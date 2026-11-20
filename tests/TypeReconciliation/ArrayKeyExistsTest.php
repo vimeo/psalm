@@ -23,6 +23,45 @@ final class ArrayKeyExistsTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'arrayKeyExistsNarrowsAMixedContainerToAnArray' => [
+                'code' => '<?php
+                    function inIf(mixed $data, string $key): void {
+                        if (array_key_exists($key, $data)) {
+                            /** @psalm-check-type-exact $data = array<array-key, mixed> */
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedArgument'],
+                'php_version' => '8.0',
+            ],
+            'arrayKeyExistsAndOffsetOfAMixedContainerNarrowItToAnArray' => [
+                'code' => '<?php
+                    function contains(array $data, array $needle): bool {
+                        $stack = [];
+
+                        while (!empty($needle)) {
+                            $key = key($needle);
+                            $val = $needle[$key];
+                            unset($needle[$key]);
+
+                            if (array_key_exists($key, $data) && is_array($val)) {
+                                $stack[] = [$val, $data[$key]];
+                            } else {
+                                if (!array_key_exists($key, $data) || $data[$key] != $val) {
+                                    return false;
+                                }
+                            }
+
+                            if (empty($needle) && !empty($stack)) {
+                                list($needle, $data) = array_pop($stack);
+                            }
+                        }
+
+                        return true;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedAssignment', 'MixedArgument', 'MixedArrayOffset', 'MixedArrayAccess'],
+            ],
             'arrayKeyExistsOfAKeyThatIsNotAnIntOrAStringKeepsItsType' => [
                 'code' => '<?php
                     function ofMixed(mixed $key): void {
