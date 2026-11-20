@@ -213,17 +213,6 @@ final class AssertionFinder
             return $if_types ? [$if_types] : [];
         }
 
-        // the value of `$a ??= $b` is the value `$a` has afterwards
-        if ($conditional instanceof PhpParser\Node\Expr\AssignOp\Coalesce) {
-            $coalesce_var_name = ExpressionIdentifier::getExtendedVarId(
-                $conditional->var,
-                $this_class_name,
-                $source,
-            );
-
-            return $coalesce_var_name !== null ? [[$coalesce_var_name => [[new Truthy()]]]] : [];
-        }
-
         $var_name = ExpressionIdentifier::getExtendedVarId(
             $conditional,
             $this_class_name,
@@ -2298,6 +2287,7 @@ final class AssertionFinder
         if ($var_name) {
             if ($base_conditional instanceof PhpParser\Node\Expr\Assign
                 || $base_conditional instanceof PhpParser\Node\Expr\AssignRef
+                || $base_conditional instanceof PhpParser\Node\Expr\AssignOp\Coalesce
             ) {
                 $var_name = '=' . $var_name;
             }
@@ -3023,6 +3013,7 @@ final class AssertionFinder
 
             while ($operand instanceof PhpParser\Node\Expr\Assign
                 || $operand instanceof PhpParser\Node\Expr\AssignRef
+                || $operand instanceof PhpParser\Node\Expr\AssignOp\Coalesce
                 || $operand instanceof PhpParser\Node\Expr\PreInc
                 || $operand instanceof PhpParser\Node\Expr\PreDec
             ) {
@@ -3047,7 +3038,7 @@ final class AssertionFinder
      *
      * @psalm-pure
      */
-    private static function getComparand(Atomic $type, string $operand_id): ?string
+    public static function getComparand(Atomic $type, string $operand_id): ?string
     {
         return $type instanceof TLiteralInt
             || $type instanceof TLiteralFloat
@@ -3306,8 +3297,8 @@ final class AssertionFinder
 
         if ($first_var_name
             && ($second_arg_type = $source->node_data->getType($expr->getArgs()[1]->value))
-            && isset($expr->getArgs()[0]->value)
-            && !$expr->getArgs()[0]->value instanceof PhpParser\Node\Expr\ClassConstFetch
+            && ($first_arg = $expr->getArgs()[0]->value ?? null)
+            && !$first_arg instanceof PhpParser\Node\Expr\ClassConstFetch
         ) {
             foreach ($second_arg_type->getAtomicTypes() as $atomic_type) {
                 if ($atomic_type instanceof TArray
@@ -3369,7 +3360,7 @@ final class AssertionFinder
                     )]);
 
                     // the values of two templates can't be intersected
-                    if (($first_var_type = $source->node_data->getType($expr->getArgs()[0]->value))
+                    if (($first_var_type = $source->node_data->getType($first_arg))
                         && Type::intersectUnionTypes($value_of_type, $first_var_type, $source->getCodebase()) !== null
                     ) {
                         $if_types[$first_var_name] = [[new InArray($value_of_type, $haystack)]];

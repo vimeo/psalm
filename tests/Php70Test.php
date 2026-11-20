@@ -81,10 +81,14 @@ final class Php70Test extends TestCase
             ],
             'nullCoalesceWithReference' => [
                 'code' => '<?php
-                    $var = 0;
+                    function f(): ?int {
+                        return rand(0, 1) ? 0 : null;
+                    }
+
+                    $var = f();
                     ($a =& $var) ?? "hello";',
                 'assertions' => [
-                    '$a' => 'int',
+                    '$a' => 'int|null',
                 ],
             ],
             'spaceship' => [
