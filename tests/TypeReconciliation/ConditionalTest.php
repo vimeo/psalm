@@ -196,6 +196,28 @@ final class ConditionalTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'truthyCoalesceWithFalseEstablishesTheKey' => [
+                'code' => '<?php
+                    /** @param array{k?: string} $a */
+                    function both(array $a): string {
+                        if (($a["k"] ?? false) && strlen($a["k"]) > 1) {
+                            return $a["k"];
+                        }
+
+                        return "";
+                    }
+
+                    /** @param array{k?: string|null} $a */
+                    function withNull(array $a): string {
+                        if (!($a["k"] ?? null)) {
+                            return "";
+                        }
+
+                        return $a["k"];
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['RiskyTruthyFalsyComparison'],
+            ],
             'varAssignedUnderConditionIsDefinedUnderTheSameCondition' => [
                 'code' => '<?php
                     function f(bool $b): void {
@@ -6965,6 +6987,19 @@ final class ConditionalTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'coalesceWithFalseInADisjunctionDoesNotEstablishTheKey' => [
+                'code' => '<?php
+                    /** @param array{k?: string} $a */
+                    function f(array $a, bool $other): string {
+                        if (($a["k"] ?? false) || $other) {
+                            return $a["k"];
+                        }
+
+                        return "";
+                    }',
+                'error_message' => 'PossiblyUndefinedArrayOffset',
+                'error_levels' => ['RiskyTruthyFalsyComparison'],
+            ],
             'narrowClassAndInterfaceIntersectionToFinalSubclassWithoutInterface' => [
                 'code' => '<?php
                     abstract class A {}
