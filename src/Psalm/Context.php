@@ -7,6 +7,7 @@ namespace Psalm;
 use InvalidArgumentException;
 use PhpParser;
 use Psalm\Internal\Analyzer\ConstructorExits;
+use Psalm\Internal\Analyzer\Statements\Expression\Assignment\ArrayAssignmentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Assignment\InstancePropertyAssignmentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\VariableFetchAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
@@ -39,10 +40,12 @@ use function array_keys;
 use function array_map;
 use function array_search;
 use function array_shift;
+use function array_slice;
 use function array_unique;
 use function array_values;
 use function assert;
 use function count;
+use function implode;
 use function in_array;
 use function is_array;
 use function is_int;
@@ -204,11 +207,20 @@ final class Context
 
     /**
      * The variables a variable may still be bound to by reference: those it was bound to before a block that rebound
-     * one of them, where the block did not run. A write to the variable is combined into their types.
+     * one of them, where the block did not run, and those a block that may not run bound it to. A write to the
+     * variable is combined into their types.
      *
      * @var array<string, array<string, true>>
      */
     public array $references_possibly_bound_to = [];
+
+    /**
+     * The variables bound to each other before a block that rebound one of them
+     *
+     * @internal
+     * @var array<string, true>
+     */
+    public array $references_detached_by_blocks = [];
 
     /**
      * Whether or not we're inside the conditional of an if/where etc.
@@ -709,7 +721,8 @@ final class Context
             if (!isset($this->references_in_scope[$reference_id])
                 && !isset($this->references_to_external_scope[$reference_id])
                 // a reference before the block that the block rebound
-                && !isset($this->references_possibly_bound_to[$reference_id])
+                && !(isset($this->references_possibly_bound_to[$reference_id])
+                    && isset($this->references_detached_by_blocks[$reference_id]))
                 && $reference_location = $statements_analyzer->getFirstAppearance($reference_id)
             ) {
                 $this->references_possibly_from_confusing_scope[$reference_id] = $reference_location;
@@ -717,6 +730,46 @@ final class Context
         }
         $this->references_possibly_from_confusing_scope +=
             $confusing_scope_context->references_possibly_from_confusing_scope;
+
+        $this->keepReferencesPossiblyBoundIn($confusing_scope_context);
+    }
+
+    /**
+     * The bindings of a block that may not run are possibly made after it: what is written to either side may be
+     * written to the other
+     *
+     * @psalm-external-mutation-free
+     */
+    public function keepReferencesPossiblyBoundIn(Context $block_context): void
+    {
+        foreach ($block_context->references_in_scope as $reference_id => $referenced_id) {
+            if (($this->references_in_scope[$reference_id] ?? null) === $referenced_id) {
+                continue;
+            }
+
+            // and to the variables along the chain it is bound through
+            $seen = [$reference_id => true];
+
+            while (!isset($seen[$referenced_id])) {
+                $seen[$referenced_id] = true;
+                $this->references_possibly_bound_to[$reference_id][$referenced_id] = true;
+                $this->references_possibly_bound_to[$referenced_id][$reference_id] = true;
+
+                if (!isset($block_context->references_in_scope[$referenced_id])) {
+                    break;
+                }
+
+                $referenced_id = $block_context->references_in_scope[$referenced_id];
+            }
+        }
+
+        // those of the blocks nested in it
+        foreach ($block_context->references_possibly_bound_to as $var_id => $target_ids) {
+            $this->references_possibly_bound_to[$var_id] = ($this->references_possibly_bound_to[$var_id] ?? [])
+                + $target_ids;
+        }
+
+        $this->references_detached_by_blocks += $block_context->references_detached_by_blocks;
     }
 
     /**
@@ -809,6 +862,8 @@ final class Context
             unset($this->references_in_scope[$reference_id]);
             $this->references_possibly_bound_to[$reference_id][$referenced_id] = true;
             $this->references_possibly_bound_to[$referenced_id][$reference_id] = true;
+            $this->references_detached_by_blocks[$reference_id] = true;
+            $this->references_detached_by_blocks[$referenced_id] = true;
 
             if (isset($this->vars_in_scope[$reference_id])) {
                 // the entry is a PHP reference to the one of the variable it was bound to
@@ -836,23 +891,96 @@ final class Context
     public function writeToReferencesPossiblyBound(string $var_id, Union $type, Codebase $codebase): void
     {
         foreach ($this->references_possibly_bound_to[$var_id] ?? [] as $target_id => $_) {
-            if (!isset($this->vars_in_scope[$target_id])) {
-                continue;
+            if (isset($this->vars_in_scope[$target_id])) {
+                $this->vars_in_scope[$target_id] = Type::combineUnionTypes(
+                    $this->vars_in_scope[$target_id],
+                    $type,
+                    $codebase,
+                );
+
+                $this->forgetDescendantsOf($target_id);
             }
 
-            $this->vars_in_scope[$target_id] = Type::combineUnionTypes(
-                $this->vars_in_scope[$target_id],
-                $type,
-                $codebase,
-            );
-
-            foreach ($this->vars_in_scope as $descendant_id => $_type) {
-                if (str_starts_with($descendant_id, $target_id . '[')
-                    || str_starts_with($descendant_id, $target_id . '->')
-                ) {
-                    unset($this->vars_in_scope[$descendant_id]);
-                }
+            if (str_ends_with($target_id, ']')) {
+                $this->writeToArrayPossiblyHoldingItem($target_id, $type, $codebase);
             }
+        }
+    }
+
+    /**
+     * @psalm-capabilities read-props|write-this-props|write-refs
+     */
+    private function forgetDescendantsOf(string $var_id): void
+    {
+        foreach ($this->vars_in_scope as $descendant_id => $_type) {
+            if ((str_starts_with($descendant_id, $var_id . '[') || str_starts_with($descendant_id, $var_id . '->'))
+                // the slot of an item bound by reference is what the references to it are tracked through
+                && !isset($this->references_in_scope[$descendant_id])
+                && !($this->referenced_counts[$descendant_id] ?? 0)
+            ) {
+                unset($this->vars_in_scope[$descendant_id]);
+            }
+        }
+    }
+
+    /**
+     * The item may be under any key its offsets can be: the array holding it gets the type besides its own under
+     * each of them. An array that can't hold the item anymore (one assigned since, empty) is left as it is.
+     *
+     * @psalm-capabilities read-props|write-this-props|write-refs
+     */
+    private function writeToArrayPossiblyHoldingItem(string $item_id, Union $type, Codebase $codebase): void
+    {
+        $parts = Reconciler::breakUpPathIntoParts($item_id);
+        $first_bracket = array_search('[', $parts, true);
+
+        if (!is_int($first_bracket) || $first_bracket === 0) {
+            return;
+        }
+
+        $array_id = implode('', array_slice($parts, 0, $first_bracket));
+
+        if (!isset($this->vars_in_scope[$array_id])) {
+            return;
+        }
+
+        $keys = [];
+        $changed_id = $item_id;
+
+        for ($i = $first_bracket, $count = count($parts); $i < $count; $i += 3) {
+            if ($parts[$i] !== '[' || !isset($parts[$i + 2]) || $parts[$i + 2] !== ']') {
+                return;
+            }
+
+            $key = ArrayAssignmentAnalyzer::getLiteralKeyOfOffset($parts[$i + 1]);
+
+            if ($key === null && $changed_id === $item_id) {
+                // an item of unknown key may be any of the items cached there
+                $changed_id = implode('', array_slice($parts, 0, $i));
+            }
+
+            $keys[] = $key;
+        }
+
+        if (!$keys) {
+            return;
+        }
+
+        $array_type = ArrayAssignmentAnalyzer::addToItemsUnderKeys(
+            $this->vars_in_scope[$array_id],
+            $keys,
+            $type,
+            $codebase,
+        );
+
+        if ($array_type === null) {
+            return;
+        }
+
+        $this->vars_in_scope[$array_id] = $array_type;
+
+        if ($changed_id !== $item_id) {
+            $this->forgetDescendantsOf($changed_id);
         }
     }
 
@@ -872,6 +1000,21 @@ final class Context
         }
 
         unset($this->references_possibly_bound_to[$var_id]);
+    }
+
+    /**
+     * The variable is assigned or released: the items and properties it held are gone, and with them what they were
+     * possibly still bound to
+     *
+     * @psalm-capabilities read-props|write-this-props|write-refs
+     */
+    public function forgetReferencesPossiblyBoundUnder(string $var_id): void
+    {
+        foreach ($this->references_possibly_bound_to as $descendant_id => $_) {
+            if (str_starts_with($descendant_id, $var_id . '[') || str_starts_with($descendant_id, $var_id . '->')) {
+                $this->forgetReferencesPossiblyBound($descendant_id);
+            }
+        }
     }
 
     /**
@@ -1070,6 +1213,7 @@ final class Context
 
         // detached first: what the variable was bound to by reference keeps its value
         $this->removePossibleReference($remove_var_id);
+        $this->forgetReferencesPossiblyBoundUnder($remove_var_id);
 
         if ($existing_type && $removeDescendents) {
             $this->removeDescendents($remove_var_id, $existing_type);
