@@ -1103,6 +1103,13 @@ final class AtomicTypeComparator
             return false;
         }
 
+        // an interface or a class that isn't final can have a child or an implementation with __invoke()
+        if (($type1_part::class === TCallable::class && self::isExtensibleObject($codebase, $type2_part))
+            || ($type2_part::class === TCallable::class && self::isExtensibleObject($codebase, $type1_part))
+        ) {
+            return true;
+        }
+
         if ($type1_part instanceof TIterable && $type2_part instanceof TNamedObject) {
             $type1_part = self::getTraversableHalf($codebase, $type1_part, $type2_part, false) ?? $type1_part;
         } elseif ($type2_part instanceof TIterable && $type1_part instanceof TNamedObject) {
@@ -1250,6 +1257,17 @@ final class AtomicTypeComparator
         }
 
         return false;
+    }
+
+    /**
+     * @psalm-assert-if-true TNamedObject $type
+     * @psalm-mutation-free
+     */
+    private static function isExtensibleObject(Codebase $codebase, Atomic $type): bool
+    {
+        return $type instanceof TNamedObject
+            && $codebase->classlike_storage_provider->has($type->value)
+            && !$codebase->classlike_storage_provider->get($type->value)->final;
     }
 
     /**
