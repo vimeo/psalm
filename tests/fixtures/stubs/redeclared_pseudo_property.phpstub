@@ -1,0 +1,7 @@
+<?php
+namespace Foo;
+
+/**
+ * @property string $value
+ */
+class PseudoPropertyBase {}
