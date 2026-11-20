@@ -332,21 +332,48 @@ final class IntRangeTest extends TestCase
                     '$k===' => 'mixed',
                     '$l===' => 'int',
                     '$m===' => 'int<0, max>',
-                    '$n===' => 'int<min, 0>',
+                    '$n===' => 'int<0, max>',
                     '$o===' => 'mixed',
                     '$p===' => 'int',
                     '$q===' => 'mixed',
                     '$r===' => 'int<0, 2>',
-                    '$s===' => 'int<-2, 0>',
+                    '$s===' => 'int<0, 2>',
                     '$t===' => 'mixed',
                     '$u===' => 'int<-2, 0>',
-                    '$v===' => 'int<2, 0>',
+                    '$v===' => 'int<-2, 0>',
                     '$w===' => 'mixed',
                     '$x===' => 'int<0, 2>',
-                    '$y===' => 'int<-2, 0>',
+                    '$y===' => 'int<0, 2>',
                     '$z===' => 'mixed',
                     '$aa===' => 'int<-2, 2>',
                     '$ab===' => 'int<-2, 2>',
+                ],
+            ],
+            'modWithANegativeDivisorTakesTheSignOfTheDividend' => [
+                'code' => '<?php
+                    /** @var int<0, max> $positive */
+                    $positive = 7;
+                    /** @var int<min, 0> $negative */
+                    $negative = -7;
+                    /** @var int<-9, 9> $mixed */
+                    $mixed = 1;
+                    /** @var int<min, -3> $negativeRange */
+                    $negativeRange = -5;
+                    $anything = rand();
+
+                    $a = $positive % -5;
+                    $b = $negative % -5;
+                    $c = $mixed % -5;
+                    $d = $anything % -5;
+                    $e = $positive % $negativeRange;
+                    $f = $negative % $negativeRange;',
+                'assertions' => [
+                    '$a===' => 'int<0, 4>',
+                    '$b===' => 'int<-4, 0>',
+                    '$c===' => 'int<-4, 4>',
+                    '$d===' => 'int<-4, 4>',
+                    '$e===' => 'int<0, max>',
+                    '$f===' => 'int<min, 0>',
                 ],
             ],
             'pow' => [
