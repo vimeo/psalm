@@ -15,8 +15,10 @@ use Stringable;
 use function array_column;
 use function array_fill_keys;
 use function array_map;
+use function array_values;
 use function count;
 use function implode;
+use function sort;
 
 /**
  * @api
@@ -171,6 +173,44 @@ abstract class FunctionLikeStorage implements HasAttributesInterface, Stringable
      * @var array<string, CodeLocation>
      */
     public array $throw_locations = [];
+
+    /**
+     * For each thrown class, the other classes of every intersection type (`A&B`) it is part of
+     *
+     * @var array<string, list<list<string>>>
+     */
+    public array $throw_intersections = [];
+
+    /**
+     * What the function declares as `@throws`, one entry per thrown type: a class alone, or the classes of an
+     * intersection (`A&B`)
+     *
+     * @return list<list<string>>
+     * @psalm-mutation-free
+     */
+    public function getThrowGroups(): array
+    {
+        $groups = [];
+
+        foreach ($this->throws ?: [] as $exception_name => $_) {
+            if (!isset($this->throw_intersections[$exception_name])) {
+                $groups[] = [$exception_name];
+
+                continue;
+            }
+
+            foreach ($this->throw_intersections[$exception_name] as $other_members) {
+                $group = [$exception_name, ...$other_members];
+                $sorted_group = $group;
+                sort($sorted_group);
+
+                // the group is stored under each of its classes
+                $groups[implode('&', $sorted_group)] ??= $group;
+            }
+        }
+
+        return array_values($groups);
+    }
 
     public bool $has_yield = false;
 
@@ -394,7 +434,8 @@ abstract class FunctionLikeStorage implements HasAttributesInterface, Stringable
      */
     public array $taint_named_property_reads = [];
 
-    public bool $allow_named_arg_calls = true;
+    /** How the arguments can be passed */
+    public ?NamedArguments $named_arguments = null;
 
     /**
      * @var list<AttributeStorage>
@@ -459,6 +500,27 @@ abstract class FunctionLikeStorage implements HasAttributesInterface, Stringable
     public function isPure(): bool
     {
         return Capabilities::allowsAnyOf(Capabilities::NONE, $this->capabilities);
+    }
+
+    /**
+     * @psalm-mutation-free
+     */
+    public function allowsNamedArguments(): bool
+    {
+        return $this->named_arguments !== NamedArguments::NOT_ALLOWED;
+    }
+
+    /**
+     * Whether the argument of the parameter must be passed by name, per `@arguments-by-name` or
+     * `@optional-arguments-by-name`
+     *
+     * @psalm-mutation-free
+     */
+    public function requiresNamedArgument(FunctionLikeParameter $param): bool
+    {
+        return !$param->is_variadic
+            && ($this->named_arguments === NamedArguments::REQUIRED
+                || ($this->named_arguments === NamedArguments::REQUIRED_FOR_OPTIONAL && $param->is_optional));
     }
 
     /**

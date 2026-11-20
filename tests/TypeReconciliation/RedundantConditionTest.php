@@ -25,6 +25,77 @@ final class RedundantConditionTest extends TestCase
     use ValidCodeAnalysisTestTrait;
     use InvalidCodeAnalysisTestTrait;
 
+    public function testAssertOfATypeCheckFunctionIsReportedOnce(): void
+    {
+        $this->project_analyzer->getConfig()->throw_exception = false;
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                function f(string $s, int $i, array $a, ?int $n): void {
+                    assert(is_string($s));
+                    assert(is_int($i));
+                    assert(is_array($a));
+                    assert(is_int($n));
+                    if (is_string($s)) {}
+                }',
+        );
+        $this->analyzeFile($file_path, new Context(), false);
+        $this->project_analyzer->consolidateAnalyzedData();
+
+        $this->assertSame(
+            [
+                ['RedundantCondition', 3, 21],
+                ['RedundantCondition', 4, 21],
+                ['RedundantCondition', 5, 21],
+                ['RedundantConditionGivenDocblockType', 7, 25],
+            ],
+            array_map(
+                static fn($issue): array => [$issue->type, $issue->line_from, $issue->column_from],
+                IssueBuffer::getIssuesDataForFile($file_path),
+            ),
+        );
+    }
+
+    public function testTypeCheckInTheArgumentOfACallInAssertIsStillReported(): void
+    {
+        $this->project_analyzer->getConfig()->throw_exception = false;
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                final class K {
+                    public function m(bool $b): bool {
+                        return $b;
+                    }
+                }
+
+                function foo(bool $b): bool {
+                    return $b;
+                }
+
+                function f(int $i, K $k): void {
+                    assert(foo(is_int($i)));
+                    assert($k->m(is_int($i)));
+                }',
+        );
+        $this->analyzeFile($file_path, new Context(), false);
+        $this->project_analyzer->consolidateAnalyzedData();
+
+        $this->assertSame(
+            [
+                ['RedundantCondition', 13, 32],
+                ['RedundantCondition', 14, 34],
+            ],
+            array_map(
+                static fn($issue): array => [$issue->type, $issue->line_from, $issue->column_from],
+                IssueBuffer::getIssuesDataForFile($file_path),
+            ),
+        );
+    }
+
     public function testPropertyThatAMethodCalledInTheConditionWritesWithoutRememberingPropertyAssignments(): void
     {
         Config::getInstance()->remember_property_assignments_after_call = false;

@@ -2694,6 +2694,20 @@ final class ReturnTypeTest extends TestCase
                 'ignored_issues' => ['RedundantCondition'],
                 'php_version' => '8.0',
             ],
+            'unionOfThisAndStaticStaysStatic' => [
+                'code' => '<?php
+                    class A {
+                        /** @return static */
+                        public function me() {
+                            return $this;
+                        }
+
+                        /** @return static */
+                        public function pick(bool $f) {
+                            return $f ? $this : $this->me();
+                        }
+                    }',
+            ],
         ];
     }
 
@@ -3948,6 +3962,16 @@ final class ReturnTypeTest extends TestCase
                     }',
                 'error_message' => 'InvalidReturnType',
                 'error_levels' => ['RedundantConditionGivenDocblockType'],
+            ],
+            'unionOfThisAndOtherInstanceIsNotStatic' => [
+                'code' => '<?php
+                    class A {
+                        /** @return static */
+                        public function pick(A $other, bool $f) {
+                            return $f ? $this : $other;
+                        }
+                    }',
+                'error_message' => 'LessSpecificReturnStatement',
             ],
         ];
     }

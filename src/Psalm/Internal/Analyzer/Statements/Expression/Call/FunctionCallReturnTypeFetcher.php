@@ -134,6 +134,7 @@ final class FunctionCallReturnTypeFetcher
             $context->mergeFunctionExceptions(
                 $function_storage,
                 new CodeLocation($statements_analyzer->getSource(), $stmt),
+                $statements_analyzer->getCodebase(),
             );
         }
 
@@ -1129,7 +1130,8 @@ final class FunctionCallReturnTypeFetcher
     /**
      * The indices of the arguments among $args given to the parameter at offset $i of $params: the one at its
      * position or named after it, and if it is variadic those after it and those named after no other parameter. An
-     * unpacked argument may hold the arguments of every parameter from its position on.
+     * unpacked argument may hold the arguments of every parameter from its position on, and of a variadic one before
+     * it.
      *
      * @param array<int, FunctionLikeParameter> $params
      * @param array<int, PhpParser\Node\Arg> $args
@@ -1143,7 +1145,7 @@ final class FunctionCallReturnTypeFetcher
 
         foreach ($args as $arg_index => $arg) {
             if ($arg->unpack) {
-                $given = $arg_index <= $i;
+                $given = $arg_index <= $i || ($param !== null && $param->is_variadic);
             } elseif ($arg->name === null) {
                 $given = $arg_index === $i || ($param !== null && $param->is_variadic && $arg_index > $i);
             } elseif ($param === null) {

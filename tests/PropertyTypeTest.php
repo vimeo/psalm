@@ -759,6 +759,93 @@ final class PropertyTypeTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'propertySetInConstructorStaysSetAfterAnIfNarrowingThis' => [
+                'code' => '<?php
+                    interface Configurable {
+                        public function setConfiguration(array $c): void;
+                    }
+
+                    interface Aggregate {}
+
+                    abstract class PluginBase {
+                        protected array $configuration;
+
+                        public function __construct(array $configuration) {
+                            $this->configuration = $configuration;
+                        }
+                    }
+
+                    class PluginDefault extends PluginBase {
+                        public function __construct(array $configuration) {
+                            parent::__construct($configuration);
+                            if ($this instanceof Configurable) {
+                                $this->setConfiguration($configuration);
+                            }
+                        }
+                    }
+
+                    class QueryBase {
+                        protected string $condition;
+                        protected ?string $aggregate = null;
+
+                        public function __construct(string $c) {
+                            $this->condition = $c;
+                            if ($this instanceof Aggregate) {
+                                $this->aggregate = $c;
+                            }
+                        }
+                    }',
+            ],
+            'propertyOfThisIsNarrowedAgainWithThisAfterAnIfOnlyNarrowingThis' => [
+                'code' => '<?php
+                    final class A {
+                        public array $uses = [];
+                    }
+
+                    final class B {
+                        public array $params = [];
+                    }
+
+                    final class C {
+                        public string $name = "";
+                    }
+
+                    /** @template-covariant T as A|B|C */
+                    abstract class Analyzer {
+                        /** @param T $function */
+                        public function __construct(protected A|B|C $function) {}
+
+                        /** @param list<int> $ids */
+                        public function run(array $ids): void {
+                            if ($this instanceof ClosureAnalyzer && $this->function instanceof A) {
+                                foreach ($this->function->uses as $_) {
+                                    $this->touch();
+                                }
+                            } elseif ($this instanceof ClosureAnalyzer && $this->function instanceof B) {
+                                foreach ($this->function->params as $_) {
+                                    echo 1;
+                                }
+                            }
+
+                            foreach ($ids as $id) {
+                                if ($this instanceof MethodAnalyzer && $id === 1) {
+                                    echo $this->function->name;
+                                }
+                            }
+                        }
+
+                        public function touch(): void {}
+                    }
+
+                    /** @extends Analyzer<A|B> */
+                    final class ClosureAnalyzer extends Analyzer {}
+
+                    /** @extends Analyzer<C> */
+                    final class MethodAnalyzer extends Analyzer {}',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'declaredPropertyOfAStdClassSubclassKeepsItsTypeAndAnUndeclaredOneStaysDynamic' => [
                 'code' => '<?php
                     final class Item extends stdClass {

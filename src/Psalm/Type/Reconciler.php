@@ -202,7 +202,8 @@ class Reconciler
             // To work around the issue, if there are any references, we have to recreate the array and fix the
             // references so they're properly scoped and won't affect the caller. Starting with a new array is
             // required for some unclear reason, just cloning elements of the existing array doesn't work properly.
-            $old_existing_types = $existing_types;
+            // The offsets of the variables bound (see below) are references to each other too.
+            $old_existing_types = Context::copyVarsInScope($existing_types);
             $existing_types = [];
 
             $cloned_referenceds = [];
@@ -324,6 +325,12 @@ class Reconciler
                 $types_before_reconciling,
                 $statements_analyzer,
             );
+
+            // the remembered result of a function call that this context never made (the call was in the
+            // condition of an `if`): nothing is known to refine
+            if ($result_type === null && !$did_type_exist && ExpressionIdentifier::isFunctionCallId($key)) {
+                continue;
+            }
 
             if ($result_type && $result_type->isUnionEmpty()) {
                 throw new InvalidArgumentException('Union::$types cannot be empty after get value for ' . $key);

@@ -24,6 +24,42 @@ final class FunctionCallTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'functionImportedWithAnAliasIsCalledWithoutAWrongCaseIssue' => [
+                'code' => '<?php
+                    namespace App;
+
+                    use function json_encode as encode;
+                    use function strtoupper as up;
+
+                    $json = encode([1]);
+                    $upper = up("x");',
+                'assertions' => [
+                    '$upper===' => 'non-falsy-string',
+                ],
+            ],
+            'functionCalledWithItsDeclaredCasing' => [
+                'code' => '<?php
+                    namespace Foo;
+
+                    function fooBar(): int {
+                        return 1;
+                    }
+
+                    /** @param callable $callable */
+                    function runThis($callable): void {
+                        $callable();
+                    }
+
+                    $a = fooBar();
+                    $b = \\Foo\\fooBar();
+                    $c = strlen("foo");
+                    $d = \\strlen("foo");
+                    runThis("Foo\\\\fooBar");',
+                'assertions' => [
+                    '$a===' => 'int',
+                    '$c===' => 'int<1, max>',
+                ],
+            ],
             'fileTestFunctionsKeepAMixedArgument' => [
                 'code' => <<<'PHP'
                     <?php
@@ -1408,6 +1444,7 @@ final class FunctionCallTest extends TestCase
                     '$b===' => 'array<string, string>',
                     '$c===' => 'false|string',
                 ],
+                'ignored_issues' => ['WrongCaseFunction'],
             ],
             'functionExistsGuardsTheRightOperandInsideAnotherNarrowingCondition' => [
                 'code' => '<?php
@@ -3267,6 +3304,7 @@ final class FunctionCallTest extends TestCase
                     '$c===' => '\'  abc\'',
                     '$d===' => '\'abc\'',
                 ],
+                'ignored_issues' => ['WrongCaseFunction'],
             ],
             'trimThatIsNotOfOneLiteralKeepsTheStubType' => [
                 'code' => '<?php
@@ -3782,6 +3820,99 @@ final class FunctionCallTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '7.4',
             ],
+            'pureFunctionCalledWithLiteralsRemembersWhatTheConditionTold' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function lookup(string $name): ?string {
+                        return $name === "test" ? "found" : null;
+                    }
+
+                    $a = "";
+                    if (lookup("test") !== null) {
+                        $a = lookup("test");
+                    }',
+                'assertions' => [
+                    '$a===' => 'string',
+                ],
+            ],
+            'pureFunctionCalledWithLiteralsRemembersAnEarlyReturnGuard' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function lookup(string $name): ?string {
+                        return $name === "test" ? "found" : null;
+                    }
+
+                    function guarded(): string {
+                        if (lookup("test") === null) {
+                            return "";
+                        }
+
+                        return lookup("test");
+                    }',
+            ],
+            'pureFunctionCalledWithLiteralsInALoopIsNotPossiblyUndefined' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function lookup(string $name): ?string {
+                        return $name === "test" ? "found" : null;
+                    }
+
+                    function loop(int $times): void {
+                        for ($i = 0; $i < $times; $i++) {
+                            $found = lookup("test");
+                            echo $found;
+                        }
+                    }',
+            ],
+            'pureFunctionCalledWithAnIntAndAFloatIsAnotherCall' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-pure
+                     * @return ($x is int ? "int" : "float")
+                     */
+                    function kind(int|float $x): string {
+                        return is_int($x) ? "int" : "float";
+                    }
+
+                    $a = kind(1);
+                    $b = kind(1.0);',
+                'assertions' => [
+                    '$a===' => '\'int\'',
+                    '$b===' => '\'float\'',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'pureFunctionCalledWithOtherBytesIsAnotherCall' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function bad(string $s): ?string {
+                        return $s === "\xff" ? null : $s;
+                    }
+
+                    if (bad("\xff") !== null) {
+                        $x = bad("\xfe");
+                        /** @psalm-check-type-exact $x = null|string */
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'pureFunctionCalledWithOtherArgumentsIsAnotherCall' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function lookup(string $name): ?string {
+                        return $name === "test" ? "found" : null;
+                    }
+
+                    $other = "";
+                    if (lookup("test") !== null) {
+                        $other = lookup("other");
+                    }',
+                'assertions' => [
+                    '$other===' => 'null|string',
+                ],
+            ],
             'pregReplaceCallbackWithNamedUnmatchedAsNullFlag' => [
                 'code' => '<?php
                     preg_replace_callback(
@@ -4103,6 +4234,66 @@ final class FunctionCallTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'aliasOfAUserFunctionImportedWithAnotherCasingIsReported' => [
+                'code' => '<?php
+                    namespace Lib {
+                        function fooBar(): int {
+                            return 1;
+                        }
+                    }
+
+                    namespace App {
+                        use function Lib\FOOBAR as run;
+
+                        echo run();
+                    }',
+                'error_message' => 'WrongCaseFunction - src' . DIRECTORY_SEPARATOR . 'somefile.php:11:30 - Function FOOBAR is declared as fooBar and has wrong casing',
+            ],
+            'wrongCaseOfAFunctionCall' => [
+                'code' => '<?php
+                    function fooBar(): void {}
+
+                    foobar();',
+                'error_message' => 'WrongCaseFunction - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:21 - '
+                    . 'Function foobar is declared as fooBar and has wrong casing',
+            ],
+            'wrongCaseOfAFunctionCallInANamespace' => [
+                'code' => '<?php
+                    namespace Foo;
+
+                    function fooBar(): void {}
+
+                    FOOBAR();',
+                'error_message' => 'WrongCaseFunction - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:21',
+            ],
+            'wrongCaseOfAFunctionPassedAsACallableString' => [
+                'code' => '<?php
+                    function abc(): void {}
+
+                    /** @param callable $callable */
+                    function runThis(string $string, $callable): void {
+                        $callable($string);
+                    }
+
+                    runThis("foo", "aBc");',
+                'error_message' => 'WrongCaseFunction - src' . DIRECTORY_SEPARATOR . 'somefile.php:9:36',
+            ],
+            'wrongCaseOfAFunctionImportedWithAnAlias' => [
+                'code' => '<?php
+                    namespace App;
+
+                    use function StrToUpper as up;
+
+                    echo up("x");',
+                'error_message' => 'WrongCaseFunction - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:26 - '
+                    . 'Function StrToUpper is declared as strtoupper and has wrong casing',
+            ],
+            'wrongCaseOfABuiltinFunctionCall' => [
+                'code' => '<?php
+                    echo STRLEN("foo");',
+                'error_message' => 'WrongCaseFunction - src' . DIRECTORY_SEPARATOR . 'somefile.php:2:26 - '
+                    . 'Function STRLEN is declared as strlen and has wrong casing',
+            ],
             'fileTestFunctionOnAnEmptyStringIsAlwaysFalse' => [
                 'code' => '<?php
                     $path = "";

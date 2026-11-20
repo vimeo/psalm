@@ -12,6 +12,7 @@ use function array_diff_key;
 use function array_flip;
 use function array_intersect_key;
 use function array_map;
+use function count;
 use function is_string;
 use function spl_object_id;
 
@@ -47,12 +48,19 @@ final class AssignmentMapVisitor extends PhpParser\NodeVisitorAbstract
     private array $feeding_var_ids = [];
 
     /**
-     * The variables assigned, incremented or unset: a call doesn't change the type of the variables it is given
-     * other than by an assertion, which holds on the next iteration too
+     * The variables assigned, incremented, unset or iterated by reference: a call doesn't change the type of the
+     * variables it is given other than by an assertion, which holds on the next iteration too
      *
      * @var array<string, true>
      */
     private array $written_var_ids = [];
+
+    /**
+     * The variables given to a call, which may write them through a by-reference parameter
+     *
+     * @var array<string, true>
+     */
+    private array $by_ref_arg_var_ids = [];
 
     /**
      * The expression statements of the loop body, evaluated on every iteration that gets to them
@@ -147,6 +155,7 @@ final class AssignmentMapVisitor extends PhpParser\NodeVisitorAbstract
             $this->defined_var_ids += $inner_visitor->defined_var_ids;
             $this->feeding_var_ids += $inner_visitor->feeding_var_ids;
             $this->written_var_ids += $inner_visitor->written_var_ids;
+            $this->by_ref_arg_var_ids += $inner_visitor->by_ref_arg_var_ids;
 
             // the sides are evaluated before the variable is overwritten
             if ($node->var instanceof PhpParser\Node\Expr\Variable
@@ -183,26 +192,44 @@ final class AssignmentMapVisitor extends PhpParser\NodeVisitorAbstract
             return PhpParser\NodeVisitor::DONT_TRAVERSE_CHILDREN;
         }
 
-        if ($node instanceof PhpParser\Node\Expr\FuncCall
-            || $node instanceof PhpParser\Node\Expr\MethodCall
-            || $node instanceof PhpParser\Node\Expr\StaticCall
+        if (($node instanceof PhpParser\Node\Expr\FuncCall
+                || $node instanceof PhpParser\Node\Expr\MethodCall
+                || $node instanceof PhpParser\Node\Expr\NullsafeMethodCall
+                || $node instanceof PhpParser\Node\Expr\StaticCall
+                || $node instanceof PhpParser\Node\Expr\New_)
+            && !$node->isPartialFunctionApplication()
         ) {
-            if (!$node->isPartialFunctionApplication()) {
-                foreach ($node->getArgs() as $arg) {
-                    $arg_var_id = ExpressionIdentifier::getRootVarId($arg->value, $this->this_class_name);
+            $args = $node->getArgs();
 
-                    if ($arg_var_id !== null) {
+            foreach ($args as $arg) {
+                $arg_var_id = ExpressionIdentifier::getRootVarId($arg->value, $this->this_class_name);
+
+                if ($arg_var_id !== null) {
+                    // left out of the map for constructors, which rarely write their arguments: the propagation
+                    // passes follow such a write
+                    if (!$node instanceof PhpParser\Node\Expr\New_) {
                         $this->assignment_map[$arg_var_id][$arg_var_id] = true;
                     }
+
+                    // possibly passed by reference
+                    $this->by_ref_arg_var_ids[$arg_var_id] = true;
                 }
             }
 
-            if ($node instanceof PhpParser\Node\Expr\MethodCall) {
-                $var_id = ExpressionIdentifier::getRootVarId($node->var, $this->this_class_name);
+            // an argument may go into another one passed by reference (`array_push($b, $c)`)
+            if (count($args) > 1) {
+                $this->addFeedingVarIds(self::getReadVarIds(array_map(
+                    static fn(PhpParser\Node\Arg $arg): PhpParser\Node\Expr => $arg->value,
+                    $args,
+                )));
+            }
+        }
 
-                if ($var_id !== null) {
-                    $this->assignment_map[$var_id]['isset'] = true;
-                }
+        if ($node instanceof PhpParser\Node\Expr\MethodCall) {
+            $var_id = ExpressionIdentifier::getRootVarId($node->var, $this->this_class_name);
+
+            if ($var_id !== null) {
+                $this->assignment_map[$var_id]['isset'] = true;
             }
         } elseif ($node instanceof PhpParser\Node\Stmt\Unset_) {
             foreach ($node->vars as $arg) {
@@ -215,6 +242,15 @@ final class AssignmentMapVisitor extends PhpParser\NodeVisitorAbstract
             }
         } elseif ($node instanceof PhpParser\Node\Stmt\Foreach_) {
             $this->addFeedingVarIds(self::getReadVarIds([$node->expr]));
+
+            if ($node->byRef) {
+                // written through the value
+                $iterated_var_id = ExpressionIdentifier::getRootVarId($node->expr, $this->this_class_name);
+
+                if ($iterated_var_id !== null) {
+                    $this->written_var_ids[$iterated_var_id] = true;
+                }
+            }
 
             foreach ([$node->keyVar, $node->valueVar] as $target) {
                 if ($target) {
@@ -321,7 +357,10 @@ final class AssignmentMapVisitor extends PhpParser\NodeVisitorAbstract
      */
     public function getFeedingVarIds(): array
     {
-        return array_intersect_key($this->feeding_var_ids, $this->written_var_ids + $this->defined_var_ids);
+        return array_intersect_key(
+            $this->feeding_var_ids,
+            $this->written_var_ids + $this->defined_var_ids + $this->by_ref_arg_var_ids,
+        );
     }
 
     /**
