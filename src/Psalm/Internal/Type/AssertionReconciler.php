@@ -1909,6 +1909,19 @@ final class AssertionReconciler extends Reconciler
         }
 
         foreach ($existing_var_atomic_types as $existing_var_atomic_type) {
+            // PHP compares two numeric strings by their numbers: `"1" == "01"`
+            if ($assertion instanceof IsLooselyEqual
+                && $existing_var_atomic_type instanceof TLiteralString
+                && $existing_var_atomic_type->value !== $value
+                && is_numeric($existing_var_atomic_type->value)
+                && is_numeric($value)
+                && $existing_var_atomic_type->value == $value
+            ) {
+                return new Union([$existing_var_atomic_type], [
+                    'from_docblock' => $existing_var_type->from_docblock,
+                ]);
+            }
+
             if ($existing_var_atomic_type instanceof TLiteralString && $existing_var_atomic_type->value === $value) {
                 //if we're here, we check that we had at least another type in the union, otherwise it's redundant
 

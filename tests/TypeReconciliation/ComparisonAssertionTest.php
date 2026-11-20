@@ -78,6 +78,31 @@ final class ComparisonAssertionTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'looseComparisonOfNumericStringLiteralsIsByTheirNumbers' => [
+                'code' => '<?php
+                    $one = "1";
+                    $padded = "01";
+                    $ten = "10";
+                    $exponent = "1e1";
+                    $spaced = " 1";
+
+                    $matches = 0;
+
+                    if ($one == $padded) {
+                        $matches++;
+                    }
+
+                    if ($ten == $exponent) {
+                        $matches++;
+                    }
+
+                    if ($one == $spaced) {
+                        $matches++;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.2',
+            ],
             'identicalToNull' => [
                 'code' => '<?php
                     function f(?int $n): void {
@@ -414,6 +439,18 @@ final class ComparisonAssertionTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'looseComparisonOfDifferentNonNumericStringLiteralsIsNeverTrue' => [
+                'code' => '<?php
+                    $first = "abc";
+                    $second = "abd";
+
+                    if ($first == $second) {
+                        echo 1;
+                    }',
+                'error_message' => 'TypeDoesNotContainType',
+                'error_levels' => [],
+                'php_version' => '8.2',
+            ],
             'nullNeverIdenticalToANonNullableValue' => [
                 'code' => '<?php
                     function f(string $s): void {
