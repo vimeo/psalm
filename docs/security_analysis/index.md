@@ -233,8 +233,8 @@ function search(DOMXPath $xpath): void {
 > **Tip:** In PCRE, `$` matches before a trailing newline as well as the end of the string — and a newline can split a
 > shell command. Add the `D` modifier or end the pattern with `\z` to forbid trailing newlines.
 
-Matching the host `parse_url()` takes from a URL against a list of hosts fixes the server PHP's stream wrappers reach,
-as long as the local variable holding the URL isn't assigned again:
+To keep a URL from reaching another server, check the host `parse_url()` extracts against a list of hosts. Psalm
+trusts the check as long as the variable holding the URL isn't assigned again:
 
 ```php
 <?php
@@ -255,7 +255,7 @@ if (preg_match('/^api.example.com$/', $host)) {
 #### Allowlist helper functions
 
 If a helper validates input against a list of allowed values, annotate it with `@psalm-assert-if-true` and those
-values. Once the check succeeds, the value is one of the literals, which can't carry user input:
+values. After the check succeeds, Psalm knows the value is one of those literals, so it carries no user input:
 
 ```php
 <?php
@@ -469,14 +469,13 @@ $user2 = new User($_GET['name']);
 echoUserName($user1);
 ```
 
-Per-object taints follow the variables holding the object, so a change made through one variable would be missed
-through the others holding the same object. Psalm therefore enforces that the object cannot be mutated after
-construction:
+Each object's taints follow the variables that hold it. If code changed the object through one variable, the other
+variables wouldn't see the new taints, so Psalm forbids changing the object after construction:
 
 - its properties are treated as readonly and cannot be reassigned outside the constructor (except on a fresh `clone`);
 - its methods cannot mutate `$this`;
 - its methods cannot write other objects, static properties, or global variables either, since another instance could
-  read back what this one wrote there.
+  read that data back.
 
 To update a specialized object, return a modified copy as `withName()` does above. Subclasses inherit specialization and
 must also carry the annotation, or Psalm reports
@@ -782,7 +781,7 @@ function logTracking(string $id): void {} // TaintedCustom (from the call below)
 logTracking(getTrackingId());
 ```
 
-To make a custom kind user input, which the built-in sources give and `input` names, declare it
+To treat a custom kind as user input (given by the built-in sources and included in `input`), declare it
 [in `psalm.xml` or in a plugin](custom_taint_sources.md#custom-taints-declared-in-the-configuration). See
 [custom taint sinks](custom_taint_sinks.md) for more on `@psalm-taint-sink`.
 
@@ -793,9 +792,9 @@ under the CGI SAPI — acts as an output sink just like `echo`. This covers:
 - `fwrite()`, `fputs()`, `fputcsv()`, `fprintf()`, `vfprintf()`, `stream_copy_to_stream()`, and
   `SplFileObject::fwrite()` / `fputcsv()`, on a handle opened on that path in the same function.
 
-**Redirects:** A `Location` header given to `header()` is a `redirect`, `url_component` and `url_path` sink rather than
-a `header` one. After a start fixing the server (`https://example.com/`, or a path such as `/account`), only the URL
-syntax a value can inject in the path, the query or the fragment is reported:
+**Redirects:** For a `Location` header, `header()` reports `redirect`, `url_component` and `url_path` instead of
+`header`. If the header value starts with a literal URL or path (`https://example.com/`, `/account`), only
+`url_component` and `url_path` are reported:
 
 ```php
 <?php
@@ -804,8 +803,8 @@ header('Location: https://example.com/' . $_GET['page']); // TaintedUrlComponent
 header('Location: /account?tab=' . urlencode((string) $_GET['tab'])); // no issue
 ```
 
-**Sessions:** What is stored in `$_SESSION` flows into what reads it back under the same key, wherever the code reading
-it is. Like with [keyed stores](taint_flow.md#keyed-stores), each read is checked against what it is used for:
+**Sessions:** A value stored in `$_SESSION` flows to every read of the same key, in any function. As with
+[keyed stores](taint_flow.md#keyed-stores), Psalm checks each read against how it's used:
 
 ```php
 <?php
