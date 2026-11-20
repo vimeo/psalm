@@ -727,18 +727,6 @@ final class FunctionCallAnalyzer extends CallAnalyzer
             );
         }
 
-        if ($function_call_info->function_id !== null
-            && $function_call_info->in_call_map
-            && !$stmt->isFirstClassCallable()
-        ) {
-            DeprecatedArgumentsAnalyzer::analyze(
-                $statements_analyzer,
-                $function_call_info->function_id,
-                $stmt->getArgs(),
-                $code_location,
-            );
-        }
-
         if ($function_name instanceof PhpParser\Node\Name && $function_call_info->function_id) {
             NamedFunctionCallHandler::handle(
                 $statements_analyzer,

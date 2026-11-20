@@ -15,14 +15,17 @@ use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ConstFetchAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\IncludeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Codebase\PhpDeprecations;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\Type\Comparator\TypeComparisonResult;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
+use Psalm\Issue\DeprecatedFunction;
 use Psalm\Issue\ForbiddenCode;
 use Psalm\Issue\PossibleRawObjectIteration;
 use Psalm\Issue\RawObjectIteration;
 use Psalm\Issue\RedundantFunctionCall;
 use Psalm\Issue\RedundantFunctionCallGivenDocblockType;
+use Psalm\Issue\ReservedWord;
 use Psalm\IssueBuffer;
 use Psalm\Node\Expr\VirtualArray;
 use Psalm\Node\Expr\VirtualVariable;
@@ -50,25 +53,36 @@ use Psalm\Type\Reconciler;
 use Psalm\Type\Union;
 
 use function array_map;
+use function array_pop;
 use function count;
+use function explode;
 use function extension_loaded;
 use function in_array;
 use function is_numeric;
 use function is_string;
 use function ltrim;
 use function preg_match;
+use function preg_split;
 use function str_starts_with;
 use function strpos;
 use function strtolower;
+use function substr_count;
 
 use const EXTR_OVERWRITE;
 use const EXTR_SKIP;
+use const PREG_SPLIT_NO_EMPTY;
 
 /**
  * @internal
  */
 final class NamedFunctionCallHandler
 {
+    /** the stream filters whose parameters can't be an object */
+    private const ARRAY_PARAMETER_FILTERS = ['zlib.deflate', 'zlib.inflate', 'bzip2.compress', 'bzip2.decompress'];
+
+    /** the number of filters a php://filter URL can chain without the filter.max_filter_count context option */
+    private const MAX_FILTERS = 16;
+
     /**
      * @param lowercase-string $function_id
      */
@@ -100,6 +114,8 @@ final class NamedFunctionCallHandler
             return;
         }
 
+        self::checkDeprecatedArguments($statements_analyzer, $stmt, $function_id);
+
         $first_arg = $stmt->getArgs()[0] ?? null;
 
         if ($function_id === 'method_exists') {
@@ -116,6 +132,23 @@ final class NamedFunctionCallHandler
             }
 
             return;
+        }
+
+        if ($function_id === 'class_alias') {
+            $alias_name = self::getClassNameOfArgument($stmt->getArgs()[1] ?? null);
+            $alias_name_parts = explode('\\', (string) $alias_name);
+            $alias_message = PhpDeprecations::getClassLikeNameMessage('an alias', array_pop($alias_name_parts));
+
+            if ($alias_message !== null) {
+                IssueBuffer::maybeAdd(
+                    new ReservedWord(
+                        $alias_message,
+                        new CodeLocation($statements_analyzer, $stmt),
+                        (string) $alias_name,
+                    ),
+                    $statements_analyzer->getSuppressedIssues(),
+                );
+            }
         }
 
         if ($function_id === 'class_alias'
@@ -344,6 +377,14 @@ final class NamedFunctionCallHandler
                     $statements_analyzer->getAliases(),
                 );
 
+                if ($fq_const_name !== null) {
+                    ConstFetchAnalyzer::checkDeprecatedName(
+                        $statements_analyzer,
+                        $fq_const_name,
+                        new CodeLocation($statements_analyzer, $stmt),
+                    );
+                }
+
                 if ($fq_const_name !== null && isset($stmt->getArgs()[1])) {
                     $second_arg = $stmt->getArgs()[1];
                     $was_in_call = $context->inside_call;
@@ -505,6 +546,13 @@ final class NamedFunctionCallHandler
             $first_arg_type = $statements_analyzer->node_data->getType($first_arg->value);
 
             if ($first_arg_type && $first_arg_type->hasObjectType()) {
+                self::reportDeprecatedObjectArgument(
+                    $statements_analyzer,
+                    $stmt,
+                    $function_id,
+                    'the array argument of ' . $function_id . '()',
+                );
+
                 if ($first_arg_type->isSingle()) {
                     IssueBuffer::maybeAdd(
                         new RawObjectIteration(
@@ -859,5 +907,278 @@ final class NamedFunctionCallHandler
         }
 
         return null;
+    }
+
+    /**
+     * Reports the arguments of builtin functions that PHP deprecates, whatever PHP version is analysed
+     *
+     * @param lowercase-string $function_id
+     */
+    private static function checkDeprecatedArguments(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr\FuncCall $stmt,
+        string $function_id,
+    ): void {
+        $types = [];
+
+        foreach ($stmt->getArgs() as $arg) {
+            // a named or unpacked argument has no known position
+            if ($arg->name !== null || $arg->unpack) {
+                return;
+            }
+
+            $types[] = $statements_analyzer->node_data->getType($arg->value);
+        }
+
+        $message = null;
+
+        switch ($function_id) {
+            case 'http_build_query':
+                if (self::canBeObject($types[0] ?? null)) {
+                    self::reportDeprecatedObjectArgument(
+                        $statements_analyzer,
+                        $stmt,
+                        $function_id,
+                        'the data argument of http_build_query()',
+                    );
+                }
+
+                return;
+
+            case 'deflate_init':
+            case 'inflate_init':
+                if (self::canBeObject($types[1] ?? null)) {
+                    self::reportDeprecatedObjectArgument(
+                        $statements_analyzer,
+                        $stmt,
+                        $function_id,
+                        'the options argument of ' . $function_id . '()',
+                    );
+                }
+
+                return;
+
+            case 'mb_convert_variables':
+                for ($position = 2, $count = count($types); $position < $count; $position++) {
+                    if (self::canBeObject($types[$position])) {
+                        self::reportDeprecatedObjectArgument(
+                            $statements_analyzer,
+                            $stmt,
+                            $function_id,
+                            'the vars argument of mb_convert_variables()',
+                        );
+
+                        return;
+                    }
+                }
+
+                return;
+
+            case 'stream_filter_append':
+            case 'stream_filter_prepend':
+                if (self::canBeObject($types[3] ?? null)
+                    && self::isAnyOf($types[1] ?? null, self::ARRAY_PARAMETER_FILTERS)
+                ) {
+                    self::reportDeprecatedObjectArgument(
+                        $statements_analyzer,
+                        $stmt,
+                        $function_id,
+                        'the parameters of the zlib and bzip2 stream filters',
+                    );
+                }
+
+                return;
+
+            case 'define':
+                if (count($types) > 2) {
+                    $message = PhpDeprecations::getDeprecatedSinceMessage(
+                        'The case_insensitive argument of define()',
+                        8_06_00,
+                        null,
+                    ) . ', leave it out';
+                }
+
+                break;
+
+            case 'is_a':
+            case 'is_subclass_of':
+                $allow_string = $types[2] ?? null;
+                $allows_strings = $allow_string === null
+                    ? $function_id === 'is_subclass_of'
+                    : !$allow_string->isFalse();
+
+                if (!$allows_strings && self::canBeString($types[0] ?? null)) {
+                    $message = PhpDeprecations::getDeprecatedSinceMessage(
+                        'Calling ' . $function_id . '() with a class name when allow_string is false',
+                        8_06_00,
+                        null,
+                    ) . ', check class_exists() first and pass true for allow_string';
+                }
+
+                break;
+
+            case 'session_set_save_handler':
+                if (self::lacksSessionIdMethods($statements_analyzer, $types[0] ?? null)) {
+                    $message = PhpDeprecations::getDeprecatedSinceMessage(
+                        'A session handler without the create_sid() and validateId() methods',
+                        8_06_00,
+                        null,
+                    ) . ', implement SessionIdInterface and SessionUpdateTimestampHandlerInterface';
+                }
+
+                break;
+
+            case 'fopen':
+            case 'file_get_contents':
+            case 'file_put_contents':
+            case 'file':
+            case 'readfile':
+            case 'copy':
+                // the path, or both paths of copy(), can be a php://filter URL
+                if (self::chainsTooManyFilters($types[0] ?? null)
+                    || ($function_id === 'copy' && self::chainsTooManyFilters($types[1] ?? null))
+                ) {
+                    $message = PhpDeprecations::getDeprecatedSinceMessage(
+                        'A php://filter URL chaining more than ' . self::MAX_FILTERS . ' filters',
+                        8_06_00,
+                        null,
+                    ) . ', append them with stream_filter_append() or raise the filter.max_filter_count context option';
+                }
+
+                break;
+        }
+
+        if ($message !== null) {
+            IssueBuffer::maybeAdd(
+                new DeprecatedFunction($message, new CodeLocation($statements_analyzer, $stmt), $function_id),
+                $statements_analyzer->getSuppressedIssues(),
+            );
+        }
+    }
+
+    private static function reportDeprecatedObjectArgument(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr\FuncCall $stmt,
+        string $function_id,
+        string $argument,
+    ): void {
+        IssueBuffer::maybeAdd(
+            new DeprecatedFunction(
+                PhpDeprecations::getDeprecatedSinceMessage(
+                    'Passing an object as ' . $argument,
+                    8_06_00,
+                    'get_object_vars()',
+                ),
+                new CodeLocation($statements_analyzer, $stmt),
+                $function_id,
+            ),
+            $statements_analyzer->getSuppressedIssues(),
+        );
+    }
+
+    /**
+     * @psalm-pure
+     */
+    private static function canBeObject(?Union $type): bool
+    {
+        foreach ($type?->getAtomicTypes() ?? [] as $atomic) {
+            if ($atomic instanceof TNamedObject || $atomic instanceof TObject) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * @psalm-pure
+     */
+    private static function canBeString(?Union $type): bool
+    {
+        foreach ($type?->getAtomicTypes() ?? [] as $atomic) {
+            if ($atomic instanceof TString) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Whether $type is one of the literal strings $values
+     *
+     * @param list<string> $values
+     * @psalm-pure
+     */
+    private static function isAnyOf(?Union $type, array $values): bool
+    {
+        if ($type === null || !$type->allStringLiterals()) {
+            return false;
+        }
+
+        foreach ($type->getLiteralStrings() as $literal) {
+            if (!in_array(strtolower($literal->value), $values, true)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * Whether $type is an object of a class that doesn't have both create_sid() and validateId(): SessionHandler has
+     * both as of PHP 8.6
+     */
+    private static function lacksSessionIdMethods(StatementsAnalyzer $statements_analyzer, ?Union $type): bool
+    {
+        if ($type === null || !$type->isSingle()) {
+            return false;
+        }
+
+        $object = $type->getSingleAtomic();
+
+        if (!$object instanceof TNamedObject || $object->extra_types !== []) {
+            return false;
+        }
+
+        $codebase = $statements_analyzer->getCodebase();
+
+        return $codebase->classlikes->classExists($object->value)
+            && !$codebase->classlikes->interfaceExists($object->value)
+            && strtolower($object->value) !== 'sessionhandler'
+            && !$codebase->classExtends($object->value, 'SessionHandler')
+            && (!$codebase->methodExists($object->value . '::create_sid')
+                || !$codebase->methodExists($object->value . '::validateid'));
+    }
+
+    /**
+     * Whether $type is a php://filter URL chaining more filters than PHP allows by default
+     *
+     * @psalm-pure
+     */
+    private static function chainsTooManyFilters(?Union $type): bool
+    {
+        if ($type === null || !$type->isSingleStringLiteral()) {
+            return false;
+        }
+
+        $url = $type->getSingleStringLiteral()->value;
+
+        if (!str_starts_with(strtolower($url), 'php://filter/')
+            || !preg_match('~^php://filter/(.*)/resource=~is', $url, $matches)
+        ) {
+            return false;
+        }
+
+        $filters = 0;
+
+        $parts = preg_split('~/~', $matches[1] ?? '', -1, PREG_SPLIT_NO_EMPTY);
+
+        // `read=a|b`, `write=c`, or filters for both
+        foreach ($parts === false ? [] : $parts as $part) {
+            $filters += substr_count($part, '|') + 1;
+        }
+
+        return $filters > self::MAX_FILTERS;
     }
 }

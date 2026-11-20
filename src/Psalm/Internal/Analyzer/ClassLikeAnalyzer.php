@@ -12,6 +12,7 @@ use Psalm\CodeLocation;
 use Psalm\Codebase;
 use Psalm\Context;
 use Psalm\Internal\Codebase\MixinLookup;
+use Psalm\Internal\Codebase\PhpDeprecations;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Provider\NodeDataProvider;
@@ -23,6 +24,7 @@ use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Internal\Type\TypeExpander;
 use Psalm\Internal\TypeVisitor\ContainsClassLikeVisitor;
 use Psalm\Internal\TypeVisitor\ContainsStaticVisitor;
+use Psalm\Issue\DeprecatedSyntax;
 use Psalm\Issue\InaccessibleProperty;
 use Psalm\Issue\InvalidClass;
 use Psalm\Issue\InvalidTemplateParam;
@@ -327,6 +329,51 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
             '/(^|\\\)(int|float|bool|string|void|null|false|true|object|mixed)$/i',
             $fq_class_name,
         ) || strtolower($fq_class_name) === 'resource';
+    }
+
+    /**
+     * Reports a class-like named after a keyword PHP adds
+     *
+     * @param array<array-key, string> $suppressed_issues
+     */
+    public static function checkDeprecatedName(
+        StatementsSource $source,
+        string $kind,
+        PhpParser\Node\Identifier $name,
+        array $suppressed_issues,
+    ): void {
+        $message = PhpDeprecations::getClassLikeNameMessage($kind, $name->name);
+
+        if ($message !== null) {
+            IssueBuffer::maybeAdd(
+                new ReservedWord($message, new CodeLocation($source, $name), $name->name),
+                $suppressed_issues,
+            );
+        }
+    }
+
+    /**
+     * Reports the class constants PHP deprecates the names of
+     *
+     * @param array<array-key, string> $suppressed_issues
+     */
+    public static function checkDeprecatedConstantNames(
+        StatementsSource $source,
+        PhpParser\Node\Stmt\ClassConst $stmt,
+        array $suppressed_issues,
+    ): void {
+        foreach ($stmt->consts as $const) {
+            if ($const->name->toLowerString() === 'namespace') {
+                IssueBuffer::maybeAdd(
+                    new DeprecatedSyntax(
+                        PhpDeprecations::getDeprecatedSinceMessage('A class constant named namespace', 8_06_00, null)
+                            . ', rename it',
+                        new CodeLocation($source, $const),
+                    ),
+                    $suppressed_issues,
+                );
+            }
+        }
     }
 
     /**

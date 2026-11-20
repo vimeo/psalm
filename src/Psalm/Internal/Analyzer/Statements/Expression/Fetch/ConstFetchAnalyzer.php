@@ -21,6 +21,7 @@ use Psalm\Internal\Provider\NodeDataProvider;
 use Psalm\Internal\Scanner\UnresolvedConstantComponent;
 use Psalm\Issue\DeprecatedConstant;
 use Psalm\Issue\ForbiddenCode;
+use Psalm\Issue\ReservedWord;
 use Psalm\Issue\UndefinedConstant;
 use Psalm\IssueBuffer;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
@@ -508,6 +509,12 @@ final class ConstFetchAnalyzer
         Context $context,
     ): void {
         foreach ($stmt->consts as $const) {
+            self::checkDeprecatedName(
+                $statements_analyzer,
+                $const->name->name,
+                new CodeLocation($statements_analyzer, $const->name),
+            );
+
             ExpressionAnalyzer::analyze($statements_analyzer, $const->value, $context);
 
             self::setConstType(
@@ -515,6 +522,26 @@ final class ConstFetchAnalyzer
                 $const->name->name,
                 $statements_analyzer->node_data->getType($const->value) ?? Type::getMixed(),
                 $context,
+            );
+        }
+    }
+
+    /**
+     * Reports a constant, declared with `const` or define(), whose name PHP deprecates
+     */
+    public static function checkDeprecatedName(
+        StatementsAnalyzer $statements_analyzer,
+        string $const_name,
+        CodeLocation $code_location,
+    ): void {
+        $name_parts = explode('\\', $const_name);
+        $name = array_pop($name_parts);
+        $message = PhpDeprecations::getConstantNameMessage($name);
+
+        if ($message !== null) {
+            IssueBuffer::maybeAdd(
+                new ReservedWord($message, $code_location, $name),
+                $statements_analyzer->getSuppressedIssues(),
             );
         }
     }

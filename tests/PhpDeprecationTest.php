@@ -124,6 +124,44 @@ final class PhpDeprecationTest extends TestCase
                         const NAMESPACE_NAME = 1;
                     }',
             ],
+            'returnInAClosureDefinedInAFinallyBlock' => [
+                'code' => '<?php
+                    function f(): void {
+                        try {
+                            echo "a";
+                        } finally {
+                            $f = function (): int {
+                                return 1;
+                            };
+                            echo $f();
+                        }
+                    }',
+            ],
+            'returnAfterAFinallyBlock' => [
+                'code' => '<?php
+                    function f(): int {
+                        try {
+                            echo "a";
+                        } finally {
+                            echo "b";
+                        }
+
+                        return 1;
+                    }',
+            ],
+            'valueReturnedFromAClosureInAConstructor' => [
+                'code' => '<?php
+                    final class A
+                    {
+                        public function __construct()
+                        {
+                            $f = function (): int {
+                                return 1;
+                            };
+                            echo $f();
+                        }
+                    }',
+            ],
             'deprecatedSyntaxSuppressedOnTheClass' => [
                 'code' => '<?php
                     /** @psalm-suppress DeprecatedSyntax */
@@ -374,23 +412,83 @@ final class PhpDeprecationTest extends TestCase
             'functionNamedReadonly' => [
                 'code' => '<?php
                     function readonly(): void {}',
-                'error_message' => 'A function named readonly is deprecated since PHP 8.6',
+                'error_message' => 'Naming a function readonly is deprecated since PHP 8.6',
             ],
             'constantNamedUnderscore' => [
                 'code' => '<?php
                     const _ = 1;',
-                'error_message' => 'A constant named _ is deprecated since PHP 8.6',
+                'error_message' => 'Naming a constant _ is deprecated since PHP 8.6',
             ],
             'constantDefinedWithAReservedName' => [
                 'code' => '<?php
                     define("App\\\\let", 1);',
-                'error_message' => 'Defining a constant named let is deprecated since PHP 8.6',
+                'error_message' => 'Naming a constant let is deprecated since PHP 8.6',
             ],
             'classAliasedToAReservedName' => [
                 'code' => '<?php
                     final class A {}
                     class_alias(A::class, "is");',
-                'error_message' => 'Aliasing a class to is is deprecated since PHP 8.6',
+                'error_message' => 'Naming an alias is is deprecated since PHP 8.6',
+            ],
+            'returnInATryNestedInAFinallyBlock' => [
+                'code' => '<?php
+                    function f(): int {
+                        try {
+                            echo "a";
+                        } finally {
+                            try {
+                                return 2;
+                            } catch (Exception $e) {
+                            }
+                        }
+                    }',
+                'error_message' => 'A return in a finally block is deprecated since PHP 8.6',
+            ],
+            'constructorDelegatingToAGenerator' => [
+                'code' => '<?php
+                    final class A
+                    {
+                        public function __construct()
+                        {
+                            yield from [1];
+                        }
+                    }',
+                'error_message' => 'Making __construct() a generator is deprecated since PHP 8.6',
+            ],
+            'traitNamedLet' => [
+                'code' => '<?php
+                    trait let {}',
+                'error_message' => 'Naming a trait let is deprecated since PHP 8.6',
+            ],
+            'enumNamedIs' => [
+                'code' => '<?php
+                    enum is {}',
+                'error_message' => 'Naming an enum is is deprecated since PHP 8.6',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'interfaceConstantNamedNamespace' => [
+                'code' => '<?php
+                    interface A
+                    {
+                        const namespace = 1;
+                    }',
+                'error_message' => 'A class constant named namespace is deprecated since PHP 8.6',
+            ],
+            'fullyQualifiedDeprecatedConstant' => [
+                'code' => '<?php
+                    namespace App;
+
+                    $list = ["b", "a"];
+                    sort($list, \\SORT_LOCALE_STRING);',
+                'error_message' => 'DeprecatedConstant - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:33 - The constant SORT_LOCALE_STRING is deprecated since PHP 8.6',
+            ],
+            'importedFunctionAliasedToAReservedName' => [
+                'code' => '<?php
+                    namespace App;
+
+                    use function strlen as is;',
+                'error_message' => 'Naming an alias is is deprecated since PHP 8.6',
             ],
             'useAliasedToAReservedName' => [
                 'code' => '<?php

@@ -10,7 +10,9 @@ use Psalm\CodeLocation;
 use Psalm\Codebase;
 use Psalm\Context;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
+use Psalm\Internal\Codebase\PhpDeprecations;
 use Psalm\Internal\MethodIdentifier;
+use Psalm\Issue\DeprecatedSyntax;
 use Psalm\Issue\InvalidEnumMethod;
 use Psalm\Issue\InvalidStaticInvocation;
 use Psalm\Issue\MethodSignatureMustOmitReturnType;
@@ -386,6 +388,52 @@ final class MethodAnalyzer extends FunctionLikeAnalyzer
      * Check that __clone, __construct, and __destruct do not have a return type
      * hint in their signature.
      */
+    /**
+     * `__construct` or `__destruct` if the statements are those of one, not of a closure in it
+     *
+     * @psalm-pure
+     */
+    public static function getConstructorOrDestructorName(StatementsAnalyzer $statements_analyzer): ?string
+    {
+        $source = $statements_analyzer->getSource();
+
+        if (!$source instanceof self) {
+            return null;
+        }
+
+        $method_name = strtolower((string) $source->getMethodName());
+
+        return $method_name === '__construct' || $method_name === '__destruct' ? $method_name : null;
+    }
+
+    /**
+     * Reports a nullable return type of __debugInfo(), which PHP deprecates whatever PHP version is analysed
+     *
+     * @param array<array-key, string> $suppressed_issues
+     */
+    public static function checkDebugInfoReturnType(
+        MethodStorage $method_storage,
+        CodeLocation $code_location,
+        array $suppressed_issues,
+    ): void {
+        if ($method_storage->cased_name !== null
+            && strtolower($method_storage->cased_name) === '__debuginfo'
+            && $method_storage->signature_return_type?->isNullable()
+        ) {
+            IssueBuffer::maybeAdd(
+                new DeprecatedSyntax(
+                    PhpDeprecations::getDeprecatedSinceMessage(
+                        'A nullable return type of __debugInfo()',
+                        8_06_00,
+                        null,
+                    ) . ', declare array',
+                    $method_storage->signature_return_type_location ?? $code_location,
+                ),
+                $suppressed_issues,
+            );
+        }
+    }
+
     public static function checkMethodSignatureMustOmitReturnType(
         MethodStorage $method_storage,
         CodeLocation $code_location,

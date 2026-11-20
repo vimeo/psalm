@@ -30,6 +30,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\DestructorAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Codebase\CliOutput;
 use Psalm\Internal\Codebase\CodeUseGraph;
+use Psalm\Internal\Codebase\PhpDeprecations;
 use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\Codebase\TaintStore;
 use Psalm\Internal\DataFlow\DataFlowNode;
@@ -3200,6 +3201,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             }
 
             MethodAnalyzer::checkMethodSignatureMustOmitReturnType($storage, $codeLocation);
+            MethodAnalyzer::checkDebugInfoReturnType($storage, $codeLocation, $this->getSuppressedIssues());
 
             if ($appearing_class_storage->is_enum) {
                 MethodAnalyzer::checkForbiddenEnumMethod(
@@ -3214,6 +3216,15 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             }
         } elseif ($this instanceof FunctionAnalyzer) {
             $function_name = $this->function->name->name;
+
+            $name_message = PhpDeprecations::getFunctionNameMessage($function_name);
+
+            if ($name_message !== null) {
+                IssueBuffer::maybeAdd(
+                    new ReservedWord($name_message, new CodeLocation($this, $this->function->name), $function_name),
+                    $this->getSuppressedIssues(),
+                );
+            }
             $namespace_prefix = $this->getNamespace();
             $cased_method_id = ($namespace_prefix !== null ? $namespace_prefix . '\\' : '') . $function_name;
             $context->calling_function_id = strtolower($cased_method_id);
