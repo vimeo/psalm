@@ -28,8 +28,8 @@ use function strtolower;
 final class KeyedArrayComparator
 {
     /**
-     * `["Class", "method"]`, with a class and a method that are known and given as literals, where there is no
-     * such method: the array is not callable
+     * `["Class", "method"]` or `[$object_of_a_final_class, "method"]`, with a method given as a literal, where there
+     * is no such method: the array is not callable
      */
     private static function isLiteralCallableArrayOfNoMethod(Codebase $codebase, TKeyedArray $input_type_part): bool
     {
@@ -50,15 +50,23 @@ final class KeyedArrayComparator
             if (in_array(strtolower($class_name), ['self', 'parent', 'static'], true)) {
                 return false;
             }
+        } elseif ($class_type->isSingle()
+            && ($object_type = $class_type->getSingleAtomic()) instanceof TNamedObject
+            && !$object_type->extra_types
+            // the object can be of a subclass that declares the method
+            && $codebase->classExists($object_type->value)
+            && $codebase->classlike_storage_provider->get($object_type->value)->final
+        ) {
+            $class_name = $object_type->value;
+        } else {
+            return false;
+        }
 
-            if ($codebase->classOrInterfaceExists($class_name)
-                && ($codebase->methodExists(new MethodIdentifier($class_name, '__call'))
-                    || $codebase->methodExists(new MethodIdentifier($class_name, '__callstatic'))
-                )
-            ) {
-                return false;
-            }
-        } elseif (!$class_type->isSingle() || !$class_type->getSingleAtomic() instanceof TNamedObject) {
+        if ($codebase->classOrInterfaceExists($class_name)
+            && ($codebase->methodExists(new MethodIdentifier($class_name, '__call'))
+                || $codebase->methodExists(new MethodIdentifier($class_name, '__callstatic'))
+            )
+        ) {
             return false;
         }
 

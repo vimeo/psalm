@@ -182,6 +182,35 @@ final class CallableTest extends TestCase
                         return ["Magic", "anything"];
                     }
 
+                    /** @return callable-array{object, string} */
+                    function magicObject(): array {
+                        return [new Magic(), "anything"];
+                    }
+
+                    class Base {
+                        public function __call(string $name, array $args): void {}
+                    }
+
+                    final class Kid extends Base {}
+
+                    /** @return callable-array{object, string} */
+                    function inheritedMagicObject(): array {
+                        return [new Kid(), "anything"];
+                    }
+
+                    /** @param callable-array{object, string} $c */
+                    function takesPair(array $c): void {}
+
+                    takesPair([new Magic(), "anything"]);
+
+                    class Open {}
+
+                    // a subclass of a class that is not final can declare the method
+                    /** @return callable-array{object, string} */
+                    function subclassMayDeclareIt(Open $o): array {
+                        return [$o, "notOnOpen"];
+                    }
+
                     // a pair that is not a literal is not proven wrong, so it is accepted
                     /**
                      * @param array{string, string} $pair
@@ -3872,6 +3901,18 @@ final class CallableTest extends TestCase
                     /** @return callable-array{string, string} */
                     function ret(): array {
                         return ["Foo", "nope"];
+                    }',
+                'error_message' => 'InvalidReturnStatement',
+            ],
+            'literalArrayOfAnObjectOfAFinalClassWithoutTheMethodIsNotACallableArray' => [
+                'code' => '<?php
+                    final class Foo {
+                        public function bar(): void {}
+                    }
+
+                    /** @return callable-array{object, string} */
+                    function ret(): array {
+                        return [new Foo(), "nope"];
                     }',
                 'error_message' => 'InvalidReturnStatement',
             ],
