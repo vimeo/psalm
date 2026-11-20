@@ -73,6 +73,30 @@ final class ArgTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'namedArgumentsOfExtensionClassesUseThePhp8Names' => [
+                'code' => '<?php
+                    function soap(SoapClient $client): void {
+                        $client->__call(name: "f", args: []);
+                        $client->__soapCall(name: "f", args: [], inputHeaders: null);
+                        $client->__setLocation(location: "http://example.com");
+                        $client->__setSoapHeaders(headers: null);
+                    }
+
+                    function cache(Memcached $cache): void {
+                        $cache->get("a", get_flags: 0);
+                        $cache->getByKey("s", "a", get_flags: 0);
+                        $cache->getMulti(["a"], get_flags: 0);
+                        $cache->getMultiByKey("s", ["a"], get_flags: 0);
+                        new MemcachedException(message: "x", code: 1);
+                    }
+
+                    function rows(PDOStatement $statement): void {
+                        $statement->fetchObject(constructorArgs: []);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'namedKeysSplitOverSeveralUnpackedArrays' => [
                 'code' => '<?php
                     function foo(int $a, string $b, float $c): void {
