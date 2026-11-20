@@ -24,6 +24,29 @@ final class FunctionCallTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'filterVarThrowOnFailureHasNoFailureValue' => [
+                'code' => '<?php
+                    $input = (string) rand();
+
+                    $int = filter_var($input, FILTER_VALIDATE_INT, FILTER_THROW_ON_FAILURE);
+                    $bool = filter_var($input, FILTER_VALIDATE_BOOLEAN, FILTER_THROW_ON_FAILURE);
+                    $ignoredDefault = filter_var(
+                        $input,
+                        FILTER_VALIDATE_INT,
+                        ["flags" => FILTER_THROW_ON_FAILURE, "options" => ["default" => "x"]],
+                    );
+                    $failureValue = filter_var($input, FILTER_VALIDATE_INT);
+                    $fromInput = filter_input(INPUT_GET, "x", FILTER_VALIDATE_INT, FILTER_THROW_ON_FAILURE);',
+                'assertions' => [
+                    '$fromInput===' => 'int',
+                    '$int===' => 'int',
+                    '$bool===' => 'bool',
+                    '$ignoredDefault===' => 'int',
+                    '$failureValue===' => 'false|int',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.5',
+            ],
             'functionImportedWithAnAliasIsCalledWithoutAWrongCaseIssue' => [
                 'code' => '<?php
                     namespace App;

@@ -107,6 +107,12 @@ use const FILTER_VALIDATE_URL;
 final class FilterUtils
 {
     /**
+     * FILTER_THROW_ON_FAILURE exists as of PHP 8.5: a failure throws a Filter\FilterFailedException instead of
+     * returning false or null, and a default option is not used
+     */
+    public const FILTER_THROW_ON_FAILURE = 0x10000000;
+
+    /**
      * @psalm-mutation-free
      */
     public static function missingFirstArg(Codebase $codebase): Union
@@ -377,6 +383,10 @@ final class FilterUtils
      */
     public static function getFailsNotSetType(int $flags_int_used): array
     {
+        if (self::hasFlag($flags_int_used, self::FILTER_THROW_ON_FAILURE)) {
+            return array(Type::getNever(), Type::getNever(), Type::getNever());
+        }
+
         $fails_type   = Type::getFalse();
         $not_set_type = Type::getNull();
         if (self::hasFlag($flags_int_used, FILTER_NULL_ON_FAILURE)) {
@@ -1600,6 +1610,7 @@ final class FilterUtils
             FILTER_REQUIRE_ARRAY,
             FILTER_FORCE_ARRAY,
             FILTER_FLAG_NONE, // does nothing, default
+            self::FILTER_THROW_ON_FAILURE,
         );
 
         // https://www.php.net/manual/en/filter.filters.sanitize.php

@@ -117,7 +117,7 @@ final class FilterVarReturnTypeProvider implements FunctionReturnTypeProviderInt
             $function_id,
         );
 
-        if (!$default) {
+        if (!$default || FilterUtils::hasFlag($flags_int_used, FilterUtils::FILTER_THROW_ON_FAILURE)) {
             [$fails_type] = FilterUtils::getFailsNotSetType($flags_int_used);
         } else {
             $fails_type = $default;

@@ -1,0 +1,4 @@
+<?php
+namespace {
+    const FILTER_THROW_ON_FAILURE = 268435456;
+}
