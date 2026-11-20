@@ -213,8 +213,10 @@ final class Refactor
 
         $path_to_config = CliUtils::getPathToConfig($options);
 
-        // `--move=X` is the same as `--move X`
+        // `--move=X` is the same as `--move X`. One leading backslash of an --into or --to value is dropped here,
+        // while the list is built: dropping it in the loop below made Psalm's taint analysis of itself much slower.
         $args = [];
+        $expects_destination = false;
 
         foreach (CliUtils::getArguments() as $arg) {
             $separator = strpos($arg, '=');
@@ -223,13 +225,20 @@ final class Refactor
                 $option = substr($arg, 0, $separator);
 
                 if (in_array($option, ['--move', '--into', '--rename', '--to'], true)) {
+                    $value_start = $separator + 1;
+                    if (($option === '--into' || $option === '--to') && substr($arg, $value_start, 1) === '\\') {
+                        ++$value_start;
+                    }
+
                     $args[] = $option;
-                    $args[] = substr($arg, $separator + 1);
+                    $args[] = substr($arg, $value_start);
+                    $expects_destination = false;
                     continue;
                 }
             }
 
-            $args[] = $arg;
+            $args[] = $expects_destination && str_starts_with($arg, '\\') ? substr($arg, 1) : $arg;
+            $expects_destination = $arg === '--into' || $arg === '--to';
         }
 
         $operation = null;
@@ -293,16 +302,14 @@ final class Refactor
                     exit(1);
                 }
 
-                $arg = self::stripLeadingBackslash($arg);
-
                 if ($operation === 'move_into') {
                     $last_arg_parts = preg_split('/, ?/', $last_arg);
                     if ($last_arg_parts === false) {
                         throw new AssertionError(preg_last_error_msg());
                     }
 
-                    foreach ($last_arg_parts as $last_arg_part) {
-                        $last_arg_part = self::stripLeadingBackslash($last_arg_part);
+                    foreach ($last_arg_parts as $listed_source) {
+                        $last_arg_part = self::stripLeadingBackslash($listed_source);
                         if (strpos($last_arg_part, '::')) {
                             [, $identifier_name] = explode('::', $last_arg_part);
                             $destination = $arg . '::' . $identifier_name;

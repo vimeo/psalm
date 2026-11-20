@@ -167,6 +167,8 @@ final class PsalterEndToEndTest extends PsalmEndToEndTestCase
         yield 'missing --into value' => [['--move', 'Ns\A::foo', '--into'], '--into expects a value'];
         yield 'missing --to value' => [['--rename', 'Ns\A::foo', '--to'], '--to expects a value'];
         yield 'empty separate --into value' => [['--move', 'Ns\A::foo', '--into', ''], '--into expects a value'];
+        yield 'lone backslash as --to value' => [['--rename', 'Ns\A::foo', '--to', '\\'], '--to expects a value'];
+        yield 'lone backslash after --into=' => [['--move', 'Ns\A::foo', '--into=\\'], '--into expects a value'];
         yield '--into followed by another operation' => [
             ['--move', 'Ns\A::foo', '--into', '--rename', 'Ns\B::bar', '--to', 'Ns\C::baz'],
             '--into expects a value',
@@ -438,6 +440,14 @@ final class PsalterEndToEndTest extends PsalmEndToEndTestCase
         ];
         yield 'leading backslash on --into' => [
             ['--move', 'Ns\A::foo', '--into', '\Ns\B'],
+            [
+                'B.php' => ['public static function foo(): void'],
+                'f.php' => ['\Ns\B::foo();'],
+            ],
+            ['A.php' => ['function foo'], 'f.php' => ['A::foo()']],
+        ];
+        yield 'leading backslash after --into=' => [
+            ['--move', 'Ns\A::foo', '--into=\Ns\B'],
             [
                 'B.php' => ['public static function foo(): void'],
                 'f.php' => ['\Ns\B::foo();'],
