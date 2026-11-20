@@ -28,6 +28,30 @@ final class ArrayAccessTest extends TestCase
     use InvalidCodeAnalysisTestTrait;
     use ValidCodeAnalysisTestTrait;
 
+    public function testEmptyBranchOffsetMayBeUndefined(): void
+    {
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessage('PossiblyUndefinedStringArrayOffset - somefile.php:8');
+
+        Config::getInstance()->ensure_array_string_offsets_exist = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                /**
+                 * @param array<string, int> $arr
+                 * @psalm-suppress RiskyTruthyFalsyComparison
+                 */
+                function f(array $arr): void {
+                    if (empty($arr["x"])) {
+                        echo $arr["x"];
+                    }
+                }',
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
     public function testEnsureArrayOffsetsExist(): void
     {
         $this->expectException(CodeException::class);
@@ -1469,6 +1493,92 @@ final class ArrayAccessTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'emptyNestedOffsetIsForgottenWhenItsParentOffsetIsAssigned' => [
+                'code' => '<?php
+                    function g(array $m, string $l, string $p): string {
+                        if (!empty($m[$l][$p])) {
+                            return $p;
+                        }
+
+                        $m[$l] = array_merge($m[$l] ?? [], ["x" => 1]);
+
+                        if (!empty($m[$l][$p])) {
+                            return $p;
+                        }
+
+                        return $p;
+                    }
+
+                    final class B {
+                        /** @var array */
+                        protected $m = [];
+
+                        public function h(string $l, string $p): string {
+                            if (!empty($this->m[$l][$p])) {
+                                return $p;
+                            }
+
+                            $this->m[$l] = ["x" => 1];
+
+                            if (!empty($this->m[$l][$p])) {
+                                return $p;
+                            }
+
+                            return $p;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedArgument', 'MixedAssignment', 'MixedArrayAccess', 'MixedArrayAssignment', 'MixedArrayOffset'],
+                'php_version' => '8.0',
+            ],
+            'emptyOffsetOfArrayKeepsValueType' => [
+                'code' => '<?php
+                    /** @var array<string, int> $arr */
+                    $arr = [];
+                    /** @var array<int, string> $list */
+                    $list = [];
+
+                    $v = empty($arr["x"]) ? $arr["x"] : 0;
+                    $w = empty($list[0]) ? $list[0] : "";
+                    $x = !empty($arr["x"]) ? 0 : $arr["x"];',
+                'assertions' => [
+                    '$v' => 'int',
+                    '$w' => 'string',
+                    '$x' => 'int',
+                ],
+                'ignored_issues' => ['RiskyTruthyFalsyComparison'],
+            ],
+            'emptyNestedOffsetOfArrayKeepsValueType' => [
+                'code' => '<?php
+                    /** @var array<string, array<string, int>> $arr */
+                    $arr = [];
+
+                    $v = empty($arr["x"]["y"]) ? $arr["x"]["y"] : 0;',
+                'assertions' => [
+                    '$v' => 'int',
+                ],
+                'ignored_issues' => ['RiskyTruthyFalsyComparison'],
+            ],
+            'destructureNullableShapeByKey' => [
+                'code' => '<?php
+                    /** @return array{x: int}|null */
+                    function f(): ?array {
+                        return null;
+                    }
+
+                    ["x" => $a] = f();',
+                'assertions' => ['$a' => 'int|null'],
+            ],
+            'destructureNullableShapeByKeyKeepsTheTypesOfTheOtherShapes' => [
+                'code' => '<?php
+                    /** @return array{x: int}|array{x: string}|null */
+                    function f(): ?array {
+                        return null;
+                    }
+
+                    ["x" => $a] = f();',
+                'assertions' => ['$a' => 'int|null|string'],
+            ],
             'directWriteToAnArrayAccessObjectDoesNotCallOffsetGet' => [
                 'code' => '<?php
                     /** @implements ArrayAccess<string, int> */
@@ -2869,7 +2979,6 @@ final class ArrayAccessTest extends TestCase
                             return null;
                     }
 
-                    /** @psalm-suppress PossiblyNullArrayAccess */
                     [1 => $foo] = bar(0);
 
                     if ($foo !== null) {}',
@@ -3588,6 +3697,45 @@ final class ArrayAccessTest extends TestCase
                         return $l[0];
                     }',
             ],
+            'arrayAccessOnCoalesceAssignmentEvaluatesItOnce' => [
+                'code' => '<?php
+                    /** @implements ArrayAccess<int, string> */
+                    final class AA implements ArrayAccess {
+                        /** @param int $o */
+                        public function offsetExists($o): bool { return true; }
+                        /** @param int $o */
+                        public function offsetGet($o): string { return ""; }
+                        /**
+                         * @param ?int $o
+                         * @param string $v
+                         */
+                        public function offsetSet($o, $v): void {}
+                        /** @param int $o */
+                        public function offsetUnset($o): void {}
+                    }
+
+                    final class C {
+                        private ?AA $a = null;
+
+                        public function get(): string {
+                            return ($this->a ??= new AA())[0];
+                        }
+
+                        public function getOrNull(): ?string {
+                            return ($this->a ??= new AA())[0] ?? null;
+                        }
+                    }',
+            ],
+            'domNodeListItemOnCoalesceAssignmentEvaluatesItOnce' => [
+                'code' => '<?php
+                    final class C {
+                        private ?DOMNodeList $l = null;
+
+                        public function first(DOMDocument $d): ?DOMNode {
+                            return ($this->l ??= $d->getElementsByTagName("a"))[0];
+                        }
+                    }',
+            ],
         ];
     }
 
@@ -3598,6 +3746,45 @@ final class ArrayAccessTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'destructureNullableShapeAndGenericArrayByKey' => [
+                'code' => '<?php
+                    /** @return array{x: int}|array<string, string>|null */
+                    function f(): ?array {
+                        return null;
+                    }
+
+                    ["x" => $a] = f();',
+                'error_message' => 'PossiblyNullArrayAccess',
+            ],
+            'destructureNullableUnionOfShapesWhereOneLacksTheKey' => [
+                'code' => '<?php
+                    /** @return array{x: int}|array{y: int}|null */
+                    function f(): ?array {
+                        return null;
+                    }
+
+                    ["x" => $a] = f();',
+                'error_message' => 'PossiblyNullArrayAccess',
+                'error_levels' => ['PossiblyUndefinedArrayOffset'],
+            ],
+            'destructureNullableShapeByAMissingKey' => [
+                'code' => '<?php
+                    /** @return array{x: int}|null */
+                    function f(): ?array {
+                        return null;
+                    }
+
+                    ["y" => $a] = f();',
+                'error_message' => 'PossiblyNullArrayAccess',
+            ],
+            'destructureNullableShapeWithAnEmptyStringKeyByADynamicKey' => [
+                'code' => '<?php
+                    /** @param array{"": int}|null $l */
+                    function f(?array $l, string $k): void {
+                        [$k => $a] = $l;
+                    }',
+                'error_message' => 'PossiblyNullArrayAccess',
+            ],
             'possiblyFalseOffsetOfAnArrayVariableNamesTheVariable' => [
                 'code' => '<?php
                     function read(array $items): void {

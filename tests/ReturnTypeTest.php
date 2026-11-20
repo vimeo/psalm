@@ -97,6 +97,32 @@ final class ReturnTypeTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'returnTypeIsInheritedFromTwoInterfacesThatDocumentTheSameOne' => [
+                'code' => '<?php
+                    interface InstanceHandler {
+                        /** @return class-string */
+                        public function getClass(): string;
+                    }
+
+                    interface StaticHandler {
+                        /** @return class-string */
+                        public function getClass(): string;
+                    }
+
+                    final class Handler implements InstanceHandler, StaticHandler {
+                        #[Override]
+                        public function getClass(): string {
+                            return Handler::class;
+                        }
+                    }
+
+                    $class = (new Handler())->getClass();',
+                'assertions' => [
+                    '$class===' => 'class-string',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
             'doWhileBodyAlwaysReturning' => [
                 'code' => '<?php
                     function f(int $i): string {
@@ -2694,6 +2720,20 @@ final class ReturnTypeTest extends TestCase
                 'ignored_issues' => ['RedundantCondition'],
                 'php_version' => '8.0',
             ],
+            'unionOfThisAndStaticStaysStatic' => [
+                'code' => '<?php
+                    class A {
+                        /** @return static */
+                        public function me() {
+                            return $this;
+                        }
+
+                        /** @return static */
+                        public function pick(bool $f) {
+                            return $f ? $this : $this->me();
+                        }
+                    }',
+            ],
         ];
     }
 
@@ -2704,6 +2744,28 @@ final class ReturnTypeTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'returnTypeOfTwoInterfacesThatDocumentDifferentOnesIsNotInherited' => [
+                'code' => '<?php
+                    interface First {
+                        /** @return class-string<First> */
+                        public function getClass(): string;
+                    }
+
+                    interface Second {
+                        /** @return class-string */
+                        public function getClass(): string;
+                    }
+
+                    final class Handler implements First, Second {
+                        #[Override]
+                        public function getClass(): string {
+                            return First::class;
+                        }
+                    }',
+                'error_message' => 'LessSpecificImplementedReturnType',
+                'error_levels' => [],
+                'php_version' => '8.3',
+            ],
             'doWhileBodyContinuingToAFalseCondition' => [
                 'code' => '<?php
                     function f(int $i): string {
@@ -3948,6 +4010,16 @@ final class ReturnTypeTest extends TestCase
                     }',
                 'error_message' => 'InvalidReturnType',
                 'error_levels' => ['RedundantConditionGivenDocblockType'],
+            ],
+            'unionOfThisAndOtherInstanceIsNotStatic' => [
+                'code' => '<?php
+                    class A {
+                        /** @return static */
+                        public function pick(A $other, bool $f) {
+                            return $f ? $this : $other;
+                        }
+                    }',
+                'error_message' => 'LessSpecificReturnStatement',
             ],
         ];
     }

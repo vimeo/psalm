@@ -210,6 +210,198 @@ final class ForeachTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'methodCallOnArrayElementSetInLoop' => [
+                'code' => '<?php
+                    final class Box {
+                        public ?Box $next = null;
+
+                        public function merge(Box $other): Box {
+                            return $other;
+                        }
+                    }
+
+                    /** @var array<int, Box> */
+                    $values = [];
+                    $merged = [];
+                    foreach ($values as $key => $value) {
+                        $merged[$key] = isset($merged[$key]) ? $merged[$key]->merge($value) : $value;
+                    }',
+                'assertions' => [
+                    '$merged===' => 'array<int, Box>',
+                ],
+            ],
+            'propertyFetchOnArrayElementSetInLoop' => [
+                'code' => '<?php
+                    final class Box {
+                        public ?Box $next = null;
+
+                        public function merge(Box $other): Box {
+                            return $other;
+                        }
+                    }
+
+                    /** @var array<int, Box> */
+                    $values = [];
+                    $nexts = [];
+                    foreach ($values as $key => $value) {
+                        $nexts[$key] = isset($nexts[$key]) ? $nexts[$key]->next : $value;
+                    }',
+                'assertions' => [
+                    '$nexts===' => 'array<int, Box|null>',
+                ],
+            ],
+            'offsetFetchOnArrayElementSetInLoop' => [
+                'code' => '<?php
+                    final class Box {
+                        public ?Box $next = null;
+
+                        public function merge(Box $other): Box {
+                            return $other;
+                        }
+                    }
+
+                    /** @var array<int, Box> */
+                    $values = [];
+                    /** @var array<int, list<Box>> */
+                    $lists = [];
+                    $firsts = [];
+                    foreach ($lists as $key => $list) {
+                        $firsts[$key] = isset($firsts[$key]) ? $firsts[$key][0] : $list;
+                    }',
+                'assertions' => [
+                    '$firsts===' => 'array<int, Box|list<Box>>',
+                ],
+            ],
+            'methodCallOnLoopVariableStartingAsNull' => [
+                'code' => '<?php
+                    final class Box {
+                        public ?Box $next = null;
+
+                        public function merge(Box $other): Box {
+                            return $other;
+                        }
+                    }
+
+                    /** @var list<Box> */
+                    $values = [];
+                    $context = null;
+                    foreach ($values as $after) {
+                        $context = $context === null ? $after : $context->merge($after);
+                    }',
+                'assertions' => [
+                    '$context===' => 'Box|null',
+                ],
+            ],
+            'methodCallInElseOfLoopVariableStartingAsNull' => [
+                'code' => '<?php
+                    final class Box {
+                        public ?Box $next = null;
+
+                        public function merge(Box $other): Box {
+                            return $other;
+                        }
+                    }
+
+                    /** @var list<Box> */
+                    $values = [];
+                    $context = null;
+                    $merges = 0;
+                    foreach ($values as $after) {
+                        if ($context === null) {
+                            $context = $after;
+                        } else {
+                            $context = $context->merge($after);
+                            $merges++;
+                        }
+                    }',
+                'assertions' => [
+                    '$context===' => 'Box|null',
+                    '$merges===' => 'int<0, max>',
+                ],
+            ],
+            'propertyFetchOnLoopVariableStartingAsNull' => [
+                'code' => '<?php
+                    final class Box {
+                        public ?Box $next = null;
+
+                        public function merge(Box $other): Box {
+                            return $other;
+                        }
+                    }
+
+                    /** @var list<Box> */
+                    $values = [];
+                    $context = null;
+                    foreach ($values as $after) {
+                        $context = $context === null ? $after : $context->next;
+                    }',
+                'assertions' => [
+                    '$context===' => 'Box|null',
+                ],
+            ],
+            'methodCallOnWhileLoopVariableStartingAsNull' => [
+                'code' => '<?php
+                    final class Box {
+                        public ?Box $next = null;
+
+                        public function merge(Box $other): Box {
+                            return $other;
+                        }
+                    }
+
+                    /** @var list<Box> */
+                    $values = [];
+                    $context = null;
+                    $i = 0;
+                    while ($i < count($values)) {
+                        $after = $values[$i++];
+                        $context = $context === null ? $after : $context->merge($after);
+                    }',
+                'assertions' => [
+                    '$context===' => 'Box|null',
+                ],
+            ],
+            'foreachIteratedExpressionIsAnalysedOnce' => [
+                'code' => '<?php
+                    class Entity {
+                        public ?int $id = null;
+
+                        /**
+                         * @psalm-mutation-free
+                         * @psalm-assert !null $this->id
+                         */
+                        public function getIdAssert(): int {
+                            return 1;
+                        }
+                    }
+
+                    function onlyValue(Entity $entity): void {
+                        foreach ([$entity->getIdAssert()] as $_) {
+                        }
+                    }
+
+                    function keyAndValue(Entity $entity): void {
+                        foreach ([$entity->getIdAssert()] as $_key => $_value) {
+                        }
+                    }
+
+                    function destructured(Entity $entity): void {
+                        foreach ([[$entity->getIdAssert()]] as [$_first]) {
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'foreachIteratedExpressionIncrementsOnce' => [
+                'code' => '<?php
+                    $i = 0;
+                    foreach ([$i++] as $_) {
+                    }',
+                'assertions' => [
+                    '$i===' => '1',
+                ],
+            ],
             'foreachCounterIncrementedThroughAReferenceIsWidened' => [
                 'code' => <<<'PHP'
                     <?php
@@ -2992,6 +3184,28 @@ final class ForeachTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'foreachIteratedExpressionAssertedTwiceInTheLoop' => [
+                'code' => '<?php
+                    class Entity {
+                        public ?int $id = null;
+
+                        /**
+                         * @psalm-mutation-free
+                         * @psalm-assert !null $this->id
+                         */
+                        public function getIdAssert(): int {
+                            return 1;
+                        }
+                    }
+
+                    function f(Entity $entity): void {
+                        foreach ([$entity->getIdAssert(), $entity->getIdAssert()] as $_) {
+                        }
+                    }',
+                'error_message' => 'RedundantConditionGivenDocblockType',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
             'foreachOverATemplateReportsEveryTypeOfItsBound' => [
                 'code' => <<<'PHP'
                     <?php

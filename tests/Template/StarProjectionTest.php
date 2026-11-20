@@ -1212,7 +1212,7 @@ final class StarProjectionTest extends TestCase
 
                     /** @extends Box<*> */
                     final class StarBox extends Box {}',
-                'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:21 - The * type argument of Box<*> is not allowed in @extends',
+                'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:21 - The * type argument of Box<*> is not allowed in @template-extends',
             ],
             'starProjectionInImplements' => [
                 'code' => '<?php
@@ -1221,7 +1221,7 @@ final class StarProjectionTest extends TestCase
 
                     /** @implements Box<*> */
                     final class StarBox implements Box {}',
-                'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:21 - The * type argument of Box<*> is not allowed in @implements',
+                'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:21 - The * type argument of Box<*> is not allowed in @template-implements',
             ],
             'starProjectionInUse' => [
                 'code' => '<?php
@@ -1232,7 +1232,7 @@ final class StarProjectionTest extends TestCase
                         /** @use Box<*> */
                         use Box;
                     }',
-                'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:25 - The * type argument of Box<*> is not allowed in @use',
+                'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:25 - The * type argument of Box<*> is not allowed in @template-use',
             ],
             'starProjectionIsNoClassStringMapValue' => [
                 'code' => '<?php
