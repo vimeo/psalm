@@ -688,7 +688,7 @@ function sscanf(string $string, string $format, &...$vars) {}
  * @psalm-pure
  *
  * @return (
- *     func_num_args() is 1
+ *     $flags is 15
  *     ? (
  *         $path is non-empty-string
  *         ? array{dirname: string, basename: string, extension?: string, filename: string}
@@ -698,7 +698,7 @@ function sscanf(string $string, string $format, &...$vars) {}
  * )
  * @psalm-flow ($path) -> return
  */
-function pathinfo(string $path, int $flags = \PATHINFO_DIRNAME) {}
+function pathinfo(string $path, int $flags = 15) {}
 
 /**
  * @psalm-pure
