@@ -282,9 +282,10 @@ final class SqlStatement
         } elseif ($word === 'default') {
             $this->position += 2;
         } elseif ($word === 'format') {
-            // INSERT INTO t (a, b) FORMAT JSONEachRow ... (ClickHouse): the parts of the data after the name of the
-            // format the analysis doesn't know can be in any of the columns, and the data names no column of a table
-            $value = $this->getValue(array_slice($this->tokens, $this->position + 2), []);
+            // INSERT INTO t (a, b) FORMAT JSONEachRow ... (ClickHouse): the parts of the data (up to the end: nothing
+            // follows it) the analysis doesn't know can be in any of the columns, and the data names no column of a
+            // table. A name of the format the analysis doesn't know the text of can hold the data.
+            $value = $this->getValue(array_slice($this->tokens, $this->position + 1), []);
             $value['columns'] = [];
             $this->position = count($this->tokens);
 
@@ -406,8 +407,9 @@ final class SqlStatement
     }
 
     /**
-     * `ALTER TABLE t [ON CLUSTER c] UPDATE a = ... WHERE ...` (ClickHouse) stores as an UPDATE does; the other ALTERs
-     * are DDL, which stores nothing
+     * `ALTER TABLE t [ON CLUSTER c] UPDATE a = ... WHERE ...` (ClickHouse) stores as an UPDATE does, in each of the
+     * commands separated by commas; the other commands and ALTERs are DDL, which stores nothing. A part the analysis
+     * doesn't know the text of, outside of the values of the UPDATEs, can hold an UPDATE: the query can't be parsed.
      *
      * @return array{writes: list<Write>, reads: list<Read>}|null
      * @psalm-capabilities read-props|write-this-props|write-refs
@@ -416,12 +418,10 @@ final class SqlStatement
     {
         $this->position++;
 
-        if (($this->tokens[$this->position][0] ?? '') === 'hole') {
-            return null;
-        }
-
         if ($this->peekWord() !== 'table') {
-            return ['writes' => [], 'reads' => []];
+            return self::containsHole(array_slice($this->tokens, $this->position))
+                ? null
+                : ['writes' => [], 'reads' => []];
         }
 
         $this->position++;
@@ -431,32 +431,89 @@ final class SqlStatement
             return null;
         }
 
+        [$table_name] = $table;
+
         if ($this->peekWord() === 'on') {
+            $cluster = $this->tokens[$this->position + 2] ?? null;
+            if (($this->tokens[$this->position + 1][0] ?? '') !== 'word'
+                || strtolower($this->tokens[$this->position + 1][1]) !== 'cluster'
+                || $cluster === null
+                || !in_array($cluster[0], ['word', 'ident', 'string'], true)
+                || $cluster[2] !== []
+                || $this->isGlued($this->position + 3)
+            ) {
+                return null;
+            }
+
             $this->position += 3;
         }
 
-        // a part the analysis doesn't know the text of can be the UPDATE (`'ALTER TABLE ' . $table . $command`)
-        $next = $this->tokens[$this->position] ?? null;
-        if ($next === null ? $table[0] === null : $next[0] === 'hole') {
+        // a name ending with a part the analysis doesn't know the text of can hold the commands
+        if ($table_name === null && !isset($this->tokens[$this->position])) {
             return null;
         }
 
-        if ($this->peekWord() !== 'update') {
-            return ['writes' => [], 'reads' => []];
+        $tables = $table_name === null ? [null] : [$table_name => $table_name];
+        $writes = [];
+
+        while (true) {
+            if ($this->peekWord() === 'update') {
+                $this->position++;
+                $assignments = $this->parseAssignments($tables, $table_name);
+
+                // ClickHouse requires WHERE: without it, the end of the last value holds it, and maybe more commands
+                if ($assignments === null || $this->peekWord() !== 'where') {
+                    return null;
+                }
+
+                $writes = [...$writes, ...$assignments];
+            }
+
+            // the rest of the command, up to the comma before the next one
+            $depth = 0;
+            $rest = [];
+            while (isset($this->tokens[$this->position])
+                && ($depth !== 0 || $this->tokens[$this->position][0] !== ',')
+            ) {
+                $token = $this->tokens[$this->position];
+                if ($token[0] === '(') {
+                    $depth++;
+                } elseif ($token[0] === ')') {
+                    $depth--;
+                }
+
+                $rest[] = $token;
+                $this->position++;
+            }
+
+            if (self::containsHole($rest)) {
+                return null;
+            }
+
+            $this->countPlaceholders($rest);
+
+            if (!isset($this->tokens[$this->position])) {
+                return ['writes' => $writes, 'reads' => []];
+            }
+
+            // the comma
+            $this->position++;
+        }
+    }
+
+    /**
+     * @param list<Token> $tokens
+     * @psalm-pure
+     */
+    private static function containsHole(array $tokens): bool
+    {
+        foreach ($tokens as $token) {
+            if ($token[0] === 'hole') {
+                return true;
+            }
         }
 
-        $this->position++;
-        [$table_name] = $table;
-        $assignments = $this->parseAssignments($table_name === null ? [null] : [$table_name => $table_name], $table_name);
-
-        if ($assignments === null) {
-            return null;
-        }
-
-        // IN PARTITION, WHERE: only placeholders to number
-        $this->countPlaceholders(array_slice($this->tokens, $this->position));
-
-        return ['writes' => $assignments, 'reads' => []];
+        return false;
     }
 
     /**

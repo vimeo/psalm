@@ -133,6 +133,34 @@ final class SqlStatementTest extends TestCase
             'ALTER TABLE %0%',
             'null',
         ];
+        yield 'the commands of an ALTER TABLE, each UPDATE storing' => [
+            'ALTER TABLE t DELETE WHERE x = 1, UPDATE a = %0% WHERE y IN (1, 2), UPDATE b = %1% WHERE 1',
+            'W t.a <- h[0] p[] c[]; W t.b <- h[1] p[] c[]',
+        ];
+        yield 'ALTER TABLE and a part the analysis doesn\'t know the text of after a command, which can be an UPDATE' => [
+            'ALTER TABLE t DELETE WHERE x = 1, %0%',
+            'null',
+        ];
+        yield 'ALTER TABLE and a part the analysis doesn\'t know the text of in a WHERE, which can end it' => [
+            'ALTER TABLE t UPDATE a = 1 WHERE x = %0%',
+            'null',
+        ];
+        yield 'ALTER TABLE ... UPDATE without WHERE, which the last value then holds' => [
+            'ALTER TABLE t UPDATE a = %0%',
+            'null',
+        ];
+        yield 'ALTER TABLE ON CLUSTER and a part the analysis doesn\'t know the text of' => [
+            'ALTER TABLE t ON CLUSTER %0% UPDATE a = 1 WHERE 1',
+            'null',
+        ];
+        yield 'ALTER TABLE ON CLUSTER and a part the analysis doesn\'t know the text of glued to the name' => [
+            'ALTER TABLE t ON CLUSTER main%0% UPDATE a = 1 WHERE 1',
+            'null',
+        ];
+        yield 'another ALTER and a part the analysis doesn\'t know the text of' => [
+            'ALTER %0%',
+            'null',
+        ];
         yield 'the other ALTERs, ATTACH and DETACH, which store nothing' => [
             'ALTER TABLE t DELETE WHERE a = ?; ALTER TABLE t ADD COLUMN b String DEFAULT ?; DETACH TABLE t; ATTACH TABLE t',
             '',
@@ -168,6 +196,10 @@ final class SqlStatementTest extends TestCase
         yield 'the rows in a part the analysis doesn\'t know the text of, then ON DUPLICATE KEY UPDATE' => [
             'INSERT INTO t (a) VALUES %0% ON DUPLICATE KEY UPDATE b = %1%',
             'W t.a <- h[0] p[] c[]; W t.b <- h[1] p[] c[]',
+        ];
+        yield 'a name of the format the analysis doesn\'t know the text of, which can hold the data' => [
+            'INSERT INTO t (a, b) FORMAT %0%',
+            'W t.a <- h[0] p[] c[]; W t.b <- h[0] p[] c[]',
         ];
         yield 'the data after FORMAT, which can be in any of the columns' => [
             'INSERT INTO t (a, b) FORMAT JSONEachRow {"a": %0%}',
