@@ -125,6 +125,11 @@ final class PsalterEndToEndTest extends PsalmEndToEndTestCase
             true,
             ['--refactor', '--move', 'Ns\A::foo', '--into', 'Ns\B'],
         ];
+
+        yield 'leading backslash on --move source' => [
+            false,
+            ['--no-cache', '--move', '\Ns\A::foo', '--into', 'Ns\B'],
+        ];
     }
 
     /**
@@ -424,6 +429,14 @@ final class PsalterEndToEndTest extends PsalmEndToEndTestCase
         ];
         yield 'leading backslash on --to' => [
             ['--rename', 'Ns\A', '--to', '\Ns\C'],
+            [
+                'A.php' => ["namespace Ns;\n\nclass C\n"],
+                'f.php' => ["use Ns\C;\n", "    C::foo();\n    echo C::\$p, C::K;\n"],
+            ],
+            ['f.php' => ['\\\\']],
+        ];
+        yield 'leading backslash after --to=' => [
+            ['--rename', 'Ns\A', '--to=\Ns\C'],
             [
                 'A.php' => ["namespace Ns;\n\nclass C\n"],
                 'f.php' => ["use Ns\C;\n", "    C::foo();\n    echo C::\$p, C::K;\n"],

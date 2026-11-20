@@ -213,8 +213,9 @@ final class Refactor
 
         $path_to_config = CliUtils::getPathToConfig($options);
 
-        // `--move=X` is the same as `--move X`. One leading backslash of an --into or --to value is dropped here,
-        // while the list is built: dropping it in the loop below made Psalm's taint analysis of itself much slower.
+        // `--move=X` is the same as `--move X`.
+        // Normalize --into/--to values while building $args.
+        // Doing it in the mapping loop makes full-project taint analysis much slower.
         $args = [];
         $expects_destination = false;
 
