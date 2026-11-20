@@ -41,6 +41,7 @@ Psalm recognises a number of taint types by default, defined in the [Psalm\Type\
 - `file` - used for strings that could contain a path
 - `cookie` - used for strings that could contain a http cookie
 - `header` - used for strings that could contain a http header
+- `redirect` - used for strings that could choose where a redirect sends the client (a `Location` header)
 - `sleep` - used for values that could set how long the code waits (`sleep()`, curl timeouts, ...). Unlike the other taints, `int` and `float` values carry it
 - `llm_prompt` - used for strings that could contain instructions passed to an LLM prompt (prompt injection)
 - `user_secret` - used for strings that could contain user-supplied secrets
@@ -77,6 +78,30 @@ You can also [define your own taint sources](custom_taint_sources.md).
 Psalm currently defines a number of different sinks for builtin functions and methods, including `echo`, `include`, `header`.
 
 What is written to a stream opened on a literal `php://output` path, which is the response, or `php://stdout`, which is the response under the CGI SAPI, is a sink as what `echo` outputs is: `file_put_contents()` to such a path, and `fwrite()`, `fputs()`, `fputcsv()`, `fprintf()`, `vfprintf()`, `stream_copy_to_stream()` and the `fwrite()` and `fputcsv()` methods of `SplFileObject` on a stream opened with `fopen()` or `new SplFileObject()` on such a path in the same function, and held by its variables.
+
+A `Location` header given to `header()` is a `redirect`, `url_component` and `url_path` sink rather than a `header` one. After a start fixing the server (`https://example.com/`, or a path such as `/account`), in the header or in the URL given to it, only the URL syntax a value can inject in the path, the query or the fragment is reported:
+
+```php
+<?php
+header('Location: ' . $_GET['next']); // TaintedRedirect
+header('Location: https://example.com/' . $_GET['page']); // TaintedUrlComponent
+header('Location: /account?tab=' . urlencode((string) $_GET['tab'])); // no issue
+```
+
+What is stored in `$_SESSION` flows into what reads it back under the same key, wherever the code reading it is. Like with [keyed stores](taint_flow.md#keyed-stores), each read is checked against what it is used for:
+
+```php
+<?php
+function login(): void {
+    $_SESSION['name'] = htmlspecialchars((string) $_GET['name'], ENT_QUOTES);
+}
+
+function show(): void {
+    echo (string) $_SESSION['name']; // no issue
+    exec('greet ' . (string) $_SESSION['name']); // TaintedShell
+    echo (string) $_SESSION['page']; // no issue
+}
+```
 
 You can also [define your own taint sinks](custom_taint_sinks.md).
 

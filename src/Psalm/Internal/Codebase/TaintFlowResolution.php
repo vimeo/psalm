@@ -206,7 +206,10 @@ final class TaintFlowResolution
      * The taints reportFlow() reports the most general of for a flow, dropping the others: they depend on each other,
      * so they are never told apart from a call's taints when sinks are replayed (see getSinkCallerTaints())
      */
-    private const URL_TAINTS = TaintKind::INPUT_SSRF | TaintKind::INPUT_URL_COMPONENT | TaintKind::INPUT_URL_PATH;
+    private const URL_TAINTS = TaintKind::INPUT_SSRF
+        | TaintKind::INPUT_REDIRECT
+        | TaintKind::INPUT_URL_COMPONENT
+        | TaintKind::INPUT_URL_PATH;
 
     /**
      * The kinds of entries: specialized call entries, and convergences (see enterConvergence())
@@ -3933,7 +3936,7 @@ final class TaintFlowResolution
 
         // a value choosing the server of a URL can also inject any URL syntax in it, such as the `..` segments of
         // its path: each is reported as the most general issue alone
-        if (($taints & TaintKind::INPUT_SSRF) !== 0) {
+        if (($taints & (TaintKind::INPUT_SSRF | TaintKind::INPUT_REDIRECT)) !== 0) {
             $taints &= ~(TaintKind::INPUT_URL_COMPONENT | TaintKind::INPUT_URL_PATH);
         } elseif (($taints & TaintKind::INPUT_URL_COMPONENT) !== 0) {
             $taints &= ~TaintKind::INPUT_URL_PATH;
@@ -3967,7 +3970,8 @@ final class TaintFlowResolution
             }
 
             $this->reported_flows[$sink_id][$predecessor_id][$origin] = $reported | $taint | match ($taint) {
-                TaintKind::INPUT_SSRF => TaintKind::INPUT_URL_COMPONENT | TaintKind::INPUT_URL_PATH,
+                TaintKind::INPUT_SSRF,
+                TaintKind::INPUT_REDIRECT => TaintKind::INPUT_URL_COMPONENT | TaintKind::INPUT_URL_PATH,
                 TaintKind::INPUT_URL_COMPONENT => TaintKind::INPUT_URL_PATH,
                 default => 0,
             };
