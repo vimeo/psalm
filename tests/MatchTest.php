@@ -627,6 +627,268 @@ final class MatchTest extends TestCase
         ];
     }
 
+    public function testArmThatIsNeverReachedIsReportedOnceWhereItIs(): void
+    {
+        $this->testConfig->throw_exception = false;
+        $this->project_analyzer->setPhpVersion('8.0', 'tests');
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                final class B {}
+                final class C {}
+
+                function defaultAfterTheOnlyClass(B $b): int {
+                    return match (true) {
+                        $b instanceof B => 1,
+                        default => 0,
+                    };
+                }
+                function armAfterTheOnlyClass(B $b): int {
+                    return match (true) {
+                        $b instanceof B => 1,
+                        $b instanceof C => 2,
+                        default => 3,
+                    };
+                }
+                /** @param "a"|"b" $a */
+                function defaultAfterEveryValue(string $a): int {
+                    return match ($a) {
+                        "a" => 1,
+                        "b" => 2,
+                        default => 3,
+                    };
+                }
+                function exhaustive(B|C $b): int {
+                    return match (true) {
+                        $b instanceof B => 1,
+                        $b instanceof C => 2,
+                    };
+                }',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+
+        self::assertSame(
+            [
+                [8, 36, 'TypeDoesNotContainType'],
+                [14, 25, 'TypeDoesNotContainType'],
+                [23, 36, 'DocblockTypeContradiction'],
+            ],
+            array_map(
+                static fn(IssueData $issue): array => [$issue->line_from, $issue->column_from, $issue->type],
+                IssueBuffer::getIssuesDataForFile($file_path),
+            ),
+        );
+    }
+
+    public function testConditionInTheBodyOfAnArmIsReportedAtTheCondition(): void
+    {
+        $this->testConfig->throw_exception = false;
+        $this->project_analyzer->setPhpVersion('8.0', 'tests');
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                final class A {}
+
+                function f(int $i, A $a, int $j): int {
+                    return match ($i) {
+                        1 => $a instanceof A ? 1 : 0,
+                        2 => $j ?? 0,
+                        3 => (static function () use ($a): int {
+                            if ($a instanceof A) {
+                                return 1;
+                            }
+                            return 0;
+                        })(),
+                        default => 2,
+                    };
+                }
+                function afterAnArmOfSeveralValues(int $x, int $a, int $c, A $y, bool $z): bool {
+                    return match ($x) {
+                        $a, $c => true,
+                        default => $y instanceof A && $z,
+                    };
+                }',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+
+        self::assertSame(
+            [
+                [6, 30, 'RedundantCondition'],
+                [7, 30, 'RedundantCondition'],
+                [9, 33, 'RedundantCondition'],
+                [20, 36, 'RedundantCondition'],
+            ],
+            array_map(
+                static fn(IssueData $issue): array => [$issue->line_from, $issue->column_from, $issue->type],
+                IssueBuffer::getIssuesDataForFile($file_path),
+            ),
+        );
+    }
+
+    public function testConditionWrittenInAnArmConditionKeepsItsReport(): void
+    {
+        $this->testConfig->throw_exception = false;
+        $this->project_analyzer->setPhpVersion('8.0', 'tests');
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                final class A {
+                    public function n(): int { return 1; }
+                }
+
+                function ternary(A $a, bool $flag): int {
+                    return match (true) {
+                        ($a instanceof A ? $flag : false) => 1,
+                        default => 0,
+                    };
+                }
+                function coalesce(int $subject, int $i): int {
+                    return match ($subject) {
+                        $i ?? 5 => 1,
+                        default => 0,
+                    };
+                }
+                function nullsafe(int $subject, A $a): int {
+                    return match ($subject) {
+                        $a?->n() => 1,
+                        default => 0,
+                    };
+                }
+                function nestedMatch(A $a, int $left, int $right): int {
+                    return match ($left) {
+                        match ($right) { 1 => $a instanceof A ? 1 : 0, default => 2 } => 1,
+                        default => 0,
+                    };
+                }
+                function inACatch(int $x, A $a): int {
+                    return match ($x) {
+                        (static function () use ($a): int {
+                            try {
+                                throw new RuntimeException();
+                            } catch (RuntimeException) {
+                                return $a instanceof A ? 1 : 2;
+                            }
+                        })() => 1,
+                        default => 2,
+                    };
+                }',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+
+        self::assertSame(
+            [
+                [8, 52, 'TypeDoesNotContainType'],
+                [14, 31, 'TypeDoesNotContainNull'],
+                [20, 25, 'TypeDoesNotContainNull'],
+                [26, 69, 'TypeDoesNotContainType'],
+            ],
+            array_map(
+                static fn(IssueData $issue): array => [$issue->line_from, $issue->column_from, $issue->type],
+                IssueBuffer::getIssuesDataForFile($file_path),
+            ),
+        );
+    }
+
+    public function testSuppressionOfAnArmThatAlwaysMatchesIsUnused(): void
+    {
+        $this->testConfig->throw_exception = false;
+        $this->project_analyzer->setPhpVersion('8.0', 'tests');
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                final class A {}
+
+                function f(A $a): int {
+                    /** @psalm-suppress RedundantCondition */
+                    return match (true) {
+                        $a instanceof A => 1,
+                        default => 0,
+                    };
+                }',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+
+        self::assertSame(
+            [
+                [8, 36, 'TypeDoesNotContainType'],
+                [5, 41, 'UnusedPsalmSuppress'],
+            ],
+            array_map(
+                static fn(IssueData $issue): array => [$issue->line_from, $issue->column_from, $issue->type],
+                IssueBuffer::getIssuesDataForFile($file_path),
+            ),
+        );
+    }
+
+    public function testBodyOfAnArmOfSeveralValuesIsCheckedOncePerValue(): void
+    {
+        $this->testConfig->throw_exception = false;
+        $this->project_analyzer->setPhpVersion('8.0', 'tests');
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                function f(int $x, bool $y): bool {
+                    return match ($x) {
+                        1, 2 => $x === 1 && $y,
+                        default => false,
+                    };
+                }
+                function g(int $x): int {
+                    return match ($x) {
+                        1, 2 => (static function () use ($x): int {
+                            if ($x === 1) {
+                                return 1;
+                            }
+                            return 2;
+                        })(),
+                        default => 3,
+                    };
+                }
+                function ternary(int $x): int {
+                    return match ($x) {
+                        1, 2 => $x === 1 ? 10 : 20,
+                        default => 30,
+                    };
+                }
+                function ternaryTrueForBoth(int $x): int {
+                    return match ($x) {
+                        1, 2 => ($x + 1) !== 3 ? 10 : 20,
+                        default => 30,
+                    };
+                }',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+
+        // known false positives: the body is analysed once per value, and each check fails for one of them
+        self::assertSame(
+            [
+                [4, 33, 'TypeDoesNotContainType'],
+                [11, 33, 'TypeDoesNotContainType'],
+                [21, 49, 'TypeDoesNotContainType'],
+                [21, 33, 'TypeDoesNotContainType'],
+            ],
+            array_map(
+                static fn(IssueData $issue): array => [$issue->line_from, $issue->column_from, $issue->type],
+                IssueBuffer::getIssuesDataForFile($file_path),
+            ),
+        );
+    }
+
     public function testMatchTrueArmConditionIssueIsReportedOnceAtTheCondition(): void
     {
         $this->testConfig->throw_exception = false;
