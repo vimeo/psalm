@@ -125,6 +125,29 @@ Every purity annotation is a name for a capability set:
 `@pure`, `@phpstan-pure`, `#[Psalm\Pure]` and `#[JetBrains\PhpStorm\Pure]` mean the same as
 `@psalm-pure`; `#[Psalm\Immutable]` and `#[JetBrains\PhpStorm\Immutable]` the same as
 `@psalm-immutable`; `#[Psalm\ExternalMutationFree]` the same as `@psalm-external-mutation-free`.
+A `@psalm-capabilities` or `@psalm-impure` tag wins over `@pure`, `@phpstan-pure` and
+`#[JetBrains\PhpStorm\Pure]` on the same function or method (and a class's purity tag over
+`#[JetBrains\PhpStorm\Immutable]`), so a library can declare `pure` for other tools and
+`read-props` for Psalm:
+
+```php
+<?php
+interface Message {
+    /**
+     * @pure
+     * @psalm-capabilities read-props
+     */
+    public function body(): string;
+}
+
+final class MyMessage implements Message {
+    public function __construct(private string $body) {}
+
+    public function body(): string {
+        return $this->body; // no issue
+    }
+}
+```
 
 ### Capability aliases
 
