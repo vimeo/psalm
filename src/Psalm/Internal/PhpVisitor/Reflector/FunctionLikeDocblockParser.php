@@ -152,6 +152,12 @@ final class FunctionLikeDocblockParser
             $info->overloads[] = ['entry' => trim($overload_entry), 'offset' => $offset];
         }
 
+        foreach (['query', 'prepare', 'execute', 'bind', 'insert', 'update', 'select', 'fetch'] as $kind) {
+            foreach ($parsed_docblock->tags['psalm-database-' . $kind] ?? [] as $text) {
+                $info->database_calls[] = [$kind, trim($text)];
+            }
+        }
+
         if (isset($parsed_docblock->tags['psalm-if-this-is'])) {
             foreach ($parsed_docblock->tags['psalm-if-this-is'] as $offset => $param) {
                 $line_parts = CommentAnalyzer::splitDocLine($param);
@@ -337,10 +343,7 @@ final class FunctionLikeDocblockParser
         );
 
         $info->variadic = isset($parsed_docblock->tags['psalm-variadic']);
-        if (isset($parsed_docblock->tags['psalm-pure'])
-            || isset($parsed_docblock->tags['phpstan-pure'])
-            || isset($parsed_docblock->tags['pure'])
-        ) {
+        if (isset($parsed_docblock->tags['psalm-pure'])) {
             $info->capabilities = Capabilities::NONE;
             $info->has_mutations_annotation = true;
         } elseif (isset($parsed_docblock->tags['psalm-mutation-free'])) {
@@ -364,6 +367,9 @@ final class FunctionLikeDocblockParser
                     $info->capabilities_expressions[] = trim($capabilities_line);
                 }
             }
+        } elseif (isset($parsed_docblock->tags['phpstan-pure']) || isset($parsed_docblock->tags['pure'])) {
+            $info->capabilities = Capabilities::NONE;
+            $info->has_mutations_annotation = true;
         }
 
         if (isset($parsed_docblock->tags['psalm-purity-from-template'])) {
@@ -496,7 +502,9 @@ final class FunctionLikeDocblockParser
                     throw new AssertionError(preg_last_error_msg());
                 }
 
-                if (count($param_parts) >= 2) {
+                if (count($param_parts) >= 2 && $param_parts[0] === 'none') {
+                    $info->taint_sink_params[] = ['name' => $param_parts[1], 'taint' => 0];
+                } elseif (count($param_parts) >= 2) {
                     $t = self::registerTaint($codebase, $param_parts[0], $code_location, $info->scan_issues);
                     if ($t !== null) {
                         $info->taint_sink_params[] = ['name' => $param_parts[1], 'taint' => $t];

@@ -37,6 +37,7 @@ use Psalm\Internal\Analyzer\TraitAnalyzer;
 use Psalm\Internal\Clause;
 use Psalm\Internal\Codebase\CombinedFlowGraph;
 use Psalm\Internal\Codebase\DataFlowGraph;
+use Psalm\Internal\Codebase\DatabaseTaints;
 use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\Codebase\TaintStore;
 use Psalm\Internal\Codebase\VariableUseGraph;
@@ -44,6 +45,7 @@ use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Internal\ReferenceConstraint;
 use Psalm\Internal\Scanner\VarDocblockComment;
+use Psalm\Internal\Type\Comparator\TypeComparisonResult;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\TypeExpander;
 use Psalm\Internal\TypeVisitor\TypeChecker;
@@ -641,6 +643,23 @@ final class AssignmentAnalyzer
 
         if ($extended_var_id !== null) {
             $context->forgetMethodResultsDependingOn($extended_var_id);
+
+            // the union of an array with another (`$a += $b`, `$a = $b + $a`) keeps the slots of its items; other
+            // copies that keep them (`array_merge()`) are taken as new arrays
+            if (!$assign_value instanceof PhpParser\Node\Expr\BinaryOp\Plus
+                || (ExpressionIdentifier::getExtendedVarId(
+                    $assign_value->left,
+                    $statements_analyzer->getFQCLN(),
+                    $statements_analyzer,
+                ) !== $extended_var_id
+                    && ExpressionIdentifier::getExtendedVarId(
+                        $assign_value->right,
+                        $statements_analyzer->getFQCLN(),
+                        $statements_analyzer,
+                    ) !== $extended_var_id)
+            ) {
+                $context->forgetReferencesPossiblyBoundUnder($extended_var_id);
+            }
         }
 
         if ($extended_var_id && isset($context->vars_in_scope[$extended_var_id])) {
@@ -763,14 +782,24 @@ final class AssignmentAnalyzer
                 && isset($context->byref_constraints[$var_id])
                 && ($outer_constraint_type = $context->byref_constraints[$var_id]->type)
             ) {
-                if (!UnionTypeComparator::isContainedBy(
+                $constraint_comparison_result = new TypeComparisonResult();
+
+                if (UnionTypeComparator::isContainedBy(
                     $codebase,
                     $assign_value_type,
                     $outer_constraint_type,
                     $assign_value_type->ignore_nullable_issues,
                     $assign_value_type->ignore_falsable_issues,
+                    $constraint_comparison_result,
                 )
                 ) {
+                    $statements_analyzer->type_variable_tracker->addBounds(
+                        $constraint_comparison_result->type_variable_lower_bounds,
+                        $constraint_comparison_result->type_variable_upper_bounds,
+                        new CodeLocation($statements_analyzer->getSource(), $assign_value ?? $assign_var),
+                        $statements_analyzer->getSuppressedIssues(),
+                    );
+                } else {
                     $referenced_properties = $context->byref_constraints[$var_id]->referenced_properties;
 
                     IssueBuffer::maybeAdd(
@@ -3324,8 +3353,12 @@ final class AssignmentAnalyzer
             // the start of a string assigned, for the keys of the keyed stores it is used as
             $taint_flow_graph = $statements_analyzer->getTaintFlowGraphWithSuppressed();
             if ($assign_value && $taint_flow_graph) {
+                $assigned_type = $statements_analyzer->node_data->getType($assign_value);
                 foreach ($context->vars_in_scope[$var_id]->parent_nodes as $var_node) {
                     TaintStore::recordAssignment($statements_analyzer, $taint_flow_graph, $assign_value, $var_node);
+                    if ($assigned_type) {
+                        DatabaseTaints::recordAssignment($taint_flow_graph, $assigned_type, $var_node);
+                    }
                 }
             }
         }

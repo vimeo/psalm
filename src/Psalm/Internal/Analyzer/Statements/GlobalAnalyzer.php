@@ -42,10 +42,27 @@ final class GlobalAnalyzer
     private const VARIABLE_ID_PATTERN = '/^\$[a-zA-Z_\x80-\xff][a-zA-Z0-9_\x80-\xff]*$/D';
 
     /**
+     * Of the file being analyzed ($globals_written_by_file): a function called by name resolves to the declaration
+     * that file sees
+     *
      * @see getGlobalsWrittenBy()
      * @var ?WeakMap<FunctionLikeStorage, array<string, bool>>
      */
     private static ?WeakMap $globals_written_by = null;
+
+    /**
+     * The root and checked file paths of $globals_written_by
+     */
+    private static ?string $globals_written_by_file = null;
+
+    /**
+     * @psalm-capabilities write-globals
+     */
+    public static function clearCache(): void
+    {
+        self::$globals_written_by = null;
+        self::$globals_written_by_file = null;
+    }
 
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
@@ -317,9 +334,12 @@ final class GlobalAnalyzer
             return $storage->global_variables;
         }
 
-        if (self::$globals_written_by === null) {
+        $file_key = $statements_analyzer->getRootFilePath() . "\0" . $statements_analyzer->getFilePath();
+
+        if (self::$globals_written_by === null || self::$globals_written_by_file !== $file_key) {
             /** @var WeakMap<FunctionLikeStorage, array<string, bool>> */
             self::$globals_written_by = new WeakMap();
+            self::$globals_written_by_file = $file_key;
         }
 
         $memoized = self::$globals_written_by[$storage] ?? null;
