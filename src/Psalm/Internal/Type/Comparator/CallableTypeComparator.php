@@ -408,6 +408,7 @@ final class CallableTypeComparator
                     $method_storage->params,
                     $converted_return_type,
                     self::getCallableCapabilities($method_storage, $class_template_types),
+                    callable_id: strtolower((string) $declaring_method_id),
                 ),
                 ($method_storage->template_types ?? []) + $class_template_types,
                 $codebase,
@@ -661,6 +662,8 @@ final class CallableTypeComparator
                     $params = $function_storage->params;
                 }
 
+                $function_id = strtolower(ltrim($input_type_part->value, '\\'));
+
                 // builtin functions are pure unless listed as impure, whatever their reflected or
                 // stubbed storage says: the same rule direct calls follow
                 $purity = InternalCallMapHandler::inCallMap($input_type_part->value)
@@ -678,6 +681,7 @@ final class CallableTypeComparator
                         $params,
                         $return_type,
                         $purity,
+                        callable_id: $function_id === '' ? null : $function_id,
                     ),
                     $function_storage->template_types ?? [],
                     $codebase,
@@ -812,6 +816,7 @@ final class CallableTypeComparator
                                 ->template_types ?? [],
                             $template_result,
                         ),
+                        callable_id: strtolower((string) $declaring_method_id),
                     );
 
                     if ($input_type_part instanceof Atomic\TGenericObject) {
@@ -986,9 +991,11 @@ final class CallableTypeComparator
         $class_name = null;
 
         if ($lhs->isSingleStringLiteral()) {
-            $class_name = $lhs->getSingleStringLiteral()->value;
-            if ($class_name[0] === '\\') {
-                $class_name = substr($class_name, 1);
+            $class_name = ltrim($lhs->getSingleStringLiteral()->value, '\\');
+
+            // names no class
+            if ($class_name === '') {
+                return 'not-callable';
             }
 
             if ($codebase) {

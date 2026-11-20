@@ -5405,6 +5405,264 @@ final class ClassTemplateExtendsTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'untypedOverrideBindsTheMethodTemplateOfTheParentParamDocblock' => [
+                'code' => '<?php
+                    /** @template T of object */
+                    final class Query {}
+
+                    class Base
+                    {
+                        /**
+                         * @template T of object
+                         * @param class-string<T> $class
+                         * @param Closure(T, Query<T>): void $callback
+                         */
+                        public function each(string $class, Closure $callback): void {}
+                    }
+
+                    final class Box extends Base
+                    {
+                        public function each($class, $callback): void {}
+                    }
+
+                    function takesStdClass(stdClass $_s): void {}
+
+                    /** @param Query<stdClass> $_q */
+                    function takesQuery(Query $_q): void {}
+
+                    function f(Box $box): void
+                    {
+                        $box->each(stdClass::class, function ($item, $query): void {
+                            takesStdClass($item);
+                            takesQuery($query);
+                        });
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'untypedStaticOverrideBindsTheMethodTemplateOfTheParentParamDocblock' => [
+                'code' => '<?php
+                    class Base
+                    {
+                        /**
+                         * @template T of object
+                         * @param class-string<T> $class
+                         * @param Closure(T): void $callback
+                         */
+                        public static function each(string $class, Closure $callback): void {}
+                    }
+
+                    final class Box extends Base
+                    {
+                        public static function each($class, $callback): void {}
+                    }
+
+                    function takesStdClass(stdClass $_s): void {}
+
+                    Box::each(stdClass::class, function ($item): void {
+                        takesStdClass($item);
+                    });',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'untypedImplementationBindsTheMethodTemplateOfTheInterfaceParamDocblock' => [
+                'code' => '<?php
+                    /** @template T of object */
+                    final class Query {}
+
+                    interface Collection
+                    {
+                        /**
+                         * @template T of object
+                         * @param class-string<T> $class
+                         * @param Closure(T, Query<T>): void $callback
+                         */
+                        public function each(string $class, Closure $callback): void;
+                    }
+
+                    final class Box implements Collection
+                    {
+                        public function each($class, $callback): void {}
+                    }
+
+                    /** @param Query<stdClass> $_q */
+                    function takesQuery(Query $_q): void {}
+
+                    function f(Box $box): void
+                    {
+                        $box->each(stdClass::class, function ($_item, $query): void {
+                            takesQuery($query);
+                        });
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'untypedOverrideBindsTheMethodTemplateBesideTheClassTemplate' => [
+                'code' => '<?php
+                    /** @template TKey */
+                    class Base
+                    {
+                        /**
+                         * @template T of object
+                         * @param class-string<T> $class
+                         * @param Closure(T, TKey): void $callback
+                         */
+                        public function each(string $class, Closure $callback): void {}
+                    }
+
+                    /** @extends Base<int> */
+                    final class Box extends Base
+                    {
+                        public function each($class, $callback): void {}
+                    }
+
+                    function takesStdClass(stdClass $_s): void {}
+
+                    function takesInt(int $_i): void {}
+
+                    function f(Box $box): void
+                    {
+                        $box->each(stdClass::class, function ($item, $key): void {
+                            takesStdClass($item);
+                            takesInt($key);
+                        });
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'inheritedClassStringOfGenericReturnType' => [
+                'code' => '<?php
+                    /** @template T */
+                    interface Coll {}
+
+                    /** @implements Coll<bool> */
+                    final class BoolColl implements Coll {}
+
+                    /** @template T */
+                    abstract class Base
+                    {
+                        /** @return class-string<Coll<T>> */
+                        abstract protected function getType(): string;
+                    }
+
+                    /** @extends Base<bool> */
+                    final class Child extends Base
+                    {
+                        protected function getType(): string
+                        {
+                            return BoolColl::class;
+                        }
+                    }',
+            ],
+            'implementedClassStringOfGenericReturnType' => [
+                'code' => '<?php
+                    /** @template T */
+                    interface Coll {}
+
+                    /** @implements Coll<bool> */
+                    final class BoolColl implements Coll {}
+
+                    /** @template T */
+                    abstract class Base
+                    {
+                        /** @return class-string<Coll<list<T>>> */
+                        abstract protected function getType(): string;
+                    }
+
+                    /** @extends Base<bool> */
+                    final class Child extends Base
+                    {
+                        /** @return class-string<Coll<list<bool>>> */
+                        protected function getType(): string
+                        {
+                            throw new RuntimeException();
+                        }
+                    }',
+            ],
+            'classStringOfGenericReplacedOnCallerSide' => [
+                'code' => '<?php
+                    /** @template T */
+                    interface Coll {}
+
+                    /** @template T */
+                    abstract class Base
+                    {
+                        /** @var class-string<Coll<T>>|null */
+                        public $prop = null;
+
+                        /** @return class-string<Coll<T>> */
+                        abstract public function getType(): string;
+
+                        /** @return class-string<Coll<list<T>>> */
+                        abstract public function nested(): string;
+                    }
+
+                    /**
+                     * @template T
+                     * @param T $_t
+                     * @return class-string<Coll<T>>
+                     */
+                    function f($_t): string
+                    {
+                        throw new RuntimeException();
+                    }
+
+                    /** @return Base<int> */
+                    function makeBase(): Base
+                    {
+                        throw new RuntimeException();
+                    }
+
+                    $b = makeBase();
+                    $type = $b->getType();
+                    $nested = $b->nested();
+                    $prop = $b->prop;
+                    $fromFunction = f(true);',
+                'assertions' => [
+                    '$type===' => 'class-string<Coll<int>>',
+                    '$nested===' => 'class-string<Coll<list<int>>>',
+                    '$prop===' => 'class-string<Coll<int>>|null',
+                    '$fromFunction===' => 'class-string<Coll<true>>',
+                ],
+            ],
+            'classStringOfGenericAsExtendsArgument' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class Box {}
+
+                    /** @template V */
+                    class Base
+                    {
+                        /** @return V */
+                        public function get(): mixed
+                        {
+                            throw new RuntimeException();
+                        }
+                    }
+
+                    /**
+                     * @template T of object
+                     * @extends Base<class-string<Box<T>>>
+                     */
+                    final class Cls extends Base {}
+
+                    /** @return Cls<DateTime> */
+                    function makeCls(): Cls
+                    {
+                        throw new RuntimeException();
+                    }
+
+                    $l = makeCls()->get();',
+                'assertions' => [
+                    '$l===' => 'class-string<Box<DateTime>>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'composedParentArgumentBindsInheritedMembers' => [
                 'code' => '<?php
                     /** @template T */
@@ -5457,6 +5715,31 @@ final class ClassTemplateExtendsTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'untypedOverrideChecksTheClosureAgainstTheBoundMethodTemplate' => [
+                'code' => '<?php
+                    class Base
+                    {
+                        /**
+                         * @template T of object
+                         * @param class-string<T> $class
+                         * @param Closure(T): void $callback
+                         */
+                        public function each(string $class, Closure $callback): void {}
+                    }
+
+                    final class Box extends Base
+                    {
+                        public function each($class, $callback): void {}
+                    }
+
+                    function f(Box $box): void
+                    {
+                        $box->each(stdClass::class, function (int $_i): void {});
+                    }',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:19:53 - Argument 2 of Box::each expects Closure[impure](stdClass):void',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
             'objectWithoutTypeParamsOfAnotherModelIsNotABaseFactoryOfTheCustomer' => [
                 'code' => <<<'PHP'
                     <?php
@@ -6944,6 +7227,57 @@ final class ClassTemplateExtendsTest extends TestCase
                     /** @extends Two<string> */
                     final class OneArg extends Two {}',
                 'error_message' => 'OneArg has missing template params when extending Two, expecting 2',
+            ],
+            'inheritedClassStringOfGenericReturnTypeWithWrongClass' => [
+                'code' => '<?php
+                    /** @template T */
+                    interface Coll {}
+
+                    /** @implements Coll<int> */
+                    final class IntColl implements Coll {}
+
+                    /** @template T */
+                    abstract class Base
+                    {
+                        /** @return class-string<Coll<T>> */
+                        abstract protected function getType(): string;
+                    }
+
+                    /** @extends Base<bool> */
+                    final class Child extends Base
+                    {
+                        protected function getType(): string
+                        {
+                            return IntColl::class;
+                        }
+                    }',
+                'error_message' => 'InvalidReturnStatement - src' . DIRECTORY_SEPARATOR . 'somefile.php:20:36'
+                    . " - The inferred type 'IntColl::class' does not match the declared return type"
+                    . " 'class-string<Coll<bool>>' for Child::getType",
+            ],
+            'implementedClassStringOfGenericReturnTypeMismatch' => [
+                'code' => '<?php
+                    /** @template T */
+                    interface Coll {}
+
+                    /** @template T */
+                    abstract class Base
+                    {
+                        /** @return class-string<Coll<T>> */
+                        abstract protected function getType(): string;
+                    }
+
+                    /** @extends Base<bool> */
+                    final class Child extends Base
+                    {
+                        /** @return class-string<Coll<int>> */
+                        protected function getType(): string
+                        {
+                            throw new RuntimeException();
+                        }
+                    }',
+                'error_message' => 'ImplementedReturnTypeMismatch - src' . DIRECTORY_SEPARATOR . 'somefile.php:15:37'
+                    . " - The inherited return type 'class-string<Coll<bool>>' for Base::getType",
             ],
             'composedParentArgumentOfAPropertyIsInvariant' => [
                 'code' => '<?php
