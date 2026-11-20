@@ -6615,6 +6615,16 @@ final class TaintTest extends TestCase
     public static function providerInvalidCodeParse(): array
     {
         return [
+            'foreachOverANullableArrayKeepsTheTaintOfItsValues' => [
+                'code' => '<?php
+                    $a = rand(0, 1) ? null : [(string) $_GET["x"]];
+
+                    /** @psalm-suppress PossiblyNullIterator */
+                    foreach ($a as $v) {
+                        echo $v;
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
             'methodImplementingASourceIsASource' => [
                 'code' => '<?php
                     interface Input {

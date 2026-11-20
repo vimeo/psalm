@@ -49,6 +49,7 @@ use function array_merge;
 use function count;
 use function in_array;
 use function is_string;
+use function preg_match;
 use function spl_object_id;
 use function str_ends_with;
 use function str_starts_with;
@@ -656,6 +657,16 @@ final class SwitchCaseAnalyzer
             $switch_scope->addWayOut($case_context->null_array_offsets_read);
 
             $case_redefined_vars = $case_context->getRedefinedVars($original_context->vars_in_scope);
+
+            // a variable the case unset is possibly undefined afterwards
+            foreach ($case_context->possibly_assigned_var_ids as $var_id => $_) {
+                if (preg_match('/^\$\w+$/', $var_id) === 1
+                    && isset($original_context->vars_in_scope[$var_id])
+                    && !isset($case_context->vars_in_scope[$var_id])
+                ) {
+                    $case_redefined_vars[$var_id] = Type::getNever()->setPossiblyUndefined(true);
+                }
+            }
 
             if ($switch_scope->possibly_redefined_vars === null) {
                 $switch_scope->possibly_redefined_vars = $case_redefined_vars;

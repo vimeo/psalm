@@ -687,6 +687,9 @@ final class AtomicStaticCallAnalyzer
                 );
 
                 if ($is_dynamic_this_method) {
+                    // the forwarded instance call analyses the arguments
+                    $args_analyzed = true;
+
                     return self::forwardCallToInstanceMethod(
                         $statements_analyzer,
                         $stmt,
@@ -1066,6 +1069,7 @@ final class AtomicStaticCallAnalyzer
             $context->mergeFunctionExceptions(
                 $pseudo_method_storage,
                 new CodeLocation($statements_analyzer, $stmt),
+                $statements_analyzer->getCodebase(),
             );
         }
 
