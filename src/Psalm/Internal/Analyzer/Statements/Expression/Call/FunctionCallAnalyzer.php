@@ -199,10 +199,10 @@ final class FunctionCallAnalyzer extends CallAnalyzer
             && isset($args[0])
             && !$args[0]->unpack
         ) {
-            $original_function_id = implode('\\', $function_name->getParts());
+            $original_function_id = strtolower(implode('\\', $function_name->getParts()));
 
             // PHP 8.5 clone(...) form: parsed as a FuncCall, not Clone_, so route it in.
-            if (strtolower($original_function_id) === 'clone') {
+            if ($original_function_id === 'clone') {
                 return CloneAnalyzer::analyzeFuncCall($statements_analyzer, $stmt, $context);
             }
 
