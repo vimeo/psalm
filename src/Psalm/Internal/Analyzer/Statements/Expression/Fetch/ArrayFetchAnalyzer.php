@@ -347,7 +347,18 @@ final class ArrayFetchAnalyzer
             }
 
             if ($context->inside_isset && !$stmt_type->hasMixed()) {
-                $stmt_type = Type::combineUnionTypes($stmt_type, Type::getNull());
+                // a key of a sealed shape is there, unlike one of an array of unknown keys
+                $dim_type = $stmt->dim ? $statements_analyzer->node_data->getType($stmt->dim) : null;
+                $key_is_declared = !$stmt_type->possibly_undefined
+                    && $dim_type !== null
+                    && ($dim_type->isSingleStringLiteral() || $dim_type->isSingleIntLiteral())
+                    && $stmt_var_type->isSingle()
+                    && ($var_atomic = $stmt_var_type->getSingleAtomic()) instanceof TKeyedArray
+                    && $var_atomic->fallback_params === null;
+
+                if (!$key_is_declared) {
+                    $stmt_type = Type::combineUnionTypes($stmt_type, Type::getNull());
+                }
             }
 
             $statements_analyzer->node_data->setType($stmt, $stmt_type);
