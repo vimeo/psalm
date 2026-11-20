@@ -1036,6 +1036,20 @@ class Reconciler
     }
 
     /**
+     * Whether what is known about $var_id may be stale after $narrowed_var_id has been narrowed. It is not when
+     * $narrowed_var_id is only used as an index of $var_id: narrowing does not change the value of the index.
+     *
+     * @psalm-pure
+     */
+    public static function dependsOnNarrowedVar(string $var_id, string $narrowed_var_id): bool
+    {
+        return (bool) preg_match(
+            '/' . preg_quote($narrowed_var_id, '/') . '[\]\[\-]/',
+            str_replace('[' . $narrowed_var_id . ']', '[]', $var_id),
+        );
+    }
+
+    /**
      * The type of a variable or of an offset of one that the known types give: mixed where nothing is known of it,
      * null for an offset of something other than an array (an ArrayAccess), whose value isn't known either
      *
@@ -1119,20 +1133,6 @@ class Reconciler
         }
 
         return true;
-    }
-
-    /**
-     * Whether what is known about $var_id may be stale after $narrowed_var_id has been narrowed. It is not when
-     * $narrowed_var_id is only used as an index of $var_id: narrowing does not change the value of the index.
-     *
-     * @psalm-pure
-     */
-    public static function dependsOnNarrowedVar(string $var_id, string $narrowed_var_id): bool
-    {
-        return (bool) preg_match(
-            '/' . preg_quote($narrowed_var_id, '/') . '[\]\[\-]/',
-            str_replace('[' . $narrowed_var_id . ']', '[]', $var_id),
-        );
     }
 
     /**

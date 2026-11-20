@@ -1620,12 +1620,21 @@ final class ArrayAccessTest extends TestCase
             ],
             'issetOnAnIndexIsKeptWhenTheIndexIsNarrowedInALoop' => [
                 'code' => '<?php
-                    /** @var array<string, string>|ArrayAccess<string, string> $test */
-                    $test = $_GET["x"];
-                    $a = $test["a"] ?? "a";',
-                'assertions' => [
-                    '$a===' => 'string',
-                ],
+                    /** @param string[] $in */
+                    function strip(array $in): array {
+                        $out = [];
+                        foreach (["foo", "bar"] as $key) {
+                            if (isset($in[$key])) {
+                                if ("foo" === $key) {
+                                    $out["baz"] = 1;
+                                } else {
+                                    $out[$key] = substr($in[$key], 0, -1);
+                                }
+                            }
+                        }
+                        return $out;
+                    }',
+                'assertions' => [],
             ],
             'issetOnANullableObjectOffsetKeepsTheOffsetUnknown' => [
                 'code' => '<?php
@@ -2382,24 +2391,6 @@ final class ArrayAccessTest extends TestCase
                     function f(array $x): int {
                         return $x["a"] ?? 0;
                     }',
-            ],
-            'issetOnAnIndexIsKeptWhenTheIndexIsNarrowedInALoop' => [
-                'code' => '<?php
-                    /** @param string[] $in */
-                    function strip(array $in): array {
-                        $out = [];
-                        foreach (["foo", "bar"] as $key) {
-                            if (isset($in[$key])) {
-                                if ("foo" === $key) {
-                                    $out["baz"] = 1;
-                                } else {
-                                    $out[$key] = substr($in[$key], 0, -1);
-                                }
-                            }
-                        }
-                        return $out;
-                    }',
-                'assertions' => [],
             ],
             'appendToASplDoublyLinkedList' => [
                 'code' => '<?php
@@ -4099,6 +4090,24 @@ final class ArrayAccessTest extends TestCase
                     }',
                 'error_message' => 'InvalidArgument',
                 'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'isArrayClauseOfAVariableTheLoopChangesIsDroppedAfterTheLoop' => [
+                'code' => '<?php
+                    /** @param array<int, mixed> $items */
+                    function f(array $items, mixed $m): void {
+                        $isArray = is_array($m);
+
+                        foreach ($items as $item) {
+                            $m = $item;
+                        }
+
+                        if ($isArray) {
+                            $m[] = 1;
+                        }
+                    }',
+                'error_message' => 'MixedArrayAssignment - src' . DIRECTORY_SEPARATOR . 'somefile.php:11:29',
+                'error_levels' => ['MixedAssignment'],
                 'php_version' => '8.0',
             ],
             'nullOffsetOfAnObjectThatRejectsItInArrayAccess' => [
