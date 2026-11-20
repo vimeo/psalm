@@ -387,6 +387,81 @@ final class OverrideTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.4',
             ],
+            'constantWithTheOverrideAttributeNeedsNoMissingOverrideAttribute' => [
+                'code' => '<?php
+                    class P {
+                        public const int K = 1;
+                    }
+
+                    class C extends P {
+                        #[\\Override]
+                        public const int K = 1;
+                    }
+                ',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.6',
+            ],
+            'constantOverridingAPrivateConstantOrNothingNeedsNoOverrideAttribute' => [
+                'code' => '<?php
+                    class P {
+                        private const int HIDDEN = 1;
+                    }
+
+                    class C extends P {
+                        private const int HIDDEN = 1;
+                        public const int OWN = 3;
+                    }
+                ',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.6',
+            ],
+            'constantOfATraitNeedsNoOverrideAttribute' => [
+                'code' => '<?php
+                    class P {
+                        public const int K = 1;
+                    }
+
+                    trait T {
+                        public const int K = 1;
+                    }
+
+                    class C extends P {
+                        use T;
+                    }
+                ',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.6',
+            ],
+            'inheritedConstantNeedsNoOverrideAttribute' => [
+                'code' => '<?php
+                    class P {
+                        public const int K = 1;
+                    }
+
+                    class C extends P {}
+                    class D extends C {}
+                ',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.6',
+            ],
+            'constantOverridingAConstantNeedsNoOverrideAttributeBeforePhp86' => [
+                'code' => '<?php
+                    class P {
+                        public const int K = 1;
+                    }
+
+                    class C extends P {
+                        public const int K = 1;
+                    }
+                ',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.5',
+            ],
         ];
     }
 
@@ -652,6 +727,35 @@ final class OverrideTest extends TestCase
                 'error_message' => 'InvalidAttribute - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:27 - Attribute Override cannot be used on a class constant',
                 'error_levels' => [],
                 'php_version' => '8.5',
+            ],
+            'constantOverridingAParentConstantNeedsTheOverrideAttribute' => [
+                'code' => '<?php
+                    class P {
+                        public const int K = 1;
+                    }
+
+                    class C extends P {
+                        public const int K = 1;
+                    }
+                ',
+                'error_message' => 'MissingOverrideAttribute - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:42 - Class constant C::K should have the "Override" attribute',
+                'error_levels' => [],
+                'php_version' => '8.6',
+            ],
+            'constantImplementingAnInterfaceConstantNeedsTheOverrideAttribute' => [
+                'code' => '<?php
+                    interface HasSides {
+                        public const int SIDES = 0;
+                    }
+
+                    enum Kind: int implements HasSides {
+                        case A = 1;
+                        public const int SIDES = 0;
+                    }
+                ',
+                'error_message' => 'MissingOverrideAttribute - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:42 - Class constant Kind::SIDES should have the "Override" attribute',
+                'error_levels' => [],
+                'php_version' => '8.6',
             ],
             'propertyOverridingAParentPropertyNeedsTheOverrideAttribute' => [
                 'code' => '<?php
