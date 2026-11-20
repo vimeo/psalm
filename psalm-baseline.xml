@@ -244,7 +244,6 @@
   <file src="src/Psalm/Internal/Analyzer/ClosureAnalyzer.php">
     <RiskyTruthyFalsyComparison>
       <code><![CDATA[$context->self]]></code>
-      <code><![CDATA[$context->self]]></code>
     </RiskyTruthyFalsyComparison>
   </file>
   <file src="src/Psalm/Internal/Analyzer/CommentAnalyzer.php">
@@ -526,31 +525,8 @@
       <code><![CDATA[$first_var_type]]></code>
       <code><![CDATA[$first_var_type]]></code>
       <code><![CDATA[$first_var_type]]></code>
-      <code><![CDATA[$true_type]]></code>
-      <code><![CDATA[$var_type]]></code>
-      <code><![CDATA[$var_type]]></code>
-      <code><![CDATA[$var_type]]></code>
-      <code><![CDATA[$var_type]]></code>
-      <code><![CDATA[$var_type]]></code>
-      <code><![CDATA[$var_type]]></code>
-      <code><![CDATA[$var_type]]></code>
-      <code><![CDATA[$var_type]]></code>
-      <code><![CDATA[$var_type]]></code>
-      <code><![CDATA[$var_type]]></code>
-      <code><![CDATA[$var_type]]></code>
-      <code><![CDATA[$var_type]]></code>
-      <code><![CDATA[$var_type]]></code>
-      <code><![CDATA[$var_type]]></code>
-      <code><![CDATA[$var_type]]></code>
-      <code><![CDATA[$var_type]]></code>
-      <code><![CDATA[$var_type]]></code>
-      <code><![CDATA[$var_type]]></code>
-      <code><![CDATA[$var_type]]></code>
-      <code><![CDATA[$var_type]]></code>
-      <code><![CDATA[$var_type]]></code>
     </ImplicitToStringCast>
     <PossiblyUndefinedIntArrayOffset>
-      <code><![CDATA[$count_expr->getArgs()[0]]]></code>
       <code><![CDATA[$count_expr->getArgs()[0]]]></code>
       <code><![CDATA[$count_expr->getArgs()[0]]]></code>
       <code><![CDATA[$count_expr->getArgs()[0]]]></code>
@@ -568,13 +544,10 @@
       <code><![CDATA[$expr->getArgs()[1]]]></code>
       <code><![CDATA[$expr->getArgs()[1]]]></code>
       <code><![CDATA[$get_debug_type_expr->getArgs()[0]]]></code>
-      <code><![CDATA[$get_debug_type_expr->getArgs()[0]]]></code>
-      <code><![CDATA[$gettype_expr->getArgs()[0]]]></code>
       <code><![CDATA[$gettype_expr->getArgs()[0]]]></code>
     </PossiblyUndefinedIntArrayOffset>
     <RiskyTruthyFalsyComparison>
       <code><![CDATA[!$var_name]]></code>
-      <code><![CDATA[!$var_type]]></code>
       <code><![CDATA[!strpos($first_var_name, '->')]]></code>
       <code><![CDATA[!strpos($first_var_name, '[')]]></code>
       <code><![CDATA[$array_root]]></code>
@@ -583,8 +556,6 @@
       <code><![CDATA[$count_equality_position]]></code>
       <code><![CDATA[$count_inequality_position]]></code>
       <code><![CDATA[$count_inequality_position]]></code>
-      <code><![CDATA[$count_inequality_position]]></code>
-      <code><![CDATA[$false_position]]></code>
       <code><![CDATA[$false_position]]></code>
       <code><![CDATA[$first_var_name]]></code>
       <code><![CDATA[$first_var_name]]></code>
@@ -599,10 +570,7 @@
       <code><![CDATA[$first_var_name]]></code>
       <code><![CDATA[$first_var_name_in_array_argument]]></code>
       <code><![CDATA[$get_debug_type_position]]></code>
-      <code><![CDATA[$get_debug_type_position]]></code>
       <code><![CDATA[$getclass_position]]></code>
-      <code><![CDATA[$getclass_position]]></code>
-      <code><![CDATA[$gettype_position]]></code>
       <code><![CDATA[$gettype_position]]></code>
       <code><![CDATA[$if_false_assertions]]></code>
       <code><![CDATA[$if_true_assertions]]></code>
@@ -610,25 +578,9 @@
       <code><![CDATA[$other_var_name]]></code>
       <code><![CDATA[$superior_value_position]]></code>
       <code><![CDATA[$true_position]]></code>
-      <code><![CDATA[$true_position]]></code>
-      <code><![CDATA[$typed_value_position]]></code>
       <code><![CDATA[$typed_value_position]]></code>
       <code><![CDATA[$var_id]]></code>
       <code><![CDATA[$var_id]]></code>
-      <code><![CDATA[$var_name]]></code>
-      <code><![CDATA[$var_name]]></code>
-      <code><![CDATA[$var_name]]></code>
-      <code><![CDATA[$var_name]]></code>
-      <code><![CDATA[$var_name]]></code>
-      <code><![CDATA[$var_name]]></code>
-      <code><![CDATA[$var_name]]></code>
-      <code><![CDATA[$var_name]]></code>
-      <code><![CDATA[$var_name]]></code>
-      <code><![CDATA[$var_name]]></code>
-      <code><![CDATA[$var_name]]></code>
-      <code><![CDATA[$var_name]]></code>
-      <code><![CDATA[$var_name]]></code>
-      <code><![CDATA[$var_name]]></code>
       <code><![CDATA[$var_name]]></code>
       <code><![CDATA[$var_name]]></code>
       <code><![CDATA[$var_name]]></code>
@@ -652,9 +604,6 @@
       <code><![CDATA[$var_name_left]]></code>
       <code><![CDATA[$var_name_right]]></code>
       <code><![CDATA[$var_type]]></code>
-      <code><![CDATA[$var_type]]></code>
-      <code><![CDATA[$var_type]]></code>
-      <code><![CDATA[self::hasReconcilableNonEmptyCountEqualityCheck($conditional)]]></code>
     </RiskyTruthyFalsyComparison>
   </file>
   <file src="src/Psalm/Internal/Analyzer/Statements/Expression/Assignment/ArrayAssignmentAnalyzer.php">
@@ -929,9 +878,6 @@
       <code><![CDATA[$method]]></code>
     </PossiblyUndefinedIntArrayOffset>
     <RiskyTruthyFalsyComparison>
-      <code><![CDATA[$context->self]]></code>
-      <code><![CDATA[$context->self]]></code>
-      <code><![CDATA[$context->self]]></code>
       <code><![CDATA[$function_storage->template_types]]></code>
       <code><![CDATA[$function_storage->template_types]]></code>
     </RiskyTruthyFalsyComparison>
@@ -1091,25 +1037,17 @@
       <code><![CDATA[$assertion_var_id]]></code>
       <code><![CDATA[$calling_class_storage->template_extended_params]]></code>
       <code><![CDATA[$context->self]]></code>
-      <code><![CDATA[$context->self]]></code>
       <code><![CDATA[$declaring_class_storage->template_types]]></code>
       <code><![CDATA[$documenting_method_storage->template_types]]></code>
     </RiskyTruthyFalsyComparison>
   </file>
   <file src="src/Psalm/Internal/Analyzer/Statements/Expression/ClassConstAnalyzer.php">
-    <ImplicitToStringCast>
-      <code><![CDATA[$stmt->name]]></code>
-      <code><![CDATA[$stmt->name]]></code>
-    </ImplicitToStringCast>
     <PossiblyUndefinedIntArrayOffset>
-      <code><![CDATA[$new_const_name]]></code>
       <code><![CDATA[$new_const_name]]></code>
     </PossiblyUndefinedIntArrayOffset>
     <RiskyTruthyFalsyComparison>
       <code><![CDATA[!$context->self]]></code>
       <code><![CDATA[$context->calling_method_id]]></code>
-      <code><![CDATA[$context->calling_method_id]]></code>
-      <code><![CDATA[$context->self]]></code>
       <code><![CDATA[$context->self]]></code>
     </RiskyTruthyFalsyComparison>
   </file>
@@ -1310,9 +1248,6 @@
       <code><![CDATA[round($mean)]]></code>
       <code><![CDATA[round($mean)]]></code>
     </InvalidOperand>
-    <PossiblyUndefinedArrayOffset>
-      <code><![CDATA[$stmt->expr->getArgs()[0]]]></code>
-    </PossiblyUndefinedArrayOffset>
     <RiskyTruthyFalsyComparison>
       <code><![CDATA[$branch_point]]></code>
       <code><![CDATA[$new_issues]]></code>
@@ -1419,9 +1354,6 @@
       <code><![CDATA[$calling_fq_class_name]]></code>
       <code><![CDATA[$calling_method_id]]></code>
       <code><![CDATA[$calling_method_id]]></code>
-      <code><![CDATA[$file_path]]></code>
-      <code><![CDATA[$file_path]]></code>
-      <code><![CDATA[$file_path]]></code>
       <code><![CDATA[$file_path]]></code>
       <code><![CDATA[$file_path]]></code>
       <code><![CDATA[$migrated_source_fqcln]]></code>
@@ -1621,15 +1553,6 @@
       <code><![CDATA[assert(!empty($name_parts))]]></code>
     </RedundantCondition>
   </file>
-  <file src="src/Psalm/Internal/Diff/NamespaceStatementsDiffer.php">
-    <ImplicitToStringCast>
-      <code><![CDATA[$diff_elem->old->name]]></code>
-    </ImplicitToStringCast>
-    <RedundantCondition>
-      <code><![CDATA[assert(!empty($name_parts))]]></code>
-      <code><![CDATA[assert(!empty($name_parts))]]></code>
-    </RedundantCondition>
-  </file>
   <file src="src/Psalm/Internal/ExecutionEnvironment/GitInfoCollector.php">
     <PossiblyUndefinedArrayOffset>
       <code><![CDATA[$url]]></code>
@@ -1725,11 +1648,6 @@
     <PossiblyUnusedMethod>
       <code><![CDATA[__construct]]></code>
     </PossiblyUnusedMethod>
-  </file>
-  <file src="src/Psalm/Internal/Json/Json.php">
-    <ImpureByReferenceAssignment>
-      <code><![CDATA[$value]]></code>
-    </ImpureByReferenceAssignment>
   </file>
   <file src="src/Psalm/Internal/LanguageServer/Client/Progress/LegacyProgress.php">
     <RiskyTruthyFalsyComparison>
@@ -2364,21 +2282,6 @@
       <code><![CDATA[$key]]></code>
       <code><![CDATA[$key]]></code>
       <code><![CDATA[$key]]></code>
-      <code><![CDATA[$key]]></code>
-      <code><![CDATA[$key]]></code>
-      <code><![CDATA[$key]]></code>
-      <code><![CDATA[$key]]></code>
-      <code><![CDATA[$key]]></code>
-      <code><![CDATA[$key]]></code>
-      <code><![CDATA[$key]]></code>
-      <code><![CDATA[$key]]></code>
-      <code><![CDATA[$key]]></code>
-      <code><![CDATA[$key]]></code>
-      <code><![CDATA[$key]]></code>
-      <code><![CDATA[$key]]></code>
-      <code><![CDATA[$key]]></code>
-      <code><![CDATA[$key]]></code>
-      <code><![CDATA[$key]]></code>
       <code><![CDATA[$var_id]]></code>
       <code><![CDATA[$var_id]]></code>
       <code><![CDATA[$var_id]]></code>
@@ -2397,17 +2300,6 @@
     </ImplicitToStringCast>
     <RiskyTruthyFalsyComparison>
       <code><![CDATA[!$count]]></code>
-      <code><![CDATA[$key]]></code>
-      <code><![CDATA[$key]]></code>
-      <code><![CDATA[$key]]></code>
-      <code><![CDATA[$key]]></code>
-      <code><![CDATA[$key]]></code>
-      <code><![CDATA[$key]]></code>
-      <code><![CDATA[$key]]></code>
-      <code><![CDATA[$key]]></code>
-      <code><![CDATA[$key]]></code>
-      <code><![CDATA[$key]]></code>
-      <code><![CDATA[$key]]></code>
       <code><![CDATA[$key]]></code>
       <code><![CDATA[$key]]></code>
       <code><![CDATA[$key]]></code>
@@ -2854,18 +2746,6 @@
     <InvalidOperand>
       <code><![CDATA[$this->progress / $this->number_of_tasks * 100]]></code>
     </InvalidOperand>
-  </file>
-  <file src="src/Psalm/Report/ByIssueLevelAndTypeReport.php">
-    <RiskyTruthyFalsyComparison>
-      <code><![CDATA[$issue_data->other_references]]></code>
-      <code><![CDATA[$issue_data->taint_trace]]></code>
-    </RiskyTruthyFalsyComparison>
-  </file>
-  <file src="src/Psalm/Report/ConsoleReport.php">
-    <RiskyTruthyFalsyComparison>
-      <code><![CDATA[$issue_data->other_references]]></code>
-      <code><![CDATA[$issue_data->taint_trace]]></code>
-    </RiskyTruthyFalsyComparison>
   </file>
   <file src="src/Psalm/Report/JunitReport.php">
     <ImmutableDependency>

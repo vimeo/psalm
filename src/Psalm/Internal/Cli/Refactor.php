@@ -62,7 +62,8 @@ final class Refactor
 {
     public const LONG_OPTIONS = [
         'help', 'debug', 'debug-by-line', 'debug-emitted-issues', 'config:', 'root:', 'monochrome',
-        'scan-threads:', 'threads:', 'move:', 'into:', 'rename:', 'to:', 'no-progress', 'no-cache',
+        'scan-threads:', 'threads:', 'memory-limit:', 'use-ini-defaults', 'move:', 'into:', 'rename:', 'to:',
+        'no-progress', 'no-cache',
     ];
 
     /** @param array<int,string> $argv */
@@ -145,6 +146,12 @@ final class Refactor
                     If greater than one, Psalm will run the scan on multiple threads, speeding things up
                     (if specified, takes priority over the --threads flag).
                     `auto` (the default) uses the scanThreads setting of the config, or else one thread per CPU core.
+
+                --use-ini-defaults
+                    Use PHP-provided ini defaults for memory and error display
+
+                --memory-limit=LIMIT
+                    Use a specific memory limit. Cannot be combined with --use-ini-defaults
 
                 --move "[Identifier]" --into "[Class]"
                     Moves the specified item into the class. More than one item can be moved into a class
