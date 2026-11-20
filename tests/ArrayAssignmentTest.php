@@ -3468,6 +3468,59 @@ final class ArrayAssignmentTest extends TestCase
                         return $l;
                     }',
             ],
+            'nestedAssignmentWithAnOffsetCreatesNonEmptyArrays' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @var string $k */
+                    $k = 'a';
+                    /** @var string $j */
+                    $j = 'b';
+                    /** @var int $i */
+                    $i = 1;
+
+                    $a = [];
+                    $a[$k][$i] = 1;
+
+                    $b = [];
+                    $b[$k][$j][$i] = 1;
+
+                    $c = [];
+                    $c[][][] = 1;
+
+                    $d = [];
+                    $d[][$k] = 1;
+
+                    $e = [];
+                    if (rand(0, 1)) {
+                        $e[$k][$i] = 1;
+                    }
+                PHP,
+                'assertions' => [
+                    '$a===' => 'non-empty-array<string, non-empty-array<int, 1>>',
+                    '$b===' => 'non-empty-array<string, non-empty-array<string, non-empty-array<int, 1>>>',
+                    '$c===' => 'non-empty-list<non-empty-list<non-empty-list<1>>>',
+                    '$d===' => 'non-empty-list<non-empty-array<string, 1>>',
+                    '$e===' => 'array<string, non-empty-array<int, 1>>',
+                ],
+            ],
+            'arrayCreatedByANestedAssignmentInALoopIsNotEmpty' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param list<list<string>> $groups */
+                    function f(array $groups): int {
+                        $by_name = [];
+                        foreach ($groups as $i => $names) {
+                            foreach ($names as $name) {
+                                $by_name[$name][$i] = $name;
+                            }
+                        }
+                        foreach ($by_name as $entries) {
+                            return array_key_first($entries);
+                        }
+                        return 0;
+                    }
+                PHP,
+            ],
         ];
     }
 
