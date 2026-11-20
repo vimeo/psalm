@@ -392,6 +392,23 @@ final class DeprecatedAnnotationTest extends TestCase
                 'error_levels' => [],
                 'php_version' => '8.1',
             ],
+            'deprecatedEnumCaseFetchOnAnInstance' => [
+                'code' => '<?php
+                    enum Foo {
+                        case A;
+
+                        /** @deprecated */
+                        case B;
+                    }
+
+                    function f(Foo $foo): Foo {
+                        return $foo::B;
+                    }
+                ',
+                'error_message' => 'DeprecatedConstant',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
             'deprecatedClassConstFetch' => [
                 'code' => '<?php
                     class Foo {
