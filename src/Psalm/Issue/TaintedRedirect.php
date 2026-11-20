@@ -9,6 +9,6 @@ namespace Psalm\Issue;
  */
 final class TaintedRedirect extends TaintedInput
 {
-    public const SHORTCODE = 379;
+    public const SHORTCODE = 387;
     public const CWE_IDS = [601];
 }
