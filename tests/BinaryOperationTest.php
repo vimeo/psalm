@@ -520,6 +520,27 @@ final class BinaryOperationTest extends TestCase
         );
     }
 
+    public function testConcatenationWithAResourceIsStillInvalidInStrictMode(): void
+    {
+        Config::getInstance()->strict_binary_operands = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                /** @param resource $res */
+                function f($res): string {
+                    return "Some resource: " . $res;
+                }',
+        );
+
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessage(
+            'InvalidOperand - somefile.php:4:48 - Cannot concatenate with a resource',
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
     public function testConcatenationWithIgnoredNullableFloatInStrictMode(): void
     {
         Config::getInstance()->strict_binary_operands = true;
@@ -746,6 +767,30 @@ final class BinaryOperationTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'concatenateAResource' => [
+                'code' => '<?php
+                    /** @param resource $res */
+                    function f($res): string {
+                        $left = $res . " is a resource";
+                        $right = "Some resource: " . $res;
+                        $right .= $res;
+
+                        return $left . $right;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
+            'concatenateAResourceThatMayBeClosed' => [
+                'code' => '<?php
+                    /** @param resource|closed-resource $res */
+                    function f($res): string {
+                        return "Some resource: " . $res;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
             'comparisonNarrowsTheBoundOfATemplateInTheTypeOfTheVariable' => [
                 'code' => '<?php
                     /** @param int<1, max> $n */

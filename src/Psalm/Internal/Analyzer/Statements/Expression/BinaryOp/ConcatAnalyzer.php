@@ -33,6 +33,7 @@ use Psalm\IssueBuffer;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArrayKey;
+use Psalm\Type\Atomic\TClosedResource;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\TInt;
@@ -47,6 +48,7 @@ use Psalm\Type\Atomic\TNonFalsyString;
 use Psalm\Type\Atomic\TNonspecificLiteralString;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TNumericString;
+use Psalm\Type\Atomic\TResource;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTypeVariable;
@@ -609,6 +611,15 @@ final class ConcatAnalyzer
             }
 
             if ($operand_type_part instanceof TNull || $operand_type_part instanceof TFalse) {
+                continue;
+            }
+
+            if (($operand_type_part instanceof TResource || $operand_type_part instanceof TClosedResource)
+                && !$config->strict_binary_operands
+            ) {
+                // PHP concatenates a resource as "Resource id #N"
+                $has_valid_operand = true;
+
                 continue;
             }
 
