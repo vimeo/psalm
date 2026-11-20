@@ -24,6 +24,7 @@ use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
+use Psalm\Internal\Type\TypeExpander;
 use Psalm\Issue\ImpureMethodCall;
 use Psalm\Issue\UnusedMethodCall;
 use Psalm\IssueBuffer;
@@ -49,6 +50,8 @@ use function count;
 use function explode;
 use function preg_match;
 use function str_starts_with;
+use function strcspn;
+use function strlen;
 use function strrpos;
 use function strtolower;
 use function substr;
@@ -639,6 +642,21 @@ final class MethodCallPurityAnalyzer
                     $class_storage,
                     $class_template_params,
                 );
+
+                // reading or assigning a magic property leaves the others as they were, as for declared ones
+                if (isset($class_storage->declaring_method_ids['__get'])
+                    && $method_id->method_name !== '__get'
+                    && $method_id->method_name !== '__set'
+                ) {
+                    self::resetMagicProperties(
+                        $codebase,
+                        $context,
+                        $result,
+                        $lhs_var_id,
+                        $class_storage,
+                        $method_storage->this_property_mutations,
+                    );
+                }
             }
         } else {
             if (!$config->remember_property_assignments_after_call) {
@@ -743,6 +761,81 @@ final class MethodCallPurityAnalyzer
 
                 self::setPropertyTypeAfterCall($context, $result, $mutation_var_id, $new_type);
                 $context->possibly_assigned_var_ids[$mutation_var_id] = true;
+            }
+        }
+    }
+
+    /**
+     * Resets what is known of the properties of the receiver that `__get()` reads (those its class does not
+     * declare), and of what they hold, after a call wrote a property of the receiver: `__get()` may read any of
+     * them from it. One with a `@property` type holds that type again, the others are forgotten
+     *
+     * @param array<string, bool> $written_properties the properties the call writes, which are reset as such
+     */
+    private static function resetMagicProperties(
+        Codebase $codebase,
+        Context $context,
+        AtomicMethodCallAnalysisResult $result,
+        string $lhs_var_id,
+        ClassLikeStorage $class_storage,
+        array $written_properties,
+    ): void {
+        $prefix = $lhs_var_id . '->';
+        $prefix_length = strlen($prefix);
+        $magic_properties = [];
+
+        foreach ($context->vars_in_scope as $var_id => $_) {
+            if (!str_starts_with($var_id, $prefix)) {
+                continue;
+            }
+
+            // `$a->p` of `$a->p->q` and `$a->p['k']` too
+            $name_length = strcspn($var_id, '[-(', $prefix_length);
+            $name = substr($var_id, $prefix_length, $name_length);
+
+            // a method result is forgotten with those of every receiver
+            if (($var_id[$prefix_length + $name_length] ?? '') !== '('
+                && !isset($class_storage->declaring_property_ids[$name])
+                && !isset($written_properties[$name])
+            ) {
+                $magic_properties[$prefix . $name] = $name;
+            }
+        }
+
+        // the type of a property of a generic class depends on the receiver: the next fetch works it out
+        $is_generic = ($class_storage->template_types ?? []) !== [];
+
+        foreach ($magic_properties as $property_id => $name) {
+            $declared_type = $class_storage->pseudo_property_get_types['$' . $name] ?? null;
+
+            if ($declared_type !== null && !$is_generic) {
+                $context->forgetPropertyDescendents($property_id);
+
+                // assigned rather than forgotten, so that it holds this type after the branches of a condition too
+                self::setPropertyTypeAfterCall(
+                    $context,
+                    $result,
+                    $property_id,
+                    TypeExpander::expandUnion(
+                        $codebase,
+                        $declared_type,
+                        $class_storage->name,
+                        $class_storage->name,
+                        $class_storage->parent_class,
+                    ),
+                );
+                $context->possibly_assigned_var_ids[$property_id] = true;
+            } else {
+                $context->forgetWrittenProperty($property_id);
+
+                // of a receiver of several types, nothing is known of what the property held for the others either
+                $result->property_types_before_call[$property_id] = null;
+                unset($result->property_types_after_call[$property_id], $result->property_writer_counts[$property_id]);
+            }
+
+            // the condition has no clause about what it holds now
+            if ($context->inside_conditional) {
+                $context->assigned_var_ids[$property_id] ??= 0;
             }
         }
     }
