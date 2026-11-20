@@ -155,6 +155,14 @@ final class CallableTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'truthyCheckOfANullableCallableIsNotRisky' => [
+                'code' => '<?php
+                    function f(?callable $c): void {
+                        if ($c) {
+                            $c();
+                        }
+                    }',
+            ],
             'callableArrayNamingAMagicMethodMatchesATypedCallable' => [
                 'code' => '<?php
                     /**
@@ -3779,6 +3787,16 @@ final class CallableTest extends TestCase
                     '$r===' => '0|array<array-key, mixed>|callable-object',
                 ],
             ],
+            'negatedIsObjectKeepsArrayOfCallableOrArray' => [
+                'code' => '<?php
+                    /** @var object|callable|array $p */
+                    $p = $_GET["p"];
+                    $r = is_object($p) ? 0 : $p;
+                ',
+                'assertions' => [
+                    '$r===' => '0|array<array-key, mixed>|callable-string',
+                ],
+            ],
             'callableCheckAfterIsStringOnCallableOrArray' => [
                 'code' => '<?php
                     /** @param string|callable|array $param */
@@ -3819,6 +3837,26 @@ final class CallableTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'truthyCheckOfACallableOrStringIsRisky' => [
+                'code' => '<?php
+                    function f(callable|string $c): void {
+                        if ($c) {
+                            echo "truthy";
+                        }
+                    }',
+                'error_message' => 'RiskyTruthyFalsyComparison',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'truthyCheckOfACallableIsRedundant' => [
+                'code' => '<?php
+                    function f(callable $c): void {
+                        if ($c) {
+                            $c();
+                        }
+                    }',
+                'error_message' => 'RedundantCondition - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:29',
+            ],
             'callableArrayNamingAMagicMethodMismatchesATypedCallable' => [
                 'code' => '<?php
                     /**

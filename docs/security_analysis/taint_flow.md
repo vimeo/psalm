@@ -34,7 +34,7 @@ of the flow:
   itself. Unless the function is specialized, they are shared by all its calls, so what one caller passes in comes out
   at every other caller.
 + *Specialized* nodes (`wrap#1 specialized in …`) belong to one call only. For a function that is
-  [specialized](avoiding_false_positives.md#specializing-taints-in-functions), or that Psalm infers to be pure, the
+  [specialized](index.md#specializing-functions), or that Psalm infers to be pure, the
   taints go from the arguments of a call to its result without leaving that call, which is why the flow above ends in
   `$x` and not in the other callers of `wrap()`.
 
@@ -382,7 +382,7 @@ function show(Model $model): void {
   `foreach ($values as $name => $value) { $model->set($name, $value); }`, sets each property to what is under its
   name in `$values`, as `($values) -> $this->{key}` does, when `$name` and `$value` are still the key and the value of
   the loop.
-+ For a class with [`@psalm-taint-specialize`](avoiding_false_positives.md#specializing-taints-in-classes), properties
++ For a class with [`@psalm-taint-specialize`](index.md#specializing-classes), properties
   are tracked per object.
 
 ### Properties held in an array property
@@ -519,6 +519,12 @@ Plugins can add flows that annotations can't express with these `Codebase` metho
   parameter at `$offset` and of the object it runs on, for a call the code doesn't show (e.g. a framework's). Given
   the location of the call, these are the nodes of that call if Psalm tells its calls apart (see
   `@psalm-taint-specialize`); the receiver node only exists then (null otherwise).
++ `addTaintValidation($source, $call, $value, $removed_taints, $kind)`: records that the call `$call` validates
+  `$value` (a local variable, or one cast to a string) against a pattern removing `$removed_taints`
+  (`getTaintsRemovedByPattern($pattern)`). Where a condition on its result tells the validation passed, the variable
+  can't carry those taints, as long as it holds the same value: `$validator->fails()` and `passes()` for a result of
+  kind `validator`, `count($violations) > 0`, `$violations->count() === 0`, ... for one of kind `violations`. Call it
+  from `afterExpressionAnalysis()`.
 + `tracksTaintFlow($source)`: false when taints aren't tracked there, e.g. when `TaintedInput` is suppressed. The
   methods above then add nothing.
 

@@ -939,6 +939,11 @@ abstract class Atomic implements TypeNode, Stringable
             return true;
         }
 
+        // a callable is a non-empty string, a non-empty array or an object
+        if ($this instanceof TCallable) {
+            return true;
+        }
+
         if ($this instanceof TKeyedArray) {
             return $this->isNonEmpty();
         }
