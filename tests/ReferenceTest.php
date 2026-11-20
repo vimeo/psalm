@@ -1982,6 +1982,52 @@ final class ReferenceTest extends TestCase
                     '$out===' => 'array{a?: \'z\'|1, b: true}',
                 ],
             ],
+            'writeAfterSwitchReachesItemBoundInACase' => [
+                'code' => '<?php
+                    /** @var string */
+                    $k = "";
+                    $x = 1;
+                    $out = [];
+                    switch (rand(0, 2)) {
+                        case 1:
+                            $out[$k] = &$x;
+                            break;
+                        default:
+                            echo "d";
+                    }
+                    $x = "z";
+                ',
+                'assertions' => [
+                    '$out===' => 'array<string, \'z\'|1>',
+                ],
+            ],
+            'writeAfterTernaryReachesVariableBoundInABranch' => [
+                'code' => '<?php
+                    $x = 1;
+                    $r = 0;
+                    rand(0, 1) ? ($r = &$x) : null;
+                    $x = "z";
+                ',
+                'assertions' => [
+                    '$r===' => '\'z\'|0|1',
+                ],
+            ],
+            'writeAfterMatchReachesVariableBoundInAnArm' => [
+                'code' => '<?php
+                    $x = 1;
+                    $r = 0;
+                    match (rand(0, 2)) {
+                        1 => $r = &$x,
+                        default => null,
+                    };
+                    $x = "z";
+                ',
+                'assertions' => [
+                    '$r===' => '\'z\'|0|1',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'writeAfterLoopReachesVariableBoundInIt' => [
                 'code' => '<?php
                     /** @var list<string> */

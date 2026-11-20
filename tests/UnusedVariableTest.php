@@ -3438,6 +3438,23 @@ final class UnusedVariableTest extends TestCase
                     }
                 ',
             ],
+            'writeAfterSwitchToVariableBoundToArrayItemInACaseIsUsed' => [
+                'code' => '<?php
+                    function f(string $k, int $c): array {
+                        $x = 1;
+                        $out = [];
+                        switch ($c) {
+                            case 1:
+                                $out[$k] = &$x;
+                                break;
+                            default:
+                                echo "d";
+                        }
+                        $x = "z";
+                        return $out;
+                    }
+                ',
+            ],
             'writeAfterLoopToVariableBoundToArrayItemsIsUsed' => [ // #14206
                 'code' => '<?php
                     /** @param list<string> $keys */

@@ -642,7 +642,8 @@ final class AssignmentAnalyzer
         if ($extended_var_id !== null) {
             $context->forgetMethodResultsDependingOn($extended_var_id);
 
-            // the union of an array with another (`$a += $b`, `$a = $b + $a`) keeps the slots of its items
+            // the union of an array with another (`$a += $b`, `$a = $b + $a`) keeps the slots of its items; other
+            // copies that keep them (`array_merge()`) are taken as new arrays
             if (!$assign_value instanceof PhpParser\Node\Expr\BinaryOp\Plus
                 || (ExpressionIdentifier::getExtendedVarId(
                     $assign_value->left,

@@ -617,6 +617,7 @@ final class SwitchCaseAnalyzer
             $case_stmts,
             $statements_analyzer->getCodebase(),
         );
+        $context->keepReferencesPossiblyBoundIn($case_context);
 
         if (!$case->cond
             && $switch_var_id

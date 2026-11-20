@@ -244,6 +244,9 @@ final class TernaryAnalyzer
         $context->mergeConstraintsOfReferencesReboundIn($if_context, $stmt->if ? [$stmt->if] : [], $codebase);
         $context->mergeConstraintsOfReferencesReboundIn($t_else_context, [$stmt->else], $codebase);
 
+        $context->keepReferencesPossiblyBoundIn($if_context);
+        $context->keepReferencesPossiblyBoundIn($t_else_context);
+
         // the branches start with the assignments made before the ternary
         $assign_var_ifs = array_diff_assoc($if_context->assigned_var_ids, $context->assigned_var_ids);
         $assign_var_else = array_diff_assoc($t_else_context->assigned_var_ids, $context->assigned_var_ids);

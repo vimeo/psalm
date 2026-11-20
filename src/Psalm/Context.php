@@ -7,8 +7,8 @@ namespace Psalm;
 use InvalidArgumentException;
 use PhpParser;
 use Psalm\Internal\Analyzer\ConstructorExits;
+use Psalm\Internal\Analyzer\Statements\Expression\Assignment\ArrayAssignmentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Assignment\InstancePropertyAssignmentAnalyzer;
-use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\VariableFetchAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Clause;
@@ -24,9 +24,7 @@ use Psalm\Storage\Capabilities;
 use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Type;
 use Psalm\Type\Atomic\DependentType;
-use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TIntRange;
-use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TObjectWithProperties;
 use Psalm\Type\Reconciler;
@@ -725,13 +723,23 @@ final class Context
         $this->references_possibly_from_confusing_scope +=
             $confusing_scope_context->references_possibly_from_confusing_scope;
 
-        foreach ($confusing_scope_context->references_in_scope as $reference_id => $referenced_id) {
+        $this->keepReferencesPossiblyBoundIn($confusing_scope_context);
+    }
+
+    /**
+     * The bindings of a block that may not run are possibly made after it: what is written to either side may be
+     * written to the other
+     *
+     * @psalm-external-mutation-free
+     */
+    public function keepReferencesPossiblyBoundIn(Context $block_context): void
+    {
+        foreach ($block_context->references_in_scope as $reference_id => $referenced_id) {
             if (($this->references_in_scope[$reference_id] ?? null) === $referenced_id) {
                 continue;
             }
 
-            // a binding the block may not have made: what is written to either may be written to the other, and to
-            // the variables along the chain it is bound through
+            // and to the variables along the chain it is bound through
             $seen = [$reference_id => true];
 
             while (!isset($seen[$referenced_id])) {
@@ -739,21 +747,21 @@ final class Context
                 $this->references_possibly_bound_to[$reference_id][$referenced_id] = true;
                 $this->references_possibly_bound_to[$referenced_id][$reference_id] = true;
 
-                if (!isset($confusing_scope_context->references_in_scope[$referenced_id])) {
+                if (!isset($block_context->references_in_scope[$referenced_id])) {
                     break;
                 }
 
-                $referenced_id = $confusing_scope_context->references_in_scope[$referenced_id];
+                $referenced_id = $block_context->references_in_scope[$referenced_id];
             }
         }
 
         // those of the blocks nested in it
-        foreach ($confusing_scope_context->references_possibly_bound_to as $var_id => $target_ids) {
+        foreach ($block_context->references_possibly_bound_to as $var_id => $target_ids) {
             $this->references_possibly_bound_to[$var_id] = ($this->references_possibly_bound_to[$var_id] ?? [])
                 + $target_ids;
         }
 
-        $this->references_detached_by_blocks += $confusing_scope_context->references_detached_by_blocks;
+        $this->references_detached_by_blocks += $block_context->references_detached_by_blocks;
     }
 
     /**
@@ -936,7 +944,7 @@ final class Context
                 return;
             }
 
-            $key = self::getLiteralKeyOfOffset($parts[$i + 1]);
+            $key = ArrayAssignmentAnalyzer::getLiteralKeyOfOffset($parts[$i + 1]);
 
             if ($key === null && $changed_id === $item_id) {
                 // an item of unknown key may be any of the items cached there
@@ -950,7 +958,12 @@ final class Context
             return;
         }
 
-        $array_type = self::addToItemsUnderKeys($this->vars_in_scope[$array_id], $keys, $type, $codebase);
+        $array_type = ArrayAssignmentAnalyzer::addToItemsUnderKeys(
+            $this->vars_in_scope[$array_id],
+            $keys,
+            $type,
+            $codebase,
+        );
 
         if ($array_type === null) {
             return;
@@ -961,104 +974,6 @@ final class Context
         if ($changed_id !== $item_id) {
             $this->forgetDescendantsOf($changed_id);
         }
-    }
-
-    /**
-     * @psalm-pure
-     */
-    private static function getLiteralKeyOfOffset(string $offset): int|string|null
-    {
-        if (preg_match('/^-?[0-9]+$/', $offset) === 1) {
-            return (int) $offset;
-        }
-
-        if ($offset[0] !== '\'' && $offset[0] !== '"') {
-            return null;
-        }
-
-        $key = ExpressionIdentifier::unquoteOffset($offset);
-
-        // PHP takes a decimal integer string key as that integer
-        return preg_match('/^(0|-?[1-9][0-9]*)$/', $key) === 1 ? (int) $key : $key;
-    }
-
-    /**
-     * The type of the array with $type added to the items under the keys (null: any key), or null when it holds no
-     * such item
-     *
-     * @param non-empty-list<int|string|null> $keys
-     * @psalm-external-mutation-free
-     */
-    private static function addToItemsUnderKeys(
-        Union $array_type,
-        array $keys,
-        Union $type,
-        Codebase $codebase,
-    ): ?Union {
-        $key = array_shift($keys);
-        $atomic_types = [];
-        $holds_item = false;
-
-        foreach ($array_type->getAtomicTypes() as $atomic_type) {
-            if ($atomic_type instanceof TKeyedArray) {
-                $properties = $atomic_type->properties;
-
-                foreach ($properties as $property_key => $property_type) {
-                    if (($key === null || $property_key === $key)
-                        && ($new_property_type = self::addToItem($property_type, $keys, $type, $codebase))
-                    ) {
-                        $properties[$property_key] = $new_property_type;
-                        $holds_item = true;
-                    }
-                }
-
-                $fallback_params = $atomic_type->fallback_params;
-
-                if ($fallback_params !== null
-                    && ($key === null || !isset($properties[$key]))
-                    && ($new_value_type = self::addToItem($fallback_params[1], $keys, $type, $codebase))
-                ) {
-                    $fallback_params[1] = $new_value_type;
-                    $holds_item = true;
-                }
-
-                $atomic_type = TKeyedArray::make(
-                    $properties,
-                    $atomic_type->class_strings,
-                    $fallback_params,
-                    $atomic_type->is_list,
-                    $atomic_type->from_docblock,
-                );
-            } elseif ($atomic_type instanceof TArray
-                && !$atomic_type->isEmptyArray()
-                && ($new_value_type = self::addToItem($atomic_type->type_params[1], $keys, $type, $codebase))
-            ) {
-                $atomic_type = $atomic_type->setTypeParams([$atomic_type->type_params[0], $new_value_type]);
-                $holds_item = true;
-            }
-
-            $atomic_types[] = $atomic_type;
-        }
-
-        if (!$holds_item) {
-            return null;
-        }
-
-        // what is written through the item is used where the array is
-        return $array_type->setTypes($atomic_types)->addParentNodes($type->parent_nodes);
-    }
-
-    /**
-     * @param list<int|string|null> $keys the keys of the item under this one
-     * @psalm-external-mutation-free
-     */
-    private static function addToItem(Union $item_type, array $keys, Union $type, Codebase $codebase): ?Union
-    {
-        $new_item_type = $keys
-            ? self::addToItemsUnderKeys($item_type, $keys, $type, $codebase)
-            : Type::combineUnionTypes($item_type, $type, $codebase);
-
-        return $new_item_type?->setPossiblyUndefined($item_type->possibly_undefined);
     }
 
     /**
