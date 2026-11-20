@@ -31,6 +31,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\Assignment\InstancePropertyAss
 use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\NativeClassTaintAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ConstFetchAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\VariableFetchAnalyzer;
+use Psalm\Internal\Analyzer\Statements\GlobalAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\Analyzer;
 use Psalm\Internal\Codebase\ClassLikes;
@@ -45,6 +46,7 @@ use Psalm\Internal\Codebase\Reflection;
 use Psalm\Internal\Codebase\Scanner;
 use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\Codebase\TaintStore;
+use Psalm\Internal\Codebase\TaintValidations;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\LanguageServer\PHPMarkdownContent;
 use Psalm\Internal\LanguageServer\Reference;
@@ -57,6 +59,7 @@ use Psalm\Internal\Provider\Providers;
 use Psalm\Internal\Provider\StatementsProvider;
 use Psalm\Internal\Scanner\UnresolvedConstantComponent;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
+use Psalm\Internal\Type\PatternCharacters;
 use Psalm\Internal\TypeVisitor\TypeScanner;
 use Psalm\Issue\CodeIssue;
 use Psalm\Issue\InvalidDocblock;
@@ -604,6 +607,11 @@ final class Codebase
             return $this->getTaintComplement($taint_type, $location);
         }
 
+        // `@psalm-taint-sink none $param`: a parameter without sinks
+        if ($taint_type === 'none') {
+            return $this->reportTaintRegistrationError('"none" is not a taint: it means no taint', $location);
+        }
+
         // When scanning runs in forked worker processes, register new taints in the parent's single
         // authoritative registry so that every worker resolves a given taint name to the same bit. Workers
         // assign bits from independent counters, so without this two brand-new taints first seen by
@@ -884,6 +892,7 @@ final class Codebase
         $this->file_reference_provider->loadReferenceCache(false);
 
         FunctionLikeAnalyzer::clearCache();
+        GlobalAnalyzer::clearCache();
         $project_analyzer->clearStatementsForMutations();
 
         if ($force || !$this->statements_provider->parser_cache_provider) {
@@ -3020,7 +3029,8 @@ final class Codebase
 
     /**
      * Whether taints are tracked in the statements of $source: false without taint analysis, while they suppress
-     * TaintedInput, or while Psalm re-analyzes them only to collect mutations. Adding paths does nothing then.
+     * TaintedInput, or while Psalm re-analyzes them only to collect the properties they initialize. Adding paths
+     * does nothing then.
      *
      * @psalm-mutation-free
      */
@@ -3289,6 +3299,38 @@ final class Codebase
             && TaintFlowGraph::isCallSpecialized($this->getTaintFlowGraphOf($source), $this, $storage, $call_location)
             ? $call_location
             : null;
+    }
+
+    /**
+     * The taints a value can't carry once it matches the pattern (anchored at both ends, the characters it allows), as
+     * `preg_match()` tells: 0 if Psalm can't tell
+     *
+     * @psalm-pure
+     */
+    public function getTaintsRemovedByPattern(string $pattern): int
+    {
+        return PatternCharacters::getTaintsRemoved($pattern);
+    }
+
+    /**
+     * Records that $call validates $value against a pattern removing $removed_taints (see getTaintsRemovedByPattern()):
+     * where a condition on its result tells the validation passed, the variable $value is (or casts to a string) can't
+     * carry those taints, as long as it holds the same value. A result of kind `validator` `fails()` when the
+     * validation failed and `passes()` when it passed; one of kind `violations` is a list of the violations, empty when
+     * it passed (`count($violations) > 0`, ...). Call it once the call is analysed (`afterExpressionAnalysis()`).
+     *
+     * @param 'validator'|'violations' $kind
+     */
+    public function addTaintValidation(
+        StatementsSource $source,
+        PhpParser\Node\Expr\CallLike $call,
+        PhpParser\Node\Expr $value,
+        int $removed_taints,
+        string $kind,
+    ): void {
+        if ($source instanceof StatementsAnalyzer) {
+            TaintValidations::record($source, $call, $value, $removed_taints, $kind);
+        }
     }
 
     /**

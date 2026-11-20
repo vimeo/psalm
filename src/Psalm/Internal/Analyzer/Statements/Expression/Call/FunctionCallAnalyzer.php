@@ -14,10 +14,13 @@ use Psalm\Internal\Analyzer\AlgebraAnalyzer;
 use Psalm\Internal\Analyzer\ClosureAnalyzer;
 use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\PurityWildcardInference;
+use Psalm\Internal\Analyzer\Statements\Expression\ArrayAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodCallPurityAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodCallReturnTypeFetcher;
 use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\CastAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\CloneAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\Statements\Expression\GlobalStateAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\IntMaskComparisonAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
@@ -42,6 +45,7 @@ use Psalm\Internal\TypeVisitor\TypeVariableResolver;
 use Psalm\Issue\DeprecatedFunction;
 use Psalm\Issue\ImpureFunctionCall;
 use Psalm\Issue\ImpureMethodCall;
+use Psalm\Issue\InvalidArrayOffset;
 use Psalm\Issue\InvalidFunctionCall;
 use Psalm\Issue\MixedFunctionCall;
 use Psalm\Issue\NullFunctionCall;
@@ -64,34 +68,46 @@ use Psalm\Storage\Possibilities;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArray;
+use Psalm\Type\Atomic\TBool;
 use Psalm\Type\Atomic\TCallable;
 use Psalm\Type\Atomic\TCallableObject;
 use Psalm\Type\Atomic\TCallableString;
+use Psalm\Type\Atomic\TClosedResource;
 use Psalm\Type\Atomic\TClosure;
+use Psalm\Type\Atomic\TFloat;
+use Psalm\Type\Atomic\TInt;
+use Psalm\Type\Atomic\TIterable;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Type\Atomic\TNever;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TObject;
 use Psalm\Type\Atomic\TObjectWithProperties;
+use Psalm\Type\Atomic\TResource;
 use Psalm\Type\Atomic\TString;
+use Psalm\Type\Atomic\TTemplateKeyOf;
 use Psalm\Type\Atomic\TTemplateParam;
+use Psalm\Type\Atomic\TTemplateValueOf;
+use Psalm\Type\Atomic\TVoid;
 use Psalm\Type\Reconciler;
 use Psalm\Type\TaintKind;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
+use function array_column;
 use function array_filter;
 use function array_map;
-use function array_merge;
 use function array_shift;
 use function array_slice;
+use function array_values;
 use function assert;
 use function count;
 use function explode;
 use function implode;
 use function in_array;
+use function is_int;
 use function is_string;
 use function preg_replace;
 use function reset;
@@ -101,12 +117,61 @@ use function str_ends_with;
 use function strpos;
 use function strtolower;
 
+use const SORT_FLAG_CASE;
+use const SORT_NATURAL;
+use const SORT_REGULAR;
+use const SORT_STRING;
+
 /**
  * @internal
  * @psalm-import-type CapabilitySet from Capabilities
  */
 final class FunctionCallAnalyzer extends CallAnalyzer
 {
+    /**
+     * Builtins comparing their needle loosely to the values of their haystack, unless their third argument (strict)
+     * is true: [haystack offset, needle offset]
+     */
+    private const LOOSE_SEARCH_ARGS = [
+        'in_array' => [[1, 'haystack'], [0, 'needle']],
+        'array_search' => [[1, 'haystack'], [0, 'needle']],
+        'array_keys' => [[0, 'array'], [1, 'filter_value']],
+    ];
+
+    /**
+     * Builtins converting the values of array arguments to strings: the [offset, name] of each such argument, or the
+     * number of trailing arguments (callbacks) that aren't
+     */
+    private const STRING_CONVERTED_VALUES_ARGS = [
+        'implode' => 0,
+        'join' => 0,
+        'natsort' => [[0, 'array']],
+        'natcasesort' => [[0, 'array']],
+        'array_diff' => 0,
+        'array_diff_assoc' => 0,
+        'array_diff_uassoc' => 1,
+        'array_intersect' => 0,
+        'array_intersect_assoc' => 0,
+        'array_intersect_uassoc' => 1,
+        'array_fill_keys' => [[0, 'keys']],
+    ];
+
+    /**
+     * Builtins comparing the values of their first argument as their second one (flags) says: [default flags]
+     */
+    private const SORT_FLAGS_DEFAULTS = [
+        'array_unique' => SORT_STRING,
+        'sort' => SORT_REGULAR,
+        'rsort' => SORT_REGULAR,
+        'asort' => SORT_REGULAR,
+        'arsort' => SORT_REGULAR,
+    ];
+
+    /**
+     * The value of `SORT_LOCALE_STRING`, which is deprecated since PHP 8.6: reading it would emit a deprecation.
+     */
+    private const SORT_LOCALE_STRING = 5;
+
     /**
      * @psalm-suppress ComplexMethod
      */
@@ -255,13 +320,17 @@ final class FunctionCallAnalyzer extends CallAnalyzer
         }
 
         $set_inside_conditional = false;
+        $was_inside_assert = $context->inside_assert;
 
         if ($function_name instanceof PhpParser\Node\Name
             && $function_name->getParts() === ['assert']
-            && !$context->inside_conditional
         ) {
-            $context->inside_conditional = true;
-            $set_inside_conditional = true;
+            $context->inside_assert = true;
+
+            if (!$context->inside_conditional) {
+                $context->inside_conditional = true;
+                $set_inside_conditional = true;
+            }
         }
 
         if (!$template_result) {
@@ -280,11 +349,12 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                 $stmt->getArgs(),
                 $function_call_info->function_params,
                 $function_call_info->function_id,
-                $function_call_info->allow_named_args,
                 $context,
                 $template_result,
             );
         }
+
+        $context->inside_assert = $was_inside_assert;
 
         if ($set_inside_conditional) {
             $context->inside_conditional = false;
@@ -348,6 +418,13 @@ final class FunctionCallAnalyzer extends CallAnalyzer
             );
         }
 
+        if (!$is_first_class_callable
+            && ($function_call_info->function_id === 'array_key_exists'
+                || $function_call_info->function_id === 'key_exists')
+        ) {
+            self::checkArrayKeyExistsKey($statements_analyzer, $stmt);
+        }
+
         CallAnalyzer::checkTemplateResult(
             $statements_analyzer,
             $template_result,
@@ -387,6 +464,24 @@ final class FunctionCallAnalyzer extends CallAnalyzer
             if ($function_call_info->function_storage?->has_yield) {
                 // a generator function always returns a new generator: nothing else holds it
                 $stmt_type = $stmt_type->setProperties(['reference_free' => true]);
+            }
+
+            // the result of a pure function called with literals is the same every time (the capabilities of a
+            // function of the call map are only worked out at the call): what is known about it
+            // (`if (lookup('a') !== null)`) holds for the next call
+            if (!$is_first_class_callable
+                && !$function_call_info->in_call_map
+                && $function_call_info->function_storage?->isPure()
+                && ($call_var_id = ExpressionIdentifier::getFunctionCallId($stmt)) !== null
+            ) {
+                if (isset($context->vars_in_scope[$call_var_id])) {
+                    // the call itself is made here, whatever happened to the id in a loop or a branch
+                    $stmt_type = $context->vars_in_scope[$call_var_id]->setPossiblyUndefined(false);
+                } else {
+                    $context->vars_in_scope[$call_var_id] = $stmt_type;
+                }
+
+                $stmt->setAttribute('memoizable', true);
             }
 
             $statements_analyzer->node_data->setType($real_stmt, $stmt_type);
@@ -472,12 +567,10 @@ final class FunctionCallAnalyzer extends CallAnalyzer
         }
 
         // a called closure may write what it captured by reference
-        foreach ($function_call_info->byref_uses as $use_name => $_) {
-            $use_var_id = '$' . $use_name;
-
+        foreach ($function_call_info->closure_written_var_ids as $var_id => $_) {
             $context->removeVarFromConflictingClauses(
-                $use_var_id,
-                $context->vars_in_scope[$use_var_id] ?? null,
+                $var_id,
+                $context->vars_in_scope[$var_id] ?? null,
                 $statements_analyzer,
             );
         }
@@ -501,7 +594,6 @@ final class FunctionCallAnalyzer extends CallAnalyzer
 
         if ($codebase->store_node_types
             && !$context->collect_initializations
-            && !$context->collect_mutations
             && ($stmt_type = $statements_analyzer->node_data->getType($real_stmt))
         ) {
             $codebase->analyzer->addNodeType(
@@ -529,6 +621,24 @@ final class FunctionCallAnalyzer extends CallAnalyzer
             $context,
         );
 
+        if ($function_call_info->in_call_map
+            && $function_call_info->function_id !== null
+            && !$stmt->isFirstClassCallable()
+        ) {
+            $builtin_id = strtolower($function_call_info->function_id);
+
+            if (isset(self::LOOSE_SEARCH_ARGS[$builtin_id])) {
+                self::chargeLooseSearchNeedleToString(
+                    $statements_analyzer,
+                    $stmt,
+                    $context,
+                    ...self::LOOSE_SEARCH_ARGS[$builtin_id],
+                );
+            }
+
+            self::chargeStringConversions($statements_analyzer, $stmt, $context, $builtin_id);
+        }
+
         if ($function_call_info->function_storage) {
             $function_storage = $function_call_info->function_storage;
 
@@ -537,7 +647,13 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                     $function_name,
                     null,
                     self::resolveStaticPropertyAssertionClasses(
-                        self::getAssertionsOnArgs($function_storage->assertions, $function_storage, $stmt->getArgs()),
+                        self::getAssertionsOnArgs(
+                            $function_storage->assertions,
+                            $function_storage,
+                            $stmt->getArgs(),
+                            $statements_analyzer->node_data,
+                            $context->strict_types,
+                        ),
                         $codebase,
                         $context,
                         null,
@@ -560,6 +676,8 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                             $function_storage->if_true_assertions,
                             $function_storage,
                             $stmt->getArgs(),
+                            $statements_analyzer->node_data,
+                            $context->strict_types,
                         ),
                     ),
                 );
@@ -575,6 +693,8 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                             $function_storage->if_false_assertions,
                             $function_storage,
                             $stmt->getArgs(),
+                            $statements_analyzer->node_data,
+                            $context->strict_types,
                         ),
                     ),
                 );
@@ -834,7 +954,6 @@ final class FunctionCallAnalyzer extends CallAnalyzer
             && !$stmt->isFirstClassCallable()
             && $codebase->store_node_types
             && !$context->collect_initializations
-            && !$context->collect_mutations
         ) {
             ArgumentMapPopulator::recordArgumentPositions(
                 $statements_analyzer,
@@ -873,7 +992,6 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                         $args,
                         null,
                         null,
-                        true,
                         $context,
                     );
                 }
@@ -904,7 +1022,6 @@ final class FunctionCallAnalyzer extends CallAnalyzer
         if ($dynamic_function_storage) {
             $function_call_info->function_storage = $dynamic_function_storage;
             $function_call_info->function_params = $dynamic_function_storage->params;
-            $function_call_info->allow_named_args = $dynamic_function_storage->allow_named_arg_calls;
             $function_call_info->defined_constants = $dynamic_function_storage->defined_constants;
         } elseif (!$function_call_info->in_call_map || $function_call_info->is_stubbed) {
             try {
@@ -915,8 +1032,20 @@ final class FunctionCallAnalyzer extends CallAnalyzer
 
                 $function_call_info->function_params = $function_call_info->function_storage->params;
 
-                if (!$function_storage->allow_named_arg_calls) {
-                    $function_call_info->allow_named_args = false;
+                if ($function_call_info->in_call_map && $function_storage->cased_name !== null) {
+                    // a function imported with an alias is called by the alias: its name is the imported one
+                    $imported_name = count($function_name->getParts()) === 1
+                        ? $statements_analyzer->getAliases()->functions[strtolower($function_name->getFirst())]
+                            ?? null
+                        : null;
+
+                    CallAnalyzer::checkFunctionNameCase(
+                        $statements_analyzer,
+                        $function_storage,
+                        $imported_name ?? $function_name->getLast(),
+                        $code_location,
+                        $function_call_info->function_id,
+                    );
                 }
 
                 if (!$is_predefined) {
@@ -950,7 +1079,6 @@ final class FunctionCallAnalyzer extends CallAnalyzer
 
         if ($codebase->store_node_types
             && !$context->collect_initializations
-            && !$context->collect_mutations
         ) {
             $codebase->analyzer->addNodeReference(
                 $statements_analyzer->getFilePath(),
@@ -1390,6 +1518,44 @@ final class FunctionCallAnalyzer extends CallAnalyzer
         return $inferable;
     }
 
+    /**
+     * The types a template, or key-of<T> or value-of<T>, is called as: its bound
+     *
+     * @return list<Atomic>
+     */
+    private static function getTemplateCalledTypes(
+        StatementsAnalyzer $statements_analyzer,
+        TTemplateParam|TTemplateKeyOf|TTemplateValueOf $template,
+    ): array {
+        if (!$template instanceof TTemplateParam) {
+            return array_values(TypeExpander::expandTemplateKeyOfAndValueOf(
+                $statements_analyzer->getCodebase(),
+                new Union([$template]),
+            )->getAtomicTypes());
+        }
+
+        $as_types = array_values($template->as->getAtomicTypes());
+
+        // a type template the enclosing function-like inherits its purity from
+        // (`@psalm-purity-from-template T`): calling it is deferred to the callers
+        if (!in_array(
+            $template->param_name,
+            CallPurityResolver::getEnclosingPurityTemplates($statements_analyzer),
+            true,
+        )) {
+            return $as_types;
+        }
+
+        // the call is still checked and typed like a call of the closure it is bound to
+        return array_map(
+            static fn(Atomic $as_type_part): Atomic => $as_type_part instanceof TClosure
+                || $as_type_part instanceof TCallable
+                ? $as_type_part->setPurity(Capabilities::NONE)
+                : $as_type_part,
+            $as_types,
+        );
+    }
+
     private static function getAnalyzeNamedExpression(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\FuncCall $stmt,
@@ -1412,7 +1578,11 @@ final class FunctionCallAnalyzer extends CallAnalyzer
 
         $context->inside_call = $was_in_call;
 
-        $function_call_info->byref_uses = [];
+        $function_call_info->closure_written_var_ids = ClosureAnalyzer::analyzeVarIdsWrittenByCall(
+            $statements_analyzer,
+            $context,
+            $function_name,
+        );
 
         if ($stmt_name_type = $statements_analyzer->node_data->getType($function_name)) {
             if ($stmt_name_type->isNull()) {
@@ -1447,26 +1617,14 @@ final class FunctionCallAnalyzer extends CallAnalyzer
             while ($var_atomic_types) {
                 $var_type_part = array_shift($var_atomic_types);
 
-                if ($var_type_part instanceof TTemplateParam) {
-                    // a type template the enclosing function-like inherits its purity from
-                    // (`@psalm-purity-from-template T`): calling it is deferred to the callers
-                    if (in_array(
-                        $var_type_part->param_name,
-                        CallPurityResolver::getEnclosingPurityTemplates($statements_analyzer),
-                        true,
-                    )) {
-                        // the call is still checked and typed like a call of the closure it is bound to
-                        foreach ($var_type_part->as->getAtomicTypes() as $as_type_part) {
-                            $var_atomic_types[] = $as_type_part instanceof TClosure
-                                || $as_type_part instanceof TCallable
-                                ? $as_type_part->setPurity(Capabilities::NONE)
-                                : $as_type_part;
-                        }
-
-                        continue;
-                    }
-
-                    $var_atomic_types = array_merge($var_atomic_types, $var_type_part->as->getAtomicTypes());
+                if ($var_type_part instanceof TTemplateParam
+                    || $var_type_part instanceof TTemplateKeyOf
+                    || $var_type_part instanceof TTemplateValueOf
+                ) {
+                    $var_atomic_types = [
+                        ...$var_atomic_types,
+                        ...self::getTemplateCalledTypes($statements_analyzer, $var_type_part),
+                    ];
                     continue;
                 }
 
@@ -1554,10 +1712,6 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                             $real_stmt,
                             $closure_return_type ?? Type::getMixed(),
                         );
-                    }
-
-                    if ($var_type_part instanceof TClosure) {
-                        $function_call_info->byref_uses += $var_type_part->byref_uses;
                     }
 
                     if ($var_type_part->callable_id !== null) {
@@ -1888,7 +2042,6 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                     && $context->vars_in_scope[$var_id]->hasMixed()
                 ) {
                     if (!$context->collect_initializations
-                        && !$context->collect_mutations
                         && $statements_analyzer->getFilePath() === $statements_analyzer->getRootFilePath()
                         && (!(($parent_source = $statements_analyzer->getSource())
                                     instanceof FunctionLikeAnalyzer)
@@ -1925,6 +2078,252 @@ final class FunctionCallAnalyzer extends CallAnalyzer
         $context->clauses = $simplified_clauses;
     }
 
+    /**
+     * A loose search converts with its __toString an object needle compared to strings, and object values compared to
+     * a string needle
+     *
+     * @param array{int, string} $haystack_param
+     * @param array{int, string} $needle_param
+     */
+    private static function chargeLooseSearchNeedleToString(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr\FuncCall $stmt,
+        Context $context,
+        array $haystack_param,
+        array $needle_param,
+    ): void {
+        $haystack_arg = self::getSearchArg($stmt, ...$haystack_param);
+        $needle_arg = self::getSearchArg($stmt, ...$needle_param);
+        $strict_arg = self::getSearchArg($stmt, 2, 'strict');
+
+        if (!$haystack_arg || !$needle_arg) {
+            return;
+        }
+
+        if ($strict_arg && $statements_analyzer->node_data->getType($strict_arg->value)?->isTrue()) {
+            return;
+        }
+
+        $needle_type = $statements_analyzer->node_data->getType($needle_arg->value);
+
+        if (!$needle_type) {
+            return;
+        }
+
+        $haystack_values = CastAnalyzer::getArrayValueType(
+            $statements_analyzer->node_data->getType($haystack_arg->value),
+        );
+
+        if ($needle_type->hasObjectType() && (!$haystack_values || self::mayBeString($haystack_values))) {
+            CastAnalyzer::castStringAttempt(
+                $statements_analyzer,
+                $context,
+                $needle_type,
+                $needle_arg->value,
+                false,
+                false,
+            );
+        }
+
+        if ($haystack_values && $haystack_values->hasObjectType() && self::mayBeString($needle_type)) {
+            CastAnalyzer::castStringAttempt(
+                $statements_analyzer,
+                $context,
+                $haystack_values,
+                $haystack_arg->value,
+                false,
+                false,
+            );
+        }
+    }
+
+    /**
+     * A builtin converting a value, or the values of its arrays, to strings calls their objects' __toString
+     */
+    private static function chargeStringConversions(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr\FuncCall $stmt,
+        Context $context,
+        string $function_id,
+    ): void {
+        if ($function_id === 'strval') {
+            $value_arg = self::getSearchArg($stmt, 0, 'value');
+            $value_type = $value_arg ? $statements_analyzer->node_data->getType($value_arg->value) : null;
+
+            if ($value_arg && $value_type && $value_type->hasObjectType()) {
+                CastAnalyzer::castStringAttempt(
+                    $statements_analyzer,
+                    $context,
+                    $value_type,
+                    $value_arg->value,
+                    false,
+                    false,
+                );
+            }
+
+            return;
+        }
+
+        if ($function_id === 'max' || $function_id === 'min') {
+            // a single argument is an array of the compared values, and so is an unpacked one
+            $args = $stmt->getArgs();
+            $compared = [];
+
+            foreach ($args as $arg) {
+                $type = $statements_analyzer->node_data->getType($arg->value);
+
+                if ($type && ($arg->unpack || count($args) === 1)) {
+                    $type = CastAnalyzer::getArrayValueType($type);
+                }
+
+                if (!$type) {
+                    return;
+                }
+
+                $compared[] = [$arg, $type];
+            }
+
+            // compared like SORT_REGULAR does, an object is only converted to be compared to a string
+            if (!$compared
+                || !self::mayBeString(Type::combineUnionTypeArray(array_column($compared, 1), null))
+            ) {
+                return;
+            }
+
+            foreach ($compared as [$arg, $type]) {
+                if ($type->hasObjectType()) {
+                    CastAnalyzer::castStringAttempt($statements_analyzer, $context, $type, $arg->value, false, false);
+                }
+            }
+
+            return;
+        }
+
+        // compared with SORT_REGULAR, an object is only converted to be compared to a string
+        $only_compared_to_strings = false;
+
+        if (isset(self::SORT_FLAGS_DEFAULTS[$function_id])) {
+            $flags = self::SORT_FLAGS_DEFAULTS[$function_id];
+            $flags_arg = self::getSearchArg($stmt, 1, 'flags');
+
+            if ($flags_arg) {
+                $flags_type = $statements_analyzer->node_data->getType($flags_arg->value);
+                // flags that aren't known may be SORT_STRING
+                $flags = $flags_type && $flags_type->isSingleIntLiteral()
+                    ? $flags_type->getSingleIntLiteral()->value & ~SORT_FLAG_CASE
+                    : SORT_STRING;
+            }
+
+            if ($flags !== SORT_STRING
+                && $flags !== self::SORT_LOCALE_STRING
+                && $flags !== SORT_NATURAL
+                && $flags !== SORT_REGULAR
+            ) {
+                return;
+            }
+
+            $only_compared_to_strings = $flags === SORT_REGULAR;
+            $array_arg = self::getSearchArg($stmt, 0, 'array');
+            $array_args = $array_arg ? [$array_arg] : [];
+        } elseif (isset(self::STRING_CONVERTED_VALUES_ARGS[$function_id])) {
+            $converted_args = self::STRING_CONVERTED_VALUES_ARGS[$function_id];
+
+            if (is_int($converted_args)) {
+                $args = $stmt->getArgs();
+                $array_args = array_slice($args, 0, count($args) - $converted_args);
+            } else {
+                $array_args = [];
+
+                foreach ($converted_args as [$offset, $name]) {
+                    $array_arg = self::getSearchArg($stmt, $offset, $name);
+
+                    if ($array_arg) {
+                        $array_args[] = $array_arg;
+                    }
+                }
+            }
+        } else {
+            return;
+        }
+
+        foreach ($array_args as $array_arg) {
+            if ($array_arg->unpack) {
+                continue;
+            }
+
+            $value_type = CastAnalyzer::getArrayValueType($statements_analyzer->node_data->getType($array_arg->value));
+
+            if (!$value_type
+                || !$value_type->hasObjectType()
+                || ($only_compared_to_strings && !self::mayBeString($value_type))
+            ) {
+                continue;
+            }
+
+            CastAnalyzer::castStringAttempt(
+                $statements_analyzer,
+                $context,
+                $value_type,
+                $array_arg->value,
+                false,
+                false,
+            );
+        }
+    }
+
+    /**
+     * Whether a value of $type may be a string, unless it is known to be something else
+     *
+     * @psalm-pure
+     */
+    private static function mayBeString(Union $type): bool
+    {
+        foreach ($type->getAtomicTypes() as $atomic_type) {
+            if ($atomic_type instanceof TTemplateParam) {
+                if (self::mayBeString($atomic_type->as)) {
+                    return true;
+                }
+
+                continue;
+            }
+
+            if (!$atomic_type->isObjectType()
+                && !$atomic_type instanceof TInt
+                && !$atomic_type instanceof TFloat
+                && !$atomic_type instanceof TBool
+                && !$atomic_type instanceof TNull
+                && !$atomic_type instanceof TArray
+                && !$atomic_type instanceof TKeyedArray
+                && !$atomic_type instanceof TIterable
+                && !$atomic_type instanceof TResource
+                && !$atomic_type instanceof TClosedResource
+                && !$atomic_type instanceof TNever
+                && !$atomic_type instanceof TVoid
+            ) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * @psalm-capabilities read-props
+     */
+    private static function getSearchArg(
+        PhpParser\Node\Expr\FuncCall $stmt,
+        int $offset,
+        string $name,
+    ): ?PhpParser\Node\Arg {
+        foreach ($stmt->getArgs() as $i => $arg) {
+            if ($arg->name ? $arg->name->name === $name : $i === $offset) {
+                return $arg;
+            }
+        }
+
+        return null;
+    }
+
     private static function checkFunctionCallPurity(
         StatementsAnalyzer $statements_analyzer,
         Codebase $codebase,
@@ -1937,7 +2336,6 @@ final class FunctionCallAnalyzer extends CallAnalyzer
         $config = $codebase->config;
 
         if (!$context->collect_initializations
-            && !$context->collect_mutations
             && ($context->isExternalMutationFree()
                 || $codebase->find_unused_variables
                 || !$config->remember_property_assignments_after_call
@@ -2172,6 +2570,69 @@ final class FunctionCallAnalyzer extends CallAnalyzer
     {
         foreach ($type->getAtomicTypes() as $atomic) {
             if (!$atomic instanceof TNamedObject && !$atomic instanceof TObject) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * `array_key_exists()` of a key that the array, whose keys are all ints, can't have
+     */
+    private static function checkArrayKeyExistsKey(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr\FuncCall $stmt,
+    ): void {
+        $args = $stmt->getArgs();
+
+        if (!isset($args[0], $args[1])) {
+            return;
+        }
+
+        $key_type = $statements_analyzer->node_data->getType($args[0]->value);
+        $array_type = $statements_analyzer->node_data->getType($args[1]->value);
+
+        if ($key_type === null
+            || $array_type === null
+            || !self::isNonNumericStringKeyOfIntKeyedArray($key_type, $array_type)
+        ) {
+            return;
+        }
+
+        IssueBuffer::maybeAdd(
+            new InvalidArrayOffset(
+                'Cannot check offset ' . $key_type->getId() . ' in ' . $array_type->getId()
+                    . ', which only has int keys',
+                new CodeLocation($statements_analyzer, $args[0]->value),
+            ),
+            $statements_analyzer->getSuppressedIssues(),
+        );
+    }
+
+    /**
+     * A non-numeric string literal is never a key of a list or of an array whose keys are all ints
+     *
+     * @psalm-pure
+     */
+    private static function isNonNumericStringKeyOfIntKeyedArray(Union $key_type, Union $array_type): bool
+    {
+        if (!$key_type->allStringLiterals()) {
+            return false;
+        }
+
+        foreach ($key_type->getLiteralStrings() as $literal_string) {
+            if (ArrayAnalyzer::getLiteralArrayKeyInt($literal_string->value) !== false) {
+                return false;
+            }
+        }
+
+        foreach ($array_type->getAtomicTypes() as $atomic_type) {
+            if ($atomic_type instanceof TKeyedArray && $atomic_type->is_list) {
+                continue;
+            }
+
+            if (!$atomic_type instanceof TArray || !$atomic_type->type_params[0]->isInt()) {
                 return false;
             }
         }

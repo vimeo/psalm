@@ -251,7 +251,6 @@ final class ArrayReduceReturnTypeProvider implements FunctionReturnTypeProviderI
                             if (!$codebase->methodExists(
                                 $method_id,
                                 !$context->collect_initializations
-                                    && !$context->collect_mutations
                                     ? $context->calling_method_id
                                     : null,
                                 $codebase->collect_locations

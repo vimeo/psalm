@@ -7,6 +7,7 @@ namespace Psalm;
 use InvalidArgumentException;
 use PhpParser;
 use Psalm\Internal\Analyzer\ConstructorExits;
+use Psalm\Internal\Analyzer\Statements\Expression\Assignment\ArrayAssignmentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Assignment\InstancePropertyAssignmentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\VariableFetchAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
@@ -21,14 +22,17 @@ use Psalm\Internal\Type\AssertionReconciler;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Storage\Capabilities;
 use Psalm\Storage\FunctionLikeStorage;
+use Psalm\Type;
 use Psalm\Type\Atomic\DependentType;
 use Psalm\Type\Atomic\TIntRange;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TObjectWithProperties;
 use Psalm\Type\Reconciler;
 use Psalm\Type\Union;
+use ReflectionReference;
 use RuntimeException;
 
+use function array_any;
 use function array_diff_key;
 use function array_filter;
 use function array_intersect_key;
@@ -36,9 +40,12 @@ use function array_keys;
 use function array_map;
 use function array_search;
 use function array_shift;
+use function array_slice;
+use function array_unique;
 use function array_values;
 use function assert;
 use function count;
+use function implode;
 use function in_array;
 use function is_array;
 use function is_int;
@@ -48,8 +55,10 @@ use function preg_quote;
 use function preg_replace;
 use function serialize;
 use function str_contains;
+use function str_ends_with;
 use function str_starts_with;
 use function strcspn;
+use function strlen;
 use function strpos;
 use function strrpos;
 use function strtolower;
@@ -198,11 +207,20 @@ final class Context
 
     /**
      * The variables a variable may still be bound to by reference: those it was bound to before a block that rebound
-     * one of them, where the block did not run. A write to the variable is combined into their types.
+     * one of them, where the block did not run, and those a block that may not run bound it to. A write to the
+     * variable is combined into their types.
      *
      * @var array<string, array<string, true>>
      */
     public array $references_possibly_bound_to = [];
+
+    /**
+     * The variables bound to each other before a block that rebound one of them
+     *
+     * @internal
+     * @var array<string, true>
+     */
+    public array $references_detached_by_blocks = [];
 
     /**
      * Whether or not we're inside the conditional of an if/where etc.
@@ -210,6 +228,13 @@ final class Context
      * This changes whether or not the context is cloned
      */
     public bool $inside_conditional = false;
+
+    /**
+     * Whether or not we're inside the argument of assert(), whose own check reports what its condition asserts.
+     * Not `inside_conditional`: that is also set for every `if`, where an is_*() call reports itself, and it is
+     * not reset in the arguments of a call inside assert()
+     */
+    public bool $inside_assert = false;
 
     /**
      * Whether or not we're inside an isset call
@@ -343,7 +368,7 @@ final class Context
     public array $reconciled_expression_clauses = [];
 
     /**
-     * Whether or not to do a deep analysis and collect mutations to this context
+     * @deprecated Has no effect; will be removed in a future version.
      */
     public bool $collect_mutations = false;
 
@@ -394,11 +419,28 @@ final class Context
     public array $byref_constraints = [];
 
     /**
+     * Variables a branch of the if/else being analysed rebinds: their constraints are merged by
+     * mergeConstraintsOfReferencesReboundIn(), not by the merge of the constraints the branches add
+     *
+     * @var array<string, true>
+     */
+    public array $references_rebound_in_blocks = [];
+
+    /**
      * A list of vars that have been assigned to
      *
      * @var array<string, int>
      */
     public array $assigned_var_ids = [];
+
+    /**
+     * The variables the last `&&` analysed outside an if condition assigns, as its right operand leaves them: an
+     * enclosing `&&` only gets what holds after the expression, which doesn't have them
+     *
+     * @internal
+     * @var array<string, Union>
+     */
+    public array $vars_assigned_in_and = [];
 
     /**
      * A list of vars that have been may have been assigned to
@@ -524,6 +566,47 @@ final class Context
     }
 
     /**
+     * A copied array shares its PHP references with the original: give the clone its own slots, linked to each other
+     * as they were in the original.
+     */
+    public function __clone()
+    {
+        if ($this->references_in_scope) {
+            $this->vars_in_scope = self::copyVarsInScope($this->vars_in_scope);
+        }
+    }
+
+    /**
+     * A copy of the variables where those bound by reference to each other (references_in_scope, and the offsets of
+     * such variables that Reconciler binds) are still bound to each other, but no longer to the given ones: a copy of
+     * an array keeps the PHP references it holds
+     *
+     * @internal
+     * @param array<string, Union> $vars_in_scope
+     * @return array<string, Union>
+     */
+    public static function copyVarsInScope(array $vars_in_scope): array
+    {
+        $copy = [];
+        $slots = [];
+
+        foreach ($vars_in_scope as $var_id => $_) {
+            $reference = ReflectionReference::fromArrayElement($vars_in_scope, $var_id);
+            $slot_var_id = $reference === null ? $var_id : ($slots[$reference->getId()] ??= $var_id);
+
+            if ($slot_var_id === $var_id) {
+                $copy[$var_id] = $vars_in_scope[$var_id];
+            } else {
+                // copied when the first variable of the slot was
+                assert(isset($copy[$slot_var_id]));
+                $copy[$var_id] = &$copy[$slot_var_id];
+            }
+        }
+
+        return $copy;
+    }
+
+    /**
      * @psalm-external-mutation-free
      */
     public function __destruct()
@@ -638,7 +721,8 @@ final class Context
             if (!isset($this->references_in_scope[$reference_id])
                 && !isset($this->references_to_external_scope[$reference_id])
                 // a reference before the block that the block rebound
-                && !isset($this->references_possibly_bound_to[$reference_id])
+                && !(isset($this->references_possibly_bound_to[$reference_id])
+                    && isset($this->references_detached_by_blocks[$reference_id]))
                 && $reference_location = $statements_analyzer->getFirstAppearance($reference_id)
             ) {
                 $this->references_possibly_from_confusing_scope[$reference_id] = $reference_location;
@@ -646,6 +730,90 @@ final class Context
         }
         $this->references_possibly_from_confusing_scope +=
             $confusing_scope_context->references_possibly_from_confusing_scope;
+
+        $this->keepReferencesPossiblyBoundIn($confusing_scope_context);
+    }
+
+    /**
+     * The bindings of a block that may not run are possibly made after it: what is written to either side may be
+     * written to the other
+     *
+     * @psalm-external-mutation-free
+     */
+    public function keepReferencesPossiblyBoundIn(Context $block_context): void
+    {
+        foreach ($block_context->references_in_scope as $reference_id => $referenced_id) {
+            if (($this->references_in_scope[$reference_id] ?? null) === $referenced_id) {
+                continue;
+            }
+
+            // and to the variables along the chain it is bound through
+            $seen = [$reference_id => true];
+
+            while (!isset($seen[$referenced_id])) {
+                $seen[$referenced_id] = true;
+                $this->references_possibly_bound_to[$reference_id][$referenced_id] = true;
+                $this->references_possibly_bound_to[$referenced_id][$reference_id] = true;
+
+                if (!isset($block_context->references_in_scope[$referenced_id])) {
+                    break;
+                }
+
+                $referenced_id = $block_context->references_in_scope[$referenced_id];
+            }
+        }
+
+        // those of the blocks nested in it
+        foreach ($block_context->references_possibly_bound_to as $var_id => $target_ids) {
+            $this->references_possibly_bound_to[$var_id] = ($this->references_possibly_bound_to[$var_id] ?? [])
+                + $target_ids;
+        }
+
+        $this->references_detached_by_blocks += $block_context->references_detached_by_blocks;
+    }
+
+    /**
+     * A variable a block that may not run binds by reference elsewhere (or releases) keeps a constraint only when it is
+     * constrained both before and after the block, to what either allows
+     *
+     * @param array<PhpParser\Node> $block_nodes
+     * @return array<string, true> the variables the block rebinds
+     */
+    public function mergeConstraintsOfReferencesReboundIn(
+        Context $block_context,
+        array $block_nodes,
+        Codebase $codebase,
+    ): array {
+        $rebound_var_ids = [];
+
+        foreach ($this->byref_constraints + $block_context->byref_constraints as $var_id => $_) {
+            $constraint = $this->byref_constraints[$var_id] ?? null;
+            $block_constraint = $block_context->byref_constraints[$var_id] ?? null;
+
+            if ($constraint === $block_constraint || self::findReferenceRebinding($block_nodes, $var_id) === null) {
+                continue;
+            }
+
+            $rebound_var_ids[$var_id] = true;
+
+            if ($constraint?->type && $block_constraint?->type) {
+                $this->byref_constraints[$var_id] = new ReferenceConstraint(
+                    Type::combineUnionTypes($constraint->type, $block_constraint->type, $codebase),
+                    false,
+                    // a reference to a property, or to one of them, only if it is one on both paths
+                    $constraint->referenced_properties && $block_constraint->referenced_properties
+                        ? array_values(array_unique([
+                            ...$constraint->referenced_properties,
+                            ...$block_constraint->referenced_properties,
+                        ]))
+                        : [],
+                );
+            } else {
+                unset($this->byref_constraints[$var_id]);
+            }
+        }
+
+        return $rebound_var_ids;
     }
 
     /**
@@ -694,6 +862,8 @@ final class Context
             unset($this->references_in_scope[$reference_id]);
             $this->references_possibly_bound_to[$reference_id][$referenced_id] = true;
             $this->references_possibly_bound_to[$referenced_id][$reference_id] = true;
+            $this->references_detached_by_blocks[$reference_id] = true;
+            $this->references_detached_by_blocks[$referenced_id] = true;
 
             if (isset($this->vars_in_scope[$reference_id])) {
                 // the entry is a PHP reference to the one of the variable it was bound to
@@ -721,23 +891,96 @@ final class Context
     public function writeToReferencesPossiblyBound(string $var_id, Union $type, Codebase $codebase): void
     {
         foreach ($this->references_possibly_bound_to[$var_id] ?? [] as $target_id => $_) {
-            if (!isset($this->vars_in_scope[$target_id])) {
-                continue;
+            if (isset($this->vars_in_scope[$target_id])) {
+                $this->vars_in_scope[$target_id] = Type::combineUnionTypes(
+                    $this->vars_in_scope[$target_id],
+                    $type,
+                    $codebase,
+                );
+
+                $this->forgetDescendantsOf($target_id);
             }
 
-            $this->vars_in_scope[$target_id] = Type::combineUnionTypes(
-                $this->vars_in_scope[$target_id],
-                $type,
-                $codebase,
-            );
-
-            foreach ($this->vars_in_scope as $descendant_id => $_type) {
-                if (str_starts_with($descendant_id, $target_id . '[')
-                    || str_starts_with($descendant_id, $target_id . '->')
-                ) {
-                    unset($this->vars_in_scope[$descendant_id]);
-                }
+            if (str_ends_with($target_id, ']')) {
+                $this->writeToArrayPossiblyHoldingItem($target_id, $type, $codebase);
             }
+        }
+    }
+
+    /**
+     * @psalm-capabilities read-props|write-this-props|write-refs
+     */
+    private function forgetDescendantsOf(string $var_id): void
+    {
+        foreach ($this->vars_in_scope as $descendant_id => $_type) {
+            if ((str_starts_with($descendant_id, $var_id . '[') || str_starts_with($descendant_id, $var_id . '->'))
+                // the slot of an item bound by reference is what the references to it are tracked through
+                && !isset($this->references_in_scope[$descendant_id])
+                && !($this->referenced_counts[$descendant_id] ?? 0)
+            ) {
+                unset($this->vars_in_scope[$descendant_id]);
+            }
+        }
+    }
+
+    /**
+     * The item may be under any key its offsets can be: the array holding it gets the type besides its own under
+     * each of them. An array that can't hold the item anymore (one assigned since, empty) is left as it is.
+     *
+     * @psalm-capabilities read-props|write-this-props|write-refs
+     */
+    private function writeToArrayPossiblyHoldingItem(string $item_id, Union $type, Codebase $codebase): void
+    {
+        $parts = Reconciler::breakUpPathIntoParts($item_id);
+        $first_bracket = array_search('[', $parts, true);
+
+        if (!is_int($first_bracket) || $first_bracket === 0) {
+            return;
+        }
+
+        $array_id = implode('', array_slice($parts, 0, $first_bracket));
+
+        if (!isset($this->vars_in_scope[$array_id])) {
+            return;
+        }
+
+        $keys = [];
+        $changed_id = $item_id;
+
+        for ($i = $first_bracket, $count = count($parts); $i < $count; $i += 3) {
+            if ($parts[$i] !== '[' || !isset($parts[$i + 2]) || $parts[$i + 2] !== ']') {
+                return;
+            }
+
+            $key = ArrayAssignmentAnalyzer::getLiteralKeyOfOffset($parts[$i + 1]);
+
+            if ($key === null && $changed_id === $item_id) {
+                // an item of unknown key may be any of the items cached there
+                $changed_id = implode('', array_slice($parts, 0, $i));
+            }
+
+            $keys[] = $key;
+        }
+
+        if (!$keys) {
+            return;
+        }
+
+        $array_type = ArrayAssignmentAnalyzer::addToItemsUnderKeys(
+            $this->vars_in_scope[$array_id],
+            $keys,
+            $type,
+            $codebase,
+        );
+
+        if ($array_type === null) {
+            return;
+        }
+
+        $this->vars_in_scope[$array_id] = $array_type;
+
+        if ($changed_id !== $item_id) {
+            $this->forgetDescendantsOf($changed_id);
         }
     }
 
@@ -757,6 +1000,21 @@ final class Context
         }
 
         unset($this->references_possibly_bound_to[$var_id]);
+    }
+
+    /**
+     * The variable is assigned or released: the items and properties it held are gone, and with them what they were
+     * possibly still bound to
+     *
+     * @psalm-capabilities read-props|write-this-props|write-refs
+     */
+    public function forgetReferencesPossiblyBoundUnder(string $var_id): void
+    {
+        foreach ($this->references_possibly_bound_to as $descendant_id => $_) {
+            if (str_starts_with($descendant_id, $var_id . '[') || str_starts_with($descendant_id, $var_id . '->')) {
+                $this->forgetReferencesPossiblyBound($descendant_id);
+            }
+        }
     }
 
     /**
@@ -955,6 +1213,7 @@ final class Context
 
         // detached first: what the variable was bound to by reference keeps its value
         $this->removePossibleReference($remove_var_id);
+        $this->forgetReferencesPossiblyBoundUnder($remove_var_id);
 
         if ($existing_type && $removeDescendents) {
             $this->removeDescendents($remove_var_id, $existing_type);
@@ -1057,6 +1316,8 @@ final class Context
 
     /**
      * @param  Clause[]               $clauses
+     * @param  bool                   $value_changed false when the variable is only narrowed: the comparisons with
+     *                                               it still hold
      * @return list<Clause>
      */
     public static function filterClauses(
@@ -1064,6 +1325,7 @@ final class Context
         array $clauses,
         ?Union $new_type = null,
         ?StatementsAnalyzer $statements_analyzer = null,
+        bool $value_changed = true,
     ): array {
         $new_type_string = $new_type ? $new_type->getId() : '';
         $clauses_to_keep = [];
@@ -1077,6 +1339,10 @@ final class Context
                 if (preg_match('/' . $quoted_remove_var_id . '[\]\[\-]/', $var_id)) {
                     continue 2;
                 }
+            }
+
+            if ($value_changed && $clause->comparesWith($remove_var_id)) {
+                continue;
             }
 
             if (!isset($clause->possibilities[$remove_var_id])
@@ -1207,6 +1473,7 @@ final class Context
         $this->clauses = self::filterClauses($remove_var_id, $this->clauses, $new_type, $statements_analyzer);
         $this->parent_remove_vars[$remove_var_id] = ++self::$clause_removal_count;
 
+
         foreach ($this->getVarsBoundTo($remove_var_id) as $bound_var_id) {
             $this->clauses = self::filterClauses($bound_var_id, $this->clauses, $new_type, $statements_analyzer);
             $this->parent_remove_vars[$bound_var_id] = ++self::$clause_removal_count;
@@ -1237,6 +1504,26 @@ final class Context
                         $nested_context->vars_in_scope[$var_id] ?? null,
                         $statements_analyzer,
                     );
+                } else {
+                    $this->removeVarFromConflictingClauses($var_id);
+                }
+            }
+        }
+    }
+
+    /**
+     * Drops the clauses about the variables a nested scope changed with the stamps $parent_remove_vars, as
+     * removeClausesOfVarsChangedIn() does with those it ends with
+     *
+     * @param array<string, int> $parent_remove_vars
+     * @internal
+     */
+    public function removeClausesOfVarsChangedWith(array $parent_remove_vars): void
+    {
+        foreach ($parent_remove_vars as $var_id => $stamp) {
+            if ($stamp > ($this->parent_remove_vars[$var_id] ?? 0)) {
+                if ($this->inside_conditional) {
+                    $this->parent_remove_vars[$var_id] = $stamp;
                 } else {
                     $this->removeVarFromConflictingClauses($var_id);
                 }
@@ -1438,7 +1725,7 @@ final class Context
                 );
             }
 
-            $this->remove($var_id);
+            $this->forgetPropertyBoundByReference($var_id, true);
             $this->removeVarFromConflictingClauses($var_id);
             $this->possibly_assigned_var_ids[$var_id] = true;
 
@@ -1573,7 +1860,7 @@ final class Context
         }
 
         foreach ($vars_to_remove as $var_id) {
-            $this->remove($var_id, false);
+            $this->forgetPropertyBoundByReference($var_id, false);
             // forgotten, not unset: Context::update() tells the two apart
             $this->vars_possibly_in_scope[$var_id] = true;
             $this->parent_remove_vars[$var_id] = ++self::$clause_removal_count;
@@ -1602,6 +1889,129 @@ final class Context
         }
 
         $this->clauses = $clauses_to_keep;
+    }
+
+    /**
+     * Forgets the results of the methods of the objects holding a property (`$a->b->c` is held by `$a` and `$a->b`)
+     * that are memoized, which can depend on what the property holds, once it is written
+     */
+    public function forgetMethodResultsDependingOn(string $var_id): void
+    {
+        if (str_ends_with($var_id, ')')) {
+            return;
+        }
+
+        $offset = 0;
+        while (($arrow = strpos($var_id, '->', $offset)) !== false) {
+            $this->forgetMemoizedMethodResults(substr($var_id, 0, $arrow));
+            $offset = $arrow + 2;
+        }
+    }
+
+    /**
+     * Forgets the memoized results of the methods of the object (`$object->method()`)
+     */
+    private function forgetMemoizedMethodResults(string $object_id): void
+    {
+        $prefix = $object_id . '->';
+        $is_method_result = static fn(string $var_id): bool => str_starts_with($var_id, $prefix)
+            && preg_match('/^[^\[\-]*\(\)/', substr($var_id, strlen($prefix))) === 1;
+
+        foreach (array_keys($this->vars_in_scope) as $var_id) {
+            if ($is_method_result($var_id)) {
+                $this->forgetPropertyBoundByReference($var_id, true);
+                // forgotten, not unset: Context::update() tells the two apart
+                $this->vars_possibly_in_scope[$var_id] = true;
+                $this->parent_remove_vars[$var_id] = ++self::$clause_removal_count;
+            }
+        }
+
+        $clauses_to_keep = [];
+        foreach ($this->clauses as $clause) {
+            foreach ($clause->possibilities as $key => $_) {
+                if ($is_method_result($key)) {
+                    $this->parent_remove_vars[$key] = ++self::$clause_removal_count;
+                    continue 2;
+                }
+            }
+
+            $clauses_to_keep[] = $clause;
+        }
+
+        $this->clauses = $clauses_to_keep;
+    }
+
+    /**
+     * Forgets what is known of the items and properties of what a property holds, and of what depends on them, after
+     * a call wrote some of them. Those bound to variables by reference stay bound to them
+     */
+    public function forgetPropertyDescendents(string $property_id): void
+    {
+        $this->forgetNullArrayOffsets($property_id);
+        $this->removeVarFromConflictingClauses($property_id);
+
+        // `$a[$this->p]` too
+        $descendent_pattern = '/' . preg_quote($property_id, '/') . '[\]\[\-]/';
+
+        foreach (array_keys($this->vars_in_scope) as $var_id) {
+            if (preg_match($descendent_pattern, $var_id) === 1) {
+                $this->forgetWrittenVar($var_id);
+            }
+        }
+    }
+
+    /**
+     * Forgets a var a call wrote as removeMutableObjectVars() does: forgotten, not unset (Context::update() tells the
+     * two apart)
+     */
+    private function forgetWrittenVar(string $var_id): void
+    {
+        $this->forgetPropertyBoundByReference($var_id, false);
+        $this->vars_possibly_in_scope[$var_id] = true;
+        $this->parent_remove_vars[$var_id] = ++self::$clause_removal_count;
+    }
+
+    /**
+     * Forgets what is known of a property (`$a->p`), and of what it holds, after a call may have written items or
+     * properties of what it holds. One known to hold an object still holds it
+     */
+    public function forgetPropertyOfHeldObject(string $property_id): void
+    {
+        $this->forgetPropertyDescendents($property_id);
+
+        if (isset($this->vars_in_scope[$property_id]) && !$this->vars_in_scope[$property_id]->isObjectType()) {
+            $this->forgetWrittenVar($property_id);
+        }
+    }
+
+    /**
+     * Forgets a property (or an item of it) a call may have written. One bound to variables by reference stays bound
+     * to them, and now holds whatever it is declared to hold
+     */
+    private function forgetPropertyBoundByReference(string $var_id, bool $remove_descendents): void
+    {
+        $reference_id = array_search($var_id, $this->references_in_scope, true);
+
+        if ($reference_id === false || !isset($this->vars_in_scope[$var_id])) {
+            $this->remove($var_id, $remove_descendents);
+
+            return;
+        }
+
+        $existing_type = $this->vars_in_scope[$var_id];
+
+        $this->forgetNarrowedShapeProperty($var_id);
+
+        if ($remove_descendents) {
+            $this->removeDescendents($var_id, $existing_type);
+        }
+
+        unset($this->null_array_offsets_read[$var_id]);
+        $this->forgetNullArrayOffsets($var_id);
+
+        // written through the binding: the variables bound to it get the type too
+        $this->vars_in_scope[$var_id] = ($this->byref_constraints[$reference_id]->type ?? Type::getMixed())
+            ->setParentNodes($existing_type->parent_nodes);
     }
 
     /**
@@ -1775,11 +2185,37 @@ final class Context
     public function mergeFunctionExceptions(
         FunctionLikeStorage $function_storage,
         CodeLocation $codelocation,
+        ?Codebase $codebase = null,
     ): void {
         $hash = $codelocation->getHash();
         foreach ($function_storage->throws as $possibly_thrown_exception => $_) {
+            // a thrown value of `A&Throwable` is caught or declared as the Throwable it is, not as `A`
+            if ($codebase
+                && isset($function_storage->throw_intersections[$possibly_thrown_exception])
+                && !self::isThrowable($codebase, $possibly_thrown_exception)
+                && array_any(
+                    $function_storage->throw_intersections[$possibly_thrown_exception],
+                    static fn(array $group): bool => array_any(
+                        $group,
+                        static fn(string $member): bool => self::isThrowable($codebase, $member),
+                    ),
+                )
+            ) {
+                continue;
+            }
+
             $this->possibly_thrown_exceptions[$possibly_thrown_exception][$hash] = $codelocation;
         }
+    }
+
+    /**
+     * @psalm-mutation-free
+     */
+    private static function isThrowable(Codebase $codebase, string $fq_class_name): bool
+    {
+        return $codebase->classlike_storage_provider->has($fq_class_name)
+            && (strtolower($fq_class_name) === 'throwable'
+                || $codebase->classExtendsOrImplements($fq_class_name, 'Throwable'));
     }
 
     /**

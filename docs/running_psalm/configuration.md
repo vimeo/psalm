@@ -503,9 +503,10 @@ When `true`, Psalm enables these plugins without listing them in [`<plugins>`](p
 | `psalm/plugin-mockery` | `composer.json` requires `mockery/mockery` |
 | `psalm/plugin-symfony` | `composer.json` requires `symfony/framework-bundle` |
 | `psalm/plugin-laravel` | `composer.json` requires `laravel/framework` or `orchestra/testbench` |
+| `weirdan/doctrine-psalm-plugin` | `composer.json` requires `doctrine/orm`, `doctrine/dbal`, `doctrine/collections` or `doctrine/persistence` |
 | the plugin of `webmozart/assert` (2.4 and later) | `webmozart/assert` is installed |
 
-Psalm itself requires the `psalm/*` plugins, so they don't need installing.
+Psalm itself requires these plugins, so they don't need installing.
 
 #### phpVersion
 ```xml
@@ -630,7 +631,7 @@ Whether or not to report issues only for files that were passed explicitly as ar
 ```
 The directory used to store Psalm's cache data. Psalm creates it recursively when initializing the cache.
 
-Defaults to `$XDG_CACHE_HOME/psalm`. If `$XDG_CACHE_HOME` is either not set or empty, a default equal to `$HOME/.cache/psalm` is used or `sys_get_temp_dir() . '/psalm'` when not defined.
+Defaults to `$XDG_CACHE_HOME/psalm`. If `$XDG_CACHE_HOME` is either not set or empty, `$HOME/.cache/psalm` is used (on Windows, `%HOMEDRIVE%%HOMEPATH%` is used when `$HOME` is not set). If no home directory is set, or it is not writable (for example `$HOME` is `/` or does not exist), `sys_get_temp_dir() . '/psalm'` is used.
 
 #### allowFileIncludes
 ```xml
@@ -730,6 +731,15 @@ Please note that changing this setting might introduce unwanted side effects and
 Specifies the maximum scan and analysis duration for individual files; files which take longer than the specified amount of seconds (as a floating point, so values smaller than one second are also accepted) will print out a warning to CLI (the scan will **not** be interrupted).  
 
 Only used in multithreaded mode, defaults to 10 seconds.  
+
+#### minTypeCoverage
+```xml
+<psalm
+  minTypeCoverage="95"
+>
+```
+
+Fails a full run whose [type coverage](command_line_usage.md#minimum-type-coverage) is below this percentage. By default there is no minimum.
 
 #### restrictReturnTypes
 
@@ -959,7 +969,7 @@ Optional. Allows you to specify a list of constants that should emit the [`Forbi
 #### &lt;taintAnalysis&gt;
 Optional. Settings of the [security analysis](../security_analysis/index.md):
 - `<ignoreFiles>`: the files and directories whose taint paths are not reported (see
-  [Avoiding files in taint paths](../security_analysis/avoiding_false_positives.md#avoiding-files-in-taint-paths)).
+  [Ignoring files](../security_analysis/index.md#ignoring-files)).
 - `<taints>`: custom taints, which the annotations can then name without a plugin registering them. Each can be added
   to aliases of built-in taints (`input`, `tainted`, `input_except_sleep`) with `<alias>`: a taint added to `input` is
   user input, which the built-in sources give (see

@@ -43,4 +43,5 @@ Sanitize user-controlled filenames by stripping `..`, `\` and `/`.
 
 - [File Upload Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/File_Upload_Cheat_Sheet.html)
 - [OWASP Wiki for Unrestricted FIle Upload](https://owasp.org/www-community/vulnerabilities/Unrestricted_File_Upload)
+- [CWE-22](https://cwe.mitre.org/data/definitions/22.html)
 - [CWE-73](https://cwe.mitre.org/data/definitions/73.html)

@@ -361,7 +361,7 @@ class ArrayObject implements IteratorAggregate, ArrayAccess, Serializable, Count
      * @psalm-capabilities read-props|write-this-props
      * @psalm-purity-from-template TStorage
      */
-    public function asort() { }
+    public function asort(int $flags = SORT_REGULAR) { }
 
     /**
      * Sort the entries by key
@@ -374,7 +374,7 @@ class ArrayObject implements IteratorAggregate, ArrayAccess, Serializable, Count
      * @psalm-capabilities read-props|write-this-props
      * @psalm-purity-from-template TStorage
      */
-    public function ksort() { }
+    public function ksort(int $flags = SORT_REGULAR) { }
 
     /**
      * Sort the entries with a user-defined comparison function and maintain key association
@@ -645,7 +645,7 @@ class mysqli
     /**
      * @psalm-pure
      *
-     * @psalm-taint-escape sql
+     * @psalm-taint-escape sql_in_quotes
      * @psalm-flow ($string) -> return
      */
     function escape_string($string) {}
@@ -653,7 +653,7 @@ class mysqli
     /**
      * @psalm-pure
      *
-     * @psalm-taint-escape sql
+     * @psalm-taint-escape sql_in_quotes
      * @psalm-flow ($string) -> return
      */
     function real_escape_string($string) {}
@@ -664,7 +664,7 @@ class SQLite3
     /**
      * @psalm-pure
      *
-     * @psalm-taint-escape sql
+     * @psalm-taint-escape sql_in_quotes
      * @psalm-flow ($string) -> return
      */
     static function escapeString($string) {}

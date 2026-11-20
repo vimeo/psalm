@@ -431,9 +431,18 @@ final class ClassLikeNodeScanner
                     $fq_classlike_name,
                 );
 
+                $known_type_aliases = $this->type_aliases + $type_aliases;
+
                 foreach ($type_aliases as $type_alias) {
                     // finds issues, if there are any; `_` is checked where the alias is used
-                    TypeParser::parseTokens($type_alias->replacement_tokens, null, [], [], false, true);
+                    TypeParser::parseTokens(
+                        $type_alias->replacement_tokens,
+                        null,
+                        [],
+                        $known_type_aliases,
+                        false,
+                        true,
+                    );
                 }
 
                 $this->type_aliases += $type_aliases;
@@ -896,6 +905,7 @@ final class ClassLikeNodeScanner
 
 
             $storage->deprecated = $docblock_info->deprecated;
+            $storage->named_arguments = $docblock_info->named_arguments;
 
             if (count($docblock_info->psalm_internal) !== 0) {
                 $storage->internal = $docblock_info->psalm_internal;
@@ -1096,6 +1106,8 @@ final class ClassLikeNodeScanner
             }
         }
 
+        $docblock_has_mutations_annotation = $storage->has_mutations_annotation;
+
         foreach ($node->attrGroups as $attr_group) {
             foreach ($attr_group->attrs as $attr) {
                 $attribute = AttributeResolver::resolve(
@@ -1133,8 +1145,10 @@ final class ClassLikeNodeScanner
                     $storage->internal = [NamespaceAnalyzer::getNameSpaceRoot($fq_classlike_name)];
                 }
 
+                // the PhpStorm attribute gives way to a purity tag of the docblock
                 if ($attribute->fq_class_name === 'Psalm\\Immutable'
-                    || $attribute->fq_class_name === 'JetBrains\\PhpStorm\\Immutable'
+                    || ($attribute->fq_class_name === 'JetBrains\\PhpStorm\\Immutable'
+                        && !$docblock_has_mutations_annotation)
                 ) {
                     $storage->capabilities = Capabilities::MUTATION_FREE & $storage->capabilities;
                     $storage->has_mutations_annotation = true;
@@ -1402,7 +1416,7 @@ final class ClassLikeNodeScanner
             $storage->template_type_extends_count[$atomic_type->value] = count($atomic_type->type_params);
 
             foreach ($atomic_type->type_params as $type_param) {
-                $extended_type_parameters[] = $type_param;
+                $extended_type_parameters[] = $type_param->replaceClassLike('self', $storage->name);
             }
 
             $storage->template_extended_offsets[$atomic_type->value] = $extended_type_parameters;
@@ -1488,7 +1502,7 @@ final class ClassLikeNodeScanner
             $storage->template_type_implements_count[$generic_class_lc] = count($atomic_type->type_params);
 
             foreach ($atomic_type->type_params as $type_param) {
-                $implemented_type_parameters[] = $type_param;
+                $implemented_type_parameters[] = $type_param->replaceClassLike('self', $storage->name);
             }
 
             $storage->template_extended_offsets[$atomic_type->value] = $implemented_type_parameters;
@@ -1945,6 +1959,7 @@ final class ClassLikeNodeScanner
                 $enum_value,
                 $case_location,
                 $deprecated,
+                $attrs,
             );
         } else {
             $this->file_storage->scan_issues[] = new DuplicateEnumCase(

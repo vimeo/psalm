@@ -38,6 +38,7 @@ use function array_filter;
 use function array_flip;
 use function array_intersect_key;
 use function array_keys;
+use function array_map;
 use function array_merge;
 use function array_reverse;
 use function array_slice;
@@ -231,6 +232,10 @@ final class LoopAnalyzer
             // record all the vars that existed before we did the first pass through the loop
             $pre_loop_context = clone $loop_context;
 
+            $type_variable_tracker = $statements_analyzer->type_variable_tracker;
+            $bounds_before_loop = $type_variable_tracker->snapshotBounds();
+            $bounds_at_kept_pass_start = $bounds_before_loop;
+
             IssueBuffer::startRecording();
 
             // what the condition writes is recorded by the passes below, which start with the values before the loop
@@ -308,6 +313,10 @@ final class LoopAnalyzer
             $max_passes = $assignment_depth;
             $data_flow_pass_added = false;
             $widening_passes = 0;
+            $propagation_passes = 0;
+            $feeding_var_ids = $assignment_mapper->getFeedingVarIds();
+            $max_propagation_passes = count($feeding_var_ids);
+            $previously_changed_feeding_var_ids = [];
             $widening_bounds = null;
             $force_pass = false;
 
@@ -456,9 +465,10 @@ final class LoopAnalyzer
                 $continue_context->clauses = $pre_loop_context->clauses;
                 $continue_context->byref_constraints = $pre_loop_context->byref_constraints;
 
-                $vars_at_iteration_start = $continue_context->vars_in_scope;
+                $vars_at_iteration_start = self::copyWithoutReferences($continue_context->vars_in_scope);
 
                 $analyzer->setMixedCountsForFile($statements_analyzer->getFilePath(), $original_mixed_counts);
+                $bounds_at_kept_pass_start = $type_variable_tracker->snapshotBounds();
                 IssueBuffer::startRecording();
 
                 // what a pass computed of the condition (the assertions of its operands too) and of the body is no
@@ -511,7 +521,7 @@ final class LoopAnalyzer
 
                 $continue_context->protected_var_ids = $loop_scope->protected_var_ids;
 
-                $vars_at_pass_start = $continue_context->vars_in_scope;
+                $vars_at_pass_start = self::copyWithoutReferences($continue_context->vars_in_scope);
 
                 $loop_scope->vars_at_breaks = null;
                 $loop_scope->vars_at_continues = null;
@@ -596,13 +606,38 @@ final class LoopAnalyzer
                     }
 
                     if ($widened_var_types || $widening_passes === 1) {
-                        $continue_context->vars_in_scope = $widened_var_types + $continue_context->vars_in_scope;
+                        // in place: a variable keeps the references it shares
+                        foreach ($widened_var_types as $var_id => $widened_type) {
+                            $continue_context->vars_in_scope[$var_id] = $widened_type;
+                        }
                         ++$max_passes;
                         ++$widening_passes;
                         $force_pass = true;
                     } else {
                         $widening_passes = 4;
                     }
+                }
+
+                // the passes counted from the assignment map don't cover every chain of copies (`$a = $b; $b = $c;
+                // $c = "s";`): a type still changing in the last pass is carried to the variables it goes into by
+                // one more pass. Along a chain, the variables a pass changes aren't those the previous one changed:
+                // the same ones changing again keep changing on their own (`$e[$k] = [$e[$k] ?? null]`) and would
+                // never settle.
+                if ($i + 1 === $max_passes && $propagation_passes < $max_propagation_passes) {
+                    $changed_feeding_var_ids = self::getChangedFeedingVarIds(
+                        $feeding_var_ids,
+                        $vars_at_iteration_start,
+                        self::getVarsStartingNextIteration($continue_context, $loop_scope, $post_expressions),
+                    );
+
+                    if ($changed_feeding_var_ids
+                        && $changed_feeding_var_ids != $previously_changed_feeding_var_ids
+                    ) {
+                        ++$max_passes;
+                        ++$propagation_passes;
+                    }
+
+                    $previously_changed_feeding_var_ids = $changed_feeding_var_ids;
                 }
 
                 if ($i + 1 === $max_passes
@@ -619,6 +654,15 @@ final class LoopAnalyzer
             if (!$condition_written_var_ids) {
                 $condition_written_var_ids = $first_condition_written_var_ids;
             }
+
+            // like their issues, the bounds the passes before the last one gave the type variables minted before the
+            // loop are dropped: the last pass records them again with the types the loop leaves. They stay until then,
+            // as the last pass reads them before recording its own (a value taken from a collection a previous
+            // iteration filled).
+            $type_variable_tracker->discardBoundsRecordedBetween(
+                $bounds_before_loop,
+                $bounds_at_kept_pass_start,
+            );
 
             if ($recorded_issues) {
                 foreach ($recorded_issues as $recorded_issue) {
@@ -637,6 +681,12 @@ final class LoopAnalyzer
         if (!$does_always_break) {
             $loop_parent_context->detachReferencesReboundIn($continue_context, $statements_analyzer, $loop_nodes);
         }
+
+        $loop_parent_context->mergeConstraintsOfReferencesReboundIn(
+            $continue_context,
+            $loop_nodes,
+            $statements_analyzer->getCodebase(),
+        );
 
         if ($does_sometimes_break) {
             foreach ($loop_scope->possibly_redefined_loop_parent_vars as $var => $type) {
@@ -794,6 +844,9 @@ final class LoopAnalyzer
 
         $loop_parent_context->removeClausesOfVarsChangedIn($loop_context);
         $loop_parent_context->removeClausesOfVarsChangedIn($continue_context);
+        // a break or continue out of a nested scope that does not end in the loop body, such as a switch case left
+        // through its breaks, changed these
+        $loop_parent_context->removeClausesOfVarsChangedWith($loop_scope->parent_remove_vars_at_jumps);
 
         if ($inner_do_context) {
             // what the condition throws is thrown by the loop too
@@ -829,6 +882,19 @@ final class LoopAnalyzer
                 $loop_scope->null_array_offsets_read_at_jumps,
             );
         }
+    }
+
+    /**
+     * A copy of the types of a context that writes through a reference don't change: a copied array shares its PHP
+     * references with the original
+     *
+     * @param array<string, Union> $vars_in_scope
+     * @return array<string, Union>
+     * @psalm-pure
+     */
+    private static function copyWithoutReferences(array $vars_in_scope): array
+    {
+        return array_map(static fn(Union $type): Union => $type, $vars_in_scope);
     }
 
     /**
@@ -1086,6 +1152,7 @@ final class LoopAnalyzer
         array &$var_ids,
     ): void {
         if ($expr instanceof PhpParser\Node\Expr\Assign
+            || $expr instanceof PhpParser\Node\Expr\AssignRef
             || ($expr instanceof PhpParser\Node\Expr\AssignOp
                 && !$expr instanceof PhpParser\Node\Expr\AssignOp\Coalesce)
         ) {
@@ -1169,7 +1236,7 @@ final class LoopAnalyzer
         array &$defined_here,
         bool $is_only_left_by_the_condition,
     ): void {
-        if ($expr instanceof PhpParser\Node\Expr\Assign) {
+        if ($expr instanceof PhpParser\Node\Expr\Assign || $expr instanceof PhpParser\Node\Expr\AssignRef) {
             // the value is evaluated before it is assigned
             self::setVarsAssignedInCondition(
                 $statements_analyzer,
@@ -1583,7 +1650,7 @@ final class LoopAnalyzer
         array &$vars_after_condition = [],
         array &$written_var_ids = [],
     ): array {
-        $vars_before_condition = $loop_context->vars_in_scope;
+        $vars_before_condition = self::copyWithoutReferences($loop_context->vars_in_scope);
         $pre_referenced_var_ids = $loop_context->cond_referenced_var_ids;
         $loop_context->cond_referenced_var_ids = [];
 
@@ -2028,6 +2095,38 @@ final class LoopAnalyzer
         }
 
         return $bounds;
+    }
+
+    /**
+     * @param array<string, true> $feeding_var_ids
+     * @param array<string, Union> $vars_at_start
+     * @param array<string, Union> $vars_at_end
+     * @return array<string, true>
+     * @psalm-capabilities read-props|write-this-props|write-refs
+     */
+    private static function getChangedFeedingVarIds(
+        array $feeding_var_ids,
+        array $vars_at_start,
+        array $vars_at_end,
+    ): array {
+        $changed_var_ids = [];
+
+        foreach ($feeding_var_ids as $var_id => $_) {
+            if (!isset($vars_at_end[$var_id])) {
+                continue;
+            }
+
+            if (!isset($vars_at_start[$var_id])
+                || self::differ(
+                    Type::combineUnionTypes($vars_at_start[$var_id], $vars_at_end[$var_id]),
+                    $vars_at_start[$var_id],
+                )
+            ) {
+                $changed_var_ids[$var_id] = true;
+            }
+        }
+
+        return $changed_var_ids;
     }
 
     /**

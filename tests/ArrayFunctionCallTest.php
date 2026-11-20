@@ -127,6 +127,35 @@ final class ArrayFunctionCallTest extends TestCase
         self::assertSame(['InvalidArgument 8:27', 'NoValue 8:17'], $issues);
     }
 
+    public function testSortFlagsAreCheckedWithoutReadingTheDeprecatedLocaleStringConstant(): void
+    {
+        // PHP 8.6+ reports SORT_LOCALE_STRING as deprecated when its value is read
+        $this->project_analyzer->getConfig()->throw_exception = false;
+
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                /** @var list<string> $strings */
+                $strings = [];
+                sort($strings);
+
+                /** @var list<stdClass> $objects */
+                $objects = [];
+                array_unique($objects, SORT_LOCALE_STRING);',
+        );
+
+        $this->withErrorsThrown(fn() => $this->analyzeFile($file_path, new Context()));
+
+        $issues = array_map(
+            static fn(IssueData $issue): string => $issue->type . ' ' . $issue->line_from . ':' . $issue->column_from,
+            IssueBuffer::getIssuesDataForFile($file_path),
+        );
+
+        self::assertSame(['InvalidArgument 8:30'], $issues);
+    }
+
     /**
      * @psalm-pure
      */
@@ -1929,6 +1958,8 @@ final class ArrayFunctionCallTest extends TestCase
                     array_filter([1, 2, 3], "A::barBar");
                     array_filter([1, 2, 3], "A::BARBAR");
                     array_filter([1, 2, 3], "A::barbar");',
+                'assertions' => [],
+                'ignored_issues' => ['WrongCaseFunction'],
             ],
             'arrayFilterIgnoreMissingClass' => [
                 'code' => '<?php
@@ -4540,6 +4571,31 @@ final class ArrayFunctionCallTest extends TestCase
                 'ignored_issues' => ['MixedArgumentTypeCoercion', 'MixedArgument', 'MixedAssignment'],
                 'php_version' => '8.0',
             ],
+            'arrayKeyExistsWithKeysThatTheArrayMayHave' => [
+                'code' => '<?php
+                    /**
+                     * @param list<int> $list
+                     * @param array<int, string> $ints
+                     * @param array<string, int> $strings
+                     * @param array<array-key, int> $keys
+                     * @param list<int>|array<string, int> $either
+                     * @param array{a: int} $shape
+                     */
+                    function f(array $list, array $ints, array $strings, array $keys, array $either, array $shape, array $any, string $s): bool {
+                        return array_key_exists("5", $list)
+                            || array_key_exists("5", $ints)
+                            || array_key_exists("a", $strings)
+                            || array_key_exists("a", $keys)
+                            || array_key_exists("a", $either)
+                            || array_key_exists("b", $shape)
+                            || array_key_exists("a", $any)
+                            || array_key_exists($s, $list)
+                            || array_key_exists(1, $list);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'arrayMergeAccumulatesInALoop' => [
                 'code' => '<?php
                     $array = [];
@@ -4826,6 +4882,19 @@ final class ArrayFunctionCallTest extends TestCase
                      * @var array<int, string|int|float> $arg
                      */
                     array_filter($arg, "abs", 0);',
+                'error_message' => 'InvalidArgument',
+            ],
+            'arrayFilterCallbackValidationNumericParam' => [
+                'code' => '<?php
+                    /** @param numeric $n */
+                    function takesNumeric($n): bool {
+                        return true;
+                    }
+
+                    /**
+                     * @var array<int, string|int|float> $arg
+                     */
+                    array_filter($arg, "takesNumeric", 0);',
                 'error_message' => 'InvalidArgument',
             ],
             'arrayFilterKeyCallbackLiteral' => [
@@ -5434,6 +5503,62 @@ final class ArrayFunctionCallTest extends TestCase
 
                     array_unique($values);',
                 'error_message' => 'PossiblyInvalidArgument',
+            ],
+            'arrayKeyExistsWithStringKeyOnList' => [
+                'code' => '<?php
+                    /** @param list<int> $a */
+                    function f(array $a): bool {
+                        return array_key_exists("a", $a);
+                    }',
+                'error_message' => 'InvalidArrayOffset - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:49 - Cannot check offset',
+            ],
+            'arrayKeyExistsWithStringKeyOnIntKeyedArray' => [
+                'code' => '<?php
+                    /** @param array<int, string> $a */
+                    function f(array $a): bool {
+                        return array_key_exists("x", $a);
+                    }',
+                'error_message' => 'InvalidArrayOffset - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:49 - Cannot check offset',
+            ],
+            'keyExistsWithStringKeyOnList' => [
+                'code' => '<?php
+                    /** @param list<int> $a */
+                    function f(array $a): bool {
+                        return key_exists("a", $a);
+                    }',
+                'error_message' => 'InvalidArrayOffset - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:43 - Cannot check offset',
+            ],
+            'arrayKeyExistsWithStringKeyOnListInAForeach' => [
+                'code' => '<?php
+                    /** @param list<int> $a */
+                    function f(array $a): void {
+                        foreach ([1, 2] as $_) {
+                            if (array_key_exists("a", $a)) {
+                                echo 1;
+                            }
+                        }
+                    }',
+                'error_message' => 'InvalidArrayOffset - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:50 - Cannot check offset',
+            ],
+            'arrayKeyExistsWithStringKeyOnListInAWhile' => [
+                'code' => '<?php
+                    /** @param list<int> $a */
+                    function f(array $a): void {
+                        while (rand(0, 1)) {
+                            if (array_key_exists("a", $a)) {
+                                echo 1;
+                            }
+                        }
+                    }',
+                'error_message' => 'InvalidArrayOffset - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:50 - Cannot check offset',
+            ],
+            'negatedArrayKeyExistsWithStringKeyOnList' => [
+                'code' => '<?php
+                    /** @param list<int> $a */
+                    function f(array $a): bool {
+                        return !array_key_exists("a", $a);
+                    }',
+                'error_message' => 'InvalidArrayOffset - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:50 - Cannot check offset',
             ],
         ];
     }

@@ -5,8 +5,13 @@ declare(strict_types=1);
 namespace Psalm\Tests;
 
 use Override;
+use Psalm\Context;
+use Psalm\Internal\Analyzer\IssueData;
+use Psalm\IssueBuffer;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
+
+use function array_map;
 
 use const DIRECTORY_SEPARATOR;
 
@@ -14,6 +19,30 @@ final class UnusedVariableTest extends TestCase
 {
     use ValidCodeAnalysisTestTrait;
     use InvalidCodeAnalysisTestTrait;
+
+    public function testStaticCallOnUndefinedClassReportsOnlyTheClassWhenItsArgumentUsesAVariable(): void
+    {
+        $this->testConfig->throw_exception = false;
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                $foo = "foo";
+
+                return Missing::config(["foo" => $foo]);',
+        );
+
+        $this->analyzeFile($file_path, new Context(), false);
+
+        self::assertSame(
+            ['UndefinedClass'],
+            array_map(
+                static fn(IssueData $issue): string => $issue->type,
+                IssueBuffer::getIssuesDataForFile($file_path),
+            ),
+        );
+    }
 
     #[Override]
     public function setUp(): void
@@ -29,6 +58,109 @@ final class UnusedVariableTest extends TestCase
     public static function providerValidCodeParse(): array
     {
         return [
+            'variableUsedInArgumentOfStaticCallOnUndefinedClass' => [
+                'code' => '<?php
+                    $foo = "foo";
+
+                    return Missing::config(["foo" => $foo]);',
+                'assertions' => [],
+                'ignored_issues' => ['UndefinedClass'],
+            ],
+            'variableUsedInArgumentOfStaticCallOnUndefinedClassInFunction' => [
+                'code' => '<?php
+                    function f(string $a): string {
+                        $b = strtoupper($a);
+
+                        return Missing::config($b);
+                    }
+
+                    echo f("x");',
+                'assertions' => [],
+                'ignored_issues' => ['UndefinedClass', 'MixedReturnStatement', 'MixedInferredReturnType'],
+            ],
+            'assignmentBeforeABreakInTheElseIsReadAfterTheIf' => [
+                'code' => '<?php
+                    /** @param list<string> $list */
+                    function f(array $list, string $needle): string {
+                        if (count($list) === 1) {
+                            $found = $list[0];
+                        } else {
+                            foreach ($list as $item) {
+                                if ($item === $needle) {
+                                    $found = $item;
+                                    break;
+                                }
+                            }
+                        }
+
+                        return is_string($found ?? null) ? "found" : "";
+                    }',
+            ],
+            'assignmentBeforeABreakInTheIfIsReadAfterTheElse' => [
+                'code' => '<?php
+                    /** @param list<string> $list */
+                    function f(array $list, string $needle, bool $b): string {
+                        if ($b) {
+                            foreach ($list as $item) {
+                                if ($item === $needle) {
+                                    $found = $item;
+                                    break;
+                                }
+                            }
+                        } else {
+                            $found = "a";
+                        }
+
+                        return is_string($found ?? null) ? "found" : "";
+                    }',
+            ],
+            'assignmentsBeforeBreaksInTheElseAreReadAfterTheIf' => [
+                'code' => '<?php
+                    /** @param list<string> $list */
+                    function f(array $list, string $needle, bool $b): string {
+                        if ($b) {
+                            $found = "a";
+                        } else {
+                            foreach ($list as $item) {
+                                if ($item === $needle) {
+                                    $found = $item;
+                                    break;
+                                }
+
+                                if ($item === "") {
+                                    $found = "empty";
+                                    break;
+                                }
+                            }
+                        }
+
+                        return is_string($found ?? null) ? "found" : "";
+                    }',
+            ],
+            'assignmentInACatchInTheElseifIsReadAfterTheIf' => [
+                'code' => '<?php
+                    function load(): void {
+                        if (rand(0, 1) === 1) {
+                            throw new RuntimeException("x");
+                        }
+                    }
+
+                    function f(bool $a, bool $b): ?bool {
+                        if ($a) {
+                            if ($b) {
+                                $searched = false;
+                            }
+                        } elseif ($b) {
+                            try {
+                                load();
+                            } catch (Exception $e) {
+                                $searched = false;
+                            }
+                        }
+
+                        return is_bool($searched ?? null) ? true : null;
+                    }',
+            ],
             'arrowFunctionParamNamedLikeAPossiblyUndefinedVariableDoesNotUseIt' => [
                 'code' => '<?php
                     /** @param list<string> $names */
@@ -3160,6 +3292,28 @@ final class UnusedVariableTest extends TestCase
                     function takesArray(array $_arr): void {}
                 ',
             ],
+            'arrayHoldingReferenceToOffsetIsUsed' => [ // #14112
+                'code' => '<?php
+                    /** @param array<string, int|null> $arr */
+                    function f(array $arr, string $k): array {
+                        $out = [];
+                        $out["a"] = &$arr[$k];
+                        $out["a"] = 5;
+                        return $arr;
+                    }
+                ',
+            ],
+            'writeToVariableAnArrayItemIsBoundToIsUsedByTheArray' => [
+                'code' => '<?php
+                    function f(): array {
+                        $x = 1;
+                        $out = [];
+                        $out["a"] = &$x;
+                        $x = 2;
+                        return $out;
+                    }
+                ',
+            ],
             'usedPlusInAddition' => [
                 'code' => '<?php
                     function takesAnInt(): void {
@@ -3303,6 +3457,67 @@ final class UnusedVariableTest extends TestCase
                 'ignored_issues' => ['RedundantCondition'],
                 'php_version' => '8.0',
             ],
+            'writeAfterLoopToVariableBoundToItemsOfArrayUnitedSinceIsUsed' => [
+                'code' => '<?php
+                    /** @param list<string> $keys */
+                    function f(array $keys): array {
+                        $x = 1;
+                        $out = [];
+                        foreach ($keys as $k) {
+                            $out[$k] = &$x;
+                        }
+                        $out = $out + ["q" => 3];
+                        $x = "z";
+                        return $out;
+                    }
+                ',
+            ],
+            'writeAfterLoopToVariableBoundToItemsOfArrayUnitedSinceOnTheRightIsUsed' => [
+                'code' => '<?php
+                    /** @param list<string> $keys */
+                    function f(array $keys): array {
+                        $x = 1;
+                        $out = [];
+                        foreach ($keys as $k) {
+                            $out[$k] = &$x;
+                        }
+                        $out = ["q" => 3] + $out;
+                        $x = "z";
+                        return $out;
+                    }
+                ',
+            ],
+            'writeAfterSwitchToVariableBoundToArrayItemInACaseIsUsed' => [
+                'code' => '<?php
+                    function f(string $k, int $c): array {
+                        $x = 1;
+                        $out = [];
+                        switch ($c) {
+                            case 1:
+                                $out[$k] = &$x;
+                                break;
+                            default:
+                                echo "d";
+                        }
+                        $x = "z";
+                        return $out;
+                    }
+                ',
+            ],
+            'writeAfterLoopToVariableBoundToArrayItemsIsUsed' => [ // #14206
+                'code' => '<?php
+                    /** @param list<string> $keys */
+                    function f(array $keys): array {
+                        $x = 1;
+                        $out = [];
+                        foreach ($keys as $k) {
+                            $out[$k] = &$x;
+                        }
+                        $x = "z";
+                        return $out;
+                    }
+                ',
+            ],
         ];
     }
 
@@ -3313,6 +3528,44 @@ final class UnusedVariableTest extends TestCase
     public static function providerInvalidCodeParse(): array
     {
         return [
+            'assignmentBeforeABreakInTheElseNeverReadIsUnused' => [
+                'code' => '<?php
+                    /** @param list<string> $list */
+                    function f(array $list, string $needle, bool $b): string {
+                        if ($b) {
+                            $found = "a";
+                            echo $found;
+                        } else {
+                            foreach ($list as $item) {
+                                if ($item === $needle) {
+                                    $found = $item;
+                                    break;
+                                }
+                            }
+                        }
+
+                        return "";
+                    }',
+                'error_message' => 'UnusedVariable - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:37',
+            ],
+            'overwrittenAssignmentInTheIfIsUnusedWhenTheElseAssignsBeforeABreak' => [
+                'code' => '<?php
+                    /** @param list<string> $list */
+                    function f(array $list, bool $b): string {
+                        if ($b) {
+                            $found = "dead";
+                            $found = "a";
+                        } else {
+                            foreach ($list as $item) {
+                                $found = $item;
+                                break;
+                            }
+                        }
+
+                        return is_string($found ?? null) ? "found" : "";
+                    }',
+                'error_message' => 'UnusedVariable - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:29',
+            ],
             'valueOverwrittenInTheCatchOfANestedTryAndNeverReadIsUnused' => [
                 'code' => '<?php
                     function f(): void {
@@ -4565,6 +4818,22 @@ final class UnusedVariableTest extends TestCase
                 'error_message' => 'UnusedVariable',
                 'error_levels' => [],
                 'php_version' => '8.4',
+            ],
+            'writeAfterLoopToVariableBoundToItemsOfArrayAssignedSinceIsUnused' => [
+                'code' => '<?php
+                    /** @param list<string> $keys */
+                    function f(array $keys): array {
+                        $x = 1;
+                        $out = [];
+                        foreach ($keys as $k) {
+                            $out[$k] = &$x;
+                        }
+                        $out = ["a" => 5];
+                        $x = "z";
+                        return $out;
+                    }
+                ',
+                'error_message' => 'UnusedVariable - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:25',
             ],
         ];
     }

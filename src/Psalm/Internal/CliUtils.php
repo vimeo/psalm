@@ -396,7 +396,8 @@ final class CliUtils
     }
 
     /**
-     * Marks the command-line arguments or options Psalm was run with as chosen by the person running it.
+     * Marks the command-line arguments or options Psalm was run with, or an environment variable it reads, as chosen by
+     * the person running it.
      *
      * They name the files and directories Psalm reads and writes, the code it scans and reflects on,
      * the config, plugins and autoloaders it loads, the Shepherd and language client addresses it
@@ -405,7 +406,7 @@ final class CliUtils
      * (see getPathsToCheckFromStdin()). The other kinds of taint stay, so that an argument still has
      * to be escaped for a shell, for example.
      *
-     * @template T of array|false
+     * @template T of array|string|false
      * @param T $arguments
      * @return T
      * @psalm-pure
@@ -418,7 +419,7 @@ final class CliUtils
      * @psalm-taint-escape url_component
      * @psalm-taint-escape url_path
      */
-    public static function chosenByOperator(array|false $arguments): array|false
+    public static function chosenByOperator(array|string|false $arguments): array|string|false
     {
         return $arguments;
     }
@@ -602,7 +603,7 @@ final class CliUtils
             try {
                 self::$stdin_contents = trim((string) stream_get_contents(STDIN));
             } finally {
-                stream_set_blocking(STDIN, $meta['blocked']);
+                stream_set_blocking(STDIN, $meta['blocked'] ?? true);
             }
         }
 

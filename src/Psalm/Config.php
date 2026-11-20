@@ -71,7 +71,6 @@ use SplFileInfo;
 use Symfony\Component\Filesystem\Path;
 use Throwable;
 use UnexpectedValueException;
-use XdgBaseDir\Xdg;
 use stdClass;
 
 use function array_any;
@@ -102,7 +101,9 @@ use function get_debug_type;
 use function get_defined_constants;
 use function get_defined_functions;
 use function getcwd;
+use function getenv;
 use function glob;
+use function hash;
 use function implode;
 use function in_array;
 use function interface_exists;
@@ -112,6 +113,7 @@ use function is_dir;
 use function is_file;
 use function is_resource;
 use function is_string;
+use function is_writable;
 use function json_decode;
 use function libxml_clear_errors;
 use function libxml_get_errors;
@@ -128,7 +130,6 @@ use function reset;
 use function rmdir;
 use function rtrim;
 use function scandir;
-use function sha1;
 use function simplexml_import_dom;
 use function sort;
 use function str_contains;
@@ -201,6 +202,10 @@ final class Config
         'symfony/framework-bundle' => 'Psalm\SymfonyPsalmPlugin\Plugin',
         'laravel/framework' => 'Psalm\LaravelPlugin\Plugin',
         'orchestra/testbench' => 'Psalm\LaravelPlugin\Plugin',
+        'doctrine/orm' => 'Weirdan\DoctrinePsalmPlugin\Plugin',
+        'doctrine/dbal' => 'Weirdan\DoctrinePsalmPlugin\Plugin',
+        'doctrine/collections' => 'Weirdan\DoctrinePsalmPlugin\Plugin',
+        'doctrine/persistence' => 'Weirdan\DoctrinePsalmPlugin\Plugin',
     ];
 
     /**
@@ -526,6 +531,12 @@ final class Config
     public float $long_scan_warning = 10.0;
 
     /**
+     * The type coverage in percent below which a full run fails, with at most two decimals: from the minTypeCoverage
+     * attribute, the --min-type-coverage option, or set through the API
+     */
+    public ?float $min_type_coverage = null;
+
+    /**
      * @var string[]
      */
     public array $plugin_paths = [];
@@ -638,6 +649,7 @@ final class Config
         "mysqli" => null,
         "openssl" => null,
         "pdo" => null,
+        "protobuf" => null,
         "random" => null,
         "rdkafka" => null,
         "redis" => null,
@@ -815,7 +827,7 @@ final class Config
 
         try {
             $config = self::loadFromXML($base_dir, $file_contents, $current_dir, $file_path);
-            $config->hash = sha1($file_contents . PSALM_VERSION);
+            $config->hash = hash('xxh3', $file_contents . PSALM_VERSION);
         } catch (ConfigException $e) {
             throw new ConfigException(
                 'Problem parsing ' . $file_path . ":\n" . '  ' . $e->getMessage(),
@@ -832,7 +844,7 @@ final class Config
      */
     public function computeHash(): string
     {
-        return sha1($this->hash . ':' . $this->level);
+        return hash('xxh3', $this->hash . ':' . $this->level);
     }
 
     /**
@@ -855,6 +867,37 @@ final class Config
         self::validateXmlConfig($base_dir, $file_contents);
 
         return self::fromXmlAndPaths($base_dir, $file_contents, $current_dir, $file_path);
+    }
+
+    private static function getDefaultCacheDirectory(): string
+    {
+        $xdg_cache_home = CliUtils::chosenByOperator(getenv('XDG_CACHE_HOME'));
+        if ($xdg_cache_home !== false && $xdg_cache_home !== '') {
+            return $xdg_cache_home . '/psalm';
+        }
+
+        $home = CliUtils::chosenByOperator(getenv('HOME'));
+        if ($home === false || $home === '') {
+            $home_drive = CliUtils::chosenByOperator(getenv('HOMEDRIVE'));
+            $home_path = CliUtils::chosenByOperator(getenv('HOMEPATH'));
+            $home = $home_drive !== false && $home_drive !== '' && $home_path !== false && $home_path !== ''
+                ? $home_drive . $home_path
+                : null;
+        }
+
+        // docker run --user sets HOME to "/", which is not a usable home
+        if ($home !== null && $home !== '/') {
+            $user_cache_dir = $home . '/.cache';
+            $is_usable = file_exists($user_cache_dir)
+                ? is_dir($user_cache_dir) && is_writable($user_cache_dir)
+                : is_dir($home) && is_writable($home);
+
+            if ($is_usable) {
+                return $user_cache_dir . '/psalm';
+            }
+        }
+
+        return sys_get_temp_dir() . '/psalm';
     }
 
     /**
@@ -1052,7 +1095,7 @@ final class Config
     ): void {
         $config->config_issues = [];
 
-        // Attributes to be removed in Psalm 6
+        // Attributes to be removed in the next major version
         $deprecated_attributes = [];
 
         /** @var list<string> */
@@ -1253,16 +1296,14 @@ final class Config
             $config->cache_directory = null;
         } elseif (isset($config_xml['cacheDirectory'])) {
             $config->cache_directory = (string)$config_xml['cacheDirectory'];
-        } elseif ($user_cache_dir = (new Xdg())->getHomeCacheDir()) {
-            $config->cache_directory = $user_cache_dir . '/psalm';
         } else {
-            $config->cache_directory = sys_get_temp_dir() . '/psalm';
+            $config->cache_directory = self::getDefaultCacheDirectory();
         }
 
         $config->global_cache_directory = $config->cache_directory;
 
         if ($config->cache_directory !== null) {
-            $config->cache_directory .= DIRECTORY_SEPARATOR . sha1($base_dir);
+            $config->cache_directory .= DIRECTORY_SEPARATOR . hash('xxh3', $base_dir);
         }
 
         if (isset($config_xml['serializer'])) {
@@ -1359,6 +1400,10 @@ final class Config
         if (isset($config_xml['longScanWarning'])) {
             $attribute_text = (float)$config_xml['longScanWarning'];
             $config->long_scan_warning = $attribute_text;
+        }
+
+        if (isset($config_xml['minTypeCoverage'])) {
+            $config->min_type_coverage = (float) $config_xml['minTypeCoverage'];
         }
 
         if (isset($config_xml['inferPropertyTypesFromConstructor'])) {
@@ -1797,6 +1842,11 @@ final class Config
 
             if (isset(TaintKind::TAINT_NAMES[$name])) {
                 throw new ConfigException('The custom taint "' . $name . '" has the name of a built-in taint');
+            }
+
+            // `@psalm-taint-sink none $param`: a parameter without sinks
+            if ($name === 'none') {
+                throw new ConfigException('A custom taint can\'t be named "none", which means no taint');
             }
 
             if (isset($this->custom_taints[$name])) {
@@ -2394,7 +2444,6 @@ final class Config
             && $e instanceof PluginIssue
             && !isset($this->issue_handlers[$issue_type])
         ) {
-            /** @var int */
             $issue_level = $e::ERROR_LEVEL;
 
             if ($issue_level > 0 && $issue_level < $this->level) {
@@ -2756,54 +2805,16 @@ final class Config
 
         $core_generic_files = [];
 
-        if (PHP_VERSION_ID < 8_00_00 && $codebase->analysis_php_version_id >= 8_00_00) {
-            $stringable_path = dirname(__DIR__, 2) . '/stubs/Php80.phpstub';
+        foreach ([8_04_00 => '8.4', 8_06_00 => '8.6'] as $version_id => $version) {
+            if (PHP_VERSION_ID < $version_id && $codebase->analysis_php_version_id >= $version_id) {
+                $stub_path = dirname(__DIR__, 2) . '/stubs/Php' . str_replace('.', '', $version) . '.phpstub';
 
-            if (!file_exists($stringable_path)) {
-                throw new UnexpectedValueException('Cannot locate PHP 8.0 classes');
+                if (!file_exists($stub_path)) {
+                    throw new UnexpectedValueException('Cannot locate PHP ' . $version . ' classes');
+                }
+
+                $core_generic_files[] = $stub_path;
             }
-
-            $core_generic_files[] = $stringable_path;
-        }
-
-        if (PHP_VERSION_ID < 8_01_00 && $codebase->analysis_php_version_id >= 8_01_00) {
-            $stringable_path = dirname(__DIR__, 2) . '/stubs/Php81.phpstub';
-
-            if (!file_exists($stringable_path)) {
-                throw new UnexpectedValueException('Cannot locate PHP 8.1 classes');
-            }
-
-            $core_generic_files[] = $stringable_path;
-        }
-
-        if (PHP_VERSION_ID < 8_02_00 && $codebase->analysis_php_version_id >= 8_02_00) {
-            $stringable_path = dirname(__DIR__, 2) . '/stubs/Php82.phpstub';
-
-            if (!file_exists($stringable_path)) {
-                throw new UnexpectedValueException('Cannot locate PHP 8.2 classes');
-            }
-
-            $core_generic_files[] = $stringable_path;
-        }
-
-        if (PHP_VERSION_ID < 8_04_00 && $codebase->analysis_php_version_id >= 8_04_00) {
-            $stringable_path = dirname(__DIR__, 2) . '/stubs/Php84.phpstub';
-
-            if (!file_exists($stringable_path)) {
-                throw new UnexpectedValueException('Cannot locate PHP 8.4 classes');
-            }
-
-            $core_generic_files[] = $stringable_path;
-        }
-
-        if (PHP_VERSION_ID < 8_06_00 && $codebase->analysis_php_version_id >= 8_06_00) {
-            $stringable_path = dirname(__DIR__, 2) . '/stubs/Php86.phpstub';
-
-            if (!file_exists($stringable_path)) {
-                throw new UnexpectedValueException('Cannot locate PHP 8.6 classes');
-            }
-
-            $core_generic_files[] = $stringable_path;
         }
 
         // Genuinely-new classes from every version live in PhpVersionedClasses.phpstub (always

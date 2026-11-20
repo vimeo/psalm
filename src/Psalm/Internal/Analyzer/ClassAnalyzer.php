@@ -588,7 +588,18 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                     }
                 }
             } elseif ($stmt instanceof PhpParser\Node\Stmt\EnumCase) {
-                AttributesAnalyzer::reportPlaceholders($this, $stmt->attrGroups, $this->getSuppressedIssues());
+                $case_storage = $storage->enum_cases[$stmt->name->name] ?? null;
+
+                if ($case_storage !== null) {
+                    AttributesAnalyzer::analyze(
+                        $this,
+                        $class_context,
+                        $case_storage,
+                        $stmt->attrGroups,
+                        Attribute::TARGET_CLASS_CONSTANT,
+                        $storage->suppressed_issues + $this->getSuppressedIssues(),
+                    );
+                }
             }
         }
 
@@ -2136,7 +2147,6 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
         if ($codebase->diff_methods
             && $method_already_analyzed
             && !$class_context->collect_initializations
-            && !$class_context->collect_mutations
         ) {
             $project_analyzer->progress->debug(
                 'Skipping analysis of pre-analyzed method ' . $analyzed_method_id . "\n",
@@ -2198,7 +2208,6 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
 
         if (!$method_already_analyzed
             && !$class_context->collect_initializations
-            && !$class_context->collect_mutations
         ) {
             $codebase->analyzer->setAnalyzedMethod($included_file_path, $trait_safe_method_id);
         }

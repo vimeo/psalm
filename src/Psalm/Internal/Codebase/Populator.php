@@ -29,6 +29,7 @@ use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\FileStorage;
 use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Storage\MethodStorage;
+use Psalm\Storage\NamedArguments;
 use Psalm\Storage\PropertyStorage;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TCapabilities;
@@ -617,11 +618,11 @@ final class Populator
                     continue;
                 }
 
-                $storage->pseudo_methods[$method_name] ??= $pseudo_method;
-
-                if (isset($parent_interface_storage->declaring_pseudo_method_ids[$method_name])) {
+                if (!isset($storage->pseudo_methods[$method_name])) {
+                    $storage->pseudo_methods[$method_name] = $pseudo_method;
                     $storage->declaring_pseudo_method_ids[$method_name]
-                        ??= $parent_interface_storage->declaring_pseudo_method_ids[$method_name];
+                        = $parent_interface_storage->declaring_pseudo_method_ids[$method_name]
+                            ?? new MethodIdentifier($parent_interface_storage->name, $method_name);
                 }
             }
         }
@@ -773,6 +774,33 @@ final class Populator
         }
     }
 
+    /**
+     * Whether two methods document the same return type and parameter types, so that either of them may document
+     * a method implementing both
+     *
+     * @psalm-mutation-free
+     */
+    private static function documentSameSignature(MethodStorage $first, ?MethodStorage $second): bool
+    {
+        if ($second === null) {
+            return false;
+        }
+
+        if ($first->return_type?->getId() !== $second->return_type?->getId()
+            || count($first->params) !== count($second->params)
+        ) {
+            return false;
+        }
+
+        foreach ($first->params as $i => $param) {
+            if ($param->type?->getId() !== $second->params[$i]->type?->getId()) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
     private function populateOverriddenMethods(
         ClassLikeStorage $storage,
         ClassLikeStorageProvider $storage_provider,
@@ -821,6 +849,7 @@ final class Populator
                                 && (!$method_storage->throws || $method_storage->inheritdoc)
                             ) {
                                 $method_storage->throws += $interface_method_storage->throws;
+                                $method_storage->throw_intersections += $interface_method_storage->throw_intersections;
                             }
                         }
                     }
@@ -917,6 +946,12 @@ final class Populator
                                     $declaring_class,
                                     $documenting_class_storage->parent_interfaces,
                                 ) && $documenting_class_storage->is_interface
+                                    && !self::documentSameSignature(
+                                        $declaring_method_storage,
+                                        $documenting_class_storage->methods[
+                                            $storage->documenting_method_ids[$method_name]->method_name
+                                        ] ?? null,
+                                    )
                                 ) {
                                     unset($storage->documenting_method_ids[$method_name]);
                                     $inherited_return_type = null;
@@ -942,6 +977,17 @@ final class Populator
                         && (!$method_storage->throws || $method_storage->inheritdoc)
                     ) {
                         $method_storage->throws += $declaring_method_storage->throws;
+                        $method_storage->throw_intersections += $declaring_method_storage->throw_intersections;
+                    }
+
+                    // a method without its own tag keeps the tag of the method it overrides, while a method that
+                    // disallows named arguments is reported as MethodSignatureMismatch, as the parent allows them
+                    if ($method_storage->named_arguments === null
+                        && $declaring_method_storage->named_arguments !== null
+                        && $declaring_method_storage->named_arguments !== NamedArguments::NOT_ALLOWED
+                        && ($method_name !== '__construct' || $declaring_class_storage->preserve_constructor_signature)
+                    ) {
+                        $method_storage->named_arguments = $declaring_method_storage->named_arguments;
                     }
                 }
 
@@ -1083,6 +1129,13 @@ final class Populator
 
         $this->populateClassLikeStorage($parent_storage, $dependent_classlikes);
 
+        // The parent was named by a class_alias() that is only scanned after this class
+        if ($storage->parent_class !== null && strtolower($storage->parent_class) !== $parent_storage_class) {
+            unset($storage->parent_classes[strtolower($storage->parent_class)]);
+            $storage->parent_class = $parent_storage->name;
+            $storage->parent_classes = [$parent_storage_class => $parent_storage->name, ...$storage->parent_classes];
+        }
+
         $storage->parent_classes = [...$storage->parent_classes, ...$parent_storage->parent_classes];
 
         $this->extendTemplateParams($storage, $parent_storage, true);
@@ -1143,25 +1196,26 @@ final class Populator
     {
         $fq_class_name_lc = strtolower($storage->name);
 
+        // a plugin can add a `@method` without its declaring id
         foreach ($parent_storage->pseudo_methods as $method_name => $pseudo_method) {
-            if (!$this->hasPublicMethodAppearingInClass($storage, $fq_class_name_lc, $method_name)) {
-                $storage->pseudo_methods[$method_name] ??= $pseudo_method;
-
-                if (isset($parent_storage->declaring_pseudo_method_ids[$method_name])) {
-                    $storage->declaring_pseudo_method_ids[$method_name]
-                        ??= $parent_storage->declaring_pseudo_method_ids[$method_name];
-                }
+            if (!isset($storage->pseudo_methods[$method_name])
+                && !$this->hasPublicMethodAppearingInClass($storage, $fq_class_name_lc, $method_name)
+            ) {
+                $storage->pseudo_methods[$method_name] = $pseudo_method;
+                $storage->declaring_pseudo_method_ids[$method_name]
+                    = $parent_storage->declaring_pseudo_method_ids[$method_name]
+                        ?? new MethodIdentifier($parent_storage->name, $method_name);
             }
         }
 
         foreach ($parent_storage->pseudo_static_methods as $method_name => $pseudo_method) {
-            if (!$this->hasPublicMethodAppearingInClass($storage, $fq_class_name_lc, $method_name)) {
-                $storage->pseudo_static_methods[$method_name] ??= $pseudo_method;
-
-                if (isset($parent_storage->declaring_pseudo_static_method_ids[$method_name])) {
-                    $storage->declaring_pseudo_static_method_ids[$method_name]
-                        ??= $parent_storage->declaring_pseudo_static_method_ids[$method_name];
-                }
+            if (!isset($storage->pseudo_static_methods[$method_name])
+                && !$this->hasPublicMethodAppearingInClass($storage, $fq_class_name_lc, $method_name)
+            ) {
+                $storage->pseudo_static_methods[$method_name] = $pseudo_method;
+                $storage->declaring_pseudo_static_method_ids[$method_name]
+                    = $parent_storage->declaring_pseudo_static_method_ids[$method_name]
+                        ?? new MethodIdentifier($parent_storage->name, $method_name);
             }
         }
     }
@@ -1652,6 +1706,19 @@ final class Populator
                 $aliased_constant_name_lc = strtolower($constant_name);
                 $aliased_constant_name = $constant_name;
             }
+            // The class's own declaration wins over the constant of the trait. A plain isset() can't tell it from
+            // an inherited one: when a storage is populated again (the Populator resets `populated`), constants
+            // already holds the copies of the parent and of the trait from the first run.
+            $own_location = ($storage->constants[$aliased_constant_name] ?? null)?->location;
+            if ($own_location !== null
+                && $storage->stmt_location !== null
+                && $own_location->file_path === $storage->stmt_location->file_path
+                && $own_location->raw_file_start >= $storage->stmt_location->raw_file_start
+                && $own_location->raw_file_end <= $storage->stmt_location->raw_file_end
+            ) {
+                continue;
+            }
+
             $visibility = $storage->trait_visibility_map[$aliased_constant_name_lc]
                 ?? $class_constant_storage->visibility;
             $final = $storage->trait_final_map[$aliased_constant_name_lc] ?? $class_constant_storage->final;

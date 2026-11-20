@@ -49,6 +49,8 @@ use Psalm\Storage\Assertion\IsLessThanOrEqualTo;
 use Psalm\Storage\Assertion\IsNotIdentical;
 use Psalm\Storage\Assertion\IsNotIsset;
 use Psalm\Storage\Assertion\IsNotLooselyEqual;
+use Psalm\Storage\Assertion\IsType;
+use Psalm\Storage\Assertion\MatchesPattern;
 use Psalm\Storage\Assertion\NestedAssertions;
 use Psalm\Storage\Assertion\NonEmpty;
 use Psalm\Storage\Assertion\NonEmptyCountable;
@@ -79,6 +81,7 @@ use function array_key_first;
 use function array_keys;
 use function array_merge;
 use function array_pop;
+use function array_push;
 use function array_shift;
 use function array_slice;
 use function array_values;
@@ -91,6 +94,8 @@ use function key;
 use function ksort;
 use function preg_match;
 use function preg_quote;
+use function reset;
+use function sort;
 use function str_contains;
 use function str_ends_with;
 use function str_split;
@@ -151,7 +156,8 @@ class Reconciler
             // To work around the issue, if there are any references, we have to recreate the array and fix the
             // references so they're properly scoped and won't affect the caller. Starting with a new array is
             // required for some unclear reason, just cloning elements of the existing array doesn't work properly.
-            $old_existing_types = $existing_types;
+            // The offsets of the variables bound (see below) are references to each other too.
+            $old_existing_types = Context::copyVarsInScope($existing_types);
             $existing_types = [];
 
             $cloned_referenceds = [];
@@ -179,7 +185,11 @@ class Reconciler
 
         $old_new_types = $new_types;
 
-        $new_types = self::addNestedAssertions($new_types, $existing_types);
+        $new_types = self::addNestedAssertions(
+            $new_types,
+            $existing_types,
+            $statements_analyzer->getCodebase()->analysis_php_version_id,
+        );
 
         // make sure array keys come after base keys
         ksort($new_types);
@@ -263,6 +273,12 @@ class Reconciler
                 $has_object_array_access,
                 $statements_analyzer,
             );
+
+            // the remembered result of a function call that this context never made (the call was in the
+            // condition of an `if`): nothing is known to refine
+            if ($result_type === null && !$did_type_exist && ExpressionIdentifier::isFunctionCallId($key)) {
+                continue;
+            }
 
             if ($result_type && $result_type->isUnionEmpty()) {
                 throw new InvalidArgumentException('Union::$types cannot be empty after get value for ' . $key);
@@ -437,6 +453,19 @@ class Reconciler
                 throw new UnexpectedValueException('$result_type should not be null');
             }
 
+            // narrowing a value does not make its false or null (that the config ignores) matter again
+            if ($before_adjustment
+                && (($before_adjustment->ignore_falsable_issues && !$result_type->ignore_falsable_issues)
+                    || ($before_adjustment->ignore_nullable_issues && !$result_type->ignore_nullable_issues))
+            ) {
+                $result_type = $result_type->setProperties([
+                    'ignore_falsable_issues' => $result_type->ignore_falsable_issues
+                        || $before_adjustment->ignore_falsable_issues,
+                    'ignore_nullable_issues' => $result_type->ignore_nullable_issues
+                        || $before_adjustment->ignore_nullable_issues,
+                ]);
+            }
+
             if ($undefined_reads_as_null) {
                 // where the value cannot be null the variable is set
                 $result_type = $result_type->setPossiblyUndefined(
@@ -490,7 +519,9 @@ class Reconciler
                 // parent nodes, that no taint goes through. One that can't carry some taints the type it is
                 // narrowed from could (e.g. a scalar, nosql) gets nodes those don't go through.
                 $narrowed_taints = $can_carry_taints
-                    ? $taints_to_remove & ~($before_adjustment?->getTaintsToRemove($input_taints) ?? 0)
+                    ? ($taints_to_remove
+                        | (self::getTaintsRemovedByPatterns($new_type_parts, $before_adjustment) & $input_taints))
+                        & ~($before_adjustment?->getTaintsToRemove($input_taints) ?? 0)
                     : TaintKind::ALL;
 
                 if ($parent_nodes !== null
@@ -777,18 +808,103 @@ class Reconciler
      * @return array<string, array<array<int, Assertion>>>
      * @psalm-external-mutation-free
      */
-    private static function addNestedAssertions(array $new_types, array $existing_types): array
-    {
+    private static function addNestedAssertions(
+        array $new_types,
+        array $existing_types,
+        int $analysis_php_version_id,
+    ): array {
+        foreach ($new_types as $nk => $type) {
+            if (!str_contains($nk, '[')) {
+                continue;
+            }
+
+            $key_exists = false;
+
+            foreach ($type as $assertions) {
+                if (count($assertions) === 1 && reset($assertions) instanceof ArrayKeyExists) {
+                    $key_exists = true;
+                    break;
+                }
+            }
+
+            $key_parts = self::breakUpPathIntoParts($nk);
+            $key_part_count = count($key_parts);
+
+            if (!$key_exists || $key_part_count < 4 || $key_parts[$key_part_count - 3] !== '[') {
+                continue;
+            }
+
+            $array_key = implode('', array_slice($key_parts, 0, -3));
+
+            // array_key_exists() is only true for a non-empty array, or before PHP 8 an object too. The first assertion
+            // makes the loop below add the isset ones on the keys the array is nested in
+            $array_type = self::getPathType($array_key, $existing_types);
+
+            // the offset of an object is left to it, and a value that can't be a non-empty array is left as it is where
+            // the condition can't be true
+            if ($array_type === null || self::cannotBeNonEmptyArray($array_type)) {
+                continue;
+            }
+
+            // reconciling an array that is already non-empty would forget what is known of its offsets
+            $array_assertions = $array_type->isAlwaysTruthy() ? [] : [[new NonEmpty()]];
+
+            // asserting a type would replace the arrays a value already is, or widen one that can't be (never)
+            if ($array_type->hasMixed()) {
+                $array_assertions[] = $analysis_php_version_id >= 8_00_00
+                    ? [new IsType(new TArray([Type::getArrayKey(), Type::getMixed()]))]
+                    : [
+                        new IsType(new TArray([Type::getArrayKey(), Type::getMixed()])),
+                        new IsType(new TNamedObject('ArrayAccess')),
+                    ];
+            } else {
+                foreach ($array_type->getAtomicTypes() as $atomic_type) {
+                    if ($atomic_type instanceof TArray
+                        || $atomic_type instanceof TKeyedArray
+                        || $atomic_type instanceof TNull
+                        || $atomic_type instanceof TFalse
+                        || $atomic_type instanceof TTemplateParam
+                        || ($analysis_php_version_id < 8_00_00 && $atomic_type->isObjectType())
+                    ) {
+                        continue;
+                    }
+
+                    $array_assertions[] = $analysis_php_version_id >= 8_00_00
+                        ? [new IsType(new TArray([Type::getArrayKey(), Type::getMixed()]))]
+                        : [new IsType(new TArray([Type::getArrayKey(), Type::getMixed()])), new IsType(new TObject())];
+                    break;
+                }
+            }
+
+            if ($array_assertions) {
+                $new_types[$array_key] = array_merge($array_assertions, $new_types[$array_key] ?? []);
+            }
+        }
+
         foreach ($new_types as $nk => $type) {
             if (strpos($nk, '[') || strpos($nk, '->')) {
                 $type = array_values($type);
                 if (!isset($type[0][0])) {
                     continue;
                 }
-                if ($type[0][0] instanceof IsEqualIsset
-                    || $type[0][0] instanceof IsIsset
-                    || $type[0][0] instanceof NonEmpty
-                ) {
+
+                // the offset is set where the first assertion or any other one that is not an alternative says so
+                $is_set = false;
+
+                foreach ($type as $offset => $assertions) {
+                    $assertion = reset($assertions);
+
+                    if (($offset === 0 || count($assertions) === 1)
+                        && ($assertion instanceof IsEqualIsset
+                            || $assertion instanceof IsIsset
+                            || $assertion instanceof NonEmpty)
+                    ) {
+                        $is_set = true;
+                        break;
+                    }
+                }
+
+                if ($is_set) {
                     $key_parts = self::breakUpPathIntoParts($nk);
 
                     $base_key = array_shift($key_parts);
@@ -798,7 +914,11 @@ class Reconciler
                         $base_key .= array_shift($key_parts);
                     }
 
-                    if (!isset($existing_types[$base_key]) || $existing_types[$base_key]->isNullable()) {
+                    if (!isset($existing_types[$base_key])
+                        || $existing_types[$base_key]->isNullable()
+                        || $existing_types[$base_key]->possibly_undefined
+                        || $existing_types[$base_key]->possibly_undefined_from_try
+                    ) {
                         if (!isset($new_types[$base_key])) {
                             $new_types[$base_key] = [[new IsEqualIsset()]];
                         } else {
@@ -885,6 +1005,92 @@ class Reconciler
         }
 
         return $new_types;
+    }
+
+    /**
+     * The type of a variable or of an offset of one that the known types give: mixed where nothing is known of it,
+     * null for an offset of something other than an array (an ArrayAccess), whose value isn't known either
+     *
+     * @param array<string, Union> $existing_types
+     * @psalm-external-mutation-free
+     */
+    private static function getPathType(string $path, array $existing_types): ?Union
+    {
+        if (isset($existing_types[$path])) {
+            return $existing_types[$path];
+        }
+
+        $key_parts = self::breakUpPathIntoParts($path);
+        $key_part_count = count($key_parts);
+
+        if ($key_part_count < 4 || $key_parts[$key_part_count - 3] !== '[') {
+            return Type::getMixed();
+        }
+
+        $parent_type = self::getPathType(implode('', array_slice($key_parts, 0, -3)), $existing_types);
+
+        if ($parent_type === null) {
+            return null;
+        }
+
+        $offset = $key_parts[$key_part_count - 2];
+
+        if ($offset[0] === '\'' || $offset[0] === '"') {
+            $offset = ExpressionIdentifier::unquoteOffset($offset);
+            $int_offset = ArrayAnalyzer::getLiteralArrayKeyInt($offset);
+            $offset = $int_offset === false ? $offset : $int_offset;
+        } elseif (is_numeric($offset)) {
+            $offset = (int) $offset;
+        } else {
+            $offset = null;
+        }
+
+        $value_types = [];
+        $atomic_types = $parent_type->getAtomicTypes();
+
+        while ($atomic_types) {
+            $atomic_type = array_shift($atomic_types);
+
+            if ($atomic_type instanceof TTemplateParam) {
+                $atomic_types = [...$atomic_types, ...array_values($atomic_type->as->getAtomicTypes())];
+            } elseif ($atomic_type instanceof TMixed) {
+                $value_types[] = Type::getMixed();
+            } elseif ($atomic_type instanceof TArray) {
+                $value_types[] = $atomic_type->type_params[1];
+            } elseif ($atomic_type instanceof TKeyedArray) {
+                if ($offset !== null && isset($atomic_type->properties[$offset])) {
+                    $value_types[] = $atomic_type->properties[$offset];
+                } elseif ($offset === null) {
+                    array_push($value_types, ...array_values($atomic_type->properties));
+                }
+
+                if ($atomic_type->fallback_params !== null) {
+                    $value_types[] = $atomic_type->fallback_params[1];
+                }
+            } elseif (!$atomic_type instanceof TNull && !$atomic_type instanceof TFalse) {
+                return null;
+            }
+        }
+
+        return $value_types ? Type::combineUnionTypeArray($value_types, null) : Type::getNever();
+    }
+
+    /**
+     * @psalm-pure
+     */
+    private static function cannotBeNonEmptyArray(Union $type): bool
+    {
+        foreach ($type->getAtomicTypes() as $atomic_type) {
+            if (!$atomic_type instanceof TNull
+                && !$atomic_type instanceof TFalse
+                && !$atomic_type instanceof TNever
+                && (!$atomic_type instanceof TArray || !$atomic_type->type_params[1]->isNever())
+            ) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /**
@@ -1139,10 +1345,6 @@ class Reconciler
                         }
 
                         if ($existing_key_type_part instanceof TArray) {
-                            if ($has_empty) {
-                                return null;
-                            }
-
                             $new_base_type_candidate = $existing_key_type_part->type_params[1];
 
                             if ($new_base_type_candidate->isMixed()
@@ -1153,10 +1355,10 @@ class Reconciler
                                 return $new_base_type_candidate;
                             }
 
-                            if (($has_isset || $has_inverted_isset || $has_inverted_key_exists)
+                            if (($has_isset || $has_inverted_isset || $has_inverted_key_exists || $has_empty)
                                 && isset($new_assertions[$new_base_key])
                             ) {
-                                if ($has_inverted_isset && $new_base_key === $key) {
+                                if (($has_inverted_isset || $has_empty) && $new_base_key === $key) {
                                     $new_base_type_candidate = $new_base_type_candidate->getBuilder();
                                     $new_base_type_candidate->addType(new TNull);
                                     $new_base_type_candidate->possibly_undefined = true;
@@ -1914,6 +2116,23 @@ class Reconciler
                                 $properties[$array_key_offset] = $result_type;
                             }
 
+                            // a list that has an offset has all the offsets before it
+                            if ($base_atomic_type->is_list
+                                && !$result_type->possibly_undefined
+                                && !$result_type->isNever()
+                                && ($int_array_key_offset = ArrayAnalyzer::getLiteralArrayKeyInt($array_key_offset))
+                                    !== false
+                            ) {
+                                for ($x = 0; $x < $int_array_key_offset; $x++) {
+                                    if (isset($properties[$x]) && $properties[$x]->possibly_undefined) {
+                                        $properties[$x] = $properties[$x]->isNever()
+                                            && $base_atomic_type->fallback_params
+                                            ? $base_atomic_type->fallback_params[1]
+                                            : $properties[$x]->setPossiblyUndefined(false);
+                                    }
+                                }
+                            }
+
                             if ($base_atomic_type->is_list
                             && (($int_array_key_offset = ArrayAnalyzer::getLiteralArrayKeyInt($array_key_offset))
                                     === false
@@ -2062,5 +2281,39 @@ class Reconciler
             return $key_type->getBuilder()->setTypes($types)->freeze();
         }
         return null;
+    }
+
+    /**
+     * The taints a value can't carry once it matches the patterns of $new_type_parts (see MatchesPattern): those
+     * of a pattern it must match, or that every alternative of a clause removes
+     *
+     * @param array<array<Assertion>> $new_type_parts
+     * @psalm-pure
+     */
+    private static function getTaintsRemovedByPatterns(array $new_type_parts, ?Union $existing_type): int
+    {
+        $existing_node_ids = array_keys($existing_type?->parent_nodes ?? []);
+        sort($existing_node_ids);
+
+        $removed_taints = 0;
+
+        foreach ($new_type_parts as $alternatives) {
+            $removed_by_alternatives = null;
+
+            foreach ($alternatives as $alternative) {
+                $removed = $alternative instanceof MatchesPattern
+                    && !$alternative->negated
+                    && ($alternative->parent_node_ids === null || $alternative->parent_node_ids === $existing_node_ids)
+                    ? $alternative->removed_taints
+                    : 0;
+                $removed_by_alternatives = $removed_by_alternatives === null
+                    ? $removed
+                    : $removed_by_alternatives & $removed;
+            }
+
+            $removed_taints |= $removed_by_alternatives ?? 0;
+        }
+
+        return $removed_taints;
     }
 }
