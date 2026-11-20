@@ -24,6 +24,30 @@ final class FunctionCallTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'strtolowerOfStringLiteralsIsTheLoweredLiterals' => [
+                'code' => '<?php
+                    /** @return \'Interface\'|\'Trait\'|\'Enum\'|\'Class\' */
+                    function kind(): string {
+                        return \'Class\';
+                    }
+
+                    /** @param \'interface\'|\'trait\'|\'enum\'|\'class\' $kind */
+                    function check(string $kind): void {}
+
+                    check(strtolower(kind()));
+                    check(mb_strtolower(kind()));
+
+                    $literal = strtolower("ABC");
+                    $multibyte = mb_strtolower("ÄBC");
+                    $other = strtolower(rand() ? "ABC" : (string) rand());
+                    $encoding = mb_strtolower("ABC", "UTF-8");',
+                'assertions' => [
+                    '$literal===' => '\'abc\'',
+                    '$multibyte===' => '\'äbc\'',
+                    '$other===' => 'non-empty-lowercase-string',
+                    '$encoding===' => 'non-empty-string',
+                ],
+            ],
             'functionImportedWithAnAliasIsCalledWithoutAWrongCaseIssue' => [
                 'code' => '<?php
                     namespace App;
