@@ -403,6 +403,14 @@ final class Cache
     }
 
     /**
+     * @psalm-mutation-free
+     */
+    public function writesToDisk(): bool
+    {
+        return $this->persistent && !$this->read_only;
+    }
+
+    /**
      * The hash of an entry, which is not necessarily one that getItem() can still load: only the header is read.
      */
     public function getHash(string $key): ?string

@@ -11,12 +11,14 @@ use Psalm\Internal\Analyzer\IssueData;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\CacheMode;
 use Psalm\Internal\Codebase\CodeUseGraph;
+use Psalm\Internal\Overlay\ReferenceIndex;
 use Psalm\Internal\Provider\FakeFileProvider;
 use Psalm\Internal\Provider\FileReferenceCacheProvider;
 use Psalm\Internal\Provider\FileReferenceProvider;
 use Psalm\Internal\Provider\Providers;
 use Psalm\Tests\Internal\Provider\FakeParserCacheProvider;
 
+use function array_combine;
 use function array_values;
 use function count;
 use function is_array;
@@ -355,6 +357,171 @@ final class FileReferenceTest extends TestCase
         // a change to the mixin of the mixin of a trait of the parent class reaches the file of the class
         self::assertEqualsCanonicalizing([$mid_path, $host_path], $provider->getFilesInheritingFromFile($deep_path));
         self::assertSame([$host_path], $provider->getFilesInheritingFromFile($mid_path));
+    }
+
+    public function testFileOfTheClassUsingATraitReferencesWhatTheTraitMethodsUse(): void
+    {
+        $files = $this->analyzeProject([
+            'a.php' => '<?php class A { public function foo(): void {} }',
+            't.php' => '<?php trait T { public function viaTrait(A $a): void { $a->foo(); } }',
+            'c.php' => '<?php final class C { use T; }',
+        ]);
+
+        // the body of a trait method is analysed with the class using the trait
+        $this->assertDependents(
+            $files['a.php'],
+            [],
+            [$files['a.php'], $files['t.php'], $files['c.php']],
+        );
+    }
+
+    public function testFileOfAClassDependsOnTheClassesItsConstantExpressionsName(): void
+    {
+        $files = $this->analyzeProject([
+            'a.php' => '<?php final class A { public const Y = 10; }',
+            'b.php' => '<?php final class B { public const X = A::Y * 2; }',
+            'd.php' => '<?php final class D { public function f(): bool { return B::X === 22; } }',
+            'unrelated.php' => '<?php final class U { public const X = 2; }',
+        ]);
+
+        // D reads B::X only, which is A::Y * 2 wherever it is read
+        $this->assertDependents($files['a.php'], [$files['b.php']], [$files['a.php'], $files['b.php'], $files['d.php']]);
+    }
+
+    public function testFileOfAClassDependsOnTheClassesItsParameterDefaultsName(): void
+    {
+        $this->project_analyzer->getCodebase()->all_functions_global = true;
+
+        $template_docblock = '/**
+             * @template T
+             * @param T $i
+             * @return T
+             */';
+
+        $files = $this->analyzeProject([
+            'a.php' => '<?php final class A { public const Y = 10; }',
+            'e.php' => '<?php final class E { ' . $template_docblock . ' public function f($i = A::Y) { return $i; } }',
+            'functions.php' => '<?php ' . $template_docblock . ' function helper($i = A::Y) { return $i; }',
+            'g.php' => '<?php final class G { public function f(E $e): int { return $e->f() + helper(); } }',
+        ]);
+
+        // the type of $e->f() and helper() is that of A::Y
+        $this->assertDependents(
+            $files['a.php'],
+            [$files['e.php'], $files['functions.php']],
+            [$files['a.php'], $files['e.php'], $files['functions.php'], $files['g.php']],
+        );
+    }
+
+    public function testFileOfAnEnumDependsOnTheClassesItsCaseValuesName(): void
+    {
+        $this->project_analyzer->setPhpVersion('8.1', 'tests');
+
+        $files = $this->analyzeProject([
+            'a.php' => '<?php final class A { public const Y = 10; }',
+            'b.php' => '<?php enum B: int { case X = A::Y * 2; }',
+            'd.php' => '<?php final class D { public function f(): bool { return B::X->value === 22; } }',
+        ]);
+
+        // the scan may infer the value of the case from A already
+        $this->assertDependents($files['a.php'], [$files['b.php']], [$files['a.php'], $files['b.php'], $files['d.php']]);
+    }
+
+    public function testFileOfAClassDependsOnTheEnumsWhoseCasePropertiesItsConstantExpressionsRead(): void
+    {
+        $this->project_analyzer->setPhpVersion('8.2', 'tests');
+
+        $files = $this->analyzeProject([
+            'a.php' => '<?php enum A: int { case Y = 10; }',
+            'b.php' => '<?php final class B { public const X = A::Y->value * 2; }',
+            'd.php' => '<?php final class D { public function f(): bool { return B::X === 22; } }',
+        ]);
+
+        $this->assertDependents($files['a.php'], [$files['b.php']], [$files['a.php'], $files['b.php'], $files['d.php']]);
+    }
+
+    public function testFileOfAClassDependsOnTheClassesWhoseAliasesItsConstantExpressionsName(): void
+    {
+        $files = $this->analyzeProject([
+            'a.php' => '<?php final class A { public const Y = 10; } class_alias("A", "AliasOfA");',
+            'b.php' => '<?php final class B { public const X = AliasOfA::Y * 2; }',
+            'd.php' => '<?php final class D { public function f(): bool { return B::X === 22; } }',
+        ]);
+
+        $this->assertDependents($files['a.php'], [$files['b.php']], [$files['a.php'], $files['b.php'], $files['d.php']]);
+    }
+
+    public function testFileOfAClassDependsOnTheClassesItImportsTypesFrom(): void
+    {
+        $files = $this->analyzeProject([
+            'a.php' => '<?php /** @psalm-type TA = array{a: int} */ final class A {}',
+            'imp.php' => '<?php
+                /** @psalm-import-type TA from A */
+                final class Imp {
+                    /** @param TA $x */
+                    public function f(array $x): int { return $x["a"]; }
+                }',
+        ]);
+
+        $this->assertDependents($files['a.php'], [$files['imp.php']], [$files['a.php'], $files['imp.php']]);
+    }
+
+    /**
+     * @param list<string> $inheriting the files depending on the file like on a parent
+     * @param list<string> $dependents the files to analyse again when the file changes
+     */
+    private function assertDependents(string $file, array $inheriting, array $dependents): void
+    {
+        self::assertEqualsCanonicalizing(
+            $inheriting,
+            $this->project_analyzer->getCodebase()->file_reference_provider->getFilesInheritingFromFile($file),
+        );
+        self::assertEqualsCanonicalizing(
+            $dependents,
+            array_values($this->project_analyzer->getReferencedFilesFromDiff([$file])),
+        );
+    }
+
+    public function testTheReferenceIndexKeepsTheDependentsOfAFullRun(): void
+    {
+        $files = $this->analyzeProject([
+            'a.php' => '<?php class A { public function foo(): void {} }',
+            'b.php' => '<?php final class B extends A {}',
+            'c.php' => '<?php final class C { public function f(A $a): void { $a->foo(); } }',
+        ]);
+        $codebase = $this->project_analyzer->getCodebase();
+
+        $index = ReferenceIndex::build($codebase, array_values($files), [$files['a.php'] => 'hash']);
+
+        self::assertSame([$files['b.php']], $index->files[$files['a.php']]['i']);
+        self::assertContains($files['c.php'], $index->files[$files['a.php']]['a']);
+        self::assertSame([$files['c.php']], $index->members[CodeUseGraph::functionLikeNode('a::foo')]);
+
+        $cache = new FileReferenceCacheProvider($codebase->config, '', CacheMode::Memory);
+        $index->save($cache);
+        self::assertEquals($index, ReferenceIndex::load($cache));
+    }
+
+    /**
+     * @param array<string, string> $contents file name => contents
+     * @return array<string, string> file name => path
+     */
+    private function analyzeProject(array $contents): array
+    {
+        $codebase = $this->project_analyzer->getCodebase();
+        $codebase->config->throw_exception = false;
+
+        $files = [];
+        foreach ($contents as $name => $file_contents) {
+            $files[$name] = self::$src_dir_path . $name;
+            $this->file_provider->registerFile($files[$name], $file_contents);
+        }
+
+        $codebase->addFilesToAnalyze(array_combine($files, $files));
+        $codebase->scanFiles();
+        $codebase->analyzer->analyzeFiles($this->project_analyzer, 1, false);
+
+        return $files;
     }
 
     private function scanFileWithReferenceCache(FileReferenceCacheProvider $cache): string
