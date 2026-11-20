@@ -2426,6 +2426,26 @@ final class WhileTest extends TestCase
                         return $z;
                     }',
             ],
+            'variableAssignedInTheRightOperandOfOrIsDefinedAfterTheLoop' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param array<int, int> $t */
+                    function f(array $t, int $d): int {
+                        $s = 0;
+                        while (!($s > 3) || ($a = $t[$s] ?? 0) === $d) {
+                            $s++;
+                        }
+                        return $a;
+                    }
+
+                    function g(bool $x): int {
+                        while (!$x or ($b = rand()) === 3) {
+                            $x = true;
+                        }
+                        return $b;
+                    }
+                PHP,
+            ],
         ];
     }
 
@@ -2820,6 +2840,33 @@ final class WhileTest extends TestCase
                         }
                     }',
                 'error_message' => 'RedundantCondition',
+            ],
+            'variableAssignedInTheRightOperandOfAndIsPossiblyUndefinedAfterTheLoop' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function f(bool $x): int {
+                        while ($x && ($a = rand()) === 3) {
+                            $x = false;
+                        }
+                        return $a;
+                    }
+                PHP,
+                'error_message' => 'PossiblyUndefinedVariable',
+            ],
+            'variableAssignedInTheRightOperandOfOrIsPossiblyUndefinedAfterALoopWithABreak' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function f(bool $x): int {
+                        while (!$x || ($a = rand()) === 3) {
+                            if (rand(0, 1)) {
+                                break;
+                            }
+                            $x = true;
+                        }
+                        return $a;
+                    }
+                PHP,
+                'error_message' => 'PossiblyUndefinedVariable',
             ],
         ];
     }
