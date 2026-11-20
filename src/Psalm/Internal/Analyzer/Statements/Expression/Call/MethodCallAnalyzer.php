@@ -53,12 +53,17 @@ use function strtolower;
  */
 final class MethodCallAnalyzer extends CallAnalyzer
 {
+    /**
+     * @param bool $receiver_analyzed the receiver was analysed already (offsetGet() for `$a[0]`): it is not
+     *      evaluated again
+     */
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\MethodCall $stmt,
         Context $context,
         bool $real_method_call = true,
         ?TemplateResult $template_result = null,
+        bool $receiver_analyzed = false,
     ): bool {
         $was_inside_call = $context->inside_call;
 
@@ -68,7 +73,7 @@ final class MethodCallAnalyzer extends CallAnalyzer
 
         $existing_stmt_var_type = null;
 
-        if (!$real_method_call) {
+        if (!$real_method_call || $receiver_analyzed) {
             $existing_stmt_var_type = $statements_analyzer->node_data->getType($stmt->var);
         }
 
@@ -501,7 +506,13 @@ final class MethodCallAnalyzer extends CallAnalyzer
             }
 
             // narrowed, not written: the enclosing scopes keep their clauses about it
-            $context->clauses = Context::filterClauses($lhs_var_id, $context->clauses, null, $statements_analyzer);
+            $context->clauses = Context::filterClauses(
+                $lhs_var_id,
+                $context->clauses,
+                null,
+                $statements_analyzer,
+                value_changed: false,
+            );
 
             $class_type = $class_type->getBuilder()->setTypes($types);
             $class_type->from_docblock = false;

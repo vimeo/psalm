@@ -157,6 +157,9 @@ final class InstancePropertyFetchAnalyzer
         }
 
         if ($stmt_var_type->isNever()) {
+            // a property of a value that can't exist is never fetched (a loop's first pass narrowing null away)
+            $statements_analyzer->node_data->setType($stmt, Type::getNever());
+
             return !IssueBuffer::accepts(
                 new MixedPropertyFetch(
                     'Cannot fetch property on empty var ' . $stmt_var_id,
@@ -622,6 +625,21 @@ final class InstancePropertyFetchAnalyzer
                         }
 
                         $override_property_visibility = $interface_storage->override_property_visibility;
+                    }
+
+                    // the dynamic property holds what was assigned to it and what the object holds under its name
+                    if ($codebase->classlikes->isUniversalObjectCrate($lhs_type_part->value, $stmt->name->name)) {
+                        $stmt_type = $stmt_type->addParentNodes(AtomicPropertyFetchAnalyzer::getDynamicPropertyType(
+                            $statements_analyzer,
+                            $stmt,
+                            $stmt_var_type,
+                            $stmt->name->name,
+                        )->parent_nodes);
+
+                        $context->vars_in_scope[$var_id] = $stmt_type;
+                        $statements_analyzer->node_data->setType($stmt, $stmt_type);
+
+                        continue;
                     }
 
                     $property_id = $lhs_type_part->value . '::$' . $stmt->name->name;

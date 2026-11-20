@@ -247,21 +247,9 @@ final class InstancePropertyAssignmentAnalyzer
                 && ($union_comparison_results->type_variable_lower_bounds
                     || $union_comparison_results->type_variable_upper_bounds)
             ) {
-                // transfer any type-variable bounds recorded while checking
-                // the assignment; a value that only reaches an upper bound
-                // through mixed is reported as MixedPropertyTypeCoercion at
-                // reconciliation
-                foreach ($union_comparison_results->type_variable_upper_bounds as [$_, $upper_bound]) {
-                    $upper_bound->property_requirement_id = $assigned_property->id;
-                }
-
-                foreach ($union_comparison_results->type_variable_lower_bounds as [$_, $lower_bound]) {
-                    $lower_bound->property_value_id = $assigned_property->id;
-                }
-
-                $statements_analyzer->type_variable_tracker->addBounds(
-                    $union_comparison_results->type_variable_lower_bounds,
-                    $union_comparison_results->type_variable_upper_bounds,
+                $statements_analyzer->type_variable_tracker->addPropertyAssignmentBounds(
+                    $union_comparison_results,
+                    $assigned_property->id,
                     new CodeLocation(
                         $statements_analyzer->getSource(),
                         $assignment_value ?? $stmt,
@@ -1280,6 +1268,44 @@ final class InstancePropertyAssignmentAnalyzer
                 } else {
                     $context->vars_in_scope[$var_id] = Type::getMixed();
                 }
+            }
+
+            // the object holds the value under the name of the property, as an array does under a key
+            $graph = $statements_analyzer->getDataFlowGraphWithSuppressed();
+            if ($graph
+                && $lhs_var_id !== null
+                && $lhs_var_id !== '$this'
+                && isset($context->vars_in_scope[$lhs_var_id])
+                && $assignment_value_type->parent_nodes !== []
+            ) {
+                $object_type = $context->vars_in_scope[$lhs_var_id];
+                $object_node = DataFlowNode::getForAssignment(
+                    $lhs_var_id,
+                    new CodeLocation($statements_analyzer->getSource(), $stmt->var),
+                );
+                $graph->addNode($object_node);
+
+                foreach ($object_type->parent_nodes as $parent_node) {
+                    $graph->addPath($parent_node, $object_node, '=');
+                }
+
+                $removed_taints = $graph instanceof VariableUseGraph
+                    ? 0
+                    : $assignment_value_type->getTaintsToRemove($codebase->getInputTaints());
+
+                foreach ($assignment_value_type->parent_nodes as $parent_node) {
+                    $graph->addPath(
+                        $parent_node,
+                        $object_node,
+                        'arrayvalue-assignment-\'' . $prop_name . '\'',
+                        0,
+                        $removed_taints,
+                    );
+                }
+
+                $context->vars_in_scope[$lhs_var_id] = $object_type->setParentNodes(
+                    [$object_node->id => $object_node],
+                );
             }
 
             return null;

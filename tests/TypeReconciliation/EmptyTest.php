@@ -21,6 +21,25 @@ final class EmptyTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'emptyOnRequiredKeyOfANestedShape' => [
+                'code' => '<?php
+                    /**
+                     * @param array{foo: array{bar: string}} $a
+                     */
+                    function f(array $a): bool {
+                        return empty($a["foo"]["bar"]);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'emptyOnRequiredShapeKey' => [
+                'code' => '<?php
+                    /** @param array{foo: string} $arg */
+                    function foo(array $arg): bool {
+                        return empty($arg["foo"]);
+                    }',
+            ],
             'emptyOfAnOffsetWithAKeyThatMayBeAnyString' => [
                 'code' => '<?php
                     function f(string $k): void {
@@ -831,6 +850,48 @@ final class EmptyTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'emptyOnOptionalShapeKeyIsRisky' => [
+                'code' => '<?php
+                    /** @param array{foo?: string} $arg */
+                    function foo(array $arg): bool {
+                        return empty($arg["foo"]);
+                    }',
+                'error_message' => 'RiskyTruthyFalsyComparison',
+            ],
+            'emptyOnNullableShapeKeyIsRisky' => [
+                'code' => '<?php
+                    /** @param array{foo: ?string} $arg */
+                    function foo(array $arg): bool {
+                        return empty($arg["foo"]);
+                    }',
+                'error_message' => 'RiskyTruthyFalsyComparison',
+            ],
+            'emptyOnShapeKeyOfAnArrayThatChangesInALoopIsRisky' => [
+                'code' => '<?php
+                    /**
+                     * @param array<string, string> $other
+                     */
+                    function f(string $s, array $other): void {
+                        $a = ["foo" => $s];
+
+                        foreach ([1, 2] as $_) {
+                            if (empty($a["foo"])) {
+                                echo "empty";
+                            }
+
+                            $a = $other;
+                        }
+                    }',
+                'error_message' => 'RiskyTruthyFalsyComparison',
+            ],
+            'emptyOnKeyOfUnsealedArrayIsRisky' => [
+                'code' => '<?php
+                    /** @param array<string, string> $arg */
+                    function foo(array $arg): bool {
+                        return empty($arg["foo"]);
+                    }',
+                'error_message' => 'RiskyTruthyFalsyComparison',
+            ],
             'emptyOfAnOffsetWithALiteralKeyVariable' => [
                 'code' => '<?php
                     $a = ["key" => "test"];

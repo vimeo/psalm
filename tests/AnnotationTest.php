@@ -184,6 +184,59 @@ final class AnnotationTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'callableParamsWithTheSameInnerParameterNameAreNotDuplicated' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @param callable(int $value): list<T> $map
+                     * @param callable(int $value): bool $filter
+                     * @return list<T>
+                     */
+                    function collect(callable $map, callable $filter): array {
+                        $result = [];
+                        foreach ([1, 2, 3] as $value) {
+                            if ($filter($value)) {
+                                foreach ($map($value) as $item) {
+                                    $result[] = $item;
+                                }
+                            }
+                        }
+
+                        return $result;
+                    }
+
+                    /** @return list<string> */
+                    function labels(): array {
+                        return collect(static fn(int $value) => [(string) $value], static fn(int $value) => $value > 1);
+                    }',
+            ],
+            'suppressDocblockInFrontOfAnArgument' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-mutation-free
+                     */
+                    function describe(): void {
+                        throw new RuntimeException(
+                            /** @psalm-suppress ImpureFunctionCall the last error is part of the message */
+                            sprintf("code: %d", preg_last_error()),
+                        );
+                    }',
+            ],
+            'suppressDocblockInFrontOfAnArgumentCoversTheCheckOfTheArgument' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function take(int $i, string $s): void {
+                        echo $i, $s;
+                    }
+
+                    function f(mixed $m): void {
+                        take(/** @psalm-suppress MixedArgument */ $m, 'a');
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'scalarAndMixedKeywordTypesInNamespace' => [
                 'code' => '<?php
                     namespace N;
@@ -2273,6 +2326,66 @@ final class AnnotationTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'duplicatedCallableParamTagsAreStillReported' => [
+                'code' => '<?php
+                    /**
+                     * @param callable(int $x): void $a
+                     * @param callable(int $x): void $a
+                     */
+                    function dup(callable $a): void {}',
+                'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR
+                    . 'somefile.php:6:21 - Found duplicated @param or prefixed @param tag in docblock for dup',
+            ],
+            'duplicatedParamTagsOfAVariadicParamAreReported' => [
+                'code' => '<?php
+                    /**
+                     * @param int $a
+                     * @param int ...$a
+                     */
+                    function dupVariadic(int ...$a): void {}',
+                'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR
+                    . 'somefile.php:6:21 - Found duplicated @param or prefixed @param tag in docblock for dupVariadic',
+            ],
+            'suppressDocblockInFrontOfAnArgumentDoesNotCoverTheNextArgumentCheck' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function take(int $i, int $j): void {
+                        echo $i, $j;
+                    }
+
+                    function f(mixed $m, mixed $n): void {
+                        take(/** @psalm-suppress MixedArgument */ $m, $n);
+                    }
+                    PHP,
+                'error_message' => 'MixedArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:51 - Argument 2 of take cannot be mixed',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'suppressDocblockInFrontOfAnArgumentOnlyCoversThatArgument' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-mutation-free
+                     */
+                    function describe(): void {
+                        echo sprintf(
+                            "%d %d",
+                            /** @psalm-suppress ImpureFunctionCall */
+                            preg_last_error(),
+                            preg_last_error(),
+                        );
+                    }',
+                'error_message' => 'ImpureFunctionCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:29',
+            ],
+            'unusedSuppressDocblockInFrontOfAnArgument' => [
+                'code' => '<?php
+                    function describe(): void {
+                        echo strlen(
+                            /** @psalm-suppress ImpureFunctionCall */
+                            "text",
+                        );
+                    }',
+                'error_message' => 'UnusedPsalmSuppress',
+            ],
             'scalarKeywordTypeWithGenericParamsInNamespace' => [
                 'code' => '<?php
                     namespace N;

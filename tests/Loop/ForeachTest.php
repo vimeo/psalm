@@ -210,6 +210,228 @@ final class ForeachTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'methodCallOnArrayElementSetInLoop' => [
+                'code' => '<?php
+                    final class Box {
+                        public ?Box $next = null;
+
+                        public function merge(Box $other): Box {
+                            return $other;
+                        }
+                    }
+
+                    /** @var array<int, Box> */
+                    $values = [];
+                    $merged = [];
+                    foreach ($values as $key => $value) {
+                        $merged[$key] = isset($merged[$key]) ? $merged[$key]->merge($value) : $value;
+                    }',
+                'assertions' => [
+                    '$merged===' => 'array<int, Box>',
+                ],
+            ],
+            'propertyFetchOnArrayElementSetInLoop' => [
+                'code' => '<?php
+                    final class Box {
+                        public ?Box $next = null;
+
+                        public function merge(Box $other): Box {
+                            return $other;
+                        }
+                    }
+
+                    /** @var array<int, Box> */
+                    $values = [];
+                    $nexts = [];
+                    foreach ($values as $key => $value) {
+                        $nexts[$key] = isset($nexts[$key]) ? $nexts[$key]->next : $value;
+                    }',
+                'assertions' => [
+                    '$nexts===' => 'array<int, Box|null>',
+                ],
+            ],
+            'offsetFetchOnArrayElementSetInLoop' => [
+                'code' => '<?php
+                    final class Box {
+                        public ?Box $next = null;
+
+                        public function merge(Box $other): Box {
+                            return $other;
+                        }
+                    }
+
+                    /** @var array<int, Box> */
+                    $values = [];
+                    /** @var array<int, list<Box>> */
+                    $lists = [];
+                    $firsts = [];
+                    foreach ($lists as $key => $list) {
+                        $firsts[$key] = isset($firsts[$key]) ? $firsts[$key][0] : $list;
+                    }',
+                'assertions' => [
+                    '$firsts===' => 'array<int, Box|list<Box>>',
+                ],
+            ],
+            'methodCallOnLoopVariableStartingAsNull' => [
+                'code' => '<?php
+                    final class Box {
+                        public ?Box $next = null;
+
+                        public function merge(Box $other): Box {
+                            return $other;
+                        }
+                    }
+
+                    /** @var list<Box> */
+                    $values = [];
+                    $context = null;
+                    foreach ($values as $after) {
+                        $context = $context === null ? $after : $context->merge($after);
+                    }',
+                'assertions' => [
+                    '$context===' => 'Box|null',
+                ],
+            ],
+            'methodCallInElseOfLoopVariableStartingAsNull' => [
+                'code' => '<?php
+                    final class Box {
+                        public ?Box $next = null;
+
+                        public function merge(Box $other): Box {
+                            return $other;
+                        }
+                    }
+
+                    /** @var list<Box> */
+                    $values = [];
+                    $context = null;
+                    $merges = 0;
+                    foreach ($values as $after) {
+                        if ($context === null) {
+                            $context = $after;
+                        } else {
+                            $context = $context->merge($after);
+                            $merges++;
+                        }
+                    }',
+                'assertions' => [
+                    '$context===' => 'Box|null',
+                    '$merges===' => 'int<0, max>',
+                ],
+            ],
+            'propertyFetchOnLoopVariableStartingAsNull' => [
+                'code' => '<?php
+                    final class Box {
+                        public ?Box $next = null;
+
+                        public function merge(Box $other): Box {
+                            return $other;
+                        }
+                    }
+
+                    /** @var list<Box> */
+                    $values = [];
+                    $context = null;
+                    foreach ($values as $after) {
+                        $context = $context === null ? $after : $context->next;
+                    }',
+                'assertions' => [
+                    '$context===' => 'Box|null',
+                ],
+            ],
+            'methodCallOnWhileLoopVariableStartingAsNull' => [
+                'code' => '<?php
+                    final class Box {
+                        public ?Box $next = null;
+
+                        public function merge(Box $other): Box {
+                            return $other;
+                        }
+                    }
+
+                    /** @var list<Box> */
+                    $values = [];
+                    $context = null;
+                    $i = 0;
+                    while ($i < count($values)) {
+                        $after = $values[$i++];
+                        $context = $context === null ? $after : $context->merge($after);
+                    }',
+                'assertions' => [
+                    '$context===' => 'Box|null',
+                ],
+            ],
+            'foreachIteratedExpressionIsAnalysedOnce' => [
+                'code' => '<?php
+                    class Entity {
+                        public ?int $id = null;
+
+                        /**
+                         * @psalm-mutation-free
+                         * @psalm-assert !null $this->id
+                         */
+                        public function getIdAssert(): int {
+                            return 1;
+                        }
+                    }
+
+                    function onlyValue(Entity $entity): void {
+                        foreach ([$entity->getIdAssert()] as $_) {
+                        }
+                    }
+
+                    function keyAndValue(Entity $entity): void {
+                        foreach ([$entity->getIdAssert()] as $_key => $_value) {
+                        }
+                    }
+
+                    function destructured(Entity $entity): void {
+                        foreach ([[$entity->getIdAssert()]] as [$_first]) {
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'foreachIteratedExpressionIncrementsOnce' => [
+                'code' => '<?php
+                    $i = 0;
+                    foreach ([$i++] as $_) {
+                    }',
+                'assertions' => [
+                    '$i===' => '1',
+                ],
+            ],
+            'foreachCounterIncrementedThroughAReferenceIsWidened' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function f(array $l): void {
+                        $i = 0;
+                        $r = &$i;
+                        foreach ($l as $_) {
+                            $r += rand(1, 3);
+                        }
+                        /** @psalm-check-type-exact $i = int<0, max> */;
+                    }
+                    PHP,
+            ],
+            'foreachTypeGoingIntoAByReferenceArgumentReachesTheVariablesItFeeds' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function f(array $l): void {
+                        $a = [0];
+                        $b = [0];
+                        $c = 0;
+                        foreach ($l as $_) {
+                            $z = 1;
+                            $a = $b;
+                            array_push($b, $c);
+                            $c = "s";
+                        }
+                        /** @psalm-check-type-exact $a = list{0: 0, 1?: 's'|0, ...<'s'|0>} */;
+                    }
+                    PHP,
+            ],
             'foreachArrayNestedInItselfOnEveryIterationSettles' => [
                 'code' => <<<'PHP'
                     <?php
@@ -2835,6 +3057,123 @@ final class ForeachTest extends TestCase
                         }
                     }',
             ],
+            'foreachOverANullableArrayTakesTheKeyAndValueOfTheArray' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param list<string>|null $a */
+                    function f(?array $a): void {
+                        foreach ($a as $k => $v) {
+                            /** @psalm-check-type-exact $k = int<0, max> */
+                            /** @psalm-check-type-exact $v = string */
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => ['PossiblyNullIterator'],
+            ],
+            'foreachOverANullableAndFalsableArrayReportsOnlyTheNull' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param array<int, string>|null|false $a */
+                    function f($a): void {
+                        foreach ($a as $k => $v) {
+                            /** @psalm-check-type-exact $k = int */
+                            /** @psalm-check-type-exact $v = string */
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => ['PossiblyNullIterator'],
+            ],
+            'foreachOverANullableIteratorTakesItsKeyAndValue' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param ArrayIterator<int, string>|null $a */
+                    function f(?ArrayIterator $a): void {
+                        foreach ($a as $k => $v) {
+                            /** @psalm-check-type-exact $k = int */
+                            /** @psalm-check-type-exact $v = string */
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => ['PossiblyNullIterator'],
+            ],
+            'foreachOverAFalsableIteratorAggregateTakesItsKeyAndValue' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param IteratorAggregate<int, string>|false $a */
+                    function f($a): void {
+                        foreach ($a as $k => $v) {
+                            /** @psalm-check-type-exact $k = int */
+                            /** @psalm-check-type-exact $v = string */
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => ['PossiblyFalseIterator'],
+            ],
+            'foreachOverANullableTemplateTakesTheValueOfItsBound' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @template T of null|list<int>
+                     * @param T $a
+                     */
+                    function f($a): void {
+                        foreach ($a as $v) {
+                            /** @psalm-check-type-exact $v = int */
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => ['PossiblyNullIterator'],
+            ],
+            'foreachOverANullableIterableTakesItsKeyAndValue' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param iterable<int, string>|null $a */
+                    function f(?iterable $a): void {
+                        foreach ($a as $k => $v) {
+                            /** @psalm-check-type-exact $k = int */
+                            /** @psalm-check-type-exact $v = string */
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => ['PossiblyNullIterator'],
+            ],
+            'foreachOverATemplateTakesTheValuesOfEveryTypeOfItsBound' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @template T of list<int>|IteratorAggregate<int, string>
+                     * @param T $a
+                     */
+                    function f($a): void {
+                        foreach ($a as $v) {
+                            /** @psalm-check-type-exact $v = int|string */
+                        }
+                    }
+                    PHP,
+            ],
+            'foreachOverANullableTemplateBoundByATemplateTakesTheValueOfTheInnerBound' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @template U of list<string>
+                     * @template T of U|null
+                     * @param T $a
+                     */
+                    function f($a): void {
+                        foreach ($a as $v) {
+                            /** @psalm-check-type-exact $v = string */
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => ['PossiblyNullIterator'],
+            ],
         ];
     }
 
@@ -2845,6 +3184,78 @@ final class ForeachTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'foreachIteratedExpressionAssertedTwiceInTheLoop' => [
+                'code' => '<?php
+                    class Entity {
+                        public ?int $id = null;
+
+                        /**
+                         * @psalm-mutation-free
+                         * @psalm-assert !null $this->id
+                         */
+                        public function getIdAssert(): int {
+                            return 1;
+                        }
+                    }
+
+                    function f(Entity $entity): void {
+                        foreach ([$entity->getIdAssert(), $entity->getIdAssert()] as $_) {
+                        }
+                    }',
+                'error_message' => 'RedundantConditionGivenDocblockType',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'foreachOverATemplateReportsEveryTypeOfItsBound' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @template T of int|stdClass
+                     * @param T|list<int> $a
+                     */
+                    function f($a): void {
+                        foreach ($a as $_) {}
+                    }
+                    PHP,
+                'error_message' => 'PossibleRawObjectIteration',
+            ],
+            'foreachOverANullableIntReportsTheInt' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param int|null $a */
+                    function f($a): void {
+                        /** @psalm-suppress PossiblyNullIterator */
+                        foreach ($a as $_) {}
+                    }
+                    PHP,
+                'error_message' => 'InvalidIterator',
+            ],
+            'foreachOverANullableRegularObjectReportsTheObject' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function f(?stdClass $a): void {
+                        /** @psalm-suppress PossiblyNullIterator */
+                        foreach ($a as $_) {}
+                    }
+                    PHP,
+                'error_message' => 'RawObjectIteration',
+            ],
+            'foreachOverANullableIteratorInAPureFunctionIsImpure' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @psalm-pure
+                     * @param ArrayIterator<int, string>|null $a
+                     */
+                    function f(?ArrayIterator $a): int {
+                        /** @psalm-suppress PossiblyNullIterator */
+                        foreach ($a as $_) {}
+
+                        return 1;
+                    }
+                    PHP,
+                'error_message' => 'ImpureMethodCall',
+            ],
             'foreachLiteralSelectedByAComparisonOfItselfStaysAUnionOfLiterals' => [
                 'code' => <<<'PHP'
                     <?php

@@ -38,6 +38,7 @@ use function preg_match;
 use function preg_quote;
 use function reset;
 use function serialize;
+use function str_starts_with;
 use function substr;
 
 /**
@@ -191,6 +192,41 @@ final class Clause implements Stringable
         }
 
         return (string) $assertion;
+    }
+
+    /**
+     * Whether an assertion of the clause compares with the variable or something under it: a change of the variable
+     * leaves the comparison unknown
+     *
+     * @psalm-mutation-free
+     */
+    public function comparesWith(string $var_id): bool
+    {
+        foreach ($this->possibilities as $assertions) {
+            foreach ($assertions as $assertion) {
+                if ($assertion instanceof IsIdentical
+                    || $assertion instanceof IsNotIdentical
+                    || $assertion instanceof IsLooselyEqual
+                    || $assertion instanceof IsNotLooselyEqual
+                ) {
+                    $comparand = $assertion->comparand;
+                } elseif ($assertion instanceof InArray || $assertion instanceof NotInArray) {
+                    $comparand = $assertion->haystack;
+                } else {
+                    continue;
+                }
+
+                if ($comparand !== null
+                    && ($comparand === $var_id
+                        || str_starts_with($comparand, $var_id . '[')
+                        || str_starts_with($comparand, $var_id . '->'))
+                ) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
     }
 
     /**
@@ -360,7 +396,10 @@ final class Clause implements Stringable
             $impossibility = [];
 
             foreach ($possibility as $type) {
+                // `$a !== $b` being false makes the two identical, so `$a` has the type of `$b`: this is so for a
+                // comparison with an operand, not for `$a === $b` being false, nor for an assertion of a docblock
                 if (!$type->hasEquality()
+                    || ($type instanceof IsNotIdentical && $type->comparand !== null)
                     || (($inner_type = $type->getAtomicType())
                         && ($inner_type instanceof TLiteralInt
                             || $inner_type instanceof TLiteralFloat

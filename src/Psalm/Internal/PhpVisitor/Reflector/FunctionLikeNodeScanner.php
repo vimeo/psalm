@@ -50,6 +50,7 @@ use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Storage\FunctionStorage;
 use Psalm\Storage\MethodStorage;
+use Psalm\Storage\NamedArguments;
 use Psalm\Storage\Possibilities;
 use Psalm\Storage\PropertyStorage;
 use Psalm\Type;
@@ -409,6 +410,16 @@ final class FunctionLikeNodeScanner
             $storage->internal = [...$classlike_storage->internal, ...$storage->internal];
         }
 
+        // private methods are only called by their class, except in traits where the using classes call them
+        if ($classlike_storage
+            && $stmt instanceof PhpParser\Node\Stmt\ClassMethod
+            && ($classlike_storage->named_arguments === NamedArguments::NOT_ALLOWED
+                || !$stmt->isPrivate()
+                || $classlike_storage->is_trait)
+        ) {
+            $storage->named_arguments = $classlike_storage->named_arguments;
+        }
+
         if ($doc_comment) {
             try {
                 $code_location = new CodeLocation($this->file_scanner, $stmt, null, true);
@@ -677,6 +688,8 @@ final class FunctionLikeNodeScanner
             }
         }
 
+        $docblock_has_mutations_annotation = $storage->has_mutations_annotation;
+
         foreach ($stmt->getAttrGroups() as $attr_group) {
             foreach ($attr_group->attrs as $attr) {
                 $attribute = AttributeResolver::resolve(
@@ -688,8 +701,10 @@ final class FunctionLikeNodeScanner
                     $this->classlike_storage->name ?? null,
                 );
 
+                // like `@pure`, the PhpStorm attribute gives way to a purity tag of the docblock
                 if ($attribute->fq_class_name === 'Psalm\\Pure'
-                    || $attribute->fq_class_name === 'JetBrains\\PhpStorm\\Pure'
+                    || ($attribute->fq_class_name === 'JetBrains\\PhpStorm\\Pure'
+                        && !$docblock_has_mutations_annotation)
                 ) {
                     $storage->specialize_call = true;
                     $storage->capabilities = Capabilities::NONE;
@@ -1495,6 +1510,7 @@ final class FunctionLikeNodeScanner
                 $overridden_param = $overridden_params[$param_storage->name];
                 $param_storage->sinks = $overridden_param->sinks;
                 $param_storage->value_sinks = $overridden_param->value_sinks;
+                $param_storage->declares_sinks = $overridden_param->declares_sinks;
                 $param_storage->assert_untainted = $overridden_param->assert_untainted;
             }
 

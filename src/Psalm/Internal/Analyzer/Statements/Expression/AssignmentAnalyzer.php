@@ -32,18 +32,23 @@ use Psalm\Internal\Analyzer\Statements\Expression\Fetch\AtomicPropertyFetchAnaly
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\InstancePropertyFetchAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\VariableFetchAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
+use Psalm\Internal\Analyzer\Statements\GlobalAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
 use Psalm\Internal\Clause;
 use Psalm\Internal\Codebase\CombinedFlowGraph;
 use Psalm\Internal\Codebase\DataFlowGraph;
+use Psalm\Internal\Codebase\DatabaseTaints;
 use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\Codebase\TaintStore;
+use Psalm\Internal\Codebase\TaintValidations;
+use Psalm\Internal\Codebase\UrlHosts;
 use Psalm\Internal\Codebase\VariableUseGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Internal\ReferenceConstraint;
 use Psalm\Internal\Scanner\VarDocblockComment;
+use Psalm\Internal\Type\Comparator\TypeComparisonResult;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\TypeExpander;
 use Psalm\Internal\TypeVisitor\TypeChecker;
@@ -639,6 +644,27 @@ final class AssignmentAnalyzer
             $assign_value_type = $assign_value_type->setByRef(false);
         }
 
+        if ($extended_var_id !== null) {
+            $context->forgetMethodResultsDependingOn($extended_var_id);
+
+            // the union of an array with another (`$a += $b`, `$a = $b + $a`) keeps the slots of its items; other
+            // copies that keep them (`array_merge()`) are taken as new arrays
+            if (!$assign_value instanceof PhpParser\Node\Expr\BinaryOp\Plus
+                || (ExpressionIdentifier::getExtendedVarId(
+                    $assign_value->left,
+                    $statements_analyzer->getFQCLN(),
+                    $statements_analyzer,
+                ) !== $extended_var_id
+                    && ExpressionIdentifier::getExtendedVarId(
+                        $assign_value->right,
+                        $statements_analyzer->getFQCLN(),
+                        $statements_analyzer,
+                    ) !== $extended_var_id)
+            ) {
+                $context->forgetReferencesPossiblyBoundUnder($extended_var_id);
+            }
+        }
+
         if ($extended_var_id && isset($context->vars_in_scope[$extended_var_id])) {
             if ($context->vars_in_scope[$extended_var_id]->by_ref
                 && !isset($context->captured_by_ref[$extended_var_id])
@@ -654,7 +680,13 @@ final class AssignmentAnalyzer
                 $assign_value_type = $assign_value_type->setByRef(true);
             }
 
-            // removes dependent vars from $context
+            // what depended on the variable, or on a variable bound to it, no longer holds
+            foreach ($context->getVarsBoundTo($extended_var_id) as $bound_var_id) {
+                if (isset($context->vars_in_scope[$bound_var_id])) {
+                    $context->removeDescendents($bound_var_id, $context->vars_in_scope[$bound_var_id]);
+                }
+            }
+
             $context->removeDescendents(
                 $extended_var_id,
                 $context->vars_in_scope[$extended_var_id],
@@ -753,14 +785,24 @@ final class AssignmentAnalyzer
                 && isset($context->byref_constraints[$var_id])
                 && ($outer_constraint_type = $context->byref_constraints[$var_id]->type)
             ) {
-                if (!UnionTypeComparator::isContainedBy(
+                $constraint_comparison_result = new TypeComparisonResult();
+
+                if (UnionTypeComparator::isContainedBy(
                     $codebase,
                     $assign_value_type,
                     $outer_constraint_type,
                     $assign_value_type->ignore_nullable_issues,
                     $assign_value_type->ignore_falsable_issues,
+                    $constraint_comparison_result,
                 )
                 ) {
+                    $statements_analyzer->type_variable_tracker->addBounds(
+                        $constraint_comparison_result->type_variable_lower_bounds,
+                        $constraint_comparison_result->type_variable_upper_bounds,
+                        new CodeLocation($statements_analyzer->getSource(), $assign_value ?? $assign_var),
+                        $statements_analyzer->getSuppressedIssues(),
+                    );
+                } else {
                     $referenced_properties = $context->byref_constraints[$var_id]->referenced_properties;
 
                     IssueBuffer::maybeAdd(
@@ -845,13 +887,14 @@ final class AssignmentAnalyzer
             }
 
             if ($context->vars_in_scope[$var_id]->isNever()) {
+                // an issue only recorded is in a pass a loop analyses again: the value stays never in it
                 if (!IssueBuffer::accepts(
                     new NoValue(
                         'All possible types for this assignment were invalidated - This may be dead code',
                         new CodeLocation($statements_analyzer->getSource(), $assign_var),
                     ),
                     $statements_analyzer->getSuppressedIssues(),
-                )) {
+                ) && !IssueBuffer::isRecording()) {
                     // if the error is suppressed, do not treat it as never anymore
                     $new_mutable = $context->vars_in_scope[$var_id]->getBuilder()->addType(new TMixed);
                     $new_mutable->removeType('never');
@@ -1230,6 +1273,10 @@ final class AssignmentAnalyzer
             $taint_flow_graph->addOutputStream($new_parent_node);
         }
 
+        if ($var_id === '$_SESSION' && $taint_flow_graph instanceof TaintFlowGraph) {
+            $taint_flow_graph->addPath($new_parent_node, GlobalAnalyzer::getSessionNode($taint_flow_graph), '=');
+        }
+
         foreach ($parent_nodes as $parent_node) {
             $flow_graph->addPath(
                 $parent_node,
@@ -1564,6 +1611,46 @@ final class AssignmentAnalyzer
             $context->references_to_external_scope[$lhs_var_id] = true;
         }
 
+        if ($stmt->var instanceof ArrayDimFetch) {
+            // the binding puts the item in the array, and replaces what the item was bound to before without writing it
+            unset($context->vars_in_scope[$lhs_var_id]);
+
+            $referenced_type = $context->vars_in_scope[$rhs_var_id];
+
+            ArrayAssignmentAnalyzer::updateArrayType(
+                $statements_analyzer,
+                $stmt->var,
+                null,
+                $referenced_type,
+                $context,
+                true,
+            );
+
+            // an item of the same array, which the write of an item of unknown key forgets, still holds its value
+            $context->vars_in_scope[$rhs_var_id] ??= $referenced_type;
+
+            // what is written through the item can't be tracked: the array holding it counts as used
+            $root_var = $stmt->var->var;
+            while ($root_var instanceof ArrayDimFetch) {
+                $root_var = $root_var->var;
+            }
+
+            $root_var_id = ExpressionIdentifier::getExtendedVarId(
+                $root_var,
+                $statements_analyzer->getFQCLN(),
+                $statements_analyzer,
+            );
+
+            if ($root_var_id !== null
+                && isset($context->vars_in_scope[$root_var_id])
+                && ($variable_use_graph = $statements_analyzer->variable_use_graph)
+            ) {
+                foreach ($context->vars_in_scope[$root_var_id]->parent_nodes as $parent_node) {
+                    $variable_use_graph->addPath($parent_node, DataFlowNode::getForVariableUse(), 'variable-use');
+                }
+            }
+        }
+
         $context->vars_in_scope[$lhs_var_id] = &$context->vars_in_scope[$rhs_var_id];
         $context->hasVariable($lhs_var_id);
         $context->references_in_scope[$lhs_var_id] = $rhs_var_id;
@@ -1686,14 +1773,6 @@ final class AssignmentAnalyzer
 
         $context->vars_in_scope[$lhs_var_id] =
             $context->vars_in_scope[$lhs_var_id]->addParentNodes([$lhs_node->id => $lhs_node]);
-
-        if ($stmt->var instanceof ArrayDimFetch && $stmt->var->dim !== null) {
-            // Analyze offset so that variables in the offset get marked as used
-            $was_inside_general_use = $context->inside_general_use;
-            $context->inside_general_use = true;
-            ExpressionAnalyzer::analyze($statements_analyzer, $stmt->var->dim, $context);
-            $context->inside_general_use = $was_inside_general_use;
-        }
 
         // The assignment expression itself evaluates to the referenced value.
         if ($from_stmt === null && isset($context->vars_in_scope[$lhs_var_id])) {
@@ -2059,6 +2138,7 @@ final class AssignmentAnalyzer
                     $by_ref_out_type,
                     $statements_analyzer,
                 );
+                $context->forgetMethodResultsDependingOn($property_var_id);
             }
 
             return;
@@ -2251,6 +2331,14 @@ final class AssignmentAnalyzer
                     $context->possibly_assigned_var_ids[$var_id] = true;
                     $context->vars_in_scope[$var_id] = $by_ref_out_type;
                     $context->writeToReferencesPossiblyBound($var_id, $by_ref_out_type, $codebase);
+                    if ($context->references_in_scope) {
+                        ArrayAssignmentAnalyzer::updateArraysHoldingBoundItem(
+                            $statements_analyzer,
+                            $context,
+                            $var_id,
+                            new CodeLocation($statements_analyzer->getSource(), $stmt),
+                        );
+                    }
 
                     if (!($stmt_type = $statements_analyzer->node_data->getType($stmt))
                         || $stmt_type->isNever()
@@ -2266,6 +2354,14 @@ final class AssignmentAnalyzer
 
             $context->vars_in_scope[$var_id] = $by_ref_out_type;
             $context->writeToReferencesPossiblyBound($var_id, $by_ref_out_type, $codebase);
+            if ($context->references_in_scope) {
+                ArrayAssignmentAnalyzer::updateArraysHoldingBoundItem(
+                    $statements_analyzer,
+                    $context,
+                    $var_id,
+                    new CodeLocation($statements_analyzer->getSource(), $stmt),
+                );
+            }
 
             $stmt_type = $statements_analyzer->node_data->getType($stmt);
 
@@ -2479,6 +2575,75 @@ final class AssignmentAnalyzer
     }
 
     /**
+     * @param int-mask-of<TaintKind::*> $removed_taints
+     */
+    private static function assignDestructuredItem(
+        StatementsAnalyzer $statements_analyzer,
+        Codebase $codebase,
+        Context $context,
+        PhpParser\Node\Expr $var,
+        string $list_var_id,
+        ?Union $new_assign_type,
+        bool $has_comment_type,
+        int &$removed_taints,
+    ): void {
+        if ($new_assign_type !== null
+            && $new_assign_type->hasMixed()
+            && !$has_comment_type
+            && !str_contains($list_var_id, '->')
+            && !str_starts_with($list_var_id, '$_')
+            && !$context->collect_initializations
+        ) {
+            IssueBuffer::maybeAdd(
+                new MixedAssignment(
+                    'Unable to determine the type that ' . $list_var_id . ' is being assigned to',
+                    new CodeLocation($statements_analyzer->getSource(), $var),
+                ),
+                $statements_analyzer->getSuppressedIssues(),
+            );
+        }
+
+        $context->vars_in_scope[$list_var_id] = $new_assign_type ?: Type::getMixed();
+
+        if ($statements_analyzer->data_flow_graph) {
+            $var_location = new CodeLocation($statements_analyzer->getSource(), $var);
+
+            if (!$context->vars_in_scope[$list_var_id]->parent_nodes) {
+                $assignment_node = DataFlowNode::getForAssignment(
+                    $list_var_id,
+                    $var_location,
+                );
+
+                $context->vars_in_scope[$list_var_id] =
+                    $context->vars_in_scope[$list_var_id]->setParentNodes([
+                        $assignment_node->id => $assignment_node,
+                    ])
+                ;
+            } else {
+                if (!$graph = $statements_analyzer->getDataFlowGraphWithSuppressed()) {
+                    $context->vars_in_scope[$list_var_id] =
+                        $context->vars_in_scope[$list_var_id]->setParentNodes([]);
+                } else {
+                    $event = new AddRemoveTaintsEvent($var, $context, $statements_analyzer, $codebase);
+
+                    $added_taints = $codebase->config->eventDispatcher->dispatchAddTaints($event);
+                    $removed_taints |= $codebase->config->eventDispatcher->dispatchRemoveTaints($event);
+
+                    self::taintAssignment(
+                        $context->vars_in_scope[$list_var_id],
+                        $graph,
+                        $list_var_id,
+                        $var_location,
+                        $removed_taints,
+                        $added_taints,
+                        $codebase->getInputTaints(),
+                    );
+                }
+            }
+        }
+    }
+
+    /**
      * @param PhpParser\Node\Expr\List_|PhpParser\Node\Expr\Array_ $assign_var
      * @param list<VarDocblockComment> $var_comments
      */
@@ -2557,8 +2722,18 @@ final class AssignmentAnalyzer
             $new_assign_type = null;
             $assigned = false;
             $has_null = false;
+            $has_shape_with_key = false;
 
             foreach ($assign_value_type->getAtomicTypes() as $assign_value_atomic_type) {
+                // like for the items of a list, a null value is no issue when a shape has the key for sure
+                if ($assign_value_atomic_type instanceof TKeyedArray
+                    && $offset_value !== null
+                    && ($assign_value_atomic_type->properties[$offset_value] ?? null)?->possibly_undefined
+                        === false
+                ) {
+                    $has_shape_with_key = true;
+                }
+
                 if ($assign_value_atomic_type instanceof TKeyedArray
                     && !$assign_var_item->key
                 ) {
@@ -2737,7 +2912,7 @@ final class AssignmentAnalyzer
 
 
             if (!$assigned) {
-                if ($has_null) {
+                if ($has_null && !$has_shape_with_key) {
                     IssueBuffer::maybeAdd(
                         new PossiblyNullArrayAccess(
                             'Cannot access array value on null variable ' . $extended_var_id,
@@ -2781,60 +2956,16 @@ final class AssignmentAnalyzer
                 }
 
                 if ($list_var_id) {
-                    if ($new_assign_type !== null
-                        && $new_assign_type->hasMixed()
-                        && !$has_comment_type
-                        && !str_contains($list_var_id, '->')
-                        && !str_starts_with($list_var_id, '$_')
-                        && !$context->collect_initializations
-                    ) {
-                        IssueBuffer::maybeAdd(
-                            new MixedAssignment(
-                                'Unable to determine the type that ' . $list_var_id . ' is being assigned to',
-                                new CodeLocation($statements_analyzer->getSource(), $var),
-                            ),
-                            $statements_analyzer->getSuppressedIssues(),
-                        );
-                    }
-
-                    $context->vars_in_scope[$list_var_id] = $new_assign_type ?: Type::getMixed();
-
-                    if ($statements_analyzer->data_flow_graph) {
-                        $var_location = new CodeLocation($statements_analyzer->getSource(), $var);
-
-                        if (!$context->vars_in_scope[$list_var_id]->parent_nodes) {
-                            $assignment_node = DataFlowNode::getForAssignment(
-                                $list_var_id,
-                                $var_location,
-                            );
-
-                            $context->vars_in_scope[$list_var_id] =
-                                $context->vars_in_scope[$list_var_id]->setParentNodes([
-                                    $assignment_node->id => $assignment_node,
-                                ])
-                            ;
-                        } else {
-                            if (!$graph = $statements_analyzer->getDataFlowGraphWithSuppressed()) {
-                                $context->vars_in_scope[$list_var_id] =
-                                    $context->vars_in_scope[$list_var_id]->setParentNodes([]);
-                            } else {
-                                $event = new AddRemoveTaintsEvent($var, $context, $statements_analyzer, $codebase);
-
-                                $added_taints = $codebase->config->eventDispatcher->dispatchAddTaints($event);
-                                $removed_taints |= $codebase->config->eventDispatcher->dispatchRemoveTaints($event);
-
-                                self::taintAssignment(
-                                    $context->vars_in_scope[$list_var_id],
-                                    $graph,
-                                    $list_var_id,
-                                    $var_location,
-                                    $removed_taints,
-                                    $added_taints,
-                                    $codebase->getInputTaints(),
-                                );
-                            }
-                        }
-                    }
+                    self::assignDestructuredItem(
+                        $statements_analyzer,
+                        $codebase,
+                        $context,
+                        $var,
+                        $list_var_id,
+                        $new_assign_type,
+                        $has_comment_type,
+                        $removed_taints,
+                    );
                 }
             }
 
@@ -2971,6 +3102,14 @@ final class AssignmentAnalyzer
                 $context->vars_in_scope[$var_id] = $assign_value_type;
                 $context->vars_possibly_in_scope[$var_id] = true;
                 $context->writeToReferencesPossiblyBound($var_id, $assign_value_type, $codebase);
+                if ($context->references_in_scope) {
+                    ArrayAssignmentAnalyzer::updateArraysHoldingBoundItem(
+                        $statements_analyzer,
+                        $context,
+                        $var_id,
+                        new CodeLocation($statements_analyzer, $assign_var),
+                    );
+                }
 
                 $location = new CodeLocation($statements_analyzer, $assign_var);
 
@@ -3222,8 +3361,20 @@ final class AssignmentAnalyzer
             // the start of a string assigned, for the keys of the keyed stores it is used as
             $taint_flow_graph = $statements_analyzer->getTaintFlowGraphWithSuppressed();
             if ($assign_value && $taint_flow_graph) {
+                $assigned_type = $statements_analyzer->node_data->getType($assign_value);
                 foreach ($context->vars_in_scope[$var_id]->parent_nodes as $var_node) {
                     TaintStore::recordAssignment($statements_analyzer, $taint_flow_graph, $assign_value, $var_node);
+                    UrlHosts::recordAssignment($statements_analyzer, $taint_flow_graph, $assign_value, $var_node);
+                    if ($assigned_type) {
+                        DatabaseTaints::recordAssignment($taint_flow_graph, $assigned_type, $var_node);
+                        TaintValidations::recordAssignment(
+                            $statements_analyzer,
+                            $taint_flow_graph,
+                            $assign_value,
+                            $assigned_type,
+                            $var_node,
+                        );
+                    }
                 }
             }
         }

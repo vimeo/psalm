@@ -208,7 +208,6 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
                 $stmt->getArgs(),
                 null,
                 null,
-                true,
                 $context,
             );
 
@@ -315,7 +314,6 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
                 $stmt->getArgs(),
                 null,
                 null,
-                true,
                 $context,
             );
 
@@ -829,13 +827,16 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
                         $stmt->getArgs(),
                         null,
                         null,
-                        true,
                         $context,
                     ) === false) {
                         return;
                     }
 
-                    $result->return_type = Type::getMixed();
+                    // a method of a value that can't exist is never called (a loop's first pass narrowing null away),
+                    // and one of a value a loop may not have set yet (isset() in its first pass) returns such a value
+                    $result->return_type = $lhs_type_part instanceof TNever
+                        ? Type::getNever()
+                        : Type::getMixed($lhs_type_part instanceof TMixed && $lhs_type_part->from_loop_isset);
                 }
                 return;
 
@@ -941,7 +942,6 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
                 $stmt->getArgs(),
                 $lhs_type_part_callable->params,
                 $method_id,
-                false,
                 $context,
                 $template_result,
             );

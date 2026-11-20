@@ -21,6 +21,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\GlobalStateAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\SimpleTypeInferer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
+use Psalm\Internal\Analyzer\Statements\GlobalAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\CliOutput;
 use Psalm\Internal\Codebase\ConditionalTaintSinks;
@@ -267,7 +268,6 @@ final class NewAnalyzer extends CallAnalyzer
                         $stmt->getArgs(),
                         null,
                         null,
-                        true,
                         $context,
                     );
 
@@ -287,7 +287,6 @@ final class NewAnalyzer extends CallAnalyzer
                         $stmt->getArgs(),
                         null,
                         null,
-                        true,
                         $context,
                     );
 
@@ -352,7 +351,6 @@ final class NewAnalyzer extends CallAnalyzer
                     $stmt->getArgs(),
                     null,
                     null,
-                    true,
                     $context,
                 );
 
@@ -588,7 +586,10 @@ final class NewAnalyzer extends CallAnalyzer
         CliOutput::checkInstantiation($statements_analyzer, $context, $storage, $stmt);
     }
 
-    private static function applyConstructorAssertions(
+    /**
+     * What the constructor leaves in the context: the globals it writes, then what it asserts
+     */
+    private static function applyConstructorEffects(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\New_ $stmt,
         Context $context,
@@ -598,6 +599,8 @@ final class NewAnalyzer extends CallAnalyzer
         $codebase = $statements_analyzer->getCodebase();
         $declaring_method_id = $codebase->methods->getDeclaringMethodId($method_id) ?? $method_id;
         $method_storage = $codebase->methods->getStorage($declaring_method_id);
+
+        GlobalAnalyzer::readGlobalsWrittenBy($statements_analyzer, $context, $method_storage);
 
         if (!$method_storage->assertions || !$stmt->class instanceof PhpParser\Node\Name) {
             return;
@@ -752,7 +755,7 @@ final class NewAnalyzer extends CallAnalyzer
                     $can_extend,
                 );
 
-                self::applyConstructorAssertions(
+                self::applyConstructorEffects(
                     $statements_analyzer,
                     $stmt,
                     $context,
@@ -836,22 +839,8 @@ final class NewAnalyzer extends CallAnalyzer
                     new Union([$result_atomic_type]),
                 );
             }
-        } elseif ($stmt->getArgs()) {
-            IssueBuffer::maybeAdd(
-                new TooManyArguments(
-                    'Class ' . $fq_class_name . ' has no __construct, but arguments were passed',
-                    new CodeLocation($statements_analyzer->getSource(), $stmt),
-                    $fq_class_name . '::__construct',
-                ),
-                $statements_analyzer->getSuppressedIssues(),
-            );
-        } elseif (($type_params = array_values(TemplateDefaults::bindOmitted($storage, [], true, false))) !== []) {
-            $result_atomic_type = new TGenericObject($fq_class_name, $type_params, false, $from_static);
-
-            $statements_analyzer->node_data->setType(
-                $stmt,
-                new Union([$result_atomic_type]),
-            );
+        } else {
+            self::analyzeConstructorlessNew($statements_analyzer, $stmt, $storage, $fq_class_name, $from_static);
         }
 
         $is_external_mutation_free = $storage->isExternalMutationFree();
@@ -1199,6 +1188,7 @@ final class NewAnalyzer extends CallAnalyzer
             $resolved_capabilities,
             $method_storage->params,
             $args,
+            $own_capabilities === Capabilities::ALL,
         );
 
         $stmt->setAttribute(self::CALLEE_CAPABILITIES_ATTRIBUTE, $constructor_capabilities);
@@ -1363,7 +1353,6 @@ final class NewAnalyzer extends CallAnalyzer
                 $stmt->getArgs(),
                 null,
                 null,
-                true,
                 $context,
             );
 
@@ -1459,7 +1448,6 @@ final class NewAnalyzer extends CallAnalyzer
                 $stmt->getArgs(),
                 null,
                 null,
-                true,
                 $context,
             );
 
@@ -2198,6 +2186,47 @@ final class NewAnalyzer extends CallAnalyzer
         }
 
         return $generic_param_types;
+    }
+
+    /**
+     * A `new` on a class without a constructor: nothing binds the templates of a generic one, as with a
+     * constructor without parameters.
+     */
+    private static function analyzeConstructorlessNew(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr\New_ $stmt,
+        ClassLikeStorage $storage,
+        string $fq_class_name,
+        bool $from_static,
+    ): void {
+        if ($stmt->getArgs()) {
+            IssueBuffer::maybeAdd(
+                new TooManyArguments(
+                    'Class ' . $fq_class_name . ' has no __construct, but arguments were passed',
+                    new CodeLocation($statements_analyzer->getSource(), $stmt),
+                    $fq_class_name . '::__construct',
+                ),
+                $statements_analyzer->getSuppressedIssues(),
+            );
+
+            return;
+        }
+
+        $type_params = self::getGenericParamTypes(
+            $statements_analyzer,
+            $stmt,
+            $storage,
+            new TemplateResult([], []),
+            $fq_class_name,
+            null,
+        );
+
+        if ($type_params !== []) {
+            $statements_analyzer->node_data->setType(
+                $stmt,
+                new Union([new TGenericObject($fq_class_name, $type_params, false, $from_static)]),
+            );
+        }
     }
 
     /**

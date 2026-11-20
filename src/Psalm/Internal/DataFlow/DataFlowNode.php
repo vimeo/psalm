@@ -231,6 +231,16 @@ final class DataFlowNode implements Stringable
     }
 
     /**
+     * What the program stores in $_SESSION, under its keys, which the requests reading the session back get
+     *
+     * @psalm-pure
+     */
+    public static function getForSession(): self
+    {
+        return self::make('$_SESSION', '$_SESSION', null);
+    }
+
+    /**
      * Builds a node carrying a taint bitmask at a location. Whether it behaves as a
      * source or a sink depends on whether the caller passes it to
      * {@see TaintFlowGraph::addSource()} or {@see TaintFlowGraph::addSink()}.
@@ -446,6 +456,24 @@ final class DataFlowNode implements Stringable
     }
 
     /**
+     * The node through which the arguments a variadic parameter is given after its first reach the body of the
+     * function-like, from $param_node, the node of the parameter. Each of those arguments has the node of its own
+     * position (see {@see self::getParameterOffset()}), which the sinks of the parameter are on already: this one
+     * has none, so that they don't report what reaches them a second time.
+     *
+     * @psalm-mutation-free
+     */
+    public static function getForVariadicArguments(self $param_node): self
+    {
+        return self::make(
+            ($param_node->unspecialized_id ?? $param_node->id) . ' variadic',
+            $param_node->label . '...',
+            $param_node->code_location,
+            $param_node->specialization_key,
+        );
+    }
+
+    /**
      * Like {@see self::getForMethodArgument()} but resolves the (declaring) method storage from the
      * cased method id itself, via $methods, instead of requiring the caller to hold it. Returns null
      * when the id does not resolve to a stored method (a callable object, or a magic method with no
@@ -497,23 +525,6 @@ final class DataFlowNode implements Stringable
             $storage,
             $specialization_location,
         );
-    }
-
-    /**
-     * The index at which the variadic $param is declared in $storage when the argument at $position comes after
-     * it, null when the node at $position is the declared one (or $param isn't declared in $storage). An argument
-     * the variadic parameter collects has a node keyed by its position, which the body reads through the declared one.
-     *
-     * @psalm-mutation-free
-     */
-    public static function getVariadicDeclaredOffset(
-        FunctionLikeStorage $storage,
-        FunctionLikeParameter $param,
-        int $position,
-    ): ?int {
-        $declared = self::getParameterOffset($storage, $param, -1);
-
-        return $declared !== -1 && $declared < $position ? $declared : null;
     }
 
     /**
