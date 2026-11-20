@@ -824,29 +824,18 @@ final class TaintStore
     }
 
     /**
-     * The format up to its conversions, with what they put in: only `%s` puts its argument as it is. Of a format the
-     * analysis knows only the start of, that start up to its first conversion.
+     * The format up to its conversions, with what they put in: only `%s` puts its argument as it is
      *
      * @param array<array-key, Arg> $args
      */
     private static function getKnownStartOfSprintf(StatementsAnalyzer $statements_analyzer, array $args): ?string
     {
         $args = array_values($args);
-        if (!isset($args[0])) {
+        if (!isset($args[0]) || !self::isSingleLiteral($statements_analyzer, $args[0]->value)) {
             return null;
         }
 
-        $format = self::getKnownStart($statements_analyzer, $args[0]->value);
-        if ($format === null) {
-            return null;
-        }
-
-        if (!self::isSingleLiteral($statements_analyzer, $args[0]->value)) {
-            $conversion = strpos($format, '%');
-
-            return $conversion === false ? $format : substr($format, 0, $conversion);
-        }
-
+        $format = (string) self::getKnownStart($statements_analyzer, $args[0]->value);
         $start = '';
         for ($argument = 1;; $argument++) {
             $conversion = strpos($format, '%');

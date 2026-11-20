@@ -1728,32 +1728,24 @@ final class TaintTest extends TestCase
                         echo (string) $pdo->query("SELECT name FROM users")->fetch()["name"];
                     }',
             ],
-            'sprintfOfAFormatInAVariableIsParsedFromWhatTheFormatStartsWith' => [
+            'queryInAVariableIsReadFromWhatItStartsWithWhenKnownTextFollows' => [
                 'code' => '<?php
-                    function run(PDO $pdo, float $delta, int $id): void {
-                        $pdo->exec(sprintf("INSERT INTO users (name, bio) VALUES (\'admin\', %s)", $pdo->quote($_GET["bio"])));
-                        if ($delta > 0) {
-                            $sql = "UPDATE accounts SET balance = balance+{$delta} WHERE id=%s";
+                    function run(PDO $pdo, bool $active): void {
+                        $pdo->prepare("INSERT INTO users (name, bio) VALUES (?, ?)")->execute(["admin", $_GET["bio"]]);
+                        if ($active) {
+                            $sql = "SELECT name FROM users WHERE active = 1";
                         } else {
-                            $sql = "UPDATE accounts SET balance = balance-" . (-$delta) . " WHERE id=%s";
+                            $sql = "SELECT name FROM users WHERE active = 0";
                         }
-                        $pdo->exec(sprintf($sql, $id));
-                        echo (string) $pdo->query("SELECT name FROM users")->fetch()["name"];
+                        echo (string) $pdo->query($sql . " LIMIT 1")->fetch()["name"];
                     }',
             ],
-            'queryInAVariableIsReadFromWhatItStartsWith' => [
+            'partTheAnalysisDoesntKnowIsAValueWhenKnownTextOrANumberFollows' => [
                 'code' => '<?php
-                    /** @param list<string> $messages */
-                    function store(PDO $pdo, array $messages): void {
-                        $sql = "INSERT INTO logs (message) VALUES " . implode(",", array_map(
-                            fn(string $message): string => "(" . $pdo->quote($message) . ")",
-                            $messages,
-                        ));
-                        $pdo->exec($sql);
-                    }
-
-                    store(new PDO("sqlite::memory:"), [(string) $_GET["message"]]);
-                    echo (string) (new PDO("sqlite::memory:"))->query("SELECT name FROM users")->fetch()["name"];',
+                    function run(PDO $pdo, int $id): void {
+                        $pdo->exec("UPDATE users SET bio = " . $pdo->quote($_GET["bio"]) . " WHERE id = " . $id);
+                        echo (string) $pdo->query("SELECT name FROM users")->fetch()["name"];
+                    }',
             ],
             'readonlyQueryTheAnalysisCantParseStoresNothing' => [
                 'code' => '<?php
@@ -1822,7 +1814,7 @@ final class TaintTest extends TestCase
                     }
 
                     function show(PDO $pdo, string $table): void {
-                        echo (string) $pdo->query("SELECT * FROM $table")->fetch()["name"];
+                        echo (string) $pdo->query("SELECT * FROM $table LIMIT 1")->fetch()["name"];
                     }',
             ],
             'columnsStoredFromOneValueStayApartInAllColumns' => [
@@ -7943,15 +7935,6 @@ final class TaintTest extends TestCase
                     }',
                 'error_message' => 'TaintedHtml',
             ],
-            'sprintfOfAFormatInAVariableStoresItsArgumentsInTheColumnTheFormatStartsWith' => [
-                'code' => '<?php
-                    function run(PDO $pdo, string $where): void {
-                        $sql = "UPDATE users SET bio = %s " . $where;
-                        $pdo->exec(sprintf($sql, $pdo->quote($_GET["bio"])));
-                        echo (string) $pdo->query("SELECT bio FROM users")->fetch()["bio"];
-                    }',
-                'error_message' => 'TaintedHtml',
-            ],
             'alterTableUpdateStoresInItsColumns' => [
                 'code' => '<?php
                     function run(PDO $pdo): void {
@@ -7960,7 +7943,7 @@ final class TaintTest extends TestCase
                     }',
                 'error_message' => 'TaintedHtml',
             ],
-            'rowsOfAQueryInAVariableAreStoredInItsColumns' => [
+            'rowsEndingAQueryInAVariableCanBeStoredInAnyColumn' => [
                 'code' => '<?php
                     /** @param list<string> $messages */
                     function store(PDO $pdo, array $messages): void {
@@ -7972,7 +7955,53 @@ final class TaintTest extends TestCase
                     }
 
                     store(new PDO("sqlite::memory:"), [(string) $_GET["message"]]);
-                    echo (string) (new PDO("sqlite::memory:"))->query("SELECT message FROM logs")->fetch()["message"];',
+                    echo (string) (new PDO("sqlite::memory:"))->query("SELECT name FROM users")->fetch()["name"];',
+                'error_message' => 'TaintedHtml',
+            ],
+            'queryInAVariableTheAnalysisKnowsOnlyTheStartOfCantBeParsed' => [
+                'code' => '<?php
+                    function run(PDO $pdo, bool $active): void {
+                        $pdo->prepare("INSERT INTO users (name, bio) VALUES (?, ?)")->execute(["admin", $_GET["bio"]]);
+                        if ($active) {
+                            $sql = "SELECT name FROM users WHERE active = 1";
+                        } else {
+                            $sql = "SELECT name FROM users WHERE active = 0";
+                        }
+                        echo (string) $pdo->query($sql)->fetch()["name"];
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'statementEndingWithAPartTheAnalysisDoesntKnowCantBeParsed' => [
+                'code' => '<?php
+                    function run(PDO $pdo, string $id): void {
+                        $pdo->exec("UPDATE users SET bio = " . $pdo->quote($_GET["bio"]) . " WHERE id = " . $id);
+                        echo (string) $pdo->query("SELECT name FROM users")->fetch()["name"];
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'sprintfOfAFormatInAVariableCantBeParsed' => [
+                'code' => '<?php
+                    function run(PDO $pdo, float $delta, int $id): void {
+                        $pdo->exec(sprintf("INSERT INTO users (name, bio) VALUES (\'admin\', %s)", $pdo->quote($_GET["bio"])));
+                        if ($delta > 0) {
+                            $sql = "UPDATE accounts SET balance = balance+{$delta} WHERE id=%s";
+                        } else {
+                            $sql = "UPDATE accounts SET balance = balance-" . (-$delta) . " WHERE id=%s";
+                        }
+                        $pdo->exec(sprintf($sql, $id));
+                        echo (string) $pdo->query("SELECT name FROM users")->fetch()["name"];
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'selectOfATableNotKnownEndingTheQueryCanReadAnyColumn' => [
+                'code' => '<?php
+                    function store(PDO $pdo): void {
+                        $pdo->prepare("INSERT INTO users (name, bio) VALUES (?, ?)")->execute(["admin", $_GET["bio"]]);
+                    }
+
+                    function show(PDO $pdo, string $table): void {
+                        echo (string) $pdo->query("SELECT * FROM $table")->fetch()["name"];
+                    }',
                 'error_message' => 'TaintedHtml',
             ],
             'quotedStringKeepsItsTaintsButSql' => [

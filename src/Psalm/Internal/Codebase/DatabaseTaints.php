@@ -18,7 +18,11 @@ use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Type\Atomic\TArray;
+use Psalm\Type\Atomic\TBool;
+use Psalm\Type\Atomic\TFloat;
+use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TKeyedArray;
+use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Union;
 
 use function array_values;
@@ -357,7 +361,7 @@ final class DatabaseTaints
 
         $holes = [];
         $sql = self::getText($statements_analyzer, $sql_arg->value, $holes);
-        $parsed = SqlStatement::parse($sql);
+        $parsed = SqlStatement::parse($sql, self::getNumberHoles($statements_analyzer, $holes));
 
         $statement = self::getStatementNode($statements_analyzer, $graph, $spec, $args, $call_location);
 
@@ -1092,7 +1096,7 @@ final class DatabaseTaints
         $holes[] = $expr;
 
         // what the analysis knows the part starts with, as for the keys of a store (a variable assigned
-        // `'INSERT INTO t (a, b) VALUES ' . implode(',', $rows)`)
+        // `'SELECT a FROM t'` or `'SELECT a FROM t WHERE b = 1'`, then concatenated with `' LIMIT 1'`)
         return TaintStore::getKnownStart($statements_analyzer, $expr)
             . SqlStatement::HOLE_MARKER . (count($holes) - 1) . SqlStatement::HOLE_MARKER;
     }
@@ -1153,6 +1157,36 @@ final class DatabaseTaints
         }
 
         return $text . substr($format, $offset);
+    }
+
+    /**
+     * The holes whose text is a number (an int, a float, a bool or null): they can't hold SQL
+     *
+     * @param list<Expr> $holes
+     * @return list<int>
+     * @psalm-capabilities read-props
+     */
+    private static function getNumberHoles(StatementsAnalyzer $statements_analyzer, array $holes): array
+    {
+        $number_holes = [];
+        foreach ($holes as $offset => $hole) {
+            $type = $statements_analyzer->node_data->getType($hole);
+            if ($type === null) {
+                continue;
+            }
+
+            foreach ($type->getAtomicTypes() as $atomic) {
+                if (!$atomic instanceof TInt && !$atomic instanceof TFloat && !$atomic instanceof TBool
+                    && !$atomic instanceof TNull
+                ) {
+                    continue 2;
+                }
+            }
+
+            $number_holes[] = $offset;
+        }
+
+        return $number_holes;
     }
 
     /**
