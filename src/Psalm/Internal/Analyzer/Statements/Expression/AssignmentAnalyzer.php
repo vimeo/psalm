@@ -44,6 +44,7 @@ use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Internal\ReferenceConstraint;
 use Psalm\Internal\Scanner\VarDocblockComment;
+use Psalm\Internal\Type\Comparator\TypeComparisonResult;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\TypeExpander;
 use Psalm\Internal\TypeVisitor\TypeChecker;
@@ -763,14 +764,24 @@ final class AssignmentAnalyzer
                 && isset($context->byref_constraints[$var_id])
                 && ($outer_constraint_type = $context->byref_constraints[$var_id]->type)
             ) {
-                if (!UnionTypeComparator::isContainedBy(
+                $constraint_comparison_result = new TypeComparisonResult();
+
+                if (UnionTypeComparator::isContainedBy(
                     $codebase,
                     $assign_value_type,
                     $outer_constraint_type,
                     $assign_value_type->ignore_nullable_issues,
                     $assign_value_type->ignore_falsable_issues,
+                    $constraint_comparison_result,
                 )
                 ) {
+                    $statements_analyzer->type_variable_tracker->addBounds(
+                        $constraint_comparison_result->type_variable_lower_bounds,
+                        $constraint_comparison_result->type_variable_upper_bounds,
+                        new CodeLocation($statements_analyzer->getSource(), $assign_value ?? $assign_var),
+                        $statements_analyzer->getSuppressedIssues(),
+                    );
+                } else {
                     $referenced_properties = $context->byref_constraints[$var_id]->referenced_properties;
 
                     IssueBuffer::maybeAdd(

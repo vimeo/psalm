@@ -8,6 +8,8 @@ use Psalm\Internal\Type\TemplateBound;
 use Psalm\Type\Atomic;
 use Psalm\Type\Union;
 
+use function array_merge;
+
 /**
  * @internal
  */
@@ -66,4 +68,22 @@ final class TypeComparisonResult
      * @var list<array{string, TemplateBound}>
      */
     public array $type_variable_upper_bounds = [];
+
+    /**
+     * Takes the type-variable bounds recorded by the comparison of a part (an array value, a shape entry).
+     *
+     * @psalm-external-mutation-free
+     */
+    public function addTypeVariableBounds(self $part_comparison_result): void
+    {
+        $this->type_variable_lower_bounds = array_merge(
+            $this->type_variable_lower_bounds,
+            $part_comparison_result->type_variable_lower_bounds,
+        );
+
+        $this->type_variable_upper_bounds = array_merge(
+            $this->type_variable_upper_bounds,
+            $part_comparison_result->type_variable_upper_bounds,
+        );
+    }
 }
