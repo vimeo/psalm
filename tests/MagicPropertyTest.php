@@ -1345,7 +1345,7 @@ final class MagicPropertyTest extends TestCase
                     final class C {}
 
                     /** @property-read ?C $p */
-                    final class M {
+                    class M {
                         /** @var array<string, ?C> */
                         private array $data = [];
 
@@ -1358,7 +1358,21 @@ final class MagicPropertyTest extends TestCase
                         }
                     }
 
+                    final class Child extends M {}
+
                     function t(M $m): void {
+                        if (!$m->p instanceof C) {
+                            return;
+                        }
+
+                        $m->reset();
+
+                        if ($m->p instanceof C) {
+                            echo "still set";
+                        }
+                    }
+
+                    function inherited(Child $m): void {
                         if (!$m->p instanceof C) {
                             return;
                         }
@@ -1655,6 +1669,45 @@ final class MagicPropertyTest extends TestCase
 
                             $m->reset();
                         }
+                    }',
+            ],
+            'magicPropertyOfGenericClassIsForgottenAfterCallWritingBackingProperty' => [
+                'code' => '<?php
+                    final class C {}
+
+                    /**
+                     * @template T
+                     * @property T $p
+                     */
+                    final class M {
+                        /** @var T */
+                        private $value;
+
+                        /** @param T $value */
+                        public function __construct($value) {
+                            $this->value = $value;
+                        }
+
+                        /** @return T */
+                        public function __get(string $name) {
+                            return $this->value;
+                        }
+
+                        /** @param T $value */
+                        public function replace($value): void {
+                            $this->value = $value;
+                        }
+                    }
+
+                    /** @param M<?C> $m */
+                    function t(M $m): void {
+                        if (!$m->p instanceof C) {
+                            return;
+                        }
+
+                        $m->replace(null);
+                        $p = $m->p;
+                        /** @psalm-check-type-exact $p = ?C */
                     }',
             ],
         ];
