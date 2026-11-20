@@ -103,6 +103,25 @@ if (preg_match('/[a-z]+/', $id)) {
 
 `$` also matches before a final newline, unless the pattern has the `D` modifier or ends with `\z`: that newline ends a shell command.
 
+The host `parse_url()` takes from a URL, matched against a list of hosts, fixes the server PHP's stream wrappers
+reach, as long as the local variable holding the URL isn't assigned again:
+
+```php
+<?php
+
+$url = getParam('next');
+$host = (string) parse_url($url, PHP_URL_HOST);
+if (preg_match('/^(api\.example\.com|cdn\.example\.com)$/', $host)) {
+    fsockopen($url, 80);           // no issue
+    file_get_contents($url);       // TaintedFile: compress.zlib://api.example.com/etc/passwd is a local file
+    header('Location: ' . $url);   // TaintedRedirect: a browser goes to evil.example for http://evil.example\@api.example.com/
+}
+
+if (preg_match('/^api.example.com$/', $host)) {
+    fsockopen($url, 80);           // TaintedSSRF: `.` matches apixexample.com
+}
+```
+
 ## Conditionally escaping tainted input
 
 A slightly modified version of the previous example is using a condition to determine whether the return value

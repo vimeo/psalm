@@ -47,6 +47,7 @@ final class SarifReport extends Report
         'TaintedHtml' => '6.1',
         'TaintedTextWithQuotes' => '6.1',
         'TaintedHeader' => '6.1',
+        'TaintedRedirect' => '6.1',
         'TaintedCookie' => '6.1',
         'TaintedUrlComponent' => '5.3',
         'TaintedUrlPath' => '5.3',

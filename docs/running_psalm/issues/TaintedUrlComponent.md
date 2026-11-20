@@ -2,7 +2,7 @@
 
 This is a **security issue**, reported by [security analysis](https://psalm.dev/docs/security_analysis/): it flags a potential vulnerability.
 
-Emitted when user-controlled input is placed, without being URL-encoded, in the path, the query or the fragment of a URL whose server is fixed, and the URL is then requested.
+Emitted when user-controlled input is placed, without being URL-encoded, in the path, the query or the fragment of a URL whose server is fixed, and the URL is then requested or redirected to.
 
 The input can't choose the server the request is sent to (that would be a [TaintedSSRF](TaintedSSRF.md)), but it can still change the request in ways it shouldn't, with URL syntax: `../` to reach another path of the server, `&` to add query parameters or override earlier ones, `#` to cut off the rest of the URL.
 
@@ -14,6 +14,9 @@ $query = (string) $_GET['query'];
 
 // with $query = "a&admin=1", this sends ?q=a&admin=1
 file_get_contents('https://api.example.com/search?q=' . $query);
+
+// with $query = "a&admin=1", this redirects to ?q=a&admin=1
+header('Location: https://example.com/search?q=' . $query);
 ```
 
 ## Mitigations

@@ -314,7 +314,8 @@ final class AssignmentInConditionalTest extends TestCase
                         }
                     }',
                 'assertions' => [
-                    '$handler===' => 'callable[impure](int):bool|null',
+                    '$handler===' => 'callable-array{0: class-string|object, 1: non-empty-string}'
+                        . '|callable-object(int):bool|callable-string|null',
                 ],
                 'ignored_issues' => ['RiskyTruthyFalsyComparison'],
                 'php_version' => '8.3',

@@ -1193,6 +1193,17 @@ final class ArrayAssignmentAnalyzer
                 }
             }
 
+            if ($expr->var instanceof Variable
+                && $expr->var->name === '_SESSION'
+                && ($taint_flow_graph = $statements_analyzer->getTaintFlowGraphWithSuppressed())
+            ) {
+                $session_node = GlobalAnalyzer::getSessionNode($taint_flow_graph);
+
+                foreach ($stmt_type->parent_nodes as $parent_node) {
+                    $taint_flow_graph->addPath($parent_node, $session_node, '=');
+                }
+            }
+
             if ($value_graph === null) {
                 return;
             }
