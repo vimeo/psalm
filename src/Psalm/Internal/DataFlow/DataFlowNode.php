@@ -446,6 +446,24 @@ final class DataFlowNode implements Stringable
     }
 
     /**
+     * The node through which the arguments a variadic parameter is given after its first reach the body of the
+     * function-like, from $param_node, the node of the parameter. Each of those arguments has the node of its own
+     * position (see {@see self::getParameterOffset()}), which the sinks of the parameter are on already: this one
+     * has none, so that they don't report what reaches them a second time.
+     *
+     * @psalm-mutation-free
+     */
+    public static function getForVariadicArguments(self $param_node): self
+    {
+        return self::make(
+            ($param_node->unspecialized_id ?? $param_node->id) . ' variadic',
+            $param_node->label . '...',
+            $param_node->code_location,
+            $param_node->specialization_key,
+        );
+    }
+
+    /**
      * Like {@see self::getForMethodArgument()} but resolves the (declaring) method storage from the
      * cased method id itself, via $methods, instead of requiring the caller to hold it. Returns null
      * when the id does not resolve to a stored method (a callable object, or a magic method with no
