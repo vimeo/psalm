@@ -32,6 +32,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ConstFetchAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
+use Psalm\Internal\Codebase\StringContext;
 use Psalm\Internal\Codebase\TaintValidations;
 use Psalm\Internal\Codebase\UrlHosts;
 use Psalm\Internal\MethodIdentifier;
@@ -119,6 +120,7 @@ use Psalm\Type\Atomic\TTemplateParamClass;
 use Psalm\Type\Atomic\TTemplateValueOf;
 use Psalm\Type\Atomic\TTraitString;
 use Psalm\Type\Atomic\TTrue;
+use Psalm\Type\TaintKind;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
@@ -933,6 +935,14 @@ final class AssertionFinder
             && isset($expr->getArgs()[1])
         ) {
             return self::getPatternMatchAssertions($expr, $source, $this_class_name);
+        } elseif ($source instanceof StatementsAnalyzer
+            && $function_id === 'str_starts_with'
+            && isset($expr->getArgs()[1])
+        ) {
+            return [
+                ...self::processCustomAssertion($expr, $this_class_name, $source),
+                ...self::getUrlStartAssertions($expr, $source, $this_class_name),
+            ];
         } else {
             return self::processCustomAssertion($expr, $this_class_name, $source);
         }
@@ -3175,7 +3185,8 @@ final class AssertionFinder
         }
 
         $pattern = $pattern_type->getSingleStringLiteral()->value;
-        $removed_taints = PatternCharacters::getTaintsRemoved($pattern);
+        $removed_taints = PatternCharacters::getTaintsRemoved($pattern)
+            | PatternCharacters::getTaintsRemovedByStart($pattern);
         $subject_var_id = self::getStringFormVarId($subject_arg->value, $this_class_name, $source);
 
         $assertions = [];
@@ -3190,6 +3201,44 @@ final class AssertionFinder
         }
 
         return $assertions === [] ? [] : [$assertions];
+    }
+
+    /**
+     * A URL starting with a literal such as `https://` or `/` has a scheme the rest of it can't choose
+     *
+     * @return list<non-empty-array<string, non-empty-list<non-empty-list<Assertion>>>>
+     */
+    private static function getUrlStartAssertions(
+        PhpParser\Node\Expr\FuncCall $expr,
+        StatementsAnalyzer $source,
+        ?string $this_class_name,
+    ): array {
+        $args = $expr->getArgs();
+        $haystack_arg = $args[0] ?? null;
+        $needle_arg = $args[1] ?? null;
+        $needle_type = $needle_arg ? $source->node_data->getType($needle_arg->value) : null;
+
+        if ($haystack_arg === null
+            || $needle_arg === null
+            || $haystack_arg->name !== null
+            || $needle_arg->name !== null
+            || $needle_type === null
+            || !$needle_type->allStringLiterals()
+        ) {
+            return [];
+        }
+
+        foreach ($needle_type->getLiteralStrings() as $needle) {
+            if (!StringContext::fixesUrlScheme($needle->value)) {
+                return [];
+            }
+        }
+
+        $haystack_var_id = self::getStringFormVarId($haystack_arg->value, $this_class_name, $source);
+
+        return $haystack_var_id === null
+            ? []
+            : [[$haystack_var_id => [[new MatchesPattern(TaintKind::INPUT_URL_SCHEME)]]]];
     }
 
     /**

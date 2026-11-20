@@ -134,24 +134,29 @@ function show(PDO $pdo): void {
 }
 ```
 
-**Watch out for context mismatches.** An escaping function only protects the context it was written for. Psalm doesn't
-check yet where an escaped value lands, so these holes aren't reported:
+An escaping function only protects the position it was written for, and Psalm checks where an escaped value lands:
 
 ```php
 <?php
 function show(mysqli $mysqli): void {
-    // id=1 OR 1=1: the value isn't in quotes
-    $mysqli->query('SELECT * FROM users WHERE id = ' . $mysqli->real_escape_string((string) $_GET['id'])); // no issue yet
+    $id = (string) ($_GET['id'] ?? '');
+    $mysqli->query("SELECT * FROM users WHERE id = '" . $mysqli->real_escape_string($id) . "'"); // no issue
+    $mysqli->query('SELECT * FROM users WHERE id = ' . $mysqli->real_escape_string($id)); // TaintedSql: `1 OR 1=1` needs no quotes
 
-    // img=/ onerror=alert(1): the attribute isn't in quotes
-    echo '<img src=' . htmlspecialchars((string) $_GET['img'], ENT_QUOTES) . ' alt="">'; // no issue yet
-
-    // url=javascript:alert(1): escaping HTML doesn't check the scheme of a URL
-    echo '<a href="' . htmlspecialchars((string) $_GET['url'], ENT_QUOTES) . '">Link</a>'; // no issue yet
+    $url = (string) ($_GET['url'] ?? '');
+    echo '<img alt="' . htmlspecialchars($url, ENT_QUOTES) . '">'; // no issue
+    echo '<img src=' . htmlspecialchars($url, ENT_QUOTES) . '>'; // TaintedHtmlAttribute: `x onerror=alert(1)` adds an attribute
+    echo '<a href="' . htmlspecialchars($url, ENT_QUOTES) . '">'; // TaintedUrlScheme: `javascript:alert(1)` runs on click
+    echo '<a href="/search?q=' . urlencode($url) . '">'; // no issue
 }
 
-// Try them all with: /?id=1+OR+1%3D1&img=%2F+onerror%3Dalert%281%29&url=javascript%3Aalert%281%29
+// Try them with: /?id=1+OR+1%3D1&url=javascript%3Aalert%281%29%2F%2F+onerror%3Dalert%281%29
 ```
+
+Psalm sees where a value lands from the text before it in the same expression: a concatenation, an interpolated string
+or a `sprintf()` format. In a template, it can't see the HTML before `<?= htmlspecialchars($x) ?>`, so put attribute
+values in quotes there. When it can't see the quotes around an SQL-escaped value, it trusts the escape. To allow a URL
+in a link, check its scheme first ([TaintedUrlScheme](../running_psalm/issues/TaintedUrlScheme.md) shows how).
 
 Prefer parameterized queries for SQL and commands, and a context-aware template engine for HTML. You can also use
 [`literal-string`](../annotating_code/type_syntax/scalar_types.md#literal-string) to enforce that queries and commands
@@ -740,10 +745,12 @@ issue:
 |---|---|---|
 | `html` | [TaintedHtml](../running_psalm/issues/TaintedHtml.md) | HTML tags (XSS) |
 | `has_quotes` | [TaintedTextWithQuotes](../running_psalm/issues/TaintedTextWithQuotes.md) | Quotes breaking out of an HTML attribute |
+| `html_attribute` | [TaintedHtmlAttribute](../running_psalm/issues/TaintedHtmlAttribute.md) | Whitespace ending an unquoted attribute value, which HTML escaping keeps |
+| `url_scheme` | [TaintedUrlScheme](../running_psalm/issues/TaintedUrlScheme.md) | `javascript:` URLs in links, forms and frames, which HTML escaping keeps |
 | `cookie` | [TaintedCookie](../running_psalm/issues/TaintedCookie.md) | Attacker-controlled HTTP cookies |
 | `header` | [TaintedHeader](../running_psalm/issues/TaintedHeader.md) | HTTP header injection |
 | `redirect` | [TaintedRedirect](../running_psalm/issues/TaintedRedirect.md) | Choosing where a redirect sends the client (open redirect) |
-| `sql` | [TaintedSql](../running_psalm/issues/TaintedSql.md) | SQL injection |
+| `sql` | [TaintedSql](../running_psalm/issues/TaintedSql.md) | SQL injection: both `sql_in_quotes` (breaking out of quotes) and `sql_unquoted` (SQL syntax outside of them, which `real_escape_string()` keeps) |
 | `nosql` | [TaintedNosql](../running_psalm/issues/TaintedNosql.md) | NoSQL query structure (MongoDB filters, updates, pipelines; arrays and objects only) |
 | `ldap` | [TaintedLdap](../running_psalm/issues/TaintedLdap.md) | LDAP DN or filter injection |
 | `xpath` | [TaintedXpath](../running_psalm/issues/TaintedXpath.md) | XPath expression injection |
