@@ -332,22 +332,6 @@ final class ReferenceTest extends TestCase
                         preg_match("/x/", "x", $o[0]);
                     }',
             ],
-            'itemOfAMixinArrayObjectPassedByReference' => [
-                'code' => '<?php
-                    /** @mixin ArrayObject<int, list<int>> */
-                    final class Lists {
-                        public function __call(string $name, array $args): mixed {
-                            return [];
-                        }
-                    }
-
-                    function sortFirst(Lists $o): bool {
-                        return sort($o[0]);
-                    }',
-                'assertions' => [],
-                'ignored_issues' => [],
-                'php_version' => '8.0',
-            ],
             'itemOfAnArrayObjectOfNeverPassedByReference' => [
                 'code' => '<?php
                     /** @param ArrayObject<int, never> $o */
@@ -361,21 +345,6 @@ final class ReferenceTest extends TestCase
                      * @template T
                      * @mixin ArrayObject<int, T>
                      */
-                    final class Lists {
-                        public function __call(string $name, array $args): mixed {
-                            return null;
-                        }
-                    }
-
-                    /** @param Lists<list<int>> $o */
-                    function sortFirst(Lists $o): void {
-                        sort($o[0]);
-                    }
-
-                    /**
-                     * @template T
-                     * @mixin ArrayObject<int, T>
-                     */
                     abstract class Wrapper {
                         public function __call(string $name, array $args): mixed {
                             return [];
@@ -385,27 +354,6 @@ final class ReferenceTest extends TestCase
                     /** @param Wrapper<list<int>>&ArrayAccess<int, mixed> $w */
                     function sortWrapped(Wrapper $w): void {
                         sort($w[0]);
-                    }',
-                'assertions' => [],
-                'ignored_issues' => [],
-                'php_version' => '8.0',
-            ],
-            'itemOfAnObjectWithAPseudoOffsetSetPassedByReference' => [
-                'code' => '<?php
-                    /** @method void offsetSet(int $key, list<int> $value) */
-                    final class Box {
-                        /** @return list<int> */
-                        public function offsetGet(int $key): array {
-                            return [];
-                        }
-
-                        public function __call(string $name, array $args): mixed {
-                            return null;
-                        }
-                    }
-
-                    function sortFirst(Box $b): void {
-                        sort($b[0]);
                     }',
                 'assertions' => [],
                 'ignored_issues' => [],
@@ -495,7 +443,7 @@ final class ReferenceTest extends TestCase
                     '$b===' => '2',
                 ],
             ],
-            'SKIPPED-referenceToArrayItemChangesArrayType' => [ // #13918
+            'referenceToArrayItemChangesArrayType' => [ // #13918
                 'code' => '<?php
                     /** @var list<int> */
                     $arr = [];
@@ -505,7 +453,422 @@ final class ReferenceTest extends TestCase
                     $int = (string) $int;
                 ',
                 'assertions' => [
-                    '$arr' => 'list<int|string>',
+                    '$arr===' => 'list{decimal-int-string, ...<int>}',
+                ],
+            ],
+            'writeThroughReferenceToOffsetChangesArrayType' => [ // #13965
+                'code' => '<?php
+                    /** @return array{x: string} */
+                    function f(): array {
+                        $a = ["x" => 1];
+                        $r = &$a["x"];
+                        $r = "changed";
+                        return $a;
+                    }
+                ',
+            ],
+            'writeThroughReferenceReboundInLoopIsSeenOnNextIteration' => [ // #13965
+                'code' => '<?php
+                    /** @param list<string> $names */
+                    function g(array $names): void {
+                        $rows = ["k" => ["seen" => false]];
+                        foreach ($names as $name) {
+                            $row = &$rows["k"];
+                            if ($row["seen"]) {
+                                echo $name;
+                            }
+                            $row["seen"] = true;
+                        }
+                    }
+                ',
+            ],
+            'writeThroughReferenceToNestedOffsetChangesEveryArrayHoldingIt' => [
+                'code' => '<?php
+                    $a = ["k" => ["x" => 1]];
+                    $r = &$a["k"]["x"];
+                    $r = "s";
+                ',
+                'assertions' => [
+                    '$a===' => 'array{k: array{x: \'s\'}}',
+                ],
+            ],
+            'writeToOffsetOfReferenceToOffsetChangesArrayType' => [
+                'code' => '<?php
+                    $rows = ["k" => ["seen" => false]];
+                    $row = &$rows["k"];
+                    $row["seen"] = true;
+                    $row["new"] = 1;
+                ',
+                'assertions' => [
+                    '$rows===' => 'array{k: array{new: 1, seen: true}}',
+                ],
+            ],
+            'writeThroughReferenceToOffsetOfUnknownKeyWidensArrayValue' => [
+                'code' => '<?php
+                    /** @var array<string, int> */
+                    $arr = [];
+                    $k = k();
+
+                    function k(): string {
+                        return "k";
+                    }
+                    $r = &$arr[$k];
+                    $r = "s";
+                ',
+                'assertions' => [
+                    '$arr===' => 'array<string, \'s\'|int>',
+                ],
+            ],
+            'writeThroughReferenceToOffsetOfUnknownKeyKeepsTheKeysOfTheArray' => [
+                'code' => '<?php
+                    /**
+                     * @param array<string, array<string, bool>> $form
+                     * @param string|false $id_key
+                     * @return array<array-key, array<string, bool>>
+                     */
+                    function f(array $form, $id_key): array {
+                        $element = &$form[$id_key];
+                        $element["#disabled"] = true;
+                        return $form;
+                    }
+                ',
+                'assertions' => [],
+                'ignored_issues' => ['PossiblyInvalidArrayOffset'],
+            ],
+            'writeThroughReferenceToReferenceToOffsetChangesArrayType' => [
+                'code' => '<?php
+                    $a = ["x" => 1];
+                    $r = &$a["x"];
+                    $s = &$r;
+                    $s = "s";
+                ',
+                'assertions' => [
+                    '$a===' => 'array{x: \'s\'}',
+                ],
+            ],
+            'writeThroughReferenceToListItemKeepsList' => [
+                'code' => '<?php
+                    $l = [1, 2, 3];
+                    $r = &$l[1];
+                    $r = "two";
+                ',
+                'assertions' => [
+                    '$l===' => 'list{1, \'two\', 3}',
+                ],
+            ],
+            'compoundAssignmentAndIncrementThroughReferenceToOffsetChangeArrayType' => [
+                'code' => '<?php
+                    $a = ["x" => "a", "y" => 1];
+                    $r = &$a["x"];
+                    $r .= "b";
+                    $s = &$a["y"];
+                    $s++;
+                ',
+                'assertions' => [
+                    '$a===' => 'array{x: \'ab\', y: 2}',
+                ],
+            ],
+            'referenceToOffsetPassedByReferenceChangesArrayType' => [
+                'code' => '<?php
+                    /**
+                     * @param mixed $p
+                     * @param-out string $p
+                     */
+                    function setString(&$p): void {
+                        $p = "s";
+                    }
+
+                    $a = ["x" => 1];
+                    $r = &$a["x"];
+                    setString($r);
+                ',
+                'assertions' => [
+                    '$a===' => 'array{x: string}',
+                ],
+            ],
+            'conditionalWriteThroughReferenceToOffset' => [
+                'code' => '<?php
+                    $a = ["x" => 1];
+                    $r = &$a["x"];
+                    if (rand(0, 1)) {
+                        $r = "s";
+                    }
+                ',
+                'assertions' => [
+                    '$a===' => 'array{x: \'s\'|1}',
+                ],
+            ],
+            'writeThroughReferenceToOffsetAfterArrayIsReassigned' => [
+                'code' => '<?php
+                    $a = ["x" => 1];
+                    $r = &$a["x"];
+                    $a = ["x" => 2];
+                    $r = "s";
+                ',
+                'assertions' => [
+                    '$a===' => 'array{x: 2}',
+                    '$r===' => '\'s\'',
+                ],
+            ],
+            'writeThroughReferenceToOffsetHoldingAnArrayAccess' => [
+                'code' => '<?php
+                    $a = ["o" => new ArrayObject([1])];
+                    $r = &$a["o"];
+                    $r = 5;
+                ',
+                'assertions' => [
+                    '$a===' => 'array{o: 5}',
+                ],
+            ],
+            'referenceAssignedToArrayItemAddsTheKey' => [ // #14112
+                'code' => '<?php
+                    /** @var array<string, int|null> */
+                    $arr = [];
+                    $k = k();
+
+                    function k(): string {
+                        return "k";
+                    }
+                    $out = [];
+                    $out["a"] = &$arr[$k];
+                ',
+                'assertions' => [
+                    '$out===' => 'array{a: int|null}',
+                ],
+            ],
+            'writeToArrayItemBoundByReferenceChangesBothArrays' => [
+                'code' => '<?php
+                    $x = 1;
+                    $out = [];
+                    $out["a"] = &$x;
+                    $out["a"] = "s";
+                ',
+                'assertions' => [
+                    '$x===' => '\'s\'',
+                    '$out===' => 'array{a: \'s\'}',
+                ],
+            ],
+            'rebindingArrayItemDoesNotWriteWhatItWasBoundTo' => [
+                'code' => '<?php
+                    $x = 1;
+                    $y = 2;
+                    $out = [];
+                    $out["a"] = &$x;
+                    $out["a"] = &$y;
+                    $out["a"] = "s";
+                ',
+                'assertions' => [
+                    '$x===' => '1',
+                    '$y===' => '\'s\'',
+                    '$out===' => 'array{a: \'s\'}',
+                ],
+            ],
+            'itemOfUnknownKeyBoundToItemOfTheSameArray' => [
+                'code' => '<?php
+                    /** @param array<string, int> $a */
+                    function f(array $a, string $k, string $l): int {
+                        $a[$k] = 1;
+                        $a[$l] = &$a[$k];
+                        return $a[$k];
+                    }
+                ',
+            ],
+            'arrayItemBoundToTheArray' => [
+                'code' => '<?php
+                    $a = ["x" => 1];
+                    $a["self"] = &$a;
+                ',
+                'assertions' => [
+                    '$a===' => 'array{self: array{x: 1}, x: 1}',
+                ],
+            ],
+            'offsetsOfVariablesBoundByReferenceAreNarrowedTogether' => [ // #14111
+                'code' => '<?php
+                    /** @param array{a?: int|string} $w */
+                    function viaReference(array $w): void {
+                        $v = &$w;
+                        if (isset($w["a"]) && is_int($v["a"])) {
+                            echo 1;
+                        }
+                    }
+
+                    /** @param array{a?: int|string} $w */
+                    function viaReferencedVariable(array $w): void {
+                        $v = &$w;
+                        if (isset($v["a"]) && is_int($w["a"])) {
+                            echo 1;
+                        }
+                    }
+
+                    /** @param array{a?: int|string} $w */
+                    function inNestedCondition(array $w): void {
+                        $v = &$w;
+                        if (isset($w["a"])) {
+                            if (is_int($w["a"])) {
+                                echo 1;
+                            }
+                        }
+                    }
+                ',
+            ],
+            'globalDetachesVariableFromWhatItWasBoundTo' => [ // #14110
+                'code' => '<?php
+                    function assignAfterGlobal(int|string $w): int|string {
+                        $v = &$w;
+                        global $v;
+                        $v = 1.5;
+                        return $w;
+                    }
+
+                    function narrowAfterGlobal(int|string $w): int|string {
+                        $v = &$w;
+                        global $v;
+                        if (is_int($v)) {}
+                        return $w;
+                    }
+                ',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'globalDetachesVariableFromTheReferencesBoundToIt' => [
+                'code' => '<?php
+                    function assignReferencedAfterGlobal(int|string $v): int|string {
+                        $w = &$v;
+                        global $v;
+                        $v = 1.5;
+                        return $w;
+                    }
+                ',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'staticDetachesVariableFromWhatItWasBoundTo' => [
+                'code' => '<?php
+                    function assignAfterStatic(int|string $w): int|string {
+                        $v = &$w;
+                        static $v;
+                        $v = 1.5;
+                        return $w;
+                    }
+
+                    function assignReferencedAfterStatic(int|string $v): int|string {
+                        $w = &$v;
+                        static $v;
+                        $v = 1.5;
+                        return $w;
+                    }
+                ',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'writeThroughReferenceToItemOfArrayOfMixedKeepsItMixed' => [
+                'code' => '<?php
+                    /** @param array<array-key, mixed> $_a */
+                    function children(array &$_a): void {}
+
+                    /** @var array<array-key, mixed> */
+                    $e = [];
+                    $n = k();
+                    $row = &$e[$n];
+                    children($row);
+
+                    function k(): string {
+                        return "k";
+                    }
+                ',
+                'assertions' => [
+                    '$e===' => 'array<array-key, mixed>',
+                ],
+                'ignored_issues' => ['MixedArgument'],
+            ],
+            'writeThroughReferenceToKnownItemOfArrayHoldingMixedKeepsItsType' => [
+                'code' => '<?php
+                    /** @var array{x: int, y: mixed} */
+                    $a = ["x" => 1, "y" => 2];
+                    $r = &$a["x"];
+                    $r = "s";
+                ',
+                'assertions' => [
+                    '$a===' => 'array{x: \'s\', y: mixed}',
+                ],
+            ],
+            'writeThroughReferenceToNewKeyKeepsTheOtherKeys' => [
+                'code' => '<?php
+                    /** @var array{grouping: true} */
+                    $variables = ["grouping" => true];
+                    $form = &$variables["form"];
+                    $form = 1;
+                ',
+                'assertions' => [
+                    '$variables===' => 'array{form: 1, grouping: true}',
+                ],
+            ],
+            'writeToItemsOfReferenceToNewKeyKeepsTheOtherKeysSet' => [
+                'code' => '<?php
+                    /** @var array<array-key, mixed> */
+                    $variables = [];
+                    $form = &$variables["form"];
+                    $variables["grouping"] = true;
+                    $form["a"] = 1;
+                ',
+                'assertions' => [
+                    '$variables===' => 'array{form: mixed, grouping: true, ...<array-key, mixed>}',
+                ],
+                'ignored_issues' => ['MixedArrayAssignment'],
+            ],
+            'writeThroughReferenceToOffsetOfNullableKeyUsesTheEmptyStringKey' => [
+                'code' => '<?php
+                    /**
+                     * @param array<string, array<string, bool>> $form
+                     * @param string|null $k
+                     * @return array<string, array<string, bool>>
+                     */
+                    function f(array $form, $k): array {
+                        $element = &$form[$k];
+                        $element["#d"] = true;
+                        return $form;
+                    }
+                ',
+                'assertions' => [],
+                'ignored_issues' => ['PossiblyNullArrayOffset'],
+            ],
+            'writeToVariableAnArrayItemIsBoundToChangesTheArray' => [
+                'code' => '<?php
+                    /** @return array{a: string} */
+                    function f(): array {
+                        $x = 1;
+                        $out = [];
+                        $out["a"] = &$x;
+                        $x = "z";
+                        return $out;
+                    }
+                ',
+            ],
+            'writeToVariableNestedArrayItemsAreBoundToChangesTheArrays' => [
+                'code' => '<?php
+                    $x = 1;
+                    $out = [];
+                    $out["a"]["b"] = &$x;
+                    $y = &$x;
+                    $y = "z";
+                ',
+                'assertions' => [
+                    '$out===' => 'array{a: array{b: \'z\'}}',
+                ],
+            ],
+            'catchIntoReferenceToOffsetChangesArrayType' => [
+                'code' => '<?php
+                    $a = ["x" => 1];
+                    $r = &$a["x"];
+                    try {
+                        throw new Exception();
+                    } catch (Exception $r) {}
+                ',
+                'assertions' => [
+                    '$a===' => 'array{x: Exception}',
                 ],
             ],
             'referenceToReference' => [
@@ -862,6 +1225,53 @@ final class ReferenceTest extends TestCase
                     }',
                 'assertions' => [],
                 'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'referenceToAnOffsetForgottenInABranchStaysBound' => [
+                'code' => '<?php
+                    function f(bool $c, string $k, string $j): int {
+                        $a = [$k => ["links" => []]];
+                        $r = &$a[$k]["links"];
+                        if ($c) {
+                            $k = $j;
+                        }
+                        if ($c) {
+                            return count($r);
+                        }
+                        return 0;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'assignmentThroughAReferenceForgetsTheOffsetsOfTheReferencedArray' => [
+                'code' => '<?php
+                    /** @param array<string, mixed> $a */
+                    function f(array $a, string $k): void {
+                        $r = &$a;
+                        if (is_int($a[$k])) {
+                            $r = [$k => "s"];
+                            $u = $a[$k];
+                            /** @psalm-check-type-exact $u = \'s\' */
+                        }
+                    }
+
+                    final class O {
+                        public ?int $p = null;
+                    }
+
+                    function g(O $o, bool $c): void {
+                        $r = &$o;
+                        if ($o->p !== null) {
+                            if ($c) {
+                                $r = new O();
+                            }
+                            $t = $o->p;
+                            /** @psalm-check-type-exact $t = int|null */
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['UnusedVariable'],
                 'php_version' => '8.0',
             ],
             'referenceToAnItemStaysBoundAfterAnIfAssertingOnTheArray' => [
@@ -1601,6 +2011,63 @@ final class ReferenceTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'itemOfAMixinArrayObjectPassedByReference' => [
+                'code' => '<?php
+                    /** @mixin ArrayObject<int, list<int>> */
+                    final class Lists {
+                        public function __call(string $name, array $args): mixed {
+                            return [];
+                        }
+                    }
+
+                    function sortFirst(Lists $o): bool {
+                        return sort($o[0]);
+                    }',
+                'error_message' => 'InvalidArrayAccess - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:37 - Cannot access array value on non-array variable $o of type Lists',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'itemOfATemplatedMixinArrayObjectPassedByReference' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @mixin ArrayObject<int, T>
+                     */
+                    final class Lists {
+                        public function __call(string $name, array $args): mixed {
+                            return null;
+                        }
+                    }
+
+                    /** @param Lists<list<int>> $o */
+                    function sortFirst(Lists $o): void {
+                        sort($o[0]);
+                    }',
+                'error_message' => 'InvalidArrayAccess - src' . DIRECTORY_SEPARATOR . 'somefile.php:14:30 - Cannot access array value on non-array variable $o of type Lists',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'itemOfAnObjectWithAPseudoOffsetSetPassedByReference' => [
+                'code' => '<?php
+                    /** @method void offsetSet(int $key, list<int> $value) */
+                    final class Box {
+                        /** @return list<int> */
+                        public function offsetGet(int $key): array {
+                            return [];
+                        }
+
+                        public function __call(string $name, array $args): mixed {
+                            return null;
+                        }
+                    }
+
+                    function sortFirst(Box $b): void {
+                        sort($b[0]);
+                    }',
+                'error_message' => 'InvalidArrayAccess - src' . DIRECTORY_SEPARATOR . 'somefile.php:15:30 - Cannot access array value on non-array variable $b of type Box',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
             'referenceBoundInConditionIsNullWhereTheConditionIsFalse' => [
                 'code' => '<?php
                     /** @param array<string, list<int>|null> $arr */

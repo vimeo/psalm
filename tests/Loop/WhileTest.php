@@ -217,6 +217,207 @@ final class WhileTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'whileCounterIncrementedThroughAReferenceIsWidened' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function f(): void {
+                        $i = 0;
+                        $r = &$i;
+                        while (true) {
+                            $r += rand(1, 3);
+                            if ($i > 10) {
+                                break;
+                            }
+                        }
+                    }
+                    PHP,
+            ],
+            'whileCounterIncrementedIsWidenedForItsReference' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function f(): void {
+                        $i = 0;
+                        $r = &$i;
+                        while (true) {
+                            $i += rand(1, 3);
+                            if ($r > 10) {
+                                break;
+                            }
+                        }
+                    }
+                    PHP,
+            ],
+            'whileTypeGoingIntoAByReferenceArgumentReachesTheVariablesItFeeds' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function f(): void {
+                        $a = [0];
+                        $b = [0];
+                        $c = 0;
+                        while (rand(0, 1)) {
+                            $z = 1;
+                            $a = $b;
+                            array_push($b, $c);
+                            $c = "s";
+                        }
+                        /** @psalm-check-type-exact $a = list{0: 0, 1?: 's'|0, ...<'s'|0>} */;
+                    }
+                    PHP,
+            ],
+            'whileTypeGoingIntoAByReferenceArgumentOfACallInAnAssignmentReachesTheVariablesItFeeds' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function f(): void {
+                        $a = [0];
+                        $b = [0];
+                        $c = 0;
+                        while (rand(0, 1)) {
+                            $z = 1;
+                            $a = $b;
+                            $n = array_push($b, $c);
+                            $c = "s";
+                        }
+                        /** @psalm-check-type-exact $a = list{0: 0, 1?: 's'|0, ...<'s'|0>} */;
+                    }
+                    PHP,
+            ],
+            'whileTypeGoingIntoAByReferenceArgumentOfAMethodReachesTheVariablesItFeeds' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class Box {
+                        /**
+                         * @template T
+                         * @param T $from
+                         * @param-out T $to
+                         */
+                        public function copy(mixed $from, mixed &$to): void {
+                            $to = $from;
+                        }
+                    }
+                    function f(Box $o): void {
+                        $a = 0;
+                        $b = 0;
+                        $c = 0;
+                        while (rand(0, 1)) {
+                            $z = 1;
+                            $a = $b;
+                            $o->copy($c, $b);
+                            $c = "s";
+                        }
+                        /** @psalm-check-type-exact $a = 's'|0 */;
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'whileTypeGoingIntoAByReferenceArgumentOfANullsafeMethodReachesTheVariablesItFeeds' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class Box {
+                        /**
+                         * @template T
+                         * @param T $from
+                         * @param-out T $to
+                         */
+                        public function copy(mixed $from, mixed &$to): void {
+                            $to = $from;
+                        }
+                    }
+                    function f(?Box $o): void {
+                        $a = 0;
+                        $b = 0;
+                        $c = 0;
+                        while (rand(0, 1)) {
+                            $z = 1;
+                            $a = $b;
+                            $o?->copy($c, $b);
+                            $c = "s";
+                        }
+                        /** @psalm-check-type-exact $a = 's'|0 */;
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'whileTypeWrittenThroughAByReferenceForeachReachesTheVariablesTheArrayFeeds' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function f(): void {
+                        $a = [0];
+                        $b = [0];
+                        $c = 0;
+                        while (rand(0, 1)) {
+                            $z = 1;
+                            $a = $b;
+                            foreach ($b as &$v) {
+                                $v = $c;
+                            }
+                            unset($v);
+                            $c = "s";
+                        }
+                        /** @psalm-check-type-exact $a = list{'s'|0} */;
+                    }
+                    PHP,
+            ],
+            'whileTypeGoingIntoAByReferenceArgumentOfAConstructorReachesTheVariablesItFeeds' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class Copier {
+                        /**
+                         * @template T
+                         * @param T $from
+                         * @param-out T $to
+                         */
+                        public function __construct(mixed $from, mixed &$to) {
+                            $to = $from;
+                        }
+                    }
+                    function f(): void {
+                        $a = 0;
+                        $b = 0;
+                        $c = 0;
+                        while (rand(0, 1)) {
+                            $z = 1;
+                            $a = $b;
+                            new Copier($c, $b);
+                            $c = "s";
+                        }
+                        /** @psalm-check-type-exact $a = 's'|0 */;
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'whileVariableBoundByReferenceInTheConditionIsDefinedAfterTheLoop' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param array<string, ?int> $arr */
+                    function f(array $arr, string $k): void {
+                        while (($v = &$arr[$k]) !== null) {
+                            $arr[$k] = null;
+                        }
+                        /** @psalm-check-type-exact $v = null */;
+                    }
+                    PHP,
+            ],
+            'whileVariableBoundByReferenceInTheConditionOfALoopLeftByABreakIsDefinedAfterTheLoop' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param array<string, ?int> $arr */
+                    function f(array $arr, string $k): void {
+                        while (($v = &$arr[$k]) !== null) {
+                            if (rand(0, 1)) {
+                                break;
+                            }
+                            $arr[$k] = null;
+                        }
+                        /** @psalm-check-type-exact $v = int|null */;
+                    }
+                    PHP,
+            ],
             'whileChainsOfDifferentLengthsMeetingOnOneVariableAreAnalysedUntilTheyReachTheFirst' => [
                 'code' => <<<'PHP'
                     <?php
