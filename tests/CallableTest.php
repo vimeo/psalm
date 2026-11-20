@@ -155,6 +155,75 @@ final class CallableTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'callableArrayNamingAMagicMethodMatchesATypedCallable' => [
+                'code' => '<?php
+                    /**
+                     * @method int magic(string $s)
+                     */
+                    class Foo {
+                        public function __call(string $name, array $arguments): mixed {
+                            return 1;
+                        }
+                    }
+
+                    /** @param callable(string): int $c */
+                    function take(callable $c): void {
+                        $c("x");
+                    }
+
+                    take([new Foo(), "magic"]);',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'callableArrayOfAMagicMethodGuardedByMethodExists' => [
+                'code' => '<?php
+                    /**
+                     * @method void magic()
+                     */
+                    class Foo {
+                        public function __call(string $name, array $arguments): mixed {
+                            return null;
+                        }
+                    }
+
+                    function call(callable $_callable): void {}
+
+                    function test(Foo $foo): void {
+                        if (method_exists($foo, "magic")) {
+                            call([$foo, "magic"]);
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'callableArrayOfAMagicMethodDeclaredByAnAnnotation' => [
+                'code' => '<?php
+                    /**
+                     * @method void magic()
+                     * @method static void staticMagic()
+                     */
+                    class Foo {
+                        public function __call(string $name, array $arguments): mixed {
+                            return null;
+                        }
+
+                        public static function __callStatic(string $name, array $arguments): mixed {
+                            return null;
+                        }
+                    }
+
+                    function call(callable $_callable): void {}
+
+                    function test(Foo $foo): void {
+                        call([$foo, "magic"]);
+                        call([Foo::class, "staticMagic"]);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'invokeInheritedGenericFirstClassCallable' => [
                 'code' => '<?php
                     class Helpers {
@@ -3750,6 +3819,52 @@ final class CallableTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'callableArrayNamingAMagicMethodMismatchesATypedCallable' => [
+                'code' => '<?php
+                    /**
+                     * @method int magic(string $s)
+                     */
+                    class Foo {
+                        public function __call(string $name, array $arguments): mixed {
+                            return 1;
+                        }
+                    }
+
+                    /** @param callable(int): void $c */
+                    function take(callable $c): void {
+                        $c(1);
+                    }
+
+                    take([new Foo(), "magic"]);',
+                'error_message' => 'InvalidArgument',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'callableArrayOfAMethodThatIsNotDeclaredByAnAnnotation' => [
+                'code' => '<?php
+                    /**
+                     * @method void magic()
+                     * @method static void staticMagic()
+                     */
+                    class Foo {
+                        public function __call(string $name, array $arguments): mixed {
+                            return null;
+                        }
+
+                        public static function __callStatic(string $name, array $arguments): mixed {
+                            return null;
+                        }
+                    }
+
+                    function call(callable $_callable): void {}
+
+                    function test(Foo $foo): void {
+                        call([$foo, "missing"]);
+                    }',
+                'error_message' => 'InvalidArgument',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
             'arrayCallableNamingNoClass' => [
                 'code' => '<?php
                     function call(callable $callback): void {}
