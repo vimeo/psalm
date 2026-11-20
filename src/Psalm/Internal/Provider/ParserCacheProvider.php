@@ -10,6 +10,7 @@ use Psalm\Internal\Cache;
 use Psalm\Internal\CacheMode;
 
 use function array_map;
+use function dirname;
 use function filemtime;
 
 use const DIRECTORY_SEPARATOR;
@@ -33,6 +34,10 @@ final class ParserCacheProvider
             $composerLock,
             PHP_PARSER_VERSION,
             (string) filemtime(__DIR__.DIRECTORY_SEPARATOR.'StatementsProvider.php'),
+            // decides which compile errors are cached with the statements
+            (string) filemtime(
+                dirname(__DIR__).DIRECTORY_SEPARATOR.'PhpVisitor'.DIRECTORY_SEPARATOR.'PartialApplicationVisitor.php',
+            ),
         ];
 
         $this->stmtCache = new Cache($config, self::PARSER_CACHE_DIRECTORY, $deps, $mode);

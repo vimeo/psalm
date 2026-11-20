@@ -472,7 +472,14 @@ final class StatementsProvider
             $used_cached_statements ? $file_changes : [],
         );
         $resolving_traverser->addVisitor($name_resolver);
-        $resolving_traverser->addVisitor(new PartialApplicationVisitor());
+
+        if ($used_cached_statements) {
+            // the name resolver skips the methods the partial reparse kept, whose compile errors are reported again
+            $resolving_traverser->traverse($stmts);
+            $resolving_traverser = new PhpParser\NodeTraverser;
+        }
+
+        $resolving_traverser->addVisitor(new PartialApplicationVisitor($error_handler));
         $resolving_traverser->traverse($stmts);
 
         $parse_errors = array_values($error_handler->getErrors());
