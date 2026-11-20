@@ -10,4 +10,5 @@ namespace Psalm\Issue;
 final class TaintedLdap extends TaintedInput
 {
     public const SHORTCODE = 254;
+    public const CWE_IDS = [90];
 }
