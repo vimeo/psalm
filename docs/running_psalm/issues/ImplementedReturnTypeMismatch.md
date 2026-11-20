@@ -19,6 +19,26 @@ class B extends A {
 }
 ```
 
+A method without a return type inherits those of the methods it overrides, so they need a common subtype:
+
+```php
+<?php
+
+interface Renderer {
+    /** @return string */
+    public function render();
+}
+interface Counter {
+    /** @return int */
+    public function render();
+}
+final class Widget implements Renderer, Counter {
+    public function render() { // ImplementedReturnTypeMismatch, calls return int|string
+        return "hello";
+    }
+}
+```
+
 ## How to fix
 
 Make sure to respect the [Liskov substitution principle](https://en.wikipedia.org/wiki/Liskov_substitution_principle) – any method that overrides a parent method must return a subtype of the parent method.

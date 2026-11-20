@@ -11,6 +11,7 @@ use Psalm\Codebase;
 use Psalm\Context;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Internal\MethodIdentifier;
+use Psalm\Issue\ImplementedReturnTypeMismatch;
 use Psalm\Issue\InvalidEnumMethod;
 use Psalm\Issue\InvalidStaticInvocation;
 use Psalm\Issue\MethodSignatureMustOmitReturnType;
@@ -24,6 +25,9 @@ use Psalm\Storage\MethodStorage;
 use Psalm\Storage\UnserializeMemoryUsageSuppressionTrait;
 use UnexpectedValueException;
 
+use function array_pop;
+use function count;
+use function implode;
 use function in_array;
 use function strtolower;
 
@@ -404,6 +408,66 @@ final class MethodAnalyzer extends FunctionLikeAnalyzer
                 ),
             );
         }
+    }
+
+    /**
+     * A method without a return type inherits those of the methods it overrides, which must
+     * have a common subtype. Conflicting native return types are a fatal error, reported as
+     * MethodSignatureMismatch.
+     *
+     * @param array<string> $suppressed_issues
+     */
+    public static function checkInheritedReturnTypes(
+        Codebase $codebase,
+        MethodStorage $method_storage,
+        ClassLikeStorage $class_storage,
+        string $cased_method_id,
+        CodeLocation $code_location,
+        array $suppressed_issues,
+    ): void {
+        if ($method_storage->return_type || $method_storage->cased_name === null) {
+            return;
+        }
+
+        $method_name_lc = strtolower($method_storage->cased_name);
+
+        if (count($class_storage->overridden_method_ids[$method_name_lc] ?? []) < 2) {
+            return;
+        }
+
+        $conflicting_return_types = [];
+
+        $codebase->methods->getInheritedReturnType(
+            $codebase,
+            $class_storage,
+            $method_name_lc,
+            true,
+            true,
+            $_self_class,
+            $conflicting_return_types,
+        );
+
+        if (!$conflicting_return_types) {
+            return;
+        }
+
+        $inherited_return_types = [];
+
+        foreach ($conflicting_return_types as $overridden_method_id => $return_type) {
+            $inherited_return_types[] = '\'' . $return_type->getId() . '\' for ' . $overridden_method_id;
+        }
+
+        $last_inherited_return_type = array_pop($inherited_return_types);
+
+        IssueBuffer::maybeAdd(
+            new ImplementedReturnTypeMismatch(
+                'The inherited return types ' . implode(', ', $inherited_return_types)
+                    . ' and ' . $last_inherited_return_type . ' cannot be satisfied together by '
+                    . $cased_method_id,
+                $code_location,
+            ),
+            $suppressed_issues + $class_storage->suppressed_issues,
+        );
     }
 
     /**
