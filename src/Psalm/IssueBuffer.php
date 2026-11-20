@@ -58,6 +58,7 @@ use function dirname;
 use function explode;
 use function file_put_contents;
 use function fwrite;
+use function hash;
 use function implode;
 use function in_array;
 use function intdiv;
@@ -74,7 +75,6 @@ use function ob_get_clean;
 use function ob_start;
 use function preg_match;
 use function round;
-use function sha1;
 use function sprintf;
 use function str_repeat;
 use function str_replace;
@@ -1323,7 +1323,7 @@ final class IssueBuffer
      */
     public static function alreadyEmitted(string $message): bool
     {
-        $sham = sha1($message);
+        $sham = hash('xxh3', $message);
 
         if (isset(self::$emitted[$sham])) {
             return true;

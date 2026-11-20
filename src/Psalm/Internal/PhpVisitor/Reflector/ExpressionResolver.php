@@ -41,8 +41,6 @@ use function array_merge;
 use function array_values;
 use function assert;
 use function class_exists;
-use function constant;
-use function defined;
 use function enum_exists;
 use function file_get_contents;
 use function function_exists;
@@ -60,6 +58,7 @@ use const T_CLASS;
 use const T_COMMENT;
 use const T_DOC_COMMENT;
 use const T_DOUBLE_COLON;
+use const T_ENUM;
 use const T_INTERFACE;
 use const T_NEW;
 use const T_STRING;
@@ -597,11 +596,7 @@ final class ExpressionResolver
 
         $short_name = strtolower(($pos = strrpos($name, '\\')) === false ? $name : substr($name, $pos + 1));
 
-        $declaration_tokens = [T_CLASS => 'class', T_INTERFACE => 'interface', T_TRAIT => 'trait'];
-
-        if (defined('T_ENUM')) {
-            $declaration_tokens[constant('T_ENUM')] = 'enum';
-        }
+        $declaration_tokens = [T_CLASS => 'class', T_INTERFACE => 'interface', T_TRAIT => 'trait', T_ENUM => 'enum'];
 
         $declared = null;
         $previous = null;

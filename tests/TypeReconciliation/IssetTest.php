@@ -81,6 +81,45 @@ final class IssetTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'issetOnListOffsetDefinesTheOffsetsBeforeIt' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @param list<int> $a
+                     * @param list<int|null> $b
+                     * @param list{0?: string, 1?: string, 2?: string} $c
+                     * @param list<object> $d
+                     * @param 1|2 $k
+                     */
+                    function f(array $a, array $b, array $c, array $d, int $k): void {
+                        if (isset($a[1])) {
+                            /** @psalm-check-type-exact $a = list{int, int, ...<int>} */
+                        } else {
+                            /** @psalm-check-type-exact $a = list<int> */
+                        }
+
+                        if (isset($b[1])) {
+                            /** @psalm-check-type-exact $b = list{int|null, int, ...<int|null>} */
+                        }
+
+                        if (isset($c[2])) {
+                            /** @psalm-check-type-exact $c = list{string, string, string} */
+                        }
+
+                        if (!empty($d[2])) {
+                            /** @psalm-check-type-exact $d = list{object, object, object, ...<object>} */
+                        }
+
+                        if (isset($a[$k])) {
+                            /** @psalm-check-type-exact $a = list<int> */
+                        }
+
+                        if (isset($a[0])) {
+                            /** @psalm-check-type-exact $a = list{int, ...<int>} */
+                        }
+                    }
+                    PHP,
+            ],
             'nullsafeCallCoalescedWithAFalsyValueKeepsTheReceiverNullableWhereItIsFalsy' => [
                 'code' => <<<'PHP'
                     <?php
@@ -1771,6 +1810,46 @@ final class IssetTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'assignmentOnTheLeftOfACoalesce' => [
+                'code' => '<?php
+                    function coalesceAssignment(?string $x, ?string $y): string {
+                        $r = ($x ??= $y) ?? "d";
+                        /** @psalm-check-type-exact $x = null|string */;
+                        return $r;
+                    }
+
+                    function assignment(?string $x, ?string $y): string {
+                        return ($x = $y) ?? "d";
+                    }
+
+                    function assignmentOfAnArray(?array $a, ?string $y): string {
+                        return ($a = ["k" => $y])["k"] ?? "d";
+                    }
+
+                    function coalesceAssignmentOrThrow(?string $x, ?string $y): string {
+                        ($x ??= $y) ?? throw new Exception();
+                        return $x;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'memoizedArrayOnTheLeftOfACoalesceInALoop' => [
+                'code' => '<?php
+                    /** @return non-empty-array<string, list<string>> */
+                    function aliases(): array {
+                        return ["a" => ["b"]];
+                    }
+
+                    /** @param list<string> $names */
+                    function f(array $names): int {
+                        $count = 0;
+                        foreach ($names as $name) {
+                            $count += count(($aliases ??= aliases())[$name] ?? []);
+                        }
+                        return $count;
+                    }',
+            ],
             'objectAssignedInTheCallOnTheLeftOfACoalesceLosesTheTypesOfItsOldProperties' => [
                 'code' => '<?php
                     final class O {
@@ -2373,6 +2452,13 @@ final class IssetTest extends TestCase
                 'error_message' => 'PossiblyUndefinedVariable',
                 'error_levels' => [],
                 'php_version' => '8.0',
+            ],
+            'coalesceAssignmentOfANonNullValueOnTheLeftOfACoalesce' => [
+                'code' => '<?php
+                    function f(?string $x): string {
+                        return ($x ??= "a") ?? "d";
+                    }',
+                'error_message' => 'Type string for $x ??= "a" is never null',
             ],
             'variableAssignedInATernaryOnTheLeftOfACoalesceIsPossiblyUndefined' => [
                 'code' => '<?php

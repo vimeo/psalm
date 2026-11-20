@@ -93,6 +93,11 @@ final class GlobalAnalyzer
 
             FunctionLikeAnalyzer::unbindByRefParam($codebase, $context, $var_id);
 
+            // the variable is bound to the global instead: what it was bound to by reference keeps its value
+            if (isset($context->references_in_scope[$var_id]) || ($context->referenced_counts[$var_id] ?? 0) > 0) {
+                $context->removePossibleReference($var_id);
+            }
+
             $doc_comment = $stmt->getDocComment();
             $comment_type = null;
 
@@ -187,11 +192,6 @@ final class GlobalAnalyzer
             $context->references_to_external_scope[$var_id] = true;
             $context->forgetReferencesPossiblyBound($var_id);
 
-            if (isset($context->references_in_scope[$var_id])) {
-                // Global shadows existing reference
-                $context->decrementReferenceCount($var_id);
-                unset($context->references_in_scope[$var_id]);
-            }
             $statements_analyzer->registerVariable(
                 $var_id,
                 new CodeLocation($statements_analyzer, $var),
@@ -297,6 +297,7 @@ final class GlobalAnalyzer
                 )
                 : $declared_type;
 
+            $context->removeVarFromConflictingClauses($var_id, $type, $statements_analyzer);
             $context->vars_in_scope[$var_id] = self::taintGlobalRead($statements_analyzer, $context, $var_id, $type);
             $context->vars_possibly_in_scope[$var_id] = true;
         }
