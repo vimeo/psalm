@@ -31,6 +31,7 @@ use Psalm\Type\Union;
 use ReflectionReference;
 use RuntimeException;
 
+use function array_any;
 use function array_diff_key;
 use function array_filter;
 use function array_intersect_key;
@@ -51,8 +52,10 @@ use function preg_quote;
 use function preg_replace;
 use function serialize;
 use function str_contains;
+use function str_ends_with;
 use function str_starts_with;
 use function strcspn;
+use function strlen;
 use function strpos;
 use function strrpos;
 use function strtolower;
@@ -346,7 +349,7 @@ final class Context
     public array $reconciled_expression_clauses = [];
 
     /**
-     * Whether or not to do a deep analysis and collect mutations to this context
+     * @deprecated Has no effect; will be removed in a future version.
      */
     public bool $collect_mutations = false;
 
@@ -549,25 +552,39 @@ final class Context
      */
     public function __clone()
     {
-        if (!$this->references_in_scope) {
-            return;
+        if ($this->references_in_scope) {
+            $this->vars_in_scope = self::copyVarsInScope($this->vars_in_scope);
         }
+    }
 
-        $vars_in_scope = [];
+    /**
+     * A copy of the variables where those bound by reference to each other (references_in_scope, and the offsets of
+     * such variables that Reconciler binds) are still bound to each other, but no longer to the given ones: a copy of
+     * an array keeps the PHP references it holds
+     *
+     * @internal
+     * @param array<string, Union> $vars_in_scope
+     * @return array<string, Union>
+     */
+    public static function copyVarsInScope(array $vars_in_scope): array
+    {
+        $copy = [];
         $slots = [];
 
-        foreach ($this->vars_in_scope as $var_id => $_) {
-            $reference = ReflectionReference::fromArrayElement($this->vars_in_scope, $var_id);
+        foreach ($vars_in_scope as $var_id => $_) {
+            $reference = ReflectionReference::fromArrayElement($vars_in_scope, $var_id);
             $slot_var_id = $reference === null ? $var_id : ($slots[$reference->getId()] ??= $var_id);
 
             if ($slot_var_id === $var_id) {
-                $vars_in_scope[$var_id] = $this->vars_in_scope[$var_id];
+                $copy[$var_id] = $vars_in_scope[$var_id];
             } else {
-                $vars_in_scope[$var_id] = &$vars_in_scope[$slot_var_id];
+                // copied when the first variable of the slot was
+                assert(isset($copy[$slot_var_id]));
+                $copy[$var_id] = &$copy[$slot_var_id];
             }
         }
 
-        $this->vars_in_scope = $vars_in_scope;
+        return $copy;
     }
 
     /**
@@ -1148,6 +1165,8 @@ final class Context
 
     /**
      * @param  Clause[]               $clauses
+     * @param  bool                   $value_changed false when the variable is only narrowed: the comparisons with
+     *                                               it still hold
      * @return list<Clause>
      */
     public static function filterClauses(
@@ -1155,6 +1174,7 @@ final class Context
         array $clauses,
         ?Union $new_type = null,
         ?StatementsAnalyzer $statements_analyzer = null,
+        bool $value_changed = true,
     ): array {
         $new_type_string = $new_type ? $new_type->getId() : '';
         $clauses_to_keep = [];
@@ -1168,6 +1188,10 @@ final class Context
                 if (preg_match('/' . $quoted_remove_var_id . '[\]\[\-]/', $var_id)) {
                     continue 2;
                 }
+            }
+
+            if ($value_changed && $clause->comparesWith($remove_var_id)) {
+                continue;
             }
 
             if (!isset($clause->possibilities[$remove_var_id])
@@ -1297,6 +1321,7 @@ final class Context
     ): void {
         $this->clauses = self::filterClauses($remove_var_id, $this->clauses, $new_type, $statements_analyzer);
         $this->parent_remove_vars[$remove_var_id] = ++self::$clause_removal_count;
+
 
         foreach ($this->getVarsBoundTo($remove_var_id) as $bound_var_id) {
             $this->clauses = self::filterClauses($bound_var_id, $this->clauses, $new_type, $statements_analyzer);
@@ -1716,6 +1741,56 @@ final class Context
     }
 
     /**
+     * Forgets the results of the methods of the objects holding a property (`$a->b->c` is held by `$a` and `$a->b`)
+     * that are memoized, which can depend on what the property holds, once it is written
+     */
+    public function forgetMethodResultsDependingOn(string $var_id): void
+    {
+        if (str_ends_with($var_id, ')')) {
+            return;
+        }
+
+        $offset = 0;
+        while (($arrow = strpos($var_id, '->', $offset)) !== false) {
+            $this->forgetMemoizedMethodResults(substr($var_id, 0, $arrow));
+            $offset = $arrow + 2;
+        }
+    }
+
+    /**
+     * Forgets the memoized results of the methods of the object (`$object->method()`)
+     */
+    private function forgetMemoizedMethodResults(string $object_id): void
+    {
+        $prefix = $object_id . '->';
+        $is_method_result = static fn(string $var_id): bool => str_starts_with($var_id, $prefix)
+            && preg_match('/^[^\[\-]*\(\)/', substr($var_id, strlen($prefix))) === 1;
+
+        foreach (array_keys($this->vars_in_scope) as $var_id) {
+            if ($is_method_result($var_id)) {
+                $this->forgetPropertyBoundByReference($var_id, true);
+                // forgotten, not unset: Context::update() tells the two apart
+                $this->vars_possibly_in_scope[$var_id] = true;
+                $this->parent_remove_vars[$var_id] = ++self::$clause_removal_count;
+            }
+        }
+
+        $clauses_to_keep = [];
+        foreach ($this->clauses as $clause) {
+            foreach ($clause->possibilities as $key => $_) {
+                if ($is_method_result($key)) {
+                    $this->parent_remove_vars[$key] = ++self::$clause_removal_count;
+                    continue 2;
+                }
+            }
+
+            $clauses_to_keep[] = $clause;
+        }
+
+        $this->clauses = $clauses_to_keep;
+    }
+
+    /**
      * Forgets what is known of the items and properties of what a property holds, and of what depends on them, after
      * a call wrote some of them. Those bound to variables by reference stay bound to them
      */
@@ -1959,11 +2034,37 @@ final class Context
     public function mergeFunctionExceptions(
         FunctionLikeStorage $function_storage,
         CodeLocation $codelocation,
+        ?Codebase $codebase = null,
     ): void {
         $hash = $codelocation->getHash();
         foreach ($function_storage->throws as $possibly_thrown_exception => $_) {
+            // a thrown value of `A&Throwable` is caught or declared as the Throwable it is, not as `A`
+            if ($codebase
+                && isset($function_storage->throw_intersections[$possibly_thrown_exception])
+                && !self::isThrowable($codebase, $possibly_thrown_exception)
+                && array_any(
+                    $function_storage->throw_intersections[$possibly_thrown_exception],
+                    static fn(array $group): bool => array_any(
+                        $group,
+                        static fn(string $member): bool => self::isThrowable($codebase, $member),
+                    ),
+                )
+            ) {
+                continue;
+            }
+
             $this->possibly_thrown_exceptions[$possibly_thrown_exception][$hash] = $codelocation;
         }
+    }
+
+    /**
+     * @psalm-mutation-free
+     */
+    private static function isThrowable(Codebase $codebase, string $fq_class_name): bool
+    {
+        return $codebase->classlike_storage_provider->has($fq_class_name)
+            && (strtolower($fq_class_name) === 'throwable'
+                || $codebase->classExtendsOrImplements($fq_class_name, 'Throwable'));
     }
 
     /**

@@ -46,6 +46,9 @@ final class NodeDataProvider implements NodeTypeProvider
     /** @var SplObjectStorage<Expr, true> */
     private SplObjectStorage $written_by_reference;
 
+    /** @var SplObjectStorage<Expr, non-empty-array<string, true>> */
+    private SplObjectStorage $vars_written_by_call;
+
     /**
      * Expressions analysed already, whose analysis is not repeated (see markEvaluated()), with how many times
      * they were marked
@@ -78,6 +81,7 @@ final class NodeDataProvider implements NodeTypeProvider
         $this->node_if_false_assertions = new SplObjectStorage();
         $this->node_literal_prefixes = new SplObjectStorage();
         $this->written_by_reference = new SplObjectStorage();
+        $this->vars_written_by_call = new SplObjectStorage();
         $this->evaluated = new SplObjectStorage();
         $this->offset_checked = new SplObjectStorage();
         $this->impossible_implicit_elses = new SplObjectStorage();
@@ -220,6 +224,30 @@ final class NodeDataProvider implements NodeTypeProvider
     public function isWrittenByReference(Expr $node): bool
     {
         return isset($this->written_by_reference[$node]);
+    }
+
+    /**
+     * Records the variables of the scope that calling the callable may write through what a closure captured by
+     * reference
+     *
+     * @param array<string, true> $var_ids
+     */
+    public function setVarIdsWrittenByCall(Expr $callable, array $var_ids): void
+    {
+        if ($var_ids) {
+            $this->vars_written_by_call[$callable] = $var_ids;
+        } else {
+            unset($this->vars_written_by_call[$callable]);
+        }
+    }
+
+    /**
+     * @return array<string, true>
+     * @psalm-capabilities read-props
+     */
+    public function getVarIdsWrittenByCall(Expr $callable): array
+    {
+        return $this->vars_written_by_call[$callable] ?? [];
     }
 
     /**
