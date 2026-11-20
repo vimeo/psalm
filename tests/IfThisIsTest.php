@@ -20,6 +20,25 @@ final class IfThisIsTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'ifThisIsKeepsThisLateStatic' => [
+                'code' => '<?php
+                    /** @template T */
+                    class Coll {
+                        public function fluent(): static {
+                            return $this;
+                        }
+
+                        /**
+                         * @psalm-if-this-is Coll<int>
+                         */
+                        public function sumOnly(): static {
+                            return $this->fluent();
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'worksAfterConvert' => [
                 'code' => '<?php
                     interface I {

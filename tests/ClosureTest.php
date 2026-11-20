@@ -2367,7 +2367,7 @@ final class ClosureTest extends TestCase
                 'assertions' => [
                     '$has===' => 'Closure[impure](string):Builder<Model>',
                     '$save===' => 'Closure[impure](Model):void',
-                    '$filter===' => 'Closure[impure]():Collection<int>&static',
+                    '$filter===' => 'Closure[impure]():Collection<int>',
                     '$final_filter===' => 'Closure[impure]():FinalCollection',
                 ],
                 'ignored_issues' => [],
@@ -2609,7 +2609,7 @@ final class ClosureTest extends TestCase
                 'assertions' => [
                     '$first===' => 'Closure[impure]():string',
                     '$find===' => 'Closure[impure](int):int',
-                    '$fresh===' => 'Closure[impure]():Repository<int>&static',
+                    '$fresh===' => 'Closure[impure]():Repository<int>',
                 ],
                 'ignored_issues' => [],
                 'php_version' => '8.1',
