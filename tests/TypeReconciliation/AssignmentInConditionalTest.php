@@ -72,6 +72,24 @@ final class AssignmentInConditionalTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'variableAssignedInAnOperandOfXorIsDefinedInTheIf' => [
+                'code' => '<?php
+                    function check(?string $s, bool $c): string {
+                        if ($c xor ($t = $s) !== null) {
+                            return (string) $t;
+                        }
+
+                        return "";
+                    }
+
+                    function checkLeft(?string $s, bool $c): string {
+                        if (($t = $s) !== null xor $c) {
+                            return (string) $t;
+                        }
+
+                        return "";
+                    }',
+            ],
             'variableAssignedBeforeABreakInTheElseIsNotTypedByTheIf' => [
                 'code' => '<?php
                     /** @return list<string> */
