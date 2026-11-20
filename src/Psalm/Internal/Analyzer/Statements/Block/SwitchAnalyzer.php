@@ -181,6 +181,16 @@ final class SwitchAnalyzer
                         break;
                     }
                 }
+
+                if (!$all_options_matched
+                    && $all_options_returned
+                    && $switch_var_id !== null
+                    && isset($case_vars_in_scope_reconciled[$switch_var_id])
+                ) {
+                    // every case leaves the switch, so only no case matching reaches the code after it (cases
+                    // sharing a body, `case 'a': case 'b': return;`, are not narrowed)
+                    $context->vars_in_scope[$switch_var_id] = $case_vars_in_scope_reconciled[$switch_var_id];
+                }
             }
         }
 

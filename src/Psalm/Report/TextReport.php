@@ -26,12 +26,12 @@ final class TextReport extends Report
         foreach ($this->issues_data as $issue_data) {
             $output .= sprintf(
                 '%s:%s:%s:%s - %s: %s',
-                $issue_data->file_path,
+                $this->escapeControlCharacters($issue_data->file_path),
                 $issue_data->line_from,
                 $issue_data->column_from,
                 ($issue_data->severity === IssueData::SEVERITY_ERROR ? 'error' : 'warning'),
                 $issue_data->type,
-                self::getMessageWithCwe($issue_data),
+                $this->escapeControlCharacters(self::getMessageWithCwe($issue_data)),
             ) . "\n";
         }
 

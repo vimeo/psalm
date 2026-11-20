@@ -431,9 +431,18 @@ final class ClassLikeNodeScanner
                     $fq_classlike_name,
                 );
 
+                $known_type_aliases = $this->type_aliases + $type_aliases;
+
                 foreach ($type_aliases as $type_alias) {
                     // finds issues, if there are any; `_` is checked where the alias is used
-                    TypeParser::parseTokens($type_alias->replacement_tokens, null, [], [], false, true);
+                    TypeParser::parseTokens(
+                        $type_alias->replacement_tokens,
+                        null,
+                        [],
+                        $known_type_aliases,
+                        false,
+                        true,
+                    );
                 }
 
                 $this->type_aliases += $type_aliases;
@@ -896,6 +905,7 @@ final class ClassLikeNodeScanner
 
 
             $storage->deprecated = $docblock_info->deprecated;
+            $storage->named_arguments = $docblock_info->named_arguments;
 
             if (count($docblock_info->psalm_internal) !== 0) {
                 $storage->internal = $docblock_info->psalm_internal;
