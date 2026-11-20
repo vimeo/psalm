@@ -3251,6 +3251,110 @@ final class CapabilitiesTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'psalmCapabilitiesWinOverPure' => [
+                'code' => '<?php
+                    interface Message {
+                        /**
+                         * @pure
+                         * @psalm-capabilities read-props
+                         */
+                        public function body(): string;
+                    }
+
+                    final class MyMessage implements Message {
+                        public function __construct(private string $body) {}
+
+                        public function body(): string {
+                            return $this->body;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'psalmCapabilitiesWinOverPhpstanPure' => [
+                'code' => '<?php
+                    interface Message {
+                        /**
+                         * @psalm-capabilities read-props
+                         * @phpstan-pure
+                         */
+                        public function body(): string;
+                    }
+
+                    final class MyMessage implements Message {
+                        public function __construct(private string $body) {}
+
+                        public function body(): string {
+                            return $this->body;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'psalmMutationFreeWinsOverPure' => [
+                'code' => '<?php
+                    interface Message {
+                        /**
+                         * @psalm-mutation-free
+                         * @pure
+                         */
+                        public function body(): string;
+                    }
+
+                    final class MyMessage implements Message {
+                        public function __construct(private string $body) {}
+
+                        public function body(): string {
+                            return $this->body;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'psalmMutationFreeWinsOverPhpstanPure' => [
+                'code' => '<?php
+                    interface Message {
+                        /**
+                         * @phpstan-pure
+                         * @psalm-mutation-free
+                         */
+                        public function body(): string;
+                    }
+
+                    final class MyMessage implements Message {
+                        public function __construct(private string $body) {}
+
+                        public function body(): string {
+                            return $this->body;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'psalmCapabilitiesWinOverPureInTheBody' => [
+                'code' => '<?php
+                    /**
+                     * @pure
+                     * @psalm-capabilities io
+                     */
+                    function greet(string $name): void {
+                        echo $name;
+                    }',
+            ],
+            'psalmImpureWinsOverPure' => [
+                'code' => '<?php
+                    /**
+                     * @pure
+                     * @psalm-impure
+                     */
+                    function now(): int {
+                        return time();
+                    }',
+            ],
         ];
     }
 
@@ -7902,6 +8006,80 @@ final class CapabilitiesTest extends TestCase
                         }
                     }',
                 'error_message' => 'ImpurePropertyAssignment',
+            ],
+            'pureAloneStillForbidsReadingProps' => [
+                'code' => '<?php
+                    interface Message {
+                        /**
+                         * @pure
+                         */
+                        public function body(): string;
+                    }
+
+                    final class MyMessage implements Message {
+                        public function __construct(private string $body) {}
+
+                        public function body(): string {
+                            return $this->body;
+                        }
+                    }',
+                'error_message' => 'ImmutableDependency - src' . DIRECTORY_SEPARATOR . 'somefile.php:9:33 - Message::body is pure, but MyMessage::body additionally requires read-props',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'psalmCapabilitiesWithPureIsTheContract' => [
+                'code' => '<?php
+                    interface Counter {
+                        /**
+                         * @pure
+                         * @psalm-capabilities read-props
+                         */
+                        public function next(): int;
+                    }
+
+                    final class MyCounter implements Counter {
+                        private int $n = 0;
+
+                        public function next(): int {
+                            return ++$this->n;
+                        }
+                    }',
+                'error_message' => 'ImmutableDependency - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:33 - Counter::next is read-props, but MyCounter::next additionally requires write-this-props',
+            ],
+            'conditionalPsalmCapabilitiesWinOverPure' => [
+                'code' => '<?php
+                    /**
+                     * @pure
+                     * @psalm-capabilities ($p is null ? io : pure)
+                     */
+                    function show(?int $p): int {
+                        if ($p === null) {
+                            echo "none";
+                        }
+                        return 0;
+                    }
+
+                    /** @psalm-pure */
+                    function quiet(): int {
+                        return show(1);
+                    }
+
+                    /** @psalm-pure */
+                    function loud(): int {
+                        return show(null);
+                    }',
+                'error_message' => 'ImpureFunctionCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:20:32 - The context is pure but function call on show requires io',
+            ],
+            'psalmCapabilitiesWithPureChecksTheBody' => [
+                'code' => '<?php
+                    /**
+                     * @pure
+                     * @psalm-capabilities read-props
+                     */
+                    function greet(string $name): void {
+                        echo $name;
+                    }',
+                'error_message' => 'ImpureFunctionCall',
             ],
         ];
     }
