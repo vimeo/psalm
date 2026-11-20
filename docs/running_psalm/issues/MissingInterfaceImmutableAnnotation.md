@@ -19,6 +19,6 @@ final class A implements SomethingPotentiallyImmutable {
 
 ## Why this is useful
 
-The annotation caps what every implementation may do, and an implementation that does more is reported as `ImmutableDependency`. An interface method has no body to infer anything from, so this is the only way to say what it may do. Explicit purity is also what [taint analysis](https://psalm.dev/docs/security_analysis/) relies on where it cannot infer it, see [specializing taints in functions](../../security_analysis/avoiding_false_positives.md#specializing-taints-in-functions).
+The annotation caps what every implementation may do, and an implementation that does more is reported as `ImmutableDependency`. An interface method has no body to infer anything from, so this is the only way to say what it may do. Explicit purity is also what [taint analysis](https://psalm.dev/docs/security_analysis/) relies on where it cannot infer it, see [specializing taints in functions](../../security_analysis/index.md#specializing-functions).
 
 See [class-level contracts](../../annotating_code/purity_model.md#class-level-contracts) in the purity model.
