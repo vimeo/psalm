@@ -71,7 +71,6 @@ use SplFileInfo;
 use Symfony\Component\Filesystem\Path;
 use Throwable;
 use UnexpectedValueException;
-use XdgBaseDir\Xdg;
 use stdClass;
 
 use function array_any;
@@ -102,6 +101,7 @@ use function get_debug_type;
 use function get_defined_constants;
 use function get_defined_functions;
 use function getcwd;
+use function getenv;
 use function glob;
 use function hash;
 use function implode;
@@ -113,6 +113,7 @@ use function is_dir;
 use function is_file;
 use function is_resource;
 use function is_string;
+use function is_writable;
 use function json_decode;
 use function libxml_clear_errors;
 use function libxml_get_errors;
@@ -868,6 +869,37 @@ final class Config
         return self::fromXmlAndPaths($base_dir, $file_contents, $current_dir, $file_path);
     }
 
+    private static function getDefaultCacheDirectory(): string
+    {
+        $xdg_cache_home = getenv('XDG_CACHE_HOME');
+        if ($xdg_cache_home !== false && $xdg_cache_home !== '') {
+            return $xdg_cache_home . '/psalm';
+        }
+
+        $home = getenv('HOME');
+        if ($home === false || $home === '') {
+            $home_drive = getenv('HOMEDRIVE');
+            $home_path = getenv('HOMEPATH');
+            $home = $home_drive !== false && $home_drive !== '' && $home_path !== false && $home_path !== ''
+                ? $home_drive . $home_path
+                : null;
+        }
+
+        // docker run --user sets HOME to "/", which is not a usable home
+        if ($home !== null && $home !== '/') {
+            $user_cache_dir = $home . '/.cache';
+            $is_usable = file_exists($user_cache_dir)
+                ? is_dir($user_cache_dir) && is_writable($user_cache_dir)
+                : is_dir($home) && is_writable($home);
+
+            if ($is_usable) {
+                return $user_cache_dir . '/psalm';
+            }
+        }
+
+        return sys_get_temp_dir() . '/psalm';
+    }
+
     /**
      * @param non-empty-string $file_contents
      */
@@ -1264,10 +1296,8 @@ final class Config
             $config->cache_directory = null;
         } elseif (isset($config_xml['cacheDirectory'])) {
             $config->cache_directory = (string)$config_xml['cacheDirectory'];
-        } elseif ($user_cache_dir = (new Xdg())->getHomeCacheDir()) {
-            $config->cache_directory = $user_cache_dir . '/psalm';
         } else {
-            $config->cache_directory = sys_get_temp_dir() . '/psalm';
+            $config->cache_directory = self::getDefaultCacheDirectory();
         }
 
         $config->global_cache_directory = $config->cache_directory;
@@ -1812,6 +1842,11 @@ final class Config
 
             if (isset(TaintKind::TAINT_NAMES[$name])) {
                 throw new ConfigException('The custom taint "' . $name . '" has the name of a built-in taint');
+            }
+
+            // `@psalm-taint-sink none $param`: a parameter without sinks
+            if ($name === 'none') {
+                throw new ConfigException('A custom taint can\'t be named "none", which means no taint');
             }
 
             if (isset($this->custom_taints[$name])) {

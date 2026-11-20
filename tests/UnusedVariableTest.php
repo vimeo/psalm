@@ -3457,6 +3457,67 @@ final class UnusedVariableTest extends TestCase
                 'ignored_issues' => ['RedundantCondition'],
                 'php_version' => '8.0',
             ],
+            'writeAfterLoopToVariableBoundToItemsOfArrayUnitedSinceIsUsed' => [
+                'code' => '<?php
+                    /** @param list<string> $keys */
+                    function f(array $keys): array {
+                        $x = 1;
+                        $out = [];
+                        foreach ($keys as $k) {
+                            $out[$k] = &$x;
+                        }
+                        $out = $out + ["q" => 3];
+                        $x = "z";
+                        return $out;
+                    }
+                ',
+            ],
+            'writeAfterLoopToVariableBoundToItemsOfArrayUnitedSinceOnTheRightIsUsed' => [
+                'code' => '<?php
+                    /** @param list<string> $keys */
+                    function f(array $keys): array {
+                        $x = 1;
+                        $out = [];
+                        foreach ($keys as $k) {
+                            $out[$k] = &$x;
+                        }
+                        $out = ["q" => 3] + $out;
+                        $x = "z";
+                        return $out;
+                    }
+                ',
+            ],
+            'writeAfterSwitchToVariableBoundToArrayItemInACaseIsUsed' => [
+                'code' => '<?php
+                    function f(string $k, int $c): array {
+                        $x = 1;
+                        $out = [];
+                        switch ($c) {
+                            case 1:
+                                $out[$k] = &$x;
+                                break;
+                            default:
+                                echo "d";
+                        }
+                        $x = "z";
+                        return $out;
+                    }
+                ',
+            ],
+            'writeAfterLoopToVariableBoundToArrayItemsIsUsed' => [ // #14206
+                'code' => '<?php
+                    /** @param list<string> $keys */
+                    function f(array $keys): array {
+                        $x = 1;
+                        $out = [];
+                        foreach ($keys as $k) {
+                            $out[$k] = &$x;
+                        }
+                        $x = "z";
+                        return $out;
+                    }
+                ',
+            ],
         ];
     }
 
@@ -4757,6 +4818,22 @@ final class UnusedVariableTest extends TestCase
                 'error_message' => 'UnusedVariable',
                 'error_levels' => [],
                 'php_version' => '8.4',
+            ],
+            'writeAfterLoopToVariableBoundToItemsOfArrayAssignedSinceIsUnused' => [
+                'code' => '<?php
+                    /** @param list<string> $keys */
+                    function f(array $keys): array {
+                        $x = 1;
+                        $out = [];
+                        foreach ($keys as $k) {
+                            $out[$k] = &$x;
+                        }
+                        $out = ["a" => 5];
+                        $x = "z";
+                        return $out;
+                    }
+                ',
+                'error_message' => 'UnusedVariable - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:25',
             ],
         ];
     }

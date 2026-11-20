@@ -37,6 +37,8 @@ final class DocComment
         'purity-template', 'capabilities',
         'allow-private-mutation', 'readonly-allow-private-mutation',
         'yield', 'trace', 'import-type', 'flow', 'taint-specialize', 'taint-escape',
+        'database-query', 'database-prepare', 'database-execute', 'database-bind', 'database-insert',
+        'database-update', 'database-select', 'database-fetch',
         'taint-unescape', 'self-out', 'consistent-constructor', 'stub-override',
         'require-extends', 'require-implements', 'param-out', 'param-closure-this', 'ignore-var',
         'consistent-templates', 'if-this-is', 'this-out', 'check-type', 'check-type-exact',
