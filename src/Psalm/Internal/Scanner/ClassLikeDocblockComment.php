@@ -6,6 +6,7 @@ namespace Psalm\Internal\Scanner;
 
 use PhpParser\Node\Stmt\ClassMethod;
 use Psalm\Storage\Capabilities;
+use Psalm\Storage\NamedArguments;
 
 /**
  * @internal
@@ -157,6 +158,9 @@ final class ClassLikeDocblockComment
     public bool $consistent_constructor = false;
 
     public bool $consistent_templates = false;
+
+    /** How the arguments of the methods can be passed */
+    public ?NamedArguments $named_arguments = null;
 
     public bool $stub_override = false;
 

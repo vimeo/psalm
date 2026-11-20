@@ -14,4 +14,5 @@ final class NullPropertyAssignment extends CodeIssue
 {
     public const ERROR_LEVEL = -1;
     public const SHORTCODE = 36;
+    public const CWE_IDS = [476];
 }

@@ -150,6 +150,34 @@ function show(Cache $cache): void
 return: the closure's body, or the function named. Here `TaintedHtml` is detected. As for `$this`, each call returns
 what its own callables return only with `@psalm-taint-specialize`.
 
+### Arguments to callables
+
+```php
+<?php // --taint-analysis
+interface Events
+{
+    /**
+     * @param callable(string): void $listener
+     * @psalm-taint-specialize
+     * @psalm-flow ($payload) -> $listener()
+     */
+    public function dispatch(string $payload, callable $listener): void;
+}
+
+function listen(Events $events): void
+{
+    $events->dispatch((string) ($_GET['x'] ?? ''), function (string $payload): void {
+        echo $payload; // TaintedHtml
+    });
+    $events->dispatch('safe', function (string $payload): void {
+        echo $payload; // no issue
+    });
+}
+```
+
+`-> $listener()` states that the callables given to `$listener` are called with what is given to `$payload`, as their
+arguments.
+
 ### Keyed stores
 
 Caches, key-value stores and similar services keep what they are given out of the analyzed code, under a key. Their
