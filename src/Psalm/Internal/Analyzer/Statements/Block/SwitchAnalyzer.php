@@ -77,12 +77,12 @@ final class SwitchAnalyzer
 
         $case_action_map = [];
 
-        // the switches directly around this one are targets of `break N` and `continue N` as well, while a loop
-        // around them is left to the actions of the switch (a `continue` of it ends the case)
+        // the switches directly around this one are targets of `continue N` too, which leaves them like `break N`,
+        // while a loop around them is left to the actions of the switch (a `continue` of it ends the case)
         $break_types = ['switch'];
 
         for ($j = count($context->break_types) - 1; $j >= 0 && $context->break_types[$j] === 'switch'; $j--) {
-            $break_types[] = 'switch';
+            $break_types = ['outer_switch', ...$break_types];
         }
 
         // create a map of case statement -> ultimate exit type

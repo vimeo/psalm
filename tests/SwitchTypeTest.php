@@ -85,6 +85,62 @@ final class SwitchTypeTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '7.4',
             ],
+            'continueTargetingTheOutermostOfThreeSwitchesLeavesIt' => [
+                'code' => '<?php
+                    $outer = uniqid();
+                    $middle = uniqid();
+                    $inner = uniqid();
+
+                    switch ($outer) {
+                        case "A":
+                            switch ($middle) {
+                                case "m":
+                                    switch ($inner) {
+                                        case "x":
+                                            $q = 1;
+                                            continue 3;
+                                    }
+
+                                    $q = 2;
+                                    break 2;
+                            }
+
+                            $q = 3;
+                            break;
+                        default:
+                            $q = 4;
+                    }',
+                'assertions' => [
+                    '$q===' => '1|2|3|4',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '7.4',
+            ],
+            'continueTargetingAnOuterSwitchInALoopLeavesTheSwitchNotTheLoop' => [
+                'code' => '<?php
+                    /** @param list<string> $l */
+                    function f(array $l): int {
+                        foreach ($l as $s) {
+                            switch ($s) {
+                                case "A":
+                                    switch (uniqid()) {
+                                        case "x":
+                                            $q = 1;
+                                            continue 2;
+                                    }
+
+                                    $q = 2;
+                                    break;
+                                default:
+                                    $q = 3;
+                            }
+
+                            return $q;
+                        }
+
+                        return 0;
+                    }',
+            ],
             'switchWithoutDefaultNarrowsTheSubjectWhenEveryCaseReturns' => [
                 'code' => '<?php
                     /** @param "a"|"b"|"c" $letter */
@@ -1904,6 +1960,22 @@ final class SwitchTypeTest extends TestCase
                         }
                     }',
                 'error_message' => 'UndefinedVariable',
+            ],
+            'varFromContinueTwoOutOfNestedSwitchIsUndefinedAfterIt' => [
+                'code' => '<?php
+                    function f(string $s, string $u): void {
+                        switch ($s) {
+                            case "A":
+                                switch ($u) {
+                                    case "x":
+                                        $q = 1;
+                                        continue 2;
+                                }
+                                echo $q;
+                                break;
+                        }
+                    }',
+                'error_message' => 'UndefinedVariable - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:38',
             ],
             'varFromCaseThatThrowsOrBreaksTwoIsUndefinedAfterNestedSwitch' => [
                 'code' => '<?php
