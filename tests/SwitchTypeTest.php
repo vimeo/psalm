@@ -61,6 +61,30 @@ final class SwitchTypeTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'continueTargetingAnOuterSwitchLeavesItLikeBreak' => [
+                'code' => '<?php
+                    $outer = uniqid();
+                    $inner = uniqid();
+
+                    switch ($outer) {
+                        case "A":
+                            switch ($inner) {
+                                case "x":
+                                    $q = 1;
+                                    continue 2;
+                            }
+
+                            $q = 2;
+                            break;
+                        default:
+                            $q = 3;
+                    }',
+                'assertions' => [
+                    '$q===' => '1|2|3',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '7.4',
+            ],
             'switchWithoutDefaultNarrowsTheSubjectWhenEveryCaseReturns' => [
                 'code' => '<?php
                     /** @param "a"|"b"|"c" $letter */
