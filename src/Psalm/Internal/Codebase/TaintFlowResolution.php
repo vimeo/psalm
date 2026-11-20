@@ -3424,8 +3424,9 @@ final class TaintFlowResolution
             return;
         }
 
-        if (str_starts_with($class, ':') && !str_ends_with($class, "'*")) {
-            // (the class of a key whose start only is known passes fetches of other keys too: it gets its own)
+        if (str_starts_with($class, ':') && DataFlowGraph::isKnownExactly(substr($class, 1))) {
+            // (the class of a key not known exactly, as one whose start only is known, passes fetches of other keys
+            // too: it gets its own)
             $class = self::EXACT_KEY_CLASS;
         } elseif ($class === self::DEFERRED_CLASS && $this->entry_kinds[$entry] !== self::ENTRY_CALL) {
             // no fetch in the walk of a convergence asks per key (see passesFetch())
