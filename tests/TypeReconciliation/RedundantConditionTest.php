@@ -242,6 +242,108 @@ final class RedundantConditionTest extends TestCase
                 'assertions' => [],
                 'ignored_issues' => ['RedundantConditionGivenDocblockType'],
             ],
+            'redundantNegatedTypeCheckOnATemplateKeepsTheTemplate' => [
+                'code' => '<?php
+                    /**
+                     * @template T of int
+                     * @param T $x
+                     * @return T
+                     */
+                    function notArray($x) {
+                        if (!is_array($x)) {
+                            return $x;
+                        }
+                        throw new Exception();
+                    }
+
+                    /**
+                     * @template T of int
+                     * @param T $x
+                     * @return T
+                     */
+                    function notString($x) {
+                        if (!is_string($x)) {
+                            return $x;
+                        }
+                        throw new Exception();
+                    }
+
+                    /**
+                     * @template T of int
+                     * @param T $x
+                     * @return T
+                     */
+                    function notObject($x) {
+                        if (!is_object($x)) {
+                            return $x;
+                        }
+                        throw new Exception();
+                    }
+
+                    /**
+                     * @template T of string
+                     * @param T $x
+                     * @return T
+                     */
+                    function notInt($x) {
+                        if (!is_int($x)) {
+                            return $x;
+                        }
+                        throw new Exception();
+                    }
+
+                    /**
+                     * @template T of int
+                     * @param T $x
+                     * @return T
+                     */
+                    function notFloat($x) {
+                        if (!is_float($x)) {
+                            return $x;
+                        }
+                        throw new Exception();
+                    }
+
+                    /**
+                     * @template T of array
+                     * @param T $x
+                     * @return T
+                     */
+                    function notNumeric($x) {
+                        if (!is_numeric($x)) {
+                            return $x;
+                        }
+                        throw new Exception();
+                    }
+
+                    /**
+                     * @template T of array
+                     * @param T $x
+                     * @return T
+                     */
+                    function notScalar($x) {
+                        if (!is_scalar($x)) {
+                            return $x;
+                        }
+                        throw new Exception();
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['RedundantConditionGivenDocblockType'],
+            ],
+            'negatedTypeCheckOnAUnionWithATemplateKeepsTheTemplate' => [
+                'code' => '<?php
+                    /**
+                     * @template T of int
+                     * @param T|array<T> $x
+                     * @return T
+                     */
+                    function f($x) {
+                        if (!is_array($x)) {
+                            return $x;
+                        }
+                        throw new Exception();
+                    }',
+            ],
             'notNullAfterAnIssetOfAnArrayAccessOffsetOrAMagicPropertyIsNotRedundant' => [
                 'code' => '<?php
                     /** @implements ArrayAccess<string, mixed> */
