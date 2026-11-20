@@ -192,6 +192,7 @@ final class ConfigTest extends DeferredAnalyzerTestCase
     }
 
     /**
+     * @psalm-pure
      * @return iterable<string, array{env: array<string, ?string>, expected: string}>
      */
     public static function providerDefaultCacheDirectory(): iterable
