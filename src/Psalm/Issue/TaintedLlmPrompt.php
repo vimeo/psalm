@@ -10,4 +10,5 @@ namespace Psalm\Issue;
 final class TaintedLlmPrompt extends TaintedInput
 {
     public const SHORTCODE = 367;
+    public const CWE_IDS = [1427];
 }

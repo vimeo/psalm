@@ -142,6 +142,7 @@ final class UnsetAnalyzer
 
                 FunctionLikeAnalyzer::unbindByRefParam($statements_analyzer->getCodebase(), $context, $var_id);
 
+                $context->forgetMethodResultsDependingOn($var_id);
                 $context->remove($var_id);
                 unset($context->references_possibly_from_confusing_scope[$var_id]);
             }

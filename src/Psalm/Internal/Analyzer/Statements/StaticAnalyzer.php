@@ -89,6 +89,11 @@ final class StaticAnalyzer
             FunctionLikeAnalyzer::unbindByRefParam($codebase, $context, $var_id);
             $context->forgetReferencesPossiblyBound($var_id);
 
+            // the variable is bound to the static variable instead: what it was bound to by reference keeps its value
+            if (isset($context->references_in_scope[$var_id]) || ($context->referenced_counts[$var_id] ?? 0) > 0) {
+                $context->removePossibleReference($var_id);
+            }
+
             if ($comment_type) {
                 $context->byref_constraints[$var_id] = new ReferenceConstraint($comment_type);
             }
