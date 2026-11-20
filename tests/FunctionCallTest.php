@@ -24,6 +24,173 @@ final class FunctionCallTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'functionImportedWithAnAliasIsCalledWithoutAWrongCaseIssue' => [
+                'code' => '<?php
+                    namespace App;
+
+                    use function json_encode as encode;
+                    use function strtoupper as up;
+
+                    $json = encode([1]);
+                    $upper = up("x");',
+                'assertions' => [
+                    '$upper===' => 'non-falsy-string',
+                ],
+            ],
+            'functionCalledWithItsDeclaredCasing' => [
+                'code' => '<?php
+                    namespace Foo;
+
+                    function fooBar(): int {
+                        return 1;
+                    }
+
+                    /** @param callable $callable */
+                    function runThis($callable): void {
+                        $callable();
+                    }
+
+                    $a = fooBar();
+                    $b = \\Foo\\fooBar();
+                    $c = strlen("foo");
+                    $d = \\strlen("foo");
+                    runThis("Foo\\\\fooBar");',
+                'assertions' => [
+                    '$a===' => 'int',
+                    '$c===' => 'int<1, max>',
+                ],
+            ],
+            'fileTestFunctionsKeepAMixedArgument' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function f(mixed $a, mixed $b, mixed $c): void {
+                        if (is_link($a)) {
+                            /** @psalm-check-type-exact $a = mixed */
+                        }
+
+                        if (file_exists($b)) {
+                            /** @psalm-check-type-exact $b = mixed */
+                        }
+
+                        if (is_dir($c) || is_readable($c)) {
+                            /** @psalm-check-type-exact $c = mixed */
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => ['MixedArgument'],
+                'php_version' => '8.1',
+            ],
+            'fileTestFunctionsKeepAnArgumentContainingMixed' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function f(array $a, string $s): void {
+                        $x = $a['k'];
+                        if ($x === null) {
+                            $x = $s;
+                        }
+
+                        if (is_link($x)) {
+                            /** @psalm-check-type-exact $x = mixed|string */
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => ['MixedAssignment', 'MixedArgument'],
+                'php_version' => '8.1',
+            ],
+            'fileTestFunctionsKeepAnSplFileInfoArgument' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function f(SplFileInfo $a, SplFileInfo $b): void {
+                        if (is_link($a)) {
+                            /** @psalm-check-type-exact $a = SplFileInfo */
+                        }
+
+                        if (is_file($b) || file_exists($b)) {
+                            /** @psalm-check-type-exact $b = SplFileInfo */
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => ['ImplicitToStringCast'],
+                'php_version' => '8.1',
+            ],
+            'fileTestFunctionsStillNarrowAStringArgument' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function f(string $a, string $b): void {
+                        if (is_link($a)) {
+                            /** @psalm-check-type-exact $a = non-empty-string */
+                        }
+
+                        if (file_exists($b)) {
+                            /** @psalm-check-type-exact $b = non-empty-string */
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'fileTestFunctionsAssertANonEmptyString' => [
+                'code' => '<?php
+                    /** @param non-empty-string $path */
+                    function takesNonEmptyString(string $path): void {}
+
+                    function check(string $path): void {
+                        if (file_exists($path)) {
+                            takesNonEmptyString($path);
+                        }
+                        if (is_file($path)) {
+                            takesNonEmptyString($path);
+                        }
+                        if (is_dir($path)) {
+                            takesNonEmptyString($path);
+                        }
+                        if (is_link($path)) {
+                            takesNonEmptyString($path);
+                        }
+                        if (is_readable($path)) {
+                            takesNonEmptyString($path);
+                        }
+                        if (is_writable($path)) {
+                            takesNonEmptyString($path);
+                        }
+                        if (is_writeable($path)) {
+                            takesNonEmptyString($path);
+                        }
+                        if (is_executable($path)) {
+                            takesNonEmptyString($path);
+                        }
+                    }',
+            ],
+            'fileTestFunctionsKeepAPossiblyEmptyStringWhenFalse' => [
+                'code' => '<?php
+                    function check(string $path): void {
+                        if (!file_exists($path)) {
+                            $a = $path;
+                        } else {
+                            $a = "x";
+                        }
+                        if (is_dir($path)) {
+                            $b = "x";
+                        } else {
+                            $b = $path;
+                        }
+                    }
+
+                    /** @var string $path */
+                    $path = "";
+                    if (is_file($path)) {
+                        $c = "x";
+                    } else {
+                        $c = $path;
+                    }',
+                'assertions' => [
+                    '$c===' => 'string',
+                ],
+            ],
             'filterVarEmptyStringNullOnlyForAnEmptyInput' => [
                 'code' => <<<'PHP'
                     <?php
@@ -1277,6 +1444,7 @@ final class FunctionCallTest extends TestCase
                     '$b===' => 'array<string, string>',
                     '$c===' => 'false|string',
                 ],
+                'ignored_issues' => ['WrongCaseFunction'],
             ],
             'functionExistsGuardsTheRightOperandInsideAnotherNarrowingCondition' => [
                 'code' => '<?php
@@ -2335,6 +2503,45 @@ final class FunctionCallTest extends TestCase
                     '$d' => 'list{int, int}',
                 ],
             ],
+            'builtinReturnTypeProvidersOnLessCommonCalls' => [
+                'code' => '<?php
+                    /** @return non-empty-list<int> */
+                    function getList(): array {
+                        return [1];
+                    }
+                    /** @return array{a: int, b?: int} */
+                    function getShape(): array {
+                        return ["a" => 1];
+                    }
+                    $a = sizeof(getList());
+                    $b = COUNT(getShape());
+                    $c = get_called_class();
+                    $d = get_parent_class();
+                    $e = count(...);
+                    $f = hrtime(...);
+                    $g = mb_strtolower(...);',
+                'assertions' => [
+                    '$a===' => 'int<1, max>',
+                    '$b===' => 'int<1, 2>',
+                    '$c===' => 'class-string',
+                    '$d===' => 'class-string|false',
+                    '$e===' => 'Closure[pure](Countable|array<array-key, mixed>, int=):int<0, max>',
+                    '$f===' => 'Closure[time](true=):(false|float|int)',
+                    '$g===' => 'Closure[pure](string, string=):lowercase-string',
+                ],
+            ],
+            'hrtimePolyfillBeforePhp73KeepsItsDeclaredType' => [
+                'code' => '<?php
+                    function hrtime(bool $as_number = false): string {
+                        return "polyfill";
+                    }
+                    $a = hrtime(true);',
+                'assertions' => [
+                    '$a===' => 'string',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '7.2',
+            ],
             'hrtimeCanBeFloat' => [
                 'code' => '<?php
                     $a = hrtime(true);
@@ -3097,6 +3304,7 @@ final class FunctionCallTest extends TestCase
                     '$c===' => '\'  abc\'',
                     '$d===' => '\'abc\'',
                 ],
+                'ignored_issues' => ['WrongCaseFunction'],
             ],
             'trimThatIsNotOfOneLiteralKeepsTheStubType' => [
                 'code' => '<?php
@@ -3933,6 +4141,82 @@ final class FunctionCallTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'aliasOfAUserFunctionImportedWithAnotherCasingIsReported' => [
+                'code' => '<?php
+                    namespace Lib {
+                        function fooBar(): int {
+                            return 1;
+                        }
+                    }
+
+                    namespace App {
+                        use function Lib\FOOBAR as run;
+
+                        echo run();
+                    }',
+                'error_message' => 'WrongCaseFunction - src' . DIRECTORY_SEPARATOR . 'somefile.php:11:30 - Function FOOBAR is declared as fooBar and has wrong casing',
+            ],
+            'wrongCaseOfAFunctionCall' => [
+                'code' => '<?php
+                    function fooBar(): void {}
+
+                    foobar();',
+                'error_message' => 'WrongCaseFunction - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:21 - '
+                    . 'Function foobar is declared as fooBar and has wrong casing',
+            ],
+            'wrongCaseOfAFunctionCallInANamespace' => [
+                'code' => '<?php
+                    namespace Foo;
+
+                    function fooBar(): void {}
+
+                    FOOBAR();',
+                'error_message' => 'WrongCaseFunction - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:21',
+            ],
+            'wrongCaseOfAFunctionPassedAsACallableString' => [
+                'code' => '<?php
+                    function abc(): void {}
+
+                    /** @param callable $callable */
+                    function runThis(string $string, $callable): void {
+                        $callable($string);
+                    }
+
+                    runThis("foo", "aBc");',
+                'error_message' => 'WrongCaseFunction - src' . DIRECTORY_SEPARATOR . 'somefile.php:9:36',
+            ],
+            'wrongCaseOfAFunctionImportedWithAnAlias' => [
+                'code' => '<?php
+                    namespace App;
+
+                    use function StrToUpper as up;
+
+                    echo up("x");',
+                'error_message' => 'WrongCaseFunction - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:26 - '
+                    . 'Function StrToUpper is declared as strtoupper and has wrong casing',
+            ],
+            'wrongCaseOfABuiltinFunctionCall' => [
+                'code' => '<?php
+                    echo STRLEN("foo");',
+                'error_message' => 'WrongCaseFunction - src' . DIRECTORY_SEPARATOR . 'somefile.php:2:26 - '
+                    . 'Function STRLEN is declared as strlen and has wrong casing',
+            ],
+            'fileTestFunctionOnAnEmptyStringIsAlwaysFalse' => [
+                'code' => '<?php
+                    $path = "";
+                    if (is_file($path)) {
+                        echo "never";
+                    }',
+                'error_message' => 'TypeDoesNotContainType',
+            ],
+            'fileTestFunctionsStayImpure' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function exists(string $path): bool {
+                        return file_exists($path);
+                    }',
+                'error_message' => 'ImpureFunctionCall',
+            ],
             'filterVarEmptyStringNullIsRedundantForAFilterWithoutIt' => [
                 'code' => <<<'PHP'
                     <?php

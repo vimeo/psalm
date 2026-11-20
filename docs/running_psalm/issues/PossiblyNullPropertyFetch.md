@@ -13,3 +13,7 @@ function foo(?A $a) : void {
     echo $a->foo;
 }
 ```
+
+## Further resources
+
+- [CWE-476](https://cwe.mitre.org/data/definitions/476.html)

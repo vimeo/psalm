@@ -93,6 +93,7 @@ use Psalm\Type\TaintKind;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
+use function array_column;
 use function array_filter;
 use function array_map;
 use function array_shift;
@@ -103,6 +104,7 @@ use function count;
 use function explode;
 use function implode;
 use function in_array;
+use function is_int;
 use function is_string;
 use function preg_replace;
 use function reset;
@@ -111,6 +113,11 @@ use function str_contains;
 use function str_ends_with;
 use function strpos;
 use function strtolower;
+
+use const SORT_FLAG_CASE;
+use const SORT_NATURAL;
+use const SORT_REGULAR;
+use const SORT_STRING;
 
 /**
  * @internal
@@ -127,6 +134,40 @@ final class FunctionCallAnalyzer extends CallAnalyzer
         'array_search' => [[1, 'haystack'], [0, 'needle']],
         'array_keys' => [[0, 'array'], [1, 'filter_value']],
     ];
+
+    /**
+     * Builtins converting the values of array arguments to strings: the [offset, name] of each such argument, or the
+     * number of trailing arguments (callbacks) that aren't
+     */
+    private const STRING_CONVERTED_VALUES_ARGS = [
+        'implode' => 0,
+        'join' => 0,
+        'natsort' => [[0, 'array']],
+        'natcasesort' => [[0, 'array']],
+        'array_diff' => 0,
+        'array_diff_assoc' => 0,
+        'array_diff_uassoc' => 1,
+        'array_intersect' => 0,
+        'array_intersect_assoc' => 0,
+        'array_intersect_uassoc' => 1,
+        'array_fill_keys' => [[0, 'keys']],
+    ];
+
+    /**
+     * Builtins comparing the values of their first argument as their second one (flags) says: [default flags]
+     */
+    private const SORT_FLAGS_DEFAULTS = [
+        'array_unique' => SORT_STRING,
+        'sort' => SORT_REGULAR,
+        'rsort' => SORT_REGULAR,
+        'asort' => SORT_REGULAR,
+        'arsort' => SORT_REGULAR,
+    ];
+
+    /**
+     * The value of `SORT_LOCALE_STRING`, which is deprecated since PHP 8.6: reading it would emit a deprecation.
+     */
+    private const SORT_LOCALE_STRING = 5;
 
     /**
      * @psalm-suppress ComplexMethod
@@ -301,7 +342,6 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                 $stmt->getArgs(),
                 $function_call_info->function_params,
                 $function_call_info->function_id,
-                $function_call_info->allow_named_args,
                 $context,
                 $template_result,
             );
@@ -493,12 +533,10 @@ final class FunctionCallAnalyzer extends CallAnalyzer
         }
 
         // a called closure may write what it captured by reference
-        foreach ($function_call_info->byref_uses as $use_name => $_) {
-            $use_var_id = '$' . $use_name;
-
+        foreach ($function_call_info->closure_written_var_ids as $var_id => $_) {
             $context->removeVarFromConflictingClauses(
-                $use_var_id,
-                $context->vars_in_scope[$use_var_id] ?? null,
+                $var_id,
+                $context->vars_in_scope[$var_id] ?? null,
                 $statements_analyzer,
             );
         }
@@ -522,7 +560,6 @@ final class FunctionCallAnalyzer extends CallAnalyzer
 
         if ($codebase->store_node_types
             && !$context->collect_initializations
-            && !$context->collect_mutations
             && ($stmt_type = $statements_analyzer->node_data->getType($real_stmt))
         ) {
             $codebase->analyzer->addNodeType(
@@ -552,15 +589,20 @@ final class FunctionCallAnalyzer extends CallAnalyzer
 
         if ($function_call_info->in_call_map
             && $function_call_info->function_id !== null
-            && isset(self::LOOSE_SEARCH_ARGS[$function_call_info->function_id])
             && !$stmt->isFirstClassCallable()
         ) {
-            self::chargeLooseSearchNeedleToString(
-                $statements_analyzer,
-                $stmt,
-                $context,
-                ...self::LOOSE_SEARCH_ARGS[$function_call_info->function_id],
-            );
+            $builtin_id = strtolower($function_call_info->function_id);
+
+            if (isset(self::LOOSE_SEARCH_ARGS[$builtin_id])) {
+                self::chargeLooseSearchNeedleToString(
+                    $statements_analyzer,
+                    $stmt,
+                    $context,
+                    ...self::LOOSE_SEARCH_ARGS[$builtin_id],
+                );
+            }
+
+            self::chargeStringConversions($statements_analyzer, $stmt, $context, $builtin_id);
         }
 
         if ($function_call_info->function_storage) {
@@ -571,7 +613,13 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                     $function_name,
                     null,
                     self::resolveStaticPropertyAssertionClasses(
-                        self::getAssertionsOnArgs($function_storage->assertions, $function_storage, $stmt->getArgs()),
+                        self::getAssertionsOnArgs(
+                            $function_storage->assertions,
+                            $function_storage,
+                            $stmt->getArgs(),
+                            $statements_analyzer->node_data,
+                            $context->strict_types,
+                        ),
                         $codebase,
                         $context,
                         null,
@@ -594,6 +642,8 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                             $function_storage->if_true_assertions,
                             $function_storage,
                             $stmt->getArgs(),
+                            $statements_analyzer->node_data,
+                            $context->strict_types,
                         ),
                     ),
                 );
@@ -609,6 +659,8 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                             $function_storage->if_false_assertions,
                             $function_storage,
                             $stmt->getArgs(),
+                            $statements_analyzer->node_data,
+                            $context->strict_types,
                         ),
                     ),
                 );
@@ -868,7 +920,6 @@ final class FunctionCallAnalyzer extends CallAnalyzer
             && !$stmt->isFirstClassCallable()
             && $codebase->store_node_types
             && !$context->collect_initializations
-            && !$context->collect_mutations
         ) {
             ArgumentMapPopulator::recordArgumentPositions(
                 $statements_analyzer,
@@ -907,7 +958,6 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                         $args,
                         null,
                         null,
-                        true,
                         $context,
                     );
                 }
@@ -938,7 +988,6 @@ final class FunctionCallAnalyzer extends CallAnalyzer
         if ($dynamic_function_storage) {
             $function_call_info->function_storage = $dynamic_function_storage;
             $function_call_info->function_params = $dynamic_function_storage->params;
-            $function_call_info->allow_named_args = $dynamic_function_storage->allow_named_arg_calls;
             $function_call_info->defined_constants = $dynamic_function_storage->defined_constants;
         } elseif (!$function_call_info->in_call_map || $function_call_info->is_stubbed) {
             try {
@@ -949,8 +998,20 @@ final class FunctionCallAnalyzer extends CallAnalyzer
 
                 $function_call_info->function_params = $function_call_info->function_storage->params;
 
-                if (!$function_storage->allow_named_arg_calls) {
-                    $function_call_info->allow_named_args = false;
+                if ($function_call_info->in_call_map && $function_storage->cased_name !== null) {
+                    // a function imported with an alias is called by the alias: its name is the imported one
+                    $imported_name = count($function_name->getParts()) === 1
+                        ? $statements_analyzer->getAliases()->functions[strtolower($function_name->getFirst())]
+                            ?? null
+                        : null;
+
+                    CallAnalyzer::checkFunctionNameCase(
+                        $statements_analyzer,
+                        $function_storage,
+                        $imported_name ?? $function_name->getLast(),
+                        $code_location,
+                        $function_call_info->function_id,
+                    );
                 }
 
                 if (!$is_predefined) {
@@ -984,7 +1045,6 @@ final class FunctionCallAnalyzer extends CallAnalyzer
 
         if ($codebase->store_node_types
             && !$context->collect_initializations
-            && !$context->collect_mutations
         ) {
             $codebase->analyzer->addNodeReference(
                 $statements_analyzer->getFilePath(),
@@ -1484,7 +1544,12 @@ final class FunctionCallAnalyzer extends CallAnalyzer
 
         $context->inside_call = $was_in_call;
 
-        $function_call_info->byref_uses = [];
+        $function_call_info->closure_written_var_ids = ClosureAnalyzer::analyzeVarIdsWrittenByCall(
+            $statements_analyzer,
+            $context,
+            $function_name,
+            false,
+        );
 
         if ($stmt_name_type = $statements_analyzer->node_data->getType($function_name)) {
             if ($stmt_name_type->isNull()) {
@@ -1614,10 +1679,6 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                             $real_stmt,
                             $closure_return_type ?? Type::getMixed(),
                         );
-                    }
-
-                    if ($var_type_part instanceof TClosure) {
-                        $function_call_info->byref_uses += $var_type_part->byref_uses;
                     }
 
                     if ($var_type_part->callable_id !== null) {
@@ -1948,7 +2009,6 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                     && $context->vars_in_scope[$var_id]->hasMixed()
                 ) {
                     if (!$context->collect_initializations
-                        && !$context->collect_mutations
                         && $statements_analyzer->getFilePath() === $statements_analyzer->getRootFilePath()
                         && (!(($parent_source = $statements_analyzer->getSource())
                                     instanceof FunctionLikeAnalyzer)
@@ -1986,7 +2046,8 @@ final class FunctionCallAnalyzer extends CallAnalyzer
     }
 
     /**
-     * A search compared loosely to strings converts an object needle with its __toString
+     * A loose search converts with its __toString an object needle compared to strings, and object values compared to
+     * a string needle
      *
      * @param array{int, string} $haystack_param
      * @param array{int, string} $needle_param
@@ -2012,38 +2073,169 @@ final class FunctionCallAnalyzer extends CallAnalyzer
 
         $needle_type = $statements_analyzer->node_data->getType($needle_arg->value);
 
-        if (!$needle_type || !$needle_type->hasObjectType()) {
+        if (!$needle_type) {
             return;
         }
 
-        $haystack_type = $statements_analyzer->node_data->getType($haystack_arg->value);
+        $haystack_values = CastAnalyzer::getArrayValueType(
+            $statements_analyzer->node_data->getType($haystack_arg->value),
+        );
 
-        if ($haystack_type) {
-            $compared_to_strings = false;
-
-            foreach ($haystack_type->getAtomicTypes() as $atomic_type) {
-                if ($atomic_type instanceof TKeyedArray) {
-                    $atomic_type = $atomic_type->getGenericArrayType();
-                }
-
-                if (!$atomic_type instanceof TArray || self::mayBeString($atomic_type->type_params[1])) {
-                    $compared_to_strings = true;
-                }
-            }
-
-            if (!$compared_to_strings) {
-                return;
-            }
+        if ($needle_type->hasObjectType() && (!$haystack_values || self::mayBeString($haystack_values))) {
+            CastAnalyzer::castStringAttempt(
+                $statements_analyzer,
+                $context,
+                $needle_type,
+                $needle_arg->value,
+                false,
+                false,
+            );
         }
 
-        CastAnalyzer::castStringAttempt(
-            $statements_analyzer,
-            $context,
-            $needle_type,
-            $needle_arg->value,
-            false,
-            false,
-        );
+        if ($haystack_values && $haystack_values->hasObjectType() && self::mayBeString($needle_type)) {
+            CastAnalyzer::castStringAttempt(
+                $statements_analyzer,
+                $context,
+                $haystack_values,
+                $haystack_arg->value,
+                false,
+                false,
+            );
+        }
+    }
+
+    /**
+     * A builtin converting a value, or the values of its arrays, to strings calls their objects' __toString
+     */
+    private static function chargeStringConversions(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr\FuncCall $stmt,
+        Context $context,
+        string $function_id,
+    ): void {
+        if ($function_id === 'strval') {
+            $value_arg = self::getSearchArg($stmt, 0, 'value');
+            $value_type = $value_arg ? $statements_analyzer->node_data->getType($value_arg->value) : null;
+
+            if ($value_arg && $value_type && $value_type->hasObjectType()) {
+                CastAnalyzer::castStringAttempt(
+                    $statements_analyzer,
+                    $context,
+                    $value_type,
+                    $value_arg->value,
+                    false,
+                    false,
+                );
+            }
+
+            return;
+        }
+
+        if ($function_id === 'max' || $function_id === 'min') {
+            // a single argument is an array of the compared values, and so is an unpacked one
+            $args = $stmt->getArgs();
+            $compared = [];
+
+            foreach ($args as $arg) {
+                $type = $statements_analyzer->node_data->getType($arg->value);
+
+                if ($type && ($arg->unpack || count($args) === 1)) {
+                    $type = CastAnalyzer::getArrayValueType($type);
+                }
+
+                if (!$type) {
+                    return;
+                }
+
+                $compared[] = [$arg, $type];
+            }
+
+            // compared like SORT_REGULAR does, an object is only converted to be compared to a string
+            if (!$compared
+                || !self::mayBeString(Type::combineUnionTypeArray(array_column($compared, 1), null))
+            ) {
+                return;
+            }
+
+            foreach ($compared as [$arg, $type]) {
+                if ($type->hasObjectType()) {
+                    CastAnalyzer::castStringAttempt($statements_analyzer, $context, $type, $arg->value, false, false);
+                }
+            }
+
+            return;
+        }
+
+        // compared with SORT_REGULAR, an object is only converted to be compared to a string
+        $only_compared_to_strings = false;
+
+        if (isset(self::SORT_FLAGS_DEFAULTS[$function_id])) {
+            $flags = self::SORT_FLAGS_DEFAULTS[$function_id];
+            $flags_arg = self::getSearchArg($stmt, 1, 'flags');
+
+            if ($flags_arg) {
+                $flags_type = $statements_analyzer->node_data->getType($flags_arg->value);
+                // flags that aren't known may be SORT_STRING
+                $flags = $flags_type && $flags_type->isSingleIntLiteral()
+                    ? $flags_type->getSingleIntLiteral()->value & ~SORT_FLAG_CASE
+                    : SORT_STRING;
+            }
+
+            if ($flags !== SORT_STRING
+                && $flags !== self::SORT_LOCALE_STRING
+                && $flags !== SORT_NATURAL
+                && $flags !== SORT_REGULAR
+            ) {
+                return;
+            }
+
+            $only_compared_to_strings = $flags === SORT_REGULAR;
+            $array_arg = self::getSearchArg($stmt, 0, 'array');
+            $array_args = $array_arg ? [$array_arg] : [];
+        } elseif (isset(self::STRING_CONVERTED_VALUES_ARGS[$function_id])) {
+            $converted_args = self::STRING_CONVERTED_VALUES_ARGS[$function_id];
+
+            if (is_int($converted_args)) {
+                $args = $stmt->getArgs();
+                $array_args = array_slice($args, 0, count($args) - $converted_args);
+            } else {
+                $array_args = [];
+
+                foreach ($converted_args as [$offset, $name]) {
+                    $array_arg = self::getSearchArg($stmt, $offset, $name);
+
+                    if ($array_arg) {
+                        $array_args[] = $array_arg;
+                    }
+                }
+            }
+        } else {
+            return;
+        }
+
+        foreach ($array_args as $array_arg) {
+            if ($array_arg->unpack) {
+                continue;
+            }
+
+            $value_type = CastAnalyzer::getArrayValueType($statements_analyzer->node_data->getType($array_arg->value));
+
+            if (!$value_type
+                || !$value_type->hasObjectType()
+                || ($only_compared_to_strings && !self::mayBeString($value_type))
+            ) {
+                continue;
+            }
+
+            CastAnalyzer::castStringAttempt(
+                $statements_analyzer,
+                $context,
+                $value_type,
+                $array_arg->value,
+                false,
+                false,
+            );
+        }
     }
 
     /**
@@ -2111,7 +2303,6 @@ final class FunctionCallAnalyzer extends CallAnalyzer
         $config = $codebase->config;
 
         if (!$context->collect_initializations
-            && !$context->collect_mutations
             && ($context->isExternalMutationFree()
                 || $codebase->find_unused_variables
                 || !$config->remember_property_assignments_after_call
