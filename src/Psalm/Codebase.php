@@ -36,6 +36,7 @@ use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\Analyzer;
 use Psalm\Internal\Codebase\ClassLikes;
 use Psalm\Internal\Codebase\CodeUseGraph;
+use Psalm\Internal\Codebase\DatabaseTaints;
 use Psalm\Internal\Codebase\Functions;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Internal\Codebase\Methods;
@@ -3353,6 +3354,50 @@ final class Codebase
 
         $graph->addNode($read_node);
         TaintStore::addRead($graph, $store, $names, $read_node, $path_type);
+    }
+
+    /**
+     * Adds a path from $write_node into the column of the table, in the database the queries Psalm reads store in and
+     * read from (see DatabaseTaints): what flows into $write_node is then what the queries selecting that column read,
+     * wherever they are. The table is named without its schema; a null table or column is any, as for a query whose
+     * table or column the analysis doesn't know. See addTaintStoreWrite() for the graph the path goes into.
+     *
+     * @psalm-capabilities read-props|write-props
+     */
+    public function addTaintDatabaseWrite(
+        StatementsSource $source,
+        DataFlowNode $write_node,
+        ?string $table,
+        ?string $column,
+    ): void {
+        $graph = $this->getTaintFlowGraphOf($source);
+        if ($graph === null) {
+            return;
+        }
+
+        $graph->addNode($write_node);
+        DatabaseTaints::addWrite($graph, $table === null ? null : strtolower($table), $column, $write_node);
+    }
+
+    /**
+     * Adds a path to $read_node from the column of the table, as a query selecting it reads it: what the queries and
+     * the other writes store in that column flows into $read_node (see addTaintDatabaseWrite())
+     *
+     * @psalm-capabilities read-props|write-props
+     */
+    public function addTaintDatabaseRead(
+        StatementsSource $source,
+        ?string $table,
+        ?string $column,
+        DataFlowNode $read_node,
+    ): void {
+        $graph = $this->getTaintFlowGraphOf($source);
+        if ($graph === null) {
+            return;
+        }
+
+        $graph->addNode($read_node);
+        DatabaseTaints::addRead($graph, $table === null ? null : strtolower($table), $column, $read_node);
     }
 
     /**
