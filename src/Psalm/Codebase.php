@@ -31,6 +31,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\Assignment\InstancePropertyAss
 use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\NativeClassTaintAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ConstFetchAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\VariableFetchAnalyzer;
+use Psalm\Internal\Analyzer\Statements\GlobalAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\Analyzer;
 use Psalm\Internal\Codebase\ClassLikes;
@@ -884,6 +885,7 @@ final class Codebase
         $this->file_reference_provider->loadReferenceCache(false);
 
         FunctionLikeAnalyzer::clearCache();
+        GlobalAnalyzer::clearCache();
         $project_analyzer->clearStatementsForMutations();
 
         if ($force || !$this->statements_provider->parser_cache_provider) {

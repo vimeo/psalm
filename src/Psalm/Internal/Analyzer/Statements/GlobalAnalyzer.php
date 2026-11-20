@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Psalm\Internal\Analyzer\Statements;
 
-use ArrayObject;
 use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Codebase;
@@ -43,12 +42,27 @@ final class GlobalAnalyzer
     private const VARIABLE_ID_PATTERN = '/^\$[a-zA-Z_\x80-\xff][a-zA-Z0-9_\x80-\xff]*$/D';
 
     /**
-     * Per root and checked file path: the functions a function-like calls are resolved as the analyzed file sees them
+     * Of the file being analyzed ($globals_written_by_file): a function called by name resolves to the declaration
+     * that file sees
      *
      * @see getGlobalsWrittenBy()
-     * @var ?WeakMap<FunctionLikeStorage, ArrayObject<string, array<string, bool>>>
+     * @var ?WeakMap<FunctionLikeStorage, array<string, bool>>
      */
     private static ?WeakMap $globals_written_by = null;
+
+    /**
+     * The root and checked file paths of $globals_written_by
+     */
+    private static ?string $globals_written_by_file = null;
+
+    /**
+     * @psalm-capabilities write-globals
+     */
+    public static function clearCache(): void
+    {
+        self::$globals_written_by = null;
+        self::$globals_written_by_file = null;
+    }
 
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
@@ -320,16 +334,18 @@ final class GlobalAnalyzer
             return $storage->global_variables;
         }
 
-        if (self::$globals_written_by === null) {
-            /** @var WeakMap<FunctionLikeStorage, ArrayObject<string, array<string, bool>>> */
+        $file_key = $statements_analyzer->getRootFilePath() . "\0" . $statements_analyzer->getFilePath();
+
+        if (self::$globals_written_by === null || self::$globals_written_by_file !== $file_key) {
+            /** @var WeakMap<FunctionLikeStorage, array<string, bool>> */
             self::$globals_written_by = new WeakMap();
+            self::$globals_written_by_file = $file_key;
         }
 
-        $file_key = $statements_analyzer->getRootFilePath() . "\0" . $statements_analyzer->getFilePath();
-        $memoized_by_file = self::$globals_written_by[$storage] ?? null;
+        $memoized = self::$globals_written_by[$storage] ?? null;
 
-        if ($memoized_by_file !== null && isset($memoized_by_file[$file_key])) {
-            return $memoized_by_file[$file_key];
+        if ($memoized !== null) {
+            return $memoized;
         }
 
         $codebase = $statements_analyzer->getCodebase();
@@ -352,9 +368,7 @@ final class GlobalAnalyzer
             }
         }
 
-        $memoized_by_file ??= new ArrayObject();
-        $memoized_by_file[$file_key] = $global_variables;
-        self::$globals_written_by[$storage] = $memoized_by_file;
+        self::$globals_written_by[$storage] = $global_variables;
 
         return $global_variables;
     }
