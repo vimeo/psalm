@@ -9,6 +9,7 @@ use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Type\DocblockRefinement;
 use Psalm\Issue\ForbiddenCode;
 use Psalm\Issue\InvalidArgument;
 use Psalm\IssueBuffer;
@@ -60,9 +61,9 @@ final class EmptyAnalyzer
             }
 
             if ($expr_type->isAlwaysTruthy() && $expr_type->possibly_undefined === false) {
-                $stmt_type = new TFalse($expr_type->from_docblock);
+                $stmt_type = new TFalse($expr_type->from_docblock || DocblockRefinement::hasRefinement($expr_type));
             } elseif ($expr_type->isAlwaysFalsy()) {
-                $stmt_type = new TTrue($expr_type->from_docblock);
+                $stmt_type = new TTrue($expr_type->from_docblock || DocblockRefinement::hasRefinement($expr_type));
             } else {
                 ExpressionAnalyzer::checkRiskyTruthyFalsyComparison($expr_type, $statements_analyzer, $stmt);
                 $stmt_type = new TBool();

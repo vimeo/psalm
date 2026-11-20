@@ -35,6 +35,7 @@ use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Provider\ClassLikeStorageProvider;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
+use Psalm\Internal\Type\DocblockRefinement;
 use Psalm\Internal\Type\PatternCharacters;
 use Psalm\Internal\Type\TypeExpander;
 use Psalm\Issue\DocblockTypeContradiction;
@@ -692,8 +693,11 @@ final class AssertionFinder
             ? $var_type->getId()
             : $var_type->getId() . ' ' . $value_type->getId();
 
+        $from_docblock = $var_type->from_docblock
+            || DocblockRefinement::isNeededFor($codebase, $var_type, $value_type, false);
+
         if ($negated) {
-            $issue = $var_type->from_docblock
+            $issue = $from_docblock
                 ? new RedundantConditionGivenDocblockType(
                     'Docblock-defined type ' . $var_type->getId() . ' can never be ' . $value_name,
                     $code_location,
@@ -704,7 +708,7 @@ final class AssertionFinder
                     $code_location,
                     $dupe_key,
                 );
-        } elseif ($var_type->from_docblock) {
+        } elseif ($from_docblock) {
             $issue = new DocblockTypeContradiction(
                 $var_type->getId() . ' does not contain ' . $value_name,
                 $code_location,
@@ -1013,7 +1017,9 @@ final class AssertionFinder
         }
 
         if (!$negate) {
-            if ($first_var_type->from_docblock) {
+            if ($first_var_type->from_docblock
+                || DocblockRefinement::isNeededFor($codebase, $first_var_type, $expected_type, true)
+            ) {
                 IssueBuffer::maybeAdd(
                     new RedundantConditionGivenDocblockType(
                         'Docblock type ' . $first_var_type . ' always contains ' . $expected_type,
@@ -1033,7 +1039,9 @@ final class AssertionFinder
                 );
             }
         } else {
-            if ($first_var_type->from_docblock) {
+            if ($first_var_type->from_docblock
+                || DocblockRefinement::isNeededFor($codebase, $first_var_type, $expected_type, true)
+            ) {
                 IssueBuffer::maybeAdd(
                     new DocblockTypeContradiction(
                         'Docblock type !' . $first_var_type . ' does not contain ' . $expected_type,
@@ -4112,7 +4120,11 @@ final class AssertionFinder
             $other_type,
             $var_type,
         )) {
-            if ($var_type->from_docblock || $other_type->from_docblock) {
+            if ($var_type->from_docblock
+                || $other_type->from_docblock
+                || DocblockRefinement::isNeededFor($codebase, $var_type, $other_type, false)
+                || DocblockRefinement::isNeededFor($codebase, $other_type, $var_type, false)
+            ) {
                 IssueBuffer::maybeAdd(
                     $conditional instanceof NotEqual || $conditional instanceof NotIdentical
                         ? new RedundantConditionGivenDocblockType(

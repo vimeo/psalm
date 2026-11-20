@@ -120,6 +120,12 @@ abstract class Atomic implements TypeNode, Stringable
     public ?string $text = null;
 
     /**
+     * Whether a native declaration guarantees only the kind of this docblock type, as `array` does for `list<int>`,
+     * and not its refinements
+     */
+    public bool $refined_by_docblock = false;
+
+    /**
      * @return static
      */
     public function setFromDocblock(bool $from_docblock): self
@@ -129,6 +135,19 @@ abstract class Atomic implements TypeNode, Stringable
         }
         $cloned = clone $this;
         $cloned->from_docblock = $from_docblock;
+        return $cloned;
+    }
+
+    /**
+     * @return static
+     */
+    public function setRefinedByDocblock(bool $refined_by_docblock): self
+    {
+        if ($refined_by_docblock === $this->refined_by_docblock) {
+            return $this;
+        }
+        $cloned = clone $this;
+        $cloned->refined_by_docblock = $refined_by_docblock;
         return $cloned;
     }
 
