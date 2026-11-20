@@ -1604,6 +1604,23 @@ final class AssertionReconciler extends Reconciler
             }
         }
 
+        foreach ($existing_var_atomic_types as $existing_var_atomic_type) {
+            if ($existing_var_atomic_type instanceof TTemplateParam) {
+                return self::handleLiteralEqualityWithTemplates(
+                    $statements_analyzer,
+                    $assertion,
+                    $assertion_type,
+                    $existing_var_type,
+                    $existing_var_atomic_types,
+                    $old_var_type_string,
+                    $var_id,
+                    $negated,
+                    $code_location,
+                    $suppressed_issues,
+                );
+            }
+        }
+
         if ($assertion_type instanceof TLiteralInt) {
             return self::handleLiteralEqualityWithInt(
                 $statements_analyzer,
@@ -1706,40 +1723,100 @@ final class AssertionReconciler extends Reconciler
     }
 
     /**
-     * The value equal to the literal is still of the template type: narrow its bound
+     * A value of a template type equal to the literal is still of that type: narrow its bound, and the other
+     * members of the union separately
      *
+     * @param non-empty-array<string, Atomic> $existing_var_atomic_types
      * @param string[] $suppressed_issues
      */
-    private static function handleLiteralEqualityWithTemplate(
+    private static function handleLiteralEqualityWithTemplates(
         StatementsAnalyzer $statements_analyzer,
         Assertion          $assertion,
-        TLiteralInt|TLiteralFloat|TLiteralString $assertion_type,
+        TLiteralInt|TLiteralFloat|TLiteralString|TEnumCase $assertion_type,
         Union              $existing_var_type,
-        TTemplateParam     $existing_var_atomic_type,
+        array              $existing_var_atomic_types,
         string             $old_var_type_string,
         ?string            $var_id,
         bool               $negated,
         ?CodeLocation      $code_location,
         array              $suppressed_issues,
     ): Union {
-        $as = self::handleLiteralEquality(
-            $statements_analyzer,
-            $assertion,
-            $assertion_type,
-            $existing_var_atomic_type->as,
-            $old_var_type_string,
-            $var_id,
-            $negated,
-            $code_location,
-            $suppressed_issues,
-        );
+        // a lone template reports impossible and redundant conditions through its bound
+        $is_single = count($existing_var_atomic_types) === 1;
 
-        // nothing narrowed, e.g. a loose equality with a `mixed` bound
-        if ($as === $existing_var_atomic_type->as) {
-            return $existing_var_type;
+        $narrowed_types = [];
+        $other_types = [];
+
+        foreach ($existing_var_atomic_types as $existing_var_atomic_type) {
+            if (!$existing_var_atomic_type instanceof TTemplateParam) {
+                $other_types[] = $existing_var_atomic_type;
+                continue;
+            }
+
+            $as = $existing_var_atomic_type->as->setProperties([
+                'from_docblock' => $existing_var_type->from_docblock,
+            ]);
+
+            $narrowed_as = self::handleLiteralEquality(
+                $statements_analyzer,
+                $assertion,
+                $assertion_type,
+                $as,
+                $old_var_type_string,
+                $is_single ? $var_id : null,
+                $negated,
+                $is_single ? $code_location : null,
+                $suppressed_issues,
+            );
+
+            if ($narrowed_as === $as) {
+                // e.g. a loose equality with a `mixed` bound: any member of the union can still be equal
+                if ($assertion instanceof IsLooselyEqual) {
+                    return $existing_var_type;
+                }
+
+                $narrowed_types[] = $existing_var_atomic_type;
+            } elseif (!$narrowed_as->isNever()) {
+                $narrowed_types[] = $existing_var_atomic_type->replaceAs($narrowed_as);
+            }
         }
 
-        return new Union([$existing_var_atomic_type->replaceAs($as)]);
+        if ($other_types) {
+            $narrowed_others = self::handleLiteralEquality(
+                $statements_analyzer,
+                $assertion,
+                $assertion_type,
+                new Union($other_types, ['from_docblock' => $existing_var_type->from_docblock]),
+                $old_var_type_string,
+                null,
+                $negated,
+                null,
+                $suppressed_issues,
+            );
+
+            if (!$narrowed_others->isNever()) {
+                $narrowed_types = [...$narrowed_types, ...$narrowed_others->getAtomicTypes()];
+            }
+        }
+
+        if (!$narrowed_types) {
+            if (!$is_single && $var_id !== null && $code_location) {
+                self::triggerIssueForImpossible(
+                    $existing_var_type,
+                    $old_var_type_string,
+                    $var_id,
+                    $assertion,
+                    false,
+                    $negated,
+                    $code_location,
+                    $suppressed_issues,
+                );
+            }
+
+            return Type::getNever();
+        }
+
+        return new Union($narrowed_types, ['from_docblock' => $existing_var_type->from_docblock]);
     }
 
     /**
@@ -1803,21 +1880,6 @@ final class AssertionReconciler extends Reconciler
 
             if ($existing_var_atomic_type instanceof TInt && !$existing_var_atomic_type instanceof TLiteralInt) {
                 return $literal_asserted_type;
-            }
-
-            if ($existing_var_atomic_type instanceof TTemplateParam) {
-                return self::handleLiteralEqualityWithTemplate(
-                    $statements_analyzer,
-                    $assertion,
-                    $assertion_type,
-                    $existing_var_type,
-                    $existing_var_atomic_type,
-                    $old_var_type_string,
-                    $var_id,
-                    $negated,
-                    $code_location,
-                    $suppressed_issues,
-                );
             }
 
             if ($assertion instanceof IsLooselyEqual
@@ -1974,21 +2036,6 @@ final class AssertionReconciler extends Reconciler
                 );
             }
 
-            if ($existing_var_atomic_type instanceof TTemplateParam) {
-                return self::handleLiteralEqualityWithTemplate(
-                    $statements_analyzer,
-                    $assertion,
-                    $assertion_type,
-                    $existing_var_type,
-                    $existing_var_atomic_type,
-                    $old_var_type_string,
-                    $var_id,
-                    $negated,
-                    $code_location,
-                    $suppressed_issues,
-                );
-            }
-
             if ($assertion instanceof IsLooselyEqual
                 && $existing_var_atomic_type instanceof TLiteralInt
                 && (string)$existing_var_atomic_type->value === $value
@@ -2099,21 +2146,6 @@ final class AssertionReconciler extends Reconciler
 
             if ($existing_var_atomic_type instanceof TFloat && !$existing_var_atomic_type instanceof TLiteralFloat) {
                 return $literal_asserted_type;
-            }
-
-            if ($existing_var_atomic_type instanceof TTemplateParam) {
-                return self::handleLiteralEqualityWithTemplate(
-                    $statements_analyzer,
-                    $assertion,
-                    $assertion_type,
-                    $existing_var_type,
-                    $existing_var_atomic_type,
-                    $old_var_type_string,
-                    $var_id,
-                    $negated,
-                    $code_location,
-                    $suppressed_issues,
-                );
             }
 
             if ($assertion instanceof IsLooselyEqual
