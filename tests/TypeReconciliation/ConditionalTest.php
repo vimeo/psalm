@@ -196,6 +196,37 @@ final class ConditionalTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'instanceofParentNarrowsToTheParentClass' => [
+                'code' => '<?php
+                    interface Shape {}
+
+                    class Box implements Shape {
+                        public function getSize(): int {
+                            return 1;
+                        }
+                    }
+
+                    final class TaggedBox extends Box {
+                        public function narrowed(Shape $shape): int {
+                            if ($shape instanceof parent) {
+                                return $shape->getSize();
+                            }
+
+                            return 0;
+                        }
+
+                        public function negated(Shape $shape): int {
+                            if (!$shape instanceof parent) {
+                                return 0;
+                            }
+
+                            return $shape->getSize();
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MissingOverrideAttribute'],
+                'php_version' => '8.3',
+            ],
             'varAssignedUnderConditionIsDefinedUnderTheSameCondition' => [
                 'code' => '<?php
                     function f(bool $b): void {

@@ -1431,6 +1431,13 @@ final class AssertionFinder
 
                 return [new IsType($named_object)];
             }
+
+            if (strtolower($stmt->class->getFirst()) === 'parent'
+                && $source instanceof StatementsAnalyzer
+                && ($parent_class_name = $source->getParentFQCLN()) !== null
+            ) {
+                return [new IsType(new TNamedObject($parent_class_name))];
+            }
         } elseif ($stmt->class instanceof PhpParser\Node\Expr\Variable && $stmt->class->name === 'this') {
             if ($this_class_name !== null) {
                 $named_object = new TNamedObject($this_class_name, true);
