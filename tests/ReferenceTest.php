@@ -2028,6 +2028,55 @@ final class ReferenceTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'writeAfterSwitchReachesVariableBoundBeforeTheBreakOfACase' => [
+                'code' => '<?php
+                    $x = 1;
+                    $r = 0;
+                    switch (rand(0, 2)) {
+                        case 1:
+                            if (rand(0, 1)) {
+                                $r = &$x;
+                                break;
+                            }
+                            return;
+                        default:
+                            echo "d";
+                    }
+                    $x = "z";
+                ',
+                'assertions' => [
+                    '$r===' => '\'z\'|0|1',
+                ],
+            ],
+            'writeAfterTernaryReachesVariableBoundInTheOnlyBranchThatCompletes' => [
+                'code' => '<?php
+                    $x = 1;
+                    $r = 0;
+                    $v = rand(0, 1) ? ($r = &$x) : throw new Exception();
+                    $x = "z";
+                ',
+                'assertions' => [
+                    '$r===' => '\'z\'|1',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'writeAfterMatchReachesVariableBoundInTheOnlyArmThatCompletes' => [
+                'code' => '<?php
+                    $x = 1;
+                    $r = 0;
+                    $v = match (rand(0, 2)) {
+                        1 => ($r = &$x),
+                        default => throw new Exception(),
+                    };
+                    $x = "z";
+                ',
+                'assertions' => [
+                    '$r===' => '\'z\'|1',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'writeAfterLoopReachesVariableBoundInIt' => [
                 'code' => '<?php
                     /** @var list<string> */

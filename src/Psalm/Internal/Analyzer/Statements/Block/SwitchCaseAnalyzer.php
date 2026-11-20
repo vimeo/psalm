@@ -434,6 +434,8 @@ final class SwitchCaseAnalyzer
         // a case left only through its breaks forgets what they changed, not what its unreachable end did
         if ($ends_unless_breaking) {
             $context->removeClausesOfVarsChangedWith($case_scope->parent_remove_vars_at_breaks);
+            // the bindings made before its breaks
+            $context->keepReferencesPossiblyBoundIn($case_context);
         } elseif ($case_exit_type !== 'return_throw') {
             $context->removeClausesOfVarsChangedIn($case_context);
         }

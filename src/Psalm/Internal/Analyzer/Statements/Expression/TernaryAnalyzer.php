@@ -235,6 +235,8 @@ final class TernaryAnalyzer
                 ...$completing_context->cond_referenced_var_ids,
             ];
 
+            $context->keepReferencesPossiblyBoundIn($completing_context);
+
             return self::setResultType($statements_analyzer, $stmt, $context);
         }
 
