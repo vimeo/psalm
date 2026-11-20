@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Psalm;
 
-use function sha1;
+use function hash;
 use function strlen;
 use function strrpos;
 use function substr;
@@ -34,7 +34,7 @@ final class FileManipulation
     public function getKey(): string
     {
         return $this->start === $this->end
-            ? ($this->start . ':' . sha1($this->insertion_text))
+            ? ($this->start . ':' . hash('xxh3', $this->insertion_text))
             : ($this->start . ':' . $this->end);
     }
 

@@ -21,6 +21,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\Statements\Expression\GlobalStateAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ReturnAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Codebase\AssertionsFromInheritanceResolver;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
@@ -170,7 +171,7 @@ final class MethodCallPurityAnalyzer
             $method_id,
             $context->calling_method_id,
             $codebase->collect_locations ? new CodeLocation($statements_analyzer->getSource(), $location) : null,
-            !$context->collect_initializations && !$context->collect_mutations ? $statements_analyzer : null,
+            !$context->collect_initializations ? $statements_analyzer : null,
             $statements_analyzer->getFilePath(),
         )) {
             return;
@@ -694,13 +695,11 @@ final class MethodCallPurityAnalyzer
                 if (!$context->inside_assignment
                     && !$context->inside_call
                     && !$context->inside_return
-                    && !$method_storage->assertions
-                    && !$method_storage->if_true_assertions
-                    && !$method_storage->if_false_assertions
                     && !$method_storage->throws
                     && !$method_storage->return_type?->isNever()
                     && !$method_storage->signature_return_type?->isNever()
                     && !self::isCalledForItsTemplatesEffects($method_storage)
+                    && !(new AssertionsFromInheritanceResolver($codebase))->hasAny($method_storage, $class_storage)
                 ) {
                     IssueBuffer::maybeAdd(
                         new UnusedMethodCall(
