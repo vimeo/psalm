@@ -1213,6 +1213,24 @@ final class EnumTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'enumCaseValueCircularWithAClassConstant' => [
+                'code' => '<?php
+                    enum Level: int {
+                        case Low = Limits::MIN + 1;
+                    }
+
+                    final class Limits {
+                        public const MIN = Level::Low->value;
+                    }
+
+                    function read(): int {
+                        return Level::Low->value;
+                    }',
+                'error_message' => 'CircularReference - src' . DIRECTORY_SEPARATOR
+                    . 'somefile.php:3:25 - Enum case Level::Low contains a circular reference',
+                'error_levels' => ['MixedReturnStatement'],
+                'php_version' => '8.2',
+            ],
             'enumCaseValueFromABoolConstantIsInvalid' => [
                 'code' => <<<'PHP'
                     <?php
