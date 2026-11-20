@@ -825,7 +825,10 @@ final class AtomicPropertyFetchAnalyzer
 
                 $statements_analyzer->node_data->setType(
                     $stmt,
-                    Type::combineUnionTypes($stmt_type, $statements_analyzer->node_data->getType($stmt)),
+                    self::keepIssetOfMagicPropertyOpen(
+                        $context,
+                        Type::combineUnionTypes($stmt_type, $statements_analyzer->node_data->getType($stmt)),
+                    ),
                 );
 
                 return false;
@@ -878,7 +881,10 @@ final class AtomicPropertyFetchAnalyzer
                 $stmt_type = $statements_analyzer->node_data->getType($stmt);
                 $statements_analyzer->node_data->setType(
                     $stmt,
-                    Type::combineUnionTypes($fake_method_call_type, $stmt_type),
+                    self::keepIssetOfMagicPropertyOpen(
+                        $context,
+                        Type::combineUnionTypes($fake_method_call_type, $stmt_type),
+                    ),
                 );
             } else {
                 $statements_analyzer->node_data->setType($stmt, Type::getMixed());
@@ -911,6 +917,18 @@ final class AtomicPropertyFetchAnalyzer
         }
 
         return true;
+    }
+
+    /**
+     * Whether a magic property is set is up to the object (__isset()), not to the type __get() returns
+     *
+     * @psalm-mutation-free
+     */
+    private static function keepIssetOfMagicPropertyOpen(Context $context, Union $type): Union
+    {
+        return $context->inside_isset && !$type->ignore_isset
+            ? $type->setProperties(['ignore_isset' => true])
+            : $type;
     }
 
     public static function localizePropertyType(

@@ -196,6 +196,26 @@ final class MagicPropertyTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'issetOfAMagicPropertyThatNeverReturnsNullCanFail' => [
+                'code' => '<?php
+                    final class Bag {
+                        public function __get(string $name): string {
+                            return $name;
+                        }
+
+                        public function __isset(string $name): bool {
+                            return $name === "known";
+                        }
+                    }
+
+                    function read(Bag $bag): string {
+                        if (!isset($bag->known)) {
+                            return "unknown";
+                        }
+
+                        return $bag->known;
+                    }',
+            ],
             'valueOfPseudoPropertyIsNarrowedByAnEqualityCheck' => [
                 'code' => '<?php
                     enum Foo: string {
