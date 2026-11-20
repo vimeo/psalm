@@ -32,6 +32,12 @@ final class FunctionLikeParameter implements HasAttributesInterface, TypeNode
      */
     public int $value_sinks = 0;
 
+    /**
+     * Whether `@psalm-taint-sink` names the parameter, `@psalm-taint-sink none $param` included: its sinks then replace
+     * those of the parameter of the method it implements or overrides
+     */
+    public bool $declares_sinks = false;
+
     public bool $assert_untainted = false;
 
     public bool $type_inferred = false;

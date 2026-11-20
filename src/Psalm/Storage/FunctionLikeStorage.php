@@ -385,6 +385,29 @@ abstract class FunctionLikeStorage implements HasAttributesInterface, Stringable
     public array $taint_store_reads = [];
 
     /**
+     * What a call of the function-like stores in the database and reads from it: `@psalm-database-query $sql $params`,
+     * ... (see DatabaseTaints), with parameters as offsets
+     *
+     * @var list<array{
+     *     0: 'query'|'prepare'|'execute'|'bind'|'insert'|'update'|'select'|'fetch',
+     *     sql?: int,
+     *     params?: int,
+     *     statement?: int,
+     *     name?: int,
+     *     key?: int,
+     *     value?: int,
+     *     values?: int,
+     *     base?: int,
+     *     table?: int,
+     *     data?: int,
+     *     from?: int,
+     *     result?: 'result'|'rows'|'value'|'column'|'any_value'|'any_column'|'value_or_row'|'none',
+     *     optional_first?: int,
+     * }>
+     */
+    public array $database_calls = [];
+
+    /**
      * The flows of arguments into a property of the object a method is called on:
      * `@psalm-flow ($value) -> $this->$name`. `name` is the offset of the parameter giving the name of the property,
      * null for any property; `params` are those whose arguments are set.

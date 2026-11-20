@@ -28,6 +28,30 @@ final class ArrayAccessTest extends TestCase
     use InvalidCodeAnalysisTestTrait;
     use ValidCodeAnalysisTestTrait;
 
+    public function testEmptyBranchOffsetMayBeUndefined(): void
+    {
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessage('PossiblyUndefinedStringArrayOffset - somefile.php:8');
+
+        Config::getInstance()->ensure_array_string_offsets_exist = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                /**
+                 * @param array<string, int> $arr
+                 * @psalm-suppress RiskyTruthyFalsyComparison
+                 */
+                function f(array $arr): void {
+                    if (empty($arr["x"])) {
+                        echo $arr["x"];
+                    }
+                }',
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
     public function testEnsureArrayOffsetsExist(): void
     {
         $this->expectException(CodeException::class);
@@ -1469,6 +1493,72 @@ final class ArrayAccessTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'emptyNestedOffsetIsForgottenWhenItsParentOffsetIsAssigned' => [
+                'code' => '<?php
+                    function g(array $m, string $l, string $p): string {
+                        if (!empty($m[$l][$p])) {
+                            return $p;
+                        }
+
+                        $m[$l] = array_merge($m[$l] ?? [], ["x" => 1]);
+
+                        if (!empty($m[$l][$p])) {
+                            return $p;
+                        }
+
+                        return $p;
+                    }
+
+                    final class B {
+                        /** @var array */
+                        protected $m = [];
+
+                        public function h(string $l, string $p): string {
+                            if (!empty($this->m[$l][$p])) {
+                                return $p;
+                            }
+
+                            $this->m[$l] = ["x" => 1];
+
+                            if (!empty($this->m[$l][$p])) {
+                                return $p;
+                            }
+
+                            return $p;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedArgument', 'MixedAssignment', 'MixedArrayAccess', 'MixedArrayAssignment', 'MixedArrayOffset'],
+                'php_version' => '8.0',
+            ],
+            'emptyOffsetOfArrayKeepsValueType' => [
+                'code' => '<?php
+                    /** @var array<string, int> $arr */
+                    $arr = [];
+                    /** @var array<int, string> $list */
+                    $list = [];
+
+                    $v = empty($arr["x"]) ? $arr["x"] : 0;
+                    $w = empty($list[0]) ? $list[0] : "";
+                    $x = !empty($arr["x"]) ? 0 : $arr["x"];',
+                'assertions' => [
+                    '$v' => 'int',
+                    '$w' => 'string',
+                    '$x' => 'int',
+                ],
+                'ignored_issues' => ['RiskyTruthyFalsyComparison'],
+            ],
+            'emptyNestedOffsetOfArrayKeepsValueType' => [
+                'code' => '<?php
+                    /** @var array<string, array<string, int>> $arr */
+                    $arr = [];
+
+                    $v = empty($arr["x"]["y"]) ? $arr["x"]["y"] : 0;',
+                'assertions' => [
+                    '$v' => 'int',
+                ],
+                'ignored_issues' => ['RiskyTruthyFalsyComparison'],
+            ],
             'destructureNullableShapeByKey' => [
                 'code' => '<?php
                     /** @return array{x: int}|null */

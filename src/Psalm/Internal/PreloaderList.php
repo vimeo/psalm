@@ -1930,7 +1930,6 @@ final class PreloaderList {
         \Symfony\Component\Console\Style\SymfonyStyle::class,
         \Symfony\Component\Filesystem\Path::class,
         \Webmozart\Assert\Assert::class,
-        \XdgBaseDir\Xdg::class,
 
     ];
 }
