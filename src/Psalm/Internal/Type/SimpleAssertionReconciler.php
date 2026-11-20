@@ -895,6 +895,12 @@ final class SimpleAssertionReconciler extends Reconciler
                     } elseif ($prop_max_count === $prop_min_count && $prop_max_count === $assertion->count) {
                         $existing_var_type->removeType('array');
                         $existing_var_type->addType($array_atomic_type->makeSealed());
+                    } elseif ($prop_min_count === 0) {
+                        // an array without required items that has some is a non-empty one of the same items
+                        $redundant = false;
+                        $generic_array = $array_atomic_type->getGenericArrayType();
+                        $existing_var_type->removeType('array');
+                        $existing_var_type->addType(new TNonEmptyArray($generic_array->type_params, $assertion->count));
                     }
                 }
             }
