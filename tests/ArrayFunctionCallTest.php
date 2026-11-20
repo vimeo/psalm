@@ -153,7 +153,7 @@ final class ArrayFunctionCallTest extends TestCase
             IssueBuffer::getIssuesDataForFile($file_path),
         );
 
-        self::assertSame(['InvalidArgument 8:30'], $issues);
+        self::assertSame(['DeprecatedConstant 8:40', 'InvalidArgument 8:30'], $issues);
     }
 
     /**
@@ -4568,7 +4568,7 @@ final class ArrayFunctionCallTest extends TestCase
                 'assertions' => [
                     '$a===' => 'array<int<0, max>, string>',
                 ],
-                'ignored_issues' => ['MixedArgumentTypeCoercion', 'MixedArgument', 'MixedAssignment'],
+                'ignored_issues' => ['DeprecatedConstant', 'MixedArgumentTypeCoercion', 'MixedArgument', 'MixedAssignment'],
                 'php_version' => '8.0',
             ],
             'arrayKeyExistsWithKeysThatTheArrayMayHave' => [
@@ -5487,6 +5487,7 @@ final class ArrayFunctionCallTest extends TestCase
 
                     array_unique($objects, SORT_LOCALE_STRING);',
                 'error_message' => 'InvalidArgument',
+                'error_levels' => ['DeprecatedConstant'],
             ],
             'arrayUniqueOfObjectsWithANamedStringFlag' => [
                 'code' => '<?php

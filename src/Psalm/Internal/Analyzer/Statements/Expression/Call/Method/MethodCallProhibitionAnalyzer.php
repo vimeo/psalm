@@ -9,6 +9,7 @@ use Psalm\Context;
 use Psalm\Internal\Analyzer\NamespaceAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\CliOutput;
+use Psalm\Internal\Codebase\PhpDeprecations;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Issue\DeprecatedMethod;
 use Psalm\Issue\InternalClass;
@@ -35,6 +36,7 @@ final class MethodCallProhibitionAnalyzer
         $codebase_methods = $codebase->methods;
 
         CliOutput::checkMethodCall($statements_analyzer, $context, $method_id, $code_location);
+        self::checkBuiltinDeprecation($statements_analyzer, $method_id, $code_location, $suppressed_issues);
 
         $method_id = $codebase_methods->getDeclaringMethodId($method_id);
 
@@ -70,6 +72,37 @@ final class MethodCallProhibitionAnalyzer
                     $suppressed_issues,
                 );
             }
+        }
+    }
+
+    /**
+     * Reports a call of a builtin method a PHP version deprecates (see PhpDeprecations)
+     *
+     * @param  string[]     $suppressed_issues
+     */
+    public static function checkBuiltinDeprecation(
+        StatementsAnalyzer $statements_analyzer,
+        MethodIdentifier $method_id,
+        CodeLocation $code_location,
+        array $suppressed_issues,
+    ): void {
+        $codebase_methods = $statements_analyzer->getCodebase()->methods;
+        $declaring_method_id = $codebase_methods->getDeclaringMethodId($method_id);
+
+        if ($declaring_method_id === null) {
+            return;
+        }
+
+        $deprecation_message = PhpDeprecations::getMethodMessage(
+            (string) $declaring_method_id,
+            $codebase_methods->getCasedMethodId($declaring_method_id),
+        );
+
+        if ($deprecation_message !== null) {
+            IssueBuffer::maybeAdd(
+                new DeprecatedMethod($deprecation_message, $code_location, (string) $declaring_method_id),
+                $suppressed_issues,
+            );
         }
     }
 }

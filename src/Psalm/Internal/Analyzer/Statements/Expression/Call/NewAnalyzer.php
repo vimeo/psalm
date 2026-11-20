@@ -556,6 +556,15 @@ final class NewAnalyzer extends CallAnalyzer
         ClassLikeStorage $storage,
         string $fq_class_name,
     ): void {
+        if (!$stmt->isFirstClassCallable()) {
+            DeprecatedArgumentsAnalyzer::analyzeConstructorCall(
+                $statements_analyzer,
+                $fq_class_name,
+                $stmt->getArgs(),
+                new CodeLocation($statements_analyzer->getSource(), $stmt),
+            );
+        }
+
         if ($storage->deprecated && strtolower($fq_class_name) !== strtolower((string)$context->self)) {
             IssueBuffer::maybeAdd(
                 new DeprecatedClass(

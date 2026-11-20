@@ -1297,6 +1297,7 @@ final class TypeTest extends TestCase
                     '$c===' => 'int',
                     '$d===' => 'int',
                 ],
+                'ignored_issues' => ['DeprecatedFunction'],
             ],
             'narrowWithCountToAllowNonTupleKeyedArray' => [
                 'code' => '<?php

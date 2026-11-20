@@ -15,9 +15,11 @@ use Psalm\Internal\Analyzer\Statements\Expression\SimpleTypeInferer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\ConstantTypeResolver;
+use Psalm\Internal\Codebase\PhpDeprecations;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\Provider\NodeDataProvider;
 use Psalm\Internal\Scanner\UnresolvedConstantComponent;
+use Psalm\Issue\DeprecatedConstant;
 use Psalm\Issue\ForbiddenCode;
 use Psalm\Issue\UndefinedConstant;
 use Psalm\IssueBuffer;
@@ -117,6 +119,22 @@ final class ConstFetchAnalyzer
                                 : $statements_analyzer->getNamespace() . '-')
                             . $const_name,
                 );
+
+                // an unqualified name falls back to the global constant
+                $global_const_name = isset($aliased_constants[$const_name]) ? $fq_const_name : $const_name;
+                $deprecation_message = $const_type && !str_contains($global_const_name, '\\')
+                    ? PhpDeprecations::getConstantMessage($global_const_name)
+                    : null;
+
+                if ($deprecation_message !== null) {
+                    IssueBuffer::maybeAdd(
+                        new DeprecatedConstant(
+                            $deprecation_message,
+                            new CodeLocation($statements_analyzer->getSource(), $stmt),
+                        ),
+                        $statements_analyzer->getSuppressedIssues(),
+                    );
+                }
 
                 if ($const_type) {
                     $statements_analyzer->node_data->setType($stmt, $const_type);
