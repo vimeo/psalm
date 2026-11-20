@@ -134,25 +134,23 @@ function show(PDO $pdo): void {
 }
 ```
 
-**Watch out for context mismatches.** Psalm trusts built-in escaping functions wherever you call them, even when the
-surrounding markup or query still leaves an injection hole:
+**Watch out for context mismatches.** An escaping function only protects the context it was written for. Psalm doesn't
+check yet where an escaped value lands, so these holes aren't reported:
 
 ```php
 <?php
-// Still vulnerable — missing quotes around the SQL value (e.g. id = "1 OR 1=1"):
-$sql = 'SELECT * FROM users WHERE id = ' . $mysqli->real_escape_string((string) $_GET['id']);
+function show(mysqli $mysqli): void {
+    // id=1 OR 1=1: the value isn't in quotes
+    $mysqli->query('SELECT * FROM users WHERE id = ' . $mysqli->real_escape_string((string) $_GET['id'])); // no issue yet
 
-// Still vulnerable — unquoted HTML attribute (e.g. img = "/ onerror=alert(1)"):
-$img = '<img src=' . htmlentities((string) $_GET['img']) . ' alt="" />';
+    // img=/ onerror=alert(1): the attribute isn't in quotes
+    echo '<img src=' . htmlspecialchars((string) $_GET['img'], ENT_QUOTES) . ' alt="">'; // no issue yet
 
-// Still vulnerable — javascript: URLs require scheme validation, not HTML escaping:
-$link = '<a href="' . htmlentities((string) $_GET['url']) . '">Link</a>';
+    // url=javascript:alert(1): escaping HTML doesn't check the scheme of a URL
+    echo '<a href="' . htmlspecialchars((string) $_GET['url'], ENT_QUOTES) . '">Link</a>'; // no issue yet
+}
 
-// Still vulnerable on PHP < 8.1 — single quotes are not escaped without ENT_QUOTES:
-$link2 = "<a href='" . htmlentities((string) $_GET['a2']) . "'>Link</a>";
-
-// Try them all with:
-// /?id=1+OR+1%3D1&img=%2F+onerror%3Dalert%281%29&url=javascript%3Aalert%281%29&a2=%2F%27+onerror%3D%27alert%281%29
+// Try them all with: /?id=1+OR+1%3D1&img=%2F+onerror%3Dalert%281%29&url=javascript%3Aalert%281%29
 ```
 
 Prefer parameterized queries for SQL and commands, and a context-aware template engine for HTML. You can also use
