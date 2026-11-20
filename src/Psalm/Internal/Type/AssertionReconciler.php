@@ -653,6 +653,28 @@ final class AssertionReconciler extends Reconciler
             );
         }
 
+        // A subclass narrows the class part of an intersection and keeps the interfaces already known.
+        if ($type_1_atomic::class === TNamedObject::class
+            && $type_2_atomic::class === TNamedObject::class
+            && $type_1_atomic->extra_types
+            && !$type_2_atomic->extra_types
+            && $codebase->classExists($type_1_atomic->value)
+            && $codebase->classExists($type_2_atomic->value)
+            && !$codebase->classlike_storage_provider->get($type_2_atomic->value)->final
+            && $codebase->classlikes->classExtends($type_2_atomic->value, $type_1_atomic->value)
+        ) {
+            $only_interfaces = true;
+            foreach ($type_1_atomic->extra_types as $constraint) {
+                if ($constraint::class !== TNamedObject::class || !$codebase->interfaceExists($constraint->value)) {
+                    $only_interfaces = false;
+                    break;
+                }
+            }
+            if ($only_interfaces) {
+                return $type_2_atomic->setIntersectionTypes($type_1_atomic->extra_types);
+            }
+        }
+
         $matching_atomic_type = null;
 
         if ($type_1_atomic instanceof TNamedObject

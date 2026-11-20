@@ -18,6 +18,170 @@ final class ConditionalReturnTypeTest extends TestCase
     public function providerValidCodeParse(): iterable
     {
         return [
+            'wrapPreservesUnknownArrayValues' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @template T
+                     * @param T $value
+                     * @return (T is null ? array{} : (T is array ? T : array{T}))
+                     */
+                    function wrap($value): array {
+                        if ($value === null) {
+                            return [];
+                        }
+                        return is_array($value) ? $value : [$value];
+                    }
+                    /** @param array|callable|null $value */
+                    function test($value): void {
+                        $result = wrap($value);
+                        /** @psalm-check-type-exact $result = array<array-key, mixed> */
+                    }
+                    PHP,
+            ],
+            'partiallyMatchingTemplateKeepsBothBranches' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @param string|array<string> $value
+                     * @return ($value is array ? array<string> : string)
+                     */
+                    function conditional($value) { return $value; }
+                    /**
+                     * @template T of string|array<string>
+                     * @param T $value
+                     */
+                    function test($value): void {
+                        $result = conditional($value);
+                        /** @psalm-check-type-exact $result = array<array-key, string>|string */
+                    }
+                    PHP,
+            ],
+            'possiblyEmptyArrayConditionKeepsBool' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @param array<mixed> $needles
+                     * @return ($needles is array{} ? false : bool)
+                     */
+                    function contains(array $needles): bool { return (bool) $needles; }
+                    /** @param array<mixed> $needles */
+                    function test(array $needles): void {
+                        $result = contains($needles);
+                        /** @psalm-check-type-exact $result = bool */
+                    }
+                    PHP,
+            ],
+            'overlappingIterableConditional' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @param iterable<mixed, mixed> $i
+                     * @return ($i is list ? 'list' : 'iter')
+                     */
+                    function describe(iterable $i) {
+                        return is_array($i) && array_is_list($i) ? 'list' : 'iter';
+                    }
+                    /** @return list<int>|iterable<mixed, mixed> */
+                    function source(): iterable { return []; }
+                    $value = describe(source());
+                    PHP,
+                'assertions' => ['$value===' => "'iter'|'list'"],
+                'ignored_issues' => [],
+                'php_version' => '8.2',
+            ],
+            'incompatibleIterableConditional' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @param iterable<string, string> $i
+                     * @return ($i is list<int>|Traversable<int, int> ? 'yes' : 'no')
+                     */
+                    function describe(iterable $i) { return 'no'; }
+                    /** @return iterable<string, string> */
+                    function source(): iterable { return []; }
+                    $value = describe(source());
+                    PHP,
+                'assertions' => ['$value===' => "'no'"],
+            ],
+            'overlapAlongsideFalseCandidate' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @template T
+                     * @param T $i
+                     * @return (T is list ? 'list' : 'iter')
+                     */
+                    function describe($i) { return is_array($i) && array_is_list($i) ? 'list' : 'iter'; }
+                    /** @return string|iterable<mixed, mixed> */
+                    function source() { return []; }
+                    $value = describe(source());
+                    PHP,
+                'assertions' => ['$value===' => "'iter'|'list'"],
+                'ignored_issues' => [],
+                'php_version' => '8.2',
+            ],
+            'overlapRefinesTemplateBranch' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @template T
+                     * @param T $i
+                     * @return (T is list ? T : null)
+                     */
+                    function describe($i) { return is_array($i) && array_is_list($i) ? $i : null; }
+                    /** @return list<int>|iterable<mixed, mixed> */
+                    function source() { return []; }
+                    $value = describe(source());
+                    PHP,
+                'assertions' => ['$value===' => "list<mixed>|null"],
+                'ignored_issues' => [],
+                'php_version' => '8.2',
+            ],
+            'unknownTraversableConditionalKeepsBothBranches' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @template T
+                     * @param T $value
+                     * @return (T is iterable<int, int> ? 'yes' : 'no')
+                     */
+                    function describe($value) { throw new Exception(); }
+                    /** @return Traversable */
+                    function source(): Traversable { return new ArrayIterator([]); }
+                    $value = describe(source());
+                    PHP,
+                'assertions' => ['$value===' => "'no'|'yes'"],
+            ],
+            'conditionalElsePreservesContainedIterableTemplate' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @template X of iterable<int, mixed>
+                     * @param X $values
+                     * @return (X is array ? never : X)
+                     */
+                    function nonArray($values) {
+                        if (is_array($values)) {
+                            throw new InvalidArgumentException();
+                        }
+                        return $values;
+                    }
+                    /**
+                     * @template T
+                     * @param iterable<int, T> $values
+                     * @return T|null
+                     */
+                    function firstValue(iterable $values) {
+                        $result = nonArray($values);
+                        foreach ($result as $value) {
+                            /** @psalm-check-type-exact $value = T */
+                            return $value;
+                        }
+                        return null;
+                    }
+                    PHP,
+            ],
             'conditionalReturnTypeSimple' => [
                 'code' => '<?php
 
@@ -1128,6 +1292,249 @@ final class ConditionalReturnTypeTest extends TestCase
                     '$two' => 'int',
                     '$three' => 'float',
                 ],
+            ],
+            'stringableUserConditional' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @template T of array|string
+                     * @param T $s
+                     * @return (T is array<int, string> ? array<int, string> : string|false)
+                     */
+                    function convert(array|string $s) { return false; }
+                    function test(Throwable $e): void {
+                        $r = convert($e);
+                        /** @psalm-check-type-exact $r = false|string */
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => ['ImplicitToStringCast'],
+                'php_version' => '8.2',
+            ],
+            'stringableNestedUserConditional' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @template T of array|string
+                     * @param T $s
+                     * @return (T is array ? (T is array<int, string> ? array<int, string> : array<array-key, mixed>) : string|false)
+                     */
+                    function convert(array|string $s) { return false; }
+                    function test(Throwable $e): void {
+                        $r = convert($e);
+                        /** @psalm-check-type-exact $r = false|string */
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => ['ImplicitToStringCast'],
+                'php_version' => '8.2',
+            ],
+            'stringableElementsDoNotConvertOuterArray' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @template T of string|array<string>
+                     * @param T $value
+                     * @return (T is array ? 'array' : 'string')
+                     */
+                    function describe($value) { return is_array($value) ? 'array' : 'string'; }
+                    $r = describe([new Exception()]);
+                    /** @psalm-check-type-exact $r = 'array' */
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => ['ImplicitToStringCast'],
+                'php_version' => '8.2',
+            ],
+            'stringableElementsInGenericArray' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @template T of string|array<string>
+                     * @param T $value
+                     * @return (T is array ? 'array' : 'string')
+                     */
+                    function describe($value) { return is_array($value) ? 'array' : 'string'; }
+                    /** @param array<Throwable> $items */
+                    function test(array $items): void {
+                        $r = describe($items);
+                        /** @psalm-check-type-exact $r = 'array' */
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => ['ImplicitToStringCast'],
+                'php_version' => '8.2',
+            ],
+            'stringableObjectAndArrayKeepBothBranches' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @template T of string|array<string>
+                     * @param T $value
+                     * @return (T is array ? 'array' : 'string')
+                     */
+                    function describe($value) { return is_array($value) ? 'array' : 'string'; }
+                    /** @param Throwable|array<Throwable> $items */
+                    function test($items): void {
+                        $r = describe($items);
+                        /** @psalm-check-type-exact $r = 'array'|'string' */
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => ['ImplicitToStringCast'],
+                'php_version' => '8.2',
+            ],
+            'stringableAcceptedAsObjectKeepsObjectBranch' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @template T of string|Throwable
+                     * @param T $value
+                     * @return (T is object ? 'object' : 'string')
+                     */
+                    function describe($value) { return is_object($value) ? 'object' : 'string'; }
+                    $r = describe(new Exception());
+                    /** @psalm-check-type-exact $r = 'object' */
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.2',
+            ],
+            'owningSideAssertionPreservesManyToManyConditionalReturn' => [
+                'code' => <<<'PHP'
+                    <?php
+                    abstract class Association {
+                        /**
+                         * @psalm-assert-if-true Owning $this
+                         * @psalm-assert-if-false Inverse $this
+                         */
+                        public function isOwning(): bool {
+                            return $this instanceof Owning;
+                        }
+                    }
+                    interface Many {}
+                    abstract class Owning extends Association {}
+                    abstract class Inverse extends Association {}
+                    final class InverseMany extends Inverse implements Many {}
+                    final class OwningMany extends Owning implements Many {
+                        public string $joinTable = '';
+                        public string $joinTableColumns = '';
+                    }
+                    final class Other extends Owning {}
+
+                    final class Factory {
+                        /**
+                         * @template A of Association
+                         * @param A $mapping
+                         * @return (A is Many ? OwningMany : Other)
+                         */
+                        public function getOwningSide(Association $mapping): Owning {
+                            if ($mapping instanceof Many) {
+                                return new OwningMany();
+                            }
+                            return new Other();
+                        }
+                    }
+
+                    function acceptMany(Many $mapping): void {}
+
+                    /** @param Association&Many $mapping */
+                    function test(Factory $factory, Association $mapping): string {
+                        if (!$mapping->isOwning()) {
+                            acceptMany($mapping);
+                            return '';
+                        }
+                        /** @psalm-check-type-exact $mapping = Owning&Many */
+                        $owning = $factory->getOwningSide($mapping);
+                        /** @psalm-check-type-exact $owning = OwningMany */
+                        return $owning->joinTable . $owning->joinTableColumns;
+                    }
+                    PHP,
+            ],
+            'stringableMethodWithConditionalReturn' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class Converter {
+                        /**
+                         * @template T of array|string
+                         * @param T $value
+                         * @return (T is array ? array : false|string)
+                         */
+                        public function convert(array|string $value): array|false|string {
+                            return $value;
+                        }
+                    }
+                    function test(Converter $converter, Throwable $error): void {
+                        $value = $converter->convert($error);
+                        /** @psalm-check-type-exact $value = false|string */
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => ['ImplicitToStringCast'],
+                'php_version' => '8.2',
+            ],
+            'stringableOrdinaryGenericReturnKeepsExistingInference' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @template T of array|string
+                     * @param T $value
+                     * @return T
+                     */
+                    function identity(array|string $value): array|string {
+                        return $value;
+                    }
+                    function test(Throwable $error): void {
+                        $value = identity($error);
+                        /** @psalm-check-type-exact $value = array<array-key, mixed>|string */
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => ['ImplicitToStringCast'],
+                'php_version' => '8.2',
+            ],
+            'stringableTemplateUsedOnlyInNestedConditional' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @template T of array|string
+                     * @template U of bool
+                     * @param T $value
+                     * @param U $keep
+                     * @return (U is true ? (T is array ? array : string) : null)
+                     */
+                    function choose(array|string $value, bool $keep): array|string|null {
+                        return $keep ? $value : null;
+                    }
+                    function test(Throwable $error): void {
+                        $value = choose($error, true);
+                        /** @psalm-check-type-exact $value = string */
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => ['ImplicitToStringCast'],
+                'php_version' => '8.2',
+            ],
+            'stringableUnrelatedTemplateKeepsExistingInference' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @template T of array|string
+                     * @template U of bool
+                     * @param T $value
+                     * @param U $keep
+                     * @return (U is true ? T : null)
+                     */
+                    function choose(array|string $value, bool $keep): array|string|null {
+                        return $keep ? $value : null;
+                    }
+                    function test(Throwable $error): void {
+                        $value = choose($error, true);
+                        /** @psalm-check-type-exact $value = array<array-key, mixed>|string */
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => ['ImplicitToStringCast'],
+                'php_version' => '8.2',
             ],
         ];
     }

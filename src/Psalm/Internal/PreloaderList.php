@@ -984,6 +984,7 @@ final class PreloaderList {
         \Psalm\Internal\Stubs\Generator\StubsGenerator::class,
         \Psalm\Internal\TypeVisitor\CanContainObjectTypeVisitor::class,
         \Psalm\Internal\TypeVisitor\ClasslikeReplacer::class,
+        \Psalm\Internal\TypeVisitor\ConditionalTemplateVisitor::class,
         \Psalm\Internal\TypeVisitor\ContainsClassLikeVisitor::class,
         \Psalm\Internal\TypeVisitor\ContainsLiteralVisitor::class,
         \Psalm\Internal\TypeVisitor\ContainsStaticVisitor::class,
