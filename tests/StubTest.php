@@ -51,7 +51,7 @@ final class StubTest extends DeferredAnalyzerTestCase
         new TestConfig();
     }
 
-    private function getProjectAnalyzerWithConfig(Config $config): ProjectAnalyzer
+    private function getProjectAnalyzerWithConfig(Config $config, string $php_version = '7.4'): ProjectAnalyzer
     {
         $project_analyzer = new ProjectAnalyzer(
             $config,
@@ -62,7 +62,7 @@ final class StubTest extends DeferredAnalyzerTestCase
         );
         $project_analyzer->initExtraFiles();
         $project_analyzer->initProjectFiles();
-        $project_analyzer->setPhpVersion('7.4', 'tests');
+        $project_analyzer->setPhpVersion($php_version, 'tests');
 
         $config->setIncludeCollector(new IncludeCollector());
         $config->visitComposerAutoloadFiles($project_analyzer, null);
@@ -958,6 +958,43 @@ final class StubTest extends DeferredAnalyzerTestCase
         );
 
         $this->analyzeFile($file_path, new Context());
+    }
+
+    /**
+     * PHP skips a polyfill of a function it has, so the native signature stays, also where the analysed version
+     * has the function
+     */
+    #[RunInSeparateProcess]
+    public function testPolyfillOfANativeFunctionKeepsTheNativeSignature(): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__),
+                '<?xml version="1.0"?>
+                <psalm
+                    errorLevel="1"
+                    autoloader="tests/fixtures/stubs/native_function_polyfill.phpstub"
+                >
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+                </psalm>',
+            ),
+            '8.6',
+        );
+
+        $file_path = (string) getcwd() . '/src/somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                $a = stream_last_errors();',
+        );
+
+        $context = new Context();
+        $this->analyzeFile($file_path, $context);
+
+        $this->assertSame('list<StreamError>', $context->vars_in_scope['$a']->getId());
     }
 
     #[RunInSeparateProcess]

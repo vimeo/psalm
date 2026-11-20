@@ -189,12 +189,17 @@ final class MethodAnalyzer extends FunctionLikeAnalyzer
             $defining_class_storage = $codebase->classlike_storage_provider->get($defining_class);
             $method_since_id = $defining_class_storage->since_php_version_id;
 
-            // A native method with no `@since` on it or its class is dated by the versioned
-            // callmaps (e.g. ReflectionClass::isEnum(), added in PHP 8.1 to a pre-existing class).
-            if ($method_since_id === null && !$defining_class_storage->user_defined) {
-                $method_since_id = InternalCallMapHandler::getIntroducingPhpVersionId(
+            // A native method with no `@since` on it is dated by the versioned callmaps when they date it later than
+            // its class (ReflectionClass::isEnum(), added in PHP 8.1 to a pre-existing class, or
+            // ReflectionAttribute::inNamespace(), added in 8.6 to a class of 8.0).
+            if (!$defining_class_storage->user_defined) {
+                $callmap_since_id = InternalCallMapHandler::getIntroducingPhpVersionId(
                     $defining_class . '::' . $method_id->method_name,
                 );
+
+                if ($callmap_since_id !== null && $callmap_since_id > ($method_since_id ?? 0)) {
+                    $method_since_id = $callmap_since_id;
+                }
             }
         }
 

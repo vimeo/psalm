@@ -294,7 +294,6 @@ final class DeprecatedArgumentsAnalyzer
      * Whether $type is one of the literal strings $values
      *
      * @param list<string> $values
-     *
      * @psalm-pure
      */
     private static function isAnyOf(?Union $type, array $values): bool

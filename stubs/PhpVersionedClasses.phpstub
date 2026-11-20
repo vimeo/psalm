@@ -41,6 +41,15 @@ namespace {
         {
         }
 
+        /** @psalm-capabilities read-props */
+        public function inNamespace(): bool {}
+
+        /** @psalm-capabilities read-props */
+        public function getNamespaceName(): string {}
+
+        /** @psalm-capabilities read-props */
+        public function getShortName(): string {}
+
         /**
          * @psalm-capabilities read-props
          * @return Attribute::TARGET_*
@@ -323,12 +332,19 @@ namespace {
      */
     final class StreamPollHandle implements Io\Poll\Handle
     {
-        /** @param resource $stream */
+        /**
+         * @psalm-pure
+         * @param resource $stream
+         */
         public function __construct($stream) {}
 
-        /** @return resource */
+        /**
+         * @psalm-capabilities read-props
+         * @return resource
+         */
         public function getStream() {}
 
+        /** @psalm-capabilities read-props|io */
         public function isValid(): bool {}
     }
 }
@@ -400,44 +416,94 @@ namespace Io\Poll {
     /** @since 8.6 */
     interface Handle {}
 
-    /** @since 8.6 */
+    /**
+     * The handle a context watches for events, with the data it was added with
+     *
+     * @template-covariant THandle of Handle
+     * @template TData
+     * @since 8.6
+     */
     final class Watcher
     {
         final private function __construct() {}
 
+        /**
+         * @psalm-capabilities read-props
+         * @return THandle
+         */
         public function getHandle(): Handle {}
 
-        /** @return list<Event> */
+        /**
+         * @psalm-capabilities read-props
+         * @return list<Event>
+         */
         public function getWatchedEvents(): array {}
 
-        /** @return list<Event> */
+        /**
+         * @psalm-capabilities read-props
+         * @return list<Event>
+         */
         public function getTriggeredEvents(): array {}
 
+        /**
+         * @psalm-capabilities read-props
+         * @return TData
+         */
         public function getData(): mixed {}
 
+        /** @psalm-capabilities read-props */
         public function hasTriggered(Event $event): bool {}
 
+        /** @psalm-capabilities read-props */
         public function isActive(): bool {}
 
+        /**
+         * @psalm-capabilities read-props|write-this-props|io
+         * @param non-empty-list<Event> $events
+         * @param TData $data
+         */
         public function modify(array $events, mixed $data = null): void {}
 
+        /**
+         * @psalm-capabilities read-props|write-this-props|io
+         * @param non-empty-list<Event> $events
+         */
         public function modifyEvents(array $events): void {}
 
+        /**
+         * @psalm-capabilities write-this-props
+         * @param TData $data
+         */
         public function modifyData(mixed $data): void {}
 
+        /** @psalm-capabilities read-props|write-this-props|io */
         public function remove(): void {}
     }
 
     /** @since 8.6 */
     final class Context
     {
+        /** @psalm-capabilities io */
         public function __construct(Backend $backend = Backend::Auto) {}
 
+        /**
+         * @psalm-capabilities read-props|write-this-props|io
+         * @template T of Handle
+         * @template D
+         * @param T $handle
+         * @param non-empty-list<Event> $events
+         * @param D $data
+         * @return Watcher<T, D>
+         */
         public function add(Handle $handle, array $events, mixed $data = null): Watcher {}
 
-        /** @return list<Watcher> */
+        /**
+         * @psalm-capabilities read-props|write-this-props|io|time
+         * @return list<Watcher<Handle, mixed>>
+         */
         public function wait(?\Time\Duration $timeout = null, ?int $maxEvents = null): array {}
 
+        /** @psalm-capabilities read-props */
         public function getBackend(): Backend {}
     }
 
@@ -507,10 +573,13 @@ namespace {
     /** @since 8.6 */
     class StreamException extends Exception
     {
-        /** @var array<int, StreamError> */
+        /** @var list<StreamError> */
         private array $errors = [];
 
-        /** @return array<int, StreamError> */
+        /**
+         * @psalm-capabilities read-props
+         * @return list<StreamError>
+         */
         public function getErrors(): array {}
     }
 
@@ -528,6 +597,7 @@ namespace {
 
         private function __construct() {}
 
+        /** @psalm-pure */
         public static function createFromSkeleton(
             string $skeleton,
             string $locale,
@@ -535,10 +605,17 @@ namespace {
             int $identityFallback
         ): IntlNumberRangeFormatter {}
 
+        /**
+         * It records its error, which getErrorCode() and getErrorMessage() then give
+         *
+         * @psalm-capabilities read-props|write-this-props
+         */
         public function format(float|int $start, float|int $end): string {}
 
+        /** @psalm-capabilities read-props */
         public function getErrorCode(): int {}
 
+        /** @psalm-capabilities read-props */
         public function getErrorMessage(): string {}
     }
 
@@ -585,22 +662,31 @@ namespace Uri\Rfc3986 {
 
         private ?string $fragment = null;
 
+        /** @psalm-capabilities read-props|write-this-props */
         public function reset(): static {}
 
+        /** @psalm-capabilities read-props|write-this-props */
         public function setScheme(?string $scheme): static {}
 
+        /** @psalm-capabilities read-props|write-this-props */
         public function setUserInfo(#[\SensitiveParameter] ?string $userInfo): static {}
 
+        /** @psalm-capabilities read-props|write-this-props */
         public function setHost(?string $host): static {}
 
+        /** @psalm-capabilities read-props|write-this-props */
         public function setPort(?int $port): static {}
 
+        /** @psalm-capabilities read-props|write-this-props */
         public function setPath(string $path): static {}
 
+        /** @psalm-capabilities read-props|write-this-props */
         public function setQuery(?string $query): static {}
 
+        /** @psalm-capabilities read-props|write-this-props */
         public function setFragment(?string $fragment): static {}
 
+        /** @psalm-capabilities read-props */
         public function build(?\Uri\Rfc3986\Uri $baseUrl = null): \Uri\Rfc3986\Uri {}
     }
 }
@@ -625,25 +711,37 @@ namespace Uri\WhatWg {
 
         private ?string $fragment = null;
 
+        /** @psalm-capabilities read-props|write-this-props */
         public function reset(): static {}
 
+        /** @psalm-capabilities read-props|write-this-props */
         public function setScheme(string $scheme): static {}
 
+        /** @psalm-capabilities read-props|write-this-props */
         public function setUsername(?string $username): static {}
 
+        /** @psalm-capabilities read-props|write-this-props */
         public function setPassword(#[\SensitiveParameter] ?string $password): static {}
 
+        /** @psalm-capabilities read-props|write-this-props */
         public function setHost(?string $host): static {}
 
+        /** @psalm-capabilities read-props|write-this-props */
         public function setPort(?int $port): static {}
 
+        /** @psalm-capabilities read-props|write-this-props */
         public function setPath(string $path): static {}
 
+        /** @psalm-capabilities read-props|write-this-props */
         public function setQuery(?string $query): static {}
 
+        /** @psalm-capabilities read-props|write-this-props */
         public function setFragment(?string $fragment): static {}
 
-        /** @param array $softErrors */
+        /**
+         * @psalm-capabilities read-props|write-refs
+         * @param-out list<\Uri\WhatWg\UrlValidationError> $softErrors
+         */
         public function build(?\Uri\WhatWg\Url $baseUrl = null, &$softErrors = null): \Uri\WhatWg\Url {}
     }
 }
@@ -674,26 +772,37 @@ namespace Openssl {
         /** @readonly */
         public string $id;
 
+        /** @psalm-capabilities read-props */
         public function export(int $format = OPENSSL_ENCODING_PEM): string {}
 
+        /** @psalm-pure */
         public static function import(string $data, int $format = OPENSSL_ENCODING_PEM): Session {}
 
+        /** @psalm-capabilities read-props|time */
         public function isResumable(): bool {}
 
+        /** @psalm-capabilities read-props */
         public function getTimeout(): int {}
 
+        /** @psalm-capabilities read-props */
         public function getCreatedAt(): int {}
 
+        /** @psalm-capabilities read-props */
         public function getProtocol(): ?string {}
 
+        /** @psalm-capabilities read-props */
         public function getCipher(): ?string {}
 
+        /** @psalm-capabilities read-props */
         public function hasTicket(): bool {}
 
+        /** @psalm-capabilities read-props */
         public function getTicketLifetimeHint(): ?int {}
 
+        /** @psalm-capabilities read-props */
         public function __serialize(): array {}
 
+        /** @psalm-capabilities write-this-props */
         public function __unserialize(array $data): void {}
     }
 }
