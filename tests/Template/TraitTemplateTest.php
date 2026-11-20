@@ -103,6 +103,66 @@ final class TraitTemplateTest extends TestCase
                         use Leak;
                     }',
             ],
+            'traitMethodArgumentKeepsItsTemplateTypeAfterTheCall' => [
+                'code' => '<?php
+                    function ts(string $s): void {
+                        echo $s;
+                    }
+
+                    function ti(int $i): void {
+                        echo $i;
+                    }
+
+                    /** @template T */
+                    trait Leak {
+                        /** @param T $x */
+                        public function h($x): string {
+                            ts($x);
+                            if (is_string($x)) {
+                                return $x;
+                            }
+                            return "o";
+                        }
+
+                        /** @param T $x */
+                        public function h2($x): void {
+                            ts($x);
+                            if (is_int($x)) {
+                                ti($x);
+                            }
+                        }
+                    }
+
+                    final class LeakStr {
+                        /** @use Leak<string> */
+                        use Leak;
+                    }',
+            ],
+            'traitMethodArgumentOfATemplateUsedAsMixedKeepsItsTemplateTypeAfterTheCall' => [
+                'code' => '<?php
+                    function ts(string $s): void {
+                        echo $s;
+                    }
+
+                    /** @template T */
+                    trait Leak {
+                        /** @param T $x */
+                        public function h($x): string {
+                            ts($x);
+                            if (is_string($x)) {
+                                return $x;
+                            }
+                            return "o";
+                        }
+                    }
+
+                    final class LeakMixed {
+                        /** @use Leak<mixed> */
+                        use Leak;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedArgument'],
+            ],
             'traitMethodPassesItsTemplatedArrayAndCallbackToATemplatedFunction' => [
                 'code' => '<?php
                     /**

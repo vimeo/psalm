@@ -1033,6 +1033,7 @@ final class ArgumentAnalyzer
         $method_identifier = $cased_method_id ? ' of ' . $cased_method_id : '';
 
         $source = $statements_analyzer->getSource();
+        $unbound_input_type = $input_type;
 
         if ($source instanceof FunctionLikeAnalyzer) {
             // the parameter type the called function inferred from an argument of a trait template type is in
@@ -1051,6 +1052,8 @@ final class ArgumentAnalyzer
                 $param_type,
             );
         }
+
+        $bound_input_type = $input_type;
 
         if ($input_type->hasMixed()) {
             if (!$context->collect_initializations
@@ -1100,7 +1103,7 @@ final class ArgumentAnalyzer
                 ) {
                     self::coerceValueAfterGatekeeperArgument(
                         $statements_analyzer,
-                        $input_type,
+                        $input_type === $bound_input_type ? $unbound_input_type : $input_type,
                         false,
                         $input_expr,
                         $param_type,
@@ -1718,9 +1721,10 @@ final class ArgumentAnalyzer
             && $cased_method_id !== 'print'
             && (!$in_call_map || $context->strict_types)
         ) {
+            // the variable keeps its type in the trait's terms, only the check uses the bound one
             self::coerceValueAfterGatekeeperArgument(
                 $statements_analyzer,
-                $input_type,
+                $input_type === $bound_input_type ? $unbound_input_type : $input_type,
                 $replace_input_type,
                 $input_expr,
                 $param_type,
