@@ -36,11 +36,25 @@ final class Connection
     /** @return array<string, string>|null */
     public function __debugInfo(): ?array // DeprecatedSyntax: declare array
     {
-        return null;
+        return null; // DeprecatedSyntax: return []
     }
+
+    public function connect(DateTimeZone $zone = null, int $retries = 1, string $dsn): void {} // DeprecatedSyntax: ?DateTimeZone, no default before $dsn
+}
+
+function &nothing(): void {} // DeprecatedSyntax: a void function returns no reference
+
+$id = (integer) $argv[1]; // DeprecatedSyntax: (int)
+$files = `ls`; // DeprecatedSyntax: shell_exec()
+$greeting = "Hello ${id}"; // DeprecatedSyntax: "{$id}"
+$inverse = 0 ** -1; // DeprecatedSyntax: fpow()
+
+switch ($id) {
+    case 1; // DeprecatedSyntax: case 1:
+        break;
 }
 ```
 
 ## How to fix
 
-Move the `return` out of the `finally` block, rename the constant, and drop the value or the `yield`.
+Write the replacement each comment gives: move the `return` out of the `finally` block, rename the constant, and drop the value or the `yield`.
