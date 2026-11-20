@@ -561,7 +561,11 @@ function pieStep(array $pieInstalls): string
             . implode(' ', [$pie['package'] . ':' . $version, ...$pie['options']]);
     }
     $pieVersion = PIE_VERSION;
-    return "\nRUN case \"\$(uname -m)\" in aarch64) arch=ARM64 ;; *) arch=X64 ;; esac && \\\n"
+    // PIE downloads through the GitHub API with Composer, whose unauthenticated rate limit the
+    // shared runners exhaust; Composer reads its credentials from COMPOSER_AUTH
+    return "\nRUN --mount=type=secret,id=github_token \\\n"
+        . "    if [ -s /run/secrets/github_token ]; then export COMPOSER_AUTH=\"{\\\"github-oauth\\\":{\\\"github.com\\\":\\\"\$(cat /run/secrets/github_token)\\\"}}\"; fi && \\\n"
+        . "    case \"\$(uname -m)\" in aarch64) arch=ARM64 ;; *) arch=X64 ;; esac && \\\n"
         . "    curl -fsSL --retry 5 --retry-delay 2 -o /usr/local/bin/pie https://github.com/php/pie/releases/download/$pieVersion/pie-Linux-\$arch && \\\n"
         . "    chmod +x /usr/local/bin/pie && \\\n"
         . '    apk add --no-cache $PHPIZE_DEPS libtool ' . implode(' ', array_unique($packages)) . " && \\\n    "
@@ -692,8 +696,14 @@ explainRebuild($image, $cacheKey, $components);
 // safe as a single label value).
 $componentsLabel = base64_encode(implode("\n", $components));
 
+// A secret, so the token is in no layer and no cache key.
+$secret = ($token = getenv('GITHUB_TOKEN')) !== false && $token !== ''
+    ? ' --secret id=github_token,env=GITHUB_TOKEN'
+    : '';
+
 $command = sprintf(
-    'docker buildx build --push --pull %s -f %s -t %s --build-arg CACHEBUST=%s --label %s --label %s --cache-from %s --cache-to %s',
+    'docker buildx build --push --pull%s %s -f %s -t %s --build-arg CACHEBUST=%s --label %s --label %s --cache-from %s --cache-to %s',
+    $secret,
     escapeshellarg($context),
     escapeshellarg("$context/Dockerfile"),
     escapeshellarg($image),
