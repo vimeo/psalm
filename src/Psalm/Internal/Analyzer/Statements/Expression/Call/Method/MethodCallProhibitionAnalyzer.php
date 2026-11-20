@@ -57,7 +57,6 @@ final class MethodCallProhibitionAnalyzer
         }
 
         if (!$context->collect_initializations
-            && !$context->collect_mutations
         ) {
             if (!NamespaceAnalyzer::isWithinAny($caller_identifier ?? "", $storage->internal)) {
                 IssueBuffer::maybeAdd(
