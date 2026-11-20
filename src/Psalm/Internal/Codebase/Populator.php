@@ -774,6 +774,33 @@ final class Populator
         }
     }
 
+    /**
+     * Whether two methods document the same return type and parameter types, so that either of them may document
+     * a method implementing both
+     *
+     * @psalm-mutation-free
+     */
+    private static function documentSameSignature(MethodStorage $first, ?MethodStorage $second): bool
+    {
+        if ($second === null) {
+            return false;
+        }
+
+        if ($first->return_type?->getId() !== $second->return_type?->getId()
+            || count($first->params) !== count($second->params)
+        ) {
+            return false;
+        }
+
+        foreach ($first->params as $i => $param) {
+            if ($param->type?->getId() !== $second->params[$i]->type?->getId()) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
     private function populateOverriddenMethods(
         ClassLikeStorage $storage,
         ClassLikeStorageProvider $storage_provider,
@@ -919,6 +946,12 @@ final class Populator
                                     $declaring_class,
                                     $documenting_class_storage->parent_interfaces,
                                 ) && $documenting_class_storage->is_interface
+                                    && !self::documentSameSignature(
+                                        $declaring_method_storage,
+                                        $documenting_class_storage->methods[
+                                            $storage->documenting_method_ids[$method_name]->method_name
+                                        ] ?? null,
+                                    )
                                 ) {
                                     unset($storage->documenting_method_ids[$method_name]);
                                     $inherited_return_type = null;

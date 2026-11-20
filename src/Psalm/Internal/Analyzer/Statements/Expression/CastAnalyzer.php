@@ -15,6 +15,7 @@ use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\CombinedFlowGraph;
 use Psalm\Internal\Codebase\TaintFlowGraph;
+use Psalm\Internal\Codebase\UrlHosts;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Internal\MethodIdentifier;
@@ -1326,6 +1327,10 @@ final class CastAnalyzer
                     0,
                     $removed_taints,
                 );
+            }
+
+            if ($statements_analyzer->taint_flow_graph && $cast_type === 'string') {
+                UrlHosts::recordCast($statements_analyzer->taint_flow_graph, $parent_nodes, $cast_node);
             }
 
             $parent_nodes = [$cast_node->id => $cast_node];

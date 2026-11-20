@@ -35,8 +35,15 @@ final class TaintKind
     public const INPUT_NOSQL = (1 << 17);
     public const INPUT_URL_COMPONENT = (1 << 18);
     public const INPUT_URL_PATH = (1 << 19);
-    public const USER_SECRET = (1 << 20);
-    public const SYSTEM_SECRET = (1 << 21);
+    public const INPUT_REDIRECT = (1 << 20);
+    /** SQL syntax outside of quotes, which escaping a value for SQL quotes doesn't remove */
+    public const INPUT_SQL_UNQUOTED = (1 << 21);
+    /** What ends an unquoted HTML attribute value, which escaping a value for HTML doesn't remove */
+    public const INPUT_HTML_ATTRIBUTE = (1 << 22);
+    /** A URL scheme running code (`javascript:`), which escaping a value for HTML doesn't remove */
+    public const INPUT_URL_SCHEME = (1 << 23);
+    public const USER_SECRET = (1 << 24);
+    public const SYSTEM_SECRET = (1 << 25);
 
     /**
      * Bitmask of all INPUT_* taint types. Used as the default taint for
@@ -45,7 +52,7 @@ final class TaintKind
      * Excludes USER_SECRET and SYSTEM_SECRET, which represent
      * sensitive data leaking out rather than untrusted data flowing in.
      */
-    public const ALL_INPUT = (1 << 20) - 1;
+    public const ALL_INPUT = (1 << 24) - 1;
 
     /** @internal */
     public const NUMERIC_ONLY = self::INPUT_SLEEP;
@@ -65,7 +72,7 @@ final class TaintKind
     public const ALL = -1;
 
     /** @internal Keep this synced with the above */
-    public const BUILTIN_TAINT_COUNT = 22;
+    public const BUILTIN_TAINT_COUNT = 26;
 
 
     // Map of taint kind names to their bitmask values, used in taint annotations
@@ -75,14 +82,20 @@ final class TaintKind
         'include' => self::INPUT_INCLUDE,
         'eval' => self::INPUT_EVAL,
         'ldap' => self::INPUT_LDAP,
-        'sql' => self::INPUT_SQL,
+        // SQL syntax wherever the value is: what breaks out of SQL quotes, and what is SQL syntax outside of them
+        'sql' => self::INPUT_SQL | self::INPUT_SQL_UNQUOTED,
+        'sql_in_quotes' => self::INPUT_SQL,
+        'sql_unquoted' => self::INPUT_SQL_UNQUOTED,
         'nosql' => self::INPUT_NOSQL,
         'html' => self::INPUT_HTML,
         'has_quotes' => self::INPUT_HAS_QUOTES,
+        'html_attribute' => self::INPUT_HTML_ATTRIBUTE,
+        'url_scheme' => self::INPUT_URL_SCHEME,
         'shell' => self::INPUT_SHELL,
         'ssrf' => self::INPUT_SSRF,
         'url_component' => self::INPUT_URL_COMPONENT,
         'url_path' => self::INPUT_URL_PATH,
+        'redirect' => self::INPUT_REDIRECT,
         'file' => self::INPUT_FILE,
         'cookie' => self::INPUT_COOKIE,
         'header' => self::INPUT_HEADER,

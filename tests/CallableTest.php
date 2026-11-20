@@ -155,6 +155,14 @@ final class CallableTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'truthyCheckOfANullableCallableIsNotRisky' => [
+                'code' => '<?php
+                    function f(?callable $c): void {
+                        if ($c) {
+                            $c();
+                        }
+                    }',
+            ],
             'callableArrayNamingAMagicMethodMatchesATypedCallable' => [
                 'code' => '<?php
                     /**
@@ -3819,6 +3827,26 @@ final class CallableTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'truthyCheckOfACallableOrStringIsRisky' => [
+                'code' => '<?php
+                    function f(callable|string $c): void {
+                        if ($c) {
+                            echo "truthy";
+                        }
+                    }',
+                'error_message' => 'RiskyTruthyFalsyComparison',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'truthyCheckOfACallableIsRedundant' => [
+                'code' => '<?php
+                    function f(callable $c): void {
+                        if ($c) {
+                            $c();
+                        }
+                    }',
+                'error_message' => 'RedundantCondition - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:29',
+            ],
             'callableArrayNamingAMagicMethodMismatchesATypedCallable' => [
                 'code' => '<?php
                     /**
