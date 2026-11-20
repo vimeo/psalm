@@ -366,6 +366,7 @@ final class TypeCombiner
         }
 
         $has_never = isset($combination->value_types['never']);
+        $never_bound_variables = [];
 
         foreach ($combination->value_types as $type) {
             if ($type instanceof TMixed
@@ -382,10 +383,18 @@ final class TypeCombiner
                 && (count($combination->value_types) > 1 || count($new_types))
             ) {
                 $has_never = $has_never || $type instanceof TNever;
+                if ($type instanceof TTypeVariable) {
+                    $never_bound_variables[] = $type->setFromDocblock($from_docblock);
+                }
                 continue;
             }
 
             $new_types[] = $type->setFromDocblock($from_docblock);
+        }
+
+        // variables that all stand for `never` until bound, and nothing else: the union is any of them
+        if (!$new_types && !$has_never) {
+            $new_types = $never_bound_variables;
         }
 
         $new_types = self::setIterablePurity($new_types, $combination);

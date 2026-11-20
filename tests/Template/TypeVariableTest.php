@@ -333,6 +333,62 @@ final class TypeVariableTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'magicPropertyOfObjectsBuiltEmptyOnEachBranch' => [
+                'code' => '<?php
+                    /**
+                     * @template-covariant K as string
+                     * @template V
+                     */
+                    final class Bag {
+                        /** @var array<K, V> */
+                        private array $properties;
+
+                        /**
+                         * @param array<K, V> $properties
+                         * @psalm-mutation-free
+                         */
+                        public function __construct(array $properties) {
+                            $this->properties = $properties;
+                        }
+
+                        /**
+                         * @param K $name
+                         * @return V
+                         * @psalm-mutation-free
+                         */
+                        public function __get(string $name): mixed {
+                            return $this->properties[$name];
+                        }
+
+                        /**
+                         * @param K $name
+                         * @param V $value
+                         * @psalm-external-mutation-free
+                         */
+                        public function __set(string $name, mixed $value): void {
+                            $this->properties[$name] = $value;
+                        }
+                    }
+
+                    /**
+                     * @param list<string> $keys
+                     * @return array<string, Bag>
+                     */
+                    function count_keys(array $keys, bool $fresh): array {
+                        $bags = [];
+                        foreach ($keys as $key) {
+                            if ($fresh || !isset($bags[$key])) {
+                                $bag = new Bag([]);
+                                $bag->count = 0;
+                                $bags[$key] = $bag;
+                            } else {
+                                $bag = $bags[$key];
+                            }
+                            $bag->count++;
+                        }
+                        return $bags;
+                    }',
+            ],
             'possiblyEmptyArray' => [
                 'code' => '<?php
                     /**
