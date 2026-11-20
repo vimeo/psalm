@@ -39,7 +39,6 @@ use function count;
 use function hash;
 use function ini_set;
 use function max;
-use function md5;
 use function serialize;
 use function str_contains;
 use function str_replace;
@@ -240,8 +239,7 @@ final class StatementsProvider
             $unchanged_members = array_fill_keys($unchanged_members, true);
             $unchanged_signature_members = array_fill_keys($unchanged_signature_members, true);
 
-            // do NOT change this to hash, it will fail on Windows for whatever reason
-            $file_path_hash = md5($file_path);
+            $file_path_hash = hash('xxh3', $file_path);
 
             $changed_members = array_map(
                 static function (string $key) use ($file_path_hash): string {

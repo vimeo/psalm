@@ -552,6 +552,9 @@ final class ClassLikeStorage implements HasAttributesInterface
 
     public bool $preserve_constructor_signature = false;
 
+    /** How the arguments of the methods can be passed, unless a method has its own tag */
+    public ?NamedArguments $named_arguments = null;
+
     public bool $enforce_template_inheritance = false;
 
     public ?string $extension_requirement = null;
