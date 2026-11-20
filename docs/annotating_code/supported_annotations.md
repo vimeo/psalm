@@ -92,8 +92,42 @@ echo $b->b;
 echo $b->a; // works
 ```
 
-Mixins are followed transitively: if `B` mixes in `A` and `C` mixes in `B`, members of `A` are also available on `C`.
-Chains are only followed through non-generic mixins; a generic hop such as `@mixin Collection<T>` is not traversed.
+The members of the class, of its parent classes and of its interfaces, their `@method`s and `@property`s included,
+come first. A member the class lacks is looked up in its mixins in declaration order, then in those of its traits,
+then in those of its parent class, and so on. The mixins of a mixin are looked up right after it, and the first mixin
+with the member wins:
+
+```php
+class Deep { public function a(): int { return 1; } }
+class Near { public function a(): string { return ''; } public function d(): string { return ''; } }
+class Other { public function b(): bool { return true; } }
+class Far { public function b(): float { return 1.0; } public function c(): float { return 1.0; } }
+
+/** @mixin Deep */
+class Middle {}
+
+/** @mixin Other */
+trait Forwards {}
+
+/** @mixin Far */
+abstract class Base { public function __call(string $name, array $args): mixed { return null; } }
+
+/**
+ * @method null d()
+ * @mixin Middle
+ * @mixin Near
+ */
+class Child extends Base { use Forwards; }
+
+$child = new Child();
+$child->a(); // int: Deep, the mixin of Middle, comes before Near
+$child->b(); // bool: the mixin of a trait comes before that of the parent class
+$child->c(); // float
+$child->d(); // null: the class's own `@method` comes first
+```
+
+A mixin's `@method`s are only used through a `__call()`, and its `@property`s through a `__get()`: those of the class,
+or of the mixin when the class is an interface.
 
 
 ## Psalm-specific tags
@@ -390,6 +424,27 @@ namespace Y {
             \X\Foo::barBar(); // error
         }
     }
+}
+```
+
+The code a project doesn't ship is internal without the annotation: classes that only `composer.json`'s
+`autoload-dev` loads, files that `.gitattributes` leaves out of the package with `export-ignore`, and, with
+[psalm/plugin-phpunit](https://github.com/psalm/psalm-plugin-phpunit), the test suites of `phpunit.xml` and the test
+cases. It is internal to the root namespaces of all that code, so test code may use the test code of another namespace.
+Code in the global namespace can't be internal.
+
+```php
+<?php
+namespace Lib\Tests { // autoload-dev: "Lib\\Tests\\": "tests/"
+    final class Helper {}
+}
+
+namespace Lib {
+    new Tests\Helper(); // this is fine
+}
+
+namespace Other {
+    new \Lib\Tests\Helper(); // InternalClass
 }
 ```
 
@@ -714,6 +769,51 @@ Incidentally, it will change the inferred type for the following code:
 ```
 The type of `$a` is `array<array-key, int>` without `@no-named-arguments` but becomes `list<int>` with it, because it excludes the case where the offset would be a string with the name of the parameter
 
+This annotation can also be used in the docblock of a class, an interface, a trait or an enum. It then applies to all the methods of that class, unless a method has `@arguments-by-name`, `@optional-arguments-by-name` or `@stable-parameter-names`.
+
+### `@optional-arguments-by-name`
+
+Callers must pass the arguments of optional parameters (the ones that have a default value) by name. Psalm emits a `PositionalArgumentNotAllowed` issue when such an argument is passed by position.
+
+The names of optional parameters are stable, but not their order. An optional parameter can be added, moved or removed without breaking callers. For required parameters, the order is stable and the names are not.
+
+```php
+<?php
+final class Configuration
+{
+    /**
+     * @optional-arguments-by-name
+     */
+    public function __construct(
+        string $dialect,
+        array $groups = [],
+        bool $allowExtraAttributes = true,
+    ) {
+    }
+}
+
+new Configuration('openapi-3.1', groups: ['read']); // OK
+new Configuration('openapi-3.1', ['read']); // PositionalArgumentNotAllowed
+```
+
+This annotation, `@arguments-by-name` and `@stable-parameter-names` can also be used in the docblock of a class, an interface, a trait or an enum. They then apply to the public and protected methods of that class. In a trait, they apply to private methods too, because the classes that use the trait can call them. A tag on a method replaces the tag on the class. A method that overrides or implements a tagged method keeps the tag of the parent method, unless the overriding method declares another tag. These annotations can't be combined with each other, nor with `@no-named-arguments`. They also apply to `@internal` code when `allowInternalNamedArgumentCalls` is `false`.
+
+Variadic parameters are not affected. But a variadic parameter gets arguments passed by position only when the parameters before it are passed by position too. When one of these parameters must be passed by name, the type of `...$args` is `array<string, T>` instead of `array<array-key, T>`.
+
+When arguments are unpacked from an array, integer keys are passed by position and string keys are passed by name.
+
+### `@arguments-by-name`
+
+Callers must pass all arguments by name, except the ones of variadic parameters. Psalm emits a `PositionalArgumentNotAllowed` issue for each argument passed by position.
+
+Parameter names are stable, but not their order. See `@optional-arguments-by-name` for where this annotation can be used.
+
+### `@stable-parameter-names`
+
+Callers can pass arguments by name or by position. Both the names and the order of the parameters are stable. Psalm doesn't report anything at call sites.
+
+A method that overrides a method with this annotation and renames a parameter is reported as `ParamNameMismatch`, even when `allowNamedArgumentCalls` is `false`. See `@optional-arguments-by-name` for where this annotation can be used.
+
 ### `@psalm-ignore-variable-property` and `@psalm-ignore-variable-method`
 
 Instructs Psalm to ignore variable property fetch / variable method call when looking for dead code.
@@ -818,6 +918,11 @@ A class that implements an interface (or extends a class) defined outside the
 project is treated as public surface automatically, since it can be instantiated
 and invoked through that external type: its overriding methods are considered
 used without an explicit `@api`.
+
+A library can make unused-code detection treat all of its code that isn't
+`@internal` as `@api` with
+[`markAllNonInternalCodeAsApi`](../running_psalm/configuration.md#markallnoninternalcodeasapi),
+at the cost of unused-code detection for internal code that lacks `@internal`.
 
 Do not reach for `@psalm-suppress UnusedClass` (or another `Unused*`
 suppression) in place of `@api`: as noted above, a suppression only silences the

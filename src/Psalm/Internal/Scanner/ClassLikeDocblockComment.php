@@ -6,6 +6,7 @@ namespace Psalm\Internal\Scanner;
 
 use PhpParser\Node\Stmt\ClassMethod;
 use Psalm\Storage\Capabilities;
+use Psalm\Storage\NamedArguments;
 
 /**
  * @internal
@@ -136,6 +137,9 @@ final class ClassLikeDocblockComment
     /** Whether the class has `@psalm-cli-only` */
     public bool $cli_only = false;
 
+    /** Whether the class has `@psalm-cli-only-instances` */
+    public bool $cli_only_instances = false;
+
     /** The array property `@psalm-taint-property-bag` says holds the properties of the objects under their names */
     public ?string $taint_property_bag = null;
 
@@ -154,6 +158,9 @@ final class ClassLikeDocblockComment
     public bool $consistent_constructor = false;
 
     public bool $consistent_templates = false;
+
+    /** How the arguments of the methods can be passed */
+    public ?NamedArguments $named_arguments = null;
 
     public bool $stub_override = false;
 

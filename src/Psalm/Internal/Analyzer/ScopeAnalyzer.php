@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Psalm\Internal\Analyzer;
 
 use PhpParser;
+use PhpParser\NodeFinder;
 use Psalm\Internal\Provider\NodeDataProvider;
 use Psalm\NodeTypeProvider;
 
@@ -12,6 +13,7 @@ use function array_any;
 use function array_diff;
 use function array_filter;
 use function array_intersect;
+use function array_key_last;
 use function array_unique;
 use function array_values;
 use function count;
@@ -34,6 +36,8 @@ final class ScopeAnalyzer
      * @param array<PhpParser\Node> $stmts
      * @param list<'loop'|'switch'> $break_types
      * @param bool $return_is_exit Exit and Throw statements are treated differently from return if this is false
+     * @param bool $skip_impossible_else treat the missing else of an if whose conditions matched every value
+     *                                   (see NodeDataProvider::isImplicitElseImpossible()) as leaving
      * @return list<self::ACTION_*>
      * @psalm-suppress ComplexMethod nothing much we can do
      */
@@ -42,6 +46,7 @@ final class ScopeAnalyzer
         ?NodeDataProvider $nodes,
         array $break_types,
         bool $return_is_exit = true,
+        bool $skip_impossible_else = false,
     ): array {
         if (empty($stmts)) {
             return [self::ACTION_NONE];
@@ -119,6 +124,7 @@ final class ScopeAnalyzer
                     $nodes,
                     $break_types,
                     $return_is_exit,
+                    $skip_impossible_else,
                 );
 
                 $all_leave = !array_any(
@@ -126,13 +132,17 @@ final class ScopeAnalyzer
                     static fn(string $action): bool => $action === self::ACTION_NONE,
                 );
 
-                $else_statement_actions = $stmt->else
-                    ? self::getControlActions(
+                $else_statement_actions = match (true) {
+                    $stmt->else !== null => self::getControlActions(
                         $stmt->else->stmts,
                         $nodes,
                         $break_types,
                         $return_is_exit,
-                    ) : [];
+                        $skip_impossible_else,
+                    ),
+                    $skip_impossible_else && $nodes?->isImplicitElseImpossible($stmt) => [self::ACTION_END],
+                    default => [],
+                };
 
                 $all_leave = $all_leave
                     && $else_statement_actions
@@ -150,6 +160,7 @@ final class ScopeAnalyzer
                             $nodes,
                             $break_types,
                             $return_is_exit,
+                            $skip_impossible_else,
                         );
 
                         $all_leave = $all_leave
@@ -185,17 +196,37 @@ final class ScopeAnalyzer
                 $has_default_terminator = false;
 
                 $all_case_actions = [];
+                $case_action_map = [];
+                $escaping_case_actions = [];
 
-                // iterate backwards in a case statement
-                for ($d = count($stmt->cases) - 1; $d >= 0; --$d) {
-                    $case = $stmt->cases[$d];
-
+                // Each case can be entered independently. Collect actions that escape the switch
+                // before the reverse pass, which may stop at an ordinary break or fallthrough.
+                foreach ($stmt->cases as $case_index => $case) {
                     $case_actions = self::getControlActions(
                         $case->stmts,
                         $nodes,
                         [...$break_types, 'switch'],
                         $return_is_exit,
+                        $skip_impossible_else,
                     );
+                    $case_action_map[$case_index] = $case_actions;
+                    $escaping_case_actions = array_values(array_unique([
+                        ...$escaping_case_actions,
+                        ...array_intersect($case_actions, [
+                            self::ACTION_LEAVE_LOOP,
+                            self::ACTION_BREAK,
+                            self::ACTION_CONTINUE,
+                            self::ACTION_END,
+                            self::ACTION_RETURN,
+                        ]),
+                    ]));
+                }
+
+                // iterate backwards in a case statement
+                for ($d = count($stmt->cases) - 1; $d >= 0; --$d) {
+                    $case = $stmt->cases[$d];
+
+                    $case_actions = $case_action_map[$d];
 
                     if (array_intersect([
                         self::ACTION_LEAVE_SWITCH,
@@ -203,6 +234,12 @@ final class ScopeAnalyzer
                         self::ACTION_CONTINUE,
                     ], $case_actions)
                     ) {
+                        // Other cases may exit an enclosing loop or return.
+                        $control_actions = array_values(array_unique([
+                            ...$control_actions,
+                            ...array_diff([...$all_case_actions, ...$escaping_case_actions], [self::ACTION_NONE]),
+                        ]));
+
                         continue 2;
                     }
 
@@ -211,7 +248,7 @@ final class ScopeAnalyzer
                     }
 
                     $case_does_end = !array_diff(
-                        $control_actions,
+                        $case_actions,
                         [self::ACTION_END, self::ACTION_RETURN],
                     );
 
@@ -219,9 +256,16 @@ final class ScopeAnalyzer
                         $has_ended = true;
                     }
 
-                    $all_case_actions = [...$all_case_actions, ...$case_actions];
+                    $all_case_actions = array_values(array_unique([
+                        ...$all_case_actions,
+                        ...$case_actions,
+                    ]));
 
                     if (!$case_does_end && !$has_ended) {
+                        $control_actions = array_values(array_unique([
+                            ...$control_actions,
+                            ...array_diff([...$all_case_actions, ...$escaping_case_actions], [self::ACTION_NONE]),
+                        ]));
                         continue 2;
                     }
 
@@ -230,16 +274,16 @@ final class ScopeAnalyzer
                     }
                 }
 
-                $all_case_actions = array_filter(
-                    $all_case_actions,
+                $all_case_actions = array_values(array_unique(array_filter(
+                    [...$all_case_actions, ...$escaping_case_actions],
                     static fn(string $action): bool => $action !== self::ACTION_NONE,
-                );
+                )));
 
                 if ($has_default_terminator || $stmt->getAttribute('allMatched', false)) {
                     return array_values(array_unique([...$control_actions, ...$all_case_actions]));
                 }
 
-                $control_actions = [...$control_actions, ...$all_case_actions];
+                $control_actions = array_values(array_unique([...$control_actions, ...$all_case_actions]));
             }
 
             if ($stmt instanceof PhpParser\Node\Stmt\Do_
@@ -252,12 +296,29 @@ final class ScopeAnalyzer
                     $nodes,
                     [...$break_types, 'loop'],
                     $return_is_exit,
+                    $skip_impossible_else,
                 );
 
                 $control_actions = array_filter(
                     [...$control_actions, ...$loop_actions],
                     static fn(string $action): bool => $action !== self::ACTION_NONE,
                 );
+
+                // a body that always runs and never reaches its end leaves nothing after the loop reachable;
+                // a continue leaves no action, and break/continue N to an outer loop or a goto don't show up as
+                // this loop's, so any of them rules this out
+                if (!array_diff($loop_actions, [self::ACTION_END, self::ACTION_RETURN])
+                    && ($stmt instanceof PhpParser\Node\Stmt\Do_
+                        || $stmt->getAttribute('alwaysEntered', false))
+                    && !(new NodeFinder())->findFirst(
+                        $stmt->stmts,
+                        static fn(PhpParser\Node $node): bool => $node instanceof PhpParser\Node\Stmt\Break_
+                            || $node instanceof PhpParser\Node\Stmt\Continue_
+                            || $node instanceof PhpParser\Node\Stmt\Goto_,
+                    )
+                ) {
+                    return array_values(array_unique($control_actions));
+                }
 
                 if (($stmt instanceof PhpParser\Node\Stmt\While_
                     || $stmt instanceof PhpParser\Node\Stmt\Do_)
@@ -273,7 +334,8 @@ final class ScopeAnalyzer
                     );
 
                     if (!$have_exit_path) {
-                        return array_values(array_unique($control_actions));
+                        // a loop nothing leaves and nothing returns from never ends
+                        return array_values(array_unique($control_actions ?: [self::ACTION_END]));
                     }
                 }
 
@@ -283,11 +345,10 @@ final class ScopeAnalyzer
                 ) {
                     $is_infinite_loop = true;
                     if ($stmt->cond) {
-                        foreach ($stmt->cond as $cond) {
-                            $stmt_expr_type = $nodes->getType($cond);
-                            if (!$stmt_expr_type || !$stmt_expr_type->isAlwaysTruthy()) {
-                                $is_infinite_loop = false;
-                            }
+                        // only the last of the comma separated conditions decides whether the loop goes on
+                        $stmt_expr_type = $nodes->getType($stmt->cond[array_key_last($stmt->cond)]);
+                        if (!$stmt_expr_type || !$stmt_expr_type->isAlwaysTruthy()) {
+                            $is_infinite_loop = false;
                         }
                     }
 
@@ -299,7 +360,7 @@ final class ScopeAnalyzer
                         );
 
                         if (!$have_exit_path) {
-                            return array_values(array_unique($control_actions));
+                            return array_values(array_unique($control_actions ?: [self::ACTION_END]));
                         }
                     }
                 }
@@ -316,6 +377,7 @@ final class ScopeAnalyzer
                     $nodes,
                     $break_types,
                     $return_is_exit,
+                    $skip_impossible_else,
                 );
 
                 $try_leaves = !array_any(
@@ -334,6 +396,7 @@ final class ScopeAnalyzer
                             $nodes,
                             $break_types,
                             $return_is_exit,
+                            $skip_impossible_else,
                         );
 
                         $all_leave = $all_leave
@@ -366,6 +429,7 @@ final class ScopeAnalyzer
                         $nodes,
                         $break_types,
                         $return_is_exit,
+                        $skip_impossible_else,
                     );
 
                     if (!in_array(self::ACTION_NONE, $finally_statement_actions, true)) {

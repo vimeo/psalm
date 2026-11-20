@@ -35,7 +35,7 @@ final class SonarqubeReport extends Report
                 'engineId' => 'Psalm',
                 'ruleId' => $issue_data->type,
                 'primaryLocation' => [
-                    'message' => $issue_data->message,
+                    'message' => self::getMessageWithCwe($issue_data),
                     'filePath' => $issue_data->file_name,
                     'textRange' => [
                         'startLine' => $issue_data->line_from,

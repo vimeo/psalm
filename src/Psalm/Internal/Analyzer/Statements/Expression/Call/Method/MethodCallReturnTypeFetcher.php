@@ -31,6 +31,7 @@ use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TypeExpander;
 use Psalm\Internal\Type\TypeVariableTracker;
+use Psalm\IssueBuffer;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Storage\MethodStorage;
 use Psalm\Type;
@@ -85,6 +86,7 @@ final class MethodCallReturnTypeFetcher
                     $codebase,
                     $method_id,
                     $method_storage,
+                    $statements_analyzer,
                 );
 
                 return self::getFirstClassCallableType(
@@ -281,19 +283,27 @@ final class MethodCallReturnTypeFetcher
 
                 $config = Config::getInstance();
 
-                // only check the type locally if it's defined externally
+                // only check the type locally if it's defined externally, reporting its issues at one call
                 if ($return_type_location && !$config->isInProjectDirs($return_type_location->file_path)) {
-                    /** @psalm-suppress UnusedMethodCall Actually generates issues */
-                    $return_type_candidate->check(
-                        $statements_analyzer,
-                        new CodeLocation($statements_analyzer, $stmt),
-                        $statements_analyzer->getSuppressedIssues(),
-                        $context->phantom_classes,
-                        true,
-                        false,
-                        false,
-                        $context,
+                    $issue_group = IssueBuffer::setIssueGroup(
+                        $return_type_location->file_path . ':' . $return_type_location->raw_file_start,
                     );
+
+                    try {
+                        /** @psalm-suppress UnusedMethodCall Actually generates issues */
+                        $return_type_candidate->check(
+                            $statements_analyzer,
+                            new CodeLocation($statements_analyzer, $stmt),
+                            $statements_analyzer->getSuppressedIssues(),
+                            $context->phantom_classes,
+                            true,
+                            false,
+                            false,
+                            $context,
+                        );
+                    } finally {
+                        IssueBuffer::setIssueGroup($issue_group);
+                    }
                 }
             } else {
                 $result->returns_by_ref =
@@ -338,6 +348,24 @@ final class MethodCallReturnTypeFetcher
         TemplateResult $template_result,
         Union $return_type_candidate,
     ): Union {
+        $result_added_taints = 0;
+        $result_removed_taints = 0;
+        $taint_flow_graph = $statements_analyzer->getTaintFlowGraphWithSuppressed();
+
+        // the event of taintMethodCallResult() is about the receiver; this one is about the call
+        if ($taint_flow_graph) {
+            $event = new AddRemoveTaintsEvent(
+                $stmt,
+                $context,
+                $statements_analyzer,
+                $statements_analyzer->getCodebase(),
+            );
+            $dispatcher = $statements_analyzer->getCodebase()->config->eventDispatcher;
+
+            $result_added_taints = $dispatcher->dispatchAddTaints($event);
+            $result_removed_taints = $dispatcher->dispatchRemoveTaints($event);
+        }
+
         self::taintMethodCallResult(
             $statements_analyzer,
             $return_type_candidate,
@@ -349,13 +377,15 @@ final class MethodCallReturnTypeFetcher
             $cased_method_id,
             $context,
             $template_result,
+            $result_added_taints,
+            $result_removed_taints,
         );
 
         // what is sent to a generator becomes the value of its yield expressions (what it gives back, see
         // YieldAnalyzer::taintGenerator(), flows as dictionaries/InternalTaintObjectFlowMap.php says)
         if (strtolower((string) $declaring_method_id) === 'generator::send'
             && isset($args[0])
-            && ($taint_flow_graph = $statements_analyzer->getTaintFlowGraphWithSuppressed())
+            && $taint_flow_graph
             && ($var_type = $statements_analyzer->node_data->getType($stmt->var))
             && $var_type->parent_nodes
             && ($sent_type = $statements_analyzer->node_data->getType($args[0]->value))
@@ -420,6 +450,42 @@ final class MethodCallReturnTypeFetcher
     }
 
     /**
+     * The taints the methods $method_id implements or overrides are sources of (`@psalm-taint-source`), through the
+     * ones that don't say it themselves
+     *
+     * @param array<string, true> $visited
+     * @psalm-capabilities read-props
+     */
+    private static function getInheritedTaintSources(
+        Codebase $codebase,
+        MethodIdentifier $method_id,
+        array $visited,
+    ): int {
+        $visited[(string) $method_id] = true;
+
+        if (!$codebase->classlike_storage_provider->has($method_id->fq_class_name)) {
+            return 0;
+        }
+
+        $class_storage = $codebase->classlike_storage_provider->get($method_id->fq_class_name);
+        $taints = 0;
+
+        foreach ($class_storage->overridden_method_ids[$method_id->method_name] ?? [] as $overridden_method_id) {
+            if (isset($visited[(string) $overridden_method_id])
+                || !$codebase->methods->hasStorage($overridden_method_id)
+            ) {
+                continue;
+            }
+
+            $overridden_storage = $codebase->methods->getStorage($overridden_method_id);
+            $taints |= $overridden_storage->taint_source_types
+                ?: self::getInheritedTaintSources($codebase, $overridden_method_id, $visited);
+        }
+
+        return $taints;
+    }
+
+    /**
      * @param list<PhpParser\Node\Arg> $args
      */
     public static function taintMethodCallResult(
@@ -433,6 +499,8 @@ final class MethodCallReturnTypeFetcher
         string $cased_method_id,
         Context $context,
         ?TemplateResult $template_result = null,
+        int $result_added_taints = 0,
+        int $result_removed_taints = 0,
     ): void {
         if (!($graph = $statements_analyzer->getDataFlowGraphWithSuppressed())
             || !$declaring_method_id
@@ -762,6 +830,19 @@ final class MethodCallReturnTypeFetcher
             $codebase->getInputTaints(),
         );
 
+        // a method implementing or overriding a source is one too, unless it says what it returns itself: a source
+        // replaces the one of the node taintUsingStorage() added, so it adds the taints of the method too
+        if ($method_storage->taint_source_types === 0) {
+            $inherited_taints = self::getInheritedTaintSources($codebase, $method_id, []);
+            $taints = ($inherited_taints === 0 ? 0 : $inherited_taints | $method_storage->added_taints)
+                & ~$method_storage->removed_taints
+                & ~($method_storage->signature_return_type?->getTaintsToRemove($codebase->getInputTaints()) ?? 0);
+
+            if ($taints !== 0) {
+                $taint_flow_graph->addSource($method_call_node->setTaints($taints));
+            }
+        }
+
         $return_type_candidate = TaintStore::taintCall(
             $statements_analyzer,
             $taint_flow_graph,
@@ -795,6 +876,9 @@ final class MethodCallReturnTypeFetcher
             $node_location,
             $return_type_candidate,
         );
+
+        $added_taints |= $result_added_taints;
+        $removed_taints |= $result_removed_taints;
 
         // what the plugins add to and remove from the result of this call, on a node of its own: the nodes the
         // result comes from may be shared with the other calls, the last call deciding for all
@@ -974,12 +1058,21 @@ final class MethodCallReturnTypeFetcher
         Codebase $codebase,
         MethodIdentifier $method_id,
         MethodStorage $method_storage,
+        StatementsAnalyzer $statements_analyzer,
     ): array {
         $params = $codebase->methods->getMethodParams($method_id);
+        $callable_id = strtolower((string) ($codebase->methods->getDeclaringMethodId($method_id) ?? $method_id));
 
-        if ($method_storage->return_type !== null) {
+        // a signature return type without a docblock one inherits the docblock return type of the parent, as a
+        // call does
+        if ($method_storage->return_type !== null && $method_storage->has_docblock_return_type) {
             return [
-                new TClosure($params, $method_storage->return_type, $method_storage->capabilities),
+                new TClosure(
+                    $params,
+                    $method_storage->return_type,
+                    $method_storage->capabilities,
+                    callable_id: $callable_id,
+                ),
                 $method_storage->template_types ?? [],
             ];
         }
@@ -994,8 +1087,9 @@ final class MethodCallReturnTypeFetcher
         return [
             new TClosure(
                 $params,
-                $codebase->methods->getMethodReturnType($codebase, $method_id, $self_class),
+                $codebase->methods->getMethodReturnType($codebase, $method_id, $self_class, $statements_analyzer),
                 $method_storage->capabilities,
+                callable_id: $callable_id,
             ),
             ($documenting_method_id !== null
                 ? $codebase->methods->getStorage($documenting_method_id)->template_types
@@ -1012,7 +1106,7 @@ final class MethodCallReturnTypeFetcher
      */
     public static function getFirstClassCallableType(
         Codebase $codebase,
-        PhpParser\Node\Expr\MethodCall|PhpParser\Node\Expr\StaticCall $stmt,
+        PhpParser\Node\Expr\MethodCall|PhpParser\Node\Expr\StaticCall|null $stmt,
         TClosure $closure,
         TemplateResult $template_result,
         array $method_template_types,
@@ -1021,8 +1115,10 @@ final class MethodCallReturnTypeFetcher
         ?string $parent_class,
         bool $final,
         bool $expand_generic = false,
+        bool $keep_method_templates = false,
     ): Union {
-        $keep_method_templates = $stmt->getAttribute(self::CALL_ARGUMENT_ATTRIBUTE) === true;
+        $keep_method_templates = $keep_method_templates
+            || $stmt?->getAttribute(self::CALL_ARGUMENT_ATTRIBUTE) === true;
         $bounds_result = new TemplateResult([], []);
         $bounds_result->lower_bounds = $template_result->lower_bounds;
 

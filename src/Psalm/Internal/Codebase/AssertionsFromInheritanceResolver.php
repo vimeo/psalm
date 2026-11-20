@@ -61,6 +61,18 @@ final class AssertionsFromInheritanceResolver
     }
 
     /**
+     * @psalm-capabilities read-props|write-this-props|write-props|write-refs
+     */
+    public function hasAny(
+        MethodStorage $method_storage,
+        ClassLikeStorage $called_class,
+    ): bool {
+        return $this->resolve($method_storage, $called_class)
+            || $this->resolveIfTrue($method_storage, $called_class)
+            || $this->resolveIfFalse($method_storage, $called_class);
+    }
+
+    /**
      * @param 'assertions'|'if_true_assertions'|'if_false_assertions' $kind
      * @return array<int,Possibilities>
      * @psalm-capabilities read-props|write-this-props|write-props|write-refs

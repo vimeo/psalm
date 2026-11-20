@@ -46,7 +46,6 @@ use function substr_compare;
  * @psalm-consistent-constructor
  * @internal
  * @psalm-external-mutation-free
- * @psalm-type SerializedNode = array{string, ?string, ?string, string, ?int, int, ?array, list<string>, ?int}
  * @psalm-type CallableKind = 'builtin'|'inherited-method'|'magic-method'|'dynamic-function-call'|'dynamic-instantiation'|'callable-object'
  */
 final class DataFlowNode implements Stringable
@@ -443,6 +442,24 @@ final class DataFlowNode implements Stringable
             $param_node->code_location,
             $param_node->specialization_key,
             $taints,
+        );
+    }
+
+    /**
+     * The node through which the arguments a variadic parameter is given after its first reach the body of the
+     * function-like, from $param_node, the node of the parameter. Each of those arguments has the node of its own
+     * position (see {@see self::getParameterOffset()}), which the sinks of the parameter are on already: this one
+     * has none, so that they don't report what reaches them a second time.
+     *
+     * @psalm-mutation-free
+     */
+    public static function getForVariadicArguments(self $param_node): self
+    {
+        return self::make(
+            ($param_node->unspecialized_id ?? $param_node->id) . ' variadic',
+            $param_node->label . '...',
+            $param_node->code_location,
+            $param_node->specialization_key,
         );
     }
 
@@ -988,49 +1005,20 @@ final class DataFlowNode implements Stringable
     }
 
     /**
-     * The fields of this node as TaintFlowGraph::__serialize() writes them: its location is $location_index, an
-     * index into the list of locations the graph is serialized with, and its taint source is $taint_source, the
-     * same fields of that node.
+     * Rebuilds a node of the graph from what NodeTable keeps of it, with the location it had, so its location is
+     * still the one its id has (see the class invariant).
      *
-     * @param SerializedNode|null $taint_source
-     * @return SerializedNode
-     * @psalm-mutation-free
-     */
-    public function toSerializedFields(?int $location_index, ?array $taint_source): array
-    {
-        return [
-            $this->id,
-            $this->unspecialized_id,
-            $this->specialization_key,
-            $this->label,
-            $location_index,
-            $this->taints,
-            $taint_source,
-            $this->path_types,
-            $this->context,
-        ];
-    }
-
-    /**
-     * Rebuilds a node from toSerializedFields(), with the location and taint source it was serialized with, so its
-     * location is still the one its id has (see the class invariant).
-     *
-     * @param SerializedNode $fields
      * @psalm-pure
      */
-    public static function fromSerializedFields(array $fields, ?CodeLocation $code_location, ?self $taint_source): self
-    {
-        return new self(
-            $fields[0],
-            $fields[1],
-            $fields[2],
-            $fields[3],
-            $code_location,
-            $fields[5],
-            $taint_source,
-            $fields[7],
-            $fields[8],
-        );
+    public static function fromRow(
+        string $id,
+        ?string $unspecialized_id,
+        ?string $specialization_key,
+        string $label,
+        ?CodeLocation $code_location,
+        int $taints,
+    ): self {
+        return new self($id, $unspecialized_id, $specialization_key, $label, $code_location, $taints);
     }
 
     /**

@@ -5,9 +5,16 @@ declare(strict_types=1);
 namespace Psalm\Tests\Template;
 
 use Override;
+use PhpParser\Node\Stmt\Return_;
+use Psalm\Context;
+use Psalm\Plugin\EventHandler\AfterStatementAnalysisInterface;
+use Psalm\Plugin\EventHandler\Event\AfterStatementAnalysisEvent;
 use Psalm\Tests\TestCase;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
+
+use function count;
+use function get_class;
 
 use const DIRECTORY_SEPARATOR;
 
@@ -16,6 +23,59 @@ final class FunctionTemplateTest extends TestCase
     use InvalidCodeAnalysisTestTrait;
     use ValidCodeAnalysisTestTrait;
 
+    public function testReturnedLiteralKeepsItsOwnTypeAndProvenance(): void
+    {
+        $hook = new class implements AfterStatementAnalysisInterface {
+            /** @var array<int, array{string, int}> line => type of the returned literal, number of its parent nodes */
+            public static array $literals = [];
+
+            #[Override]
+            public static function afterStatementAnalysis(AfterStatementAnalysisEvent $event): ?bool
+            {
+                $stmt = $event->getStmt();
+
+                if ($stmt instanceof Return_ && $stmt->expr !== null) {
+                    $type = $event->getStatementsSource()->getNodeTypeProvider()->getType($stmt->expr);
+
+                    if ($type !== null) {
+                        self::$literals[$stmt->getStartLine()] = [$type->getId(), count($type->parent_nodes)];
+                    }
+                }
+
+                return null;
+            }
+        };
+
+        $hook::$literals = [];
+        $this->project_analyzer->trackTaintedInputs();
+        $this->project_analyzer->getCodebase()->config->eventDispatcher->after_statement_checks[] = get_class($hook);
+
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                /**
+                 * @template T of int
+                 * @param T $a
+                 * @return T
+                 */
+                function run($a): int {
+                    if ($a === 15) {
+                        return 15;
+                    }
+
+                    return $a;
+                }',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+
+        // the returned literal is still the literal `15`, not the template variable it is returned as (whose flow it
+        // would take over); the variable on the other return is the variable
+        $this->assertSame([9 => ['15', 0], 12 => ['T:fn-run as int', 1]], $hook::$literals);
+    }
+
     /**
      * @psalm-pure
      */
@@ -23,6 +83,137 @@ final class FunctionTemplateTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'closureOfATemplateWithANullDefaultOfTheSameTemplate' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class Collection {
+                        /**
+                         * @param Closure(T,mixed):bool|null $callback
+                         * @param T|null $default
+                         * @return T|null
+                         */
+                        public function last(?Closure $callback = null, $default = null) {
+                            return $default;
+                        }
+                    }
+
+                    /** @var Collection<array> $collection */
+                    $collection = new Collection();
+                    $collection->last(function (array $_item): bool {
+                        return true;
+                    });',
+            ],
+            'argumentThatIsAnAtomOfAUnionWithATemplateStillBindsIt' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @param T|string $x
+                     * @return T
+                     */
+                    function withString($x) { throw new Exception(); }
+
+                    /**
+                     * @template T
+                     * @param T|array<int, string> $x
+                     * @return T
+                     */
+                    function withArray($x) { throw new Exception(); }
+
+                    /**
+                     * @template T
+                     * @param T|1 $x
+                     * @return T
+                     */
+                    function withLiteral($x) { throw new Exception(); }
+
+                    /** @param array<int, string> $arr */
+                    function check(string $s, array $arr): void {
+                        $a = withString($s);
+                        $b = withArray($arr);
+                        $c = withLiteral(1);
+
+                        /** @psalm-check-type-exact $a = string */
+                        /** @psalm-check-type-exact $b = array<int, string> */
+                        /** @psalm-check-type-exact $c = 1 */
+                        echo 1;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'defaultNullOfATemplateOrNullParamDoesNotBoundTheTemplate' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @param Closure(T):void $callback
+                     * @param T|null $default
+                     */
+                    function withDefault(Closure $callback, $default = null): void {}
+
+                    /**
+                     * @template T
+                     * @param T|null $value
+                     * @return T
+                     */
+                    function identity($value) {
+                        return $value;
+                    }
+
+                    withDefault(function (array $_item): void {});
+                    $null = identity(null);
+                    $one = identity(1);',
+                'assertions' => [
+                    '$null===' => 'null',
+                    '$one===' => '1',
+                ],
+            ],
+            'classStringOfAFinalClassKeepsItsTypeWhereTheValueIsNotItsClassConstant' => [
+                'code' => '<?php
+                    final class Foo {}
+
+                    /** @var class-string<Foo> $class */
+                    $class = (string) getenv("CLASS");
+
+                    // class names are case-insensitive: `foo` is a class-string<Foo>
+                    $inner = $class !== Foo::class ? $class : null;',
+                'assertions' => [
+                    '$inner===' => 'class-string<Foo>|null',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'literalReturnedWhereATemplateVariableIsIdenticalToIt' => [
+                'code' => '<?php
+                    /**
+                     * @template T of int
+                     * @param T $a
+                     * @return T
+                     */
+                    function run($a): int {
+                        if ($a === 15) {
+                            return 15;
+                        }
+
+                        return $a;
+                    }',
+            ],
+            'literalReturnedForTheTemplateOfTheReturnTypeWhenAnotherOneIsIdenticalToItToo' => [
+                'code' => '<?php
+                    /**
+                     * @template T of int
+                     * @template U of int
+                     * @param U $a
+                     * @param T $b
+                     * @return T
+                     */
+                    function run($a, $b): int {
+                        if ($a === 15 && $b === 15) {
+                            return 15;
+                        }
+
+                        return $b;
+                    }',
+            ],
             'typePredicatesOnATemplateBoundedByATemplate' => [
                 'code' => '<?php
                     /**
@@ -1727,6 +1918,191 @@ final class FunctionTemplateTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'inferTemplateFromCallableReturningNullableList' => [
+                'code' => '<?php
+                    /**
+                     * @template TNode
+                     * @param callable(): (list<TNode>|null) $fetch
+                     * @return list<TNode>
+                     */
+                    function nullable(callable $fetch): array {
+                        return $fetch() ?? [];
+                    }
+
+                    /** @var list<int>|null $ints */
+                    $ints = null;
+                    $a = nullable(fn () => $ints);',
+                'assertions' => [
+                    '$a' => 'list<int>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'inferTemplateFromNullableListParam' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @param list<T>|null $items
+                     * @return list<T>
+                     */
+                    function fromNullable($items): array {
+                        return $items ?? [];
+                    }
+
+                    /** @var list<int>|null $ints */
+                    $ints = null;
+                    $a = fromNullable($ints);',
+                'assertions' => [
+                    '$a' => 'list<int>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'inferTemplateFromListOrFalseParam' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @param list<T>|false $items
+                     * @return list<T>
+                     */
+                    function fromFalsable($items): array {
+                        return $items === false ? [] : $items;
+                    }
+
+                    /** @var list<string>|false $strings */
+                    $strings = false;
+                    $a = fromFalsable($strings);',
+                'assertions' => [
+                    '$a' => 'list<string>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'inferTemplateFromArrayOrFalseParam' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @param array<T>|false $items
+                     * @return list<T>
+                     */
+                    function fromFalsableArray($items): array {
+                        return $items === false ? [] : array_values($items);
+                    }
+
+                    /** @var array<string, int>|false $map */
+                    $map = false;
+                    $a = fromFalsableArray($map);',
+                'assertions' => [
+                    '$a' => 'list<int>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'inferTemplateFromNullableListInConstructor' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     */
+                    final class Coll {
+                        /**
+                         * @param list<T>|null $items
+                         */
+                        public function __construct(public ?array $items = null) {}
+                    }
+
+                    /** @var list<int>|null $ints */
+                    $ints = null;
+                    $a = new Coll($ints);',
+                'assertions' => [
+                    '$a' => 'Coll<int>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'subtractArrayFromTemplateUnionWithArray' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @param T|array $var
+                     * @return T
+                     */
+                    function notArray($var) {
+                        if (\is_array($var)) {
+                            throw new \InvalidArgumentException("");
+                        }
+
+                        return $var;
+                    }
+
+                    /** @var array<string>|int $in */
+                    $in = 1;
+                    $a = notArray($in);',
+                'assertions' => [
+                    '$a' => 'int',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'inferTemplateFromTemplateOrListUnion' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @param T|list<T> $var
+                     * @return list<T>
+                     */
+                    function toList($var): array {
+                        return [];
+                    }
+
+                    /** @var int|list<int> $in */
+                    $in = 1;
+                    $a = toList($in);',
+                'assertions' => [
+                    '$a' => 'list<int>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'keepScalarBoundsForTemplateOrListUnion' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @param T|list<T> $var
+                     * @return list<T>
+                     */
+                    function toList($var): array {
+                        return [];
+                    }
+
+                    /** @var int|string|list<int> $in */
+                    $in = 1;
+                    $a = toList($in);',
+                'assertions' => [
+                    '$a' => 'list<int|string>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'keepScalarBoundsForTemplateOrKeyedArrayUnion' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @param T|array<string, T> $var
+                     * @return list<T>
+                     */
+                    function toList($var): array {
+                        return [];
+                    }
+
+                    /** @var int|string|array<string, int> $in */
+                    $in = 1;
+                    $a = toList($in);',
+                'assertions' => [
+                    '$a' => 'list<int|string>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'templateChildClass' => [
                 'code' => '<?php
                     /** @template T */
@@ -2565,6 +2941,307 @@ final class FunctionTemplateTest extends TestCase
                     }',
                 'assertions' => [],
             ],
+            'templateOrStringIsNotBoundToALiteralString' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @param T|string $arg
+                     * @return T
+                     */
+                    function notString($arg) {
+                        if (is_string($arg)) {
+                            throw new Exception();
+                        }
+
+                        return $arg;
+                    }
+
+                    $foo = random_int(0, 1) ? "foobar" : [];
+                    $bar = notString($foo);',
+                'assertions' => [
+                    '$bar===' => 'array<never, never>',
+                ],
+            ],
+            'templateOrIntIsNotBoundToALiteralInt' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @param T|int $arg
+                     * @return T
+                     */
+                    function notInt($arg) { throw new Exception(); }
+
+                    $r = notInt(random_int(0, 1) ? 5 : "x");',
+                'assertions' => [
+                    '$r===' => "'x'",
+                ],
+            ],
+            'templateOrStringStillTakesTheOtherTypesOfTheArgument' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @param T|string $arg
+                     * @return T
+                     */
+                    function notString($arg) { throw new Exception(); }
+
+                    /** @var int|"lit"|null $v */
+                    $v = 1;
+                    $r = notString($v);',
+                'assertions' => [
+                    '$r===' => 'int|null',
+                ],
+            ],
+            'templateOrObjectIsNotBoundToAnObject' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @param T|object $arg
+                     * @return T
+                     */
+                    function notObject($arg) { throw new Exception(); }
+
+                    /** @var stdClass|array<string, int> $a */
+                    $a = new stdClass();
+                    $r = notObject($a);',
+                'assertions' => [
+                    '$r===' => 'array<string, int>',
+                ],
+            ],
+            'templateOrIntIsNotBoundToAnIntLiteralOfAMixedInput' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @param T|int $arg
+                     * @return T
+                     */
+                    function notInt($arg) { throw new Exception(); }
+
+                    /** @var "x"|5 $b */
+                    $b = 5;
+                    $r = notInt($b);
+                    $single = notInt("lit");',
+                'assertions' => [
+                    '$r===' => '\'x\'',
+                    '$single===' => '\'lit\'',
+                ],
+            ],
+            'templateOrStringIsBoundToTheLiteralStringsWhenNothingElseIsLeft' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @param T|string $arg
+                     * @return ArrayObject<int, T>
+                     */
+                    function wrap($arg) { throw new Exception(); }
+
+                    $w = wrap(random_int(0, 1) ? "a" : "b");',
+                'assertions' => [
+                    '$w===' => "ArrayObject<int, 'a'|'b'>",
+                ],
+            ],
+            'stringOrClassStringOfTheTemplateIsBoundByTheClassStringOfTheArgument' => [
+                'code' => '<?php
+                    /**
+                     * @template T of object
+                     * @param string|class-string<T> $abstract
+                     * @return ($abstract is class-string<T> ? T : mixed)
+                     */
+                    function make($abstract) { throw new Exception(); }
+
+                    /** @var ArrayObject|class-string<ArrayObject> $h */
+                    $h = ArrayObject::class;
+                    $r = make($h);',
+                'assertions' => [
+                    '$r===' => 'ArrayObject[write-props]<array-key, mixed>',
+                ],
+                'ignored_issues' => ['PossiblyInvalidArgument'],
+            ],
+            'templateOrIterableOfTheTemplateIsBoundByTheIterablesOfTheArgument' => [
+                'code' => '<?php
+                    /**
+                     * @template TKey of array-key
+                     * @template TValue
+                     * @implements IteratorAggregate<TKey, TValue>
+                     */
+                    final class Coll implements IteratorAggregate {
+                        public function getIterator(): Iterator { throw new Exception(); }
+
+                        /**
+                         * @template TWrapValue
+                         * @param iterable<array-key, TWrapValue>|TWrapValue $value
+                         * @return Coll<array-key, TWrapValue>
+                         */
+                        public static function wrap($value): Coll { throw new Exception(); }
+                    }
+
+                    /** @var Coll<array-key, mixed>|array<array-key, mixed> $in */
+                    $in = [];
+                    $w = Coll::wrap($in);',
+                'assertions' => [
+                    '$w===' => 'Coll<array-key, mixed>',
+                ],
+            ],
+            'methodClassStringTemplateTakesAClassOfItsBound' => [
+                'code' => '<?php
+                    interface Vehicle {}
+                    class Car implements Vehicle {}
+
+                    class Garage {
+                        /**
+                         * @template U of Vehicle
+                         * @param class-string<U> $class
+                         * @return list<U>
+                         */
+                        public function find(string $class): array { return []; }
+                    }
+
+                    $cars = (new Garage)->find(Car::class);',
+                'assertions' => [
+                    '$cars===' => 'list<Car>',
+                ],
+            ],
+            'conditionalReturnOnArgumentOnlyCoercedToTheBoundKeepsTheBoundPartsItContains' => [
+                'code' => '<?php
+                    /** @return array|scalar */
+                    function arrayOrScalar() {
+                        return "";
+                    }
+
+                    /** @return array|int */
+                    function arrayOrInt() {
+                        return [];
+                    }
+
+                    $from_scalar = substr_replace(arrayOrScalar(), "x", 0, 1);
+                    $from_int = substr_replace(arrayOrInt(), "x", 0, 1);',
+                'assertions' => [
+                    '$from_scalar===' => 'array<array-key, string>|string',
+                    '$from_int===' => 'array<array-key, string>',
+                ],
+                'ignored_issues' => ['ArgumentTypeCoercion', 'PossiblyInvalidArgument'],
+            ],
+            'templateBoundByArgumentOnlyCoercedToTheBoundKeepsTheStringItContains' => [
+                'code' => '<?php
+                    /**
+                     * @template T of string|array<string>
+                     * @param T $value
+                     * @return T
+                     */
+                    function identity($value) {
+                        return $value;
+                    }
+
+                    /** @return array|scalar */
+                    function arrayOrScalar() {
+                        return "";
+                    }
+
+                    $value = identity(arrayOrScalar());',
+                'assertions' => [
+                    '$value===' => 'array<array-key, mixed>|string',
+                ],
+                'ignored_issues' => ['ArgumentTypeCoercion'],
+            ],
+            'templateBoundByArgumentOnlyCoercedToTheBoundKeepsTheBoundPartsItContains' => [
+                'code' => '<?php
+                    interface I {}
+                    class A {}
+
+                    /**
+                     * @template T of I|string
+                     * @param T $value
+                     * @return T
+                     */
+                    function identity($value) {
+                        return $value;
+                    }
+
+                    /** @return A|string */
+                    function aOrString() {
+                        return "";
+                    }
+
+                    /** @return object|string */
+                    function objectOrString() {
+                        return "";
+                    }
+
+                    /**
+                     * @template T of int|array
+                     * @param T $value
+                     * @return T
+                     */
+                    function intOrArray($value) {
+                        return $value;
+                    }
+
+                    /** @return float|array */
+                    function floatOrArray() {
+                        return [];
+                    }
+
+                    $from_a = identity(aOrString());
+                    $from_object = identity(objectOrString());
+                    $from_float = intOrArray(floatOrArray());',
+                'assertions' => [
+                    '$from_a===' => 'string',
+                    '$from_object===' => 'I|string',
+                    '$from_float===' => 'array<array-key, mixed>',
+                ],
+                'ignored_issues' => ['ArgumentTypeCoercion', 'PossiblyInvalidArgument', 'InvalidScalarArgument'],
+            ],
+            'templateUpperBoundByCallableParamOnlyCoercedToTheBoundKeepsTheBoundPartsItContains' => [
+                'code' => '<?php
+                    /**
+                     * @template T of string|array<string>
+                     * @param callable(T): void $callback
+                     * @return T
+                     */
+                    function fromCallback(callable $callback) {
+                        throw new Exception();
+                    }
+
+                    /**
+                     * @template T of string|array<string>
+                     * @param T $value
+                     * @param callable(T): void $callback
+                     * @return T
+                     */
+                    function withCallback($value, callable $callback) {
+                        return $value;
+                    }
+
+                    /**
+                     * @param callable(array|scalar): void $callback
+                     * @param string|array<string> $string_or_array
+                     */
+                    function takesArrayOrScalar(callable $callback, string $string, $string_or_array): void {
+                        $from_callback = fromCallback($callback);
+                        /** @psalm-check-type-exact $from_callback = array<array-key, mixed>|string */
+
+                        withCallback($string, $callback);
+                        withCallback($string_or_array, $callback);
+                    }',
+            ],
+            'omittedNullDefaultOfATemplateNoArgumentBindsIsNull' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @param T|null $x
+                     * @return T
+                     */
+                    function f($x = null) {
+                        return $x;
+                    }
+
+                    $a = f();',
+                'assertions' => [
+                    '$a===' => 'null',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
         ];
     }
 
@@ -2575,6 +3252,83 @@ final class FunctionTemplateTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'methodTemplateBoundStillReportsTheClassStringOfANonFinalClassThatWasExcluded' => [
+                'code' => '<?php
+                    interface StampInterface {}
+
+                    class Envelope {}
+
+                    final class Box {
+                        /**
+                         * @template TStamp of StampInterface
+                         * @param class-string<TStamp> $stampFqcn
+                         * @return TStamp|null
+                         */
+                        public function last(string $stampFqcn): ?StampInterface {
+                            return null;
+                        }
+                    }
+
+                    /** @param class-string<Envelope|StampInterface> $class */
+                    function handle(Box $box, string $class): void {
+                        if (Envelope::class !== $class) {
+                            $box->last($class);
+                        }
+                    }',
+                'error_message' => 'PossiblyInvalidArgument',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'otherLiteralReturnedWhereATemplateVariableIsIdenticalToALiteral' => [
+                'code' => '<?php
+                    /**
+                     * @template T of int
+                     * @param T $a
+                     * @return T
+                     */
+                    function run($a): int {
+                        if ($a === 15) {
+                            return 16;
+                        }
+
+                        return $a;
+                    }',
+                'error_message' => 'InvalidReturnStatement',
+            ],
+            'literalReturnedWhereATemplateVariableIsLooselyEqualToIt' => [
+                'code' => '<?php
+                    /**
+                     * @template T of int|string
+                     * @param T $a
+                     * @return T
+                     */
+                    function run($a) {
+                        if ($a == 15) {
+                            return 15;
+                        }
+
+                        return $a;
+                    }',
+                'error_message' => 'InvalidReturnStatement',
+            ],
+            'literalReturnedAsAnotherTemplate' => [
+                'code' => '<?php
+                    /**
+                     * @template T of int
+                     * @template U of int
+                     * @param T $a
+                     * @param U $b
+                     * @return U
+                     */
+                    function run($a, $b) {
+                        if ($a === 15) {
+                            return 15;
+                        }
+
+                        return $b;
+                    }',
+                'error_message' => 'InvalidReturnStatement',
+            ],
             'typePredicateImpossibleForATemplateBoundedByATemplate' => [
                 'code' => '<?php
                     /**
@@ -3281,6 +4035,64 @@ final class FunctionTemplateTest extends TestCase
                         throw new Exception();
                     }',
                 'error_message' => 'UndefinedClass - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:24 - Class, interface or enum named Missing does not exist',
+            ],
+            'methodTemplateBoundAfterTheClassStringOfAFinalClassWasExcluded' => [
+                'code' => '<?php
+                    interface StampInterface {}
+
+                    final class Envelope {
+                        /**
+                         * @template TStamp of StampInterface
+                         * @param class-string<TStamp> $stampFqcn
+                         * @return TStamp|null
+                         */
+                        public function last(string $stampFqcn): ?StampInterface {
+                            return null;
+                        }
+                    }
+
+                    /** @param class-string<Envelope|StampInterface> $class */
+                    function handle(Envelope $envelope, string $class): void {
+                        if (Envelope::class !== $class) {
+                            $envelope->last($class);
+                        }
+                    }',
+                'error_message' => 'PossiblyInvalidArgument',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'methodClassStringTemplateRejectsAClassOutsideItsBound' => [
+                'code' => '<?php
+                    interface Vehicle {}
+
+                    class Garage {
+                        /**
+                         * @template U of Vehicle
+                         * @param class-string<U> $class
+                         * @return list<U>
+                         */
+                        public function find(string $class): array { return []; }
+                    }
+
+                    (new Garage)->find(Countable::class);',
+                'error_message' => 'InvalidArgument',
+            ],
+            'methodOfAGenericClassClassStringTemplateRejectsAClassOutsideItsBound' => [
+                'code' => '<?php
+                    interface Vehicle {}
+
+                    /** @template T */
+                    class Garage {
+                        /**
+                         * @template U of Vehicle
+                         * @param class-string<U> $class
+                         * @return list<U>
+                         */
+                        public function find(string $class): array { return []; }
+                    }
+
+                    (new Garage)->find(Countable::class);',
+                'error_message' => 'InvalidArgument',
             ],
         ];
     }

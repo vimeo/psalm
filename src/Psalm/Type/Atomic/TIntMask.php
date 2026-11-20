@@ -17,7 +17,7 @@ use function substr;
  */
 final class TIntMask extends TInt
 {
-    /** @param non-empty-array<TLiteralInt|TClassConstant> $values */
+    /** @param non-empty-array<TLiteralInt|TClassConstant|TGlobalConstant> $values */
     public function __construct(public array $values, bool $from_docblock = false)
     {
         parent::__construct($from_docblock);
@@ -77,5 +77,14 @@ final class TIntMask extends TInt
     public function canBeFullyExpressedInPhp(int $analysis_php_version_id): bool
     {
         return false;
+    }
+
+    /**
+     * @psalm-pure
+     */
+    #[Override]
+    protected function getChildNodeKeys(): array
+    {
+        return ['values'];
     }
 }

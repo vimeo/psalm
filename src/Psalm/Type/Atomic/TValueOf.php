@@ -115,6 +115,7 @@ final class TValueOf extends Atomic
                 && !$type instanceof TKeyedArray
                 && !$type instanceof TPropertiesOf
                 && !$type instanceof TNamedObject
+                && !$type instanceof TTypeAlias
             ) {
                 return false;
             }

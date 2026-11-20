@@ -34,6 +34,7 @@ use Psalm\Tests\Config\Plugin\TestPluginIssueDefaultLevel;
 use Psalm\Tests\DeferredAnalyzerTestCase;
 use Psalm\Tests\Internal\Provider\FakeParserCacheProvider;
 use Psalm\Tests\TestConfig;
+use RuntimeException;
 use Throwable;
 use UnexpectedValueException;
 
@@ -1361,6 +1362,34 @@ final class ConfigTest extends DeferredAnalyzerTestCase
         );
     }
 
+    #[DataProvider('provideInvalidMinTypeCoverage')]
+    public function testInvalidMinTypeCoverageIsAConfigError(string $min_type_coverage): void
+    {
+        $this->expectException(ConfigException::class);
+        $this->expectExceptionMessage("attribute 'minTypeCoverage'");
+        Config::loadFromXML(
+            dirname(__DIR__, 2),
+            '<?xml version="1.0"?>
+            <psalm minTypeCoverage="' . $min_type_coverage . '">
+                <projectFiles>
+                    <directory name="src" />
+                </projectFiles>
+            </psalm>',
+        );
+    }
+
+    /**
+     * @return iterable<string, array{string}>
+     * @psalm-pure
+     */
+    public static function provideInvalidMinTypeCoverage(): iterable
+    {
+        yield 'above 100' => ['100.01'];
+        yield 'three decimals' => ['95.555'];
+        yield 'three decimals with a trailing zero' => ['95.500'];
+        yield 'whitespace' => [' 95'];
+    }
+
     public function testImpossibleIssue(): void
     {
         $this->expectExceptionMessage('This element is not expected');
@@ -1409,6 +1438,41 @@ final class ConfigTest extends DeferredAnalyzerTestCase
                 $a = new MyMockClass();
                 $a->foo($b = 5);
                 echo $b;',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+    }
+
+    public function testProtobufExtensionStubIsLoadedWhenEnabled(): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__, 2),
+                '<?xml version="1.0"?>
+                <psalm>
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+                    <enableExtensions>
+                        <extension name="protobuf"/>
+                    </enableExtensions>
+                </psalm>',
+            ),
+        );
+
+        $this->project_analyzer->setPhpVersion('8.1', 'tests');
+        $config = $this->project_analyzer->getConfig();
+        $config->visitStubFiles($this->project_analyzer->getCodebase());
+        $this->assertContains((string) realpath('stubs/extensions/protobuf.phpstub'), $config->internal_stubs);
+
+        $file_path = (string) getcwd() . '/src/somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                function seconds(): int|string {
+                    return (new \\Google\\Protobuf\\Timestamp())->setSeconds(0)->getSeconds();
+                }',
         );
 
         $this->analyzeFile($file_path, new Context());
@@ -1738,7 +1802,10 @@ final class ConfigTest extends DeferredAnalyzerTestCase
     {
         yield 'a method of a stub, ignored' => ['\\DateTimeImmutable::createFromFormat("Y-m-d", $date)', true, false];
         yield 'a method of a stub, reported' => ['\\DateTimeImmutable::createFromFormat("Y-m-d", $date)', false, true];
-        yield 'a method of the call map, ignored' => ['\\DateTime::createFromFormat("Y-m-d", $date)', true, false];
+        yield 'a method of a mutable class, ignored' => ['\\DateTime::createFromFormat("Y-m-d", $date)', true, false];
+        yield 'a method of a mutable class, reported' => ['\\DateTime::createFromFormat("Y-m-d", $date)', false, true];
+        yield 'a method of the call map, ignored' => ['(new \\DateTime())->modify($date)', true, false];
+        yield 'a method of the call map, not reported either' => ['(new \\DateTime())->modify($date)', false, false];
         yield 'a function, ignored' => ['date_create_from_format("Y-m-d", $date)', true, false];
         yield 'a function, reported' => ['date_create_from_format("Y-m-d", $date)', false, true];
     }
@@ -2579,6 +2646,24 @@ final class ConfigTest extends DeferredAnalyzerTestCase
                 '<psalm></psalm>',
                 ['Psalm\SymfonyPsalmPlugin\Plugin'],
             ],
+            'requiredDoctrineOrm' => [
+                ['composer.json' => '{"require": {"doctrine/orm": "^3"}}'],
+                '<psalm></psalm>',
+                ['Weirdan\DoctrinePsalmPlugin\Plugin'],
+            ],
+            'requiredDoctrineDbal' => [
+                ['composer.json' => '{"require": {"doctrine/dbal": "^4"}}'],
+                '<psalm></psalm>',
+                ['Weirdan\DoctrinePsalmPlugin\Plugin'],
+            ],
+            'requiredSeveralDoctrineLibraries' => [
+                [
+                    'composer.json' => '{"require": {"doctrine/orm": "^3", "doctrine/dbal": "^4", '
+                        . '"doctrine/collections": "^2", "doctrine/persistence": "^4"}}',
+                ],
+                '<psalm></psalm>',
+                ['Weirdan\DoctrinePsalmPlugin\Plugin'],
+            ],
             'requiredLaravel' => [
                 ['composer.json' => '{"require": {"laravel/framework": "^12"}}'],
                 '<psalm></psalm>',
@@ -2622,7 +2707,7 @@ final class ConfigTest extends DeferredAnalyzerTestCase
                 [],
             ],
             'requiredOtherLibraries' => [
-                ['composer.json' => '{"require": {"symfony/console": "^7", "doctrine/orm": "^3"}}'],
+                ['composer.json' => '{"require": {"symfony/console": "^7", "guzzlehttp/guzzle": "^7"}}'],
                 '<psalm></psalm>',
                 [],
             ],
@@ -3368,6 +3453,34 @@ final class ConfigTest extends DeferredAnalyzerTestCase
 
         $this->assertSame('zstd', $config->compressor);
         $this->assertSame([], $config->config_warnings);
+    }
+
+    public function testRemoveCacheDirectoryToleratesAFileWrittenByAnotherProcess(): void
+    {
+        $dir = sys_get_temp_dir() . DIRECTORY_SEPARATOR . uniqid('psalm-cache-removal-', true);
+        mkdir($dir . DIRECTORY_SEPARATOR . 'classlike_cache', 0777, true);
+        file_put_contents($dir . DIRECTORY_SEPARATOR . 'classlike_cache' . DIRECTORY_SEPARATOR . 'cached', 'x');
+
+        // as in the CLI, where PHP warnings are turned into exceptions
+        set_error_handler(static function (int $severity, string $message): never {
+            throw new RuntimeException('PHP Error: ' . $message);
+        });
+
+        ConcurrentWriterStreamWrapper::register();
+
+        try {
+            // while this removes the cache, another Psalm process (a second language server on the same project)
+            // writes a file into the directory, which can then no longer be removed
+            Config::removeCacheDirectory(ConcurrentWriterStreamWrapper::PROTOCOL . '://' . $dir);
+
+            $this->assertFileDoesNotExist($dir . DIRECTORY_SEPARATOR . 'classlike_cache' . DIRECTORY_SEPARATOR . 'cached');
+        } finally {
+            ConcurrentWriterStreamWrapper::unregister();
+            restore_error_handler();
+            Config::removeCacheDirectory($dir);
+        }
+
+        $this->assertDirectoryDoesNotExist($dir);
     }
 
     /**

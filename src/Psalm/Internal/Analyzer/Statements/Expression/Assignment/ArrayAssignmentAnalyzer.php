@@ -48,9 +48,11 @@ use Psalm\Type\Atomic\TTemplateIndexedAccess;
 use Psalm\Type\Atomic\TTemplateKeyOf;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTemplateParamClass;
+use Psalm\Type\Reconciler;
 use Psalm\Type\Union;
 
 use function array_fill;
+use function array_key_last;
 use function array_keys;
 use function array_pop;
 use function array_reverse;
@@ -65,9 +67,9 @@ use function preg_match;
 use function sort;
 use function spl_object_id;
 use function str_contains;
+use function str_ends_with;
 use function str_starts_with;
 use function strlen;
-use function strpos;
 use function substr;
 
 /**
@@ -158,12 +160,47 @@ final class ArrayAssignmentAnalyzer
         $root_type = $statements_analyzer->node_data->getType($root_array_expr) ?? Type::getMixed();
 
         if ($root_type->hasMixed()) {
+            $vars_before_read = $context->vars_in_scope;
+
+            // read the chain as PHP does for a write: missing offsets along the arrays are created
+            $was_inside_by_ref_offset = $context->inside_by_ref_offset;
+            $context->inside_by_ref_offset = true;
+
             ExpressionAnalyzer::analyze(
                 $statements_analyzer,
                 $stmt->var,
                 $context,
                 true,
             );
+
+            $context->inside_by_ref_offset = $was_inside_by_ref_offset;
+
+            // the read creates the missing offsets as null, the write below creates them as arrays
+            foreach (array_slice($child_stmts, 1) as $child_stmt) {
+                $child_var_id = ExpressionIdentifier::getExtendedVarId(
+                    $child_stmt,
+                    $statements_analyzer->getFQCLN(),
+                    $statements_analyzer,
+                );
+
+                if ($child_var_id === null
+                    || isset($vars_before_read[$child_var_id])
+                    || !isset($context->vars_in_scope[$child_var_id])
+                    || !$context->vars_in_scope[$child_var_id]->hasType('null')
+                    // an object isn't replaced by the array the write creates from null
+                    || $context->vars_in_scope[$child_var_id]->hasObjectType()
+                ) {
+                    continue;
+                }
+
+                if ($context->vars_in_scope[$child_var_id]->isNull()) {
+                    unset($context->vars_in_scope[$child_var_id]);
+                } else {
+                    $offset_type = $context->vars_in_scope[$child_var_id]->getBuilder();
+                    $offset_type->removeType('null');
+                    $context->vars_in_scope[$child_var_id] = $offset_type->freeze();
+                }
+            }
 
             if ($stmt->dim) {
                 ExpressionAnalyzer::analyze(
@@ -285,6 +322,7 @@ final class ArrayAssignmentAnalyzer
                     $root_type,
                     $context,
                     false,
+                    true,
                 );
 
                 self::trackPropertyElementImpurity($statements_analyzer, $root_array_expr, $context);
@@ -318,6 +356,25 @@ final class ArrayAssignmentAnalyzer
                 && !$root_type->possibly_undefined_from_try
                     ? $root_type->setPossiblyUndefined(false)
                     : $root_type;
+            $context->writeToReferencesPossiblyBound($root_var_id, $root_type, $codebase);
+
+            if ($context->references_in_scope) {
+                $location = new CodeLocation($statements_analyzer->getSource(), $stmt);
+
+                self::updateArraysHoldingBoundItem($statements_analyzer, $context, $root_var_id, $location);
+
+                foreach ($child_stmts as $child_stmt) {
+                    $child_var_id = ExpressionIdentifier::getExtendedVarId(
+                        $child_stmt,
+                        $statements_analyzer->getFQCLN(),
+                        $statements_analyzer,
+                    );
+
+                    if ($child_var_id !== null) {
+                        self::updateArraysHoldingBoundItem($statements_analyzer, $context, $child_var_id, $location);
+                    }
+                }
+            }
         }
 
         if ($root_array_expr instanceof PhpParser\Node\Expr\MethodCall
@@ -337,6 +394,227 @@ final class ArrayAssignmentAnalyzer
         }
 
         return null;
+    }
+
+    /**
+     * What is written to a variable bound by reference to array items (`$r = &$a['k']`, `$a['k'] = &$r`) is written
+     * to the arrays holding those items: their types are rebuilt from its new type
+     */
+    public static function updateArraysHoldingBoundItem(
+        StatementsAnalyzer $statements_analyzer,
+        Context $context,
+        string $var_id,
+        CodeLocation $location,
+    ): void {
+        if (!isset($context->references_in_scope[$var_id]) && !($context->referenced_counts[$var_id] ?? 0)) {
+            return;
+        }
+
+        $referenced_id = self::getReferencedVarId($context, $var_id);
+
+        foreach ([$referenced_id => $referenced_id] + $context->references_in_scope as $item_id => $_) {
+            if ($item_id !== $var_id
+                && str_ends_with($item_id, ']')
+                && isset($context->vars_in_scope[$item_id])
+                && self::getReferencedVarId($context, $item_id) === $referenced_id
+            ) {
+                self::updateArraysHoldingItem($statements_analyzer, $context, $item_id, $location);
+            }
+        }
+    }
+
+    /**
+     * The variable the reference chain from $var_id ends at
+     *
+     * @psalm-mutation-free
+     */
+    private static function getReferencedVarId(Context $context, string $var_id): string
+    {
+        $seen = [];
+
+        while (isset($context->references_in_scope[$var_id]) && !isset($seen[$var_id])) {
+            $seen[$var_id] = true;
+            $var_id = $context->references_in_scope[$var_id];
+        }
+
+        return $var_id;
+    }
+
+    private static function updateArraysHoldingItem(
+        StatementsAnalyzer $statements_analyzer,
+        Context $context,
+        string $item_id,
+        CodeLocation $location,
+    ): void {
+        $codebase = $statements_analyzer->getCodebase();
+        $item_type = $context->vars_in_scope[$item_id];
+        $key_parts = Reconciler::breakUpPathIntoParts($item_id);
+
+        while (count($key_parts) > 3 && end($key_parts) === ']') {
+            array_pop($key_parts);
+            $key = array_pop($key_parts);
+            array_pop($key_parts);
+            $array_id = implode('', $key_parts);
+
+            if ($key === null || !isset($context->vars_in_scope[$array_id])) {
+                return;
+            }
+
+            $array_type = $context->vars_in_scope[$array_id];
+            $holds_mixed = $item_type->hasMixed();
+
+            foreach ($array_type->getAtomicTypes() as $atomic_type) {
+                if ($atomic_type instanceof TKeyedArray) {
+                    $holds_mixed = $holds_mixed || $atomic_type->getGenericValueType()->hasMixed();
+                } elseif ($atomic_type instanceof TArray) {
+                    $holds_mixed = $holds_mixed || $atomic_type->type_params[1]->hasMixed();
+                } else {
+                    return;
+                }
+            }
+
+            $key_values = self::getKeyValuesOfOffset($context, $key);
+
+            if (count($key_values) === 1) {
+                $array_type = self::setItemOfKey($codebase, $array_type, $key_values[0], $item_type);
+            } elseif ($key_values) {
+                $array_type = self::updateTypeWithKeyValues($codebase, $array_type, $item_type, $key_values);
+            } else {
+                // the key the item is under, as an assignment to it has it
+                $key_type = Type::getArrayKey();
+
+                if ($key[0] === '$'
+                    && isset($context->vars_in_scope[$key])
+                    && !$context->vars_in_scope[$key]->hasMixed()
+                ) {
+                    $key_type = $context->vars_in_scope[$key];
+
+                    // PHP takes null as the empty string
+                    if ($key_type->isNullable()) {
+                        $key_type = $key_type->getBuilder();
+                        $key_type->removeType('null');
+                        $key_type = $key_type->addType(Type::getAtomicStringFromLiteral(''))->freeze();
+                    }
+
+                    $key_type = ArrayFetchAnalyzer::castOffsetTypeOfAWrite(
+                        ArrayFetchAnalyzer::replaceOffsetTypeWithInts($key_type),
+                    );
+                }
+
+                // as for an assignment, an item under any of the keys that may be anything is mixed
+                $array_type = Type::combineUnionTypes(
+                    $array_type,
+                    new Union([new TNonEmptyArray([$key_type, $holds_mixed ? Type::getMixed() : $item_type])]),
+                    $codebase,
+                );
+            }
+
+            if ($graph = $statements_analyzer->getDataFlowGraphWithSuppressed()) {
+                // the array holds what was written under the key, as for an assignment of the item
+                $array_node = DataFlowNode::getForAssignment($array_id . ' through ' . $item_id, $location);
+                $graph->addNode($array_node);
+
+                $old_array_type = $context->vars_in_scope[$array_id];
+                $copy_path_type = count($key_values) === 1
+                    ? self::getOverwritePathType($old_array_type, $key_values[0])
+                    : '=';
+
+                foreach ($old_array_type->parent_nodes as $old_array_node) {
+                    $graph->addPath($old_array_node, $array_node, $copy_path_type);
+                }
+
+                foreach ($item_type->parent_nodes as $item_node) {
+                    if (count($key_values) > 1) {
+                        self::taintAssignmentUnderKeys($graph, $item_node, $array_node, $key_values, $location, 0);
+                    } else {
+                        $graph->addPath(
+                            $item_node,
+                            $array_node,
+                            $key_values
+                                ? 'arrayvalue-assignment-\'' . $key_values[0]->value . '\''
+                                : 'arrayvalue-assignment',
+                        );
+                    }
+                }
+
+                $array_type = $array_type->setParentNodes([$array_node->id => $array_node]);
+            }
+
+            $context->vars_in_scope[$array_id] = $array_type;
+            $item_type = $array_type;
+        }
+    }
+
+    /**
+     * The array with $item_type under the key, which it holds whether it had it before or not, as an assignment to
+     * the item leaves it
+     */
+    private static function setItemOfKey(
+        Codebase $codebase,
+        Union $array_type,
+        TLiteralInt|TLiteralString $key_value,
+        Union $item_type,
+    ): Union {
+        $key = $key_value->value;
+        $item_type = $item_type->setPossiblyUndefined(false);
+        $atomic_types = [];
+
+        foreach ($array_type->getAtomicTypes() as $atomic_type) {
+            if ($atomic_type instanceof TKeyedArray) {
+                if ($atomic_type->is_list && !isset($atomic_type->properties[$key])) {
+                    // which keys the list holds then depends on the ones before
+                    return self::updateTypeWithKeyValues($codebase, $array_type, $item_type, [$key_value]);
+                }
+
+                $properties = $atomic_type->properties;
+                $properties[$key] = $item_type;
+                $atomic_types[] = $atomic_type->setProperties($properties);
+            } elseif ($atomic_type instanceof TArray) {
+                $atomic_types[] = TKeyedArray::make(
+                    [$key => $item_type],
+                    null,
+                    $atomic_type->isEmptyArray() ? null : $atomic_type->type_params,
+                );
+            } else {
+                return self::updateTypeWithKeyValues($codebase, $array_type, $item_type, [$key_value]);
+            }
+        }
+
+        return (new Union($atomic_types))->setParentNodes($array_type->parent_nodes);
+    }
+
+    /**
+     * The literal keys the offset of a var id (`'k'`, `0`, `$k`) can be, or none when one of them isn't known
+     *
+     * @return list<TLiteralInt|TLiteralString>
+     */
+    private static function getKeyValuesOfOffset(Context $context, string $offset): array
+    {
+        if ($offset[0] === '\'' || $offset[0] === '"') {
+            $key_value = Type::getAtomicStringFromLiteral(ExpressionIdentifier::unquoteOffset($offset));
+
+            return $key_value instanceof TLiteralString ? [$key_value] : [];
+        }
+
+        if (preg_match('/^-?[0-9]+$/', $offset) === 1) {
+            return [new TLiteralInt((int) $offset)];
+        }
+
+        if ($offset[0] !== '$' || !isset($context->vars_in_scope[$offset])) {
+            return [];
+        }
+
+        $key_values = [];
+
+        foreach ($context->vars_in_scope[$offset]->getAtomicTypes() as $atomic_type) {
+            if (!$atomic_type instanceof TLiteralInt && !$atomic_type instanceof TLiteralString) {
+                return [];
+            }
+
+            $key_values[] = $atomic_type;
+        }
+
+        return count($key_values) <= self::MAX_KEY_VALUES ? $key_values : [];
     }
 
     /**
@@ -978,7 +1256,9 @@ final class ArrayAssignmentAnalyzer
                     }
                 }
 
-                $array_atomic_key_type = ArrayFetchAnalyzer::replaceOffsetTypeWithInts($key_type);
+                $array_atomic_key_type = ArrayFetchAnalyzer::castOffsetTypeOfAWrite(
+                    ArrayFetchAnalyzer::replaceOffsetTypeWithInts($key_type),
+                );
             } else {
                 $array_atomic_key_type = Type::getArrayKey();
             }
@@ -1063,6 +1343,18 @@ final class ArrayAssignmentAnalyzer
                     && $atomic_root_type_array->fallback_params === null
                 ) {
                     $array_atomic_type = $atomic_root_type_array;
+
+                    // the item an append in the middle of a nested write added holds nothing yet: it is the value
+                    $last_item_key = array_key_last($atomic_root_type_array->properties);
+
+                    if ($array_atomic_type_list !== null
+                        && $atomic_root_type_array->properties[$last_item_key]->isNever()
+                    ) {
+                        $array_atomic_type = $atomic_root_type_array->setProperties([
+                            ...$atomic_root_type_array->properties,
+                            $last_item_key => $array_atomic_type_list,
+                        ]);
+                    }
                 } elseif ($atomic_root_type_array instanceof TNonEmptyArray
                     || ($atomic_root_type_array instanceof TKeyedArray
                         && $atomic_root_type_array->is_list
@@ -1101,27 +1393,12 @@ final class ArrayAssignmentAnalyzer
                     }
                 } elseif ($atomic_root_type_array instanceof TKeyedArray
                     && $atomic_root_type_array->fallback_params === null
+                    && $array_atomic_type_array
                 ) {
-                    if ($array_atomic_type_array) {
-                        $array_atomic_type = new TNonEmptyArray(
-                            $array_atomic_type_array,
-                            count($atomic_root_type_array->properties),
-                        );
-                    } else {
-                        assert($array_atomic_type_list !== null);
-                        $array_atomic_type = array_fill(
-                            $atomic_root_type_array->getMinCount(),
-                            count($atomic_root_type_array->properties)-1,
-                            $array_atomic_type_list,
-                        );
-                        assert(count($array_atomic_type) > 0);
-                        $array_atomic_type = TKeyedArray::make(
-                            $array_atomic_type,
-                            null,
-                            null,
-                            true,
-                        );
-                    }
+                    $array_atomic_type = new TNonEmptyArray(
+                        $array_atomic_type_array,
+                        count($atomic_root_type_array->properties),
+                    );
                     $from_countable_object_like = true;
                 } elseif ($array_atomic_type_list) {
                     $array_atomic_type = Type::getNonEmptyListAtomic(
@@ -1255,6 +1532,7 @@ final class ArrayAssignmentAnalyzer
         $existing_offsets = [];
 
         $root_var = end($child_stmts)->var;
+        $previous_dim_is_append = false;
 
         // First go from the root element up, and go as far as we can to figure out what
         // array types there are
@@ -1311,7 +1589,7 @@ final class ArrayAssignmentAnalyzer
             $existing_offsets[spl_object_id($child_stmt)] = isset($context->vars_in_scope[$extended_var_id])
                 && !$context->vars_in_scope[$extended_var_id]->possibly_undefined;
 
-            if ($parent_var_id && isset($context->vars_in_scope[$parent_var_id])) {
+            if ($parent_var_id && !$previous_dim_is_append && isset($context->vars_in_scope[$parent_var_id])) {
                 $array_type = $context->vars_in_scope[$parent_var_id];
                 $statements_analyzer->node_data->setType($child_stmt->var, $array_type);
             }
@@ -1336,6 +1614,11 @@ final class ArrayAssignmentAnalyzer
                     $child_stmt->dim,
                     $child_stmt_dim_type_or_int,
                 );
+            }
+
+            // the element an append creates holds nothing yet
+            if (!$child_stmt->dim && !$is_last) {
+                $child_stmt_type = Type::getNever();
             }
 
             $statements_analyzer->node_data->setType(
@@ -1384,6 +1667,7 @@ final class ArrayAssignmentAnalyzer
             $current_dim = $child_stmt->dim;
 
             $parent_var_id = $extended_var_id;
+            $previous_dim_is_append = !$child_stmt->dim;
         }
 
         if ($root_var_id !== null) {
@@ -1602,7 +1886,8 @@ final class ArrayAssignmentAnalyzer
     /**
      * Forgets what is known about the offsets of an array that the write may overwrite. A known offset at some
      * depth may be overwritten when, at every depth down to it, its key and the written one may be the same:
-     * they are equal, or either isn't a literal. An appended offset is a new one, so no known offset is under it.
+     * they are equal, or either isn't a literal. What is under the written offset is overwritten with it. An appended
+     * offset is a new one, so no known offset is under it.
      *
      * @param list<array{string, bool}|null> $written_offsets each written key with whether it's a literal,
      *     null for an appended one
@@ -1616,6 +1901,7 @@ final class ArrayAssignmentAnalyzer
 
             $position = strlen($root_var_id);
             $is_written_path = true;
+            $is_under_written_offset = true;
 
             foreach ($written_offsets as $written_offset) {
                 if ($written_offset === null) {
@@ -1626,6 +1912,7 @@ final class ArrayAssignmentAnalyzer
                 $key = self::getKeyAt($var_id, $position);
 
                 if ($key === null) {
+                    $is_under_written_offset = false;
                     break;
                 }
 
@@ -1640,7 +1927,7 @@ final class ArrayAssignmentAnalyzer
                 $position += strlen($key);
             }
 
-            if (!$is_written_path) {
+            if (!$is_written_path || ($is_under_written_offset && $position < strlen($var_id))) {
                 $context->remove($var_id, false);
                 $context->removeVarFromConflictingClauses($var_id);
             }
@@ -1663,10 +1950,14 @@ final class ArrayAssignmentAnalyzer
 
         for ($i = $position; $i < $length; $i++) {
             if ($var_id[$i] === "'") {
-                // string literals aren't escaped in var ids, so one ends where a quote closes a key
-                $i = strpos($var_id, "']", $i + 1);
+                // a string literal ends at the first quote that isn't escaped
+                for ($i++; $i < $length && $var_id[$i] !== "'"; $i++) {
+                    if ($var_id[$i] === '\\') {
+                        $i++;
+                    }
+                }
 
-                if ($i === false) {
+                if ($i >= $length) {
                     return null;
                 }
             } elseif ($var_id[$i] === '[') {
@@ -1784,7 +2075,7 @@ final class ArrayAssignmentAnalyzer
             if ($string_to_int !== false) {
                 $var_id_addition = '[' . $string_to_int . ']';
             } else {
-                $var_id_addition = '[\'' . $offset_type->value . '\']';
+                $var_id_addition = '[' . ExpressionIdentifier::quoteOffset($offset_type->value) . ']';
             }
 
             return [$offset_type, $var_id_addition, true];

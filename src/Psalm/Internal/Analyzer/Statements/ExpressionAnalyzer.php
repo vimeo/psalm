@@ -8,6 +8,8 @@ use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Config;
 use Psalm\Context;
+use Psalm\DocComment;
+use Psalm\Exception\DocblockParseException;
 use Psalm\Internal\Analyzer\ClosureAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ArrayAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\AssertionFinder;
@@ -67,6 +69,7 @@ use Psalm\Type\Atomic\TMixed;
 
 use function count;
 use function in_array;
+use function str_contains;
 use function strtolower;
 
 /**
@@ -74,6 +77,11 @@ use function strtolower;
  */
 final class ExpressionAnalyzer
 {
+    /**
+     * The attribute that carries the docblock in front of an argument to the argument's expression
+     */
+    public const ARGUMENT_DOCBLOCK_ATTRIBUTE = 'psalm-argument-docblock';
+
     /**
      * @param bool $assigned_to_reference This is set to true when the expression being analyzed
      *                                    here is being assigned to another variable by reference.
@@ -98,7 +106,15 @@ final class ExpressionAnalyzer
 
         $codebase = $statements_analyzer->getCodebase();
 
-        if (self::handleExpression(
+        $suppressed_issues = $from_stmt === null ? self::addDocblockSuppressions($statements_analyzer, $stmt) : [];
+
+        $if_body_context = $context->if_body_context;
+
+        if ($if_body_context && !self::passesIfBodyContext($stmt, $context->inside_negation)) {
+            $context->if_body_context = null;
+        }
+
+        $handled = self::handleExpression(
             $statements_analyzer,
             $stmt,
             $context,
@@ -107,7 +123,15 @@ final class ExpressionAnalyzer
             $from_stmt,
             $template_result,
             $assigned_to_reference,
-        ) === false) {
+        );
+
+        if ($suppressed_issues) {
+            $statements_analyzer->removeSuppressedIssues($suppressed_issues);
+        }
+
+        $context->if_body_context = $if_body_context;
+
+        if ($handled === false) {
             return false;
         }
 
@@ -187,6 +211,41 @@ final class ExpressionAnalyzer
                 );
             }
         }
+    }
+
+    /**
+     * Whether the operands of an expression of the condition all hold where it does, so that what they assign or
+     * narrow reaches the if body: those of an `&&`, of an `||` under a `!`, of a comparison to `true`, not those of a
+     * `xor`, of a negated `&&` or of a call argument
+     *
+     * @psalm-mutation-free
+     */
+    private static function passesIfBodyContext(PhpParser\Node\Expr $stmt, bool $inside_negation): bool
+    {
+        if ($stmt instanceof PhpParser\Node\Expr\BinaryOp\BooleanAnd
+            || $stmt instanceof PhpParser\Node\Expr\BinaryOp\LogicalAnd
+        ) {
+            return !$inside_negation;
+        }
+
+        if ($stmt instanceof PhpParser\Node\Expr\BinaryOp\Identical
+            || $stmt instanceof PhpParser\Node\Expr\BinaryOp\Equal
+        ) {
+            return self::isTrueConst($stmt->left) || self::isTrueConst($stmt->right);
+        }
+
+        return $stmt instanceof PhpParser\Node\Expr\BooleanNot
+            || $stmt instanceof PhpParser\Node\Expr\BinaryOp\BooleanOr
+            || $stmt instanceof PhpParser\Node\Expr\BinaryOp\LogicalOr;
+    }
+
+    /**
+     * @psalm-mutation-free
+     */
+    private static function isTrueConst(PhpParser\Node\Expr $expr): bool
+    {
+        return $expr instanceof PhpParser\Node\Expr\ConstFetch
+            && strtolower($expr->name->toString()) === 'true';
     }
 
     /**
@@ -405,8 +464,16 @@ final class ExpressionAnalyzer
                     $statements_analyzer->getSuppressedIssues(),
                 );
 
-                // Analyze as if it were a normal assignment and just pretend the reference doesn't exist
-                return self::analyzeAssignment($statements_analyzer, $stmt, $context, $from_stmt);
+                // Analyze as if it were a normal assignment and just pretend the reference doesn't exist, but for the
+                // offset it binds, which PHP creates
+                $was_inside_by_ref_offset = $context->inside_by_ref_offset;
+                $context->inside_by_ref_offset = $stmt->expr instanceof PhpParser\Node\Expr\ArrayDimFetch;
+
+                try {
+                    return self::analyzeAssignment($statements_analyzer, $stmt, $context, $from_stmt);
+                } finally {
+                    $context->inside_by_ref_offset = $was_inside_by_ref_offset;
+                }
             }
 
             return true;
@@ -505,6 +572,62 @@ final class ExpressionAnalyzer
         );
 
         return false;
+    }
+
+    /**
+     * The issues the docblock in front of an argument suppresses while its expression is analysed,
+     * as in `foo(/** @psalm-suppress X *\/ bar())`
+     *
+     * @return array<int, string>
+     */
+    public static function addDocblockSuppressions(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr $stmt,
+    ): array {
+        $docblock = $stmt->getAttribute(self::ARGUMENT_DOCBLOCK_ATTRIBUTE);
+
+        if (!$docblock instanceof PhpParser\Comment\Doc || !str_contains($docblock->getText(), 'psalm-suppress')) {
+            return [];
+        }
+
+        try {
+            $suppressed = DocComment::parsePreservingLength($docblock)->tags['psalm-suppress'] ?? [];
+        } catch (DocblockParseException) {
+            return [];
+        }
+
+        $codebase = $statements_analyzer->getCodebase();
+        $new_issues = [];
+
+        foreach ($suppressed as $offset => $suppress_entry) {
+            foreach (DocComment::parseSuppressList($suppress_entry) as $issue_offset => $issue_type) {
+                $new_issues[$issue_offset + $offset] = $issue_type;
+            }
+        }
+
+        if ($codebase->track_unused_suppressions
+            && (
+                count($new_issues) === 1
+                || !$codebase->config->suppressesIssueType($new_issues, 'UnusedPsalmSuppress')
+            )
+        ) {
+            foreach ($new_issues as $offset => $issue_type) {
+                if ($issue_type === 'InaccessibleMethod') {
+                    continue;
+                }
+
+                IssueBuffer::addUnusedSuppression(
+                    $statements_analyzer->getFilePath(),
+                    $offset,
+                    $issue_type,
+                    $codebase->taint_flow_graph !== null,
+                );
+            }
+        }
+
+        $statements_analyzer->addSuppressedIssues($new_issues);
+
+        return $new_issues;
     }
 
     /**

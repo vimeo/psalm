@@ -4,12 +4,17 @@ declare(strict_types=1);
 
 namespace Psalm\Internal\Analyzer\Statements\Block;
 
+use Closure;
 use Override;
 use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Codebase;
 use Psalm\Context;
+use Psalm\Exception\ComplicatedExpressionException;
 use Psalm\Exception\ScopeAnalysisException;
+use Psalm\Internal\Algebra;
+use Psalm\Internal\Algebra\FormulaGenerator;
+use Psalm\Internal\Analyzer\AlgebraAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
@@ -26,14 +31,19 @@ use Psalm\Type;
 use Psalm\Type\Reconciler;
 use Psalm\Type\Union;
 
+use function array_diff;
 use function array_diff_key;
 use function array_filter;
+use function array_intersect_key;
 use function array_key_first;
 use function array_merge;
 use function array_values;
 use function count;
 use function explode;
 use function in_array;
+use function is_string;
+use function preg_match;
+use function preg_quote;
 use function spl_object_id;
 
 /**
@@ -50,6 +60,8 @@ final class IfConditionalAnalyzer
         int $branch_point,
     ): IfConditionalScope {
         $entry_clauses = [];
+        $condition_context = $outer_context;
+        $negated_phantom_classes_before_cond = $outer_context->negated_phantom_classes;
 
         // used when evaluating elseifs
         if ($if_scope->negated_clauses) {
@@ -165,6 +177,13 @@ final class IfConditionalAnalyzer
         // to $outer_context don't mess with elseif/else blocks
         $post_if_context = clone $outer_context;
 
+        // the condition may have been analysed on a copy of the context it was given
+        $condition_context->phantom_classes += $outer_context->phantom_classes;
+        $condition_context->negated_phantom_classes += $outer_context->negated_phantom_classes;
+
+        // where a negated condition about a class holds, the class is missing
+        $if_context->demoteNegatedPhantomClasses($negated_phantom_classes_before_cond);
+
         if ($internally_applied_if_cond_expr !== $cond
             || $externally_applied_if_cond_expr !== $cond
         ) {
@@ -178,11 +197,37 @@ final class IfConditionalAnalyzer
 
             $if_conditional_context->inside_conditional = true;
 
+            $pre_cond_remove_vars = $if_conditional_context->parent_remove_vars;
+
             if (ExpressionAnalyzer::analyze($statements_analyzer, $cond, $if_conditional_context) === false) {
                 throw new ScopeAnalysisException();
             }
 
             $if_conditional_context->inside_conditional = $was_inside_conditional;
+
+            // the operands analysed only here may be skipped, so what they write or forget may have changed after
+            // the condition
+            $post_if_context->mergeChangesOfPossiblySkippedBranch(
+                $if_conditional_context,
+                $pre_cond_remove_vars,
+                $codebase,
+            );
+            $outer_context->mergeChangesOfPossiblySkippedBranch(
+                $if_conditional_context,
+                $pre_cond_remove_vars,
+                $codebase,
+            );
+
+            // what the operands analysed only here changed is dropped by the analyser of the condition once checked,
+            // and by the scope enclosing an elseif once its body was analysed
+            $outer_context->parent_remove_vars = [
+                ...$outer_context->parent_remove_vars,
+                ...$if_conditional_context->parent_remove_vars,
+            ];
+            $if_context->parent_remove_vars = [
+                ...$if_context->parent_remove_vars,
+                ...$if_conditional_context->parent_remove_vars,
+            ];
 
             /** @var array<string, bool> */
             $more_cond_referenced_var_ids = $if_conditional_context->cond_referenced_var_ids;
@@ -298,6 +343,267 @@ final class IfConditionalAnalyzer
             $assigned_in_conditional_var_ids,
             $entry_clauses,
         );
+    }
+
+    /**
+     * Checks the condition of an if or a ternary against the clauses that held before it, sets the clauses its body
+     * starts with and the clauses and types of its negation
+     *
+     * @param list<Clause> $pre_cond_clauses the clauses of the context before the condition
+     * @param list<string|int> $pre_cond_reconciled_clauses
+     * @param array<string, int> $pre_cond_remove_vars
+     * @param array<string, int> $assigned_in_conditional_var_ids
+     */
+    public static function applyConditionClauses(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr $cond,
+        Context $context,
+        Context $if_context,
+        IfScope $if_scope,
+        Codebase $codebase,
+        array $pre_cond_clauses,
+        array $pre_cond_reconciled_clauses,
+        array $pre_cond_remove_vars,
+        array $assigned_in_conditional_var_ids,
+    ): void {
+        $cond_object_id = spl_object_id($cond);
+
+        [$if_clauses, $get_negated_clauses] = self::getConditionClauses(
+            $statements_analyzer,
+            $cond,
+            $cond_object_id,
+            $if_context,
+            $context,
+            $codebase,
+        );
+
+        $entry_clauses = $context->clauses;
+
+        // what the earlier conditions said of a variable the condition assigns is not true of the new value: the
+        // body does not get those clauses (the paradox check below drops them per operand by itself). The clauses
+        // the condition's own assignments added are about the new value.
+        $cond_added_clauses = self::getClausesAddedByCondition(
+            $cond,
+            $pre_cond_clauses,
+            $entry_clauses,
+        );
+        $body_entry_clauses = [];
+
+        foreach ($entry_clauses as $c) {
+            if (in_array($c, $cond_added_clauses, true)) {
+                $body_entry_clauses[] = $c;
+                continue;
+            }
+
+            foreach ($c->possibilities as $key => $_value) {
+                foreach ($assigned_in_conditional_var_ids as $conditional_assigned_var_id => $_) {
+                    if (preg_match('/^' . preg_quote($conditional_assigned_var_id, '/') . '(\[|-|$)/', $key)) {
+                        $c = new Clause([], $cond_object_id, $cond_object_id, true);
+                        break 2;
+                    }
+                }
+            }
+
+            $body_entry_clauses[] = $c;
+        }
+
+        // the clauses the condition has already reconciled are not established independently of it
+        $already_reconciled_clauses = [
+            ...$if_context->reconciled_expression_clauses,
+            ...array_diff($context->reconciled_expression_clauses, $pre_cond_reconciled_clauses),
+        ];
+
+        // this will see whether any of the clauses in set A conflict with the clauses in set B
+        AlgebraAnalyzer::checkForParadox(
+            $already_reconciled_clauses
+                ? array_values(array_filter(
+                    $entry_clauses,
+                    static fn(Clause $c): bool => !in_array($c->hash, $already_reconciled_clauses, true),
+                ))
+                : $entry_clauses,
+            $if_clauses,
+            $statements_analyzer,
+            $cond,
+            $assigned_in_conditional_var_ids,
+        );
+
+        $context->removeClausesOfVarsChangedSince($pre_cond_remove_vars);
+
+        $if_clauses = Algebra::simplifyCNF($if_clauses);
+
+        $if_context->clauses = $body_entry_clauses
+            ? Algebra::simplifyCNF([...$body_entry_clauses, ...$if_clauses])
+            : $if_clauses;
+
+        if ($if_context->reconciled_expression_clauses) {
+            $reconciled_expression_clauses = $if_context->reconciled_expression_clauses;
+
+            $if_context->clauses = array_values(
+                array_filter(
+                    $if_context->clauses,
+                    static fn(Clause $c): bool => !in_array($c->hash, $reconciled_expression_clauses, true),
+                ),
+            );
+
+            if (count($if_context->clauses) === 1
+                && $if_context->clauses[0]->wedge
+                && !$if_context->clauses[0]->possibilities
+            ) {
+                $if_context->clauses = [];
+                $if_context->reconciled_expression_clauses = [];
+            }
+        }
+
+        try {
+            $if_scope->negated_clauses = $get_negated_clauses();
+        } catch (ComplicatedExpressionException) {
+            $if_scope->negated_clauses = [];
+        }
+
+        $if_scope->negated_types = Algebra::getTruthsFromFormula(
+            Algebra::simplifyCNF(
+                [...$context->clauses, ...$if_scope->negated_clauses],
+            ),
+        );
+    }
+
+    /**
+     * The clauses of the condition, where a clause on an offset or a property of a variable that is mixed in the body
+     * is unknown, and a function returning those of its negation
+     *
+     * @return array{list<Clause>, Closure(): list<Clause>}
+     */
+    private static function getConditionClauses(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr $cond,
+        int $cond_object_id,
+        Context $if_context,
+        Context $context,
+        Codebase $codebase,
+    ): array {
+        // whether each mixed variable may be unset
+        $mixed_vars = [];
+
+        foreach ($if_context->vars_in_scope as $var_id => $type) {
+            if ($type->isMixed() && isset($context->vars_in_scope[$var_id])) {
+                $mixed_vars[$var_id] = $type->possibly_undefined || $type->possibly_undefined_from_try;
+            }
+        }
+
+        $cond_clauses = FormulaGenerator::getFormula(
+            $cond_object_id,
+            $cond_object_id,
+            $cond,
+            $context->self,
+            $statements_analyzer,
+            $codebase,
+        );
+
+        if (count($cond_clauses) > 200) {
+            $cond_clauses = [];
+        }
+
+        $if_clauses = [];
+        foreach ($cond_clauses as $clause) {
+            $mixed_vars = array_diff_key($mixed_vars, $clause->possibilities);
+
+            $if_clauses[] = $clause->forgetItemsOfMixedVars($mixed_vars, $cond_object_id);
+        }
+
+        $get_negated_clauses = static fn(): array => [
+            ...FormulaGenerator::getNegatedFormula(
+                Algebra::simplifyCNF($if_clauses),
+                $cond,
+                $cond_object_id,
+                $context->self,
+                $statements_analyzer,
+                $codebase,
+                true,
+            ),
+            ...FormulaGenerator::getNegatedSetMixedVarClauses(
+                $cond_clauses,
+                $mixed_vars,
+                $cond,
+                $cond_object_id,
+                $context->self,
+                $statements_analyzer,
+                $codebase,
+            ),
+        ];
+
+        return [$if_clauses, $get_negated_clauses];
+    }
+
+    /**
+     * The clauses that analysing the condition added to the context: what its own assignments say of the new values.
+     * A clause of a variable the condition always assigns is new even if an identical one was there before: the
+     * assignment removed the old ones.
+     *
+     * @param list<Clause> $pre_condition_clauses
+     * @param list<Clause> $clauses
+     * @return list<Clause>
+     * @psalm-capabilities read-props
+     */
+    public static function getClausesAddedByCondition(
+        PhpParser\Node\Expr $cond,
+        array $pre_condition_clauses,
+        array $clauses,
+    ): array {
+        $pre_condition_hashes = [];
+
+        foreach ($pre_condition_clauses as $clause) {
+            $pre_condition_hashes[$clause->hash] = true;
+        }
+
+        $always_assigned_var_ids = self::getAlwaysAssignedVarIds($cond);
+
+        return array_values(array_filter(
+            $clauses,
+            static fn(Clause $clause): bool => !isset($pre_condition_hashes[$clause->hash])
+                || array_intersect_key($clause->possibilities, $always_assigned_var_ids) !== [],
+        ));
+    }
+
+    /**
+     * The variables the expression assigns wherever it is evaluated
+     *
+     * @return array<string, true>
+     * @psalm-capabilities read-props
+     */
+    private static function getAlwaysAssignedVarIds(PhpParser\Node\Expr $expr): array
+    {
+        if ($expr instanceof PhpParser\Node\Expr\Assign) {
+            $var_ids = self::getAlwaysAssignedVarIds($expr->expr);
+
+            if ($expr->var instanceof PhpParser\Node\Expr\Variable && is_string($expr->var->name)) {
+                $var_ids['$' . $expr->var->name] = true;
+            }
+
+            return $var_ids;
+        }
+
+        if ($expr instanceof PhpParser\Node\Expr\BooleanNot || $expr instanceof PhpParser\Node\Expr\Cast) {
+            return self::getAlwaysAssignedVarIds($expr->expr);
+        }
+
+        // the right side of these isn't always evaluated
+        if ($expr instanceof PhpParser\Node\Expr\BinaryOp\BooleanAnd
+            || $expr instanceof PhpParser\Node\Expr\BinaryOp\BooleanOr
+            || $expr instanceof PhpParser\Node\Expr\BinaryOp\LogicalAnd
+            || $expr instanceof PhpParser\Node\Expr\BinaryOp\LogicalOr
+            || $expr instanceof PhpParser\Node\Expr\BinaryOp\Coalesce
+        ) {
+            return self::getAlwaysAssignedVarIds($expr->left);
+        }
+
+        if ($expr instanceof PhpParser\Node\Expr\BinaryOp) {
+            return [
+                ...self::getAlwaysAssignedVarIds($expr->left),
+                ...self::getAlwaysAssignedVarIds($expr->right),
+            ];
+        }
+
+        return [];
     }
 
     /**
