@@ -333,10 +333,7 @@ final class FunctionLikeDocblockParser
         );
 
         $info->variadic = isset($parsed_docblock->tags['psalm-variadic']);
-        if (isset($parsed_docblock->tags['psalm-pure'])
-            || isset($parsed_docblock->tags['phpstan-pure'])
-            || isset($parsed_docblock->tags['pure'])
-        ) {
+        if (isset($parsed_docblock->tags['psalm-pure'])) {
             $info->capabilities = Capabilities::NONE;
             $info->has_mutations_annotation = true;
         } elseif (isset($parsed_docblock->tags['psalm-mutation-free'])) {
@@ -360,6 +357,9 @@ final class FunctionLikeDocblockParser
                     $info->capabilities_expressions[] = trim($capabilities_line);
                 }
             }
+        } elseif (isset($parsed_docblock->tags['phpstan-pure']) || isset($parsed_docblock->tags['pure'])) {
+            $info->capabilities = Capabilities::NONE;
+            $info->has_mutations_annotation = true;
         }
 
         if (isset($parsed_docblock->tags['psalm-purity-from-template'])) {
