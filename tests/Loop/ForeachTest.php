@@ -210,6 +210,68 @@ final class ForeachTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'methodCallOnArrayElementSetInLoop' => [
+                'code' => '<?php
+                    final class Box {
+                        public ?Box $next = null;
+
+                        public function merge(Box $other): Box {
+                            return $other;
+                        }
+                    }
+
+                    /** @var array<int, Box> */
+                    $values = [];
+                    $merged = [];
+                    foreach ($values as $key => $value) {
+                        $merged[$key] = isset($merged[$key]) ? $merged[$key]->merge($value) : $value;
+                    }',
+                'assertions' => [
+                    '$merged===' => 'array<int, Box>',
+                ],
+            ],
+            'propertyFetchOnArrayElementSetInLoop' => [
+                'code' => '<?php
+                    final class Box {
+                        public ?Box $next = null;
+
+                        public function merge(Box $other): Box {
+                            return $other;
+                        }
+                    }
+
+                    /** @var array<int, Box> */
+                    $values = [];
+                    $nexts = [];
+                    foreach ($values as $key => $value) {
+                        $nexts[$key] = isset($nexts[$key]) ? $nexts[$key]->next : $value;
+                    }',
+                'assertions' => [
+                    '$nexts===' => 'array<int, Box|null>',
+                ],
+            ],
+            'offsetFetchOnArrayElementSetInLoop' => [
+                'code' => '<?php
+                    final class Box {
+                        public ?Box $next = null;
+
+                        public function merge(Box $other): Box {
+                            return $other;
+                        }
+                    }
+
+                    /** @var array<int, Box> */
+                    $values = [];
+                    /** @var array<int, list<Box>> */
+                    $lists = [];
+                    $firsts = [];
+                    foreach ($lists as $key => $list) {
+                        $firsts[$key] = isset($firsts[$key]) ? $firsts[$key][0] : $list;
+                    }',
+                'assertions' => [
+                    '$firsts===' => 'array<int, Box|list<Box>>',
+                ],
+            ],
             'methodCallOnLoopVariableStartingAsNull' => [
                 'code' => '<?php
                     final class Box {
