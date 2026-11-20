@@ -9,6 +9,7 @@ use Psalm\CodeLocation;
 use Psalm\Codebase;
 use Psalm\Context;
 use Psalm\FileManipulation;
+use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodCallPurityAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodCallReturnTypeFetcher;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
@@ -24,7 +25,6 @@ use Psalm\Internal\Type\TypeCombiner;
 use Psalm\Internal\Type\TypeExpander;
 use Psalm\Internal\Type\TypeVariableTracker;
 use Psalm\Internal\TypeVisitor\TypeVariableResolver;
-use Psalm\Issue\ImpureMethodCall;
 use Psalm\Issue\InvalidCast;
 use Psalm\Issue\PossiblyInvalidCast;
 use Psalm\Issue\RedundantCast;
@@ -32,7 +32,6 @@ use Psalm\Issue\RedundantCastGivenDocblockType;
 use Psalm\Issue\RiskyCast;
 use Psalm\Issue\UnrecognizedExpression;
 use Psalm\IssueBuffer;
-use Psalm\Storage\Capabilities;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\Scalar;
@@ -857,28 +856,6 @@ final class CastAnalyzer
                                 $intersection_method_id,
                                 $self_class,
                             ) ?? Type::getString();
-
-                            $declaring_method_id = $codebase->methods->getDeclaringMethodId($intersection_method_id);
-
-                            if ($declaring_method_id !== null) {
-                                $to_string_storage = $codebase->methods->getStorage($declaring_method_id);
-                                $var_id = ExpressionIdentifier::getExtendedVarId(
-                                    $stmt,
-                                    $statements_analyzer->getFQCLN(),
-                                    $statements_analyzer,
-                                );
-
-                                $statements_analyzer->signalMutation(
-                                    $to_string_storage->capabilities & ~Capabilities::READ_PROPS,
-                                    $context,
-                                    'possibly-mutating method ' . $intersection_type->value . '::__toString',
-                                    ImpureMethodCall::class,
-                                    $stmt,
-                                    $to_string_storage->capabilities,
-                                    false,
-                                    $var_id === '$this' ? $to_string_storage : null,
-                                );
-                            }
                         }
                     }
 
@@ -888,6 +865,14 @@ final class CastAnalyzer
                         $return_types[] = Type::getString();
                     }
                 }
+
+                MethodCallPurityAnalyzer::signalImplicitToStringCall(
+                    $statements_analyzer,
+                    $context,
+                    $stmt,
+                    $atomic_type,
+                    $stmt,
+                );
 
                 if ($return_types) {
                     $castable_types = [
@@ -900,7 +885,20 @@ final class CastAnalyzer
             }
 
             if ($atomic_type instanceof TTemplateParam) {
-                $atomic_types = array_merge($atomic_types, $atomic_type->as->getAtomicTypes());
+                if ($atomic_type->extra_types === []) {
+                    $atomic_types = array_merge($atomic_types, $atomic_type->as->getAtomicTypes());
+                } else {
+                    foreach ($atomic_type->as->getAtomicTypes() as $bound) {
+                        if ($bound instanceof TNamedObject
+                            || $bound instanceof TObjectWithProperties
+                            || $bound instanceof TTemplateParam
+                        ) {
+                            $bound = $bound->setIntersectionTypes($bound->extra_types + $atomic_type->extra_types);
+                        }
+
+                        $atomic_types[] = $bound;
+                    }
+                }
 
                 continue;
             }

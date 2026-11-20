@@ -13,6 +13,7 @@ use Psalm\Internal\Algebra;
 use Psalm\Internal\Algebra\FormulaGenerator;
 use Psalm\Internal\Analyzer\AlgebraAnalyzer;
 use Psalm\Internal\Analyzer\ScopeAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\BinaryOpAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\IntMaskComparisonAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
@@ -165,13 +166,12 @@ final class SwitchCaseAnalyzer
                 }
             }
 
-            if ($switch_condition instanceof PhpParser\Node\Expr\ConstFetch
-                && $switch_condition->name->getParts() === ['true']
-            ) {
-                $case_equality_expr = $case->cond;
-            } else {
-                $case_equality_expr = self::getCaseEqualityExpr($statements_analyzer, $switch_condition, $case->cond);
-            }
+            $case_equality_expr = self::getCaseEqualityExpr(
+                $statements_analyzer,
+                $case_context,
+                $switch_condition,
+                $case->cond,
+            );
         }
 
         $continue_case_equality_expr = false;
@@ -572,16 +572,22 @@ final class SwitchCaseAnalyzer
     }
 
     /**
-     * @return null|false
-     */
-    /**
-     * The comparison of a case with the switch condition: `===` when both have the same scalar type, `==` otherwise.
+     * Builds the condition a case matches on: the case condition itself for `switch (true)`, otherwise its
+     * comparison with the switch condition, `===` when both have the same scalar type and `==` otherwise.
+     * A loose comparison of an object with a string charges the `__toString` it calls.
      */
     private static function getCaseEqualityExpr(
         StatementsAnalyzer $statements_analyzer,
+        Context $context,
         PhpParser\Node\Expr $switch_condition,
         PhpParser\Node\Expr $case_cond,
-    ): VirtualIdentical|VirtualEqual {
+    ): PhpParser\Node\Expr {
+        if ($switch_condition instanceof PhpParser\Node\Expr\ConstFetch
+            && $switch_condition->name->getParts() === ['true']
+        ) {
+            return $case_cond;
+        }
+
         $switch_condition_type = $statements_analyzer->node_data->getType($switch_condition);
         $case_cond_type = $statements_analyzer->node_data->getType($case_cond);
 
@@ -591,6 +597,18 @@ final class SwitchCaseAnalyzer
                 || ($switch_condition_type->isInt() && $case_cond_type->isInt())
                 || ($switch_condition_type->isFloat() && $case_cond_type->isFloat())
             );
+
+        if (!$is_identical && $switch_condition_type && $case_cond_type) {
+            BinaryOpAnalyzer::signalImplicitToStringComparison(
+                $context,
+                $statements_analyzer,
+                $switch_condition,
+                $case_cond,
+                $switch_condition_type,
+                $case_cond_type,
+                $case_cond,
+            );
+        }
 
         $case_equality_expr = $is_identical
             ? new VirtualIdentical($switch_condition, $case_cond, $case_cond->getAttributes())

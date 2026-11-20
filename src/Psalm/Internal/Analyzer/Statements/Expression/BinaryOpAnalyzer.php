@@ -13,16 +13,15 @@ use Psalm\Internal\Analyzer\Statements\Expression\BinaryOp\ConcatAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\BinaryOp\NonComparisonOpAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\BinaryOp\OrAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\BinaryOp\PipeAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodCallPurityAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\CombinedFlowGraph;
 use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\Codebase\VariableUseGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
-use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\Comparator\ClassLikeStringComparator;
 use Psalm\Issue\DocblockTypeContradiction;
-use Psalm\Issue\ImpureMethodCall;
 use Psalm\Issue\InvalidOperand;
 use Psalm\Issue\InvalidStringClass;
 use Psalm\Issue\NullOperand;
@@ -32,14 +31,13 @@ use Psalm\Issue\RedundantConditionGivenDocblockType;
 use Psalm\Issue\TypeDoesNotContainType;
 use Psalm\IssueBuffer;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
-use Psalm\Storage\Capabilities;
 use Psalm\Type;
 use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TDependentGetClass;
 use Psalm\Type\Atomic\TLiteralClassString;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
-use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\TaintKind;
 use Psalm\Type\Union;
 use UnexpectedValueException;
@@ -184,6 +182,20 @@ final class BinaryOpAnalyzer
                     ],
                 ),
             );
+
+            $left_type = $statements_analyzer->node_data->getType($stmt->left);
+            $right_type = $statements_analyzer->node_data->getType($stmt->right);
+            if ($left_type && $right_type) {
+                self::signalImplicitToStringComparison(
+                    $context,
+                    $statements_analyzer,
+                    $stmt->left,
+                    $stmt->right,
+                    $left_type,
+                    $right_type,
+                    $stmt,
+                );
+            }
 
             self::addDataFlow(
                 $statements_analyzer,
@@ -341,21 +353,19 @@ final class BinaryOpAnalyzer
                 }
             }
 
-            $codebase = $statements_analyzer->getCodebase();
-
-            if ($stmt instanceof PhpParser\Node\Expr\BinaryOp\Equal
+            if (!($stmt instanceof PhpParser\Node\Expr\BinaryOp\Identical
+                    || $stmt instanceof PhpParser\Node\Expr\BinaryOp\NotIdentical)
                 && $stmt_left_type
                 && $stmt_right_type
-                && ($context->capabilities !== Capabilities::ALL
-                    || $codebase->alter_code
-                )
             ) {
-                self::checkForImpureEqualityComparison(
+                self::signalImplicitToStringComparison(
                     $context,
                     $statements_analyzer,
-                    $stmt,
+                    $stmt->left,
+                    $stmt->right,
                     $stmt_left_type,
                     $stmt_right_type,
+                    $stmt,
                 );
             }
 
@@ -552,81 +562,56 @@ final class BinaryOpAnalyzer
         }
     }
 
-    private static function checkForImpureEqualityComparison(
+    public static function signalImplicitToStringComparison(
         Context $context,
         StatementsAnalyzer $statements_analyzer,
-        PhpParser\Node\Expr\BinaryOp\Equal $stmt,
-        Union $stmt_left_type,
-        Union $stmt_right_type,
+        PhpParser\Node\Expr $left,
+        PhpParser\Node\Expr $right,
+        Union $left_type,
+        Union $right_type,
+        PhpParser\Node $location,
     ): void {
-        $codebase = $statements_analyzer->getCodebase();
-
-        if ($stmt_left_type->hasString() && $stmt_right_type->hasObjectType()) {
-            foreach ($stmt_right_type->getAtomicTypes() as $atomic_type) {
-                if ($atomic_type instanceof TNamedObject) {
-                    try {
-                        $storage = $codebase->methods->getStorage(
-                            new MethodIdentifier(
-                                $atomic_type->value,
-                                '__tostring',
-                            ),
-                        );
-                    } catch (UnexpectedValueException) {
-                        continue;
-                    }
-                    $var_id = ExpressionIdentifier::getExtendedVarId(
-                        $stmt->right,
-                        $statements_analyzer->getFQCLN(),
-                        $statements_analyzer,
-                    );
-
-                    $statements_analyzer->signalMutation(
-                        $storage->capabilities,
-                        $context,
-                        'possibly-mutating method '
-                                    . $atomic_type->value . '::__toString',
-                        ImpureMethodCall::class,
-                        $stmt,
-                        null,
-                        false,
-                        $var_id === '$this' ? $storage : null,
-                    );
-                }
-            }
-        } elseif ($stmt_right_type->hasString() && $stmt_left_type->hasObjectType()) {
-            foreach ($stmt_left_type->getAtomicTypes() as $atomic_type) {
-                if ($atomic_type instanceof TNamedObject) {
-                    try {
-                        $storage = $codebase->methods->getStorage(
-                            new MethodIdentifier(
-                                $atomic_type->value,
-                                '__tostring',
-                            ),
-                        );
-                    } catch (UnexpectedValueException) {
-                        continue;
-                    }
-
-                    $var_id = ExpressionIdentifier::getExtendedVarId(
-                        $stmt->left,
-                        $statements_analyzer->getFQCLN(),
-                        $statements_analyzer,
-                    );
-
-                    $statements_analyzer->signalMutation(
-                        $storage->capabilities,
-                        $context,
-                        'possibly-mutating method '
-                                    . $atomic_type->value . '::__toString',
-                        ImpureMethodCall::class,
-                        $stmt,
-                        null,
-                        false,
-                        $var_id === '$this' ? $storage : null,
-                    );
-                }
+        if (self::canBeString($left_type) && $right_type->hasObjectType()) {
+            foreach ($right_type->getAtomicTypes() as $atomic_type) {
+                MethodCallPurityAnalyzer::signalImplicitToStringCall(
+                    $statements_analyzer,
+                    $context,
+                    $right,
+                    $atomic_type,
+                    $location,
+                );
             }
         }
+
+        if (self::canBeString($right_type) && $left_type->hasObjectType()) {
+            foreach ($left_type->getAtomicTypes() as $atomic_type) {
+                MethodCallPurityAnalyzer::signalImplicitToStringCall(
+                    $statements_analyzer,
+                    $context,
+                    $left,
+                    $atomic_type,
+                    $location,
+                );
+            }
+        }
+    }
+
+    /**
+     * @psalm-pure
+     */
+    private static function canBeString(Union $type): bool
+    {
+        if ($type->hasString()) {
+            return true;
+        }
+
+        foreach ($type->getAtomicTypes() as $atomic) {
+            if ($atomic instanceof TTemplateParam && self::canBeString($atomic->as)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**

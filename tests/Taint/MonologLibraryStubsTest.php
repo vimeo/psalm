@@ -262,6 +262,34 @@ final class MonologLibraryStubsTest extends LibraryStubsTestCase
                     'ImpureMethodCall on line 36',
                 ],
             ],
+            'psrLoggerStringifyingImplementation' => [
+                '<?php
+                    final class StringLogger implements Psr\Log\LoggerInterface {
+                        use Psr\Log\LoggerTrait;
+
+                        /** @psalm-capabilities read-props|write-this-props|write-props|read-globals|write-globals|io|time */
+                        public function log($level, string|\Stringable $message, array $context = []): void {
+                            echo (string) $message;
+                            echo "message: $message";
+                            echo "message: " . $message;
+                            if ($message == "x") {
+                                echo 1;
+                            }
+                        }
+                    }
+
+                    final class ReadingLogger implements Psr\Log\LoggerInterface {
+                        use Psr\Log\LoggerTrait;
+
+                        /** @psalm-capabilities read-props */
+                        public function log($level, string|\Stringable $message, array $context = []): void {
+                            $m = (string) $message;
+                        }
+                    }',
+                [
+                    'ImpureMethodCall on line 21',
+                ],
+            ],
             'handlerSetupCapabilities' => [
                 '<?php
                     /** @psalm-capabilities write-this-props|read-globals|io */

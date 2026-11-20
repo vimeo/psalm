@@ -1445,6 +1445,104 @@ final class CapabilitiesTest extends TestCase
                         return "hello $n" . (string) $n;
                     }',
             ],
+            'implicitToStringOfUnannotatedMethodCostsNoWriteRefs' => [
+                'code' => '<?php
+                    final class Name {
+                        public function __toString(): string {
+                            echo "x";
+                            return "x";
+                        }
+                    }
+
+                    /** @psalm-capabilities read-props|write-this-props|write-props|read-globals|write-globals|io|time */
+                    function greet(Name $n, string $s): string {
+                        $left = $n == $s;
+                        $right = $s == $n;
+
+                        return "hello $n" . (string) $n . $n . $n->__toString() . ($left && $right ? "!" : "");
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['ImplicitToStringCast'],
+            ],
+            'castCostsAClosureWhatTheExplicitToStringCallCosts' => [
+                'code' => '<?php
+                    final class Name {
+                        public function __toString(): string {
+                            return "x";
+                        }
+                    }
+
+                    $cast = fn(Name $n): string => (string) $n;
+                    $call = fn(Name $n): string => $n->__toString();',
+                'assertions' => [
+                    '$cast===' => 'Closure[write-props|read-globals|write-globals|io|time](Name):string',
+                    '$call===' => 'Closure[write-props|read-globals|write-globals|io|time](Name):string',
+                ],
+            ],
+            'comparisonInfersPurityInAnArrowFunction' => [
+                'code' => '<?php
+                    final class Name {
+                        /** @psalm-capabilities io */
+                        public function __toString(): string {
+                            echo "x";
+                            return "x";
+                        }
+                    }
+
+                    $compare = fn(Name $n): bool => $n == "x";',
+                'assertions' => [
+                    '$compare===' => 'Closure[io](Name):bool',
+                ],
+            ],
+            'templateBoundToStringCostsNoWriteRefs' => [
+                'code' => '<?php
+                    /**
+                     * @template T as Stringable
+                     * @param T $n
+                     * @psalm-capabilities read-props|write-this-props|write-props|read-globals|write-globals|io|time
+                     */
+                    function render(Stringable $n): string {
+                        return (string) $n;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'cachingIteratorWriteRefsFromTemplateMatchesExplicitCallGuard' => [
+                'code' => '<?php
+                    /**
+                     * @param CachingIterator[read-props|write-refs]<int, int, Iterator[read-props|write-refs]<int, int>> $it
+                     * @psalm-capabilities read-props
+                     */
+                    function render(CachingIterator $it): string {
+                        return (string) $it . $it->__toString();
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'implicitToStringOfThisOrAFreshObjectCostsNoWriteProps' => [
+                'code' => '<?php
+                    final class Counter {
+                        private int $n = 0;
+
+                        /** @psalm-capabilities read-props|write-this-props */
+                        public function __toString(): string {
+                            $this->n++;
+                            return "x";
+                        }
+
+                        /** @psalm-capabilities read-props|write-this-props */
+                        public function twice(): string {
+                            return (string) $this . "$this" . $this . "!" . ("x" == $this ? "" : "");
+                        }
+                    }
+
+                    /** @psalm-pure */
+                    function fresh(): string {
+                        return (string) new Counter() . (new Counter() . "!") . (new Counter() == "x" ? "" : "");
+                    }',
+            ],
             'noToStringInStrictOrNonStringSearch' => [
                 'code' => '<?php
                     final class Name {
@@ -5567,6 +5665,351 @@ final class CapabilitiesTest extends TestCase
                     }',
                 'error_message' => 'ImpureMethodCall',
             ],
+            'implicitToStringOfUnannotatedMethodStillCostsItsWrites' => [
+                'code' => '<?php
+                    final class Sorted {
+                        /** @var list<int> */
+                        public array $items = [];
+
+                        public function __toString(): string {
+                            sort($this->items);
+                            return implode(",", $this->items);
+                        }
+                    }
+
+                    /** @psalm-capabilities read-props|read-globals|write-globals|io|time */
+                    function show(Sorted $s): string {
+                        return "sorted: $s";
+                    }',
+                'error_message' => 'ImpureMethodCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:14:41 - The context is read-props|read-globals|write-globals|io|time but possibly-mutating method Sorted::__toString requires write-props|read-globals|write-globals|io|time',
+            ],
+            'implicitToStringWritingGlobalsIsCharged' => [
+                'code' => '<?php
+                    final class Counted {
+                        public static int $casts = 0;
+
+                        /** @psalm-capabilities read-globals|write-globals */
+                        public function __toString(): string {
+                            self::$casts++;
+                            return "x";
+                        }
+                    }
+
+                    /** @psalm-capabilities read-props|write-this-props|write-props|write-refs|io|time */
+                    function show(Counted $c): bool {
+                        return $c == "x";
+                    }',
+                'error_message' => 'ImpureMethodCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:14:32 - The context is read-props|write-this-props|write-props|write-refs|io|time but possibly-mutating method Counted::__toString requires read-globals|write-globals',
+            ],
+            'implicitToStringOfAnotherObjectCostsWriteProps' => [
+                'code' => '<?php
+                    final class Counter {
+                        private int $n = 0;
+
+                        /** @psalm-capabilities read-props|write-this-props */
+                        public function __toString(): string {
+                            $this->n++;
+                            return "x";
+                        }
+
+                        /** @psalm-capabilities read-props|write-this-props */
+                        public function describe(Counter $other): string {
+                            return "other: $other";
+                        }
+                    }',
+                'error_message' => 'ImpureMethodCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:13:44 - The context is read-props|write-this-props but possibly-mutating method Counter::__toString requires write-props',
+            ],
+            'concatOfAnotherObjectCostsWriteProps' => [
+                'code' => '<?php
+                    final class Counter {
+                        private int $n = 0;
+                        /** @psalm-capabilities read-props|write-this-props */
+                        public function __toString(): string {
+                            $this->n++;
+                            return "x";
+                        }
+                    }
+                    /** @psalm-capabilities read-props|write-this-props */
+                    function render(Counter $other): string {
+                        return $other . "!";
+                    }',
+                'error_message' => 'ImpureMethodCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:12:32 - The context is read-props|write-this-props but possibly-mutating method Counter::__toString requires write-props',
+            ],
+            'comparisonOfAnotherObjectCostsWriteProps' => [
+                'code' => '<?php
+                    final class Counter {
+                        private int $n = 0;
+                        /** @psalm-capabilities read-props|write-this-props */
+                        public function __toString(): string {
+                            $this->n++;
+                            return "x";
+                        }
+                    }
+                    /** @psalm-capabilities read-props|write-this-props */
+                    function compare(Counter $other): bool {
+                        return $other == "x";
+                    }',
+                'error_message' => 'ImpureMethodCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:12:32 - The context is read-props|write-this-props but possibly-mutating method Counter::__toString requires write-props',
+            ],
+            'objectHoldingAReferenceIsChargedWhereTheReferenceIsHandedOut' => [
+                'code' => '<?php
+                    final class Leaky implements Stringable {
+                        private mixed $ref = null;
+                        public function __construct(int &$ref) { $this->ref = &$ref; }
+                        public function __toString(): string { $this->ref = 2; return ""; }
+                    }
+
+                    /** @psalm-capabilities read-props|write-this-props|write-props|read-globals|write-globals|io|time */
+                    function leaks(int &$out): string {
+                        return (string) new Leaky($out);
+                    }',
+                'error_message' => 'ImpureMethodCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:41 - The context is read-props|write-this-props|write-props|read-globals|write-globals|io|time but constructor Leaky::__construct requires write-props|read-globals|write-globals|write-refs|io|time',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'notEqualCallsToString' => [
+                'code' => '<?php
+                    class Name {
+                        public function __toString(): string { echo "x"; return "x"; }
+                    }
+                    /** @psalm-pure */
+                    function compare(Name $n): bool {
+                        return $n != "x";
+                    }',
+                'error_message' => 'ImpureMethodCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:32',
+            ],
+            'smallerCallsToString' => [
+                'code' => '<?php
+                    class Name {
+                        public function __toString(): string { echo "x"; return "x"; }
+                    }
+                    /** @psalm-pure */
+                    function compare(Name $n): bool {
+                        return $n < "x";
+                    }',
+                'error_message' => 'ImpureMethodCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:32',
+            ],
+            'smallerOrEqualCallsToString' => [
+                'code' => '<?php
+                    class Name {
+                        public function __toString(): string { echo "x"; return "x"; }
+                    }
+                    /** @psalm-pure */
+                    function compare(Name $n): bool {
+                        return $n <= "x";
+                    }',
+                'error_message' => 'ImpureMethodCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:32',
+            ],
+            'greaterCallsToStringOnRight' => [
+                'code' => '<?php
+                    class Name {
+                        public function __toString(): string { echo "x"; return "x"; }
+                    }
+                    /** @psalm-pure */
+                    function compare(Name $n): bool {
+                        return "x" > $n;
+                    }',
+                'error_message' => 'ImpureMethodCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:32',
+            ],
+            'greaterOrEqualCallsToString' => [
+                'code' => '<?php
+                    class Name {
+                        public function __toString(): string { echo "x"; return "x"; }
+                    }
+                    /** @psalm-pure */
+                    function compare(Name $n): bool {
+                        return $n >= "x";
+                    }',
+                'error_message' => 'ImpureMethodCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:32',
+            ],
+            'spaceshipCallsToString' => [
+                'code' => '<?php
+                    class Name {
+                        public function __toString(): string { echo "x"; return "x"; }
+                    }
+                    /** @psalm-pure */
+                    function compare(Name $n): int {
+                        return $n <=> "x";
+                    }',
+                'error_message' => 'ImpureMethodCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:32',
+            ],
+            'inheritedToStringInConcatenation' => [
+                'code' => '<?php
+                    class ParentName {
+                        public function __toString(): string { echo "x"; return "x"; }
+                    }
+                    final class ChildName extends ParentName {}
+                    /** @psalm-pure */
+                    function render(ChildName $n): string {
+                        return "hello " . $n;
+                    }',
+                'error_message' => 'ImpureMethodCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:43',
+            ],
+            'inheritedToStringInComparison' => [
+                'code' => '<?php
+                    class ParentName {
+                        public function __toString(): string { echo "x"; return "x"; }
+                    }
+                    final class ChildName extends ParentName {}
+                    /** @psalm-pure */
+                    function compare(ChildName $n): bool {
+                        return $n == "x";
+                    }',
+                'error_message' => 'ImpureMethodCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:32',
+            ],
+            'intersectionToStringInComparison' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function compare(Countable&Stringable $n): bool {
+                        return $n == "x";
+                    }',
+                'error_message' => 'ImpureMethodCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:32',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'intersectionToStringInConcatenation' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function render(Countable&Stringable $n): string {
+                        return "hello " . $n;
+                    }',
+                'error_message' => 'ImpureMethodCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:43',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'cachingIteratorToStringUsesItsPurityTemplate' => [
+                'code' => '<?php
+                    /** @param CachingIterator[io]<int, int, Iterator[io]<int, int>> $it
+                     * @psalm-pure
+                     */
+                    function render(CachingIterator $it): string {
+                        return (string) $it;
+                    }',
+                'error_message' => 'ImpureMethodCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:41',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'templateIntersectionToStringInComparison' => [
+                'code' => '<?php
+                    /**
+                     * @template T as Countable
+                     * @param T&Stringable $n
+                     * @psalm-pure
+                     */
+                    function compare($n): bool {
+                        return $n == "x";
+                    }',
+                'error_message' => 'ImpureMethodCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:32',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'templateStringComparisonChargesToString' => [
+                'code' => '<?php
+                    final class Name {
+                        /** @psalm-capabilities io */
+                        public function __toString(): string { echo "x"; return "x"; }
+                    }
+                    /**
+                     * @template T as string
+                     * @param T $s
+                     * @psalm-pure
+                     */
+                    function compare(Name $n, $s): bool {
+                        return $n == $s;
+                    }',
+                'error_message' => 'ImpureMethodCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:12:32',
+            ],
+            'templateStringOnLeftOfSpaceshipChargesToString' => [
+                'code' => '<?php
+                    final class Name {
+                        /** @psalm-capabilities io */
+                        public function __toString(): string { echo "x"; return "x"; }
+                    }
+                    /**
+                     * @template T as string
+                     * @param T $s
+                     * @psalm-pure
+                     */
+                    function compare(Name $n, $s): int {
+                        return $s <=> $n;
+                    }',
+                'error_message' => 'ImpureMethodCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:12:32',
+            ],
+            'templateObjectComparisonChargesToString' => [
+                'code' => '<?php
+                    final class Name {
+                        /** @psalm-capabilities io */
+                        public function __toString(): string { echo "x"; return "x"; }
+                    }
+                    /**
+                     * @template T as Name
+                     * @param T $n
+                     * @psalm-pure
+                     */
+                    function compare($n): bool {
+                        return $n == "x";
+                    }',
+                'error_message' => 'ImpureMethodCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:12:32',
+            ],
+            'objectShapeIntersectionChargesToStringGuard' => [
+                'code' => '<?php
+                    final class Name {
+                        /** @psalm-capabilities io */
+                        public function __toString(): string { echo "x"; return "x"; }
+                    }
+                    /**
+                     * @param object{foo:int}&Name $n
+                     * @psalm-pure
+                     */
+                    function render(object $n): string {
+                        return (string) $n;
+                    }',
+                'error_message' => 'ImpureMethodCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:11:41',
+            ],
+            'switchObjectWithStringCaseChargesToString' => [
+                'code' => '<?php
+                    final class Name {
+                        /** @psalm-capabilities io */
+                        public function __toString(): string { echo "x"; return "x"; }
+                    }
+                    /** @psalm-pure */
+                    function compare(Name $n): bool {
+                        switch ($n) {
+                            case "x": return true;
+                        }
+                        return false;
+                    }',
+                'error_message' => 'ImpureMethodCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:9:34',
+            ],
+            'switchStringWithObjectCaseChargesToString' => [
+                'code' => '<?php
+                    final class Name {
+                        /** @psalm-capabilities io */
+                        public function __toString(): string { echo "x"; return "x"; }
+                    }
+                    /** @psalm-pure */
+                    function compare(Name $n): bool {
+                        switch ("x") {
+                            case $n: return true;
+                        }
+                        return false;
+                    }',
+                'error_message' => 'ImpureMethodCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:9:34',
+            ],
+            'templateIntersectionToStringInCast' => [
+                'code' => '<?php
+                    /**
+                     * @template T as Countable
+                     * @param T&Stringable $n
+                     * @psalm-pure
+                     */
+                    function render($n): string {
+                        return (string) $n;
+                    }',
+                'error_message' => 'ImpureMethodCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:41',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
             'impureToStringInEcho' => [
                 'code' => '<?php
                     final class Name {
@@ -8333,6 +8776,33 @@ final class CapabilitiesTest extends TestCase
                 'php_version' => '8.0',
             ],
         ];
+    }
+
+    public function testObjectBoundTemplateConcatenationChargesToStringBeforeMixedOperand(): void
+    {
+        $this->testConfig->throw_exception = false;
+        $file_path = self::$src_dir_path . 'somefile.php';
+        $this->addFile($file_path, '<?php
+            final class Name {
+                /** @psalm-capabilities io */
+                public function __toString(): string { echo "x"; return "x"; }
+            }
+            /**
+             * @template T as Name
+             * @param T $n
+             * @psalm-pure
+             */
+            function concat($n): string {
+                return "a" . $n;
+            }');
+
+        $this->analyzeFile($file_path, new Context());
+        $issues = array_map(
+            static fn(IssueData $issue): array => [$issue->line_from, $issue->type],
+            IssueBuffer::getIssuesDataForFile($file_path),
+        );
+        sort($issues);
+        self::assertSame([[12, 'ImpureMethodCall'], [12, 'MixedOperand']], $issues);
     }
 
     public function testEachPropertyWriteIsReportedOnce(): void
