@@ -2396,7 +2396,8 @@ final class ClassLikes
                     && !$method_storage->return_type->isVoid()
                     && !$method_storage->return_type->isNever()
                     && $method_id->method_name !== '__tostring'
-                    && ($method_storage->is_static || !$method_storage->probably_fluent)
+                    && ($method_storage->is_static
+                        || !($method_storage->probably_fluent || $method_storage->returns_this))
                 ) {
                     $method_return_referenced = $codebase->code_use_graph->isUsed(
                         CodeUseGraph::functionLikeReturnNode(strtolower((string) $method_id)),

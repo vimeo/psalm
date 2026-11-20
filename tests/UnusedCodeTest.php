@@ -2466,6 +2466,25 @@ final class UnusedCodeTest extends TestCase
 
                     (new A())->foo()->bar();',
             ],
+            'fluentMethodDelegatingToAnotherFluentCallAllowed' => [
+                'code' => '<?php
+                    final class Query {
+                        /** @return $this */
+                        public function where(string $column): static {
+                            echo $column;
+                            return $this;
+                        }
+
+                        /** @return $this */
+                        public function active() {
+                            return $this->where("active");
+                        }
+                    }
+
+                    $query = new Query();
+                    $query->where("a");
+                    $query->active();',
+            ],
             'unusedInterfaceReturnValueWithImplementingClassSuppressed' => [
                 'code' => '<?php
                     interface IWorker {
@@ -4202,6 +4221,25 @@ final class UnusedCodeTest extends TestCase
                     $foo = new A();
                     echo $foo->a;',
                 'error_message' => 'PossiblyUnusedProperty',
+            ],
+            'delegatingMethodNotMarkedAsReturningThisIsReported' => [
+                'code' => '<?php
+                    final class Query {
+                        public function where(string $column): static {
+                            echo $column;
+                            return $this;
+                        }
+
+                        /** @return static */
+                        public function active() {
+                            return $this->where("active");
+                        }
+                    }
+
+                    $query = new Query();
+                    $query->where("a");
+                    $query->active();',
+                'error_message' => 'PossiblyUnusedReturnValue',
             ],
             'unusedInterfaceReturnValue' => [
                 'code' => '<?php
