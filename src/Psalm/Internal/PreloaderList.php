@@ -1486,6 +1486,7 @@ final class PreloaderList {
         \Psalm\Issue\WeakCipher::class,
         \Psalm\Issue\WeakHash::class,
         \Psalm\Issue\WeakRandom::class,
+        \Psalm\Issue\WrongCaseFunction::class,
         \Psalm\Issue\XmlExternalEntity::class,
         \Psalm\NodeTypeProvider::class,
         \Psalm\Node\Expr\AssignOp\VirtualBitwiseAnd::class,

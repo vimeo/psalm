@@ -262,14 +262,17 @@ final class ClassLikeStubGenerator
                 );
             }
 
-            foreach ($method_storage->throws ?: [] as $exception_name => $_) {
-                $docblock->tags['throws'][] = Type::getStringFromFQCLN(
-                    $exception_name,
-                    $namespace_name,
-                    [],
-                    null,
-                    false
-                );
+            foreach ($method_storage->getThrowGroups() as $throw_group) {
+                $docblock->tags['throws'][] = implode('&', array_map(
+                    static fn(string $exception_name): string => Type::getStringFromFQCLN(
+                        $exception_name,
+                        $namespace_name,
+                        [],
+                        null,
+                        false
+                    ),
+                    $throw_group,
+                ));
             }
 
             $method_nodes[] = new VirtualClassMethod(
