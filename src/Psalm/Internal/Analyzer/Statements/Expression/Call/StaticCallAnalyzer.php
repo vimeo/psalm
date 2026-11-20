@@ -236,7 +236,6 @@ final class StaticCallAnalyzer extends CallAnalyzer
                         $stmt->isFirstClassCallable() ? [] : $stmt->getArgs(),
                         null,
                         null,
-                        true,
                         $context,
                     );
 
@@ -262,7 +261,6 @@ final class StaticCallAnalyzer extends CallAnalyzer
                         $fq_class_name,
                         new CodeLocation($source, $stmt->class),
                         !$context->collect_initializations
-                            && !$context->collect_mutations
                             ? $context
                             : null,
                         $statements_analyzer->getSuppressedIssues(),
@@ -280,7 +278,6 @@ final class StaticCallAnalyzer extends CallAnalyzer
                             $stmt->isFirstClassCallable() ? [] : $stmt->getArgs(),
                             null,
                             null,
-                            true,
                             $context,
                         );
                     }
@@ -292,7 +289,6 @@ final class StaticCallAnalyzer extends CallAnalyzer
             if ($codebase->store_node_types
                 && $fq_class_name
                 && !$context->collect_initializations
-                && !$context->collect_mutations
             ) {
                 $codebase->analyzer->addNodeReference(
                     $statements_analyzer->getFilePath(),
@@ -321,7 +317,6 @@ final class StaticCallAnalyzer extends CallAnalyzer
                 $stmt->getArgs(),
                 null,
                 null,
-                true,
                 $context,
             ) === false) {
                 return false;

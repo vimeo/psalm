@@ -43,3 +43,4 @@ function printName(string $name) {
 
 - [OWASP Wiki for Cross Site Scripting (XSS)](https://owasp.org/www-community/attacks/xss/)
 - [Content-Security-Policy - Web Fundamentals](https://developers.google.com/web/fundamentals/security/csp)
+- [CWE-79](https://cwe.mitre.org/data/definitions/79.html)
