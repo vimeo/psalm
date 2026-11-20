@@ -2476,6 +2476,48 @@ final class PropertyTypeTest extends TestCase
                     }',
                 'assertions' => [],
             ],
+            'propertyMapOfPhpParserNodesAllowsWhatTheLibraryDeclares' => [
+                'code' => '<?php
+                    namespace PhpParser\Node {
+                        interface Expr {}
+
+                        class InterpolatedStringPart {}
+
+                        class MatchArm {
+                            /** @var mixed */
+                            public $conds = null;
+                        }
+                    }
+
+                    namespace PhpParser\Node\Expr {
+                        class ShellExec {
+                            /** @var mixed */
+                            public $parts = [];
+                        }
+                    }
+
+                    namespace App {
+                        use PhpParser\Node\Expr;
+                        use PhpParser\Node\Expr\ShellExec;
+                        use PhpParser\Node\MatchArm;
+
+                        function literalParts(ShellExec $e): int {
+                            $literals = 0;
+
+                            foreach ($e->parts as $part) {
+                                if (!$part instanceof Expr) {
+                                    $literals++;
+                                }
+                            }
+
+                            return $literals;
+                        }
+
+                        function isDefault(MatchArm $arm): bool {
+                            return $arm->conds === [] || $arm->conds === null;
+                        }
+                    }',
+            ],
             'privatePropertyAccessible' => [
                 'code' => '<?php
                     class A {
