@@ -574,6 +574,16 @@ final class IfAnalyzer
 
         $possibly_redefined_vars = $redefined_vars;
 
+        // a variable the branch unset is possibly undefined afterwards
+        foreach ($possibly_assigned_var_ids as $var_id => $_) {
+            if (preg_match('/^\$\w+$/', $var_id) === 1
+                && isset($outer_context->vars_in_scope[$var_id])
+                && !isset($if_context->vars_in_scope[$var_id])
+            ) {
+                $possibly_redefined_vars[$var_id] = Type::getNever()->setPossiblyUndefined(true);
+            }
+        }
+
         foreach ($possibly_redefined_vars as $var_id => $type) {
             if (!isset($possibly_assigned_var_ids[$var_id])
                 && isset($newly_reconciled_var_ids[$var_id])
