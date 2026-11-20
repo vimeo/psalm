@@ -911,11 +911,10 @@ final class ArrayFetchAnalyzer
 
         $array_access_type = null;
 
-        // offsetGet() and its siblings decide which offsets an object accepts, and the call of them checks it
         $only_array_access_objects = array_all(
             $array_type->getAtomicTypes(),
             static fn(Atomic $atomic): bool => $atomic instanceof TNamedObject
-                && $codebase->classExtendsOrImplements($atomic->value, 'ArrayAccess'),
+                && self::isKnownArrayAccessObject($codebase, $atomic),
         );
 
         if ($offset_type->isNull() && !$only_array_access_objects) {
@@ -2408,6 +2407,25 @@ final class ArrayFetchAnalyzer
                 || $codebase->classExtendsOrImplements($part->value, 'ArrayAccess')
                 || $codebase->classExtendsOrImplements($part->value, 'SimpleXMLElement')
                 || $codebase->interfaceExtends($part->value, 'ArrayAccess')
+            ) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * offsetGet() and its siblings decide which offsets such an object accepts, and the calls of them check it
+     */
+    private static function isKnownArrayAccessObject(Codebase $codebase, TNamedObject $type): bool
+    {
+        foreach ([$type, ...$type->extra_types] as $part) {
+            if ($part instanceof TNamedObject
+                && $codebase->classOrInterfaceExists($part->value)
+                && (strtolower($part->value) === 'arrayaccess'
+                    || $codebase->classExtendsOrImplements($part->value, 'ArrayAccess')
+                    || $codebase->interfaceExtends($part->value, 'ArrayAccess'))
             ) {
                 return true;
             }

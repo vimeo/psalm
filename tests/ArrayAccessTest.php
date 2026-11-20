@@ -1524,6 +1524,21 @@ final class ArrayAccessTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.3',
             ],
+            'nullOffsetOfAnArrayAccessInterfaceOrItsChild' => [
+                'code' => '<?php
+                    /** @extends ArrayAccess<string|null, int> */
+                    interface Bag extends ArrayAccess {}
+
+                    /** @param ArrayAccess<string|null, int> $a */
+                    function f(ArrayAccess $a, Bag $bag, Countable&ArrayAccess $c): void {
+                        echo $a[null];
+                        echo $bag[null];
+                        echo (string) $c[null];
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'emptyNestedOffsetIsForgottenWhenItsParentOffsetIsAssigned' => [
                 'code' => '<?php
                     function g(array $m, string $l, string $p): string {
