@@ -952,6 +952,122 @@ final class TryCatchTest extends TestCase
                         if (isset($exception)) {}
                     }',
             ],
+            'variableAssignedInAConditionOfAFinallyBlockKeepsTheAssignedTypeAfterTheTry' => [
+                'code' => '<?php
+                    function g(): void {}
+
+                    function inAnIf(): void {
+                        $t = null;
+                        try {
+                            g();
+                        } finally {
+                            if (rand(0, 1)) {
+                                $t = new Exception();
+                            }
+                        }
+                        /** @psalm-check-type-exact $t = Exception|null */;
+                    }
+
+                    function inACatchOfANestedTry(): void {
+                        $t = null;
+                        try {
+                            g();
+                        } finally {
+                            try {
+                                g();
+                            } catch (Throwable $e) {
+                                $t = $e;
+                            }
+                        }
+                        /** @psalm-check-type-exact $t = Throwable|null */;
+                    }
+
+                    function inALoop(): void {
+                        $t = null;
+                        try {
+                            g();
+                        } finally {
+                            foreach ([1, 2] as $i) {
+                                if ($i > rand(0, 3)) {
+                                    $t = $i;
+                                }
+                            }
+                        }
+                        /** @psalm-check-type-exact $t = 1|2|null */;
+                    }
+
+                    function inAClosure(): void {
+                        $t = null;
+                        $f = function () use (&$t): void {
+                            try {
+                                g();
+                            } finally {
+                                if (rand(0, 1)) {
+                                    $t = new Exception();
+                                }
+                            }
+                        };
+                        $f();
+                        /** @psalm-check-type-exact $t = Exception|null */;
+                    }',
+            ],
+            'variableWrittenByReferenceInACatchOfAFinallyOfAClosureIsNotNull' => [
+                'code' => '<?php
+                    interface App {
+                        public function send(): void;
+                    }
+
+                    interface Term {
+                        public function terminate(): void;
+                    }
+
+                    final class R {
+                        public function __construct(private App $app) {}
+
+                        public function run(): void {
+                            $termination_exception = null;
+                            $handler = function () use (&$termination_exception): void {
+                                try {
+                                    $this->app->send();
+                                } finally {
+                                    if ($this->app instanceof Term) {
+                                        try {
+                                            $this->app->terminate();
+                                        } catch (Throwable $e) {
+                                            $termination_exception = $e;
+                                        }
+                                    }
+                                }
+                            };
+
+                            do {
+                                $ret = handle_request($handler);
+                                if (null !== $termination_exception) {
+                                    throw $termination_exception;
+                                }
+                            } while ($ret);
+                        }
+                    }
+
+                    function handle_request(callable $c): bool {
+                        $c();
+                        return true;
+                    }',
+            ],
+            'variableAssignedUnconditionallyInAFinallyBlockHasTheAssignedTypeAfterTheTry' => [
+                'code' => '<?php
+                    function g(): void {}
+
+                    function f(): void {
+                        $t = null;
+                        try {
+                            g();
+                        } finally {
+                            $t = 1;
+                        }
+                        /** @psalm-check-type-exact $t = 1 */;
+                    }',
+            ],
         ];
     }
 
@@ -1270,6 +1386,23 @@ final class TryCatchTest extends TestCase
                         }
                     }',
                 'error_message' => 'RedundantCondition',
+            ],
+            'variableAssignedInAConditionOfAFinallyBlockOnlyIsPossiblyUndefinedAfterTheTry' => [
+                'code' => '<?php
+                    function g(): void {}
+
+                    function f(): void {
+                        try {
+                            g();
+                        } finally {
+                            if (rand(0, 1)) {
+                                $u = 1;
+                            }
+                        }
+
+                        echo $u;
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable',
             ],
         ];
     }

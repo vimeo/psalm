@@ -515,6 +515,9 @@ final class TryAnalyzer
                     $catch_context->vars_possibly_in_scope,
                     $context->vars_possibly_in_scope,
                 );
+
+                // what a catch that goes on assigns is possibly assigned after the try
+                $context->possibly_assigned_var_ids += $catch_context->possibly_assigned_var_ids;
             } else {
                 if ($stmt->finally) {
                     $context->vars_possibly_in_scope = array_merge(
@@ -584,8 +587,13 @@ final class TryAnalyzer
 
                 $finally_has_returned = $finally_context->has_returned;
 
+                // a variable assigned on some paths of the finally block only (in a condition, a loop, a nested try)
+                // takes what it holds after the block too
+                $finally_assigned_var_ids = $finally_context->assigned_var_ids
+                    + $finally_context->possibly_assigned_var_ids;
+
                 /** @var string $var_id */
-                foreach ($finally_context->assigned_var_ids as $var_id => $_) {
+                foreach ($finally_assigned_var_ids as $var_id => $_) {
                     if (isset($context->vars_in_scope[$var_id])
                         && isset($finally_context->vars_in_scope[$var_id])
                     ) {
