@@ -4746,7 +4746,7 @@ final class MethodCallTest extends TestCase
 
                     function f(MyEnumReflection $r): bool
                     {
-                        return $r->isSubclassOf(1);
+                        return $r->isSubclassOf(new stdClass);
                     }
                 PHP,
                 'error_message' => 'InvalidArgument',
