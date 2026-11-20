@@ -4,9 +4,7 @@ Psalm tracks untrusted input as it moves through your code — through assignmen
 properties — and reports whenever it reaches a dangerous operation. Depending on where the input lands, that prevents
 cross-site scripting (XSS), SQL injection, command injection, path traversal, and more.
 
-Taint analysis runs by default alongside type checking. To disable it in `psalm.xml`, set
-[`runTaintAnalysis="false"`](../running_psalm/configuration.md#runtaintanalysis). You can still enable it for a single
-run with `--taint-analysis`.
+Taint analysis runs by default alongside type checking.
 
 **On this page:**
 
