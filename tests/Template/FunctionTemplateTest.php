@@ -391,6 +391,22 @@ final class FunctionTemplateTest extends TestCase
                         }
                     }',
             ],
+            'everyTemplateOfAUnionKeptWhenIdenticalToALiteral' => [
+                'code' => '<?php
+                    /**
+                     * @template T of string
+                     * @template U of string
+                     * @param T|U $a
+                     * @return T|U
+                     */
+                    function run($a) {
+                        if ($a === "a") {
+                            return $a;
+                        }
+
+                        return $a;
+                    }',
+            ],
             'templateOfEnumKeptWhenIdenticalToACase' => [
                 'code' => '<?php
                     enum Suit {
@@ -3527,6 +3543,23 @@ final class FunctionTemplateTest extends TestCase
                      */
                     function run($a) {
                         if ($a === "a") {
+                            return $a;
+                        }
+
+                        throw new Exception();
+                    }',
+                'error_message' => 'InvalidReturnStatement - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:36',
+            ],
+            'otherIntTemplateIdenticalToALiteralIsNotTheReturnedTemplate' => [
+                'code' => '<?php
+                    /**
+                     * @template T of int
+                     * @template U of int
+                     * @param T|U $a
+                     * @return T
+                     */
+                    function run($a) {
+                        if ($a === 5) {
                             return $a;
                         }
 
