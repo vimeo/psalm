@@ -1,0 +1,30 @@
+<?php
+
+// The taints of symfony/yaml. Loaded when the analysed code uses the package, refining its classes (see
+// Config::visitStubFiles()): the methods declared here keep the signatures of symfony/yaml 8.1.
+//
+// Parsing with Yaml::PARSE_OBJECT (4) unserializes what the `!php/object` tags of the input hold: the input is an
+// unserialize sink, unless the flags are only some of the others.
+
+namespace Symfony\Component\Yaml;
+
+class Yaml
+{
+    /**
+     * @psalm-taint-sink ($flags is int-mask<2, 8, 32, 256, 512, 65536> ? null : 'unserialize') $input
+     */
+    public static function parse(
+        string $input,
+        int $flags = 0,
+        int $maxNestingLevel = Parser::DEFAULT_MAX_NESTING_LEVEL,
+        int $maxAliasesForCollections = Parser::DEFAULT_MAX_ALIASES_FOR_COLLECTIONS,
+    ): mixed {}
+}
+
+class Parser
+{
+    /**
+     * @psalm-taint-sink ($flags is int-mask<2, 8, 32, 256, 512, 65536> ? null : 'unserialize') $value
+     */
+    public function parse(string $value, int $flags = 0): mixed {}
+}

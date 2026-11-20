@@ -10,4 +10,5 @@ namespace Psalm\Issue;
 final class TaintedExtract extends TaintedInput
 {
     public const SHORTCODE = 327;
+    public const CWE_IDS = [621];
 }
