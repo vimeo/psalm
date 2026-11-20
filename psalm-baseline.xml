@@ -2001,11 +2001,6 @@
       <code><![CDATA[?FileStorage]]></code>
     </InvalidReturnType>
   </file>
-  <file src="src/Psalm/Internal/Provider/FunctionParamsProvider.php">
-    <RiskyTruthyFalsyComparison>
-      <code><![CDATA[$result]]></code>
-    </RiskyTruthyFalsyComparison>
-  </file>
   <file src="src/Psalm/Internal/Provider/MethodReturnTypeProvider.php">
     <RiskyTruthyFalsyComparison>
       <code><![CDATA[$called_method_name]]></code>
