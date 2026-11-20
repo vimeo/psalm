@@ -832,7 +832,8 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
                         return;
                     }
 
-                    $result->return_type = Type::getMixed();
+                    // a method of a value that can't exist is never called (a loop's first pass narrowing null away)
+                    $result->return_type = $lhs_type_part instanceof TNever ? Type::getNever() : Type::getMixed();
                 }
                 return;
 
