@@ -3039,6 +3039,14 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 }
 
                 if ($this->storage instanceof MethodStorage && $this->storage->if_this_is_type) {
+                    $if_this_is_type = TypeExpander::expandUnion(
+                        $codebase,
+                        $this->storage->if_this_is_type,
+                        $context->self,
+                        $context->self,
+                        $this->getParentFQCLN(),
+                    );
+
                     $template_result = new TemplateResult($this->getTemplateTypeMap() ?? [], []);
 
                     TemplateStandinTypeReplacer::fillTemplateResult(
@@ -3046,7 +3054,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                         $template_result,
                         $codebase,
                         null,
-                        $this->storage->if_this_is_type,
+                        $if_this_is_type,
                     );
 
                     foreach ($context->vars_in_scope as $var_name => &$var_type) {
@@ -3055,8 +3063,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                         }
                     }
 
-                    $context->vars_in_scope['$this'] = $this->storage->if_this_is_type
-                        ->setProperties($props);
+                    $context->vars_in_scope['$this'] = $if_this_is_type->setProperties($props);
                 } else {
                     $context->vars_in_scope['$this'] = new Union([$this_object_type], $props);
                 }

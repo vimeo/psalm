@@ -1820,6 +1820,77 @@ final class TraitTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'traitClassTemplateAndMethodTemplateAreKeptInAClosureOfTheTraitMethod' => [
+                'code' => '<?php
+                    interface Base {}
+
+                    /** @template T of Base */
+                    trait Tr {
+                        /** @param class-string<T> $c */
+                        public function useIt(string $c): string {
+                            $f = function () use ($c): string {
+                                return $c;
+                            };
+
+                            return $f();
+                        }
+
+                        /**
+                         * @template U
+                         * @param U $u
+                         * @return U
+                         */
+                        public function other($u) {
+                            $g = function (mixed $x): mixed {
+                                return $x;
+                            };
+
+                            return $g($u);
+                        }
+                    }
+
+                    final class Impl implements Base {
+                        /** @use Tr<Impl> */
+                        use Tr;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'traitMethodTemplatePassedThroughAClosureParam' => [
+                'code' => '<?php
+                    class Service
+                    {
+                        /**
+                         * @template T
+                         * @param class-string<T> $type
+                         * @param Closure(T): void $callback
+                         */
+                        public function run(string $type, Closure $callback): void
+                        {
+                            echo $type;
+                            echo $callback::class;
+                        }
+                    }
+
+                    trait SomeTrait
+                    {
+                        /**
+                         * @template T
+                         * @param class-string<T> $type
+                         * @param Closure(T): void $callback
+                         */
+                        protected function bar(string $type, Closure $callback): void
+                        {
+                            (new Service())->run($type, $callback);
+                        }
+                    }
+
+                    class Bar
+                    {
+                        use SomeTrait;
+                    }',
+            ],
             'traitReadsAClassConstantWithTheLiteralTheUsingClassesGiveIt' => [
                 'code' => '<?php
                     /** @param positive-int $i */

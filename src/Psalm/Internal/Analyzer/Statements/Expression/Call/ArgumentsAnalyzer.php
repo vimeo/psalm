@@ -128,6 +128,10 @@ final class ArgumentsAnalyzer
         $was_inside_negation = $context->inside_negation;
         $context->inside_negation = false;
 
+        // assert() reconciles its own argument, not the arguments of another call inside it
+        $was_inside_assert = $context->inside_assert;
+        $context->inside_assert = $was_inside_assert && $method_id === 'assert';
+
         try {
             $result = self::analyzeArguments(
                 $statements_analyzer,
@@ -139,6 +143,7 @@ final class ArgumentsAnalyzer
             );
         } finally {
             $context->inside_negation = $was_inside_negation;
+            $context->inside_assert = $was_inside_assert;
         }
 
         // the callee may call a closure it is given, also inside an array or an object, which may write what the
@@ -708,6 +713,11 @@ final class ArgumentsAnalyzer
                     $lower_bounds,
                     $codebase,
                 );
+
+                // nothing was inferred for the template yet: the closure parameter is not `never`
+                if ($new_bounds[$k][$kk]->isNever() && isset($template_result->template_types[$k][$kk])) {
+                    $new_bounds[$k][$kk] = $template_result->template_types[$k][$kk];
+                }
             }
         }
         // `T` of `@template TArray as array<T>` is only known through what `TArray` was given
@@ -2761,6 +2771,26 @@ final class ArgumentsAnalyzer
                         );
 
                         $default_type = new Union([$default_type_atomic]);
+                    }
+
+                    // a default that is one of the own atomic types of the parameter (`null` for `T|null`) says
+                    // nothing about a template that an argument bound already, and that has no default of its own
+                    // to fall back to
+                    if ($default_type->isSingle()
+                        && !$param->type->isSingle()
+                        && isset($param->type->getAtomicTypes()[$default_type->getSingleAtomic()->getKey()])
+                        && array_all(
+                            $param->type->getTemplateTypes(),
+                            static fn(TTemplateParam $template_type): bool
+                                => !isset($function_storage?->template_defaults[$template_type->param_name])
+                                && isset(
+                                    $template_result->lower_bounds[$template_type->param_name][
+                                        $template_type->defining_class
+                                    ],
+                                ),
+                        )
+                    ) {
+                        continue;
                     }
 
                     TemplateStandinTypeReplacer::fillTemplateResult(

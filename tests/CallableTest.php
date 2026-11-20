@@ -155,6 +155,75 @@ final class CallableTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'callableArrayNamingAMagicMethodMatchesATypedCallable' => [
+                'code' => '<?php
+                    /**
+                     * @method int magic(string $s)
+                     */
+                    class Foo {
+                        public function __call(string $name, array $arguments): mixed {
+                            return 1;
+                        }
+                    }
+
+                    /** @param callable(string): int $c */
+                    function take(callable $c): void {
+                        $c("x");
+                    }
+
+                    take([new Foo(), "magic"]);',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'callableArrayOfAMagicMethodGuardedByMethodExists' => [
+                'code' => '<?php
+                    /**
+                     * @method void magic()
+                     */
+                    class Foo {
+                        public function __call(string $name, array $arguments): mixed {
+                            return null;
+                        }
+                    }
+
+                    function call(callable $_callable): void {}
+
+                    function test(Foo $foo): void {
+                        if (method_exists($foo, "magic")) {
+                            call([$foo, "magic"]);
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'callableArrayOfAMagicMethodDeclaredByAnAnnotation' => [
+                'code' => '<?php
+                    /**
+                     * @method void magic()
+                     * @method static void staticMagic()
+                     */
+                    class Foo {
+                        public function __call(string $name, array $arguments): mixed {
+                            return null;
+                        }
+
+                        public static function __callStatic(string $name, array $arguments): mixed {
+                            return null;
+                        }
+                    }
+
+                    function call(callable $_callable): void {}
+
+                    function test(Foo $foo): void {
+                        call([$foo, "magic"]);
+                        call([Foo::class, "staticMagic"]);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'invokeInheritedGenericFirstClassCallable' => [
                 'code' => '<?php
                     class Helpers {
@@ -2442,6 +2511,8 @@ final class CallableTest extends TestCase
                             usort($arr, "fooBar");
                         }
                     }',
+                'assertions' => [],
+                'ignored_issues' => ['WrongCaseFunction'],
             ],
             'closureSelf' => [
                 'code' => '<?php
@@ -2855,6 +2926,63 @@ final class CallableTest extends TestCase
                         }
                         $setter = "b" . $key;
                         if (is_callable($setter)) {}
+                    }',
+            ],
+            'privateStaticCallbackByLiteralStringAndToAMethodOfTheClass' => [
+                'code' => '<?php
+                    final class Sorter {
+                        public function run(): void {
+                            $items = [3, 1];
+                            usort($items, "Sorter::compare");
+                            $this->apply([self::class, "compare"]);
+                        }
+
+                        /** @param callable(int, int): int $callback */
+                        private function apply(callable $callback): void {
+                            $callback(1, 2);
+                        }
+
+                        private static function compare(int $a, int $b): int {
+                            return $a <=> $b;
+                        }
+                    }',
+            ],
+            'privateStaticCallbackOfTheCurrentClassByClassString' => [
+                'code' => '<?php
+                    final class Sorter {
+                        /** @param list<int> $values */
+                        public function sort(array $values): array {
+                            usort($values, [self::class, "compare"]);
+                            usort($values, [static::class, "compare"]);
+                            usort($values, [Sorter::class, "compare"]);
+
+                            return array_map([self::class, "double"], $values);
+                        }
+
+                        private static function compare(int $a, int $b): int {
+                            return $a <=> $b;
+                        }
+
+                        protected static function double(int $a): int {
+                            return $a * 2;
+                        }
+                    }',
+            ],
+            'protectedStaticCallbackOfASubclassByClassStringGivenToAParentMethod' => [
+                'code' => '<?php
+                    class Command
+                    {
+                        public function setCode(callable $code): void {}
+                    }
+
+                    abstract class EndlessCommand extends Command
+                    {
+                        public function __construct()
+                        {
+                            parent::setCode([self::class, "runLoop"]);
+                        }
+
+                        protected static function runLoop(): void {}
                     }',
             ],
             'noExceptionOnSelfString' => [
@@ -3691,6 +3819,52 @@ final class CallableTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'callableArrayNamingAMagicMethodMismatchesATypedCallable' => [
+                'code' => '<?php
+                    /**
+                     * @method int magic(string $s)
+                     */
+                    class Foo {
+                        public function __call(string $name, array $arguments): mixed {
+                            return 1;
+                        }
+                    }
+
+                    /** @param callable(int): void $c */
+                    function take(callable $c): void {
+                        $c(1);
+                    }
+
+                    take([new Foo(), "magic"]);',
+                'error_message' => 'InvalidArgument',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'callableArrayOfAMethodThatIsNotDeclaredByAnAnnotation' => [
+                'code' => '<?php
+                    /**
+                     * @method void magic()
+                     * @method static void staticMagic()
+                     */
+                    class Foo {
+                        public function __call(string $name, array $arguments): mixed {
+                            return null;
+                        }
+
+                        public static function __callStatic(string $name, array $arguments): mixed {
+                            return null;
+                        }
+                    }
+
+                    function call(callable $_callable): void {}
+
+                    function test(Foo $foo): void {
+                        call([$foo, "missing"]);
+                    }',
+                'error_message' => 'InvalidArgument',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
             'arrayCallableNamingNoClass' => [
                 'code' => '<?php
                     function call(callable $callback): void {}
@@ -3918,6 +4092,87 @@ final class CallableTest extends TestCase
 
                     foo(A::class . "::barr");',
                 'error_message' => 'UndefinedMethod',
+            ],
+            'privateStaticCallbackByClassStringToAFunctionOutsideTheClass' => [
+                'code' => '<?php
+                    /** @param callable(int, int): int $callback */
+                    function apply(callable $callback): void {
+                        $callback(1, 2);
+                    }
+
+                    final class Sorter {
+                        public function run(): void {
+                            apply([self::class, "compare"]);
+                        }
+
+                        private static function compare(int $a, int $b): int {
+                            return $a <=> $b;
+                        }
+                    }',
+                'error_message' => 'InvalidArgument',
+            ],
+            'privateStaticCallbackOfAnotherClassByClassString' => [
+                'code' => '<?php
+                    final class Other {
+                        private static function compare(int $a, int $b): int {
+                            return $a <=> $b;
+                        }
+                    }
+
+                    final class Sorter {
+                        /** @param list<int> $values */
+                        public function sort(array $values): void {
+                            usort($values, [Other::class, "compare"]);
+                        }
+                    }',
+                'error_message' => 'InvalidArgument',
+            ],
+            'privateStaticCallbackByClassStringToANativeFunctionOutsideTheNonPublicList' => [
+                'code' => '<?php
+                    final class Sorter {
+                        public function run(): void {
+                            iterator_apply(new ArrayIterator([]), [self::class, "cleanup"]);
+                        }
+
+                        private static function cleanup(): void {}
+                    }',
+                'error_message' => 'InvalidArgument',
+            ],
+            'privateStaticCallbackOfASubclassByClassStringGivenToAParentMethod' => [
+                'code' => '<?php
+                    class Command
+                    {
+                        public function setCode(callable $code): void {}
+                    }
+
+                    abstract class EndlessCommand extends Command
+                    {
+                        public function __construct()
+                        {
+                            parent::setCode([self::class, "runLoop"]);
+                        }
+
+                        private static function runLoop(): void {}
+                    }',
+                'error_message' => 'expects a public static callable',
+            ],
+            'protectedStaticCallbackByClassStringGivenToAnUnrelatedClassMethod' => [
+                'code' => '<?php
+                    class Other
+                    {
+                        public function take(callable $code): void {}
+                    }
+
+                    class Runner
+                    {
+                        public function __construct(private Other $other)
+                        {
+                            $this->other->take([self::class, "runLoop"]);
+                        }
+
+                        protected static function runLoop(): void {}
+                    }',
+                'error_message' => 'expects a public static callable',
             ],
             'undefinedCallableMethodArray' => [
                 'code' => '<?php

@@ -1469,6 +1469,26 @@ final class ArrayAccessTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'destructureNullableShapeByKey' => [
+                'code' => '<?php
+                    /** @return array{x: int}|null */
+                    function f(): ?array {
+                        return null;
+                    }
+
+                    ["x" => $a] = f();',
+                'assertions' => ['$a' => 'int|null'],
+            ],
+            'destructureNullableShapeByKeyKeepsTheTypesOfTheOtherShapes' => [
+                'code' => '<?php
+                    /** @return array{x: int}|array{x: string}|null */
+                    function f(): ?array {
+                        return null;
+                    }
+
+                    ["x" => $a] = f();',
+                'assertions' => ['$a' => 'int|null|string'],
+            ],
             'directWriteToAnArrayAccessObjectDoesNotCallOffsetGet' => [
                 'code' => '<?php
                     /** @implements ArrayAccess<string, int> */
@@ -2869,7 +2889,6 @@ final class ArrayAccessTest extends TestCase
                             return null;
                     }
 
-                    /** @psalm-suppress PossiblyNullArrayAccess */
                     [1 => $foo] = bar(0);
 
                     if ($foo !== null) {}',
@@ -3598,6 +3617,45 @@ final class ArrayAccessTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'destructureNullableShapeAndGenericArrayByKey' => [
+                'code' => '<?php
+                    /** @return array{x: int}|array<string, string>|null */
+                    function f(): ?array {
+                        return null;
+                    }
+
+                    ["x" => $a] = f();',
+                'error_message' => 'PossiblyNullArrayAccess',
+            ],
+            'destructureNullableUnionOfShapesWhereOneLacksTheKey' => [
+                'code' => '<?php
+                    /** @return array{x: int}|array{y: int}|null */
+                    function f(): ?array {
+                        return null;
+                    }
+
+                    ["x" => $a] = f();',
+                'error_message' => 'PossiblyNullArrayAccess',
+                'error_levels' => ['PossiblyUndefinedArrayOffset'],
+            ],
+            'destructureNullableShapeByAMissingKey' => [
+                'code' => '<?php
+                    /** @return array{x: int}|null */
+                    function f(): ?array {
+                        return null;
+                    }
+
+                    ["y" => $a] = f();',
+                'error_message' => 'PossiblyNullArrayAccess',
+            ],
+            'destructureNullableShapeWithAnEmptyStringKeyByADynamicKey' => [
+                'code' => '<?php
+                    /** @param array{"": int}|null $l */
+                    function f(?array $l, string $k): void {
+                        [$k => $a] = $l;
+                    }',
+                'error_message' => 'PossiblyNullArrayAccess',
+            ],
             'possiblyFalseOffsetOfAnArrayVariableNamesTheVariable' => [
                 'code' => '<?php
                     function read(array $items): void {
