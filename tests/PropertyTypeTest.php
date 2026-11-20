@@ -759,6 +759,25 @@ final class PropertyTypeTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'offsetWriteInitializesAnUninitializedArrayProperty' => [
+                'code' => '<?php
+                    final class Bag
+                    {
+                        /** @var array<string, string> */
+                        private array $values;
+
+                        public function __construct(string $name)
+                        {
+                            $this->values["name"] = $name;
+                        }
+
+                        /** @return array<string, string> */
+                        public function all(): array
+                        {
+                            return $this->values;
+                        }
+                    }',
+            ],
             'propertySetInConstructorStaysSetAfterAnIfNarrowingThis' => [
                 'code' => '<?php
                     interface Configurable {
@@ -4773,6 +4792,21 @@ final class PropertyTypeTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'readOfAnUninitializedArrayPropertyBeforeItsOffsetIsWritten' => [
+                'code' => '<?php
+                    final class Bag
+                    {
+                        /** @var array<string, string> */
+                        private array $values;
+
+                        public function __construct(string $name)
+                        {
+                            echo count($this->values);
+                            $this->values["name"] = $name;
+                        }
+                    }',
+                'error_message' => 'UninitializedProperty',
+            ],
             'nullsafeOnAnUnreadNonNullPropertyReceiverIsARedundantCondition' => [
                 'code' => '<?php
                     final class Item { public bool $flag = true; }

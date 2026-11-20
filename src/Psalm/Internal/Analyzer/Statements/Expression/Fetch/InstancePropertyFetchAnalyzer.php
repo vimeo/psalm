@@ -552,6 +552,8 @@ final class InstancePropertyFetchAnalyzer
                 && !$context->inside_unset
             ) {
                 if ($context->inside_isset
+                    // PHP creates an uninitialized array property when an offset of it is written
+                    || ($in_assignment && $stmt_type->isArray())
                     || ($context->inside_assignment
                         && isset($context->vars_in_scope[$var_id])
                         && $context->vars_in_scope[$var_id]->isNullable()
