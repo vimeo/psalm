@@ -7952,6 +7952,14 @@ final class TaintTest extends TestCase
                     }',
                 'error_message' => 'TaintedHtml',
             ],
+            'alterTableUpdateStoresInItsColumns' => [
+                'code' => '<?php
+                    function run(PDO $pdo): void {
+                        $pdo->exec("ALTER TABLE users UPDATE bio = " . $pdo->quote($_GET["bio"]) . " WHERE id = 1");
+                        echo (string) $pdo->query("SELECT bio FROM users")->fetch()["bio"];
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
             'rowsOfAQueryInAVariableAreStoredInItsColumns' => [
                 'code' => '<?php
                     /** @param list<string> $messages */

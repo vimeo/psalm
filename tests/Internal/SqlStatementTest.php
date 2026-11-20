@@ -121,6 +121,22 @@ final class SqlStatementTest extends TestCase
             'DELETE FROM users WHERE id = ?',
             '',
         ];
+        yield 'ALTER TABLE ... UPDATE (ClickHouse), which stores as an UPDATE does' => [
+            'ALTER TABLE t ON CLUSTER main UPDATE a = b, c = ? IN PARTITION 1 WHERE d = ?; INSERT INTO x (y) VALUES (?)',
+            'W t.a <- h[] p[] c[t.b]; W t.c <- h[] p[0] c[]; W x.y <- h[] p[2] c[]',
+        ];
+        yield 'ALTER TABLE and a part the analysis doesn\'t know the text of, which can be an UPDATE' => [
+            'ALTER TABLE t %0%',
+            'null',
+        ];
+        yield 'ALTER TABLE ending with a name the analysis doesn\'t know the text of, which can be an UPDATE' => [
+            'ALTER TABLE %0%',
+            'null',
+        ];
+        yield 'the other ALTERs, ATTACH and DETACH, which store nothing' => [
+            'ALTER TABLE t DELETE WHERE a = ?; ALTER TABLE t ADD COLUMN b String DEFAULT ?; DETACH TABLE t; ATTACH TABLE t',
+            '',
+        ];
         yield 'two statements' => [
             'INSERT INTO a (x) VALUES (?); SELECT y FROM b',
             'W a.x <- h[] p[0] c[]; R [y,0] <- h[] p[] c[b.y]',

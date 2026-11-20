@@ -156,11 +156,17 @@ final class SqlStatement
             return $this->parseUpdate();
         }
 
+        if ($first === 'alter') {
+            return $this->parseAlter();
+        }
+
         // what can't store values (DELETE, DDL, transactions, ...): a hole or a placeholder isn't written anywhere
         if (in_array($first, [
-            'delete', 'truncate', 'create', 'drop', 'alter', 'begin', 'start', 'commit', 'rollback', 'savepoint',
+            'delete', 'truncate', 'create', 'drop', 'begin', 'start', 'commit', 'rollback', 'savepoint',
             'release', 'set', 'lock', 'unlock', 'use', 'show', 'describe', 'desc', 'explain', 'analyze', 'vacuum',
             'pragma', 'grant', 'revoke', 'optimize', 'flush', 'kill',
+            // ClickHouse, SQLite
+            'attach', 'detach',
         ], true)) {
             // but the rows a statement gives back with RETURNING aren't modelled
             return $this->containsWordAtDepth('returning', 0) ? null : ['writes' => [], 'reads' => []];
@@ -397,6 +403,60 @@ final class SqlStatement
         }
 
         return ['writes' => $assignments, 'reads' => $reads];
+    }
+
+    /**
+     * `ALTER TABLE t [ON CLUSTER c] UPDATE a = ... WHERE ...` (ClickHouse) stores as an UPDATE does; the other ALTERs
+     * are DDL, which stores nothing
+     *
+     * @return array{writes: list<Write>, reads: list<Read>}|null
+     * @psalm-capabilities read-props|write-this-props|write-refs
+     */
+    private function parseAlter(): ?array
+    {
+        $this->position++;
+
+        if (($this->tokens[$this->position][0] ?? '') === 'hole') {
+            return null;
+        }
+
+        if ($this->peekWord() !== 'table') {
+            return ['writes' => [], 'reads' => []];
+        }
+
+        $this->position++;
+        $table = $this->parseTableName();
+
+        if ($table === false) {
+            return null;
+        }
+
+        if ($this->peekWord() === 'on') {
+            $this->position += 3;
+        }
+
+        // a part the analysis doesn't know the text of can be the UPDATE (`'ALTER TABLE ' . $table . $command`)
+        $next = $this->tokens[$this->position] ?? null;
+        if ($next === null ? $table[0] === null : $next[0] === 'hole') {
+            return null;
+        }
+
+        if ($this->peekWord() !== 'update') {
+            return ['writes' => [], 'reads' => []];
+        }
+
+        $this->position++;
+        [$table_name] = $table;
+        $assignments = $this->parseAssignments($table_name === null ? [null] : [$table_name => $table_name], $table_name);
+
+        if ($assignments === null) {
+            return null;
+        }
+
+        // IN PARTITION, WHERE: only placeholders to number
+        $this->countPlaceholders(array_slice($this->tokens, $this->position));
+
+        return ['writes' => $assignments, 'reads' => []];
     }
 
     /**
