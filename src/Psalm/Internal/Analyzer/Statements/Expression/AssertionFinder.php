@@ -32,6 +32,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ConstFetchAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
+use Psalm\Internal\Codebase\TaintValidations;
 use Psalm\Internal\Codebase\UrlHosts;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Provider\ClassLikeStorageProvider;
@@ -162,6 +163,39 @@ final class AssertionFinder
      * @return list<non-empty-array<string, non-empty-list<non-empty-list<Assertion>>>>
      */
     public static function scrapeAssertions(
+        PhpParser\Node\Expr $conditional,
+        ?string $this_class_name,
+        FileSource $source,
+        ?Codebase $codebase = null,
+        bool $inside_negation = false,
+        bool $cache = true,
+        bool $inside_conditional = true,
+    ): array {
+        // what the result of a validation tells of the value it validated, which the negation of the condition must
+        // tell alone: it would be one of several possibilities next to what the condition says of the result
+        if ($source instanceof StatementsAnalyzer
+            && ($validation = TaintValidations::getAssertions($source, $conditional)) !== []
+        ) {
+            return $validation;
+        }
+
+        return self::scrapeAssertionsOfConditional(
+            $conditional,
+            $this_class_name,
+            $source,
+            $codebase,
+            $inside_negation,
+            $cache,
+            $inside_conditional,
+        );
+    }
+
+    /**
+     * Gets all the type assertions in a conditional
+     *
+     * @return list<non-empty-array<string, non-empty-list<non-empty-list<Assertion>>>>
+     */
+    private static function scrapeAssertionsOfConditional(
         PhpParser\Node\Expr $conditional,
         ?string $this_class_name,
         FileSource $source,

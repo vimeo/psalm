@@ -20,7 +20,9 @@ use Psalm\Internal\Analyzer\DataFlowNodeData;
 use Psalm\Internal\Analyzer\IssueData;
 use Psalm\IssueBuffer;
 use Psalm\Plugin\EventHandler\AddTaintsInterface;
+use Psalm\Plugin\EventHandler\AfterExpressionAnalysisInterface;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
+use Psalm\Plugin\EventHandler\Event\AfterExpressionAnalysisEvent;
 use Psalm\Plugin\EventHandler\Event\FunctionReturnTypeProviderEvent;
 use Psalm\Plugin\EventHandler\Event\MethodReturnTypeProviderEvent;
 use Psalm\Plugin\EventHandler\FunctionReturnTypeProviderInterface;
@@ -38,6 +40,7 @@ use function array_filter;
 use function array_flip;
 use function array_map;
 use function array_values;
+use function getcwd;
 use function implode;
 use function in_array;
 use function ini_get;
@@ -69,6 +72,169 @@ final class TaintTest extends TestCase
         'MixedArrayAssignment', 'InvalidReturnStatement', 'InvalidArrayOffset', 'UndefinedFunction', 'ImplicitToStringCast',
         'InvalidArgument', 'UndefinedVariable', 'WeakHash', 'InsecureCookie',
     ];
+    public function testTheResultOfAValidationRemovesTheTaintsOfTheValueValidated(): void
+    {
+        $this->testConfig->throw_exception = false;
+        $file_path = (string) getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'somefile.php';
+
+        $this->addFile($file_path, '<?php
+            final class Violations implements Countable {
+                public function count(): int { return 0; }
+            }
+
+            final class Validator {
+                public static function make(string $value, string $pattern): self { return new self(); }
+                public static function check(string $value, string $pattern): Violations { return new Violations(); }
+                public function fails(): bool { return false; }
+                public function passes(): bool { return true; }
+            }
+
+            function passed(): void {
+                $value = (string) $_GET["a"];
+                $validator = Validator::make($value, "/^[a-z]+$/D");
+                if ($validator->fails()) {
+                    echo $value;
+                    return;
+                }
+                echo $value;
+            }
+
+            function noViolations(): void {
+                $value = (string) $_GET["b"];
+                $violations = Validator::check((string) $value, "/^[a-z]+$/D");
+                if (count($violations) > 0) {
+                    return;
+                }
+                echo $value;
+                $_SESSION["value"] = $value;
+            }
+
+            function assignedAfterTheValidation(): void {
+                $value = (string) $_GET["c"];
+                $validator = Validator::make($value, "/^[a-z]+$/D");
+                $value = (string) $_GET["d"];
+                if ($validator->passes()) {
+                    echo $value;
+                }
+            }
+
+            function countedWithAMethod(): void {
+                $value = (string) $_GET["e"];
+                $violations = Validator::check($value, "/^[a-z]+$/D");
+                if ($violations->count() === 0) {
+                    $_SESSION["value"] = $value;
+                }
+            }
+
+            function show(): void {
+                echo (string) ($_SESSION["value"] ?? "");
+            }
+
+            function changeGlobal(): void {
+                global $g;
+                $g = (string) $_GET["g"];
+            }
+
+            function globalChangedByACall(): void {
+                global $g;
+                $g = (string) $_GET["f"];
+                $validator = Validator::make($g, "/^[a-z]+$/D");
+                changeGlobal();
+                if ($validator->passes()) {
+                    echo (string) $g;
+                }
+            }
+
+            function assignedThroughAReference(): void {
+                $value = (string) $_GET["h"];
+                $alias = &$value;
+                $validator = Validator::make($value, "/^[a-z]+$/D");
+                $alias = (string) $_GET["i"];
+                if ($validator->passes()) {
+                    echo $value;
+                }
+            }
+
+            /** @param-out string $s */
+            function replace(?string &$s): void {
+                $s = (string) $_GET["k"];
+            }
+
+            function replacedByAReferenceArgument(): void {
+                $value = (string) $_GET["j"];
+                $validator = Validator::make($value, "/^[a-z]+$/D");
+                replace($value);
+                if ($validator->passes()) {
+                    echo $value;
+                }
+            }
+        ');
+        $this->project_analyzer->setPhpVersion('8.0', 'tests');
+        $this->project_analyzer->trackTaintedInputs();
+
+        $codebase = $this->project_analyzer->getCodebase();
+        $socket = new PluginRegistrationSocket($codebase->config, $codebase);
+        $socket->registerHooksFromClass((new class implements AfterExpressionAnalysisInterface {
+            #[Override]
+            public static function afterExpressionAnalysis(AfterExpressionAnalysisEvent $event): ?bool
+            {
+                $expr = $event->getExpr();
+
+                if (!$expr instanceof StaticCall
+                    || !$expr->class instanceof Name
+                    || $expr->class->toString() !== 'Validator'
+                    || !$expr->name instanceof Identifier
+                    || !in_array($expr->name->toLowerString(), ['make', 'check'], true)
+                    || !isset($expr->getArgs()[1])
+                ) {
+                    return null;
+                }
+
+                $source = $event->getStatementsSource();
+                $pattern = $source->getNodeTypeProvider()->getType($expr->getArgs()[1]->value);
+
+                if ($pattern === null || !$pattern->isSingleStringLiteral()) {
+                    return null;
+                }
+
+                $codebase = $event->getCodebase();
+                $codebase->addTaintValidation(
+                    $source,
+                    $expr,
+                    $expr->getArgs()[0]->value,
+                    $codebase->getTaintsRemovedByPattern($pattern->getSingleStringLiteral()->value),
+                    $expr->name->toLowerString() === 'make' ? 'validator' : 'violations',
+                );
+
+                return null;
+            }
+        })::class);
+        $codebase->config->initializePlugins($this->project_analyzer);
+
+        $this->analyzeFile($file_path, new Context(), false);
+
+        $issues = array_values(array_filter(
+            IssueBuffer::getIssuesDataForFile($file_path),
+            static fn(IssueData $issue): bool => !in_array($issue->type, self::IGNORE, true),
+        ));
+
+        self::assertEqualsCanonicalizing(
+            [
+                [17, 'TaintedHtml'],
+                [17, 'TaintedTextWithQuotes'],
+                [38, 'TaintedHtml'],
+                [38, 'TaintedTextWithQuotes'],
+                [65, 'TaintedHtml'],
+                [65, 'TaintedTextWithQuotes'],
+                [75, 'TaintedHtml'],
+                [75, 'TaintedTextWithQuotes'],
+                [89, 'TaintedHtml'],
+                [89, 'TaintedTextWithQuotes'],
+            ],
+            array_map(static fn(IssueData $issue): array => [$issue->line_from, $issue->type], $issues),
+        );
+    }
+
     public function testTaintKindNoHoles(): void
     {
         $constants = array_flip(TaintKind::TAINT_NAMES);
@@ -1523,6 +1689,19 @@ final class TaintTest extends TestCase
                         exit;
                     }
                     exec("gzip -" . (string) $level . " /tmp/backup.tar");',
+            ],
+            'valueMatchingAPatternIsValidatedWhenReadBackFromTheSession' => [
+                'code' => '<?php
+                    function remember(): void {
+                        $name = (string) $_GET["name"];
+                        if (preg_match("/^[a-z0-9_]+$/iD", $name)) {
+                            $_SESSION["name"] = $name;
+                        }
+                    }
+
+                    function show(): void {
+                        echo (string) ($_SESSION["name"] ?? "");
+                    }',
             ],
             'requestToAUrlWhoseHostMatchesAListOfHosts' => [
                 'code' => '<?php

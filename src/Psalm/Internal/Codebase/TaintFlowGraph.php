@@ -51,6 +51,7 @@ use Psalm\Type\Union;
 use function array_flip;
 use function array_pop;
 use function array_unshift;
+use function array_values;
 use function count;
 use function end;
 use function get_object_vars;
@@ -182,6 +183,22 @@ final class TaintFlowGraph extends DataFlowGraph
      * @var array<string, array{string, list<string>}>
      */
     private array $url_hosts = [];
+
+    /**
+     * The ids of the nodes holding the result of a validation => what it validated (see TaintValidations). Only used
+     * while analysing the function-like they are in, so never merged by addGraph().
+     *
+     * @var array<string, list<array{string, list<string>, int, 'validator'|'violations'}>>
+     */
+    private array $taint_validations = [];
+
+    /**
+     * The validations each call (its file and position) is the result of, by the variable validated, which plugins
+     * record before the analysis gives the value of the call its nodes: analysing the call again replaces them
+     *
+     * @var array<string, array<string, array{string, list<string>, int, 'validator'|'violations'}>>
+     */
+    private array $taint_validations_of_calls = [];
 
     /**
      * The ids of the nodes of variables assigned an empty array, whose items the next item assigned starts the start
@@ -674,6 +691,53 @@ final class TaintFlowGraph extends DataFlowGraph
         }
 
         return $url;
+    }
+
+    /**
+     * @param list<array{string, list<string>, int, 'validator'|'violations'}> $validations
+     * @psalm-capabilities read-props|write-this-props
+     */
+    public function addTaintValidations(DataFlowNode $node, array $validations): void
+    {
+        $this->taint_validations[$node->id] = [...$this->taint_validations[$node->id] ?? [], ...$validations];
+    }
+
+    /**
+     * @param array{string, list<string>, int, 'validator'|'violations'} $validation
+     * @psalm-capabilities read-props|write-this-props
+     */
+    public function addTaintValidationOfCall(string $call, array $validation): void
+    {
+        $this->taint_validations_of_calls[$call][$validation[0]] = $validation;
+    }
+
+    /**
+     * @return list<array{string, list<string>, int, 'validator'|'violations'}>
+     * @psalm-mutation-free
+     */
+    public function getTaintValidationsOfCall(string $call): array
+    {
+        return array_values($this->taint_validations_of_calls[$call] ?? []);
+    }
+
+    /**
+     * The validations all the nodes hold the result of
+     *
+     * @param array<string, DataFlowNode> $nodes
+     * @return list<array{string, list<string>, int, 'validator'|'violations'}>
+     * @psalm-mutation-free
+     */
+    public function getTaintValidations(array $nodes): array
+    {
+        $validations = null;
+        foreach ($nodes as $node) {
+            $node_validations = $this->taint_validations[$node->id] ?? [];
+            $validations = $validations === null ? $node_validations : ($validations === $node_validations
+                ? $validations
+                : []);
+        }
+
+        return $validations ?? [];
     }
 
     /**
