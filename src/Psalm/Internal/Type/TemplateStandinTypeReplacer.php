@@ -886,6 +886,8 @@ final class TemplateStandinTypeReplacer
                     );
                 }
 
+                $templates_in_scope = null;
+
                 foreach ($replacement_type->getAtomicTypes() as $replacement_atomic_type) {
                     $replacements_found = false;
 
@@ -925,6 +927,13 @@ final class TemplateStandinTypeReplacer
                     if ($replacement_atomic_type instanceof TTemplateParam
                         && $replacement_atomic_type->defining_class !== $calling_class
                         && $replacement_atomic_type->defining_class !== 'fn-' . $calling_function
+                        // a trait method is analysed as a method of the using class,
+                        // so its own templates don't match the `fn-` id of the calling function
+                        && !isset(
+                            ($templates_in_scope ??= $statements_analyzer?->getTemplateTypeMap() ?? [])
+                                [$replacement_atomic_type->param_name]
+                                [$replacement_atomic_type->defining_class],
+                        )
                     ) {
                         foreach ($replacement_atomic_type->as->getAtomicTypes() as $nested_type_atomic) {
                             $replacements_found = true;
