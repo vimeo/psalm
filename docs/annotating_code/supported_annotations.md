@@ -819,6 +819,8 @@ class BarClass extends BaseClass {}
 class BazClass extends BaseClass {} // this is an error
 ```
 
+Psalm also reads the `@phpstan-sealed` spelling. When a docblock has both, only the `@psalm-inheritors` tags are used.
+
 ## Type Syntax
 
 Psalm supports PHPDoc’s [type syntax](https://docs.phpdoc.org/guide/guides/types.html), and also the [proposed PHPDoc PSR type syntax](https://github.com/php-fig/fig-standards/blob/master/proposed/phpdoc.md#appendix-a-types).
