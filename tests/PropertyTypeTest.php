@@ -759,6 +759,44 @@ final class PropertyTypeTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'readingAPropertyOfANonObjectGivesNull' => [
+                'code' => '<?php
+                    $int = 1;
+                    $string = "hello";
+                    $a = $int->prop;
+                    $b = $string->prop;',
+                'assertions' => [
+                    '$a===' => 'null',
+                    '$b===' => 'null',
+                ],
+                'ignored_issues' => ['InvalidPropertyFetch'],
+            ],
+            'readingAPropertyOfAnObjectOrANonObjectGivesNullForTheNonObject' => [
+                'code' => '<?php
+                    class Foo {
+                        public string $prop = "";
+                    }
+
+                    $object = rand(0, 1) ? new Foo : 1;
+                    $a = $object->prop;',
+                'assertions' => [
+                    '$a===' => 'null|string',
+                ],
+                'ignored_issues' => ['PossiblyInvalidPropertyFetch'],
+            ],
+            'readingAnUndefinedPropertyOfAnEnumGivesNull' => [
+                'code' => '<?php
+                    enum Suit {
+                        case Hearts;
+                    }
+
+                    $a = Suit::Hearts->nope;',
+                'assertions' => [
+                    '$a===' => 'null',
+                ],
+                'ignored_issues' => ['UndefinedPropertyFetch'],
+                'php_version' => '8.1',
+            ],
             'propertySetInConstructorStaysSetAfterAnIfNarrowingThis' => [
                 'code' => '<?php
                     interface Configurable {

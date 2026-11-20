@@ -120,6 +120,12 @@ final class AtomicPropertyFetchAnalyzer
         if (!$lhs_type_part instanceof TNamedObject && !$lhs_type_part instanceof TObject) {
             $invalid_fetch_types[] = (string)$lhs_type_part;
 
+            // PHP warns and gives null
+            $statements_analyzer->node_data->setType(
+                $stmt,
+                Type::combineUnionTypes(Type::getNull(), $statements_analyzer->node_data->getType($stmt)),
+            );
+
             return;
         }
 
@@ -1338,6 +1344,7 @@ final class AtomicPropertyFetchAnalyzer
         bool $has_magic_getter,
         ?string $var_id,
         bool &$missing_in_isset,
+        bool $is_enum,
     ): void {
         if ($context->inside_isset || $context->collect_initializations) {
             // isset() sees null where the object doesn't have the property
@@ -1385,7 +1392,10 @@ final class AtomicPropertyFetchAnalyzer
             }
         }
 
-        $stmt_type = Type::getMixed();
+        // an enum has no dynamic properties: PHP warns and gives null
+        $stmt_type = $is_enum
+            ? Type::combineUnionTypes(Type::getNull(), $statements_analyzer->node_data->getType($stmt))
+            : Type::getMixed();
 
         $statements_analyzer->node_data->setType($stmt, $stmt_type);
 
@@ -1664,6 +1674,7 @@ final class AtomicPropertyFetchAnalyzer
             $has_magic_getter,
             $var_id,
             $missing_in_isset,
+            $class_storage->is_enum,
         );
     }
 
