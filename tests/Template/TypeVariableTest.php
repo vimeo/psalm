@@ -1972,6 +1972,17 @@ final class TypeVariableTest extends TestCase
                         }
                     }',
             ],
+            'constructionAssignedToADocumentedStaticVariableTakesItsType' => [
+                'code' => '<?php
+                    final class H {}
+
+                    function f(H $h): int {
+                        /** @var SplObjectStorage<H, int>|null */
+                        static $st = null;
+                        $st = new SplObjectStorage();
+                        return $st[$h];
+                    }',
+            ],
             'constructionAssignedThroughAPropertyReferenceTakesItsType' => [
                 'code' => '<?php
                     final class H {}
@@ -2771,6 +2782,32 @@ final class TypeVariableTest extends TestCase
                     }',
                 'error_message' => 'IncompatibleTypeParameters - src' . DIRECTORY_SEPARATOR
                     . "somefile.php:11:38 - Type 5 should be a subtype of array",
+            ],
+            'constructionAssignedToADocumentedStaticVariableRejectsOtherValues' => [
+                'code' => '<?php
+                    final class H {}
+
+                    function f(H $h): void {
+                        /** @var SplObjectStorage<H, int>|null */
+                        static $st = null;
+                        $st = new SplObjectStorage();
+                        $st[$h] = "bad";
+                    }',
+                'error_message' => 'IncompatibleTypeParameters - src' . DIRECTORY_SEPARATOR
+                    . "somefile.php:8:35 - Type 'bad' should be a subtype of int",
+            ],
+            'constructionAssignedToADocumentedGlobalRejectsOtherValues' => [
+                'code' => '<?php
+                    final class H {}
+
+                    function f(H $h): void {
+                        /** @var SplObjectStorage<H, int>|null */
+                        global $g;
+                        $g = new SplObjectStorage();
+                        $g[$h] = "bad";
+                    }',
+                'error_message' => 'IncompatibleTypeParameters - src' . DIRECTORY_SEPARATOR
+                    . "somefile.php:8:34 - Type 'bad' should be a subtype of int",
             ],
             'constructionAssignedThroughAPropertyReferenceRejectsOtherValues' => [
                 'code' => '<?php
