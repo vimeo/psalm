@@ -564,7 +564,6 @@ final class ArithmeticOpAnalyzer
         if ($left_type_part instanceof TMixed || $right_type_part instanceof TMixed) {
             if ($statements_source && $codebase && $context) {
                 if (!$context->collect_initializations
-                    && !$context->collect_mutations
                     && $statements_source->getFilePath() === $statements_source->getRootFilePath()
                     && (!(($source = $statements_source->getSource())
                             instanceof FunctionLikeAnalyzer)
@@ -648,7 +647,6 @@ final class ArithmeticOpAnalyzer
 
         if ($statements_source && $codebase && $context) {
             if (!$context->collect_initializations
-                && !$context->collect_mutations
                 && $statements_source->getFilePath() === $statements_source->getRootFilePath()
                 && (!(($parent_source = $statements_source->getSource())
                         instanceof FunctionLikeAnalyzer)

@@ -4,10 +4,14 @@ declare(strict_types=1);
 
 namespace Psalm\Internal\Json;
 
+use JsonSerializable;
 use RuntimeException;
 
-use function array_walk_recursive;
+use function array_map;
 use function bin2hex;
+use function get_object_vars;
+use function is_array;
+use function is_object;
 use function is_string;
 use function json_encode;
 use function json_last_error_msg;
@@ -79,25 +83,30 @@ final class Json
         return $result;
     }
 
-    /** @psalm-pure */
-    private static function scrub(array $data): array
+    /**
+     * Replaces the invalid UTF-8 in the strings of $data, in the properties of its objects too (a taint trace is a list
+     * of them), which json_encode() encodes
+     *
+     * @psalm-pure
+     */
+    private static function scrub(mixed $data): mixed
     {
-        array_walk_recursive(
-            $data,
-            /**
-             * @psalm-pure
-             * @param mixed $value
-             */
-            function (mixed &$value): void {
-                if (is_string($value)) {
-                    $value = preg_replace_callback(
-                        self::INVALID_UTF_REGEXP,
-                        static fn(array $matches): string => '<Invalid UTF-8: 0x' . bin2hex($matches[0] ?? '') . '>',
-                        $value,
-                    );
-                }
-            },
-        );
+        if (is_string($data)) {
+            return preg_replace_callback(
+                self::INVALID_UTF_REGEXP,
+                static fn(array $matches): string => '<Invalid UTF-8: 0x' . bin2hex($matches[0] ?? '') . '>',
+                $data,
+            );
+        }
+
+        if (is_array($data)) {
+            return array_map(self::scrub(...), $data);
+        }
+
+        if (is_object($data) && !$data instanceof JsonSerializable) {
+            return (object) array_map(self::scrub(...), get_object_vars($data));
+        }
+
         return $data;
     }
 }

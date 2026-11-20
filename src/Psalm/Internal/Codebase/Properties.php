@@ -85,7 +85,6 @@ final class Properties
             && $context
             && $context->self !== $fq_class_name
             && !$context->collect_initializations
-            && !$context->collect_mutations
         ) {
             $codebase->addReferenceToClass($fq_class_name_lc, $code_location, $context, $source->getFilePath());
         }
