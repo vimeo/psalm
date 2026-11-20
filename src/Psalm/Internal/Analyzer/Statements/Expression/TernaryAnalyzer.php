@@ -7,7 +7,6 @@ namespace Psalm\Internal\Analyzer\Statements\Expression;
 use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Context;
-use Psalm\Exception\ComplicatedExpressionException;
 use Psalm\Exception\ScopeAnalysisException;
 use Psalm\Internal\Algebra;
 use Psalm\Internal\Algebra\FormulaGenerator;
@@ -16,7 +15,6 @@ use Psalm\Internal\Analyzer\Statements\Block\IfConditionalAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Block\IfElse\IfAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
-use Psalm\Internal\Clause;
 use Psalm\Internal\Scope\IfScope;
 use Psalm\Internal\Type\AssertionReconciler;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
@@ -27,16 +25,11 @@ use Psalm\Type\Reconciler;
 use Psalm\Type\Union;
 
 use function array_diff_assoc;
-use function array_diff_key;
 use function array_fill_keys;
 use function array_filter;
 use function array_intersect;
 use function array_intersect_key;
 use function array_keys;
-use function array_map;
-use function array_values;
-use function count;
-use function in_array;
 use function spl_object_id;
 
 /**
@@ -53,7 +46,9 @@ final class TernaryAnalyzer
 
         $if_scope = new IfScope();
 
-        $pre_condition_remove_vars = $context->parent_remove_vars;
+        $pre_cond_clauses = $context->clauses;
+        $pre_cond_reconciled_clauses = $context->reconciled_expression_clauses;
+        $pre_cond_remove_vars = $context->parent_remove_vars;
 
         try {
             // the else of an `||` is analysed again from where the condition started, not from where it ended
@@ -86,119 +81,24 @@ final class TernaryAnalyzer
             $statements_analyzer->node_data,
         );
 
-        $cond_object_id = spl_object_id($stmt->cond);
-
-        $if_clauses = FormulaGenerator::getFormula(
-            $cond_object_id,
-            $cond_object_id,
-            $stmt->cond,
-            $context->self,
+        IfConditionalAnalyzer::applyConditionClauses(
             $statements_analyzer,
+            $stmt->cond,
+            $context,
+            $if_context,
+            $if_scope,
             $codebase,
-        );
-
-        if (count($if_clauses) > 200) {
-            $if_clauses = [];
-        }
-
-        // whether each mixed variable may be unset
-        $mixed_vars = [];
-
-        foreach ($if_context->vars_in_scope as $var_id => $type) {
-            if ($type->isMixed() && isset($context->vars_in_scope[$var_id])) {
-                $mixed_vars[$var_id] = $type->possibly_undefined || $type->possibly_undefined_from_try;
-            }
-        }
-
-        foreach ($context->vars_possibly_in_scope as $var_id => $_) {
-            if (!isset($context->vars_in_scope[$var_id])) {
-                $mixed_vars[$var_id] = true;
-            }
-        }
-
-        $forget_items_of_mixed_vars = static fn(Clause $c): Clause => $c->forgetItemsOfMixedVars(
-            array_diff_key($mixed_vars, $c->possibilities),
-            $cond_object_id,
-        );
-
-        $cond_clauses = $if_clauses;
-
-        $if_clauses = array_map($forget_items_of_mixed_vars, $if_clauses);
-
-        $entry_clauses = $context->clauses;
-
-        // this will see whether any of the clauses in set A conflict with the clauses in set B
-        AlgebraAnalyzer::checkForParadox(
-            $entry_clauses,
-            $if_clauses,
-            $statements_analyzer,
-            $stmt->cond,
+            $pre_cond_clauses,
+            $pre_cond_reconciled_clauses,
+            $pre_cond_remove_vars,
             $assigned_in_conditional_var_ids,
-        );
-
-        $context->removeClausesOfVarsChangedSince($pre_condition_remove_vars);
-
-        $if_clauses = Algebra::simplifyCNF($if_clauses);
-
-        $ternary_context_clauses = $entry_clauses
-            ? Algebra::simplifyCNF([...$entry_clauses, ...$if_clauses])
-            : $if_clauses;
-
-        if ($if_context->reconciled_expression_clauses) {
-            $reconciled_expression_clauses = $if_context->reconciled_expression_clauses;
-
-            $ternary_context_clauses = array_values(
-                array_filter(
-                    $ternary_context_clauses,
-                    static fn(Clause $c): bool => !in_array($c->hash, $reconciled_expression_clauses, true),
-                ),
-            );
-
-            if (count($if_context->clauses) === 1
-                && $if_context->clauses[0]->wedge
-                && !$if_context->clauses[0]->possibilities
-            ) {
-                $if_context->clauses = [];
-                $if_context->reconciled_expression_clauses = [];
-            }
-        }
-
-        try {
-            $if_scope->negated_clauses = [
-                ...FormulaGenerator::getNegatedFormula(
-                    $if_clauses,
-                    $stmt->cond,
-                    $cond_object_id,
-                    $context->self,
-                    $statements_analyzer,
-                    $codebase,
-                    true,
-                ),
-                ...FormulaGenerator::getNegatedSetMixedVarClauses(
-                    $cond_clauses,
-                    $mixed_vars,
-                    $stmt->cond,
-                    $cond_object_id,
-                    $context->self,
-                    $statements_analyzer,
-                    $codebase,
-                ),
-            ];
-        } catch (ComplicatedExpressionException) {
-            $if_scope->negated_clauses = [];
-        }
-
-        $if_scope->negated_types = Algebra::getTruthsFromFormula(
-            Algebra::simplifyCNF(
-                [...$context->clauses, ...$if_scope->negated_clauses],
-            ),
         );
 
         $active_if_types = [];
 
         $reconcilable_if_types = Algebra::getTruthsFromFormula(
-            $ternary_context_clauses,
-            $cond_object_id,
+            $if_context->clauses,
+            spl_object_id($stmt->cond),
             $cond_referenced_var_ids,
             $active_if_types,
         );
@@ -218,6 +118,15 @@ final class TernaryAnalyzer
                 $if_context->inside_loop,
                 new CodeLocation($statements_analyzer->getSource(), $stmt->cond),
             );
+
+            if ($changed_var_ids) {
+                $if_context->clauses = AlgebraAnalyzer::removeReconciledClauses(
+                    $if_context->clauses,
+                    $changed_var_ids,
+                    $if_context->vars_in_scope,
+                    $statements_analyzer,
+                )[0];
+            }
         }
 
         $if_start_vars = $if_context->vars_in_scope;

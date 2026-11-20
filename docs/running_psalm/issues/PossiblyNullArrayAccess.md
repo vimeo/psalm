@@ -9,3 +9,7 @@ function foo(?array $a) : void {
     echo $a[0];
 }
 ```
+
+## Further resources
+
+- [CWE-476](https://cwe.mitre.org/data/definitions/476.html)
