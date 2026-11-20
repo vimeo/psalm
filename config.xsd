@@ -585,6 +585,7 @@
             <xs:element name="WeakCipher" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="WeakHash" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="WeakRandom" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="WrongCaseFunction" type="FunctionIssueHandlerType" minOccurs="0" />
             <xs:element name="XmlExternalEntity" type="IssueHandlerType" minOccurs="0" />
         </xs:choice>
         <xs:anyAttribute processContents="skip" />
