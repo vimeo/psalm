@@ -147,14 +147,12 @@ final class ArgumentsAnalyzer
             $context->inside_assert = $was_inside_assert;
         }
 
-        // the callee may call a closure it is given, also inside an array or an object, which may write what the
-        // closure captured by reference
+        // the callee may call a closure it is given, which may write what the closure captured by reference
         foreach ($args as $arg) {
             $written_var_ids = ClosureAnalyzer::analyzeVarIdsWrittenByCall(
                 $statements_analyzer,
                 $context,
                 $arg->value,
-                true,
             );
 
             foreach ($written_var_ids as $var_id => $_) {
