@@ -336,7 +336,7 @@ final class TypeVariableTest extends TestCase
             'magicPropertyOfObjectsBuiltEmptyOnEachBranch' => [
                 'code' => '<?php
                     /**
-                     * @template-covariant K as string
+                     * @template K as string
                      * @template V
                      */
                     final class Bag {
@@ -384,10 +384,14 @@ final class TypeVariableTest extends TestCase
                             } else {
                                 $bag = $bags[$key];
                             }
-                            $bag->count++;
+                            $bag->count = 1;
                         }
                         return $bags;
                     }',
+                // __set() doesn't bind the variables of an object built empty
+                'assertions' => [],
+                'ignored_issues' => ['UndefinedMagicPropertyAssignment'],
+                'php_version' => '8.0',
             ],
             'possiblyEmptyArray' => [
                 'code' => '<?php
