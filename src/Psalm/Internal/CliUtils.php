@@ -13,6 +13,7 @@ use Psalm\Exception\ConfigCreationException;
 use Psalm\Exception\ConfigException;
 use Psalm\Exception\ConfigNotFoundException;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
+use Psalm\Internal\Cli\OverlayExitGuard;
 use Psalm\Internal\Cli\Psalm;
 use Psalm\Internal\Cli\Psalter;
 use Psalm\Internal\Cli\Refactor;
@@ -424,6 +425,40 @@ final class CliUtils
     }
 
     /**
+     * Like chosenByOperator(), for what the person running Psalm sends it besides the arguments: an overlay
+     * request and the files it names
+     *
+     * @psalm-pure
+     * @psalm-taint-escape file
+     * @psalm-taint-escape ssrf
+     * @psalm-taint-escape include
+     * @psalm-taint-escape callable
+     * @psalm-taint-escape html
+     * @psalm-taint-escape has_quotes
+     * @psalm-taint-escape url_component
+     * @psalm-taint-escape url_path
+     */
+    public static function sentByOperator(string $data): string
+    {
+        return $data;
+    }
+
+    /**
+     * A command for proc_open() as a list, which runs without a shell: the arguments are not shell code. Psalm's
+     * own proc_open() sink does not tell a list from a command line. Only for a program Psalm chose (PHP_BINARY):
+     * the program of a list is still run.
+     *
+     * @param list<string> $command
+     * @return list<string>
+     * @psalm-pure
+     * @psalm-taint-escape shell
+     */
+    public static function withoutShell(array $command): array
+    {
+        return $command;
+    }
+
+    /**
      * @return list<string>
      */
     public static function getArguments(): array
@@ -662,6 +697,7 @@ final class CliUtils
                 STDERR,
                 $e->getMessage() . PHP_EOL,
             );
+            OverlayExitGuard::explain($e->getMessage());
             exit(1);
         } finally {
             Config::setAddCommandLinePaths(false);
