@@ -2285,7 +2285,8 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
     }
 
     /**
-     * A closure's return type names the templates of the class-like that declares the method around it
+     * A closure's return type names the templates of the class-like that declares the method around it: the
+     * declared type, and what the analysed class gives those templates
      */
     public static function localizeClosureReturnType(
         Codebase $codebase,
@@ -2309,13 +2310,19 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
             return $return_type;
         }
 
-        return self::localizeReturnType(
+        $localized_return_type = self::localizeReturnType(
             $codebase,
             $return_type,
             $codebase->classlike_storage_provider->get($enclosing_method_id->fq_class_name),
             $context->self,
             $enclosing_method_id->method_name,
         );
+
+        // what the closure returns can be in either terms: `$this->get()` in those of the analysed class, a captured
+        // `@param T` value in those of the declaring class-like
+        return $localized_return_type->getId() === $return_type->getId()
+            ? $return_type
+            : Type::combineUnionTypes($return_type, $localized_return_type, $codebase);
     }
 
     public static function analyzeClassMethodReturnType(
