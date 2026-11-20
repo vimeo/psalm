@@ -22,6 +22,31 @@ final class GeneratorTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'yieldFromForwardsTheSendTypeOfTheInnerGenerator' => [
+                'code' => '<?php
+                    /** @return Generator<int, string, int, void> */
+                    function inner(): Generator {
+                        $x = yield "a";
+                        echo $x;
+                    }
+
+                    /** @return Generator<int, string, int, void> */
+                    function outer(): Generator {
+                        yield from inner();
+                    }
+
+                    /** @return Generator<int, string, int, string> */
+                    function innerWithResult(): Generator {
+                        $x = yield "a";
+                        return (string) $x;
+                    }
+
+                    /** @return Generator<int, string, int, void> */
+                    function outerWithResult(): Generator {
+                        $result = yield from innerWithResult();
+                        echo $result;
+                    }',
+            ],
             'generator' => [
                 'code' => '<?php
                     /**
@@ -479,6 +504,19 @@ final class GeneratorTest extends TestCase
 
                     function example2() : Generator {
                         yield from example();
+                    }',
+                'error_message' => 'InvalidIterator',
+            ],
+            'foreachOverAGeneratorWithASendTypeIsInvalid' => [
+                'code' => '<?php
+                    /** @return Generator<int, string, int, void> */
+                    function inner(): Generator {
+                        $x = yield "a";
+                        echo $x;
+                    }
+
+                    foreach (inner() as $value) {
+                        echo $value;
                     }',
                 'error_message' => 'InvalidIterator',
             ],
