@@ -966,7 +966,7 @@ final class ArgumentAnalyzer
 
     /**
      * A sealed shape with integer keys that is not a list passes its values in the order of the shape, whatever the
-     * keys are: as the list of them
+     * keys are, as the list of them. A shape with an optional item is left as it is.
      *
      * @psalm-pure
      */
@@ -977,6 +977,7 @@ final class ArgumentAnalyzer
             || $array->is_list
             || $array->fallback_params
             || !array_all(array_keys($array->properties), static fn(int|string $key): bool => is_int($key))
+            || !array_all($array->properties, static fn(Union $property): bool => !$property->possibly_undefined)
         ) {
             return $array;
         }
