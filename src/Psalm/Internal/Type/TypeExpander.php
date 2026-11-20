@@ -308,6 +308,7 @@ final class TypeExpander
 
                 $extra_types = [];
                 foreach ($return_type->extra_types as $extra_type) {
+                    // a member is not expanded as a generic or its templates (`Iterator` stays `Iterator`)
                     self::expandAtomic(
                         $codebase,
                         $extra_type,
@@ -317,8 +318,8 @@ final class TypeExpander
                         $evaluate_class_constants,
                         $evaluate_conditional_types,
                         $final,
-                        $expand_generic,
-                        $expand_templates,
+                        false,
+                        false,
                         $throw_on_unresolvable_constant,
                     );
 
@@ -400,11 +401,12 @@ final class TypeExpander
                     $self_class,
                 );
             }
-            if (is_string($static_class_type) || $self_class) {
-                $return_type = $return_type->replaceClassLike(
-                    'static',
-                    is_string($static_class_type) ? $static_class_type : $self_class,
-                );
+            $static_class_name = $static_class_type instanceof TNamedObject
+                ? $static_class_type->value
+                : (is_string($static_class_type) ? $static_class_type : $self_class);
+
+            if ($static_class_name !== null) {
+                $return_type = $return_type->replaceClassLike('static', $static_class_name);
             }
 
             if ($evaluate_class_constants && $codebase->classOrInterfaceOrEnumExists($return_type->fq_classlike_name)) {
@@ -904,7 +906,8 @@ final class TypeExpander
                     static fn($type_map): bool => !reset($type_map)->hasMixed(),
                 )
             ) {
-                $return_type = new TGenericObject(
+                // a late static type already resolved stays one
+                $return_type = (new TGenericObject(
                     $return_type->value,
                     array_values(
                         array_map(
@@ -912,7 +915,7 @@ final class TypeExpander
                             $container_class_storage->template_types,
                         ),
                     ),
-                );
+                ))->setIsStatic($return_type->is_static, $return_type->is_static_resolved);
 
                 // we don't want to expand generic types recursively
                 $expand_generic = false;

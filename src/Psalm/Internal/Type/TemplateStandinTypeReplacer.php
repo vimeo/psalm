@@ -818,8 +818,11 @@ final class TemplateStandinTypeReplacer
                     $codebase,
                     $replacement_type,
                     $calling_class,
-                    $calling_class,
+                    $template_result->static_class_type ?? $calling_class,
                     null,
+                    true,
+                    false,
+                    $template_result->static_class_type !== null && $template_result->static_class_is_final,
                 );
 
                 if ($depth < 10) {
@@ -907,8 +910,11 @@ final class TemplateStandinTypeReplacer
                 $codebase,
                 $atomic_type->as,
                 $calling_class,
-                $calling_class,
+                $template_result->static_class_type ?? $calling_class,
                 null,
+                true,
+                false,
+                $template_result->static_class_type !== null && $template_result->static_class_is_final,
             );
 
             $as = self::replace(
