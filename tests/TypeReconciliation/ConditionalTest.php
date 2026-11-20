@@ -196,6 +196,16 @@ final class ConditionalTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'negatedIsFloatCombinesTheRemainingTypes' => [
+                'code' => '<?php
+                    /** @var numeric|"a" $x */
+                    $x = $_GET["x"];
+                    $r = is_float($x) ? null : $x;
+                ',
+                'assertions' => [
+                    '$r===' => 'int|null|string',
+                ],
+            ],
             'varAssignedUnderConditionIsDefinedUnderTheSameCondition' => [
                 'code' => '<?php
                     function f(bool $b): void {

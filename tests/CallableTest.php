@@ -3787,6 +3787,16 @@ final class CallableTest extends TestCase
                     '$r===' => '0|array<array-key, mixed>|callable-object',
                 ],
             ],
+            'negatedIsObjectKeepsArrayOfCallableOrArray' => [
+                'code' => '<?php
+                    /** @var object|callable|array $p */
+                    $p = $_GET["p"];
+                    $r = is_object($p) ? 0 : $p;
+                ',
+                'assertions' => [
+                    '$r===' => '0|array<array-key, mixed>|callable-string',
+                ],
+            ],
             'callableCheckAfterIsStringOnCallableOrArray' => [
                 'code' => '<?php
                     /** @param string|callable|array $param */
