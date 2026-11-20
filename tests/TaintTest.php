@@ -1759,19 +1759,45 @@ final class TaintTest extends TestCase
                     redirectTo("https://example.com/" . (string) $_GET["page"]);
                     redirectTo("/docs/" . (string) $_GET["page"]);',
             ],
-            'sessionItemWhereTaintedInputIsSuppressed' => [
+            'sessionItemStoredButNeverRead' => [
+                'code' => '<?php
+                    $_SESSION["user"] = $_GET["user"];',
+            ],
+            'sessionItemReadUnderAnotherKey' => [
+                'code' => '<?php
+                    function remember(): void {
+                        $_SESSION["user"] = (string) $_GET["user"];
+                        $_SESSION["page"] = 1;
+                    }
+
+                    function show(): void {
+                        echo (string) ($_SESSION["page"] ?? "");
+                    }',
+            ],
+            'sessionItemEscapedForWhatReadsIt' => [
+                'code' => '<?php
+                    function remember(): void {
+                        $_SESSION["user"] = htmlspecialchars((string) $_GET["user"], ENT_QUOTES);
+                        $_SESSION["page"] = (int) $_GET["page"];
+                    }
+
+                    function show(): void {
+                        echo (string) ($_SESSION["user"] ?? "");
+                        echo (string) ($_SESSION["page"] ?? "");
+                    }',
+            ],
+            'sessionItemStoredWhereTaintedInputIsSuppressed' => [
                 'code' => '<?php
                     /** @psalm-suppress TaintedInput */
                     function remember(string $user): void {
                         $_SESSION["user"] = $user;
                     }
 
+                    function show(): void {
+                        echo (string) ($_SESSION["user"] ?? "");
+                    }
+
                     remember((string) $_GET["user"]);',
-            ],
-            'sessionItemOfAValueThatCantBeTainted' => [
-                'code' => '<?php
-                    $_SESSION["page"] = (int) $_GET["page"];
-                    $_SESSION["user"] = "guest";',
             ],
             'rowOfATableNothingStoresIntoIsNoSource' => [
                 'code' => '<?php
@@ -7643,19 +7669,75 @@ final class TaintTest extends TestCase
                     header((string) $_GET["header"] . ": /");',
                 'error_message' => 'TaintedHeader',
             ],
-            'taintedSessionItem' => [
+            'taintedSessionItemReadBack' => [
                 'code' => '<?php
-                    $_SESSION["user"] = $_GET["user"];',
-                'error_message' => 'TaintedSession',
+                    function remember(): void {
+                        $_SESSION["user"] = (string) $_GET["user"];
+                    }
+
+                    function show(): void {
+                        echo (string) ($_SESSION["user"] ?? "");
+                    }',
+                'error_message' => 'TaintedHtml',
             ],
-            'taintedNestedSessionItem' => [
+            'taintedNestedSessionItemReadBack' => [
                 'code' => '<?php
                     function remember(string $role): void {
                         $_SESSION["auth"]["role"] = $role;
                     }
 
+                    function check(): void {
+                        exec("grant " . (string) ($_SESSION["auth"]["role"] ?? ""));
+                    }
+
                     remember((string) $_GET["role"]);',
-                'error_message' => 'TaintedSession',
+                'error_message' => 'TaintedShell',
+            ],
+            'sessionItemEscapedForAnotherReader' => [
+                'code' => '<?php
+                    function remember(): void {
+                        $_SESSION["user"] = htmlspecialchars((string) $_GET["user"]);
+                    }
+
+                    function backup(): void {
+                        exec("backup " . (string) ($_SESSION["user"] ?? ""));
+                    }',
+                'error_message' => 'TaintedShell',
+            ],
+            'taintedSessionStoredAsAWhole' => [
+                'code' => '<?php
+                    function login(): void {
+                        $_SESSION = ["user" => (string) $_GET["user"]];
+                    }
+
+                    function show(): void {
+                        echo (string) ($_SESSION["user"] ?? "");
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintedSessionItemUnderAKeyNotKnown' => [
+                'code' => '<?php
+                    function remember(string $key): void {
+                        $_SESSION[$key] = (string) $_GET["value"];
+                    }
+
+                    function show(): void {
+                        echo (string) ($_SESSION["user"] ?? "");
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintedSessionReadAsAWhole' => [
+                'code' => '<?php
+                    function remember(): void {
+                        $_SESSION["user"] = (string) $_GET["user"];
+                    }
+
+                    function show(): void {
+                        foreach ($_SESSION as $value) {
+                            echo (string) $value;
+                        }
+                    }',
+                'error_message' => 'TaintedHtml',
             ],
             'getenvIsASource' => [
                 'code' => '<?php

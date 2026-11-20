@@ -266,7 +266,6 @@
  - [TaintedLlmPrompt](issues/TaintedLlmPrompt.md)
  - [TaintedNosql](issues/TaintedNosql.md)
  - [TaintedRedirect](issues/TaintedRedirect.md)
- - [TaintedSession](issues/TaintedSession.md)
  - [TaintedShell](issues/TaintedShell.md)
  - [TaintedSleep](issues/TaintedSleep.md)
  - [TaintedSql](issues/TaintedSql.md)

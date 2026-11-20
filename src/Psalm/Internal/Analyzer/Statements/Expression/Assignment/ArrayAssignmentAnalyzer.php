@@ -49,7 +49,6 @@ use Psalm\Type\Atomic\TTemplateKeyOf;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTemplateParamClass;
 use Psalm\Type\Reconciler;
-use Psalm\Type\TaintKind;
 use Psalm\Type\Union;
 
 use function array_fill;
@@ -1194,23 +1193,14 @@ final class ArrayAssignmentAnalyzer
                 }
             }
 
-            // what is stored in the session is trusted by the requests that read it back
             if ($expr->var instanceof Variable
                 && $expr->var->name === '_SESSION'
                 && ($taint_flow_graph = $statements_analyzer->getTaintFlowGraphWithSuppressed())
             ) {
-                $session_sink = DataFlowNode::getForCallableArg(
-                    'builtin',
-                    '$_SESSION',
-                    0,
-                    $var_location,
-                    TaintKind::INPUT_SESSION,
-                );
+                $session_node = GlobalAnalyzer::getSessionNode($taint_flow_graph);
 
-                $taint_flow_graph->addSink($session_sink);
-
-                foreach ($child_stmt_type->parent_nodes as $child_parent_node) {
-                    $taint_flow_graph->addPath($child_parent_node, $session_sink, '=', 0, $removed_taints);
+                foreach ($stmt_type->parent_nodes as $parent_node) {
+                    $taint_flow_graph->addPath($parent_node, $session_node, '=');
                 }
             }
 

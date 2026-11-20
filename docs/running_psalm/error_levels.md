@@ -378,7 +378,6 @@ These issues are only reported when their corresponding feature is enabled (e.g.
  - [TaintedLlmPrompt](issues/TaintedLlmPrompt.md)
  - [TaintedNosql](issues/TaintedNosql.md)
  - [TaintedRedirect](issues/TaintedRedirect.md)
- - [TaintedSession](issues/TaintedSession.md)
  - [TaintedSSRF](issues/TaintedSSRF.md)
  - [TaintedShell](issues/TaintedShell.md)
  - [TaintedSleep](issues/TaintedSleep.md)

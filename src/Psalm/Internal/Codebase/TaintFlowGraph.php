@@ -27,7 +27,6 @@ use Psalm\Issue\TaintedLlmPrompt;
 use Psalm\Issue\TaintedNosql;
 use Psalm\Issue\TaintedRedirect;
 use Psalm\Issue\TaintedSSRF;
-use Psalm\Issue\TaintedSession;
 use Psalm\Issue\TaintedShell;
 use Psalm\Issue\TaintedSleep;
 use Psalm\Issue\TaintedSql;
@@ -1546,12 +1545,6 @@ final class TaintFlowGraph extends DataFlowGraph
                 ),
                 TaintKind::INPUT_REDIRECT => new TaintedRedirect(
                     'Detected tainted redirect target',
-                    $issue_location,
-                    $issue_trace,
-                    $path,
-                ),
-                TaintKind::INPUT_SESSION => new TaintedSession(
-                    'Detected tainted session data',
                     $issue_location,
                     $issue_trace,
                     $path,

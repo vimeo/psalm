@@ -32,6 +32,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\Fetch\AtomicPropertyFetchAnaly
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\InstancePropertyFetchAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\VariableFetchAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
+use Psalm\Internal\Analyzer\Statements\GlobalAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
 use Psalm\Internal\Clause;
@@ -1267,6 +1268,10 @@ final class AssignmentAnalyzer
         $taint_flow_graph = $flow_graph instanceof CombinedFlowGraph ? $flow_graph->taint_flow_graph : $flow_graph;
         if ($taint_flow_graph instanceof TaintFlowGraph && $taint_flow_graph->isOutputStream($type)) {
             $taint_flow_graph->addOutputStream($new_parent_node);
+        }
+
+        if ($var_id === '$_SESSION' && $taint_flow_graph instanceof TaintFlowGraph) {
+            $taint_flow_graph->addPath($new_parent_node, GlobalAnalyzer::getSessionNode($taint_flow_graph), '=');
         }
 
         foreach ($parent_nodes as $parent_node) {
