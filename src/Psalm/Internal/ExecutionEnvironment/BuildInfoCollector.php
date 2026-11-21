@@ -7,6 +7,7 @@ namespace Psalm\Internal\ExecutionEnvironment;
 use Psalm\SourceControl\Git\CommitInfo;
 use Psalm\SourceControl\Git\GitInfo;
 
+use function array_filter;
 use function array_unshift;
 use function assert;
 use function explode;
@@ -54,6 +55,9 @@ final class BuildInfoCollector
      * Collect environment variables.
      *
      * The git info of the checkout names the repository of a CI service Psalm does not know.
+     *
+     * A null value and a pull request number that says there is no pull request ("", "0", "false") are left out:
+     * Shepherd reads them like a missing key.
      */
     public function collect(?GitInfo $git_info = null): array
     {
@@ -68,7 +72,13 @@ final class BuildInfoCollector
             ->fillGithubActions()
             ->fillGenericCi($git_info);
 
-        return $this->readEnv;
+        $build_info = array_filter($this->readEnv, static fn(mixed $value): bool => $value !== null);
+
+        if (in_array($build_info['CI_PR_NUMBER'] ?? null, ['', '0', 'false'], true)) {
+            unset($build_info['CI_PR_NUMBER']);
+        }
+
+        return $build_info;
     }
 
     // internal method

@@ -289,7 +289,6 @@ final class BuildInfoCollectorTest extends TestCase
                 'TRAVIS_TAG' => '',
                 'CI_REPO_OWNER' => 'psalm',
                 'CI_REPO_NAME' => 'example',
-                'CI_PR_NUMBER' => 'false',
                 'CI_BRANCH' => 'master',
             ],
         ];
@@ -339,7 +338,6 @@ final class BuildInfoCollectorTest extends TestCase
                 'TRAVIS_TAG' => 'v1.0.0',
                 'CI_REPO_OWNER' => 'psalm',
                 'CI_REPO_NAME' => 'example',
-                'CI_PR_NUMBER' => 'false',
                 'CI_BRANCH' => 'v1.0.0',
             ],
         ];
@@ -357,11 +355,8 @@ final class BuildInfoCollectorTest extends TestCase
                 'CIRCLECI' => 'true',
                 'CIRCLE_BUILD_NUM' => '77',
                 'CI_NAME' => 'circleci',
-                'CI_PR_REPO_OWNER' => null,
-                'CI_PR_REPO_NAME' => null,
                 'CI_REPO_OWNER' => 'psalm',
                 'CI_REPO_NAME' => 'example',
-                'CI_PR_NUMBER' => null,
                 'CI_BRANCH' => 'master',
             ],
         ];
@@ -403,7 +398,6 @@ final class BuildInfoCollectorTest extends TestCase
             [
                 'CI_BUILD_NUMBER' => '5',
                 'CI_JOB_ID' => '1',
-                'CI_PR_NUMBER' => '',
                 'APPVEYOR' => 'True',
                 'APPVEYOR_BUILD_NUMBER' => '5',
                 'APPVEYOR_JOB_NUMBER' => '1',
@@ -467,7 +461,6 @@ final class BuildInfoCollectorTest extends TestCase
             [
                 'CI_JOB_ID' => 'aaaa-bbbb',
                 'CI_BRANCH' => 'master',
-                'CI_PR_NUMBER' => '',
                 'CI_NAME' => 'Scrutinizer',
                 'CI_REPO_OWNER' => 'psalm',
                 'CI_REPO_NAME' => 'example',
