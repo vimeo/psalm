@@ -25,8 +25,9 @@ final class BuildInfoCollector
     private readonly Env $env;
 
     /**
-     * The first provider that detects its CI service wins, so the generic one, which takes any CI service,
-     * is the last. The others keep the order in which the CI_NAME of the last of them used to win.
+     * The first provider that matches the environment wins. The known CI services come first and the generic
+     * one, which matches any CI service, last; the order of the known ones only matters when the environment
+     * has the variables of several of them.
      *
      * @var list<CiProvider>
      */
@@ -49,8 +50,6 @@ final class BuildInfoCollector
             new GenericCi(),
         ];
     }
-
-    // API
 
     /**
      * Collect the build info of the CI service the environment variables are the ones of, as Shepherd reads it.
