@@ -573,7 +573,65 @@ function f(Pair $concrete, Pair $other, Pair $any): void {
 }
 ```
 
-A `*` argument itself fits only another `*`, an argument left out (`Pair $pair`), or a covariant argument that holds the whole bound. With `@template B of list<A>`, reading `B` of a `P<int, *>` gives `list<int>`. `class-string<*>` is any class-string, and the array-like builtins (`array<*>`, `non-empty-array<*>`, `list<*>`, `non-empty-list<*>`, `iterable<*>`) read `*` as `mixed`. A `*` argument is not allowed in `@extends`, `@implements` or `@use` (`InvalidDocblock`).
+A `*` fits only another `*`, an argument left out, or a covariant argument that holds the whole bound:
+
+```php
+<?php
+/** @template T of object */
+class Box {}
+
+/** @template-covariant T of object */
+interface Reader {}
+
+/**
+ * @template A
+ * @template B of list<A>
+ */
+final class Dependent {
+    /** @return B */
+    public function second(): array { throw new Exception(); }
+}
+
+/** @extends Box<*> */
+final class StarBox extends Box {} // InvalidDocblock
+
+/** @param Box<*> $any */
+function takesAnyBox(Box $any): void {}
+
+/** @param Box<object> $box */
+function takesBoxOfObject(Box $box): void {}
+
+/** @param Reader<object> $reader */
+function takesReaderOfObject(Reader $reader): void {}
+
+/**
+ * @param Box<*> $star
+ * @param Box<stdClass> $concrete
+ * @param Box $left_out
+ * @param Reader<*> $reader
+ * @param Dependent<int, *> $dependent
+ * @param class-string<*> $class
+ * @param list<*> $list
+ */
+function f(
+    Box $star,
+    Box $concrete,
+    Box $left_out,
+    Reader $reader,
+    Dependent $dependent,
+    string $class,
+    array $list,
+): void {
+    takesAnyBox($concrete); // no issue
+    takesAnyBox($star); // no issue
+    takesBoxOfObject($star); // ArgumentTypeCoercion
+    takesBoxOfObject($left_out); // no issue
+    takesReaderOfObject($reader); // no issue
+    $dependent->second(); // list<int>
+    $class; // class-string
+    $list; // list<mixed>
+}
+```
 
 Reading a template gives its bound (`T`, `list<T>`), but a return or property type that holds the template as a whole generic argument stays a `*`: with `@return Box<T>`, a `Box<*>` receiver gives a `Box<*>`, not a `Box<object>`. Covariant arguments (`Iterator<TKey, TValue>`) read the bound.
 
