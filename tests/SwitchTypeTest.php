@@ -95,6 +95,23 @@ final class SwitchTypeTest extends TestCase
                     }
 
                     /** @param array<string, mixed> $a */
+                    function caseThatContinuesTheLoop(array $a, string $k): void {
+                        foreach ([1, 2] as $c) {
+                            if (!is_int($a[$k])) {
+                                continue;
+                            }
+                            switch ($c) {
+                                case 1:
+                                    $k = "zz";
+                                    continue 2;
+                                default:
+                                    break;
+                            }
+                            /** @psalm-check-type-exact $a[$k] = int */;
+                        }
+                    }
+
+                    /** @param array<string, mixed> $a */
                     function caseOnlyComparingTheKey(array $a, string $k, int $c): void {
                         if (is_int($a[$k])) {
                             switch ($c) {
