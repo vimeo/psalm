@@ -6,22 +6,25 @@ declare(strict_types=1);
 const QUALIFIED_NAME_PATTERN = '/\\\\?(?:[A-Za-z_][A-Za-z0-9_]*\\\\)+([A-Za-z_][A-Za-z0-9_]*)/';
 
 /**
- * Diff of the issues an in-place change replaced: chunks [old, new], where unchanged text has old === new.
- * Several issues on a side diff as sets; for one issue whose type changed, only the quoted types are diffed.
+ * The messages of an in-place change cut into segments: each segment holds one string per message (old messages
+ * first), and is shared when all of them are equal. One issue on each side diffs word by word; several issues on a
+ * side share the text around one differing middle.
  *
- * @param list<array{type: string, message: string}> $old
- * @param list<array{type: string, message: string}> $new
- * @return list<array{string, string}>
+ * @param list<string> $old
+ * @param list<string> $new
+ * @return list<list<string>>
  */
-function changeDiff(array $old, array $new): array
+function changeSegments(array $old, array $new): array
 {
-    [$a, $b] = [array_column($old, 'message'), array_column($new, 'message')];
+    return count($old) === 1 && count($new) === 1
+        ? tokenDiff($old[0], $new[0])
+        : commonAffixes([...$old, ...$new]);
+}
 
-    return match (true) {
-        count($a) > 1 || count($b) > 1 => setDiff($a, $b),
-        $old[0]['type'] !== $new[0]['type'] => quotedDiff($a[0], $b[0]),
-        default => tokenDiff($a[0], $b[0]),
-    };
+/** @param list<string> $segment */
+function isShared(array $segment): bool
+{
+    return count(array_unique($segment)) === 1;
 }
 
 /**
@@ -48,20 +51,20 @@ function shortClassNames(array $messages): array
 }
 
 /**
- * Words, whitespace runs and single other characters, so that `HasOne` and `HasOneOrMany` differ as whole names.
+ * Words, `{self}`, whitespace runs and single other characters, so that `HasOne` and `HasOneOrMany` differ as
+ * whole names.
  *
  * @return list<string>
  */
 function messageTokens(string $text): array
 {
-    preg_match_all('/[A-Za-z0-9_]+|\s+|./su', $text, $m);
+    preg_match_all('/\{self\}|[A-Za-z0-9_]+|\s+|./su', $text, $m);
 
     return $m[0];
 }
 
 /**
- * Word diff as chunks [old, new]; unchanged text has old === new. Whitespace between two changes joins them, so
- * that `is more general than` → `does not match` reads as one change.
+ * Word diff of two messages as [old, new] segments.
  *
  * @return list<array{string, string}>
  */
@@ -89,13 +92,13 @@ function tokenDiff(string $old, string $new): array
         }
     }
 
-    $chunks = [];
-    $push = static function (string $old, string $new) use (&$chunks): void {
-        $last = array_key_last($chunks);
-        if ($last !== null && ($chunks[$last][0] === $chunks[$last][1]) === ($old === $new)) {
-            $chunks[$last] = [$chunks[$last][0] . $old, $chunks[$last][1] . $new];
-        } else {
-            $chunks[] = [$old, $new];
+    $segments = [];
+    $push = static function (string $old, string $new) use (&$segments): void {
+        $last = array_key_last($segments);
+        if ($last !== null && ($segments[$last][0] === $segments[$last][1]) === ($old === $new)) {
+            $segments[$last] = [$segments[$last][0] . $old, $segments[$last][1] . $new];
+        } elseif ($old !== '' || $new !== '') {
+            $segments[] = [$old, $new];
         }
     };
     $head = implode('', array_slice($a, 0, $prefix));
@@ -111,63 +114,21 @@ function tokenDiff(string $old, string $new): array
         }
     }
 
-    $tail = implode('', array_slice($a, count($a) - $suffix));
+    $tail = implode('', array_slice($a, $na - $suffix));
     $push($tail, $tail);
 
-    $joined = [];
-    foreach ($chunks as $k => $c) {
-        $last = array_key_last($joined);
-        $glue = $c[0] === $c[1] && trim($c[0]) === '' && isset($chunks[$k + 1]);
-        if ($last !== null && $joined[$last][0] !== $joined[$last][1] && ($c[0] !== $c[1] || $glue)) {
-            $joined[$last] = [$joined[$last][0] . $c[0], $joined[$last][1] . $c[1]];
-        } elseif ($c !== ['', '']) {
-            $joined[] = $c;
-        }
-    }
-
-    return $joined;
+    return $segments;
 }
 
 /**
- * For an issue whose type changed, the prose differs anyway: the new message with only its quoted types diffed.
- * Falls back to a word diff when the two messages quote a different number of types.
+ * The text all messages start and end with as shared segments, around one segment of differing middles.
  *
- * @return list<array{string, string}>
+ * @param list<string> $messages
+ * @return list<list<string>>
  */
-function quotedDiff(string $old, string $new): array
+function commonAffixes(array $messages): array
 {
-    $split = static fn(string $s): array => preg_split("/('[^']*')/", $s, -1, PREG_SPLIT_DELIM_CAPTURE);
-    [$a, $b] = [$split($old), $split($new)];
-    if (count($a) !== count($b) || count($b) === 1) {
-        return tokenDiff($old, $new);
-    }
-
-    $merged = [];
-    foreach ($b as $k => $part) {
-        foreach ($k % 2 === 1 ? tokenDiff($a[$k], $part) : [[$part, $part]] as $c) {
-            $last = array_key_last($merged);
-            if ($last !== null && $c[0] === $c[1] && $merged[$last][0] === $merged[$last][1]) {
-                $merged[$last] = [$merged[$last][0] . $c[0], $merged[$last][1] . $c[1]];
-            } elseif ($c !== ['', '']) {
-                $merged[] = $c;
-            }
-        }
-    }
-
-    return $merged;
-}
-
-/**
- * Several issues at one location: the text all messages share around one change, the differing middles as sets,
- * e.g. `Builder<TRelatedModel:` ~~`{HasOne, MorphOne}`~~ **`HasOneOrMany`** ` as Model>`.
- *
- * @param list<string> $old
- * @param list<string> $new
- * @return list<array{string, string}>
- */
-function setDiff(array $old, array $new): array
-{
-    $tokens = array_map(messageTokens(...), [...$old, ...$new]);
+    $tokens = array_map(messageTokens(...), $messages);
     $shortest = min(array_map(count(...), $tokens));
     $shared = static function (callable $at) use ($tokens, $shortest): int {
         for ($k = 0; $k < $shortest; $k++) {
@@ -182,29 +143,16 @@ function setDiff(array $old, array $new): array
     };
     $prefix = $shared(static fn(array $t, int $k): string => $t[$k]);
     $suffix = min($shortest - $prefix, $shared(static fn(array $t, int $k): string => $t[count($t) - 1 - $k]));
+    $count = count($messages);
+    $head = implode('', array_slice($tokens[0], 0, $prefix));
+    $tail = implode('', array_slice($tokens[0], count($tokens[0]) - $suffix));
     $middles = array_map(
         static fn(array $t): string => implode('', array_slice($t, $prefix, count($t) - $prefix - $suffix)),
         $tokens,
     );
-    $set = static function (array $items): string {
-        if (count($items) === 1) {
-            return $items[0];
-        }
-
-        $counts = array_count_values($items);
-
-        return '{' . implode(', ', array_map(
-            static fn(string $item, int $n): string => ($item === '' ? '∅' : $item) . ($n > 1 ? " ×{$n}" : ''),
-            array_keys($counts),
-            $counts,
-        )) . '}';
-    };
-    $head = implode('', array_slice($tokens[0], 0, $prefix));
-    $tail = implode('', array_slice($tokens[0], count($tokens[0]) - $suffix));
-    $change = [$set(array_slice($middles, 0, count($old))), $set(array_slice($middles, count($old)))];
 
     return array_values(array_filter(
-        [[$head, $head], $change, [$tail, $tail]],
-        static fn(array $c): bool => $c !== ['', ''],
+        [array_fill(0, $count, $head), $middles, array_fill(0, $count, $tail)],
+        static fn(array $segment): bool => implode('', $segment) !== '',
     ));
 }
