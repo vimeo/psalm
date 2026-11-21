@@ -159,6 +159,13 @@ final class ClosureTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.5',
             ],
+            'staticCallOfAMethodNewerThanTheRuntime' => [
+                'code' => '<?php
+                    $date = DateTime::createFromTimestamp(1);',
+                'assertions' => [],
+                'ignored_issues' => ['MixedAssignment'],
+                'php_version' => '8.4',
+            ],
             'closureFallingOffItsEndReturnsNull' => [
                 'code' => '<?php
                     $f = function(int $x) {
