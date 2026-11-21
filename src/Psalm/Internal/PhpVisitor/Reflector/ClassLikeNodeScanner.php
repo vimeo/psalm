@@ -80,9 +80,11 @@ use UnexpectedValueException;
 use function array_column;
 use function array_diff_key;
 use function array_fill_keys;
+use function array_map;
 use function array_merge;
 use function array_pop;
 use function array_shift;
+use function array_slice;
 use function array_values;
 use function assert;
 use function count;
@@ -93,6 +95,7 @@ use function is_array;
 use function ltrim;
 use function pathinfo;
 use function preg_match;
+use function preg_quote;
 use function preg_split;
 use function reset;
 use function sprintf;
@@ -509,6 +512,15 @@ final class ClassLikeNodeScanner
                     }
                 }
 
+                // a bound may name a template declared after it
+                $declared_template_types = [];
+
+                foreach ($docblock_info->templates as $template_map) {
+                    $declared_template_types[$template_map[0]] = [$fq_classlike_name => Type::getMixed()];
+                }
+
+                $forward_bounds = [];
+
                 foreach ($docblock_info->templates as $i => $template_map) {
                     $template_name = $template_map[0];
 
@@ -530,11 +542,11 @@ final class ClassLikeNodeScanner
                                     TypeTokenizer::getFullyQualifiedTokens(
                                         $type_string,
                                         $this->aliases,
-                                        $storage->template_types + $purity_template_types,
+                                        $storage->template_types + $purity_template_types + $declared_template_types,
                                         $this->type_aliases,
                                     ),
                                     null,
-                                    $storage->template_types + $purity_template_types,
+                                    $storage->template_types + $purity_template_types + $declared_template_types,
                                     $this->type_aliases,
                                 );
                             } catch (TypeParseTreeException $e) {
@@ -544,6 +556,17 @@ final class ClassLikeNodeScanner
                                 );
 
                                 continue;
+                            }
+
+                            $later_templates = array_map(
+                                preg_quote(...),
+                                array_column(array_slice($docblock_info->templates, $i + 1), 0),
+                            );
+
+                            if ($later_templates !== []
+                                && preg_match('/\\b(?:' . implode('|', $later_templates) . ')\\b/', $type_string)
+                            ) {
+                                $forward_bounds[$template_name] = $type_string;
                             }
 
                             // a class named only in the bound (`@template TArr of array{a: stdClass}`) is read where
@@ -569,6 +592,40 @@ final class ClassLikeNodeScanner
                     }
 
                     $storage->template_covariants[$i] = $template_map[3];
+                }
+
+                // a bound that named a template declared after it read that template as mixed
+                for ($pass = count($forward_bounds); $pass > 0; $pass--) {
+                    $settled = true;
+
+                    foreach ($forward_bounds as $template_name => $type_string) {
+                        $known_template_types = $storage->template_types + $purity_template_types;
+
+                        try {
+                            $bound = TypeParser::parseTokens(
+                                TypeTokenizer::getFullyQualifiedTokens(
+                                    $type_string,
+                                    $this->aliases,
+                                    $known_template_types,
+                                    $this->type_aliases,
+                                ),
+                                null,
+                                $known_template_types,
+                                $this->type_aliases,
+                            );
+                        } catch (TypeParseTreeException) {
+                            continue;
+                        }
+
+                        if ($bound->getId() !== $storage->template_types[$template_name][$fq_classlike_name]->getId()) {
+                            $storage->template_types[$template_name] = [$fq_classlike_name => $bound];
+                            $settled = false;
+                        }
+                    }
+
+                    if ($settled) {
+                        break;
+                    }
                 }
 
                 $this->class_template_types = $storage->template_types;
