@@ -80,6 +80,35 @@ final class ValueOfTemplateTest extends TestCase
                     }
                 ',
             ],
+            'keyOfAndValueOfAFunctionTemplateBoundedByAShapeAreThoseOfTheBound' => [
+                'code' => '<?php
+                    /** @template TArr of array{foo: int, bar: string} */
+                    final class Holder {
+                        /** @return value-of<TArr> */
+                        public function value(): mixed {
+                            throw new Exception();
+                        }
+
+                        /** @return key-of<TArr> */
+                        public function key(): string {
+                            throw new Exception();
+                        }
+                    }
+
+                    function useScalar(int|string $s): void {}
+
+                    /**
+                     * @template A of array{foo: int, bar: string}
+                     * @param Holder<A> $h
+                     */
+                    function f(Holder $h): void {
+                        useScalar($h->value());
+                        echo $h->key() === "foo" ? 1 : 2;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'typeCheckAfterInArrayOnTemplate' => [
                 'code' => '<?php
                     /**
