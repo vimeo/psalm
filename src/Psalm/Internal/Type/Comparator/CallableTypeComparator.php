@@ -388,7 +388,8 @@ final class CallableTypeComparator
 
             $callable = self::withoutPurityTemplates(
                 new TCallable(
-                    $method_storage->params,
+                    // the parameters an override leaves undocumented are those of the method it overrides
+                    $codebase->methods->getMethodParams($method_id),
                     $converted_return_type,
                     self::getCallableCapabilities($method_storage, $class_template_types),
                     callable_id: strtolower((string) $declaring_method_id),
@@ -413,12 +414,13 @@ final class CallableTypeComparator
                 if ($class_template_params !== null) {
                     // what the method returns from a `Box<*>` is as unknown as the receiver
                     $class_template_result = new TemplateResult([], $class_template_params);
-                    $class_template_result->markStarBindings(ClassTemplateParamCollector::getStarBoundTemplates(
+                    ClassTemplateParamCollector::markStarBindings(
+                        $class_template_result,
                         $codebase,
                         $callable_class_storage,
                         $callable_object,
                         $class_template_params,
-                    ));
+                    );
 
                     $replaced = TemplateInferredTypeReplacer::replace(
                         new Union([$callable]),

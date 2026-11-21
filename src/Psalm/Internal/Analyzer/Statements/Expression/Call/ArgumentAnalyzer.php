@@ -29,6 +29,7 @@ use Psalm\Internal\Type\Comparator\CallableTypeComparator;
 use Psalm\Internal\Type\Comparator\TypeComparisonResult;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\TemplateBound;
+use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Internal\Type\TypeArgumentProjection;
@@ -452,6 +453,15 @@ final class ArgumentAnalyzer
 
         // what the argument says about each template is read from the declared type, before class templates are bound
         $declared_param_type = $param_type;
+
+        // a template bound to a `*` of the receiver is `never` in what is passed to it
+        if ($template_result && $template_result->star_bindings !== []) {
+            $param_type = TemplateInferredTypeReplacer::replace(
+                $param_type,
+                $template_result->getStarInputs(),
+                $codebase,
+            );
+        }
 
         if ($class_generic_params) {
             // here we're replacing the param types and arg types with the bound

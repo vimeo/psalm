@@ -369,7 +369,7 @@ final class TGenericObject extends TNamedObject
      * @return array<int, TypeArgumentProjection>
      * @psalm-mutation-free
      */
-    private function getStarBoundProjections(TemplateResult $template_result, ?Codebase $codebase): array
+    public function getStarBoundProjections(TemplateResult $template_result, ?Codebase $codebase): array
     {
         if ($codebase === null || $template_result->star_bindings === []) {
             return [];

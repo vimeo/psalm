@@ -1987,7 +1987,7 @@ final class AssignmentAnalyzer
                 $receiver,
                 $class_storage,
                 $declaring_class_storage,
-                false,
+                null,
             )
             : $property_type;
     }

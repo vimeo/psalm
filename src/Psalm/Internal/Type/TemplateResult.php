@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Psalm\Internal\Type;
 
+use Psalm\Type;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Union;
 
@@ -58,6 +59,20 @@ final class TemplateResult
     public array $star_bindings = [];
 
     /**
+     * What a template of star_bindings that stands for a type wrapping a template bound to a `*` is where the types
+     * are replaced as inputs (a parameter, an assigned value): that type with `never` for the `*`
+     *
+     * @var array<string, array<string, Union>>
+     */
+    public array $star_input_bounds = [];
+
+    /**
+     * Whether the types are replaced as inputs: a template bound to a `*` is `never` there, as no value is known to
+     * be of the unknown type. It is flipped inside the parameters of a callable.
+     */
+    public bool $star_input = false;
+
+    /**
      * `static` of the call when it is known before the arguments are analyzed (a template receiver or a forwarding call
      * has none) and whether it is final: the arguments are checked, and the return type is expanded, with them
      */
@@ -80,31 +95,37 @@ final class TemplateResult
     }
 
     /**
-     * Marks the class templates the receiver bound to a `*`, for what is read from the receiver
+     * Marks the class templates the receiver bound to a `*`, for what is read from and written to the receiver
      *
      * @param array<string, array<string, true|Union>> $star_templates template name => defining class => mark
+     * @param array<string, array<string, Union>> $input_bounds what the marks that are types are as inputs
      * @psalm-capabilities read-props|write-this-props
      */
-    public function markStarBindings(array $star_templates): void
+    public function markStarBindings(array $star_templates, array $input_bounds = []): void
     {
         $this->star_bindings = array_replace_recursive($this->star_bindings, $star_templates);
+        $this->star_input_bounds = array_replace_recursive($this->star_input_bounds, $input_bounds);
     }
 
     /**
      * The lower bounds for replacing the templates of what is read from the receiver: a template of a class it
-     * extends that stands for a type wrapping a template bound to a `*` is that type with the `*` in it, where the
-     * parameters (which have no star marks, see withoutStarBindings()) read the bound
+     * extends that stands for a type wrapping a template bound to a `*` is that type with the `*` in it. For what is
+     * written to the receiver, every template bound to a `*` is `never` (or the type wrapping it with `never` in it).
      *
      * @return array<string, array<string, non-empty-list<TemplateBound>>>
      * @psalm-mutation-free
      */
-    public function getLowerBoundsOfReads(): array
+    public function getLowerBounds(): array
     {
         $lower_bounds = $this->lower_bounds;
 
         foreach ($this->star_bindings as $template_name => $defining_classes) {
             foreach ($defining_classes as $defining_class => $star_type) {
-                if ($star_type instanceof Union) {
+                if ($this->star_input) {
+                    $lower_bounds[$template_name][$defining_class] = [new TemplateBound(
+                        $this->star_input_bounds[$template_name][$defining_class] ?? Type::getNever(),
+                    )];
+                } elseif ($star_type instanceof Union) {
                     $lower_bounds[$template_name][$defining_class] = [new TemplateBound($star_type)];
                 }
             }
@@ -114,20 +135,53 @@ final class TemplateResult
     }
 
     /**
-     * This result without the star marks, for the parameter types of a callable: they hold the bound of the template
-     * (not a `*`, which would accept any argument). Calling such a callable with a value of another type is a write
-     * through the `*` that is not restricted yet.
+     * Whether a template is bound to a `*` where the types are replaced as inputs
+     *
+     * @psalm-mutation-free
+     */
+    public function isStarInput(string $template_name, string $defining_class): bool
+    {
+        return $this->star_input && isset($this->star_bindings[$template_name][$defining_class]);
+    }
+
+    /**
+     * Only the star marks of this result, for replacing the templates of the types of a parameter
      *
      * @psalm-capabilities read-props
      */
-    public function withoutStarBindings(): self
+    public function getStarInputs(): self
     {
-        if ($this->star_bindings === []) {
+        $instance = new self([], []);
+        $instance->markStarBindings($this->star_bindings, $this->star_input_bounds);
+        $instance->star_input = true;
+
+        return $instance;
+    }
+
+    /**
+     * This result for the other side of a type: the parameters of a callable are inputs of what is an output (the
+     * closure of a getter takes what the getter returns as its argument), and the other way round
+     *
+     * @psalm-capabilities read-props
+     */
+    public function flipStarPosition(): self
+    {
+        return $this->withStarPosition(!$this->star_input);
+    }
+
+    /**
+     * This result for the types of a parameter or of an assigned value (`$input`) or of what is read
+     *
+     * @psalm-capabilities read-props
+     */
+    public function withStarPosition(bool $input): self
+    {
+        if ($this->star_bindings === [] || $this->star_input === $input) {
             return $this;
         }
 
         $instance = clone $this;
-        $instance->star_bindings = [];
+        $instance->star_input = $input;
 
         return $instance;
     }
@@ -147,6 +201,10 @@ final class TemplateResult
         $instance->lower_bounds = $lower_bounds;
         $instance->template_types = [...$instance->template_types, ...$result->template_types];
         $instance->star_bindings = array_replace_recursive($instance->star_bindings, $result->star_bindings);
+        $instance->star_input_bounds = array_replace_recursive(
+            $instance->star_input_bounds,
+            $result->star_input_bounds,
+        );
 
         $instance->static_class_type = $result->static_class_type;
         $instance->static_class_is_final = $result->static_class_is_final;
