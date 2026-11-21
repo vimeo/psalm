@@ -62,19 +62,20 @@ class LongProgress extends Progress
     {
         $threads = $threads === 1 ? '' : " ($threads threads)";
         $this->reportPhaseDuration($phase);
-        $this->write(match ($phase) {
+        $message = match ($phase) {
             Phase::SCAN => "\nScanning files$threads...\n\n",
             Phase::ANALYSIS => "\nAnalyzing files$threads...\n\n",
             Phase::ALTERING => "\nUpdating files$threads...\n",
             Phase::TAINT_GRAPH_RESOLUTION => "\n\nResolving taint graph$threads...\n\n",
-            Phase::JIT_COMPILATION => "JIT compilation in progress$threads...\n\n",
-            Phase::PRELOADING => "Preloading in progress$threads...\n\n",
+            // a single line is printed once the phase is over: see reportPhaseDuration()
+            Phase::JIT_COMPILATION, Phase::PRELOADING => '',
             Phase::MERGING_THREAD_RESULTS => "\nMerging thread results$threads...\n\n",
-        });
+        };
+        if ($message !== '') {
+            $this->write($message);
+        }
         $this->fixed_size = $phase === Phase::ANALYSIS
             || $phase === Phase::ALTERING
-            || $phase === Phase::JIT_COMPILATION
-            || $phase === Phase::PRELOADING
             || $phase === Phase::MERGING_THREAD_RESULTS;
         $this->indeterminate = $phase === Phase::TAINT_GRAPH_RESOLUTION;
     }
