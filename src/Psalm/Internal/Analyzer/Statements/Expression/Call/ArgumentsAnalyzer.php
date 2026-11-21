@@ -276,6 +276,8 @@ final class ArgumentsAnalyzer
 
             if ($by_ref) {
                 $by_ref_type = $param->type ?: Type::getMixed();
+
+                AssignmentAnalyzer::checkConstantObjectWrite($statements_analyzer, $arg->value);
             }
 
             if ($by_ref

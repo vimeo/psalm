@@ -521,6 +521,36 @@ final class Php85Test extends TestCase
                 'error_levels' => ['MixedArrayAssignment'],
                 'php_version' => '8.5',
             ],
+            'unsetOfAPropertyOfAConstantObjectBeforePhp86' => [
+                'code' => '<?php
+                    const CONFIG = new stdClass();
+
+                    unset(CONFIG->debug);',
+                'error_message' => 'ParseError - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:27 - Cannot use temporary expression in write context before PHP 8.6',
+                'error_levels' => [],
+                'php_version' => '8.5',
+            ],
+            'propertyOfAConstantObjectPassedByReferenceBeforePhp86' => [
+                'code' => '<?php
+                    const CONFIG = new stdClass();
+                    function setOne(mixed &$v): void {
+                        $v = 1;
+                    }
+
+                    setOne(CONFIG->debug);',
+                'error_message' => 'ParseError - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:28 - Cannot use temporary expression in write context before PHP 8.6',
+                'error_levels' => [],
+                'php_version' => '8.5',
+            ],
+            'referenceToAPropertyOfAConstantObjectBeforePhp86' => [
+                'code' => '<?php
+                    const CONFIG = new stdClass();
+
+                    $debug = &CONFIG->debug;',
+                'error_message' => 'ParseError - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:31 - Cannot use temporary expression in write context before PHP 8.6',
+                'error_levels' => ['UnsupportedReferenceUsage', 'MixedAssignment'],
+                'php_version' => '8.5',
+            ],
         ];
     }
 }
