@@ -17034,6 +17034,33 @@ final class TaintTest extends TestCase
                 'error_message' => 'TaintedShell',
                 'php_version' => '8.1',
             ],
+            'taintSinkOfAnOverrideOfAMethodWithTemplates' => [
+                'code' => '<?php // --taint-analysis
+                    class P {
+                        /**
+                         * @template T
+                         * @param T $a
+                         * @param positive-int $b
+                         * @return T
+                         */
+                        public function f($a, int $b) {
+                            return $a;
+                        }
+                    }
+
+                    final class C extends P {
+                        /**
+                         * @psalm-taint-sink html $a
+                         */
+                        #[\\Override]
+                        public function f($a, int $b) {
+                            return $a;
+                        }
+                    }
+
+                    (new C())->f((string) $_GET["x"], 1);',
+                'error_message' => 'TaintedHtml',
+            ],
             'taintPassedToTheSinkOfACalledInstanceMethodClosure' => [
                 'code' => '<?php
                     final class Shell {
