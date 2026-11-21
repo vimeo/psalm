@@ -18,7 +18,6 @@ use Psalm\Internal\Cli\Psalter;
 use Psalm\Internal\Cli\Refactor;
 use Psalm\Report;
 use RuntimeException;
-use Symfony\Component\Filesystem\Path;
 use UnexpectedValueException;
 
 use function array_filter;
@@ -43,6 +42,7 @@ use function is_scalar;
 use function is_string;
 use function json_decode;
 use function preg_last_error_msg;
+use function preg_match;
 use function preg_replace;
 use function preg_split;
 use function realpath;
@@ -181,11 +181,17 @@ final class CliUtils
     /**
      * The message of a -r/--root path that doesn't exist: a relative path is shown as it is resolved from the
      * current directory, an absolute one as it was given
+     *
+     * @psalm-pure
      */
     public static function getRootDirectoryNotFoundMessage(string $current_dir, string $root): string
     {
-        return 'Could not locate root directory '
-            . (Path::isAbsolute($root) ? $root : $current_dir . DIRECTORY_SEPARATOR . $root);
+        // runs before the autoloader is required, so symfony's Path isn't available
+        $is_absolute = str_starts_with($root, '/')
+            || str_starts_with($root, DIRECTORY_SEPARATOR)
+            || preg_match('/^[A-Za-z]:[\\\\\/]/', $root) === 1;
+
+        return 'Could not locate root directory ' . ($is_absolute ? $root : $current_dir . DIRECTORY_SEPARATOR . $root);
     }
 
     /**

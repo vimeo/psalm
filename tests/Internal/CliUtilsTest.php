@@ -339,11 +339,11 @@ final class CliUtilsTest extends TestCase
     {
         yield 'a path from the root' => ['/does-not-exist', '/does-not-exist'];
         yield 'a relative path' => ['does-not-exist', 'C:\project' . DIRECTORY_SEPARATOR . 'does-not-exist'];
+        yield 'a drive path' => ['D:\does-not-exist', 'D:\does-not-exist'];
+        yield 'a drive path with a slash' => ['D:/does-not-exist', 'D:/does-not-exist'];
 
         if (DIRECTORY_SEPARATOR === '\\') {
             yield 'a backslash path from the root of the drive' => ['\does-not-exist', '\does-not-exist'];
-            yield 'a drive path' => ['D:\does-not-exist', 'D:\does-not-exist'];
-            yield 'a drive path with a slash' => ['D:/does-not-exist', 'D:/does-not-exist'];
         }
     }
 
