@@ -2457,6 +2457,29 @@ final class WhileTest extends TestCase
                         }
                     }
 
+                    function bothOperandsHold(?int $x, ?int $y): void {
+                        if ($x !== null && $y !== null) {
+                            $seen = [];
+                            while ($x !== null && $y !== null) {
+                                $seen[] = $x;
+                                $x = rand(0, 1) ? null : $x + 1;
+                                $y = rand(0, 1) ? null : $y;
+                            }
+                            /** @psalm-check-type-exact $seen = non-empty-list<int> */;
+                        }
+                    }
+
+                    function oneOperandMayNotHold(Link|string $value, bool $flag): void {
+                        if ($value instanceof Link) {
+                            $stack = [];
+                            while ($flag && $value instanceof Link) {
+                                $stack[] = $value;
+                                $value = $value->inner;
+                            }
+                            /** @psalm-check-type-exact $stack = list<Link> */;
+                        }
+                    }
+
                     function notEntered(Link|string $value): void {
                         $stack = [];
                         while ($value instanceof Link) {
