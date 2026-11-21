@@ -299,13 +299,14 @@ final class PsalmEndToEndTest extends PsalmEndToEndTestCase
         );
         file_put_contents(
             self::$tmpDir . '/src/Polyfilled.php',
-            "<?php\narray_find([1], fn(int \$x): bool => \$x > 0);\n",
+            "<?php\narray_find([1], fn(int \$x): bool => \$x > 0);\nclamp(5, 0, 10);\n",
         );
 
         $process = $this->runPsalmInTheProject(['--no-cache', '--php-version=8.3', '--output-format=compact']);
         @unlink(self::$tmpDir . '/src/Polyfilled.php');
 
         $this->assertStringContainsString('Function array_find is not defined', $process->getOutput());
+        $this->assertStringContainsString('Function clamp does not exist', $process->getOutput());
         $this->assertSame(2, $process->getExitCode());
     }
 
