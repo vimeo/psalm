@@ -63,6 +63,12 @@ use function strtolower;
 final class AtomicMethodCallAnalyzer extends CallAnalyzer
 {
     /**
+     * The node attribute of a call that a static call on a class using a `@mixin` forwards to the mixin:
+     * the name of the class the static call was made on, whose providers are asked about the call first.
+     */
+    public const MIXIN_HOST_ATTRIBUTE = 'mixin_host';
+
+    /**
      * @param  TNamedObject|TTemplateParam|null $static_type
      * @psalm-suppress ComplexMethod it's really complex, but unavoidably so
      */
@@ -365,8 +371,9 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
         );
 
         $fake_method_exists = false;
-        // the class whose @mixin the method is found through, as the call goes through its __call()
-        $mixin_user_class = null;
+        // the method as called on the class using the @mixin, when it is found through the mixin
+        $premixin_method_id = null;
+        $premixin_lhs_type_part = null;
         $mixin_method_id = null;
         // the mixin whose `@method` is called
         $pseudo_method_mixin = null;
@@ -413,7 +420,8 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
 
                 if ($mixin !== null) {
                     if ($mixin_method_exists || $class_storage->is_interface) {
-                        $mixin_user_class = $fq_class_name;
+                        $premixin_method_id = new MethodIdentifier($fq_class_name, $method_name_lc);
+                        $premixin_lhs_type_part = $lhs_type_part;
                         ['type' => $lhs_type_part, 'storage' => $class_storage] = $mixin;
                         $fq_class_name = $class_storage->name;
                         $method_id = new MethodIdentifier($fq_class_name, $method_name_lc);
@@ -430,6 +438,10 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
                     }
                 }
             }
+        } elseif (($mixin_host = (string) $stmt->getAttribute(self::MIXIN_HOST_ATTRIBUTE, '')) !== '') {
+            $premixin_method_id = new MethodIdentifier($mixin_host, $method_name_lc);
+            $premixin_lhs_type_part = new TNamedObject($mixin_host);
+            $mixin_method_id = $method_id;
         }
 
         $all_intersection_return_type = null;
@@ -602,7 +614,8 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
             $method_id,
             $result,
             $inferred_template_result,
-            $method_id === $mixin_method_id ? $mixin_user_class : null,
+            $method_id === $mixin_method_id ? $premixin_method_id : null,
+            $method_id === $mixin_method_id ? $premixin_lhs_type_part : null,
         );
 
         $statements_analyzer->node_data = $old_node_data;
