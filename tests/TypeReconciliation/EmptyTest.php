@@ -9,6 +9,8 @@ use Psalm\Tests\TestCase;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
+use const DIRECTORY_SEPARATOR;
+
 final class EmptyTest extends TestCase
 {
     use InvalidCodeAnalysisTestTrait;
@@ -38,6 +40,33 @@ final class EmptyTest extends TestCase
                     /** @param array{foo: string} $arg */
                     function foo(array $arg): bool {
                         return empty($arg["foo"]);
+                    }',
+            ],
+            'nonEmptyMixedMayStillBeAnyTruthyValue' => [
+                'code' => '<?php
+                    /** @var mixed $foo */
+                    if (!empty($foo)) {
+                        if ($foo === "a") {
+                            echo 1;
+                        }
+                        if ($foo === true) {
+                            echo 2;
+                        }
+                    }',
+            ],
+            'emptyMixedMayStillBeAnyFalsyValue' => [
+                'code' => '<?php
+                    /** @var mixed $foo */
+                    if (empty($foo)) {
+                        if ($foo === 0) {
+                            echo 1;
+                        }
+                        if ($foo === null) {
+                            echo 2;
+                        }
+                        if ($foo === false) {
+                            echo 3;
+                        }
                     }',
             ],
             'emptyOfAnOffsetWithAKeyThatMayBeAnyString' => [
@@ -891,6 +920,61 @@ final class EmptyTest extends TestCase
                         return empty($arg["foo"]);
                     }',
                 'error_message' => 'RiskyTruthyFalsyComparison',
+            ],
+            'nonEmptyMixedIsNeverFalse' => [
+                'code' => '<?php
+                    /** @var mixed $foo */
+                    if (!empty($foo)) {
+                        if ($foo === false) {
+                            echo 1;
+                        }
+                    }',
+                'error_message' => 'TypeDoesNotContainType - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:29 - '
+                    . 'non-empty-mixed does not contain false',
+            ],
+            'nonEmptyMixedIsNeverAnEmptyString' => [
+                'code' => '<?php
+                    /** @var mixed $foo */
+                    if (!empty($foo)) {
+                        if ($foo === "") {
+                            echo 1;
+                        }
+                    }',
+                'error_message' => 'TypeDoesNotContainType - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:29 - '
+                    . "'' cannot be identical to non-empty-mixed",
+            ],
+            'nonEmptyMixedIsNeverNull' => [
+                'code' => '<?php
+                    /** @var mixed $foo */
+                    if (!empty($foo)) {
+                        if ($foo === null) {
+                            echo 1;
+                        }
+                    }',
+                'error_message' => 'TypeDoesNotContainNull - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:29 - '
+                    . 'non-empty-mixed does not contain null',
+            ],
+            'nonEmptyMixedIsNeverInAListOfFalsyValues' => [
+                'code' => '<?php
+                    /** @var mixed $foo */
+                    if (!empty($foo)) {
+                        if (in_array($foo, [0, "", null], true)) {
+                            echo 1;
+                        }
+                    }',
+                'error_message' => 'TypeDoesNotContainType - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:29 - '
+                    . 'Operand of type false is always falsy',
+            ],
+            'emptyMixedIsNeverTrue' => [
+                'code' => '<?php
+                    /** @var mixed $foo */
+                    if (empty($foo)) {
+                        if ($foo === true) {
+                            echo 1;
+                        }
+                    }',
+                'error_message' => 'DocblockTypeContradiction - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:29 - '
+                    . 'empty-mixed does not contain true',
             ],
             'emptyOfAnOffsetWithALiteralKeyVariable' => [
                 'code' => '<?php

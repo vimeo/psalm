@@ -93,9 +93,6 @@
     <PossiblyNullReference>
       <code><![CDATA[addAttribute]]></code>
     </PossiblyNullReference>
-    <PropertyTypeCoercion>
-      <code><![CDATA[$this]]></code>
-    </PropertyTypeCoercion>
     <RiskyTruthyFalsyComparison>
       <code><![CDATA[!$config_path]]></code>
       <code><![CDATA[!$file_path]]></code>
@@ -215,13 +212,6 @@
       <code><![CDATA[$stmt->getStmts()]]></code>
       <code><![CDATA[$storage->template_extended_params]]></code>
       <code><![CDATA[$storage->template_types]]></code>
-      <code><![CDATA[ClassTemplateParamCollector::collect(
-                $codebase,
-                $class_storage,
-                $codebase->classlike_storage_provider->get($original_fq_classlike_name),
-                strtolower($stmt->name->name),
-                $this_object_type,
-            )]]></code>
     </RiskyTruthyFalsyComparison>
   </file>
   <file src="src/Psalm/Internal/Analyzer/ClassLikeAnalyzer.php">
@@ -354,8 +344,6 @@
       <code><![CDATA[$guide_param_signature_type]]></code>
       <code><![CDATA[$guide_signature_return_type]]></code>
       <code><![CDATA[$guide_signature_return_type]]></code>
-      <code><![CDATA[$implementer_declaring_method_id]]></code>
-      <code><![CDATA[$implementer_declaring_method_id]]></code>
       <code><![CDATA[$implementer_param_signature_type]]></code>
       <code><![CDATA[$implementer_param_signature_type]]></code>
       <code><![CDATA[$implementer_param_signature_type]]></code>
@@ -1730,8 +1718,6 @@
       <code><![CDATA[$docblock_info->description]]></code>
       <code><![CDATA[$docblock_info->inheritors]]></code>
       <code><![CDATA[$docblock_info->yield]]></code>
-      <code><![CDATA[$storage->template_types]]></code>
-      <code><![CDATA[$storage->template_types]]></code>
       <code><![CDATA[$storage->template_types]]></code>
       <code><![CDATA[$storage->template_types]]></code>
       <code><![CDATA[$storage->template_types]]></code>
