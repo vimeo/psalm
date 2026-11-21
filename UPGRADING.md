@@ -115,6 +115,7 @@
 
 - [BC] Class Psalm\Type\Atomic\TKeyedArray became final
 
+- [BC] The keys of `Psalm\Storage\ClassLikeStorage::$template_type_extends_count` and of the internal `$template_extended_offsets` are the lowercase name of the parent class, interface or trait, as the keys of `$template_type_implements_count` and `$template_type_uses_count` already were, instead of its name as written in the `@extends`, `@implements` or `@use` tag.
 - [BC] Class Psalm\Type\Atomic\TKeyedArray can only be created using the new `make` or `makeCallable` factory methods, the constructor was rendered private.  
 
 - [BC] Class Psalm\Type\Atomic\TCallableKeyedArray has been deleted, and replaced with a new `is_callable` flag in Psalm\Type\Atomic\TKeyedArray

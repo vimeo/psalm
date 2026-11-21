@@ -20,7 +20,9 @@ use Psalm\Internal\Analyzer\DataFlowNodeData;
 use Psalm\Internal\Analyzer\IssueData;
 use Psalm\IssueBuffer;
 use Psalm\Plugin\EventHandler\AddTaintsInterface;
+use Psalm\Plugin\EventHandler\AfterExpressionAnalysisInterface;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
+use Psalm\Plugin\EventHandler\Event\AfterExpressionAnalysisEvent;
 use Psalm\Plugin\EventHandler\Event\FunctionReturnTypeProviderEvent;
 use Psalm\Plugin\EventHandler\Event\MethodReturnTypeProviderEvent;
 use Psalm\Plugin\EventHandler\FunctionReturnTypeProviderInterface;
@@ -38,6 +40,7 @@ use function array_filter;
 use function array_flip;
 use function array_map;
 use function array_values;
+use function getcwd;
 use function implode;
 use function in_array;
 use function ini_get;
@@ -68,7 +71,171 @@ final class TaintTest extends TestCase
         'InvalidReturnStatement', 'ArgumentTypeCoercion', 'UnresolvableInclude', 'UndefinedClass', 'RedundantCast',
         'MixedArrayAssignment', 'InvalidReturnStatement', 'InvalidArrayOffset', 'UndefinedFunction', 'ImplicitToStringCast',
         'InvalidArgument', 'UndefinedVariable', 'WeakHash', 'InsecureCookie',
+        'DeprecatedFunction', 'DeprecatedMethod', 'DeprecatedSyntax',
     ];
+    public function testTheResultOfAValidationRemovesTheTaintsOfTheValueValidated(): void
+    {
+        $this->testConfig->throw_exception = false;
+        $file_path = (string) getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'somefile.php';
+
+        $this->addFile($file_path, '<?php
+            final class Violations implements Countable {
+                public function count(): int { return 0; }
+            }
+
+            final class Validator {
+                public static function make(string $value, string $pattern): self { return new self(); }
+                public static function check(string $value, string $pattern): Violations { return new Violations(); }
+                public function fails(): bool { return false; }
+                public function passes(): bool { return true; }
+            }
+
+            function passed(): void {
+                $value = (string) $_GET["a"];
+                $validator = Validator::make($value, "/^[a-z]+$/D");
+                if ($validator->fails()) {
+                    echo $value;
+                    return;
+                }
+                echo $value;
+            }
+
+            function noViolations(): void {
+                $value = (string) $_GET["b"];
+                $violations = Validator::check((string) $value, "/^[a-z]+$/D");
+                if (count($violations) > 0) {
+                    return;
+                }
+                echo $value;
+                $_SESSION["value"] = $value;
+            }
+
+            function assignedAfterTheValidation(): void {
+                $value = (string) $_GET["c"];
+                $validator = Validator::make($value, "/^[a-z]+$/D");
+                $value = (string) $_GET["d"];
+                if ($validator->passes()) {
+                    echo $value;
+                }
+            }
+
+            function countedWithAMethod(): void {
+                $value = (string) $_GET["e"];
+                $violations = Validator::check($value, "/^[a-z]+$/D");
+                if ($violations->count() === 0) {
+                    $_SESSION["value"] = $value;
+                }
+            }
+
+            function show(): void {
+                echo (string) ($_SESSION["value"] ?? "");
+            }
+
+            function changeGlobal(): void {
+                global $g;
+                $g = (string) $_GET["g"];
+            }
+
+            function globalChangedByACall(): void {
+                global $g;
+                $g = (string) $_GET["f"];
+                $validator = Validator::make($g, "/^[a-z]+$/D");
+                changeGlobal();
+                if ($validator->passes()) {
+                    echo (string) $g;
+                }
+            }
+
+            function assignedThroughAReference(): void {
+                $value = (string) $_GET["h"];
+                $alias = &$value;
+                $validator = Validator::make($value, "/^[a-z]+$/D");
+                $alias = (string) $_GET["i"];
+                if ($validator->passes()) {
+                    echo $value;
+                }
+            }
+
+            /** @param-out string $s */
+            function replace(?string &$s): void {
+                $s = (string) $_GET["k"];
+            }
+
+            function replacedByAReferenceArgument(): void {
+                $value = (string) $_GET["j"];
+                $validator = Validator::make($value, "/^[a-z]+$/D");
+                replace($value);
+                if ($validator->passes()) {
+                    echo $value;
+                }
+            }
+        ');
+        $this->project_analyzer->setPhpVersion('8.0', 'tests');
+        $this->project_analyzer->trackTaintedInputs();
+
+        $codebase = $this->project_analyzer->getCodebase();
+        $socket = new PluginRegistrationSocket($codebase->config, $codebase);
+        $socket->registerHooksFromClass((new class implements AfterExpressionAnalysisInterface {
+            #[Override]
+            public static function afterExpressionAnalysis(AfterExpressionAnalysisEvent $event): ?bool
+            {
+                $expr = $event->getExpr();
+
+                if (!$expr instanceof StaticCall
+                    || !$expr->class instanceof Name
+                    || $expr->class->toString() !== 'Validator'
+                    || !$expr->name instanceof Identifier
+                    || !in_array($expr->name->toLowerString(), ['make', 'check'], true)
+                    || !isset($expr->getArgs()[1])
+                ) {
+                    return null;
+                }
+
+                $source = $event->getStatementsSource();
+                $pattern = $source->getNodeTypeProvider()->getType($expr->getArgs()[1]->value);
+
+                if ($pattern === null || !$pattern->isSingleStringLiteral()) {
+                    return null;
+                }
+
+                $codebase = $event->getCodebase();
+                $codebase->addTaintValidation(
+                    $source,
+                    $expr,
+                    $expr->getArgs()[0]->value,
+                    $codebase->getTaintsRemovedByPattern($pattern->getSingleStringLiteral()->value),
+                    $expr->name->toLowerString() === 'make' ? 'validator' : 'violations',
+                );
+
+                return null;
+            }
+        })::class);
+        $codebase->config->initializePlugins($this->project_analyzer);
+
+        $this->analyzeFile($file_path, new Context(), false);
+
+        $issues = array_values(array_filter(
+            IssueBuffer::getIssuesDataForFile($file_path),
+            static fn(IssueData $issue): bool => !in_array($issue->type, self::IGNORE, true),
+        ));
+
+        self::assertEqualsCanonicalizing(
+            [
+                [17, 'TaintedHtml'],
+                [17, 'TaintedTextWithQuotes'],
+                [38, 'TaintedHtml'],
+                [38, 'TaintedTextWithQuotes'],
+                [65, 'TaintedHtml'],
+                [65, 'TaintedTextWithQuotes'],
+                [75, 'TaintedHtml'],
+                [75, 'TaintedTextWithQuotes'],
+                [89, 'TaintedHtml'],
+                [89, 'TaintedTextWithQuotes'],
+            ],
+            array_map(static fn(IssueData $issue): array => [$issue->line_from, $issue->type], $issues),
+        );
+    }
+
     public function testTaintKindNoHoles(): void
     {
         $constants = array_flip(TaintKind::TAINT_NAMES);
@@ -423,6 +590,148 @@ final class TaintTest extends TestCase
                 [6, 'TaintedTextWithQuotes'],
                 [7, 'TaintedHtml'],
                 [7, 'TaintedTextWithQuotes'],
+            ],
+            array_map(static fn(IssueData $issue): array => [$issue->line_from, $issue->type], $issues),
+        );
+    }
+
+    /**
+     * HTML escaping leaves the whitespace that ends an unquoted attribute value, and a `javascript:` URL in an
+     * attribute that runs it: the concatenation is the sink, where the markup before the value shows its position.
+     */
+    public function testHtmlEscapedValuesInAttributes(): void
+    {
+        $this->testConfig->throw_exception = false;
+        $file_path = self::$src_dir_path . 'somefile.php';
+        $this->addFile($file_path, '<?php
+            $url = (string) ($_GET["url"] ?? "");
+            echo "<img alt=\"" . htmlspecialchars($url) . "\">";
+            echo "<img src=" . htmlspecialchars($url) . ">";
+            echo "<a href=\"" . htmlspecialchars($url) . "\">";
+            echo "<a href=\'" . htmlspecialchars($url) . "\'>";
+            echo "<a href=\"/search?q=" . urlencode($url) . "\">";
+            echo "<a href=\"" . htmlspecialchars(rawurlencode($url)) . "\">";
+            echo "<img src=\"" . htmlspecialchars($url) . "\">";
+            echo "<iframe src=\"" . htmlspecialchars($url) . "\"></iframe>";
+            echo "<form action=\"" . htmlspecialchars($url) . "\">";
+            echo "<a href=" . htmlspecialchars($url) . ">";
+            echo "<a title=\"x\" href=\"" . htmlspecialchars($url) . "\">";
+            echo "<!-- <a href=\"" . htmlspecialchars($url) . "\"> -->";
+            echo "<a href=\"java" . htmlspecialchars($url) . "\">";
+            echo "<a href=\"  " . htmlspecialchars($url) . "\">";
+            echo "<a href=\"https://example.com/" . htmlspecialchars($url) . "\">";
+            echo sprintf("<a href=\"%s\">", htmlspecialchars($url));
+            echo sprintf("<img alt=\"%s\">", htmlspecialchars($url));
+            echo "<a href=\"" . htmlspecialchars($url) . "\" title=" . htmlspecialchars($url) . ">";
+            echo "<input value={$url}>";
+            echo base64_encode($url);
+            if (str_starts_with($url, "https://")) {
+                echo "<a href=\"" . htmlspecialchars($url) . "\">";
+            }
+            if (preg_match("~^(?:https?|mailto):~i", $url)) {
+                echo "<a href=\"" . htmlspecialchars($url) . "\">";
+            }
+            if (preg_match("~^/~", $url)) {
+                echo "<a href=\"" . htmlspecialchars($url) . "\">";
+            }
+            if (preg_match("~^#*~", $url)) {
+                echo "<a href=\"" . htmlspecialchars($url) . "\">";
+            }
+            if (str_starts_with($url, "java")) {
+                echo "<a href=\"" . htmlspecialchars($url) . "\">";
+            }
+            if (preg_match("/^[a-z0-9]+$/", $url)) {
+                echo "<img src=" . $url . ">";
+            }
+        ');
+        $this->project_analyzer->setPhpVersion('8.1', 'tests');
+        $this->project_analyzer->trackTaintedInputs();
+        $this->project_analyzer->getCodebase()->config->initializePlugins($this->project_analyzer);
+
+        $this->analyzeFile($file_path, new Context(), false);
+
+        $issues = array_values(array_filter(
+            IssueBuffer::getIssuesDataForFile($file_path),
+            static fn(IssueData $issue): bool => !in_array($issue->type, self::IGNORE, true),
+        ));
+
+        self::assertEqualsCanonicalizing(
+            [
+                [4, 'TaintedHtmlAttribute'],
+                [5, 'TaintedUrlScheme'],
+                [6, 'TaintedUrlScheme'],
+                [10, 'TaintedUrlScheme'],
+                [11, 'TaintedUrlScheme'],
+                [12, 'TaintedHtmlAttribute'],
+                [12, 'TaintedUrlScheme'],
+                [13, 'TaintedUrlScheme'],
+                [15, 'TaintedUrlScheme'],
+                [16, 'TaintedUrlScheme'],
+                [18, 'TaintedUrlScheme'],
+                [20, 'TaintedUrlScheme'],
+                [20, 'TaintedHtmlAttribute'],
+                [21, 'TaintedHtml'],
+                [21, 'TaintedTextWithQuotes'],
+                [21, 'TaintedHtmlAttribute'],
+                [33, 'TaintedUrlScheme'],
+                [36, 'TaintedUrlScheme'],
+            ],
+            array_map(static fn(IssueData $issue): array => [$issue->line_from, $issue->type], $issues),
+        );
+    }
+
+    /**
+     * What real_escape_string() returns is only safe in SQL quotes: outside of them, or with no quotes, it is
+     * reported once, as a value that wasn't escaped at all is
+     */
+    public function testSqlEscapedForQuotesOutsideOfThem(): void
+    {
+        $this->testConfig->throw_exception = false;
+        $file_path = self::$src_dir_path . 'somefile.php';
+        $this->addFile($file_path, '<?php
+            function run(mysqli $m, PDO $pdo): void {
+                $id = (string) ($_GET["id"] ?? "");
+                $m->query("SELECT * FROM t WHERE id = \'" . $m->real_escape_string($id) . "\'");
+                $m->query("SELECT * FROM t WHERE id = " . $m->real_escape_string($id));
+                $m->query("SELECT * FROM t WHERE id = {$m->real_escape_string($id)}");
+                $m->query("SELECT * FROM t WHERE id = \'{$m->real_escape_string($id)}\'");
+                $m->query($m->real_escape_string($id));
+                $m->query(sprintf("SELECT * FROM t WHERE id = \'%s\'", mysqli_real_escape_string($m, $id)));
+                $m->query(sprintf("SELECT * FROM t WHERE id = %s", mysqli_real_escape_string($m, $id)));
+                $m->query("SELECT * FROM t WHERE id = " . $id);
+                $m->query("SELECT * FROM t WHERE a = \'" . $m->real_escape_string($id) . "\' AND b = " . $m->real_escape_string($id));
+                $m->query("SELECT * FROM t WHERE a = \"" . $m->real_escape_string($id) . "\"");
+                $m->query("SELECT * FROM t WHERE a = \'it\\\\\'s " . $m->real_escape_string($id) . "\'");
+                $m->query("SELECT `" . $m->real_escape_string($id) . "` FROM t");
+                $m->query("SELECT * FROM t WHERE id = " . $pdo->quote($id));
+                $m->query("SELECT * FROM t WHERE id = " . (string) pg_escape_literal($id));
+                $sql = "SELECT * FROM t WHERE a = \'" . $m->real_escape_string($id) . "\' AND b = \'";
+                $sql .= $m->real_escape_string($id) . "\'";
+                $m->query($sql);
+                $m->query("SELECT * FROM t WHERE id = " . (string) (int) $id);
+                if (preg_match("/^[a-z0-9_]+$/", $id)) {
+                    $m->query("SELECT * FROM t ORDER BY " . $m->real_escape_string($id));
+                }
+            }
+        ');
+        $this->project_analyzer->trackTaintedInputs();
+
+        $this->analyzeFile($file_path, new Context(), false);
+
+        $issues = array_values(array_filter(
+            IssueBuffer::getIssuesDataForFile($file_path),
+            static fn(IssueData $issue): bool => !in_array($issue->type, self::IGNORE, true),
+        ));
+
+        self::assertEqualsCanonicalizing(
+            [
+                [5, 'TaintedSql'],
+                [6, 'TaintedSql'],
+                [8, 'TaintedSql'],
+                [10, 'TaintedSql'],
+                [11, 'TaintedSql'],
+                [12, 'TaintedSql'],
+                [15, 'TaintedSql'],
             ],
             array_map(static fn(IssueData $issue): array => [$issue->line_from, $issue->type], $issues),
         );
@@ -1262,12 +1571,13 @@ final class TaintTest extends TestCase
     }
 
     /**
-     * The sinks of the curl options with several, which a test expecting an issue can't check: it only sees the first
-     * one reported.
+     * The sinks of the curl options and of the `Location` header with several, which a test expecting an issue can't
+     * check: it only sees the first one reported.
      *
      * @param list<string> $expected_issues
      */
     #[DataProvider('providerCurlSinks')]
+    #[DataProvider('providerLocationHeaderSinks')]
     public function testCurlSinks(string $code, array $expected_issues, bool $track_unused_variables): void
     {
         if ($track_unused_variables) {
@@ -1291,6 +1601,62 @@ final class TaintTest extends TestCase
         sort($taint_issues);
 
         self::assertSame($expected_issues, $taint_issues);
+    }
+
+    /**
+     * @return array<string, array{string, list<string>, bool}>
+     * @psalm-pure
+     */
+    public static function providerLocationHeaderSinks(): array
+    {
+        $cases = [
+            // a value choosing the server is reported as the redirect alone, a value after a fixed server as the URL
+            // syntax it can inject: `?`, `&` or `#` in the path, query or fragment, and `..` in the path
+            'locationHeader' => [
+                '<?php
+                    $next = (string) $_GET["next"];
+                    header("Location: " . $next);
+                    header("Location: /" . $next);
+                    header("Location: https://example.com" . $next);
+                    header("Location: https://example.com/" . $next);
+                    header("Location: https://example.com/?page=" . $next);
+                    header("Location: https://example.com/#" . $next);
+                    header("Location: /docs/" . $next);
+                    header("Location: /account?tab=" . $next);
+                    header("Location: https://example.com/" . rawurlencode($next));
+                    header("Location: /docs/" . rawurlencode($next));
+                    header("Location: https://example.com/?page=" . urlencode($next));
+                    header("Location: /account?tab=" . rawurlencode($next));
+                    header("Location: https://example.com/?" . http_build_query(["page" => $next]));
+                    $url = "https://example.com/" . $next;
+                    header("Location: " . $url);
+                    $path = "/docs/" . rawurlencode($next);
+                    header("Location: $path");',
+                [
+                    'TaintedRedirect on line 3',
+                    'TaintedRedirect on line 4',
+                    'TaintedRedirect on line 5',
+                    'TaintedUrlComponent on line 10',
+                    'TaintedUrlComponent on line 17',
+                    'TaintedUrlComponent on line 6',
+                    'TaintedUrlComponent on line 7',
+                    'TaintedUrlComponent on line 8',
+                    'TaintedUrlComponent on line 9',
+                    'TaintedUrlPath on line 11',
+                    'TaintedUrlPath on line 12',
+                    'TaintedUrlPath on line 19',
+                ],
+            ],
+        ];
+
+        $data = [];
+
+        foreach ($cases as $name => [$code, $expected_issues]) {
+            $data[$name] = [$code, $expected_issues, false];
+            $data[$name . ' tracking unused variables'] = [$code, $expected_issues, true];
+        }
+
+        return $data;
     }
 
     /**
@@ -1379,6 +1745,17 @@ final class TaintTest extends TestCase
     public static function providerValidCodeParse(): array
     {
         return [
+            'deprecatedPromotedPropertyIsNotUsedByItsOwnDeclaration' => [
+                'code' => '<?php
+                    final class A {
+                        public function __construct(
+                            /** @deprecated */
+                            public string $foo,
+                        ) {}
+                    }
+
+                    new A("x");',
+            ],
             'annotatedStatementExecutedIntoAResultGivesOnlyTheColumnsStored' => [
                 'code' => '<?php
                     final class Result {
@@ -1466,6 +1843,30 @@ final class TaintTest extends TestCase
                         exit;
                     }
                     exec("gzip -" . (string) $level . " /tmp/backup.tar");',
+            ],
+            'valueMatchingAPatternIsValidatedWhenReadBackFromTheSession' => [
+                'code' => '<?php
+                    function remember(): void {
+                        $name = (string) $_GET["name"];
+                        if (preg_match("/^[a-z0-9_]+$/iD", $name)) {
+                            $_SESSION["name"] = $name;
+                        }
+                    }
+
+                    function show(): void {
+                        echo (string) ($_SESSION["name"] ?? "");
+                    }',
+            ],
+            'requestToAUrlWhoseHostMatchesAListOfHosts' => [
+                'code' => '<?php
+                    function fetch(): void {
+                        $url = trim((string) $_GET["next"]);
+                        $host = (string) parse_url($url, PHP_URL_HOST);
+                        if (!preg_match("#^(api\.example\.com|cdn\.example\.com)$#", $host)) {
+                            return;
+                        }
+                        fsockopen($url, 80);
+                    }',
             ],
             'noTaintFromASpecializedPregReplaceCallbackCallbackInItsOtherCalls' => [
                 'code' => '<?php
@@ -1676,6 +2077,71 @@ final class TaintTest extends TestCase
                     $row = new stdClass();
                     $row->name = "guest";
                     echo (string) $row->name;',
+            ],
+            'locationHeaderWithAFixedServerIsNoRedirect' => [
+                'code' => '<?php
+                    header("Location: https://example.com/?page=" . rawurlencode((string) $_GET["page"]));
+                    header("Location: /account?tab=" . urlencode((string) $_GET["tab"]));
+                    header("location : /docs/?" . http_build_query(["page" => (string) $_GET["page"]]));',
+            ],
+            'urlPathSinkOfAQueryAfterARootPath' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-taint-sink ssrf $path
+                     * @psalm-taint-sink url_component $path
+                     * @psalm-taint-sink url_path $path
+                     */
+                    function fetchFromApi(string $path): void {}
+
+                    fetchFromApi("/search?q=" . rawurlencode((string) $_GET["q"]));',
+            ],
+            'redirectSinkOfAUrlWithAFixedServer' => [
+                'code' => '<?php
+                    /** @psalm-taint-sink redirect $url */
+                    function redirectTo(string $url): void {}
+
+                    redirectTo("https://example.com/" . (string) $_GET["page"]);
+                    redirectTo("/docs/" . (string) $_GET["page"]);',
+            ],
+            'sessionItemStoredButNeverRead' => [
+                'code' => '<?php
+                    $_SESSION["user"] = $_GET["user"];',
+            ],
+            'sessionItemReadUnderAnotherKey' => [
+                'code' => '<?php
+                    function remember(): void {
+                        $_SESSION["user"] = (string) $_GET["user"];
+                        $_SESSION["page"] = 1;
+                    }
+
+                    function show(): void {
+                        echo (string) ($_SESSION["page"] ?? "");
+                    }',
+            ],
+            'sessionItemEscapedForWhatReadsIt' => [
+                'code' => '<?php
+                    function remember(): void {
+                        $_SESSION["user"] = htmlspecialchars((string) $_GET["user"], ENT_QUOTES);
+                        $_SESSION["page"] = (int) $_GET["page"];
+                    }
+
+                    function show(): void {
+                        echo (string) ($_SESSION["user"] ?? "");
+                        echo (string) ($_SESSION["page"] ?? "");
+                    }',
+            ],
+            'sessionItemStoredWhereTaintedInputIsSuppressed' => [
+                'code' => '<?php
+                    /** @psalm-suppress TaintedInput */
+                    function remember(string $user): void {
+                        $_SESSION["user"] = $user;
+                    }
+
+                    function show(): void {
+                        echo (string) ($_SESSION["user"] ?? "");
+                    }
+
+                    remember((string) $_GET["user"]);',
             ],
             'rowOfATableNothingStoresIntoIsNoSource' => [
                 'code' => '<?php
@@ -5395,7 +5861,18 @@ final class TaintTest extends TestCase
                     $c = $mysqli->real_escape_string($_GET["c"]);
                     $d = mysqli_real_escape_string($mysqli, $_GET["d"]);
 
-                    $mysqli->query("$a$b$c$d");',
+                    $mysqli->query("SELECT * FROM t WHERE a = \'$a\' AND b = \'$b\' AND c = \'$c\' AND d = \'$d\'");',
+            ],
+            'sqlEscapeOfCustomFunctionCoversUnquotedValues' => [
+                'code' => '<?php
+                    /** @psalm-taint-escape sql */
+                    function quote(string $value): string {
+                        return "\'" . addslashes($value) . "\'";
+                    }
+
+                    function run(mysqli $mysqli): void {
+                        $mysqli->query("SELECT * FROM t WHERE id = " . quote((string) $_GET["id"]));
+                    }',
             ],
             'querySimpleXMLElement' => [
                 'code' => '<?php
@@ -7387,6 +7864,112 @@ final class TaintTest extends TestCase
                     backup($_GET["bin"]);',
                 'error_message' => 'TaintedShell',
             ],
+            'urlWhoseHostATernaryInTheConditionCanFixIsStillTainted' => [
+                'code' => '<?php
+                    function fetch(bool $parse): void {
+                        $url = (string) $_GET["next"];
+                        if (!preg_match("#^api\.example\.com$#", $parse ? (string) parse_url($url, PHP_URL_HOST) : "api.example.com")) {
+                            return;
+                        }
+                        fsockopen($url, 80);
+                    }',
+                'error_message' => 'TaintedSSRF',
+            ],
+            'redirectToAUrlWhoseHostMatchesAListOfHostsIsStillTainted' => [
+                'code' => '<?php
+                    function forward(): void {
+                        $url = (string) $_GET["next"];
+                        $host = (string) parse_url($url, PHP_URL_HOST);
+                        if (!preg_match("#^api\.example\.com$#", $host)) {
+                            return;
+                        }
+                        header("Location: " . $url);
+                    }',
+                'error_message' => 'TaintedRedirect',
+            ],
+            'urlWhoseHostATernaryCanFixIsStillTainted' => [
+                'code' => '<?php
+                    function fetch(bool $parse): void {
+                        $url = (string) $_GET["next"];
+                        $host = $parse ? (string) parse_url($url, PHP_URL_HOST) : "api.example.com";
+                        if (!preg_match("#^api\.example\.com$#", $host)) {
+                            return;
+                        }
+                        fsockopen($url, 80);
+                    }',
+                'error_message' => 'TaintedSSRF',
+            ],
+            'urlOfAPropertyWhoseHostMatchesAListOfHostsIsStillTainted' => [
+                'code' => '<?php
+                    final class Fetcher {
+                        public string $url = "";
+
+                        public function fetch(): void {
+                            $host = (string) parse_url($this->url, PHP_URL_HOST);
+                            if (!preg_match("#^api\.example\.com$#", $host)) {
+                                return;
+                            }
+                            fsockopen($this->url, 80);
+                        }
+                    }
+
+                    $fetcher = new Fetcher();
+                    $fetcher->url = (string) $_GET["next"];
+                    $fetcher->fetch();',
+                'error_message' => 'TaintedSSRF',
+            ],
+            'urlAssignedAfterItsHostWasTakenIsStillTainted' => [
+                'code' => '<?php
+                    function forward(): void {
+                        $url = (string) $_GET["next"];
+                        $host = (string) parse_url($url, PHP_URL_HOST);
+                        $url = (string) $_GET["other"];
+                        if (!preg_match("#^api\.example\.com$#", $host)) {
+                            return;
+                        }
+                        fsockopen($url, 80);
+                    }',
+                'error_message' => 'TaintedSSRF',
+            ],
+            'urlWhoseHostMatchesAPatternWithAnyCharacterIsStillTainted' => [
+                'code' => '<?php
+                    function forward(): void {
+                        $url = (string) $_GET["next"];
+                        $host = (string) parse_url($url, PHP_URL_HOST);
+                        if (!preg_match("#^api.example.com$#", $host)) {
+                            return;
+                        }
+                        fsockopen($url, 80);
+                    }',
+                'error_message' => 'TaintedSSRF',
+            ],
+            'urlWhoseHostCanBeAnotherValueIsStillTainted' => [
+                'code' => '<?php
+                    function forward(bool $parse): void {
+                        $url = (string) $_GET["next"];
+                        $host = "api.example.com";
+                        if ($parse) {
+                            $host = (string) parse_url($url, PHP_URL_HOST);
+                        }
+                        if (!preg_match("#^api\.example\.com$#", $host)) {
+                            return;
+                        }
+                        fsockopen($url, 80);
+                    }',
+                'error_message' => 'TaintedSSRF',
+            ],
+            'urlWhoseHostMatchesAListOfHostsCanStillReadAFile' => [
+                'code' => '<?php
+                    function forward(): void {
+                        $url = (string) $_GET["next"];
+                        $host = (string) parse_url($url, PHP_URL_HOST);
+                        if (!preg_match("#^api\.example\.com$#", $host)) {
+                            return;
+                        }
+                        echo file_get_contents($url);
+                    }',
+                'error_message' => 'TaintedFile',
+            ],
             'valueThatMayNotMatchThePatternKeepsItsTaints' => [
                 'code' => '<?php
                     $name = (string) $_GET["name"];
@@ -7511,6 +8094,112 @@ final class TaintTest extends TestCase
                     }',
                 'error_message' => 'TaintedHtml',
             ],
+            'taintedLocationHeader' => [
+                'code' => '<?php
+                    header("Location: " . (string) $_GET["next"]);',
+                'error_message' => 'TaintedRedirect',
+            ],
+            'taintedLocationHeaderAfterARootSlash' => [
+                'code' => '<?php
+                    // `//evil.example` is another server
+                    header("Location: /" . (string) $_GET["next"]);',
+                'error_message' => 'TaintedRedirect',
+            ],
+            'taintedRedirectSinkAnnotation' => [
+                'code' => '<?php
+                    /** @psalm-taint-sink redirect $url */
+                    function redirectTo(string $url): void {}
+
+                    redirectTo((string) $_GET["next"]);',
+                'error_message' => 'TaintedRedirect',
+            ],
+            'locationHeaderPathAfterAFixedServer' => [
+                'code' => '<?php
+                    // `?admin=1#` changes the query of the URL
+                    header("Location: https://example.com/" . (string) $_GET["page"]);',
+                'error_message' => 'TaintedUrlComponent',
+            ],
+            'locationHeaderPathSegmentAfterAFixedServer' => [
+                'code' => '<?php
+                    // `..` reaches another path of the server
+                    header("Location: https://example.com/docs/" . rawurlencode((string) $_GET["page"]));',
+                'error_message' => 'TaintedUrlPath',
+            ],
+            'headerWhoseNameIsTaintedIsNoRedirect' => [
+                'code' => '<?php
+                    header((string) $_GET["header"] . ": /");',
+                'error_message' => 'TaintedHeader',
+            ],
+            'taintedSessionItemReadBack' => [
+                'code' => '<?php
+                    function remember(): void {
+                        $_SESSION["user"] = (string) $_GET["user"];
+                    }
+
+                    function show(): void {
+                        echo (string) ($_SESSION["user"] ?? "");
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintedNestedSessionItemReadBack' => [
+                'code' => '<?php
+                    function remember(string $role): void {
+                        $_SESSION["auth"]["role"] = $role;
+                    }
+
+                    function check(): void {
+                        exec("grant " . (string) ($_SESSION["auth"]["role"] ?? ""));
+                    }
+
+                    remember((string) $_GET["role"]);',
+                'error_message' => 'TaintedShell',
+            ],
+            'sessionItemEscapedForAnotherReader' => [
+                'code' => '<?php
+                    function remember(): void {
+                        $_SESSION["user"] = htmlspecialchars((string) $_GET["user"]);
+                    }
+
+                    function backup(): void {
+                        exec("backup " . (string) ($_SESSION["user"] ?? ""));
+                    }',
+                'error_message' => 'TaintedShell',
+            ],
+            'taintedSessionStoredAsAWhole' => [
+                'code' => '<?php
+                    function login(): void {
+                        $_SESSION = ["user" => (string) $_GET["user"]];
+                    }
+
+                    function show(): void {
+                        echo (string) ($_SESSION["user"] ?? "");
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintedSessionItemUnderAKeyNotKnown' => [
+                'code' => '<?php
+                    function remember(string $key): void {
+                        $_SESSION[$key] = (string) $_GET["value"];
+                    }
+
+                    function show(): void {
+                        echo (string) ($_SESSION["user"] ?? "");
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintedSessionReadAsAWhole' => [
+                'code' => '<?php
+                    function remember(): void {
+                        $_SESSION["user"] = (string) $_GET["user"];
+                    }
+
+                    function show(): void {
+                        foreach ($_SESSION as $value) {
+                            echo (string) $value;
+                        }
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
             'getenvIsASource' => [
                 'code' => '<?php
                     exec((string) getenv("BACKUP_COMMAND"));',
@@ -7591,6 +8280,16 @@ final class TaintTest extends TestCase
                         }
                     }',
                 'error_message' => 'TaintedHtml',
+            ],
+            'customSqlSinkTakesValuesEscapedOutsideOfQuotes' => [
+                'code' => '<?php
+                    /** @psalm-taint-sink sql $query */
+                    function runQuery(string $query): void {}
+
+                    function run(mysqli $mysqli): void {
+                        runQuery("SELECT * FROM t WHERE id = " . $mysqli->real_escape_string((string) $_GET["id"]));
+                    }',
+                'error_message' => 'TaintedSql',
             ],
             'escapedValueStoredWithMysqliIsStillHtml' => [
                 'code' => '<?php

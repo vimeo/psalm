@@ -156,7 +156,7 @@ class DOMNode
      */
     public ?DOMNamedNodeMap $attributes;
     /** @readonly */
-    public DOMDocument $ownerDocument;
+    public ?DOMDocument $ownerDocument;
     /** @readonly */
     public ?string $namespaceURI;
     public string $prefix;
@@ -244,7 +244,7 @@ class DOMNameSpaceNode
     /** @readonly */
     public ?string $namespaceURI;
     /** @readonly */
-    public DOMDocument $ownerDocument;
+    public ?DOMDocument $ownerDocument;
     /** @readonly */
     public ?DOMNode $parentNode;
 }
@@ -1008,6 +1008,8 @@ class DOMXPath
 }
 
 namespace Dom {
+    \class_alias(\DOMException::class, 'Dom\DOMException');
+
     /** @since 8.4 */
     interface ParentNode
     {
@@ -1323,5 +1325,198 @@ namespace Dom {
         public function query(string $expression, ?Node $contextNode = null, bool $registerNodeNS = true): NodeList {}
 
         public static function quote(string $str): string {}
+    }
+
+    /** @since 8.4 */
+    class Implementation
+    {
+        /** @psalm-pure */
+        public function createDocumentType(string $qualifiedName, string $publicId, string $systemId): DocumentType {}
+
+        /** @psalm-pure */
+        public function createDocument(
+            ?string $namespace,
+            string $qualifiedName,
+            ?DocumentType $doctype = null
+        ): XMLDocument {}
+
+        /** @psalm-pure */
+        public function createHTMLDocument(?string $title = null): HTMLDocument {}
+    }
+
+    /**
+     * @template-implements \IteratorAggregate<string, Entity|Notation>
+     * @since 8.4
+     */
+    class DtdNamedNodeMap implements \IteratorAggregate, \Countable
+    {
+        /** @readonly */
+        public int $length;
+
+        /** @psalm-capabilities read-props */
+        public function item(int $index): Entity|Notation|null {}
+
+        /** @psalm-capabilities read-props */
+        public function getNamedItem(string $qualifiedName): Entity|Notation|null {}
+
+        /** @psalm-capabilities read-props */
+        public function getNamedItemNS(?string $namespace, string $localName): Entity|Notation|null {}
+
+        /**
+         * @psalm-capabilities read-props
+         * @return int<0, max>
+         */
+        public function count(): int {}
+
+        /**
+         * @psalm-capabilities read-props
+         * @return \Iterator<string, Entity|Notation>
+         */
+        public function getIterator(): \Iterator {}
+    }
+
+    /** @since 8.4 */
+    class CharacterData extends Node implements ChildNode
+    {
+        /** @readonly */
+        public ?Element $previousElementSibling;
+        /** @readonly */
+        public ?Element $nextElementSibling;
+        public string $data;
+        /** @readonly */
+        public int $length;
+
+        /** @psalm-capabilities read-props */
+        public function substringData(int $offset, int $count): string {}
+
+        /** @psalm-capabilities read-props|write-this-props */
+        public function appendData(string $data): void {}
+
+        /** @psalm-capabilities read-props|write-this-props */
+        public function insertData(int $offset, string $data): void {}
+
+        /** @psalm-capabilities read-props|write-this-props */
+        public function deleteData(int $offset, int $count): void {}
+
+        /** @psalm-capabilities read-props|write-this-props */
+        public function replaceData(int $offset, int $count, string $data): void {}
+
+        /** @psalm-capabilities read-props|write-props */
+        public function remove(): void {}
+
+        /**
+         * @psalm-capabilities read-props|write-props
+         * @param Node|string ...$nodes
+         */
+        public function before(...$nodes): void {}
+
+        /**
+         * @psalm-capabilities read-props|write-props
+         * @param Node|string ...$nodes
+         */
+        public function after(...$nodes): void {}
+
+        /**
+         * @psalm-capabilities read-props|write-props
+         * @param Node|string ...$nodes
+         */
+        public function replaceWith(...$nodes): void {}
+    }
+
+    /** @since 8.4 */
+    class Text extends CharacterData
+    {
+        /** @readonly */
+        public string $wholeText;
+
+        /** @psalm-capabilities read-props|write-props */
+        public function splitText(int $offset): Text {}
+    }
+
+    /** @since 8.4 */
+    class CDATASection extends Text {}
+
+    /** @since 8.4 */
+    class ProcessingInstruction extends CharacterData
+    {
+        /** @readonly */
+        public string $target;
+    }
+
+    /** @since 8.4 */
+    class Comment extends CharacterData {}
+
+    /** @since 8.4 */
+    class DocumentType extends Node implements ChildNode
+    {
+        /** @readonly */
+        public string $name;
+        /** @readonly */
+        public DtdNamedNodeMap $entities;
+        /** @readonly */
+        public DtdNamedNodeMap $notations;
+        /** @readonly */
+        public string $publicId;
+        /** @readonly */
+        public string $systemId;
+        /** @readonly */
+        public ?string $internalSubset;
+
+        /** @psalm-capabilities read-props|write-props */
+        public function remove(): void {}
+
+        /**
+         * @psalm-capabilities read-props|write-props
+         * @param Node|string ...$nodes
+         */
+        public function before(...$nodes): void {}
+
+        /**
+         * @psalm-capabilities read-props|write-props
+         * @param Node|string ...$nodes
+         */
+        public function after(...$nodes): void {}
+
+        /**
+         * @psalm-capabilities read-props|write-props
+         * @param Node|string ...$nodes
+         */
+        public function replaceWith(...$nodes): void {}
+    }
+
+    /** @since 8.4 */
+    class Entity extends Node
+    {
+        /** @readonly */
+        public ?string $publicId;
+        /** @readonly */
+        public ?string $systemId;
+        /** @readonly */
+        public ?string $notationName;
+    }
+
+    /** @since 8.4 */
+    class EntityReference extends Node {}
+
+    /** @since 8.4 */
+    class Notation extends Node
+    {
+        /** @readonly */
+        public string $publicId;
+        /** @readonly */
+        public string $systemId;
+    }
+
+    /**
+     * @psalm-immutable
+     * @since 8.4
+     */
+    final class NamespaceInfo
+    {
+        public ?string $prefix;
+        public ?string $namespaceURI;
+        public Element $element;
+
+        private function __construct() {}
     }
 }

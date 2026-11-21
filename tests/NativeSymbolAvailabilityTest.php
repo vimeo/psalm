@@ -14,6 +14,7 @@ use function array_filter;
 use function array_map;
 use function explode;
 use function implode;
+use function str_replace;
 
 use const DIRECTORY_SEPARATOR;
 
@@ -446,7 +447,7 @@ final class NativeSymbolAvailabilityTest extends TestCase
                         ->setQuery("q=1")
                         ->setFragment(null)
                         ->build(null, $softErrors);
-                    echo count($softErrors ?? []);
+                    echo count($softErrors);
                 }
 
                 function rfc3986HostType(Uri\Rfc3986\UriHostType $type): string {
@@ -663,6 +664,162 @@ final class NativeSymbolAvailabilityTest extends TestCase
             'ignored_issues' => [],
             'php_version' => '8.5',
         ];
+
+        yield 'php83DateExceptionsAvailable' => [
+            'code' => '<?php
+                function f(string $s): ?DateTimeImmutable {
+                    try {
+                        return new DateTimeImmutable($s);
+                    } catch (DateMalformedStringException $e) {
+                        $exception = $e;
+                        return null;
+                    }
+                }
+
+                function g(DateError $e, DateRangeError $r, DateObjectError $o, DateInvalidTimeZoneException $z): void {}
+
+                function h(
+                    DateInvalidOperationException $o,
+                    DateMalformedIntervalStringException $i,
+                    DateMalformedPeriodStringException $p
+                ): void {}
+            ',
+            'assertions' => [],
+            'ignored_issues' => [],
+            'php_version' => '8.3',
+        ];
+
+        yield 'php84NewClassesAvailable' => [
+            'code' => '<?php
+                /** @psalm-pure */
+                function money(BcMath\Number $a): string {
+                    [$quotient, $remainder] = $a->add("1.5")->mul(2, 2)->divmod(3);
+
+                    return $quotient->round(1, RoundingMode::HalfEven)->value . $remainder->scale;
+                }
+
+                /** @psalm-pure */
+                function constant_value(ReflectionConstant $c): string {
+                    return $c->getName() . $c->getShortName() . ($c->isDeprecated() ? "!" : "");
+                }
+
+                function bucket(StreamBucket $b): string {
+                    return $b->data . $b->datalen;
+                }
+
+                function interval(): Random\IntervalBoundary {
+                    return Random\IntervalBoundary::ClosedOpen;
+                }
+
+                function f(RequestParseBodyException $e, Dba\Connection $d, Odbc\Connection $c, Odbc\Result $r): void {}
+
+                function hook(): string {
+                    return PropertyHookType::Get->value;
+                }
+            ',
+            'assertions' => [],
+            'ignored_issues' => [],
+            'php_version' => '8.4',
+        ];
+
+        yield 'php84PdoDriverSubclassesAvailable' => [
+            'code' => '<?php
+                /** @psalm-pure */
+                function sqlite_flags(): int {
+                    return Pdo\Sqlite::OPEN_READONLY | Pdo\Sqlite::OPEN_CREATE;
+                }
+
+                /** @psalm-pure */
+                function escape(Pdo\Pgsql $db, string $name): string {
+                    return $db->escapeIdentifier($name);
+                }
+
+                function mysql(Pdo\Mysql $db): int {
+                    return $db->getWarningCount() + Pdo\Mysql::ATTR_USE_BUFFERED_QUERY;
+                }
+
+                function others(Pdo\Odbc $o, Pdo\Dblib $d, Pdo\Firebird $f): int {
+                    return Pdo\Odbc::ATTR_ASSUME_UTF8 + Pdo\Dblib::ATTR_QUERY_TIMEOUT + Pdo\Firebird::getApiVersion();
+                }
+            ',
+            'assertions' => [],
+            'ignored_issues' => [],
+            'php_version' => '8.4',
+        ];
+
+        yield 'php84DomClassesAvailable' => [
+            'code' => '<?php
+                /** @psalm-capabilities read-props */
+                function text(Dom\Text $t, Dom\DocumentType $type): string {
+                    $entity = $type->entities->item(0);
+
+                    return $t->substringData(0, 3) . $t->wholeText . $type->name
+                        . ($entity instanceof Dom\Entity ? (string) $entity->notationName : "");
+                }
+
+                /** @psalm-pure */
+                function implementation(Dom\Implementation $i): Dom\HTMLDocument {
+                    return $i->createHTMLDocument("title");
+                }
+
+                function nodes(
+                    Dom\CDATASection $c,
+                    Dom\ProcessingInstruction $p,
+                    Dom\Comment $comment,
+                    Dom\EntityReference $r,
+                    Dom\Notation $n,
+                    Dom\NamespaceInfo $info
+                ): string {
+                    return $p->target . $n->systemId . (string) $info->prefix . Dom\AdjacentPosition::AfterEnd->value;
+                }
+            ',
+            'assertions' => [],
+            'ignored_issues' => [],
+            'php_version' => '8.4',
+        ];
+
+        yield 'php85UriAvailable' => [
+            'code' => '<?php
+                /** @psalm-pure */
+                function rfc3986(string $s): ?string {
+                    $uri = Uri\Rfc3986\Uri::parse($s);
+                    if ($uri === null) {
+                        return null;
+                    }
+
+                    $other = $uri->withPath("/a")->withQuery("b=c");
+
+                    return $other->equals($uri, Uri\UriComparisonMode::IncludeFragment) ? $uri->getHost() : $other->toString();
+                }
+
+                /** @psalm-pure */
+                function whatwg(string $s): string {
+                    $url = new Uri\WhatWg\Url($s, null, $softErrors);
+                    foreach ($softErrors as $error) {
+                        if ($error->type === Uri\WhatWg\UrlValidationErrorType::PortInvalid) {
+                            return $error->context;
+                        }
+                    }
+
+                    return $url->toAsciiString();
+                }
+
+                function invalid(Uri\WhatWg\InvalidUrlException $e, Uri\UriError $error, Uri\UriException $base): array {
+                    return $e->errors;
+                }
+
+                function filter(Filter\FilterFailedException $e): Filter\FilterException {
+                    return $e;
+                }
+
+                function format(IntlListFormatter $formatter): string|false {
+                    return $formatter->format(["a", "b"]);
+                }
+            ',
+            'assertions' => [],
+            'ignored_issues' => [],
+            'php_version' => '8.5',
+        ];
     }
 
     /**
@@ -845,6 +1002,81 @@ final class NativeSymbolAvailabilityTest extends TestCase
                 'php_version' => '8.5',
             ];
         }
+
+        $classesNewBefore86 = [
+            '8.3' => [
+                'DateError', 'DateObjectError', 'DateRangeError', 'DateException', 'DateInvalidOperationException',
+                'DateInvalidTimeZoneException', 'DateMalformedIntervalStringException',
+                'DateMalformedPeriodStringException', 'DateMalformedStringException', 'Random\IntervalBoundary',
+            ],
+            '8.4' => [
+                'RequestParseBodyException', 'BcMath\Number', 'Dba\Connection', 'Dom\Implementation',
+                'Dom\DtdNamedNodeMap', 'Dom\AdjacentPosition', 'Dom\CharacterData', 'Dom\Text', 'Dom\CDATASection',
+                'Dom\ProcessingInstruction', 'Dom\Comment', 'Dom\DocumentType', 'Dom\Entity', 'Dom\EntityReference',
+                'Dom\Notation', 'Dom\NamespaceInfo', 'Odbc\Connection', 'Odbc\Result', 'Pcntl\QosClass', 'Pdo\Dblib',
+                'Pdo\Firebird', 'Pdo\Mysql', 'Pdo\Odbc', 'Pdo\Pgsql', 'Pdo\Sqlite', 'ReflectionConstant', 'Soap\Url',
+                'Soap\Sdl', 'RoundingMode', 'StreamBucket', 'PropertyHookType',
+            ],
+            '8.5' => [
+                'Uri\UriException', 'Uri\UriError', 'Uri\InvalidUriException', 'Uri\UriComparisonMode',
+                'Uri\Rfc3986\Uri', 'Uri\WhatWg\InvalidUrlException', 'Uri\WhatWg\UrlValidationErrorType',
+                'Uri\WhatWg\UrlValidationError', 'Uri\WhatWg\Url', 'Filter\FilterException',
+                'Filter\FilterFailedException', 'IntlListFormatter',
+            ],
+        ];
+
+        $previous_versions = ['8.3' => '8.2', '8.4' => '8.3', '8.5' => '8.4'];
+        foreach ($classesNewBefore86 as $version => $classes) {
+            foreach ($classes as $class) {
+                yield 'php' . str_replace('.', '', $version) . str_replace('\\', '', $class) . 'BelowItsVersion' => [
+                    'code' => '<?php
+                        function f(' . $class . ' $c): void {}
+                    ',
+                    'error_message' => $class . ' is not defined for the analysed PHP version '
+                        . $previous_versions[$version] . ' (it was introduced in PHP ' . $version,
+                    'error_levels' => [],
+                    'php_version' => $previous_versions[$version],
+                ];
+            }
+        }
+
+        yield 'php85IntlListFormatterFormatRecordsTheError' => [
+            'code' => '<?php
+                /** @psalm-pure */
+                function format(IntlListFormatter $formatter): string|false {
+                    return $formatter->format(["a", "b"]);
+                }
+            ',
+            'error_message' => 'ImpureMethodCall',
+            'error_levels' => [],
+            'php_version' => '8.5',
+        ];
+
+        yield 'php84DomNodeRemovalWritesTheParent' => [
+            'code' => '<?php
+                /** @psalm-pure */
+                function remove(Dom\Text $t): Dom\Text {
+                    $t->remove();
+
+                    return $t;
+                }
+            ',
+            'error_message' => 'ImpureMethodCall',
+            'error_levels' => [],
+            'php_version' => '8.4',
+        ];
+
+        yield 'php84PgsqlCopyIsIo' => [
+            'code' => '<?php
+                /** @psalm-pure */
+                function rows(Pdo\Pgsql $db): array|false {
+                    return $db->copyToArray("t");
+                }
+            ',
+            'error_message' => 'ImpureMethodCall',
+            'error_levels' => [],
+            'php_version' => '8.4',
+        ];
 
         yield 'php86OpensslSessionIdIsReadonly' => [
             'code' => '<?php

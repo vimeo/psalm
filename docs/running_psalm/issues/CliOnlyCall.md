@@ -98,7 +98,7 @@ import(); // no issue
 ```
 
 Code that holds an instance of a class with
-[`@psalm-cli-only-instances`](../../security_analysis/avoiding_false_positives.md#classes-only-instantiated-from-the-command-line)
+[`@psalm-cli-only-instances`](../../security_analysis/index.md#classes-only-instantiated-from-the-command-line)
 already runs from the command line: calling a method that isn't static of such a class, or a function-like whose
 parameter requires an instance of it, reports no `CliOnlyCall`:
 
@@ -117,7 +117,7 @@ final class ConsoleRequest
         }
     }
 
-    public function __wakeup(): void
+    public function __unserialize(array $data): void
     {
         if (PHP_SAPI !== 'cli') {
             throw new LogicException('Run it from the command line');
