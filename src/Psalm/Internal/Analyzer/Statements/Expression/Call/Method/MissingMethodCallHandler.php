@@ -87,6 +87,23 @@ final class MissingMethodCallHandler
                     $pseudo_method_class_storage,
                     $mixin_type ?? $lhs_type_part,
                 );
+            } elseif (!$class_storage->hasSealedMethods($config)) {
+                // PHP creates the callable of a method the class forwards to `__call`
+                $result->has_valid_method_call_type = true;
+                $result->existent_method_ids[$method_id->__toString()] = true;
+
+                $call_method_id = new MethodIdentifier($fq_class_name, '__call');
+                $call_declaring_id = $codebase->methods->getDeclaringMethodId($call_method_id);
+
+                $result->return_type = $call_declaring_id !== null
+                    ? new Union([new TClosure(
+                        null,
+                        $codebase->getMethodReturnType($call_method_id, $fq_class_name),
+                        $codebase->methods->hasStorage($call_declaring_id)
+                            ? $codebase->methods->getStorage($call_declaring_id)->capabilities
+                            : Capabilities::ALL,
+                    )])
+                    : Type::getClosure();
             } else {
                 $result->non_existent_magic_method_ids[] = $method_id->__toString();
                 $result->return_type = Type::getClosure();
