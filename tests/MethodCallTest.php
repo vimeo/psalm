@@ -2449,7 +2449,7 @@ final class MethodCallTest extends TestCase
                     $db = new PDO("sqlite:sqlitedb");
                     $db->sqliteCreateFunction("md5rev", "md5_and_reverse", 1);',
                 'assertions' => [],
-                'ignored_issues' => ['WeakHash'],
+                'ignored_issues' => ['WeakHash', 'DeprecatedMethod'],
             ],
             'dontConvertedMaybeMixedAfterCall' => [
                 'code' => '<?php
@@ -3140,6 +3140,8 @@ final class MethodCallTest extends TestCase
                         $s->attach($o, null);
                         $s->attach($o);
                     }',
+                'assertions' => [],
+                'ignored_issues' => ['DeprecatedMethod'],
             ],
             'splObjectStorageDataParamsAreNamedInfo' => [
                 'code' => '<?php
@@ -3150,7 +3152,7 @@ final class MethodCallTest extends TestCase
                         $s->setInfo(info: "c");
                     }',
                 'assertions' => [],
-                'ignored_issues' => [],
+                'ignored_issues' => ['DeprecatedMethod'],
                 'php_version' => '8.0',
             ],
             'splObjectStorageOverrideKeepsInfoParamName' => [
@@ -3609,7 +3611,7 @@ final class MethodCallTest extends TestCase
                         $pdo->sqliteCreateFunction("double", static fn(int $i): int => $i * 2, 1, 2048);
                     }',
                 'assertions' => [],
-                'ignored_issues' => [],
+                'ignored_issues' => ['DeprecatedMethod'],
                 'php_version' => '7.4',
             ],
         ];
