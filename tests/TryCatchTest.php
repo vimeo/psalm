@@ -958,6 +958,84 @@ final class TryCatchTest extends TestCase
                         if (isset($exception)) {}
                     }',
             ],
+            'variableAssignedInAConditionOfAFinallyBlockDoesNotKeepTheTypeBeforeTheTry' => [
+                'code' => '<?php
+                    function g(): void {}
+
+                    function f(): int {
+                        $t = null;
+
+                        try {
+                            $t = 1;
+                            g();
+                        } finally {
+                            if (rand(0, 1)) {
+                                $t = 2;
+                            }
+                        }
+
+                        /** @psalm-check-type-exact $t = 1|2 */;
+
+                        return $t;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'variableAssignedInAConditionOfAFinallyBlockAfterACatchHasTheTypesOfTheTryAndTheCatch' => [
+                'code' => '<?php
+                    function g(): void {}
+
+                    function f(): string {
+                        $s = null;
+
+                        try {
+                            $s = "a";
+                            g();
+                        } catch (Exception $e) {
+                            $s = "b";
+                        } finally {
+                            if (rand(0, 1)) {
+                                $s = "c";
+                            }
+                        }
+
+                        /** @psalm-check-type-exact $s = \'a\'|\'b\'|\'c\' */;
+
+                        return $s;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'variableAssignedInAConditionOfAFinallyBlockWithAReturnInTheTryHasNoNull' => [
+                'code' => '<?php
+                    function g(): void {}
+
+                    function f(): int {
+                        $t = 0;
+
+                        try {
+                            if (rand(0, 1)) {
+                                return 5;
+                            }
+
+                            $t = 1;
+                            g();
+                        } finally {
+                            if (rand(0, 1)) {
+                                $t = 2;
+                            }
+                        }
+
+                        /** @psalm-check-type-exact $t = 1|2 */;
+
+                        return $t + 1;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'variableAssignedInAConditionOfAFinallyBlockKeepsTheAssignedTypeAfterTheTry' => [
                 'code' => '<?php
                     function g(): void {}
@@ -1084,6 +1162,27 @@ final class TryCatchTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'variableUnsetInAConditionOfAFinallyBlockIsPossiblyUndefinedAfterTheTry' => [
+                'code' => '<?php
+                    function g(): void {}
+
+                    function f(): int {
+                        $t = 1;
+
+                        try {
+                            g();
+                        } finally {
+                            if (rand(0, 1)) {
+                                unset($t);
+                            }
+                        }
+
+                        return $t;
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
             'possiblyUndefinedVariableInArrayItemIsStillReported' => [
                 'code' => '<?php
                     function foo(): array {

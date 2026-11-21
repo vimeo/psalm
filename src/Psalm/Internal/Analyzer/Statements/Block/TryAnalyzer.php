@@ -24,6 +24,7 @@ use Psalm\Type\Union;
 use UnexpectedValueException;
 
 use function array_diff;
+use function array_diff_key;
 use function array_filter;
 use function array_intersect_key;
 use function array_map;
@@ -574,7 +575,32 @@ final class TryAnalyzer
                     }
                 }
 
+                // the state the code after the try starts from: the end of the try or of a catch that goes on
+                $post_try_context = clone $context;
+                $post_try_context->inside_finally = true;
+                $post_try_context->assigned_var_ids = [];
+                $post_try_context->possibly_assigned_var_ids = [];
+
                 $statements_analyzer->analyze($stmt->finally->stmts, $finally_context);
+
+                // a variable the finally block assigns on some paths only holds, after the try, what the block leaves
+                // when it runs from that state: the type it ends with has the state before the try in it too
+                $partially_assigned_var_ids = array_diff_key(
+                    $finally_context->possibly_assigned_var_ids,
+                    $finally_context->assigned_var_ids,
+                );
+
+                if ($partially_assigned_var_ids !== []) {
+                    $old_node_data = $statements_analyzer->node_data;
+                    $statements_analyzer->node_data = clone $old_node_data;
+
+                    IssueBuffer::startRecording();
+                    $statements_analyzer->analyze($stmt->finally->stmts, $post_try_context);
+                    IssueBuffer::clearRecordingLevel();
+                    IssueBuffer::stopRecording();
+
+                    $statements_analyzer->node_data = $old_node_data;
+                }
 
                 // the code after the try runs after the finally
                 $context->intersectNullArrayOffsets($finally_context);
@@ -599,6 +625,13 @@ final class TryAnalyzer
                         && isset($finally_context->vars_in_scope[$var_id])
                     ) {
                         $type_after_try = $context->vars_in_scope[$var_id];
+
+                        if (isset($partially_assigned_var_ids[$var_id])
+                            && isset($post_try_context->vars_in_scope[$var_id])
+                        ) {
+                            $context->vars_in_scope[$var_id] = $post_try_context->vars_in_scope[$var_id];
+                            continue;
+                        }
 
                         // the finally block started from every state the try and the catches can end in
                         $context->vars_in_scope[$var_id] = $finally_context->vars_in_scope[$var_id];
