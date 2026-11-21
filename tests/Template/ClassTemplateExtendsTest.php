@@ -2837,6 +2837,352 @@ final class ClassTemplateExtendsTest extends TestCase
 
                     $a = (new MyContainer("hello"))->getAnother();',
             ],
+            'returnStaticArgumentsProjectedThroughSwappedExtends' => [
+                'code' => '<?php
+                    /**
+                     * @template TA
+                     * @template TB
+                     */
+                    class Base {
+                        /** @return static<TA, int> */
+                        public function withIntB() {
+                            throw new \Exception();
+                        }
+                    }
+
+                    /**
+                     * @template TX
+                     * @template TY
+                     * @extends Base<TY, TX>
+                     */
+                    class Swapped extends Base {}
+
+                    /** @var Swapped<bool, string> $s */
+                    $s = new Swapped();
+                    $r = $s->withIntB();',
+                'assertions' => [
+                    '$r===' => 'Swapped<int, string>&static',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'returnStaticArgumentsProjectedWithExtraLeadingTemplate' => [
+                'code' => '<?php
+                    /**
+                     * @template TA
+                     * @template TB
+                     */
+                    class Base {
+                        /** @return static<TA, int> */
+                        public function withIntB() {
+                            throw new \Exception();
+                        }
+                    }
+
+                    /**
+                     * @template TZ
+                     * @template TA2
+                     * @template TB2
+                     * @extends Base<TA2, TB2>
+                     */
+                    class Prefixed extends Base {}
+
+                    /** @var Prefixed<float, string, bool> $p */
+                    $p = new Prefixed();
+                    $r = $p->withIntB();',
+                'assertions' => [
+                    '$r===' => 'Prefixed<float, string, int>&static',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'returnStaticArgumentsProjectedThroughMultiLevelExtends' => [
+                'code' => '<?php
+                    /**
+                     * @template TA
+                     * @template TB
+                     */
+                    class Base {
+                        /** @return static<TA, int> */
+                        public function withIntB() {
+                            throw new \Exception();
+                        }
+                    }
+
+                    /**
+                     * @template TM1
+                     * @template TM2
+                     * @extends Base<TM2, TM1>
+                     */
+                    class Mid extends Base {}
+
+                    /**
+                     * @template TL1
+                     * @template TL2
+                     * @extends Mid<TL1, TL2>
+                     */
+                    class Leaf extends Mid {}
+
+                    /**
+                     * @var Mid<bool, string> $m
+                     */
+                    $m = new Mid();
+                    /** @var Leaf<bool, string> $l */
+                    $l = new Leaf();
+                    $rm = $m->withIntB();
+                    $rl = $l->withIntB();',
+                'assertions' => [
+                    '$rm===' => 'Mid<int, string>&static',
+                    '$rl===' => 'Leaf<int, string>&static',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'returnStaticArgumentsProjectedWhenSubclassBindsTemplate' => [
+                'code' => '<?php
+                    /**
+                     * @template TA
+                     * @template TB
+                     */
+                    class Base {
+                        /** @return static<TA, int> */
+                        public function withIntB() {
+                            throw new \Exception();
+                        }
+                    }
+
+                    /**
+                     * @template TX
+                     * @extends Base<string, TX>
+                     */
+                    class Bound extends Base {}
+
+                    /** @var Bound<bool> $b */
+                    $b = new Bound();
+                    $r = $b->withIntB();',
+                'assertions' => [
+                    '$r===' => 'Bound<int>&static',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'returnStaticArgumentsUnchangedOnDeclaringClass' => [
+                'code' => '<?php
+                    /**
+                     * @template TA
+                     * @template TB
+                     */
+                    class Base {
+                        /** @return static<TA, int> */
+                        public function withIntB() {
+                            throw new \Exception();
+                        }
+                    }
+
+                    /** @var Base<string, bool> $b */
+                    $b = new Base();
+                    $r = $b->withIntB();',
+                'assertions' => [
+                    '$r===' => 'Base<string, int>&static',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'returnStaticArgumentsProjectedForInheritedOverrideReturn' => [
+                'code' => '<?php
+                    /**
+                     * @template TA
+                     * @template TB
+                     */
+                    class Base {
+                        /** @return static<TA, int> */
+                        public function withIntB() {
+                            throw new \Exception();
+                        }
+                    }
+
+                    /**
+                     * @template TX
+                     * @template TY
+                     * @extends Base<TY, TX>
+                     */
+                    class Swapped extends Base {
+                        public function withIntB(): static {
+                            /** @var Swapped<int, TY>&static $r */
+                            $r = clone $this;
+
+                            return $r;
+                        }
+                    }
+
+                    /** @var Swapped<bool, string> $s */
+                    $s = new Swapped();
+                    $r = $s->withIntB();',
+                'assertions' => [
+                    '$r===' => 'Swapped<int, string>&static',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'returnStaticArgumentsProjectedInsideNestedType' => [
+                'code' => '<?php
+                    /**
+                     * @template TA
+                     * @template TB
+                     */
+                    class Base {
+                        /** @return list<static<TA, int>> */
+                        public function withList() {
+                            throw new \Exception();
+                        }
+                    }
+
+                    /**
+                     * @template TZ
+                     * @template TA2
+                     * @template TB2
+                     * @extends Base<TA2, TB2>
+                     */
+                    class Prefixed extends Base {}
+
+                    /** @var Prefixed<float, string, bool> $p */
+                    $p = new Prefixed();
+                    $r = $p->withList();',
+                'assertions' => [
+                    '$r===' => 'list<Prefixed<float, string, int>&static>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'returnStaticArgumentsProjectedInsideStaticArguments' => [
+                'code' => '<?php
+                    /**
+                     * @template TA
+                     * @template TB
+                     */
+                    class Base {
+                        /** @return static<static<TA, int>, TB> */
+                        public function nested() {
+                            throw new \Exception();
+                        }
+                    }
+
+                    /**
+                     * @template TX
+                     * @template TY
+                     * @extends Base<TY, TX>
+                     */
+                    class Swapped extends Base {}
+
+                    /** @var Swapped<bool, string> $s */
+                    $s = new Swapped();
+                    $r = $s->nested();',
+                'assertions' => [
+                    '$r===' => 'Swapped<bool, Swapped<int, string>&static>&static',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'returnStaticArgumentsProjectedFromATraitThroughExtends' => [
+                'code' => '<?php
+                    /**
+                     * @template A
+                     * @template B
+                     */
+                    trait Maker {
+                        /** @return static<A, int> */
+                        public function m() {
+                            throw new \Exception();
+                        }
+                    }
+
+                    /**
+                     * @template X
+                     * @template Y
+                     */
+                    class D {
+                        /** @use Maker<Y, X> */
+                        use Maker;
+                    }
+
+                    /**
+                     * @template U
+                     * @template V
+                     * @extends D<V, U>
+                     */
+                    class C extends D {}
+
+                    /** @var C<string, bool> $c */
+                    $c = new C();
+                    $r = $c->m();',
+                'assertions' => [
+                    '$r===' => 'C<string, int>&static',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'returnStaticArgumentsProjectedFromATraitUsedByTheCalledClass' => [
+                'code' => '<?php
+                    /**
+                     * @template A
+                     * @template B
+                     */
+                    trait Maker {
+                        /** @return static<A, int> */
+                        public function m() {
+                            throw new \Exception();
+                        }
+                    }
+
+                    /**
+                     * @template X
+                     * @template Y
+                     */
+                    class D {
+                        /** @use Maker<Y, X> */
+                        use Maker;
+                    }
+
+                    /** @var D<string, bool> $d */
+                    $d = new D();
+                    $r = $d->m();',
+                'assertions' => [
+                    '$r===' => 'D<int, bool>&static',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'returnStaticArgumentsNotMappedThroughAnIntersectionExtendsArgument' => [
+                'code' => '<?php
+                    /**
+                     * @template A
+                     * @template B
+                     */
+                    class Base {
+                        /** @return static<DateTime, int> */
+                        public function m() {
+                            throw new \Exception();
+                        }
+                    }
+
+                    interface I {}
+
+                    /**
+                     * @template X
+                     * @template Y
+                     * @extends Base<Y&I, X>
+                     */
+                    class CI extends Base {}
+
+                    /** @var CI<bool, stdClass> $c */
+                    $c = new CI();
+                    $r = $c->m();',
+                'assertions' => [
+                    '$r===' => 'CI<int, stdClass>&static',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'staticClassCreationIndirect' => [
                 'code' => '<?php
                     /**
@@ -6176,6 +6522,32 @@ final class ClassTemplateExtendsTest extends TestCase
                         }
                     }',
                 'error_message' => 'ImplementedReturnTypeMismatch',
+                'php_version' => '8.0',
+            ],
+            'returnStaticArgumentsOfInheritedOverrideReturnAreProjected' => [
+                'code' => '<?php
+                    /**
+                     * @template TA
+                     * @template TB
+                     */
+                    class Base {
+                        /** @return static<TA, int> */
+                        public function withIntB() {
+                            throw new \Exception();
+                        }
+                    }
+
+                    /**
+                     * @template TX
+                     * @template TY
+                     * @extends Base<TY, TX>
+                     */
+                    class Swapped extends Base {
+                        public function withIntB(): static {
+                            return $this;
+                        }
+                    }',
+                'error_message' => 'declared return type \'Swapped<int, TY:Swapped as mixed>&static',
                 'php_version' => '8.0',
             ],
             'extendsFillsThePartialGenericInAGeneratedDefaultOfAProperty' => [
