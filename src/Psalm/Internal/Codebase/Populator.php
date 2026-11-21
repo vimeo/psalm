@@ -780,7 +780,10 @@ final class Populator
      */
     private static function returnTypeUsesAMethodTemplate(FunctionLikeStorage $method_storage): bool
     {
-        if ($method_storage->return_type === null || !$method_storage->template_types) {
+        if ($method_storage->return_type === null
+            || $method_storage->template_types === null
+            || $method_storage->template_types === []
+        ) {
             return false;
         }
 
