@@ -61,6 +61,13 @@ final class SwitchScope
     public ?array $new_assigned_var_ids = null;
 
     /**
+     * The variables the cases going on after the switch assign as a whole
+     *
+     * @var array<string, bool>
+     */
+    public array $fully_assigned_var_ids = [];
+
+    /**
      * The offsets of nullable arrays read on every way out of the cases so far, null before there is one
      *
      * @var array<string, true>|null

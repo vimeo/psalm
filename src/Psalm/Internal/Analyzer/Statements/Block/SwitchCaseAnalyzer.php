@@ -83,6 +83,7 @@ final class SwitchCaseAnalyzer
             || (count($case_actions) && !in_array(ScopeAnalyzer::ACTION_NONE, $case_actions, true));
 
         $case_context = clone $original_context;
+        $case_context->fully_assigned_var_ids = [];
 
         if ($codebase->alter_code && $case_context->branch_point === null) {
             $case_context->branch_point = (int) $stmt->getAttribute('startFilePos');
@@ -439,6 +440,10 @@ final class SwitchCaseAnalyzer
             $context->keepReferencesPossiblyBoundIn($case_context);
         } elseif ($case_exit_type !== 'return_throw') {
             $context->removeClausesOfVarsChangedIn($case_context);
+        }
+
+        if ($case_exit_type !== 'return_throw') {
+            $switch_scope->fully_assigned_var_ids += $case_context->fully_assigned_var_ids;
         }
 
         if ($case_exit_type !== 'return_throw' && !$ends_unless_breaking) {

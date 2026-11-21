@@ -61,6 +61,38 @@ final class SwitchTypeTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'caseNotChangingTheKeyOfANarrowedOffsetKeepsTheNarrowing' => [
+                'code' => '<?php
+                    /** @param array<string, mixed> $a */
+                    function caseThatReturns(array $a, string $k, int $c): void {
+                        if (is_int($a[$k])) {
+                            switch ($c) {
+                                case 1:
+                                    $k = "zz";
+                                    return;
+                                default:
+                                    break;
+                            }
+                            /** @psalm-check-type-exact $a[$k] = int */;
+                        }
+                    }
+
+                    /** @param array<string, mixed> $a */
+                    function caseOnlyComparingTheKey(array $a, string $k, int $c): void {
+                        if (is_int($a[$k])) {
+                            switch ($c) {
+                                case 1:
+                                    if ($k === "x") {
+                                        echo 1;
+                                    }
+                                    break;
+                                default:
+                                    break;
+                            }
+                            /** @psalm-check-type-exact $a[$k] = int */;
+                        }
+                    }',
+            ],
             'switchWithoutDefaultNarrowsTheSubjectWhenEveryCaseReturns' => [
                 'code' => '<?php
                     /** @param "a"|"b"|"c" $letter */
@@ -1865,6 +1897,42 @@ final class SwitchTypeTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'caseAssigningTheKeyOfANarrowedOffsetForgetsTheNarrowing' => [
+                'code' => '<?php
+                    function takesInt(int $i): void {}
+
+                    /** @param array<string, mixed> $a */
+                    function f(array $a, string $k, int $c): void {
+                        if (is_int($a[$k])) {
+                            switch ($c) {
+                                case 1:
+                                    $k = "zz";
+                                    break;
+                                default:
+                                    break;
+                            }
+                            takesInt($a[$k]);
+                        }
+                    }',
+                'error_message' => 'MixedArgument',
+            ],
+            'caseOfASwitchWithoutDefaultAssigningTheKeyOfANarrowedOffsetForgetsTheNarrowing' => [
+                'code' => '<?php
+                    function takesInt(int $i): void {}
+
+                    /** @param array<string, mixed> $a */
+                    function f(array $a, string $k, int $c): void {
+                        if (is_int($a[$k])) {
+                            switch ($c) {
+                                case 1:
+                                    $k = "zz";
+                                    break;
+                            }
+                            takesInt($a[$k]);
+                        }
+                    }',
+                'error_message' => 'MixedArgument',
+            ],
             'varFromBreakTwoOutOfNestedSwitchIsUndefinedAfterIt' => [
                 'code' => '<?php
                     function f(string $s, string $u): void {
