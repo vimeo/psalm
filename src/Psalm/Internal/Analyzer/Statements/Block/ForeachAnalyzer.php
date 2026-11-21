@@ -1236,6 +1236,7 @@ final class ForeachAnalyzer
         ?Union &$value_type,
         bool &$always_non_empty_array,
         ?string $foreach_marker = null,
+        bool $forwards_send = false,
     ): ?bool {
         if ($iterator_type->isNull()) {
             IssueBuffer::maybeAdd(
@@ -1506,6 +1507,7 @@ final class ForeachAnalyzer
                         $value_type,
                         $has_valid_iterator,
                         $invalid_iterator_types,
+                        $forwards_send,
                     );
                 } else {
                     $raw_object_types[] = $iterator_atomic_type->value;
@@ -1601,6 +1603,7 @@ final class ForeachAnalyzer
         ?Union &$value_type,
         bool &$has_valid_iterator,
         array &$invalid_iterator_types = [],
+        bool $forwards_send = false,
     ): void {
         if ($iterator_atomic_type->extra_types) {
             $iterator_atomic_types = [
@@ -1701,6 +1704,7 @@ final class ForeachAnalyzer
                                             $value_type,
                                             $has_valid_iterator,
                                             $invalid_iterator_types,
+                                            $forwards_send,
                                         );
 
                                         continue;
@@ -1741,7 +1745,8 @@ final class ForeachAnalyzer
                     && strtolower($iterator_atomic_type->value) === 'generator'
                 ) {
                     $type_params = $iterator_atomic_type->type_params;
-                    if (isset($type_params[2])
+                    if (!$forwards_send
+                        && isset($type_params[2])
                         && !$type_params[2]->isNullable()
                         && !$type_params[2]->isVoid()
                         && !$type_params[2]->isMixed()
