@@ -26,6 +26,7 @@ use Psalm\Internal\Provider\NodeDataProvider;
 use Psalm\Internal\Type\Comparator\TypeComparisonResult;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\TemplateBound;
+use Psalm\Internal\Type\TemplateDefaults;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
@@ -332,6 +333,7 @@ abstract class CallAnalyzer
         $class_storage = $codebase->classlike_storage_provider->get($fq_class_name);
 
         $method_storage = null;
+        $template_documenting_storage = null;
 
         if (isset($class_storage->declaring_method_ids[$method_name])) {
             $declaring_method_id = $class_storage->declaring_method_ids[$method_name];
@@ -361,6 +363,7 @@ abstract class CallAnalyzer
                 // the method keeps its own storage (its taint sinks, named arguments)
                 if ($documenting_method_storage->template_types) {
                     $template_result->template_types += $documenting_method_storage->template_types;
+                    $template_documenting_storage = $documenting_method_storage;
                 }
             }
 
@@ -406,6 +409,10 @@ abstract class CallAnalyzer
             $static_is_called_class,
         ) === false) {
             return false;
+        }
+
+        if ($template_documenting_storage !== null) {
+            TemplateDefaults::bindUninferred($template_result, $template_documenting_storage, $codebase);
         }
 
         if ($template_result->template_types) {
