@@ -158,11 +158,19 @@ final class ArrayAssignmentTest extends TestCase
                     function mixedAfterAnAppend($m): void {
                         $m[] = 1;
                         $m["x"][] = 2;
-                    }',
+                    }
+
+                    $next_key = [1];
+                    $next_key[1]["y"] = 2;
+
+                    $negative_key = [1];
+                    $negative_key[-1]["y"] = 2;',
                 'assertions' => [
                     '$string_key===' => 'array{0: 1, x: non-empty-list<2>}',
                     '$int_key===' => 'array{0: 1, 5: array{y: 2}}',
                     '$list_items===' => 'array{0: list{1}, x: non-empty-list<2>}',
+                    '$next_key===' => 'list{1, array{y: 2}}',
+                    '$negative_key===' => 'array{-1: array{y: 2}, 0: 1}',
                 ],
                 'ignored_issues' => ['MixedArrayAccess', 'MixedArrayAssignment'],
             ],
@@ -3516,6 +3524,20 @@ final class ArrayAssignmentTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'byReferenceArgumentUnderAKeyTheListDoesNotHaveIsNull' => [
+                'code' => '<?php
+                    function takesArray(array &$x): void {}
+
+                    $l = [1];
+                    takesArray($l["y"]);',
+                'error_message' => 'NullArgument',
+            ],
+            'plainReadUnderAKeyTheListDoesNotHaveIsStillReported' => [
+                'code' => '<?php
+                    $l = [[1]];
+                    echo $l["x"][0];',
+                'error_message' => 'InvalidArrayOffset',
+            ],
             'pushWithFloatOrStringKey' => [
                 'code' => '<?php
                     /**

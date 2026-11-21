@@ -1665,9 +1665,9 @@ final class ArrayFetchAnalyzer
         if ($type instanceof TKeyedArray
             && $type->is_list
             && ($original_type instanceof TTemplateParam
-                || !(($in_assignment || $context->inside_by_ref_offset)
-                    && self::knowsWhichKeysTheListHas($type, $key_values))
-                    && ($in_assignment && $stmt->dim || !$offset_type->isInt()))
+                || (!(($in_assignment || $context->inside_by_ref_offset)
+                        && self::knowsWhichKeysTheListHas($type, $key_values))
+                    && (($in_assignment && $stmt->dim) || !$offset_type->isInt())))
         ) {
             $temp = $type->getGenericArrayType();
             self::handleArrayAccessOnTArray(
