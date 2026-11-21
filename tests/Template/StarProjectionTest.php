@@ -889,6 +889,8 @@ final class StarProjectionTest extends TestCase
                 'php_version' => '8.0',
             ],
             'starProjectionReadsAComposedParentArgument' => [
+                // known gap: `@extends Base<list<TModel>>` is read as a `Base<list<Model>>`, which the write-restriction
+                // PR restricts
                 'code' => '<?php
                     abstract class Model {}
 
@@ -1247,8 +1249,8 @@ final class StarProjectionTest extends TestCase
                 'php_version' => '8.0',
             ],
             'starProjectionFitsAParamWithoutArguments' => [
-                // `Box<stdClass>` does not (see starProjectionBareParamRejectsAConcreteArgument): the
-                // write-restriction PR makes a bare parameter take any argument
+                // `Box<stdClass>` does not (see starProjectionBareParamRejectsAConcreteArgument): the bare class
+                // taking any argument is a separate later change (see `Omitted`)
                 'code' => '<?php
                     /** @template T of object */
                     final class Box {}
@@ -1385,6 +1387,7 @@ final class StarProjectionTest extends TestCase
                 'php_version' => '8.0',
             ],
             'starProjectionInAClosureParamOfAReadTypeIsTheBound' => [
+                // known gap: a callable parameter is a write, which the write-restriction PR restricts to `never`
                 'code' => '<?php
                     /** @template T of object */
                     final class Box {
@@ -1526,6 +1529,112 @@ final class StarProjectionTest extends TestCase
                 'assertions' => [],
                 'ignored_issues' => [],
                 'php_version' => '8.1',
+            ],
+            'starProjectionReadThroughATemplatedMixinKeepsTheStar' => [
+                'code' => '<?php
+                    abstract class Model {}
+
+                    /** @template T of object */
+                    final class Box {}
+
+                    /** @template TModel of Model */
+                    final class Builder {
+                        /** @return TModel */
+                        public function first(): Model {
+                            throw new Exception();
+                        }
+
+                        /** @return Builder<TModel> */
+                        public function self(): Builder {
+                            return $this;
+                        }
+
+                        /** @return Box<TModel> */
+                        public function boxed(): Box {
+                            throw new Exception();
+                        }
+                    }
+
+                    /**
+                     * @template TModel of Model
+                     * @mixin Builder<TModel>
+                     */
+                    final class Relation {}
+
+                    /** @var Relation<*> $relation */
+                    $relation = new Relation();
+                    $first = $relation->first();
+                    $self = $relation->self();
+                    $boxed = $relation->boxed();',
+                'assertions' => [
+                    '$first===' => 'Model',
+                    '$self===' => 'Builder<*>',
+                    '$boxed===' => 'Box<*>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'starProjectionReadThroughOffsetGetKeepsTheStar' => [
+                'code' => '<?php
+                    /** @template T of object */
+                    final class Box {}
+
+                    /**
+                     * @template T of object
+                     * @implements ArrayAccess<int, Box<T>>
+                     */
+                    final class Offsets implements ArrayAccess {
+                        public function offsetExists(mixed $offset): bool {
+                            return true;
+                        }
+
+                        /** @return Box<T> */
+                        public function offsetGet(mixed $offset): mixed {
+                            throw new Exception();
+                        }
+
+                        public function offsetSet(mixed $offset, mixed $value): void {}
+
+                        public function offsetUnset(mixed $offset): void {}
+                    }
+
+                    /** @var Offsets<*> $offsets */
+                    $offsets = new Offsets();
+                    $box = $offsets[0];',
+                'assertions' => [
+                    '$box===' => 'Box<*>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'starProjectionIterationOfAWrappedArgumentIsNotAStarYet' => [
+                // known gap: `@implements IteratorAggregate<int, Box<T>>` reads its `Box<T>` with the bound, so the item
+                // is not a `Box<*>` yet
+                'code' => '<?php
+                    /** @template T of object */
+                    final class Box {}
+
+                    /**
+                     * @template T of object
+                     * @implements IteratorAggregate<int, Box<T>>
+                     */
+                    final class Boxes implements IteratorAggregate {
+                        public function getIterator(): Iterator {
+                            throw new Exception();
+                        }
+                    }
+
+                    /** @var Boxes<*> $boxes */
+                    $boxes = new Boxes();
+                    $item = null;
+
+                    foreach ($boxes as $item) {
+                    }',
+                'assertions' => [
+                    '$item===' => 'Box<object>|null',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
         ];
     }
@@ -1811,8 +1920,8 @@ final class StarProjectionTest extends TestCase
                 'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:13:37 - Argument 1 of Box::merge expects Box<object>, but Box<DateTime> provided',
             ],
             'starProjectionBareParamRejectsAConcreteArgument' => [
-                // a `*` and a bare `Box` both leave the argument unknown, a `Box<stdClass>` is not a bare `Box`:
-                // the write-restriction PR makes the bare parameter take any argument
+                // a `*` and a bare `Box` both leave the argument unknown, a `Box<stdClass>` is not a bare `Box`: the
+                // bare class taking any argument is a separate later change (see `Omitted`)
                 'code' => '<?php
                     /** @template T of object */
                     final class Box {}

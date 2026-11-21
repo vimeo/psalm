@@ -16,6 +16,7 @@ use Psalm\Type\Atomic;
 use Psalm\Type\Union;
 
 use function array_diff_key;
+use function array_values;
 use function count;
 use function implode;
 use function in_array;
@@ -348,7 +349,7 @@ final class TGenericObject extends TNamedObject
 
         return (new static(
             $this->value,
-            $type_params,
+            array_values($type_params),
             true,
             $this->is_static,
             $intersection ?? $this->extra_types,

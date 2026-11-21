@@ -13,6 +13,8 @@ use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Union;
 
+use function array_slice;
+
 /**
  * Types Box::get() as the receiver's type parameter, as given to the plugin, and Box::all() as a list of it;
  * Relation::related() as the first type parameter of the type of the receiver expression
@@ -53,8 +55,11 @@ final class TemplateParameterProvider implements MethodReturnTypeProviderInterfa
             }
 
             // the second type parameter is rebuilt, as a plugin refining a pivot class does
-            $type_params = $receiver_atomic->type_params;
-            $type_params[1] = new Union([new TNamedObject('Ns\Pivot')]);
+            $type_params = [
+                $receiver_atomic->type_params[0],
+                new Union([new TNamedObject('Ns\Pivot')]),
+                ...array_slice($receiver_atomic->type_params, 2),
+            ];
 
             return new Union([$receiver_atomic->setTypeParams($type_params)]);
         }
