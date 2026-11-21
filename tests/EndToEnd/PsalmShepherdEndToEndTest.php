@@ -336,6 +336,8 @@ final class PsalmShepherdEndToEndTest extends PsalmEndToEndTestCase
             'GITHUB_ACTIONS' => false,
             'GITHUB_EVENT_PATH' => false,
             'GITHUB_EVENT_NAME' => false,
+            'GITHUB_HEAD_REF' => false,
+            'GITHUB_RUN_ID' => false,
             'TRAVIS' => false,
             'CIRCLECI' => false,
             'APPVEYOR' => false,
