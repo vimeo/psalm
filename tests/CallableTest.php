@@ -155,6 +155,61 @@ final class CallableTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'callOfACallableArrayOrMethodStringReturnsWhatTheMethodReturns' => [
+                'code' => '<?php
+                    final class A {
+                        public function pub(int $i): int {
+                            return $i * 2;
+                        }
+                        public static function st(int $i): int {
+                            return $i * 2;
+                        }
+                    }
+                    $a = new A();
+                    $userFuncArray = call_user_func([$a, "pub"], 1);
+                    $userFuncString = call_user_func("A::st", 1);
+                    $userFuncArrayArgs = call_user_func_array([$a, "pub"], [1]);
+                    $arrayCall = [$a, "pub"](1);
+                    $classStringArrayCall = [A::class, "st"](1);
+                    $f = "A::st";
+                    $stringCall = $f(1);',
+                'assertions' => [
+                    '$userFuncArray===' => 'int',
+                    '$userFuncString===' => 'int',
+                    '$userFuncArrayArgs===' => 'int',
+                    '$arrayCall===' => 'int',
+                    '$classStringArrayCall===' => 'int',
+                    '$stringCall===' => 'int',
+                ],
+            ],
+            'callOfACallableArrayResolvesTheTemplatesAndStaticOfItsMethod' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class Box {
+                        /** @param T $v */
+                        public function __construct(private mixed $v) {}
+                        /** @return T */
+                        public function get(): mixed {
+                            return $this->v;
+                        }
+                    }
+                    class Maker {
+                        final public function __construct() {}
+                        public static function create(): static {
+                            return new static();
+                        }
+                    }
+                    final class Sub extends Maker {}
+                    $box = new Box(5);
+                    $value = [$box, "get"]();
+                    $made = call_user_func([Sub::class, "create"]);',
+                'assertions' => [
+                    '$value===' => '5',
+                    '$made===' => 'Sub',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'callableOfThisTakesTheTemplatesOfTheObject' => [
                 'code' => '<?php
                     /**

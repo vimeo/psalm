@@ -803,9 +803,40 @@ final class FunctionCallAnalyzer extends CallAnalyzer
     }
 
     /**
+     * A call of a callable array or `Class::method` string returns what the method it names returns
+     */
+    private static function setCallableMethodReturnType(
+        StatementsAnalyzer $statements_analyzer,
+        Context $context,
+        PhpParser\Node\Expr\FuncCall $real_stmt,
+        Atomic $var_type_part,
+    ): void {
+        $callable = CallableTypeComparator::getCallableFromAtomic(
+            $statements_analyzer->getCodebase(),
+            $var_type_part,
+            null,
+            $statements_analyzer,
+            $context,
+        );
+
+        if (!$callable instanceof TCallable && !$callable instanceof TClosure) {
+            return;
+        }
+
+        $return_type = $callable->return_type ?? Type::getMixed();
+        $stmt_type = $statements_analyzer->node_data->getType($real_stmt);
+
+        $statements_analyzer->node_data->setType(
+            $real_stmt,
+            $stmt_type ? Type::combineUnionTypes($stmt_type, $return_type) : $return_type,
+        );
+    }
+
+    /**
      * Charges the call of callable string or array $var_type_part what the method it names requires (see
      * getIntersectionCallableArrayMethods() for one on an intersection), or, if it names none (and isn't the name of
-     * a function, see FunctionCallInfo::$new_function_name), what the class contract of its object allows
+     * a function, see FunctionCallInfo::$new_function_name), what the class contract of its object allows, and gives
+     * the call the return type of the method
      */
     private static function signalCallableArrayCall(
         StatementsAnalyzer $statements_analyzer,
@@ -815,9 +846,14 @@ final class FunctionCallAnalyzer extends CallAnalyzer
         Atomic $var_type_part,
         ?MethodIdentifier $potential_method_id,
         FunctionCallInfo $function_call_info,
+        PhpParser\Node\Expr\FuncCall $real_stmt,
     ): void {
         $codebase = $statements_analyzer->getCodebase();
         $has_new_function_name = $function_call_info->new_function_name !== null;
+
+        if ($potential_method_id) {
+            self::setCallableMethodReturnType($statements_analyzer, $context, $real_stmt, $var_type_part);
+        }
 
         if ($potential_method_id && $codebase->methods->hasStorage($potential_method_id)) {
             $potential_method_storage = $codebase->methods->getStorage($potential_method_id);
@@ -1841,6 +1877,7 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                         $var_type_part,
                         $potential_method_id,
                         $function_call_info,
+                        $real_stmt,
                     );
                 } elseif ($var_type_part instanceof TNull) {
                     // handled above
