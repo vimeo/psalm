@@ -7151,6 +7151,24 @@ final class ConditionalTest extends TestCase
                         }
                     }',
             ],
+            'looseEqualityWithAStringKeepsTheOtherScalars' => [
+                'code' => '<?php
+                    /** @param numeric $n */
+                    function f($n, string $s): void {
+                        if ($n == $s) {
+                            /** @psalm-check-type-exact $n = numeric */;
+                        }
+                    }
+
+                    function g(int|float|bool|null $x, string $s): void {
+                        if ($x == $s) {
+                            /** @psalm-check-type-exact $x = bool|float|int|null */;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
         ];
     }
 
