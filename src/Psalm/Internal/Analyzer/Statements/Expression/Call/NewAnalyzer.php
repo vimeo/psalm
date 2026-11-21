@@ -688,7 +688,7 @@ final class NewAnalyzer extends CallAnalyzer
 
             $template_result ??= new TemplateResult([], []);
 
-            if (!self::isInTrait($statements_analyzer)) {
+            if (!self::isStaticOfTraitUser($statements_analyzer, $context, $fq_class_name)) {
                 $template_result->static_class_type = $fq_class_name;
                 $template_result->static_class_is_final = $storage->final;
             }
@@ -1876,13 +1876,10 @@ final class NewAnalyzer extends CallAnalyzer
                 $offset++;
             }
 
+            $bound_template_result->static_class_type = $template_result->static_class_type;
             $template_result = $bound_template_result;
         } else {
             return null;
-        }
-
-        if (!self::isInTrait($statements_analyzer)) {
-            $template_result->static_class_type = $fq_class_name;
         }
 
         $self_out_candidate = MethodCallReturnTypeFetcher::replaceTemplateTypes(
