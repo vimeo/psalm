@@ -16,6 +16,7 @@ use Psalm\Internal\Analyzer\AttributesAnalyzer;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\ClassLikeNameOptions;
 use Psalm\Internal\Analyzer\NamespaceAnalyzer;
+use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
@@ -34,6 +35,7 @@ use Psalm\Issue\InvalidConstantAssignmentValue;
 use Psalm\Issue\InvalidOverride;
 use Psalm\Issue\InvalidStringClass;
 use Psalm\Issue\LessSpecificClassConstantType;
+use Psalm\Issue\MissingOverrideAttribute;
 use Psalm\Issue\NonStaticSelfCall;
 use Psalm\Issue\OverriddenFinalConstant;
 use Psalm\Issue\OverriddenInterfaceConstant;
@@ -41,6 +43,7 @@ use Psalm\Issue\ParentNotFound;
 use Psalm\Issue\ParseError;
 use Psalm\Issue\UndefinedConstant;
 use Psalm\IssueBuffer;
+use Psalm\Storage\AttributeStorage;
 use Psalm\Storage\ClassConstantStorage;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Type;
@@ -790,6 +793,7 @@ final class ClassConstAnalyzer
     ): void {
         if ($codebase->analysis_php_version_id >= 8_06_00) {
             self::checkOverrideAttributes($class_storage, $codebase);
+            self::checkMissingOverrideAttributes($class_storage, $codebase);
         }
 
         foreach ($class_storage->constants as $const_name => $const_storage) {
@@ -922,6 +926,140 @@ final class ClassConstAnalyzer
                 );
             }
         }
+    }
+
+    /**
+     * PHP 8.6: a constant or enum case that overrides a public or protected constant of a parent class or an
+     * interface needs #[\Override], as a method does. A constant inherited as is and one a trait gave the class are
+     * not declared by it.
+     */
+    private static function checkMissingOverrideAttributes(ClassLikeStorage $class_storage, Codebase $codebase): void
+    {
+        if (!$codebase->config->ensure_override_attribute) {
+            return;
+        }
+
+        foreach ($class_storage->constants as $const_name => $const_storage) {
+            if ($const_storage->location === null
+                || self::hasOverrideAttribute($const_storage->attributes)
+                || !self::redeclaresConstant($class_storage, $const_name, $const_storage, $codebase)
+            ) {
+                continue;
+            }
+
+            foreach ($class_storage->used_traits as $used_trait) {
+                $trait_const_location = $codebase->classlikes->getStorageFor($used_trait)
+                    ?->constants[$const_name]->location ?? null;
+
+                if ($trait_const_location !== null
+                    && $trait_const_location->getHash() === $const_storage->location->getHash()
+                ) {
+                    continue 2;
+                }
+            }
+
+            self::reportMissingOverrideAttribute(
+                'Class constant ' . $class_storage->name . '::' . $const_name,
+                $const_storage->location,
+                // the location of a constant is its item, not the statement the attribute goes before
+                null,
+                $const_storage->suppressed_issues,
+                $codebase,
+            );
+        }
+
+        foreach ($class_storage->enum_cases as $case_name => $case_storage) {
+            if (!self::hasOverrideAttribute($case_storage->attributes)
+                && self::redeclaresConstant($class_storage, $case_name, null, $codebase)
+            ) {
+                self::reportMissingOverrideAttribute(
+                    'Enum case ' . $class_storage->name . '::' . $case_name,
+                    $case_storage->stmt_location,
+                    $case_storage->stmt_location,
+                    $class_storage->suppressed_issues,
+                    $codebase,
+                );
+            }
+        }
+    }
+
+    /**
+     * @param list<AttributeStorage> $attributes
+     * @psalm-pure
+     */
+    private static function hasOverrideAttribute(array $attributes): bool
+    {
+        foreach ($attributes as $attribute) {
+            if ($attribute->fq_class_name === 'Override') {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * @param array<string> $suppressed_issues
+     */
+    private static function reportMissingOverrideAttribute(
+        string $member,
+        CodeLocation $location,
+        ?CodeLocation $stmt_location,
+        array $suppressed_issues,
+        Codebase $codebase,
+    ): void {
+        IssueBuffer::maybeAdd(
+            new MissingOverrideAttribute($member . ' should have the "Override" attribute', $location),
+            $suppressed_issues,
+            true,
+        );
+
+        if ($codebase->alter_code
+            && $stmt_location !== null
+            && isset(ProjectAnalyzer::getInstance()->getIssuesToFix()['MissingOverrideAttribute'])
+        ) {
+            $idx = $stmt_location->getSelectionBounds()[0];
+            FileManipulationBuffer::add($stmt_location->file_path, [
+                new FileManipulation($idx, $idx, "#[\\Override]\n", true),
+            ]);
+        }
+    }
+
+    /**
+     * Whether a public or protected constant of the same name, other than this one, is in a parent class or an
+     * interface
+     *
+     * @psalm-capabilities read-props
+     */
+    private static function redeclaresConstant(
+        ClassLikeStorage $class_storage,
+        string $const_name,
+        ?ClassConstantStorage $const_storage,
+        Codebase $codebase,
+    ): bool {
+        $overrides = false;
+
+        foreach ([
+            ...$class_storage->parent_classes,
+            ...$class_storage->class_implements,
+            ...$class_storage->parent_interfaces,
+        ] as $ancestor) {
+            $inherited = $codebase->classlikes->getStorageFor($ancestor)?->constants[$const_name] ?? null;
+
+            if ($inherited === null) {
+                continue;
+            }
+
+            if ($inherited === $const_storage) {
+                return false;
+            }
+
+            if ($inherited->visibility !== ClassLikeAnalyzer::VISIBILITY_PRIVATE) {
+                $overrides = true;
+            }
+        }
+
+        return $overrides;
     }
 
     /**
