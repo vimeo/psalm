@@ -77,7 +77,6 @@ final class PowReturnTypeProviderTest extends TestCase
                 $f = pow($int, getNonNegativeInt());
                 $g = pow($int, getNegativeInt());
                 $h = pow($int, getMixedSignInt());
-                $i = pow(0, -1);
             ',
             'assertions' => [
                 '$a===' => 'float|int',
@@ -88,8 +87,16 @@ final class PowReturnTypeProviderTest extends TestCase
                 '$f===' => 'int',
                 '$g===' => 'float',
                 '$h===' => 'float|int',
-                '$i===' => 'float',
             ],
+        ];
+        yield 'zeroToANegativePowerIsAFloat' => [
+            'code' => '<?php
+                $a = pow(0, -1);
+            ',
+            'assertions' => [
+                '$a===' => 'float',
+            ],
+            'ignored_issues' => ['DeprecatedSyntax'],
         ];
     }
 }
