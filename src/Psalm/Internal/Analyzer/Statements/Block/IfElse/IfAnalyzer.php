@@ -460,7 +460,6 @@ final class IfAnalyzer
     {
         if ($stmt instanceof PhpParser\Node\Expr\BinaryOp\BooleanOr
             || $stmt instanceof PhpParser\Node\Expr\BinaryOp\LogicalOr
-            || $stmt instanceof PhpParser\Node\Expr\BinaryOp\LogicalXor
         ) {
             return [
                 ...self::getDefinitelyEvaluatedOredExpressions($stmt->left),

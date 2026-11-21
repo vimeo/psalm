@@ -14,8 +14,10 @@ use Psalm\Internal\Analyzer\Statements\Expression\AssignmentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\Statements\GlobalAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Codebase\PhpDeprecations;
 use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
+use Psalm\Issue\DeprecatedSyntax;
 use Psalm\Issue\ImpureGlobalVariable;
 use Psalm\Issue\ImpureVariable;
 use Psalm\Issue\InvalidScope;
@@ -136,7 +138,8 @@ final class VariableFetchAnalyzer
             return true;
         }
 
-        if (!$context->check_variables) {
+        // a superglobal is always defined, and what it holds is tainted whether the other variables are known or not
+        if (!$context->check_variables && !(is_string($stmt->name) && self::isSuperGlobal('$' . $stmt->name))) {
             if (is_string($stmt->name)) {
                 $var_name = '$' . $stmt->name;
 
@@ -161,6 +164,20 @@ final class VariableFetchAnalyzer
 
         if (is_string($stmt->name) && self::isSuperGlobal('$' . $stmt->name)) {
             $var_name = '$' . $stmt->name;
+
+            if ($var_name === '$http_response_header') {
+                IssueBuffer::maybeAdd(
+                    new DeprecatedSyntax(
+                        PhpDeprecations::getDeprecatedSinceMessage(
+                            'The $http_response_header variable',
+                            8_05_00,
+                            'http_get_last_response_headers()',
+                        ),
+                        new CodeLocation($statements_analyzer, $stmt),
+                    ),
+                    $statements_analyzer->getSuppressedIssues(),
+                );
+            }
 
             $statements_analyzer->signalMutation(
                 Capabilities::READ_GLOBALS,

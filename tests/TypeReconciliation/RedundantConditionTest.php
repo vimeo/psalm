@@ -550,6 +550,7 @@ final class RedundantConditionTest extends TestCase
                 'assertions' => [],
                 'ignored_issues' => [
                     'RiskyTruthyFalsyComparison',
+                    'DeprecatedSyntax',
                 ],
             ],
             'noRedundantConditionAfterAssignment' => [
