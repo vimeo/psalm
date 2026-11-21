@@ -29,6 +29,7 @@ use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
 use Psalm\Internal\Codebase\DataFlowGraph;
 use Psalm\Internal\Codebase\Methods;
+use Psalm\Internal\Codebase\Properties;
 use Psalm\Internal\Codebase\VariableUseGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
@@ -209,7 +210,7 @@ final class InstancePropertyAssignmentAnalyzer
 
         $can_narrow_property = true;
         foreach ($assigned_properties as $assigned_property) {
-            if ($assigned_property->interface_setter) {
+            if ($assigned_property->through_set_hook) {
                 $can_narrow_property = false;
                 break;
             }
@@ -1144,7 +1145,7 @@ final class InstancePropertyAssignmentAnalyzer
             if ($assigned_property) {
                 $assigned_properties[] = $assigned_property;
 
-                $read_type = $assigned_property->interface_setter
+                $read_type = $assigned_property->through_set_hook
                     ? $assigned_property->read_type
                     : $assigned_property->assignment_type;
                 if ($read_type === null) {
@@ -1886,8 +1887,18 @@ final class InstancePropertyAssignmentAnalyzer
             }
         }
 
+        // a write from outside the hooks of a property with a set hook goes through that hook: the property is
+        // not the value assigned
+        $set_hook_write = $interface_setter
+            || ($property_storage !== null
+                && $property_storage->hook_set !== null
+                && !Properties::isInHookOf($statements_analyzer, $declaring_property_class, $prop_name));
+
         $read_type = null;
-        if ($interface_setter && $property_storage !== null && $property_storage->hook_get !== null) {
+        if ($set_hook_write
+            && $property_storage !== null
+            && ($property_storage->hook_get !== null || !$interface_setter)
+        ) {
             $read_type = $codebase->properties->getPropertyType($property_id, false, $statements_analyzer, $context)
                 ?? Type::getMixed();
             $read_type = TypeExpander::expandUnion(
@@ -1913,7 +1924,7 @@ final class InstancePropertyAssignmentAnalyzer
             $class_property_type,
             $property_id,
             $assignment_value_type,
-            $interface_setter,
+            $set_hook_write,
             $read_type,
         );
     }
