@@ -541,6 +541,8 @@ final class CallableTypeComparator
      * @param array<int, FunctionLikeParameter> $method_params
      * @param CapabilitySet $capabilities
      * @param bool $exact_static whether `static` is the class itself, as for `C::m(...)`, and not a subclass of it
+     * @param bool $evaluate_conditional_types whether a conditional type is evaluated: not where the arguments of
+     *     the call that resolve it are not known yet, as for an invokable object
      */
     private static function getClosureOfMethod(
         Codebase $codebase,
@@ -550,6 +552,7 @@ final class CallableTypeComparator
         ?string $self_class,
         string $static_class,
         bool $exact_static = false,
+        bool $evaluate_conditional_types = true,
     ): TClosure {
         $parent_class = $self_class !== null && $codebase->classlike_storage_provider->has($self_class)
             ? $codebase->classlike_storage_provider->get($self_class)->parent_class
@@ -567,6 +570,7 @@ final class CallableTypeComparator
                         $static_class,
                         $parent_class,
                         $exact_static,
+                        $evaluate_conditional_types,
                     ),
                 );
             }
@@ -580,6 +584,7 @@ final class CallableTypeComparator
                         $static_class,
                         $parent_class,
                         $exact_static,
+                        $evaluate_conditional_types,
                     ),
                 );
             }
@@ -597,6 +602,7 @@ final class CallableTypeComparator
                     $static_class,
                     $parent_class,
                     $exact_static,
+                    $evaluate_conditional_types,
                 )
                 : null,
             $capabilities,
@@ -610,6 +616,7 @@ final class CallableTypeComparator
         string $static_class,
         ?string $parent_class,
         bool $exact_static,
+        bool $evaluate_conditional_types,
     ): Union {
         return TypeExpander::expandUnion(
             $codebase,
@@ -618,7 +625,7 @@ final class CallableTypeComparator
             $static_class,
             $parent_class,
             true,
-            true,
+            $evaluate_conditional_types,
             $exact_static,
             false,
             false,
@@ -897,6 +904,7 @@ final class CallableTypeComparator
                                 ->fq_class_name,
                             $method_fqcln,
                             $codebase->classlike_storage_provider->get($method_fqcln)->final,
+                            false,
                         );
 
                         $callable = $callable->replace($closure->params, $closure->return_type);

@@ -2007,6 +2007,30 @@ final class ClassTemplateExtendsTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'invokableObjectKeepsItsConditionalReturnTypeUnresolvedOnItsCallables' => [
+                'code' => '<?php
+                    final class Flag {
+                        /** @return ($flag is true ? int : string) */
+                        public function __invoke(bool $flag): int|string {
+                            return $flag ? 1 : "s";
+                        }
+                    }
+
+                    $flag = new Flag();
+                    $r = array_map($flag(...), [true]);
+                    $s = array_map(Closure::fromCallable($flag), [true]);
+
+                    /** @return list<int> */
+                    function f(Flag $flag): array {
+                        return array_map($flag(...), [true]);
+                    }',
+                'assertions' => [
+                    '$r===' => 'list{int}',
+                    '$s===' => 'list{int}',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'nonGenericChildBindsTheTemplatesOfItsGenericParentThroughTwoExtends' => [
                 'code' => '<?php
                     /** @template T */
