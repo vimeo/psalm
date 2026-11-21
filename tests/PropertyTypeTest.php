@@ -879,6 +879,82 @@ final class PropertyTypeTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'finalClassInitialisesThePropertyThroughAnAliasedTraitMethod' => [
+                'code' => '<?php
+                    interface H {}
+
+                    trait T {
+                        private H $h;
+
+                        public function setH(H $h): void {
+                            $this->h = $h;
+                        }
+
+                        public function getH(): H {
+                            return $this->h;
+                        }
+                    }
+
+                    final class C {
+                        use T { setH as public init; }
+
+                        public function __construct(H $h) {
+                            $this->init($h);
+                        }
+                    }',
+            ],
+            'finalClassInitialisesThePropertyThroughAMethodOfANestedTrait' => [
+                'code' => '<?php
+                    interface H {}
+
+                    trait T {
+                        private H $h;
+
+                        public function setH(H $h): void {
+                            $this->h = $h;
+                        }
+
+                        public function getH(): H {
+                            return $this->h;
+                        }
+                    }
+
+                    trait T2 {
+                        use T;
+                    }
+
+                    final class C {
+                        use T2;
+
+                        public function __construct(H $h) {
+                            $this->setH($h);
+                        }
+                    }',
+            ],
+            'finalClassInitialisesThePropertyThroughATraitMethodItCalls' => [
+                'code' => '<?php
+                    interface ViewHandler {}
+
+                    trait ControllerTrait {
+                        private ViewHandler $handler;
+
+                        public function setHandler(ViewHandler $handler): void {
+                            $this->handler = $handler;
+                        }
+
+                        public function getHandler(): ViewHandler {
+                            return $this->handler;
+                        }
+                    }
+
+                    final class Controller {
+                        use ControllerTrait;
+
+                        public function __construct(ViewHandler $handler) {
+                            $this->setHandler($handler);
+                        }
+                    }',
+            ],
             'propertySetInConstructorStaysSetAfterAnIfNarrowingThis' => [
                 'code' => '<?php
                     interface Configurable {
@@ -5112,6 +5188,58 @@ final class PropertyTypeTest extends TestCase
                         }
                     }',
                 'error_message' => 'UndefinedPropertyFetch',
+            ],
+            'finalClassFollowsItsOwnOverrideOfTheTraitMethod' => [
+                'code' => '<?php
+                    interface H {}
+
+                    trait T {
+                        private H $h;
+
+                        public function setH(H $h): void {
+                            $this->h = $h;
+                        }
+
+                        public function getH(): H {
+                            return $this->h;
+                        }
+                    }
+
+                    final class C {
+                        use T;
+
+                        public function setH(H $h): void {}
+
+                        public function __construct(H $h) {
+                            $this->setH($h);
+                        }
+                    }',
+                'error_message' => 'PropertyNotSetInConstructor',
+            ],
+            'classThatIsNotFinalDoesNotInitialiseThePropertyThroughAnOverridableTraitMethod' => [
+                'code' => '<?php
+                    interface ViewHandler {}
+
+                    trait ControllerTrait {
+                        private ViewHandler $handler;
+
+                        public function setHandler(ViewHandler $handler): void {
+                            $this->handler = $handler;
+                        }
+
+                        public function getHandler(): ViewHandler {
+                            return $this->handler;
+                        }
+                    }
+
+                    class Controller {
+                        use ControllerTrait;
+
+                        public function __construct(ViewHandler $handler) {
+                            $this->setHandler($handler);
+                        }
+                    }',
+                'error_message' => 'PropertyNotSetInConstructor',
             ],
             'staticPropertyOfAStaticTypeInANonFinalClassIsNotTheClass' => [
                 'code' => '<?php
