@@ -450,6 +450,29 @@ final class MagicMethodAnnotationTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'staticInTheParamsOfAMethodTagIsTheClassItIsCalledOn' => [
+                'code' => '<?php
+                    /**
+                     * @method ($other is null ? int : string) compare(static|null $other = null)
+                     * @method ($callback is null ? int : string) tap((callable(static): mixed)|null $callback = null)
+                     */
+                    final class MagicBox {
+                        public function __call(string $name, array $args): mixed {
+                            throw new RuntimeException();
+                        }
+                    }
+
+                    function compared(MagicBox $box): string {
+                        return $box->compare($box);
+                    }
+
+                    function tapped(MagicBox $box): string {
+                        return $box->tap(fn (MagicBox $_x): int => 1);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'intersectionTypeOfAMethodParam' => [
                 'code' => '<?php
                     interface I1 {}
@@ -2460,6 +2483,27 @@ final class MagicMethodAnnotationTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'staticInTheParamsOfAMethodTagRejectsAnotherClass' => [
+                'code' => '<?php
+                    /**
+                     * @method ($other is null ? int : string) compare(static|null $other = null)
+                     * @method ($callback is null ? int : string) tap((callable(static): mixed)|null $callback = null)
+                     */
+                    final class MagicBox {
+                        public function __call(string $name, array $args): mixed {
+                            throw new RuntimeException();
+                        }
+                    }
+
+                    final class Other {}
+
+                    function compared(MagicBox $box): void {
+                        $box->compare(new Other());
+                    }',
+                'error_message' => 'InvalidArgument',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
             'intersectionTypeOfAMethodParamIsEnforced' => [
                 'code' => '<?php
                     interface I1 {}

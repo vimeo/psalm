@@ -27,6 +27,7 @@ use Psalm\Node\VirtualArg;
 use Psalm\Node\VirtualArrayItem;
 use Psalm\Storage\Capabilities;
 use Psalm\Storage\ClassLikeStorage;
+use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Storage\MethodStorage;
 use Psalm\Type;
 use Psalm\Type\Atomic;
@@ -44,6 +45,51 @@ use function count;
  */
 final class MissingMethodCallHandler
 {
+    /**
+     * The pseudo method with `static` in its params and return type, and in the bounds of the templates of its
+     * conditional return type, resolved to the object it is called on
+     */
+    private static function resolveStaticInParams(
+        Codebase $codebase,
+        MethodStorage $pseudo_method_storage,
+        ClassLikeStorage $defining_class_storage,
+        Atomic\TNamedObject $static_type,
+        bool $final,
+    ): MethodStorage {
+        $expand = static fn(Union $type): Union => TypeExpander::expandUnion(
+            $codebase,
+            $type,
+            $defining_class_storage->name,
+            $static_type,
+            $defining_class_storage->parent_class,
+            true,
+            false,
+            $final,
+        );
+
+        $resolved_storage = clone $pseudo_method_storage;
+
+        $resolved_storage->setParams(array_map(
+            static fn(FunctionLikeParameter $param): FunctionLikeParameter => $param->type !== null
+                ? $param->setType($expand($param->type))
+                : $param,
+            $resolved_storage->params,
+        ));
+
+        if ($resolved_storage->return_type !== null) {
+            $resolved_storage->return_type = $expand($resolved_storage->return_type);
+        }
+
+        if ($resolved_storage->template_types !== null) {
+            $resolved_storage->template_types = array_map(
+                static fn(array $bounds): array => array_map($expand, $bounds),
+                $resolved_storage->template_types,
+            );
+        }
+
+        return $resolved_storage;
+    }
+
     /**
      * @param array{type: TNamedObject, storage: ClassLikeStorage, declared: TNamedObject|TTemplateParam}|null $mixin
      *     the mixin, bound for the receiver, whose `@method` the call goes to
@@ -177,6 +223,17 @@ final class MissingMethodCallHandler
                     && !$statements_analyzer->isStatic()
                     && $method_id->fq_class_name === $context->self,
             );
+
+            // `static` in the params is the object the method is called on, as for a declared method
+            if ($mixin_type === null && $lhs_type_part instanceof Atomic\TNamedObject) {
+                $pseudo_method_storage = self::resolveStaticInParams(
+                    $codebase,
+                    $pseudo_method_storage,
+                    $defining_class_storage,
+                    $lhs_type_part,
+                    $class_storage->final,
+                );
+            }
 
             // the pseudo-method's own templates are the purity templates of its `_` params
             $template_result = new TemplateResult(
