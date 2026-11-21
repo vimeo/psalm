@@ -61,6 +61,39 @@ final class SwitchTypeTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'propertyACaseForgetsByNarrowingItsObjectIsNotPossiblyUndefinedAfterTheSwitch' => [
+                'code' => '<?php
+                    interface I {}
+
+                    abstract class A {
+                        public function __construct(public string $s) {}
+                    }
+
+                    function takesString(string $s): void {}
+
+                    function f(A $a): void {
+                        echo $a->s;
+
+                        $x = $y = 0;
+                        while (rand(0, 1)) {
+                            $x = $y;
+                            $y = 1;
+
+                            takesString($a->s);
+
+                            switch (rand(0, 1)) {
+                                case 1:
+                                    if (!$a instanceof I) {
+                                        break;
+                                    }
+                                    break;
+                            }
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'caseNotChangingTheKeyOfANarrowedOffsetKeepsTheNarrowing' => [
                 'code' => '<?php
                     /** @param array<string, mixed> $a */
