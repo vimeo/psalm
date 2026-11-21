@@ -469,7 +469,7 @@ final class ProjectAnalyzer
             $lines[] = 'Enabled plugins: ' . implode(', ', $plugins);
         }
 
-        // startPhase(Phase::SCAN) begins with the blank line
+        // no blank line at the end: Progress::startPhase(Phase::SCAN), which follows, starts with one
         return implode(PHP_EOL, $lines) . PHP_EOL;
     }
 

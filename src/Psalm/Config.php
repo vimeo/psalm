@@ -1942,10 +1942,10 @@ final class Config
     }
 
     /**
-     * The names the startup output shows for the enabled plugins: the name of the Composer package declaring a plugin
-     * class, without the plugin/psalm affixes (`psalm/plugin-phpunit` is `psalm/phpunit`); the short name of a class no
-     * installed package declares, or its full name when that is `Plugin`; the path of a file plugin, shortened when
-     * absolute
+     * The names the startup output shows for the enabled plugins:
+     * - `psalm/phpunit` for a class a Composer package declares (see stripPluginAffixes());
+     * - `MyPlugin` for any other class, `Acme\Foo\Plugin` when its short name is `Plugin`;
+     * - `plugins/a.php` for a file, relative to the base dir when inside it, as given otherwise.
      *
      * @internal
      * @return list<string>
@@ -1995,17 +1995,16 @@ final class Config
     }
 
     /**
+     * The package name without the plugin/psalm affixes of its name, repeated ones included
+     * (`weirdan/doctrine-psalm-plugin` is `weirdan/doctrine`); the full name when nothing but an affix would remain
+     * (`foo/psalm-plugin`)
+     *
      * @psalm-pure
      */
     private static function stripPluginAffixes(string $package_name): string
     {
         [$vendor, $name] = explode('/', $package_name, 2) + [1 => ''];
-
-        do {
-            $stripped = (string) preg_replace(['/^(?:plugin|psalm)-/', '/-(?:plugin|psalm)$/'], '', $name, 1);
-            $changed = $stripped !== $name;
-            $name = $stripped;
-        } while ($changed);
+        $name = (string) preg_replace('/^(?:(?:plugin|psalm)-)+|(?:-(?:plugin|psalm))+$/', '', $name);
 
         return $name === '' || $name === 'plugin' || $name === 'psalm' ? $package_name : $vendor . '/' . $name;
     }
@@ -3487,9 +3486,9 @@ final class Config
                     'replace' => isset($package['replace']) && is_array($package['replace'])
                         ? array_keys($package['replace'])
                         : [],
-                    'plugin_class' => isset($package['extra']) && is_array($package['extra'])
-                        && isset($package['extra']['psalm']) && is_array($package['extra']['psalm'])
-                        && isset($package['extra']['psalm']['pluginClass'])
+                    'plugin_class' => isset($package['extra']['psalm']['pluginClass'])
+                        && is_array($package['extra'])
+                        && is_array($package['extra']['psalm'])
                         && is_string($package['extra']['psalm']['pluginClass'])
                             ? $package['extra']['psalm']['pluginClass']
                             : null,
