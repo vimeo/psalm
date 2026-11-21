@@ -111,6 +111,59 @@ final class FunctionTemplateTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'typeCheckOfATemplateBoundedByScalarTypesCanHold' => [
+                'code' => '<?php
+                    /**
+                     * @template T of bool|int|float|string
+                     * @param T $i
+                     */
+                    function isBool(bool|int|float|string $i): bool {
+                        return is_bool($i);
+                    }
+
+                    /**
+                     * @template T of bool|int|float|string
+                     * @param T $i
+                     */
+                    function isInt(bool|int|float|string $i): bool {
+                        return is_int($i);
+                    }
+
+                    /**
+                     * @template T of numeric
+                     * @param T $i
+                     */
+                    function isIntOfNumeric(int|float|string $i): bool {
+                        return is_int($i);
+                    }
+
+                    /**
+                     * @template T of array-key
+                     * @param T $i
+                     */
+                    function isNumericOfArrayKey(int|string $i): bool {
+                        return is_numeric($i);
+                    }
+
+                    /**
+                     * @template T of array-key
+                     * @param T $i
+                     */
+                    function isScalarOfArrayKey(int|string $i): bool {
+                        return is_scalar($i);
+                    }
+
+                    /**
+                     * @template T of int<0, 10>
+                     * @param T $i
+                     */
+                    function isNumericOfIntRange(int $i): bool {
+                        return is_numeric($i);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'closureOfATemplateWithANullDefaultOfTheSameTemplate' => [
                 'code' => '<?php
                     /** @template T */
