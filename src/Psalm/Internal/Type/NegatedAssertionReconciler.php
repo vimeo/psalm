@@ -14,6 +14,7 @@ use Psalm\Storage\Assertion;
 use Psalm\Storage\Assertion\IsClassNotEqual;
 use Psalm\Storage\Assertion\IsNotCountable;
 use Psalm\Storage\Assertion\IsNotIdentical;
+use Psalm\Storage\Assertion\IsNotLooselyEqual;
 use Psalm\Storage\Assertion\IsNotType;
 use Psalm\Type;
 use Psalm\Type\Atomic;
@@ -85,6 +86,13 @@ final class NegatedAssertionReconciler extends Reconciler
                 || $assertion_type instanceof TEnumCase)
         ) {
             if ($existing_var_type->hasMixed()) {
+                return $existing_var_type;
+            }
+
+            // not identical to one of the values an operand may have, the value may still be any of them
+            if (($assertion instanceof IsNotIdentical || $assertion instanceof IsNotLooselyEqual)
+                && $assertion->comparand !== null
+            ) {
                 return $existing_var_type;
             }
 
