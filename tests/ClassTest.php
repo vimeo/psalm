@@ -159,6 +159,23 @@ final class ClassTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'aLazyGhostInitializerPassedByNameOrToReflectionObject' => [
+                'code' => '<?php
+                    final class Example {
+                        public function __construct(public int $prop) {}
+                    }
+                    $reset = new Example(1);
+                    $reflector = new ReflectionClass(Example::class);
+                    $reflector->resetAsLazyGhost(initializer: static function (Example $object): void {
+                        $object->__construct(2);
+                    }, object: $reset);
+                    $ghost = (new ReflectionObject($reset))->newLazyGhost(static function (Example $object): void {
+                        $object->__construct(3);
+                    });',
+                'assertions' => [],
+                'ignored_issues' => ['ArgumentTypeCoercion'],
+                'php_version' => '8.4',
+            ],
             'aLazyGhostInitializerConstructsTheObject' => [
                 'code' => '<?php
                     final class Example {
