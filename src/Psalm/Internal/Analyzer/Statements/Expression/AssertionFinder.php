@@ -100,6 +100,7 @@ use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TInt;
+use Psalm\Type\Atomic\TIterable;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TLiteralClassString;
 use Psalm\Type\Atomic\TLiteralFloat;
@@ -1430,8 +1431,8 @@ final class AssertionFinder
 
     /**
      * The types of `@psalm-assert-if-true` and `-if-false` are expanded here, as those of `@psalm-assert` are (see
-     * CallAnalyzer::applyAssertionsToContext()): a class constant and the arguments of a generic object (a `*` holds
-     * the bound of its template once expanded)
+     * CallAnalyzer::applyAssertionsToContext()): a class constant, and the arguments of a generic object or of an
+     * array or iterable (a `*` holds the bound of its template once expanded)
      */
     private static function expandTypesOfRules(Possibilities $assertion, Codebase $codebase): Possibilities
     {
@@ -1439,9 +1440,16 @@ final class AssertionFinder
 
         foreach ($assertion->rule as $rule) {
             $rule_type = $rule->getAtomicType();
+            $expanded = $rule_type instanceof TClassConstant
+                || $rule_type instanceof TGenericObject
+                || $rule_type instanceof TArray
+                || $rule_type instanceof TKeyedArray
+                || $rule_type instanceof TIterable
+                ? TypeExpander::expandAtomic($codebase, $rule_type, null, null, null)
+                : [];
 
-            $rules[] = $rule_type instanceof TClassConstant || $rule_type instanceof TGenericObject
-                ? $rule->setAtomicType(TypeExpander::expandAtomic($codebase, $rule_type, null, null, null)[0])
+            $rules[] = $rule_type instanceof TClassConstant || count($expanded) === 1
+                ? $rule->setAtomicType($expanded[0])
                 : $rule;
         }
 

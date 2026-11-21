@@ -1680,6 +1680,62 @@ final class StarProjectionTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'starProjectionNarrowedToAGrandchildKeepsTheStarAndAppliesTheChildsBound' => [
+                'code' => '<?php
+                    /** @template T of object */
+                    class Box {}
+
+                    /**
+                     * @template U of object
+                     * @extends Box<U>
+                     */
+                    class Middle extends Box {}
+
+                    /**
+                     * @template V of DateTimeInterface
+                     * @extends Middle<V>
+                     */
+                    final class Child extends Middle {
+                        /** @return V */
+                        public function get() {
+                            throw new Exception();
+                        }
+                    }
+
+                    /** @param Box<*> $box */
+                    function f(Box $box): void {
+                        if ($box instanceof Child) {
+                            /** @psalm-check-type-exact $box = Child<*> */
+                            $date = $box->get();
+                            /** @psalm-check-type-exact $date = DateTimeInterface */
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'starProjectionNestedInAnAssertedListHoldsTheBound' => [
+                'code' => '<?php
+                    /** @template-covariant T of Countable */
+                    final class Reader {}
+
+                    /** @param list<Reader<Countable>> $list */
+                    function takes(array $list): void {}
+
+                    /** @psalm-assert-if-true list<Reader<*>> $x */
+                    function isReaderList(mixed $x): bool {
+                        return true;
+                    }
+
+                    function f(mixed $a): void {
+                        if (isReaderList($a)) {
+                            takes($a);
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
         ];
     }
 
@@ -2274,6 +2330,28 @@ final class StarProjectionTest extends TestCase
                         takesNestedDates($any->nested());
                     }',
                 'error_message' => 'ArgumentTypeCoercion - src' . DIRECTORY_SEPARATOR . 'somefile.php:15:42 - Argument 1 of takesNestedDates expects Box<Box<DateTime>>, but parent type Box<*> provided',
+            ],
+            'starProjectionNestedInAnAssertedListIsStillAStar' => [
+                'code' => '<?php
+                    /** @template T of Countable */
+                    final class Inv {}
+
+                    /** @param list<Inv<Countable>> $list */
+                    function takes(array $list): void {}
+
+                    /** @psalm-assert-if-true list<Inv<*>> $x */
+                    function isInvList(mixed $x): bool {
+                        return true;
+                    }
+
+                    function f(mixed $a): void {
+                        if (isInvList($a)) {
+                            takes($a);
+                        }
+                    }',
+                'error_message' => 'ArgumentTypeCoercion - src' . DIRECTORY_SEPARATOR . 'somefile.php:15:35 - Argument 1 of takes expects list<Inv<Countable>>, but parent type list<Inv<*>> provided',
+                'error_levels' => [],
+                'php_version' => '8.0',
             ],
         ];
     }
