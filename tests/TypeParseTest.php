@@ -295,6 +295,38 @@ final class TypeParseTest extends TestCase
         );
     }
 
+    public function testUnsealedArrayWithAListAfterTheEllipsisKeepsTheDefaultTail(): void
+    {
+        $this->assertSame(
+            'array{a: int, ...<array-key, mixed>}',
+            Type::parseString('array{a: int, ...list<int>}')->getId(),
+        );
+    }
+
+    public function testUnsealedListWithAnArrayAfterTheEllipsisKeepsTheDefaultTail(): void
+    {
+        $this->assertSame(
+            'list{int, ...<mixed>}',
+            Type::parseString('list{int, ...array<int, string>}')->getId(),
+        );
+    }
+
+    public function testUnsealedArrayWithAGenericOfTheWrongParameterCountKeepsTheDefaultTail(): void
+    {
+        $this->assertSame(
+            'array{a: int, ...<array-key, mixed>}',
+            Type::parseString('array{a: int, ...array<string>}')->getId(),
+        );
+    }
+
+    public function testUnsealedListWithAGenericOfTheWrongParameterCountKeepsTheDefaultTail(): void
+    {
+        $this->assertSame(
+            'list{int, ...<mixed>}',
+            Type::parseString('list{int, ...list<int, string>}')->getId(),
+        );
+    }
+
     public function testUnsealedListWithAListAfterTheEllipsis(): void
     {
         $this->assertSame('list{int, ...<string>}', Type::parseString('list{int, ...list<string>}')->getId());
