@@ -10,6 +10,7 @@ use Psalm\Plugin\EventHandler\Event\MethodReturnTypeProviderEvent;
 use Psalm\Plugin\EventHandler\MethodReturnTypeProviderInterface;
 use Psalm\Type;
 use Psalm\Type\Atomic\TGenericObject;
+use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Union;
 
 /**
@@ -36,14 +37,26 @@ final class TemplateParameterProvider implements MethodReturnTypeProviderInterfa
     #[Override]
     public static function getMethodReturnType(MethodReturnTypeProviderEvent $event): ?Union
     {
-        if ($event->getMethodNameLowercase() === 'related') {
+        if ($event->getMethodNameLowercase() === 'related' || $event->getMethodNameLowercase() === 'withpivot') {
             $stmt = $event->getStmt();
             $receiver = $stmt instanceof MethodCall
                 ? $event->getSource()->getNodeTypeProvider()->getType($stmt->var)
                 : null;
             $receiver_atomic = $receiver?->isSingle() ? $receiver->getSingleAtomic() : null;
 
-            return $receiver_atomic instanceof TGenericObject ? $receiver_atomic->type_params[0] : null;
+            if (!$receiver_atomic instanceof TGenericObject) {
+                return null;
+            }
+
+            if ($event->getMethodNameLowercase() === 'related') {
+                return $receiver_atomic->type_params[0];
+            }
+
+            // the second type parameter is rebuilt, as a plugin refining a pivot class does
+            $type_params = $receiver_atomic->type_params;
+            $type_params[1] = new Union([new TNamedObject('Ns\Pivot')]);
+
+            return new Union([$receiver_atomic->setTypeParams($type_params)]);
         }
 
         $type_parameter = $event->getTemplateTypeParameters()[0] ?? null;

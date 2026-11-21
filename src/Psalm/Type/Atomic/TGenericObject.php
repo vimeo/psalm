@@ -129,6 +129,50 @@ final class TGenericObject extends TNamedObject
         return $cloned;
     }
 
+    /**
+     * The object with other type arguments. An argument that is replaced is no `*` or left out argument any more: a
+     * plugin that rebuilds an argument (`Relation<User, *>` with a pivot class) means that type.
+     *
+     * @param non-empty-list<Union> $type_params
+     * @return static
+     */
+    public function setTypeParams(array $type_params): self
+    {
+        if ($this->type_params === $type_params) {
+            return $this;
+        }
+
+        $cloned = clone $this;
+        $cloned->type_params = $type_params;
+
+        foreach ($cloned->projections as $offset => $_) {
+            if (($type_params[$offset] ?? null) !== ($this->type_params[$offset] ?? null)) {
+                unset($cloned->projections[$offset]);
+            }
+        }
+
+        return $cloned;
+    }
+
+    /**
+     * The object with the same projections holding other types, for what only refines the type a `*` holds
+     *
+     * @internal
+     * @param non-empty-list<Union> $type_params
+     * @return static
+     */
+    public function setHeldTypes(array $type_params): self
+    {
+        if ($this->type_params === $type_params) {
+            return $this;
+        }
+
+        $cloned = clone $this;
+        $cloned->type_params = $type_params;
+
+        return $cloned;
+    }
+
     #[Override]
     public function getKey(bool $include_extra = true): string
     {

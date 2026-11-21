@@ -62,7 +62,7 @@ final class StarProjection
 
         return $type_params === [] || $type_params === $type->type_params
             ? $type
-            : $type->setTypeParams($type_params);
+            : $type->setHeldTypes($type_params);
     }
 
     /**

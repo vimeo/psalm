@@ -696,7 +696,9 @@ final class TypeExpander
             }
 
             /** @psalm-suppress InvalidArgument Psalm bug */
-            $return_type = $return_type->setTypeParams($type_params);
+            $return_type = $return_type instanceof TGenericObject
+                ? $return_type->setHeldTypes($type_params)
+                : $return_type->setTypeParams($type_params);
 
             // the purity of an iterable may name a type alias (`iterable[Storage]`)
             if ($return_type instanceof TIterable) {

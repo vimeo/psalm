@@ -1092,7 +1092,7 @@ final class PluginTest extends DeferredAnalyzerTestCase
              * @template TParent of Model
              */
             final class Relation {
-                public function related(): Model {
+                public function related(): object {
                     throw new \Exception();
                 }
             }
@@ -1102,6 +1102,37 @@ final class PluginTest extends DeferredAnalyzerTestCase
                 $related = $any->related();
                 /** @psalm-check-type-exact $related = Model */
                 $related->save();
+            }');
+    }
+
+    public function testPluginRebuildingAStarArgumentMeansThatType(): void
+    {
+        $this->analyzeWithTemplateParameterPlugin('
+            abstract class Model {}
+
+            final class Pivot extends Model {}
+
+            /**
+             * @template TRelated of Model
+             * @template TParent of Model
+             */
+            final class Relation {
+                public function withPivot(): static {
+                    return $this;
+                }
+
+                /** @return TParent */
+                public function parent(): Model {
+                    throw new \Exception();
+                }
+            }
+
+            /** @param Relation<Model, *> $relation */
+            function run(Relation $relation): void {
+                $refined = $relation->withPivot();
+                /** @psalm-check-type-exact $refined = Relation<Model, Pivot> */
+                $parent = $refined->parent();
+                /** @psalm-check-type-exact $parent = Pivot */
             }');
     }
 
