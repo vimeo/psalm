@@ -39,6 +39,23 @@ use const PREG_OFFSET_CAPTURE;
  */
 final class DocblockParser
 {
+    /**
+     * The tags each combined tag is read from, the later ones winning
+     */
+    private const COMBINED_TAGS = [
+        'template' => ['template', 'phpstan-template', 'psalm-template'],
+        'template-covariant' => ['template-covariant', 'phpstan-template-covariant', 'psalm-template-covariant'],
+        'extends' => ['template-extends', 'inherits', 'extends', 'psalm-extends', 'phpstan-extends'],
+        'implements' => ['template-implements', 'implements', 'phpstan-implements', 'psalm-implements'],
+        'use' => ['template-use', 'use', 'phpstan-use', 'psalm-use'],
+        'method' => ['method', 'psalm-method'],
+        'return' => ['return', 'phpstan-return', 'psalm-return'],
+        'param' => ['param', 'phpstan-param', 'psalm-param'],
+        'var' => ['var', 'phpstan-var', 'psalm-var'],
+        'param-out' => ['param-out', 'phpstan-param-out', 'psalm-param-out'],
+        'param-closure-this' => ['param-closure-this', 'phpstan-param-closure-this', 'psalm-param-closure-this'],
+    ];
+
     private const NAMED_ARGUMENTS_TAGS = [
         'no-named-arguments' => NamedArguments::NOT_ALLOWED,
         'arguments-by-name' => NamedArguments::REQUIRED,
@@ -178,127 +195,27 @@ final class DocblockParser
 
     private static function resolveTags(ParsedDocblock $docblock): void
     {
-        if (isset($docblock->tags['template'])
-            || isset($docblock->tags['psalm-template'])
-            || isset($docblock->tags['phpstan-template'])
-        ) {
-            $docblock->combined_tags['template']
-                = ($docblock->tags['template'] ?? [])
-                + ($docblock->tags['phpstan-template'] ?? [])
-                + ($docblock->tags['psalm-template'] ?? []);
-        }
+        $ignore_var = isset($docblock->tags['ignore-var']) || isset($docblock->tags['psalm-ignore-var']);
 
-        if (isset($docblock->tags['template-covariant'])
-            || isset($docblock->tags['psalm-template-covariant'])
-            || isset($docblock->tags['phpstan-template-covariant'])
-        ) {
-            $docblock->combined_tags['template-covariant']
-                = ($docblock->tags['template-covariant'] ?? [])
-                + ($docblock->tags['phpstan-template-covariant'] ?? [])
-                + ($docblock->tags['psalm-template-covariant'] ?? []);
-        }
-
-        if (isset($docblock->tags['template-extends'])
-            || isset($docblock->tags['inherits'])
-            || isset($docblock->tags['extends'])
-            || isset($docblock->tags['psalm-extends'])
-            || isset($docblock->tags['phpstan-extends'])
-        ) {
-            $docblock->combined_tags['extends']
-                = ($docblock->tags['template-extends'] ?? [])
-                + ($docblock->tags['inherits'] ?? [])
-                + ($docblock->tags['extends'] ?? [])
-                + ($docblock->tags['psalm-extends'] ?? [])
-                + ($docblock->tags['phpstan-extends'] ?? []);
-        }
-
-        if (isset($docblock->tags['template-implements'])
-            || isset($docblock->tags['implements'])
-            || isset($docblock->tags['phpstan-implements'])
-            || isset($docblock->tags['psalm-implements'])
-        ) {
-            $docblock->combined_tags['implements']
-                = ($docblock->tags['template-implements'] ?? [])
-                + ($docblock->tags['implements'] ?? [])
-                + ($docblock->tags['phpstan-implements'] ?? [])
-                + ($docblock->tags['psalm-implements'] ?? []);
-        }
-
-        if (isset($docblock->tags['template-use'])
-            || isset($docblock->tags['use'])
-            || isset($docblock->tags['phpstan-use'])
-            || isset($docblock->tags['psalm-use'])
-        ) {
-            $docblock->combined_tags['use']
-                = ($docblock->tags['template-use'] ?? [])
-                + ($docblock->tags['use'] ?? [])
-                + ($docblock->tags['phpstan-use'] ?? [])
-                + ($docblock->tags['psalm-use'] ?? []);
-        }
-
-        if (isset($docblock->tags['method'])
-            || isset($docblock->tags['psalm-method'])
-        ) {
-            $docblock->combined_tags['method']
-                = ($docblock->tags['method'] ?? [])
-                + ($docblock->tags['psalm-method'] ?? []);
-        }
-
-        if (isset($docblock->tags['return'])
-            || isset($docblock->tags['psalm-return'])
-            || isset($docblock->tags['phpstan-return'])
-        ) {
-            if (isset($docblock->tags['psalm-return'])) {
-                $docblock->combined_tags['return'] = $docblock->tags['psalm-return'];
-            } elseif (isset($docblock->tags['phpstan-return'])) {
-                $docblock->combined_tags['return'] = $docblock->tags['phpstan-return'];
-            } else {
-                $docblock->combined_tags['return'] = $docblock->tags['return'];
+        foreach (self::COMBINED_TAGS as $combined_name => $tag_names) {
+            if ($combined_name === 'var' && $ignore_var) {
+                continue;
             }
-        }
 
-        if (isset($docblock->tags['param'])
-            || isset($docblock->tags['psalm-param'])
-            || isset($docblock->tags['phpstan-param'])
-        ) {
-            $docblock->combined_tags['param']
-                = ($docblock->tags['param'] ?? [])
-                + ($docblock->tags['phpstan-param'] ?? [])
-                + ($docblock->tags['psalm-param'] ?? []);
-        }
+            $combined = null;
 
-        if (isset($docblock->tags['var'])
-            || isset($docblock->tags['psalm-var'])
-            || isset($docblock->tags['phpstan-var'])
-        ) {
-            if (!isset($docblock->tags['ignore-var'])
-                && !isset($docblock->tags['psalm-ignore-var'])
-            ) {
-                $docblock->combined_tags['var']
-                    = ($docblock->tags['var'] ?? [])
-                    + ($docblock->tags['phpstan-var'] ?? [])
-                    + ($docblock->tags['psalm-var'] ?? []);
+            foreach ($tag_names as $tag_name) {
+                if (isset($docblock->tags[$tag_name])) {
+                    // a return type is taken from the last tag of the list instead of merging them
+                    $combined = $combined_name === 'return'
+                        ? $docblock->tags[$tag_name]
+                        : ($combined ?? []) + $docblock->tags[$tag_name];
+                }
             }
-        }
 
-        if (isset($docblock->tags['param-out'])
-            || isset($docblock->tags['psalm-param-out'])
-            || isset($docblock->tags['phpstan-param-out'])
-        ) {
-            $docblock->combined_tags['param-out']
-                = ($docblock->tags['param-out'] ?? [])
-                + ($docblock->tags['phpstan-param-out'] ?? [])
-                + ($docblock->tags['psalm-param-out'] ?? []);
-        }
-
-        if (isset($docblock->tags['param-closure-this'])
-            || isset($docblock->tags['psalm-param-closure-this'])
-            || isset($docblock->tags['phpstan-param-closure-this'])
-        ) {
-            $docblock->combined_tags['param-closure-this']
-                = ($docblock->tags['param-closure-this'] ?? [])
-                + ($docblock->tags['phpstan-param-closure-this'] ?? [])
-                + ($docblock->tags['psalm-param-closure-this'] ?? []);
+            if ($combined !== null) {
+                $docblock->combined_tags[$combined_name] = $combined;
+            }
         }
     }
 

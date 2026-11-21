@@ -56,7 +56,6 @@ use Psalm\Storage\Capabilities;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Storage\MethodStorage;
-use Psalm\Storage\Possibilities;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TAnonymousClassInstance;
@@ -565,49 +564,6 @@ final class NewAnalyzer extends CallAnalyzer
             : null;
     }
 
-    private static function setConstructorConditionAssertions(
-        StatementsAnalyzer $statements_analyzer,
-        Codebase $codebase,
-        PhpParser\Node\Expr\New_ $stmt,
-        MethodStorage $method_storage,
-        TemplateResult $template_result,
-        bool $strict_types,
-    ): void {
-        if ($method_storage->if_true_assertions) {
-            $statements_analyzer->node_data->setIfTrueAssertions(
-                $stmt,
-                array_map(
-                    static fn(Possibilities $assertion): Possibilities
-                        => $assertion->getUntemplatedCopy($template_result, null, $codebase),
-                    self::getAssertionsOnArgs(
-                        $method_storage->if_true_assertions,
-                        $method_storage,
-                        $stmt->getArgs(),
-                        $statements_analyzer->node_data,
-                        $strict_types,
-                    ),
-                ),
-            );
-        }
-
-        if ($method_storage->if_false_assertions) {
-            $statements_analyzer->node_data->setIfFalseAssertions(
-                $stmt,
-                array_map(
-                    static fn(Possibilities $assertion): Possibilities
-                        => $assertion->getUntemplatedCopy($template_result, null, $codebase),
-                    self::getAssertionsOnArgs(
-                        $method_storage->if_false_assertions,
-                        $method_storage,
-                        $stmt->getArgs(),
-                        $statements_analyzer->node_data,
-                        $strict_types,
-                    ),
-                ),
-            );
-        }
-    }
-
     /**
      * Reports the instantiation of a class deprecated, internal to other code, or only running from the command line
      */
@@ -824,15 +780,6 @@ final class NewAnalyzer extends CallAnalyzer
                     $context,
                     $method_id,
                     $template_result,
-                );
-
-                self::setConstructorConditionAssertions(
-                    $statements_analyzer,
-                    $codebase,
-                    $stmt,
-                    $method_storage,
-                    $template_result,
-                    $context->strict_types,
                 );
             }
 
