@@ -2844,6 +2844,10 @@ final class Config
             $core_generic_files[] = $versioned_classes_path;
         }
 
+        if (PHP_VERSION_ID < 8_05_00 && $codebase->analysis_php_version_id >= 8_01_00) {
+            $core_generic_files[] = dirname(__DIR__, 2) . '/stubs/PhpVersionedEnums.phpstub';
+        }
+
         $stub_files = array_merge($core_generic_files, $this->preloaded_stub_files);
 
         if (!$stub_files) {
@@ -2947,6 +2951,8 @@ final class Config
 
         if ($codebase->analysis_php_version_id >= 8_01_00) {
             $this->internal_stubs[] = $stubsDir . 'Php81.phpstub';
+            // the enums of later versions, which are reported as undefined before their `@since` version
+            $this->internal_stubs[] = $stubsDir . 'PhpVersionedEnums.phpstub';
         }
 
         if ($codebase->analysis_php_version_id >= 8_02_00) {
@@ -3275,7 +3281,10 @@ final class Config
         return $this->unrequired_package_paths = $paths;
     }
 
-    private function isInUnrequiredPackage(string $file_path): bool
+    /**
+     * @internal
+     */
+    public function isInUnrequiredPackage(string $file_path): bool
     {
         return array_any(
             $this->getUnrequiredPackagePaths(),

@@ -3450,11 +3450,13 @@ final class Codebase
      * Whether a native class-like stubbed with a newer `@since` than the analysed PHP version is
      * provided by a polyfill the project's composer autoloader can load (e.g. `Stringable` from
      * symfony/polyfill-php80). Such polyfills are usually never scanned, since the stub already
-     * defines the class, so the autoloader is asked directly.
+     * defines the class, so the autoloader is asked directly. The polyfills Psalm itself requires don't count.
      */
     public function isClassLikePolyfilled(string $fq_classlike_name): bool
     {
-        return $this->config->getComposerFilePathForClassLike($fq_classlike_name) !== false;
+        $file_path = $this->config->getComposerFilePathForClassLike($fq_classlike_name);
+
+        return $file_path !== false && !$this->config->isInUnrequiredPackage($file_path);
     }
 
     /**
