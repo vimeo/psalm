@@ -196,6 +196,37 @@ final class MagicPropertyTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'propertyAnnotationWithATemplateOfTheParentIsLocalizedInTheChild' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @property T|null $at
+                     */
+                    abstract class Base {
+                        public function __get(string $name): mixed {
+                            return null;
+                        }
+                        public function __set(string $name, mixed $value): void {}
+                    }
+
+                    /** @extends Base<int> */
+                    class Child extends Base {
+                        public function fill(): void {
+                            $this->at = 5;
+                        }
+                    }
+
+                    final class GrandChild extends Child {}
+
+                    $at = (new Child())->at;
+                    $grandChildAt = (new GrandChild())->at;',
+                'assertions' => [
+                    '$at===' => 'int|null',
+                    '$grandChildAt===' => 'int|null',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'valueOfPseudoPropertyIsNarrowedByAnEqualityCheck' => [
                 'code' => '<?php
                     enum Foo: string {
@@ -1258,6 +1289,29 @@ final class MagicPropertyTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'propertyAnnotationWithATemplateOfTheParentRejectsAnotherTypeInTheChild' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @property T|null $at
+                     */
+                    abstract class Base {
+                        public function __get(string $name): mixed {
+                            return null;
+                        }
+                        public function __set(string $name, mixed $value): void {}
+                    }
+
+                    /** @extends Base<int> */
+                    final class Child extends Base {
+                        public function fill(): void {
+                            $this->at = "x";
+                        }
+                    }',
+                'error_message' => 'InvalidPropertyAssignmentValue',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
             'annotationWithoutGetter' => [
                 'code' => '<?php
                     /**

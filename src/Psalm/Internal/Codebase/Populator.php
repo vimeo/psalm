@@ -19,6 +19,7 @@ use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TypeAlias\ClassTypeAlias;
 use Psalm\Internal\TypeVisitor\ContainsTemplateExpressionVisitor;
+use Psalm\Internal\TypeVisitor\TypeLocalizer;
 use Psalm\Issue\CircularReference;
 use Psalm\Issue\UndefinedTrait;
 use Psalm\IssueBuffer;
@@ -1177,8 +1178,16 @@ final class Populator
             $storage->preserve_constructor_signature = true;
         }
 
-        $storage->pseudo_property_get_types += $parent_storage->pseudo_property_get_types;
-        $storage->pseudo_property_set_types += $parent_storage->pseudo_property_set_types;
+        $storage->pseudo_property_get_types += self::localizeInheritedTypes(
+            $storage,
+            $parent_storage,
+            $parent_storage->pseudo_property_get_types,
+        );
+        $storage->pseudo_property_set_types += self::localizeInheritedTypes(
+            $storage,
+            $parent_storage,
+            $parent_storage->pseudo_property_set_types,
+        );
 
         $parent_storage->dependent_classlikes[strtolower($storage->name)] = true;
 
@@ -1192,6 +1201,30 @@ final class Populator
      * already has, win over the `@method` of a used trait or parent class. A call of a method that isn't public goes
      * through `__call` or `__callStatic` from outside the class, so the `@method` still describes it.
      */
+    /**
+     * The `@property` types of a generic parent, in terms of the template arguments the class gives it
+     *
+     * @param array<string, Union> $types
+     * @return array<string, Union>
+     */
+    private static function localizeInheritedTypes(
+        ClassLikeStorage $storage,
+        ClassLikeStorage $parent_storage,
+        array $types,
+    ): array {
+        if ($storage->template_extended_params === null || $storage->template_extended_params === []) {
+            return $types;
+        }
+
+        $localizer = new TypeLocalizer($storage->template_extended_params, $parent_storage->name);
+
+        foreach ($types as &$type) {
+            $localizer->traverse($type);
+        }
+
+        return $types;
+    }
+
     private function inheritPseudoMethods(ClassLikeStorage $storage, ClassLikeStorage $parent_storage): void
     {
         $fq_class_name_lc = strtolower($storage->name);
