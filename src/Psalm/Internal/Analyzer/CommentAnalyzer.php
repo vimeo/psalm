@@ -15,6 +15,9 @@ use Psalm\Exception\DocblockParseException;
 use Psalm\Exception\IncorrectDocblockException;
 use Psalm\Exception\TypeParseTreeException;
 use Psalm\FileSource;
+use Psalm\Internal\Analyzer\FunctionAnalyzer;
+use Psalm\Internal\Analyzer\MethodAnalyzer;
+use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Scanner\DocblockParser;
 use Psalm\Internal\Scanner\ParsedDocblock;
 use Psalm\Internal\Scanner\VarDocblockComment;
@@ -26,6 +29,7 @@ use Psalm\Internal\TypeVisitor\TypeChecker;
 use Psalm\Issue\InvalidDocblock;
 use Psalm\Issue\MissingDocblockType;
 use Psalm\IssueBuffer;
+use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
 use RuntimeException;
 use UnexpectedValueException;
@@ -38,6 +42,7 @@ use function preg_replace;
 use function preg_split;
 use function rtrim;
 use function str_replace;
+use function str_starts_with;
 use function strlen;
 use function strpos;
 use function substr;
@@ -76,6 +81,59 @@ final class CommentAnalyzer
             $template_type_map,
             $type_aliases,
         );
+    }
+
+    /**
+     * The tokens with a reference to a param of the function the comment is in (`$f` in `($f is null ? T : int)`)
+     * replaced with the template its conditional return type made of the param, as in the `@return` of the function
+     *
+     * @param list<array{0: string, 1: int, 2?: string}> $tokens
+     * @return list<array{0: string, 1: int, 2?: string}>
+     */
+    private static function replaceParamReferences(array $tokens, FileSource $source): array
+    {
+        while ($source instanceof StatementsAnalyzer) {
+            $source = $source->getSource();
+        }
+
+        try {
+            if ($source instanceof MethodAnalyzer) {
+                $storage = $source->getFunctionLikeStorage();
+            } elseif ($source instanceof FunctionAnalyzer) {
+                $storage = $source->getCodebase()->functions->getStorage(
+                    null,
+                    $source->getFunctionId(),
+                    $source->getRootFilePath(),
+                    $source->getFilePath(),
+                );
+            } else {
+                return $tokens;
+            }
+        } catch (UnexpectedValueException) {
+            return $tokens;
+        }
+
+        $param_templates = [];
+
+        foreach ($storage->params as $param) {
+            $param_type = $param->type?->isSingle() ? $param->type->getSingleAtomic() : null;
+
+            if ($param_type instanceof TTemplateParam
+                && str_starts_with($param_type->param_name, 'TGeneratedFromParam')
+            ) {
+                $param_templates['$' . $param->name] = $param_type->param_name;
+            }
+        }
+
+        foreach ($tokens as $offset => $token) {
+            foreach ($param_templates as $param_reference => $template_name) {
+                if ($token[0] === $param_reference) {
+                    $tokens[$offset][0] = $template_name;
+                }
+            }
+        }
+
+        return $tokens;
     }
 
     /**
@@ -140,11 +198,14 @@ final class CommentAnalyzer
                     }
 
                     try {
-                        $var_type_tokens = TypeTokenizer::getFullyQualifiedTokens(
-                            $line_parts[0],
-                            $aliases,
-                            $template_type_map,
-                            $type_aliases,
+                        $var_type_tokens = self::replaceParamReferences(
+                            TypeTokenizer::getFullyQualifiedTokens(
+                                $line_parts[0],
+                                $aliases,
+                                $template_type_map,
+                                $type_aliases,
+                            ),
+                            $source,
                         );
                     } catch (TypeParseTreeException) {
                         throw new DocblockParseException($line_parts[0] . ' is not a valid type');
