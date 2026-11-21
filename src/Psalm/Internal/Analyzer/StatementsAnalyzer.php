@@ -306,7 +306,6 @@ final class StatementsAnalyzer extends SourceAnalyzer
             if ($this->root_scope
                 && $this->depth === 1
                 && !$context->collect_initializations
-                && !$context->collect_mutations
                 && $codebase->find_unused_variables
                 && $context->check_variables
             ) {
@@ -675,35 +674,7 @@ final class StatementsAnalyzer extends SourceAnalyzer
             if (isset($statements_analyzer->parsed_docblock->tags['psalm-suppress'])) {
                 $suppressed = $statements_analyzer->parsed_docblock->tags['psalm-suppress'];
                 if ($suppressed) {
-                    $new_issues = [];
-
-                    foreach ($suppressed as $offset => $suppress_entry) {
-                        foreach (DocComment::parseSuppressList($suppress_entry) as $issue_offset => $issue_type) {
-                            $new_issues[$issue_offset + $offset] = $issue_type;
-                        }
-                    }
-
-                    if ($codebase->track_unused_suppressions
-                        && (
-                            (count($new_issues) === 1) // UnusedPsalmSuppress by itself should be marked as unused
-                            || !$codebase->config->suppressesIssueType($new_issues, 'UnusedPsalmSuppress')
-                        )
-                    ) {
-                        foreach ($new_issues as $offset => $issue_type) {
-                            if ($issue_type === 'InaccessibleMethod') {
-                                continue;
-                            }
-
-                            IssueBuffer::addUnusedSuppression(
-                                $statements_analyzer->getFilePath(),
-                                $offset,
-                                $issue_type,
-                                $codebase->taint_flow_graph !== null,
-                            );
-                        }
-                    }
-
-                    $statements_analyzer->addSuppressedIssues($new_issues);
+                    $new_issues = ExpressionAnalyzer::addSuppressions($statements_analyzer, $suppressed);
                 }
             }
 
@@ -776,7 +747,6 @@ final class StatementsAnalyzer extends SourceAnalyzer
 
         if ($context->has_returned
             && !$context->collect_initializations
-            && !$context->collect_mutations
             && !($stmt instanceof PhpParser\Node\Stmt\Nop)
             && !($stmt instanceof PhpParser\Node\Stmt\Function_)
             && !($stmt instanceof PhpParser\Node\Stmt\Class_)
@@ -1279,11 +1249,14 @@ final class StatementsAnalyzer extends SourceAnalyzer
     }
 
     /**
+     * @param array{int, int}|null $code_range only the assignments between these file offsets
      * @return array<string, DataFlowNode>
      * @psalm-mutation-free
      */
-    public function getParentNodesForPossiblyUndefinedVariable(string $undefined_var_id): array
-    {
+    public function getParentNodesForPossiblyUndefinedVariable(
+        string $undefined_var_id,
+        ?array $code_range = null,
+    ): array {
         if (!$this->data_flow_graph) {
             return [];
         }
@@ -1291,7 +1264,11 @@ final class StatementsAnalyzer extends SourceAnalyzer
         $parent_nodes = [];
 
         foreach ($this->unused_var_locations as [$var_id, $original_location]) {
-            if ($var_id === $undefined_var_id) {
+            if ($var_id === $undefined_var_id
+                && ($code_range === null
+                    || ($original_location->raw_file_start >= $code_range[0]
+                        && $original_location->raw_file_end <= $code_range[1]))
+            ) {
                 $assignment_node = DataFlowNode::getForAssignment($var_id, $original_location);
                 $parent_nodes[$assignment_node->id] = $assignment_node;
             }

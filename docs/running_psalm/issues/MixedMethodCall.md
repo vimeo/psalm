@@ -34,10 +34,10 @@ class A {
 }
 
 /**
- * @param  array<A> $arr
+ * @param  non-empty-array<A> $arr
  */
 function callFoo(array $arr) : void {
-    array_pop($arr)->foo(); // MixedMethodCall emitted here
+    array_pop($arr)->foo(); // no issue
 }
 
 callFoo(
@@ -57,7 +57,7 @@ class A {
 function callFoo(array $arr) : void {
     $a = array_pop($arr);
     assert($a instanceof A);
-    $a->foo(); // MixedMethodCall emitted here
+    $a->foo(); // no issue
 }
 
 callFoo(

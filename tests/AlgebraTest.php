@@ -32,8 +32,10 @@ use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TString;
 
 use function array_map;
+use function implode;
 use function json_encode;
 use function preg_match;
+use function range;
 use function spl_object_id;
 
 use const JSON_THROW_ON_ERROR;
@@ -80,7 +82,22 @@ final class AlgebraTest extends TestCase
     {
         $assertions = ['$s' => [[new IsIdentical(TLiteralString::make("é/\"\\\n"))]]];
         $assertion = $negated ? new NotNestedAssertions($assertions) : new NestedAssertions($assertions);
-        self::assertSame(($negated ? '!@' : '@') . json_encode($assertions, JSON_THROW_ON_ERROR), (string) $assertion);
+        self::assertSame(
+            ($negated ? '!@' : '@') . json_encode(['$s' => [["=string(é/\"\\\n)"]]], JSON_THROW_ON_ERROR),
+            (string) $assertion,
+        );
+    }
+
+    #[DataProvider('providerNestedAssertionNegations')]
+    public function testNestedAssertionsOfDifferentClassesWithTheSamePropertiesDiffer(bool $negated): void
+    {
+        $is_int = ['$x' => [[new IsType(new TInt())]]];
+        $is_not_int = ['$x' => [[new IsNotType(new TInt())]]];
+
+        self::assertNotSame(
+            (string) ($negated ? new NotNestedAssertions($is_int) : new NestedAssertions($is_int)),
+            (string) ($negated ? new NotNestedAssertions($is_not_int) : new NestedAssertions($is_not_int)),
+        );
     }
 
     /**
@@ -410,6 +427,60 @@ final class AlgebraTest extends TestCase
         $is_not_five = self::clause(['$a' => [new IsNotType(new TLiteralInt(5))]])->calculateNegation();
 
         $this->assertSame([], Algebra::groupImpossibilities([$is_not_five, $is_five]));
+    }
+
+    public function testNegateFormulaOfOredLiteralsDropsSubsumedGroupedClauses(): void
+    {
+        // !in_array($name, ['a', ..., 'l'], true) || !$k
+        $formula = [];
+        foreach (range('a', 'l') as $literal) {
+            $formula[] = self::clause([
+                '$name' => [new IsNotIdentical(TLiteralString::make($literal))],
+                '$k' => [new Falsy()],
+            ]);
+        }
+
+        $grouped = Algebra::groupImpossibilities(
+            array_map(static fn(Clause $clause): Clause => $clause->calculateNegation(), $formula),
+        );
+
+        $this->assertSame(
+            [
+                '$k',
+                implode(' || ', array_map(
+                    static fn(string $literal): string => '($name is string(' . $literal . '))',
+                    range('l', 'a'),
+                )),
+            ],
+            self::clauseStrings($grouped),
+        );
+
+        $this->assertSame(
+            [
+                '$k',
+                implode(' || ', array_map(
+                    static fn(string $literal): string => '($name is string(' . $literal . '))',
+                    range('l', 'a'),
+                )),
+            ],
+            self::clauseStrings(Algebra::negateFormula($formula)),
+        );
+    }
+
+    public function testGroupImpossibilitiesExpandsClauseWithTheSameImpossibilityOfAnotherVariable(): void
+    {
+        $grouped = Algebra::groupImpossibilities([
+            self::clause([
+                '$a' => [new IsNotIdentical(new TLiteralInt(5))],
+                '$c' => [new Falsy()],
+            ])->calculateNegation(),
+            self::clause(['$b' => [new IsNotIdentical(new TLiteralInt(5))]])->calculateNegation(),
+        ]);
+
+        $this->assertSame(
+            ['($a is int(5)) || ($b is int(5))', '($b is int(5)) || ($c)'],
+            self::clauseStrings($grouped),
+        );
     }
 
     public function testFilterClausesKeepsClauseAlreadyImpliedByLiteralIntType(): void

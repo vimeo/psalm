@@ -82,11 +82,14 @@ use Psalm\Type\Union;
 use UnexpectedValueException;
 
 use function array_any;
+use function array_diff;
 use function array_filter;
 use function array_keys;
 use function array_map;
 use function array_pop;
 use function array_search;
+use function array_shift;
+use function array_unshift;
 use function array_values;
 use function assert;
 use function count;
@@ -247,13 +250,17 @@ final class ForeachAnalyzer
                 }
 
                 if (isset($context->vars_in_scope[$var_comment->var_id])) {
-                    /** @psalm-suppress InaccessibleProperty We just created this type */
-                    $comment_type->parent_nodes = $context->vars_in_scope[$var_comment->var_id]->parent_nodes;
+                    $comment_type = $comment_type->setParentNodes(
+                        $context->vars_in_scope[$var_comment->var_id]->parent_nodes,
+                    );
                 }
 
                 $context->vars_in_scope[$var_comment->var_id] = $comment_type;
             }
         }
+
+        // read by ScopeAnalyzer::getControlActions()
+        $stmt->setAttribute('alwaysEntered', false);
 
         $was_inside_general_use = $context->inside_general_use;
         $context->inside_general_use = true;
@@ -275,7 +282,10 @@ final class ForeachAnalyzer
         );
 
         if ($stmt_expr_type = $statements_analyzer->node_data->getType($stmt->expr)) {
-            $iterator_type = TypeVariableResolver::resolveTopLevel($stmt_expr_type, $codebase);
+            $iterator_type = TypeExpander::expandTemplateKeyOfAndValueOf(
+                $codebase,
+                TypeVariableResolver::resolveTopLevel($stmt_expr_type, $codebase),
+            );
         } elseif ($var_id && $context->hasVariable($var_id)) {
             $iterator_type = $context->vars_in_scope[$var_id];
         } else {
@@ -348,18 +358,25 @@ final class ForeachAnalyzer
             FunctionLikeAnalyzer::unbindByRefParam($codebase, $foreach_context, '$' . $stmt->valueVar->name);
         }
 
-        AssignmentAnalyzer::analyze(
-            $statements_analyzer,
-            $stmt->valueVar,
-            $stmt->expr,
-            $value_type,
-            $foreach_context,
-            $doc_comment,
-            $stmt->valueVar instanceof PhpParser\Node\Expr\Variable
-                && is_string($stmt->valueVar->name)
-                ? ['$' . $stmt->valueVar->name => true]
-                : [],
-        );
+        // PHP evaluates the iterated expression once, and it is analysed already
+        $statements_analyzer->node_data->markEvaluated([$stmt->expr]);
+
+        try {
+            AssignmentAnalyzer::analyze(
+                $statements_analyzer,
+                $stmt->valueVar,
+                $stmt->expr,
+                $value_type,
+                $foreach_context,
+                $doc_comment,
+                $stmt->valueVar instanceof PhpParser\Node\Expr\Variable
+                    && is_string($stmt->valueVar->name)
+                    ? ['$' . $stmt->valueVar->name => true]
+                    : [],
+            );
+        } finally {
+            $statements_analyzer->node_data->unmarkEvaluated([$stmt->expr]);
+        }
 
         if ($stmt->byRef
             && $stmt->valueVar instanceof PhpParser\Node\Expr\Variable
@@ -400,10 +417,10 @@ final class ForeachAnalyzer
 
             if (isset($foreach_context->vars_in_scope[$var_comment->var_id])) {
                 $existing_var_type = $foreach_context->vars_in_scope[$var_comment->var_id];
-                /** @psalm-suppress InaccessibleProperty We just created this type */
-                $comment_type->parent_nodes = $existing_var_type->parent_nodes;
-                /** @psalm-suppress InaccessibleProperty We just created this type */
-                $comment_type->by_ref = $existing_var_type->by_ref;
+                $comment_type = $comment_type->setProperties([
+                    'parent_nodes' => $existing_var_type->parent_nodes,
+                    'by_ref' => $existing_var_type->by_ref,
+                ]);
             }
 
             $foreach_context->vars_in_scope[$var_comment->var_id] = $comment_type;
@@ -454,6 +471,8 @@ final class ForeachAnalyzer
         $loop_scope = new LoopScope($foreach_context, $context);
 
         $loop_scope->protected_var_ids = $context->protected_var_ids;
+
+        $stmt->setAttribute('alwaysEntered', $iterator_type !== null && $always_non_empty_array);
 
         if (LoopAnalyzer::analyze(
             $statements_analyzer,
@@ -1239,11 +1258,7 @@ final class ForeachAnalyzer
                 ),
                 $statements_analyzer->getSuppressedIssues(),
             );
-
-            return null;
-        }
-
-        if ($iterator_type->isFalsable() && !$iterator_type->ignore_falsable_issues) {
+        } elseif ($iterator_type->isFalsable() && !$iterator_type->ignore_falsable_issues) {
             $always_non_empty_array = false;
 
             IssueBuffer::maybeAdd(
@@ -1253,17 +1268,23 @@ final class ForeachAnalyzer
                 ),
                 $statements_analyzer->getSuppressedIssues(),
             );
-
-            return null;
         }
+
+        // the loop body only runs for the iterable part: null and false are skipped below
 
         $has_valid_iterator = false;
         $invalid_iterator_types = [];
         $raw_object_types = [];
 
-        foreach ($iterator_type->getAtomicTypes() as $iterator_atomic_type) {
+        $remaining_atomic_types = array_values($iterator_type->getAtomicTypes());
+
+        while ($remaining_atomic_types) {
+            $iterator_atomic_type = array_shift($remaining_atomic_types);
+
+            // a template parameter iterates over every type of its bound
             if ($iterator_atomic_type instanceof TTemplateParam) {
-                $iterator_atomic_type = $iterator_atomic_type->as->getSingleAtomic();
+                array_unshift($remaining_atomic_types, ...array_values($iterator_atomic_type->as->getAtomicTypes()));
+                continue;
             }
 
             // if it's an empty array, we cannot iterate over it
@@ -1342,7 +1363,8 @@ final class ForeachAnalyzer
             } elseif ($iterator_atomic_type instanceof Scalar || $iterator_atomic_type instanceof TVoid) {
                 $invalid_iterator_types[] = $iterator_atomic_type->getKey();
 
-                $value_type = Type::getMixed();
+                // what the other types of the iterated value hold is still iterated
+                $value_type = Type::getMixed()->setParentNodes($value_type?->parent_nodes ?? []);
             } elseif ($iterator_atomic_type instanceof TObject ||
                 $iterator_atomic_type instanceof TMixed ||
                 $iterator_atomic_type instanceof TNever
@@ -1625,52 +1647,12 @@ final class ForeachAnalyzer
                 ) {
                     $has_valid_iterator = true;
 
-                    $old_data_provider = $statements_analyzer->node_data;
-
-                    $statements_analyzer->node_data = clone $statements_analyzer->node_data;
-
-                    $fake_method_call = new VirtualMethodCall(
-                        $foreach_expr,
-                        new VirtualIdentifier('getIterator', $foreach_expr->getAttributes()),
-                    );
-
-                    $suppressed_issues = $statements_analyzer->getSuppressedIssues();
-
-                    if (!isset($suppressed_issues['PossiblyInvalidMethodCall'])) {
-                        $statements_analyzer->addSuppressedIssues(['PossiblyInvalidMethodCall']);
-                    }
-
-                    if (!isset($suppressed_issues['PossiblyUndefinedMethod'])) {
-                        $statements_analyzer->addSuppressedIssues(['PossiblyUndefinedMethod']);
-                    }
-
-                    $was_inside_call = $context->inside_call;
-                    $was_inside_type_only_call = $context->inside_type_only_call;
-
-                    $context->inside_call = true;
-                    // only the iterator's type is wanted here: the loop is charged for the call
-                    $context->inside_type_only_call = true;
-
-                    MethodCallAnalyzer::analyze(
+                    $iterator_class_type = self::getFakeMethodCallType(
                         $statements_analyzer,
-                        $fake_method_call,
+                        $foreach_expr,
                         $context,
+                        'getIterator',
                     );
-
-                    $context->inside_call = $was_inside_call;
-                    $context->inside_type_only_call = $was_inside_type_only_call;
-
-                    if (!isset($suppressed_issues['PossiblyInvalidMethodCall'])) {
-                        $statements_analyzer->removeSuppressedIssues(['PossiblyInvalidMethodCall']);
-                    }
-
-                    if (!isset($suppressed_issues['PossiblyUndefinedMethod'])) {
-                        $statements_analyzer->removeSuppressedIssues(['PossiblyUndefinedMethod']);
-                    }
-
-                    $iterator_class_type = $statements_analyzer->node_data->getType($fake_method_call) ?? null;
-
-                    $statements_analyzer->node_data = $old_data_provider;
 
                     if ($iterator_class_type) {
                         foreach ($iterator_class_type->getAtomicTypes() as $array_atomic_type) {
@@ -1709,7 +1691,10 @@ final class ForeachAnalyzer
                                         self::handleIterable(
                                             $statements_analyzer,
                                             $array_atomic_type,
-                                            $fake_method_call,
+                                            new VirtualMethodCall(
+                                                $foreach_expr,
+                                                new VirtualIdentifier('getIterator', $foreach_expr->getAttributes()),
+                                            ),
                                             $codebase,
                                             $context,
                                             $key_type,
@@ -1959,6 +1944,9 @@ final class ForeachAnalyzer
                 $generic_storage->template_types,
                 $passed_type_params,
             );
+
+            $key_type = $key_type?->replaceClassLike('static', $iterator_atomic_type->value);
+            $value_type = $value_type?->replaceClassLike('static', $iterator_atomic_type->value);
 
             return;
         }
@@ -2225,21 +2213,20 @@ final class ForeachAnalyzer
             new VirtualIdentifier($method_name, $foreach_expr->getAttributes()),
         );
 
-        $suppressed_issues = $statements_analyzer->getSuppressedIssues();
+        // the call is made on the whole iterated expression: its other parts (null, false, arrays…) are
+        // reported by checkIteratorType()
+        $added_suppressions = array_values(array_diff(
+            ['PossiblyInvalidMethodCall', 'PossiblyUndefinedMethod', 'PossiblyNullReference', 'PossiblyFalseReference'],
+            array_keys($statements_analyzer->getSuppressedIssues()),
+        ));
 
-        if (!isset($suppressed_issues['PossiblyInvalidMethodCall'])) {
-            $statements_analyzer->addSuppressedIssues(['PossiblyInvalidMethodCall']);
-        }
-
-        if (!isset($suppressed_issues['PossiblyUndefinedMethod'])) {
-            $statements_analyzer->addSuppressedIssues(['PossiblyUndefinedMethod']);
-        }
+        $statements_analyzer->addSuppressedIssues($added_suppressions);
 
         $was_inside_call = $context->inside_call;
         $was_inside_type_only_call = $context->inside_type_only_call;
 
         $context->inside_call = true;
-        // only the value's type is wanted here: the loop is charged for the call
+        // only the type is wanted here: the loop is charged for the call
         $context->inside_type_only_call = true;
 
         MethodCallAnalyzer::analyze(
@@ -2251,13 +2238,7 @@ final class ForeachAnalyzer
         $context->inside_call = $was_inside_call;
         $context->inside_type_only_call = $was_inside_type_only_call;
 
-        if (!isset($suppressed_issues['PossiblyInvalidMethodCall'])) {
-            $statements_analyzer->removeSuppressedIssues(['PossiblyInvalidMethodCall']);
-        }
-
-        if (!isset($suppressed_issues['PossiblyUndefinedMethod'])) {
-            $statements_analyzer->removeSuppressedIssues(['PossiblyUndefinedMethod']);
-        }
+        $statements_analyzer->removeSuppressedIssues($added_suppressions);
 
         $iterator_class_type = $statements_analyzer->node_data->getType($fake_method_call) ?? null;
 
@@ -2286,7 +2267,7 @@ final class ForeachAnalyzer
             return null;
         }
 
-        return self::getExtendedType(
+        $value_type = self::getExtendedType(
             'TValue',
             'ArrayAccess',
             $storage->name,
@@ -2294,6 +2275,8 @@ final class ForeachAnalyzer
             $storage->template_types,
             $atomic_type instanceof TGenericObject ? $atomic_type->type_params : null,
         );
+
+        return $value_type?->replaceClassLike('static', $atomic_type->value);
     }
 
     /**

@@ -14,8 +14,10 @@ use Psalm\Internal\Analyzer\Statements\Expression\AssignmentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\Statements\GlobalAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Codebase\PhpDeprecations;
 use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
+use Psalm\Issue\DeprecatedSyntax;
 use Psalm\Issue\ImpureGlobalVariable;
 use Psalm\Issue\ImpureVariable;
 use Psalm\Issue\InvalidScope;
@@ -112,7 +114,6 @@ final class VariableFetchAnalyzer
 
             if ($codebase->store_node_types
                     && !$context->collect_initializations
-                    && !$context->collect_mutations
                 && ($stmt_type = $statements_analyzer->node_data->getType($stmt))
             ) {
                 $codebase->analyzer->addNodeType(
@@ -137,7 +138,8 @@ final class VariableFetchAnalyzer
             return true;
         }
 
-        if (!$context->check_variables) {
+        // a superglobal is always defined, and what it holds is tainted whether the other variables are known or not
+        if (!$context->check_variables && !(is_string($stmt->name) && self::isSuperGlobal('$' . $stmt->name))) {
             if (is_string($stmt->name)) {
                 $var_name = '$' . $stmt->name;
 
@@ -162,6 +164,20 @@ final class VariableFetchAnalyzer
 
         if (is_string($stmt->name) && self::isSuperGlobal('$' . $stmt->name)) {
             $var_name = '$' . $stmt->name;
+
+            if ($var_name === '$http_response_header') {
+                IssueBuffer::maybeAdd(
+                    new DeprecatedSyntax(
+                        PhpDeprecations::getDeprecatedSinceMessage(
+                            'The $http_response_header variable',
+                            8_05_00,
+                            'http_get_last_response_headers()',
+                        ),
+                        new CodeLocation($statements_analyzer, $stmt),
+                    ),
+                    $statements_analyzer->getSuppressedIssues(),
+                );
+            }
 
             $statements_analyzer->signalMutation(
                 Capabilities::READ_GLOBALS,
@@ -382,7 +398,6 @@ final class VariableFetchAnalyzer
 
                 if ($codebase->store_node_types
                     && !$context->collect_initializations
-                    && !$context->collect_mutations
                 ) {
                     $codebase->analyzer->addNodeReference(
                         $statements_analyzer->getFilePath(),
@@ -522,7 +537,6 @@ final class VariableFetchAnalyzer
 
             if ($codebase->store_node_types
                 && !$context->collect_initializations
-                && !$context->collect_mutations
             ) {
                 $codebase->analyzer->addNodeType(
                     $statements_analyzer->getFilePath(),
@@ -533,7 +547,6 @@ final class VariableFetchAnalyzer
 
             if ($codebase->store_node_types
                 && !$context->collect_initializations
-                && !$context->collect_mutations
             ) {
                 $first_appearance = $statements_analyzer->getFirstAppearance($var_name);
 
@@ -622,7 +635,7 @@ final class VariableFetchAnalyzer
 
     /**
      * The arguments of a CLI script are its user's input, and PHP builds $argv from the query string with
-     * register_argc_argv (see also ArrayFetchAnalyzer::USER_CONTROLLED_SERVER_KEYS).
+     * register_argc_argv (see also ServerVariableTaints).
      */
     public static function getArgvTaintSource(
         StatementsAnalyzer $statements_analyzer,
@@ -657,6 +670,7 @@ final class VariableFetchAnalyzer
             || $var_name === '$_POST'
             || $var_name === '$_COOKIE'
             || $var_name === '$_REQUEST'
+            || $var_name === '$_ENV'
         ) {
             $taints = $codebase->getInputTaints();
         } else {
@@ -697,7 +711,8 @@ final class VariableFetchAnalyzer
     /**
      * $GLOBALS holds what the whole program writes to the global variables (see GlobalAnalyzer::getGlobalNode()).
      * The variable in scope doesn't, and neither does $GLOBALS assigned to: reading a global by its name gets
-     * what is written to that name only (see ArrayFetchAnalyzer::taintArrayFetch()).
+     * what is written to that name only (see ArrayFetchAnalyzer::taintArrayFetch()). $_SESSION holds what the
+     * whole program stores in it (see GlobalAnalyzer::getSessionNode()) besides what the variable in scope does.
      */
     private static function taintGlobals(
         StatementsAnalyzer $statements_analyzer,
@@ -705,11 +720,17 @@ final class VariableFetchAnalyzer
         Union $type,
         bool $array_assignment,
     ): Union {
-        if ($var_name !== '$GLOBALS'
+        if (($var_name !== '$GLOBALS' && $var_name !== '$_SESSION')
             || $array_assignment
             || !($graph = $statements_analyzer->getTaintFlowGraphWithSuppressed())
         ) {
             return $type;
+        }
+
+        if ($var_name === '$_SESSION') {
+            $session_node = GlobalAnalyzer::getSessionNode($graph);
+
+            return $type->addParentNodes([$session_node->id => $session_node]);
         }
 
         $globals_node = DataFlowNode::getForGlobals();
@@ -744,16 +765,26 @@ final class VariableFetchAnalyzer
     }
 
     /**
-     * The value that is read from a superglobal is defined, whatever the superglobal is (an isset() asks about it),
-     * but $http_response_header, which only exists after a network request, may not be
+     * The value that is read from a superglobal is defined (an isset() asks about it), see isReadAsSetSuperGlobal()
      *
      * @psalm-capabilities read-props
      */
     private static function getReadSuperGlobalType(Union $type, string $var_name, Context $context): Union
     {
-        return $context->inside_isset || $var_name === '$http_response_header'
+        return $context->inside_isset || !self::isReadAsSetSuperGlobal($var_name)
             ? $type
             : $type->setPossiblyUndefined(false);
+    }
+
+    /**
+     * Whether the superglobal is taken as set wherever it is used: all of them but $http_response_header, which
+     * only exists after a network request
+     *
+     * @psalm-pure
+     */
+    public static function isReadAsSetSuperGlobal(string $var_id): bool
+    {
+        return $var_id !== '$http_response_header' && self::isSuperGlobal($var_id);
     }
 
     /**

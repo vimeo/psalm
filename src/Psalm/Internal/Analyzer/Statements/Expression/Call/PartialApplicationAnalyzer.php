@@ -41,6 +41,7 @@ use Psalm\IssueBuffer;
 use Psalm\Node\Expr\PartialApplication;
 use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Type;
+use Psalm\Type\Atomic\TCallable;
 use Psalm\Type\Atomic\TClosure;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Union;
@@ -49,6 +50,7 @@ use UnexpectedValueException;
 use function array_pop;
 use function count;
 use function end;
+use function str_contains;
 use function strtolower;
 
 /**
@@ -106,15 +108,23 @@ final class PartialApplicationAnalyzer
         $binding = null;
 
         if ($closure) {
+            $signature = self::getCallMapSignature($statements_analyzer, $stmt, $closure);
+            $closure = $signature ?? $closure;
+
             $method_id = self::getMethodId($statements_analyzer, $stmt, $context);
+            // the closure of a method has the method's id, which the method call gives cased
+            $function_id = $closure->callable_id !== null && !str_contains($closure->callable_id, '::')
+                ? $closure->callable_id
+                : null;
             $binding = self::bind(
                 $statements_analyzer,
                 $stmt,
                 $closure,
-                $closure->callable_id ?? ($method_id !== null ? (string) $method_id : null),
-                $closure->callable_id
+                $function_id ?? ($method_id !== null ? (string) $method_id : null),
+                $function_id
                     ?? ($method_id !== null ? $codebase->methods->getCasedMethodId($method_id) : 'the closure'),
                 $code_location,
+                $signature !== null,
             );
         }
 
@@ -145,7 +155,6 @@ final class PartialApplicationAnalyzer
 
         if ($codebase->store_node_types
             && !$context->collect_initializations
-            && !$context->collect_mutations
         ) {
             $codebase->analyzer->addNodeType($statements_analyzer->getFilePath(), $stmt, $type->getId());
         }
@@ -234,6 +243,87 @@ final class PartialApplicationAnalyzer
     }
 
     /**
+     * The signatures of the callmap function $function_id, when it has several and no stub gives it one
+     *
+     * @return non-empty-list<TCallable>|null
+     */
+    private static function getCallMapSignatures(StatementsAnalyzer $statements_analyzer, string $function_id): ?array
+    {
+        if (!InternalCallMapHandler::inCallMap($function_id)
+            || $statements_analyzer->getCodebase()->functions->hasStubbedFunction($function_id)
+        ) {
+            return null;
+        }
+
+        $callables = InternalCallMapHandler::getCallablesFromCallMap($function_id) ?? [];
+
+        return count($callables) > 1 ? $callables : null;
+    }
+
+    /**
+     * The closure of the one signature of a callmap function with several that takes as many arguments as the
+     * application writes (`version_compare(?, '8.6', '>=')` is the one with an operator), if there is one
+     */
+    private static function getCallMapSignature(
+        StatementsAnalyzer $statements_analyzer,
+        PartialApplication $stmt,
+        TClosure $closure,
+    ): ?TClosure {
+        if ($closure->callable_id === null || str_contains($closure->callable_id, '::')) {
+            return null;
+        }
+
+        $callables = self::getCallMapSignatures($statements_analyzer, $closure->callable_id);
+
+        if ($callables === null) {
+            return null;
+        }
+
+        $arg_count = 0;
+
+        foreach ($stmt->args as $arg) {
+            // a named argument or `...` doesn't tell how many parameters there are
+            if ($arg instanceof VariadicPlaceholder || $arg->name !== null || ($arg instanceof Arg && $arg->unpack)) {
+                return null;
+            }
+
+            $arg_count++;
+        }
+
+        $matching = null;
+
+        foreach ($callables as $callable) {
+            $params = $callable->params ?? [];
+            $required = 0;
+            $has_variadic = false;
+
+            foreach ($params as $param) {
+                $required += $param->is_optional || $param->is_variadic ? 0 : 1;
+                $has_variadic = $has_variadic || $param->is_variadic;
+            }
+
+            if ($arg_count < $required || (!$has_variadic && $arg_count > count($params))) {
+                continue;
+            }
+
+            if ($matching !== null) {
+                return null;
+            }
+
+            $matching = $callable;
+        }
+
+        return $matching === null
+            ? null
+            : new TClosure(
+                $matching->params,
+                $matching->return_type,
+                $closure->purity,
+                callable_id: $closure->callable_id,
+            );
+    }
+
+    /**
      * The method the first-class callable of a method call refers to, when its class is known
      */
     private static function getMethodId(
@@ -293,16 +383,17 @@ final class PartialApplicationAnalyzer
         ?string $callee_id,
         string $callee_name,
         CodeLocation $code_location,
+        bool $signature_chosen,
     ): array {
         $params = $closure->params ?? [];
         $variadic = $params !== [] && end($params)->is_variadic ? array_pop($params) : null;
         $fixed_count = count($params);
 
-        // a callmap function with several signatures: which one applies isn't known (a stub gives it one)
-        $report = !($closure->callable_id !== null
-            && InternalCallMapHandler::inCallMap($closure->callable_id)
-            && !$statements_analyzer->getCodebase()->functions->hasStubbedFunction($closure->callable_id)
-            && count(InternalCallMapHandler::getCallablesFromCallMap($closure->callable_id) ?? []) > 1);
+        // a callmap function with several signatures, none of which the arguments single out (see
+        // getCallMapSignature()): which one applies isn't known
+        $report = $signature_chosen
+            || $closure->callable_id === null
+            || self::getCallMapSignatures($statements_analyzer, $closure->callable_id) === null;
 
         $positional_placeholders = [];
         $named_placeholders = [];
@@ -469,7 +560,10 @@ final class PartialApplicationAnalyzer
             }
         }
 
-        if ($closure->callable_id === null || InternalCallMapHandler::inCallMap($closure->callable_id)) {
+        if ($closure->callable_id === null
+            || str_contains($closure->callable_id, '::')
+            || InternalCallMapHandler::inCallMap($closure->callable_id)
+        ) {
             return false;
         }
 

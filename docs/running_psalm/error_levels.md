@@ -158,6 +158,7 @@ These issues become info (non-blocking) at level 3 and higher.
  - [DeprecatedInterface](issues/DeprecatedInterface.md)
  - [DeprecatedMethod](issues/DeprecatedMethod.md)
  - [DeprecatedProperty](issues/DeprecatedProperty.md)
+ - [DeprecatedSyntax](issues/DeprecatedSyntax.md)
  - [DeprecatedTrait](issues/DeprecatedTrait.md)
  - [DirectConstructorCall](issues/DirectConstructorCall.md)
  - [DocblockTypeContradiction](issues/DocblockTypeContradiction.md)
@@ -186,6 +187,8 @@ These issues become info (non-blocking) at level 3 and higher.
  - [UnsafeGenericInstantiation](issues/UnsafeGenericInstantiation.md)
  - [UnsafeInstantiation](issues/UnsafeInstantiation.md)
  - [UnsupportedReferenceUsage](issues/UnsupportedReferenceUsage.md)
+ - [WeakHash](issues/WeakHash.md)
+ - [WeakRandom](issues/WeakRandom.md)
 
 ## Errors at level 3 and below
 
@@ -194,6 +197,7 @@ These issues become info (non-blocking) at level 4 and higher.
  - [ArgumentTypeCoercion](issues/ArgumentTypeCoercion.md)
  - [CallableByReferenceMismatch](issues/CallableByReferenceMismatch.md)
  - [ImplicitFloatToIntCast](issues/ImplicitFloatToIntCast.md)
+ - [InsecureCookie](issues/InsecureCookie.md)
  - [LessSpecificReturnStatement](issues/LessSpecificReturnStatement.md)
  - [MoreSpecificReturnType](issues/MoreSpecificReturnType.md)
  - [NonInvariantDocblockPropertyType](issues/NonInvariantDocblockPropertyType.md)
@@ -283,6 +287,8 @@ These issues become info (non-blocking) at level 6 and higher.
  - [NullableReturnStatement](issues/NullableReturnStatement.md)
  - [UndefinedInterfaceMethod](issues/UndefinedInterfaceMethod.md)
  - [UndefinedThisPropertyAssignment](issues/UndefinedThisPropertyAssignment.md)
+ - [WeakCipher](issues/WeakCipher.md)
+ - [XmlExternalEntity](issues/XmlExternalEntity.md)
 
 ## Errors at level 6 and below
 
@@ -319,6 +325,7 @@ These issues become info (non-blocking) at level 7 and higher.
  - [UndefinedPropertyAssignment](issues/UndefinedPropertyAssignment.md)
  - [UndefinedPropertyFetch](issues/UndefinedPropertyFetch.md)
  - [UndefinedThisPropertyFetch](issues/UndefinedThisPropertyFetch.md)
+ - [WrongCaseFunction](issues/WrongCaseFunction.md)
 
 ## Errors at level 7 and below
 
@@ -337,6 +344,7 @@ These issues become info (non-blocking) at level 8.
  - [NonVariableReferenceReturn](issues/NonVariableReferenceReturn.md)
  - [OverriddenMethodAccess](issues/OverriddenMethodAccess.md)
  - [ParamNameMismatch](issues/ParamNameMismatch.md)
+ - [PositionalArgumentNotAllowed](issues/PositionalArgumentNotAllowed.md)
  - [ReservedWord](issues/ReservedWord.md)
  - [UnhandledMatchCondition](issues/UnhandledMatchCondition.md)
  - [UninitializedProperty](issues/UninitializedProperty.md)
@@ -365,11 +373,13 @@ These issues are only reported when their corresponding feature is enabled (e.g.
  - [TaintedFile](issues/TaintedFile.md)
  - [TaintedHeader](issues/TaintedHeader.md)
  - [TaintedHtml](issues/TaintedHtml.md)
+ - [TaintedHtmlAttribute](issues/TaintedHtmlAttribute.md)
  - [TaintedInclude](issues/TaintedInclude.md)
  - [TaintedInput](issues/TaintedInput.md)
  - [TaintedLdap](issues/TaintedLdap.md)
  - [TaintedLlmPrompt](issues/TaintedLlmPrompt.md)
  - [TaintedNosql](issues/TaintedNosql.md)
+ - [TaintedRedirect](issues/TaintedRedirect.md)
  - [TaintedSSRF](issues/TaintedSSRF.md)
  - [TaintedShell](issues/TaintedShell.md)
  - [TaintedSleep](issues/TaintedSleep.md)
@@ -379,6 +389,7 @@ These issues are only reported when their corresponding feature is enabled (e.g.
  - [TaintedUnserialize](issues/TaintedUnserialize.md)
  - [TaintedUrlComponent](issues/TaintedUrlComponent.md)
  - [TaintedUrlPath](issues/TaintedUrlPath.md)
+ - [TaintedUrlScheme](issues/TaintedUrlScheme.md)
  - [TaintedUserSecret](issues/TaintedUserSecret.md)
  - [TaintedXpath](issues/TaintedXpath.md)
  - [UncaughtThrowInGlobalScope](issues/UncaughtThrowInGlobalScope.md)

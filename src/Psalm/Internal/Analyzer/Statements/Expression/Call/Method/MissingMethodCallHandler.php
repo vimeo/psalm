@@ -106,6 +106,7 @@ final class MissingMethodCallHandler
             $context->mergeFunctionExceptions(
                 $found_method_and_class_storage[0],
                 new CodeLocation($statements_analyzer->getSource(), $stmt->name),
+                $statements_analyzer->getCodebase(),
             );
         }
 
@@ -188,7 +189,6 @@ final class MissingMethodCallHandler
                 $stmt->getArgs(),
                 $pseudo_method_storage->params,
                 (string) $method_id,
-                true,
                 $context,
                 $template_result->template_types !== [] || $template_result->lower_bounds !== []
                     ? $template_result
@@ -426,6 +426,7 @@ final class MissingMethodCallHandler
                 $context->mergeFunctionExceptions(
                     $pseudo_method_storage,
                     new CodeLocation($statements_analyzer, $stmt->name),
+                    $statements_analyzer->getCodebase(),
                 );
             }
 
@@ -448,7 +449,6 @@ final class MissingMethodCallHandler
                 $stmt->getArgs(),
                 $pseudo_method_storage->params,
                 (string) $method_id,
-                true,
                 $context,
                 $template_result,
             ) === false) {
@@ -518,19 +518,22 @@ final class MissingMethodCallHandler
             $stmt->getArgs(),
             null,
             null,
-            true,
             $context,
         ) === false) {
             return;
         }
 
-        if ($all_intersection_return_type && $all_intersection_existent_method_ids) {
+        // a part may know the method exists without knowing what it returns, like __invoke() of a callable-object
+        if ($all_intersection_existent_method_ids) {
             $result->existent_method_ids = array_merge(
                 $result->existent_method_ids,
                 $all_intersection_existent_method_ids,
             );
 
-            $result->return_type = Type::combineUnionTypes($all_intersection_return_type, $result->return_type);
+            $result->return_type = Type::combineUnionTypes(
+                $all_intersection_return_type ?? Type::getMixed(),
+                $result->return_type,
+            );
 
             return;
         }

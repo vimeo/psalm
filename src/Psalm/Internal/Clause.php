@@ -6,8 +6,17 @@ namespace Psalm\Internal;
 
 use Override;
 use Psalm\Storage\Assertion;
+use Psalm\Storage\Assertion\InArray;
+use Psalm\Storage\Assertion\IsEqualIsset;
+use Psalm\Storage\Assertion\IsIdentical;
+use Psalm\Storage\Assertion\IsIsset;
 use Psalm\Storage\Assertion\IsLooselyEqual;
+use Psalm\Storage\Assertion\IsNotIdentical;
 use Psalm\Storage\Assertion\IsNotLooselyEqual;
+use Psalm\Storage\Assertion\IsNotType;
+use Psalm\Storage\Assertion\IsType;
+use Psalm\Storage\Assertion\NonEmpty;
+use Psalm\Storage\Assertion\NotInArray;
 use Psalm\Storage\ImmutableNonCloneableTrait;
 use Psalm\Type\Atomic\TClassConstant;
 use Psalm\Type\Atomic\TEnumCase;
@@ -25,8 +34,11 @@ use function count;
 use function hash;
 use function implode;
 use function ksort;
+use function preg_match;
+use function preg_quote;
 use function reset;
 use function serialize;
+use function str_starts_with;
 use function substr;
 
 /**
@@ -151,6 +163,73 @@ final class Clause implements Stringable
     }
 
     /**
+     * The string of the assertion without what only tells comparisons apart: the operand or array it was compared
+     * with, and the whole of a long literal string
+     *
+     * @psalm-mutation-free
+     */
+    public static function getAssertionDisplayString(Assertion $assertion): string
+    {
+        if (($assertion instanceof IsIdentical
+                || $assertion instanceof IsNotIdentical
+                || $assertion instanceof IsLooselyEqual
+                || $assertion instanceof IsNotLooselyEqual)
+            && $assertion->comparand !== null
+        ) {
+            return (string) new ($assertion::class)($assertion->type);
+        }
+
+        if (($assertion instanceof InArray || $assertion instanceof NotInArray) && $assertion->haystack !== null) {
+            return (string) new ($assertion::class)($assertion->type);
+        }
+
+        if ($assertion instanceof IsType) {
+            return $assertion->type->getId();
+        }
+
+        if ($assertion instanceof IsNotType) {
+            return '!' . $assertion->type->getId();
+        }
+
+        return (string) $assertion;
+    }
+
+    /**
+     * Whether an assertion of the clause compares with the variable or something under it: a change of the variable
+     * leaves the comparison unknown
+     *
+     * @psalm-mutation-free
+     */
+    public function comparesWith(string $var_id): bool
+    {
+        foreach ($this->possibilities as $assertions) {
+            foreach ($assertions as $assertion) {
+                if ($assertion instanceof IsIdentical
+                    || $assertion instanceof IsNotIdentical
+                    || $assertion instanceof IsLooselyEqual
+                    || $assertion instanceof IsNotLooselyEqual
+                ) {
+                    $comparand = $assertion->comparand;
+                } elseif ($assertion instanceof InArray || $assertion instanceof NotInArray) {
+                    $comparand = $assertion->haystack;
+                } else {
+                    continue;
+                }
+
+                if ($comparand !== null
+                    && ($comparand === $var_id
+                        || str_starts_with($comparand, $var_id . '[')
+                        || str_starts_with($comparand, $var_id . '->'))
+                ) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    /**
      * @psalm-mutation-free
      */
     #[Override]
@@ -165,7 +244,7 @@ final class Clause implements Stringable
 
             $var_id_clauses = [];
             foreach ($values as $value) {
-                $value = (string) $value;
+                $value = self::getAssertionDisplayString($value);
                 if ($value === 'falsy') {
                     $var_id_clauses[] = '!'.$var_id;
                     continue;
@@ -198,7 +277,6 @@ final class Clause implements Stringable
             if (count($var_id_clauses) > 1) {
                 $clause_strings[] = '('.implode(') || (', $var_id_clauses).')';
             } else {
-                assert(!empty($var_id_clauses));
                 $clause_strings[] = reset($var_id_clauses);
             }
         }
@@ -210,6 +288,59 @@ final class Clause implements Stringable
         assert(!empty($clause_strings));
 
         return reset($clause_strings);
+    }
+
+    /**
+     * What is assigned to an offset or a property of a mixed variable is not tracked, so a clause on one says nothing
+     * of it. Where the variable may be unset and the clause only holds if it is set, it says that instead.
+     *
+     * @param array<string, bool> $mixed_vars whether each mixed variable may be unset
+     */
+    public function forgetItemsOfMixedVars(array $mixed_vars, int $cond_object_id): self
+    {
+        $possibilities = [];
+
+        foreach ($this->possibilities as $key => $assertions) {
+            foreach ($mixed_vars as $mixed_var_id => $may_be_unset) {
+                if (!preg_match('/^' . preg_quote($mixed_var_id, '/') . '(\[|-)/', $key)) {
+                    continue;
+                }
+
+                if (!$may_be_unset) {
+                    return new self([], $cond_object_id, $cond_object_id, true);
+                }
+
+                foreach ($assertions as $assertion) {
+                    if (!$assertion instanceof IsIsset
+                        && !$assertion instanceof IsEqualIsset
+                        && !$assertion instanceof NonEmpty
+                    ) {
+                        return new self([], $cond_object_id, $cond_object_id, true);
+                    }
+                }
+
+                $possibilities[$mixed_var_id] = ['=isset' => new IsEqualIsset()];
+
+                continue 2;
+            }
+
+            $possibilities[$key] = $assertions;
+        }
+
+        if ($possibilities === $this->possibilities) {
+            return $this;
+        }
+
+        // not written in the condition, so not redundant with what is already known
+        return new self(
+            $possibilities,
+            $this->creating_conditional_id,
+            $this->creating_object_id,
+            $this->wedge,
+            $this->reconcilable,
+            true,
+            $this->redefined_vars,
+        );
     }
 
     public function removePossibilities(string $var_id): ?self
@@ -264,7 +395,10 @@ final class Clause implements Stringable
             $impossibility = [];
 
             foreach ($possibility as $type) {
+                // `$a !== $b` being false makes the two identical, so `$a` has the type of `$b`: this is so for a
+                // comparison with an operand, not for `$a === $b` being false, nor for an assertion of a docblock
                 if (!$type->hasEquality()
+                    || ($type instanceof IsNotIdentical && $type->comparand !== null)
                     || (($inner_type = $type->getAtomicType())
                         && ($inner_type instanceof TLiteralInt
                             || $inner_type instanceof TLiteralFloat

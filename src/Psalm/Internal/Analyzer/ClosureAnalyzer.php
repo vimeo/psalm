@@ -19,11 +19,14 @@ use Psalm\Issue\ImpureByReferenceAssignment;
 use Psalm\Issue\PossiblyUndefinedVariable;
 use Psalm\Issue\UndefinedVariable;
 use Psalm\IssueBuffer;
+use Psalm\StatementsSource;
 use Psalm\Storage\Capabilities;
+use Psalm\Storage\FunctionStorage;
 use Psalm\Storage\UnserializeMemoryUsageSuppressionTrait;
 use Psalm\Type;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TBool;
+use Psalm\Type\Atomic\TClosure;
 use Psalm\Type\Atomic\TEnumCase;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TFloat;
@@ -85,6 +88,26 @@ final class ClosureAnalyzer extends FunctionLikeAnalyzer
     private readonly string $closure_id;
 
     /**
+     * Set on the initializer closure passed to `ReflectionClass::newLazyGhost()` or `resetAsLazyGhost()`
+     */
+    public const LAZY_GHOST_INITIALIZER_ATTRIBUTE = 'psalm-lazy-ghost-initializer';
+
+    /**
+     * The parameter of a lazy ghost initializer that holds the object it initializes, whose
+     * constructor the initializer may call
+     */
+    public function getInitializedObjectParam(): ?string
+    {
+        if (!$this->function->getAttribute(self::LAZY_GHOST_INITIALIZER_ATTRIBUTE)) {
+            return null;
+        }
+
+        $param = $this->function->params[0]->var ?? null;
+
+        return $param instanceof PhpParser\Node\Expr\Variable && is_string($param->name) ? $param->name : null;
+    }
+
+    /**
      * @psalm-mutation-free
      */
     #[Override]
@@ -105,6 +128,11 @@ final class ClosureAnalyzer extends FunctionLikeAnalyzer
     public array $captured_by_ref_writes = [];
 
     /**
+     * The type of this closure, which `Closure::getCurrent()` returns in its body
+     */
+    public ?TClosure $closure_type = null;
+
+    /**
      * The types of the variables captured by reference where the closure body returns.
      *
      * @var array<string, list<Union>>
@@ -119,6 +147,17 @@ final class ClosureAnalyzer extends FunctionLikeAnalyzer
      * @var array<string, Union>
      */
     public array $captured_by_ref_enclosing_types = [];
+
+    /**
+     * `A::$property::get` when this is the body of a property hook, see ClassAnalyzer::analyzePropertyHooks()
+     */
+    public function getPropertyHookId(): ?string
+    {
+        /** @var mixed $hook_id */
+        $hook_id = $this->function->getAttribute(ClassAnalyzer::PROPERTY_HOOK_ATTRIBUTE);
+
+        return is_string($hook_id) ? $hook_id : null;
+    }
 
     public function getRecursiveVarId(): ?string
     {
@@ -162,6 +201,99 @@ final class ClosureAnalyzer extends FunctionLikeAnalyzer
             . ':' . $this->function->getLine()
             . ':' . (int)$this->function->getAttribute('startFilePos')
             . ':-:closure';
+    }
+
+    /**
+     * The id of the function-like the source's code is in, or '' outside of any: the scope of its variables
+     */
+    public static function getScopeId(StatementsSource $source): string
+    {
+        while ($source instanceof StatementsAnalyzer) {
+            $source = $source->getSource();
+        }
+
+        return $source instanceof FunctionLikeAnalyzer ? $source->getId() : '';
+    }
+
+    /**
+     * The ids of the scopes (see getScopeId()) whose variable each name is, for a closure made in the source that
+     * captures them by reference: a closure the source is in shares a variable it captured by reference with the
+     * scope it was made in
+     *
+     * @param array<string, bool> $byref_uses
+     * @return array<string, non-empty-list<string>>
+     */
+    public static function getByRefUseScopes(StatementsSource $source, array $byref_uses): array
+    {
+        $scopes = [];
+
+        foreach ($byref_uses as $use_name => $_) {
+            $scope = $source;
+
+            while (true) {
+                while ($scope instanceof StatementsAnalyzer) {
+                    $scope = $scope->getSource();
+                }
+
+                if (!$scope instanceof FunctionLikeAnalyzer) {
+                    $scopes[$use_name][] = '';
+                    break;
+                }
+
+                $scopes[$use_name][] = $scope->getId();
+                if (!$scope instanceof self
+                    || !$scope->storage instanceof FunctionStorage
+                    || !isset($scope->storage->byref_uses[$use_name])
+                ) {
+                    break;
+                }
+
+                $scope = $scope->getSource();
+            }
+        }
+
+        return $scopes;
+    }
+
+    /**
+     * The variables of the current scope that calling the analysed callable may write, also recorded for
+     * {@see \Psalm\Internal\Algebra\FormulaGenerator}. What a closure captured by reference are variables of the
+     * scopes it was made in (see getByRefUseScopes()): elsewhere, a variable of the same name is taken to be one when
+     * this scope binds it by reference to a variable outside (`use (&$x)`, `global $x`, a by-reference parameter or
+     * foreach value, ...)
+     *
+     * @return array<string, true>
+     */
+    public static function analyzeVarIdsWrittenByCall(
+        StatementsAnalyzer $statements_analyzer,
+        Context $context,
+        PhpParser\Node\Expr $callable,
+    ): array {
+        $var_ids = [];
+        $scope_id = null;
+
+        foreach ($statements_analyzer->node_data->getType($callable)?->getAtomicTypes() ?? [] as $closure) {
+            if (!$closure instanceof TClosure || !$closure->byref_uses) {
+                continue;
+            }
+
+            $scope_id ??= self::getScopeId($statements_analyzer);
+
+            foreach ($closure->byref_uses as $use_name => $_) {
+                $var_id = '$' . $use_name;
+
+                if (!isset($closure->byref_use_scopes[$use_name])
+                    || in_array($scope_id, $closure->byref_use_scopes[$use_name], true)
+                    || isset($context->references_to_external_scope[$var_id])
+                ) {
+                    $var_ids[$var_id] = true;
+                }
+            }
+        }
+
+        $statements_analyzer->node_data->setVarIdsWrittenByCall($callable, $var_ids);
+
+        return $var_ids;
     }
 
     /**
@@ -341,16 +473,7 @@ final class ClosureAnalyzer extends FunctionLikeAnalyzer
         if ($bound_atomic !== null) {
             $use_context->vars_in_scope['$this'] = new Union([$bound_atomic]);
         } elseif (!$statements_analyzer->isStatic() && !$closure_analyzer->isStatic()) {
-            if ($context->collect_mutations &&
-                $context->self &&
-                $codebase->classExtends(
-                    $context->self,
-                    (string)$statements_analyzer->getFQCLN(),
-                )
-            ) {
-                /** @psalm-suppress PossiblyUndefinedStringArrayOffset */
-                $use_context->vars_in_scope['$this'] = $context->vars_in_scope['$this'];
-            } elseif ($context->self) {
+            if ($context->self) {
                 $outer_this_atomic = isset($context->vars_in_scope['$this'])
                     && $context->vars_in_scope['$this']->isSingle()
                     ? $context->vars_in_scope['$this']->getSingleAtomic()
@@ -535,6 +658,9 @@ final class ClosureAnalyzer extends FunctionLikeAnalyzer
             // the variable is shared with the closure, but is still this scope's own unless it
             // was a reference already
             $context->vars_in_scope[$key] = $value->setByRef($was_by_ref[$key] ?? false);
+
+            // the closure may change it whenever it is called
+            $context->removeVarFromConflictingClauses($key, $context->vars_in_scope[$key], $statements_analyzer);
         }
 
         // the closure writes variables it shares with this scope: when such a variable is

@@ -10,7 +10,10 @@ const WALL_WARN_PCT = 20.0;
  */
 const LIMIT_HEADROOM = 0.5;
 const EXAMPLES_PER_LIST = 10;
-const MESSAGE_CHARS = 300;
+/** Locations listed per group of identical in-place changes. */
+const LOCATIONS_PER_CHANGE = 10;
+/** Cap on a message in summary.json; the report shortens class names and trims messages further. */
+const MESSAGE_CHARS = 2_000;
 const STATUSES = ['ok', 'crash', 'timeout', 'error'];
 /** 'skip' (💥, base not ok, not comparable) counts as warn overall. */
 const VERDICT_RANK = ['pass' => 0, 'skip' => 1, 'warn' => 1, 'fail' => 2];
@@ -258,38 +261,52 @@ function withIssueDiff(array $judged, string $dir, string $name): array
     return $judged + ['issues' => diffIssues($base, $head), 'weighted_issues' => $weighted];
 }
 
-/** Unannotated-code suggestions: own bucket, weight 0. */
-const PURITY_SUGGESTIONS = [
-    'MissingPureAnnotation',
-    'MissingImmutableAnnotation',
-    'MissingAbstractPureAnnotation',
-    'MissingInterfaceImmutableAnnotation',
+/** Buckets in display order: L1..L8, always (-1), feature (-2). */
+const ISSUE_BUCKETS = ['L1', 'L2', 'L3', 'L4', 'L5', 'L6', 'L7', 'L8', 'always', 'feature'];
+
+// Same categories and weights as psalm-plugin-laravel's delta report, so that both reports read alike.
+// Taint and dead-code issues are reported beside the weighted type issues, not inside them.
+// Taint is every `Tainted*` type; dead code is the closed list below (all need --find-dead-code).
+const DEAD_CODE_TYPES = [
+    'UnusedClass', 'UnusedMethod', 'UnusedProperty', 'UnusedParam', 'UnusedConstructor', 'UnusedReturnValue',
+    'UnusedClosureParam', 'UnusedDocblockParam', 'UnusedForeachValue', 'UnusedVariable', 'UnevaluatedCode',
+    'PossiblyUnusedMethod', 'PossiblyUnusedParam', 'PossiblyUnusedProperty', 'PossiblyUnusedReturnValue',
+    'UnnecessaryVarAnnotation', 'UnusedPsalmSuppress',
 ];
-/** Buckets in display order: L1..L8, always (-1), feature (-2), purity. */
-const ISSUE_BUCKETS = ['L1', 'L2', 'L3', 'L4', 'L5', 'L6', 'L7', 'L8', 'always', 'feature', 'purity_suggestions'];
+const ISSUE_CATEGORIES = ['taint', 'deadcode'];
+
+/** `taint`, `deadcode` or `types` (everything else, strictness checks included). */
+function issueCategory(string $type): string
+{
+    return match (true) {
+        str_starts_with($type, 'Tainted') => 'taint',
+        in_array($type, DEAD_CODE_TYPES, true) => 'deadcode',
+        default => 'types',
+    };
+}
 
 /** @param array<string, mixed> $issue */
 function issueBucket(array $issue): string
 {
-    return match (true) {
-        in_array($issue['type'], PURITY_SUGGESTIONS, true) => 'purity_suggestions',
-        $issue['error_level'] === -1 => 'always',
-        $issue['error_level'] === -2 => 'feature',
+    return match ($issue['error_level']) {
+        -1 => 'always',
+        -2 => 'feature',
         default => 'L' . $issue['error_level'],
     };
 }
 
-/** Issue weight: level for L1..L8, 10 for always, 0 for feature and purity. */
+/** Type-issue weight: level for L1..L8, 10 for always, 1 for feature (the remaining strictness checks). */
 function bucketWeight(string $bucket): int
 {
     return match ($bucket) {
         'always' => 10,
-        'feature', 'purity_suggestions' => 0,
+        'feature' => 1,
         default => (int) substr($bucket, 1),
     };
 }
 
 /**
+ * Type issues weighted by level; taint and dead-code issues are not weighed.
  * Informational only, never feeds a verdict. `drift`: same issue count, different weight.
  *
  * @param list<array<string, mixed>> $base
@@ -301,7 +318,10 @@ function bucketWeight(string $bucket): int
  */
 function weightedIssues(array $base, array $head): array
 {
-    $counts = static fn(array $issues): array => array_count_values(array_map(issueBucket(...), $issues));
+    $counts = static fn(array $issues): array => array_count_values(array_map(
+        issueBucket(...),
+        array_filter($issues, static fn(array $i): bool => issueCategory($i['type']) === 'types'),
+    ));
     $weight = static fn(array $counts): int => array_sum(array_map(
         static fn(string $bucket, int $n): int => bucketWeight($bucket) * $n,
         array_keys($counts),
@@ -389,12 +409,17 @@ function surplus(array $from, array $against): array
 }
 
 /**
+ * Issues added and removed against base. An issue that only changed in place (removed and added at the same file,
+ * line and column) is reported as a change, and identical changes are grouped (see changeGroups()).
+ *
  * @param list<array<string, mixed>> $base
  * @param list<array<string, mixed>> $head
  * @return array{
- *     base: int, head: int, added: int, removed: int,
+ *     base: int, head: int, added: int, removed: int, changed: int, unpaired_added: int, unpaired_removed: int,
  *     types: array<string, array{added: int, removed: int}>,
- *     added_examples: list<string>, removed_examples: list<string>
+ *     categories: array<string, array{base: int, head: int, added: int, removed: int}>,
+ *     changed_examples: list<array<string, mixed>>,
+ *     added_examples: list<array<string, mixed>>, removed_examples: list<array<string, mixed>>
  * }
  */
 function diffIssues(array $base, array $head): array
@@ -412,20 +437,134 @@ function diffIssues(array $base, array $head): array
     }
 
     ksort($types);
-    $example = static fn(array $p): string => mb_strimwidth(
-        "{$p[0]}:{$p[1]} {$p[3]} ({$p[4]}): " . preg_replace('/\s+/u', ' ', $p[5]),
-        0,
-        MESSAGE_CHARS,
-        '…',
-    );
+    $categories = array_fill_keys(ISSUE_CATEGORIES, ['base' => 0, 'head' => 0, 'added' => 0, 'removed' => 0]);
+    $count = static function (string $type, string $key, int $n) use (&$categories): void {
+        $category = issueCategory($type);
+        if (isset($categories[$category])) {
+            $categories[$category][$key] += $n;
+        }
+    };
+    foreach (['base' => $base, 'head' => $head] as $side => $issues) {
+        foreach ($issues as $issue) {
+            $count($issue['type'], $side, 1);
+        }
+    }
+
+    foreach ($types as $type => $n) {
+        $count($type, 'added', $n['added']);
+        $count($type, 'removed', $n['removed']);
+    }
+
+    $byLocation = [];
+    foreach (['old' => $removed, 'new' => $added] as $side => $list) {
+        foreach ($list as $parts) {
+            $byLocation["{$parts[0]}\0{$parts[1]}\0{$parts[2]}"][$side][] = $parts;
+        }
+    }
+
+    ksort($byLocation);
+    $changes = [];
+    $unpaired = ['added' => [], 'removed' => []];
+    foreach ($byLocation as $sides) {
+        if (isset($sides['old'], $sides['new'])) {
+            $changes[] = $sides;
+        } else {
+            array_push($unpaired['removed'], ...$sides['old'] ?? []);
+            array_push($unpaired['added'], ...$sides['new'] ?? []);
+        }
+    }
+
+    $example = static fn(array $p): array => [
+        'file' => $p[0],
+        'line' => (int) $p[1],
+        'type' => $p[3],
+        'severity' => $p[4],
+        'message' => cutMessage($p[5]),
+    ];
 
     return [
         'base' => count($base),
         'head' => count($head),
         'added' => count($added),
         'removed' => count($removed),
+        'changed' => count($changes),
+        'unpaired_added' => count($unpaired['added']),
+        'unpaired_removed' => count($unpaired['removed']),
         'types' => $types,
-        'added_examples' => array_map($example, array_slice($added, 0, EXAMPLES_PER_LIST)),
-        'removed_examples' => array_map($example, array_slice($removed, 0, EXAMPLES_PER_LIST)),
+        'categories' => $categories,
+        'changed_examples' => array_slice(changeGroups($changes), 0, EXAMPLES_PER_LIST),
+        'added_examples' => array_map($example, array_slice($unpaired['added'], 0, EXAMPLES_PER_LIST)),
+        'removed_examples' => array_map($example, array_slice($unpaired['removed'], 0, EXAMPLES_PER_LIST)),
     ];
+}
+
+function cutMessage(string $message): string
+{
+    return mb_strimwidth(preg_replace('/\s+/u', ' ', $message), 0, MESSAGE_CHARS, '…');
+}
+
+/**
+ * Type and message of each issue, sorted; `$self` names written `{self}`.
+ *
+ * @param list<list<string>> $list exploded tally keys
+ * @return list<array{type: string, message: string}>
+ */
+function changeSide(array $list, ?string $self): array
+{
+    $issues = array_map(static fn(array $p): array => [
+        'type' => $p[3],
+        'message' => cutMessage($self === null ? $p[5] : preg_replace_callback(
+            QUALIFIED_NAME_PATTERN,
+            static fn(array $m): string => $m[1] === $self ? '{self}' : $m[0],
+            $p[5],
+        )),
+    ], $list);
+    sort($issues);
+
+    return $issues;
+}
+
+/**
+ * Groups in-place changes that change the same text once the class named after their file is written `{self}`:
+ * `HasMany` → `HasOneOrMany` in HasMany.php and `MorphMany` → `HasOneOrMany` in MorphMany.php are one group. A group
+ * shows the messages of its first change; a group of one keeps the class name.
+ *
+ * @param list<array{old: list<list<string>>, new: list<list<string>>}> $changes in location order
+ * @return list<array{
+ *     old: list<array{type: string, message: string}>, new: list<array{type: string, message: string}>,
+ *     locations: list<string>, count: int
+ * }>
+ */
+function changeGroups(array $changes): array
+{
+    $groups = [];
+    foreach ($changes as $sides) {
+        $self = pathinfo($sides['old'][0][0], PATHINFO_FILENAME);
+        $old = changeSide($sides['old'], $self);
+        $new = changeSide($sides['new'], $self);
+        $key = serialize([
+            array_column($old, 'type'),
+            array_column($new, 'type'),
+            array_values(array_filter(
+                changeSegments(array_column($old, 'message'), array_column($new, 'message')),
+                static fn(array $segment): bool => !isShared($segment),
+            )),
+        ]);
+        $groups[$key] ??= ['old' => $old, 'new' => $new, 'locations' => [], 'count' => 0, 'first' => $sides];
+        $groups[$key]['count']++;
+        if (count($groups[$key]['locations']) < LOCATIONS_PER_CHANGE) {
+            $groups[$key]['locations'][] = "{$sides['old'][0][0]}:{$sides['old'][0][1]}";
+        }
+    }
+
+    return array_values(array_map(static function (array $g): array {
+        if ($g['count'] === 1) {
+            $g['old'] = changeSide($g['first']['old'], null);
+            $g['new'] = changeSide($g['first']['new'], null);
+        }
+
+        unset($g['first']);
+
+        return $g;
+    }, $groups));
 }

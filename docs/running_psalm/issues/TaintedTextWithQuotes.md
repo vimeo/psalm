@@ -37,9 +37,10 @@ Passing `');alert('injection');//` as a `GET` param here would cause the `alert`
 - Sanitize user input by using functions such as `htmlentities` with the `ENT_QUOTES` flag or use an allowlist.
 - Set all cookies to `HTTPOnly`.
 - Consider using Content Security Policy (CSP), to limit the risk of XSS vulnerabilities.
-- If user input itself is HTML, see [Sanitizing HTML User Input](../../security_analysis/avoiding_false_positives.md#sanitizing-html-user-input)
+- If user input itself is HTML, see [Your own escaping functions](../../security_analysis/index.md#your-own-escaping-functions)
 
 ## Further resources
 
 - [OWASP Wiki for Cross Site Scripting (XSS)](https://owasp.org/www-community/attacks/xss/)
 - [Content-Security-Policy - Web Fundamentals](https://developers.google.com/web/fundamentals/security/csp)
+- [CWE-79](https://cwe.mitre.org/data/definitions/79.html)

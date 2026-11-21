@@ -12,6 +12,7 @@ use PhpParser\Node\Name;
 use Psalm\Aliases;
 use Psalm\CodeLocation;
 use Psalm\Codebase;
+use Psalm\DocComment;
 use Psalm\Exception\CodeException;
 use Psalm\Exception\DocblockParseException;
 use Psalm\Exception\TypeParseTreeException;
@@ -41,9 +42,11 @@ use SplObjectStorage;
 use UnexpectedValueException;
 
 use function array_pop;
+use function array_unshift;
 use function defined;
 use function end;
 use function explode;
+use function implode;
 use function in_array;
 use function is_string;
 use function preg_match;
@@ -137,10 +140,8 @@ final class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements Fi
 
         if ($node instanceof PhpParser\Node\Stmt\Namespace_) {
             $this->handleNamespace($node);
-        } elseif ($node instanceof PhpParser\Node\Stmt\Use_) {
+        } elseif ($node instanceof PhpParser\Node\Stmt\Use_ || $node instanceof PhpParser\Node\Stmt\GroupUse) {
             $this->handleUse($node);
-        } elseif ($node instanceof PhpParser\Node\Stmt\GroupUse) {
-            $this->handleGroupUse($node);
         } elseif ($node instanceof PhpParser\Node\Stmt\ClassLike) {
             if ($this->skip_if_descendants) {
                 return null;
@@ -219,10 +220,6 @@ final class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements Fi
                 $this->closure_statements->offsetSet($node);
             } elseif ($this->closure_statements->offsetExists($node)) {
                 // This is a closure that was already processed at the statement level.
-                return null;
-            }
-
-            if (!$node instanceof PhpParser\Node\FunctionLike) {
                 return null;
             }
 
@@ -327,8 +324,43 @@ final class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements Fi
 
             $classlike_node_scanner->handleTraitUse($node);
         } elseif ($node instanceof PhpParser\Node\Stmt\Const_) {
+            $var_type = null;
+
+            // a docblock type overrides the declared value to make stub constants configurable
+            $doc_comment = $node->getDocComment();
+            if ($doc_comment && $this->codebase->register_stub_files) {
+                try {
+                    foreach (CommentAnalyzer::getTypeFromComment(
+                        $this->codebase,
+                        $doc_comment,
+                        $this->file_scanner,
+                        $this->aliases,
+                    ) as $var_comment) {
+                        // only check the first @var comment
+                        $var_type = $var_comment->type;
+                        break;
+                    }
+                } catch (DocblockParseException) {
+                    // do nothing
+                }
+            }
+
+            $deprecated = $doc_comment !== null
+                && isset(DocComment::parsePreservingLength($doc_comment)->tags['deprecated']);
+            foreach ($node->attrGroups as $attr_group) {
+                foreach ($attr_group->attrs as $attr) {
+                    $attr_name = $attr->name instanceof PhpParser\Node\Name\FullyQualified
+                        ? $attr->name->toString()
+                        : Type::getFQCLNFromString($attr->name->toString(), $this->aliases);
+                    $deprecated = $deprecated
+                        || $attr_name === 'Deprecated'
+                        || $attr_name === 'Psalm\\Deprecated'
+                        || $attr_name === 'JetBrains\\PhpStorm\\Deprecated';
+                }
+            }
+
             foreach ($node->consts as $const) {
-                $const_type = SimpleTypeInferer::infer(
+                $const_type = $var_type ?? SimpleTypeInferer::infer(
                     $this->codebase,
                     new NodeDataProvider(),
                     $const->value,
@@ -351,6 +383,10 @@ final class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements Fi
                 ) {
                     $this->codebase->addGlobalConstantType($fq_const_name, $const_type);
 
+                    if ($deprecated) {
+                        $this->codebase->addDeprecatedGlobalConstant($fq_const_name);
+                    }
+
                     if ($unresolved !== null) {
                         $this->codebase->addUnresolvedGlobalConstant($fq_const_name, $unresolved);
                     }
@@ -358,6 +394,10 @@ final class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements Fi
 
                 $this->file_storage->constants[$fq_const_name] = $const_type;
                 $this->file_storage->declaring_constants[$fq_const_name] = $this->file_path;
+
+                if ($deprecated) {
+                    $this->file_storage->deprecated_constants[$fq_const_name] = true;
+                }
 
                 if ($unresolved !== null) {
                     $this->file_storage->unresolved_constants[$fq_const_name] = $unresolved;
@@ -454,13 +494,7 @@ final class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements Fi
         if ($node instanceof PhpParser\Node\Expr\Assign
             || $node instanceof PhpParser\Node\Expr\AssignOp
             || $node instanceof PhpParser\Node\Expr\AssignRef
-        ) {
-            if (!$this->recordThisPropertyMutation($node->var)) {
-                $this->recordStaticPropertyMutation($node->var);
-            }
-        }
-
-        if ($node instanceof PhpParser\Node\Expr\PreInc
+            || $node instanceof PhpParser\Node\Expr\PreInc
             || $node instanceof PhpParser\Node\Expr\PreDec
             || $node instanceof PhpParser\Node\Expr\PostInc
             || $node instanceof PhpParser\Node\Expr\PostDec
@@ -471,10 +505,26 @@ final class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements Fi
 
         if ($node instanceof PhpParser\Node\Stmt\Foreach_) {
             if ($node->keyVar !== null) {
+                $this->recordThisPropertyMutation($node->keyVar);
                 $this->recordStaticPropertyMutation($node->keyVar);
             }
 
+            $this->recordThisPropertyMutation($node->valueVar);
             $this->recordStaticPropertyMutation($node->valueVar);
+        }
+
+        if ($node instanceof PhpParser\Node\Stmt\Unset_) {
+            foreach ($node->vars as $var) {
+                // unsetting a whole property of `$this` leaves it uninitialized: it is not assigned
+                if ($var instanceof PhpParser\Node\Expr\ArrayDimFetch) {
+                    $this->recordThisPropertyMutation($var);
+                    $this->recordStaticPropertyMutation($var);
+                } elseif ($var instanceof PhpParser\Node\Expr\PropertyFetch
+                    && !$var->var instanceof PhpParser\Node\Expr\Variable
+                ) {
+                    $this->recordThisPropertyMutation($var);
+                }
+            }
         }
 
         $this->recordExternalEffects($node);
@@ -547,25 +597,68 @@ final class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements Fi
         }
     }
 
-    /** Record direct writes to `$this->property`, including ++ and --. */
-    private function recordThisPropertyMutation(PhpParser\Node\Expr $target): bool
+    /**
+     * Records that the method being scanned writes `$this->property` (see MethodStorage::$this_property_mutations),
+     * or only items or properties of what it holds (see MethodStorage::$this_property_item_mutations)
+     */
+    private function recordThisPropertyMutation(PhpParser\Node\Expr $target): void
     {
+        if (!$this->functionlike_node_scanners) {
+            return;
+        }
+
+        if ($target instanceof PhpParser\Node\Expr\List_ || $target instanceof PhpParser\Node\Expr\Array_) {
+            foreach ($target->items as $item) {
+                if ($item !== null) {
+                    $this->recordThisPropertyMutation($item->value);
+                }
+            }
+
+            return;
+        }
+
+        // the properties written under the property of `$this`, down to the first item written
+        $path = [];
+        $writes_last = true;
+
+        while ($target instanceof PhpParser\Node\Expr\ArrayDimFetch
+            || ($target instanceof PhpParser\Node\Expr\PropertyFetch
+                && !$target->var instanceof PhpParser\Node\Expr\Variable)
+        ) {
+            if ($target instanceof PhpParser\Node\Expr\PropertyFetch
+                && $target->name instanceof PhpParser\Node\Identifier
+            ) {
+                array_unshift($path, $target->name->name);
+            } else {
+                $path = [];
+                $writes_last = false;
+            }
+
+            $target = $target->var;
+        }
+
+        $storage = end($this->functionlike_node_scanners)->storage;
+
         if (!$target instanceof PhpParser\Node\Expr\PropertyFetch
             || !$target->var instanceof PhpParser\Node\Expr\Variable
             || $target->var->name !== 'this'
             || !$target->name instanceof PhpParser\Node\Identifier
+            || !$storage instanceof MethodStorage
         ) {
-            return false;
+            return;
         }
 
-        if ($this->functionlike_node_scanners) {
-            $scanner = end($this->functionlike_node_scanners);
-            if ($scanner->storage instanceof MethodStorage) {
-                $scanner->storage->this_property_mutations[$target->name->name] = true;
-            }
-        }
+        $name = $target->name->name;
+        $writes_property = !$path && $writes_last;
 
-        return true;
+        $storage->this_property_mutations[$name] = $writes_property
+            || ($storage->this_property_mutations[$name] ?? false);
+
+        if (!$writes_property) {
+            $sub_path = implode('->', $path);
+            $storage->this_property_item_mutations[$name][$sub_path] = $writes_last
+                || ($storage->this_property_item_mutations[$name][$sub_path] ?? false);
+        }
     }
 
     /**
@@ -635,44 +728,12 @@ final class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements Fi
         }
     }
 
-    private function handleUse(PhpParser\Node\Stmt\Use_ $node): void
+    private function handleUse(PhpParser\Node\Stmt\Use_|PhpParser\Node\Stmt\GroupUse $node): void
     {
-        foreach ($node->uses as $use) {
-            $use_path = $use->name->toString();
-
-            $use_alias = $use->alias->name ?? $use->name->getLast();
-
-            switch ($use->type !== PhpParser\Node\Stmt\Use_::TYPE_UNKNOWN ? $use->type : $node->type) {
-                case PhpParser\Node\Stmt\Use_::TYPE_FUNCTION:
-                    $this->aliases->functions[strtolower($use_alias)] = $use_path;
-                    $this->aliases->functions_flipped[strtolower($use_path)] = $use_alias;
-                    break;
-
-                case PhpParser\Node\Stmt\Use_::TYPE_CONSTANT:
-                    $this->aliases->constants[$use_alias] = $use_path;
-                    $this->aliases->constants_flipped[$use_path] = $use_alias;
-                    break;
-
-                case PhpParser\Node\Stmt\Use_::TYPE_NORMAL:
-                    $this->aliases->uses[strtolower($use_alias)] = $use_path;
-                    $this->aliases->uses_flipped[strtolower($use_path)] = $use_alias;
-                    break;
-            }
-        }
-
-        if (!$this->aliases->uses_start) {
-            $this->aliases->uses_start = (int) $node->getAttribute('startFilePos');
-        }
-
-        $this->aliases->uses_end = (int) $node->getAttribute('endFilePos') + 1;
-    }
-
-    private function handleGroupUse(PhpParser\Node\Stmt\GroupUse $node): void
-    {
-        $use_prefix = $node->prefix->toString();
+        $use_prefix = $node instanceof PhpParser\Node\Stmt\GroupUse ? $node->prefix->toString() . '\\' : '';
 
         foreach ($node->uses as $use) {
-            $use_path = $use_prefix . '\\' . $use->name->toString();
+            $use_path = $use_prefix . $use->name->toString();
             $use_alias = $use->alias->name ?? $use->name->getLast();
 
             switch ($use->type !== PhpParser\Node\Stmt\Use_::TYPE_UNKNOWN ? $use->type : $node->type) {

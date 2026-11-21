@@ -48,11 +48,13 @@ final class ForbiddenCodeTest extends TestCase
                 'code' => '<?php
                     vAr_dUMp("hello");',
                 'error_message' => 'ForbiddenCode',
+                'error_levels' => ['WrongCaseFunction'],
             ],
             'execTicks' => [
                 'code' => '<?php
                     `rm -rf`;',
                 'error_message' => 'ForbiddenCode',
+                'error_levels' => ['DeprecatedSyntax'],
             ],
             'exec' => [
                 'code' => '<?php

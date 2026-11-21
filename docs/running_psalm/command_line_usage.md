@@ -20,16 +20,35 @@ Run with `--help` to see a list of options that Psalm supports.
 
 Psalm exits with status `0` when it successfully completed and found no issues,
 `1` when there was a problem running Psalm and `2` when it completed
-successfully but found some issues. Any exit status apart from those indicate
-some internal problem.
+successfully but found issues or the [type coverage](#minimum-type-coverage) is
+below the minimum. Any exit status apart from those indicates some internal problem.
+
+## Minimum type coverage
+
+`--min-type-coverage` (or the [`minTypeCoverage`](configuration.md#mintypecoverage) config attribute) makes Psalm exit with status `2` when the type coverage is below the given percentage:
+
+```bash
+./vendor/bin/psalm --min-type-coverage=95
+# STDERR: Type coverage 93.41% is below the minimum of 95.00%
+```
+
+Type coverage is the number in Psalm's summary line and on [Shepherd](#shepherd): the share of expressions whose inferred type is not `mixed`. Files in a `<directory ignoreTypeStats="true">` aren't counted.
+
+Only full runs are checked: the option can't be combined with file paths, `--set-baseline` or `--update-baseline`, and the config attribute is skipped on such runs.
 
 ## Shepherd
 
-Psalm currently offers some GitHub integration with public projects.
+[Shepherd](https://shepherd.dev) is a free service for public GitHub projects that stores the results of your CI Psalm runs and shows your type coverage over time, with README badges.
 
-Add `--shepherd` to send information about your build to https://shepherd.dev.
+Add `--shepherd` to the Psalm command that runs in CI:
 
-Currently, Shepherd tracks type coverage (the percentage of types Psalm can infer) on `master` branches.
+```bash
+./vendor/bin/psalm --shepherd
+```
+
+The coverage history and the badges use the runs on the default branch of your repository. Psalm reports to Shepherd from GitHub Actions and other popular CI services, and from any other CI when the checkout has a GitHub remote.
+
+See [Using Shepherd](shepherd.md) for badges, what is sent, and how to send reports to your own endpoint.
 
 ## Running Psalm faster
 

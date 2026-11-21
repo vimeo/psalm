@@ -8,15 +8,16 @@ use PhpParser;
 use Psalm\Context;
 use Psalm\Internal\Algebra;
 use Psalm\Internal\Analyzer\ScopeAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Block\IfElse\IfAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Scope\SwitchScope;
 use Psalm\Type;
 use Psalm\Type\Reconciler;
+use Psalm\Type\Union;
 use SplFixedArray;
 
-use function array_diff;
 use function array_intersect_key;
 use function array_merge;
 use function count;
@@ -87,14 +88,15 @@ final class SwitchAnalyzer
             );
 
             if (!in_array(ScopeAnalyzer::ACTION_NONE, $case_actions, true)) {
-                // a case that only returns, throws or breaks out of a loop around the switch (`break 2`) does not go
-                // on after the switch: what it leaves is seen after that loop (see BreakAnalyzer)
-                if (!array_diff($case_actions, [ScopeAnalyzer::ACTION_END, ScopeAnalyzer::ACTION_BREAK])) {
+                if ($case_actions === [ScopeAnalyzer::ACTION_END]) {
                     $last_case_exit_type = 'return_throw';
                 } elseif ($case_actions === [ScopeAnalyzer::ACTION_CONTINUE]) {
                     $last_case_exit_type = 'continue';
                 } elseif (in_array(ScopeAnalyzer::ACTION_LEAVE_SWITCH, $case_actions, true)) {
                     $last_case_exit_type = 'break';
+                } elseif ($case_actions) {
+                    // `break 2` or more out of an enclosing structure: the case never reaches the end of the switch
+                    $last_case_exit_type = 'leave';
                 }
             } elseif (count($case_actions) !== 1) {
                 $last_case_exit_type = 'hybrid';
@@ -116,7 +118,7 @@ final class SwitchAnalyzer
 
             /** @var string */
             $case_exit_type = $case_exit_types[$i];
-            if ($case_exit_type !== 'return_throw') {
+            if ($case_exit_type !== 'return_throw' && $case_exit_type !== 'leave') {
                 $all_options_returned = false;
             }
 
@@ -170,10 +172,14 @@ final class SwitchAnalyzer
                         $original_context->inside_loop,
                     );
 
-                if (isset($case_vars_in_scope_reconciled[$switch_var_id])
-                    && $case_vars_in_scope_reconciled[$switch_var_id]->isNever()
-                ) {
-                    $all_options_matched = true;
+                if (isset($case_vars_in_scope_reconciled[$switch_var_id])) {
+                    if ($case_vars_in_scope_reconciled[$switch_var_id]->isNever()) {
+                        $all_options_matched = true;
+                    } elseif ($all_options_returned) {
+                        // every case leaves the switch, so only no case matching reaches the code after it (cases
+                        // sharing a body, `case 'a': case 'b': return;`, are not narrowed)
+                        $context->vars_in_scope[$switch_var_id] = $case_vars_in_scope_reconciled[$switch_var_id];
+                    }
                 }
             }
         }
@@ -185,6 +191,10 @@ final class SwitchAnalyzer
         // only update vars if there is a default or all possible cases accounted for
         // if the default has a throw/return/continue, that should be handled above
         if ($all_options_matched) {
+            foreach ($switch_scope->unknown_offsets as $var_id => $_) {
+                unset($context->vars_in_scope[$var_id], $context->vars_possibly_in_scope[$var_id]);
+            }
+
             if ($switch_scope->new_vars_in_scope) {
                 $context->vars_in_scope = array_merge($context->vars_in_scope, $switch_scope->new_vars_in_scope);
             }
@@ -199,7 +209,10 @@ final class SwitchAnalyzer
                         && !isset($switch_scope->new_vars_in_scope[$var_id])
                         && isset($context->vars_in_scope[$var_id])
                     ) {
-                        $context->vars_in_scope[$var_id] = Type::combineUnionTypes(
+                        $context->vars_in_scope[$var_id] = self::addPossiblyRedefinedType(
+                            $statements_analyzer,
+                            $stmt,
+                            $var_id,
                             $type,
                             $context->vars_in_scope[$var_id],
                         );
@@ -220,7 +233,10 @@ final class SwitchAnalyzer
         } elseif ($switch_scope->possibly_redefined_vars) {
             foreach ($switch_scope->possibly_redefined_vars as $var_id => $type) {
                 if (isset($context->vars_in_scope[$var_id])) {
-                    $context->vars_in_scope[$var_id] = Type::combineUnionTypes(
+                    $context->vars_in_scope[$var_id] = self::addPossiblyRedefinedType(
+                        $statements_analyzer,
+                        $stmt,
+                        $var_id,
                         $type,
                         $context->vars_in_scope[$var_id],
                     );
@@ -246,5 +262,28 @@ final class SwitchAnalyzer
 
         //a switch can't return in all options without a default
         $context->has_returned = $all_options_returned && $has_default;
+
+        if ($context->has_returned && $context->case_scope && in_array('leave', $case_exit_types->toArray(), true)) {
+            $context->case_scope->has_nested_switch_leaving_it = true;
+        }
+    }
+
+    /**
+     * The type of a variable after the switch, from its type before and the one some cases leave it with
+     */
+    private static function addPossiblyRedefinedType(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Stmt\Switch_ $stmt,
+        string $var_id,
+        Union $case_type,
+        Union $type,
+    ): Union {
+        if (IfAnalyzer::isNarrowedMixed($statements_analyzer->getCodebase(), $case_type, $type)
+            && !IfAnalyzer::mayAssignAsAWhole($stmt->cases, $var_id, $statements_analyzer)
+        ) {
+            return $type->addParentNodes($case_type->parent_nodes);
+        }
+
+        return Type::combineUnionTypes($case_type, $type);
     }
 }

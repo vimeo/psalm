@@ -69,19 +69,7 @@ use const SORT_STRING;
  * }
  *
  * @psalm-type  PoolData = array{
- *     classlikes_data:array{
- *         array<lowercase-string, bool>,
- *         array<lowercase-string, bool>,
- *         array<lowercase-string, bool>,
- *         array<string, bool>,
- *         array<lowercase-string, bool>,
- *         array<string, bool>,
- *         array<lowercase-string, bool>,
- *         array<string, bool>,
- *         array<string, bool>,
- *         array<lowercase-string, string>,
- *         array<string, bool>
- *     },
+ *     classlikes_data: ClassLikesThreadData,
  *     scanner_data: ThreadData,
  *     issues:array<string, list<IssueData>>,
  *     changed_members:array<string, array<string, bool>>,
@@ -102,6 +90,7 @@ use const SORT_STRING;
  * @internal
  *
  * Contains methods that aid in the scanning of Psalm's codebase
+ * @psalm-import-type ClassLikesThreadData from ClassLikes
  */
 final class Scanner
 {
@@ -736,7 +725,7 @@ final class Scanner
                 if (!$this->codebase->tryExhumeClassLikeStorage($fq_classlike_name, $file_path)) {
                     // the cache has the storage of the file, but not that of a class-like it declares: scan again
                     foreach ($exhumed_classlike_names as $exhumed_classlike_name) {
-                        $this->codebase->classlike_storage_provider->remove($exhumed_classlike_name);
+                        $this->codebase->classlike_storage_provider->remove($exhumed_classlike_name, $file_path);
                     }
 
                     $from_cache = false;
