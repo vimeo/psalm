@@ -21,6 +21,7 @@ use Psalm\Storage\Assertion\Falsy;
 use Psalm\Storage\Assertion\InArray;
 use Psalm\Storage\Assertion\IsIsset;
 use Psalm\Storage\Assertion\IsNotType;
+use Psalm\Storage\Assertion\MatchesPattern;
 use Psalm\Storage\Assertion\NotInArray;
 use Psalm\Storage\Assertion\Truthy;
 use Psalm\Type\Atomic;
@@ -517,7 +518,11 @@ final class AlgebraAnalyzer
                         break;
                     }
                     foreach ($keyed_possibilities as $possibility) {
-                        if ($possibility instanceof InArray || $possibility instanceof NotInArray) {
+                        // A pattern assertion only knows the taints its pattern removes, the same for other patterns
+                        if ($possibility instanceof InArray
+                            || $possibility instanceof NotInArray
+                            || $possibility instanceof MatchesPattern
+                        ) {
                             $negated_clause_2_contains_1_possibilities = false;
                             break;
                         }

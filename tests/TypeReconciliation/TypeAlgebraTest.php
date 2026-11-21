@@ -593,6 +593,25 @@ final class TypeAlgebraTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'matchingAnotherPatternThatRemovesTheSameTaintsIsADifferentCondition' => [
+                'code' => '<?php
+                    function f(string $value): int {
+                        if ("transparent" === $value) {
+                            return 0;
+                        }
+                        if (preg_match("/^light-dark\\((.+)\\)$/s", $value)) {
+                            return 1;
+                        }
+                        if (preg_match("/^color-mix\\((.+)\\)$/s", $value)) {
+                            return 2;
+                        }
+
+                        return 3;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'comparisonWithAValueThatChangedIsForgotten' => [
                 'code' => '<?php
                     final class C {
