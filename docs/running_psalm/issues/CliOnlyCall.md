@@ -117,7 +117,7 @@ final class ConsoleRequest
         }
     }
 
-    public function __wakeup(): void
+    public function __unserialize(array $data): void
     {
         if (PHP_SAPI !== 'cli') {
             throw new LogicException('Run it from the command line');

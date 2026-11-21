@@ -20,7 +20,6 @@ use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\TaintKind;
 use Psalm\Type\Union;
-use RuntimeException;
 
 use function is_int;
 
@@ -94,9 +93,6 @@ final class UnaryPlusMinusAnalyzer
                 }
             }
 
-            if (!$acceptable_types) {
-                throw new RuntimeException("Impossible!");
-            }
 
             $statements_analyzer->node_data->setType($stmt, new Union($acceptable_types));
         }
