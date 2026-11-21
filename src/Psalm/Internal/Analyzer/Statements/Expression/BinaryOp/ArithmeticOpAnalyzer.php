@@ -942,7 +942,6 @@ final class ArithmeticOpAnalyzer
                     $result_type = Type::combineUnionTypes(Type::getFloat(), $result_type);
                 } elseif ($parent instanceof PhpParser\Node\Expr\BinaryOp\Pow
                     && !$right_type_part instanceof TLiteralInt
-                    && !$right_type_part instanceof TIntRange
                 ) {
                     // a negative exponent gives a float
                     $result_type = Type::combineUnionTypes(new Union([new TInt(), new TFloat()]), $result_type);
