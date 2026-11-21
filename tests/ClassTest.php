@@ -159,6 +159,24 @@ final class ClassTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'paramNamedAsInOneOfTwoConflictingAncestors' => [
+                'code' => '<?php
+                    class A {
+                        public function foo(string $a): void {}
+                    }
+
+                    interface B {
+                        public function foo(string $b): void;
+                    }
+
+                    final class KeepsTheNameOfTheParent extends A implements B {
+                        public function foo(string $a): void {}
+                    }
+
+                    final class KeepsTheNameOfTheInterface extends A implements B {
+                        public function foo(string $b): void {}
+                    }',
+            ],
             'arrayOfLiteralStringOrClassStringIsNotCheckedAsClassName' => [
                 'code' => '<?php
                     /** @param array<"string"|"int"|class-string> $input */
@@ -1862,6 +1880,21 @@ final class ClassTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'paramNamedAsInNoneOfTwoConflictingAncestors' => [
+                'code' => '<?php
+                    class A {
+                        public function foo(string $a): void {}
+                    }
+
+                    interface B {
+                        public function foo(string $b): void;
+                    }
+
+                    final class M extends A implements B {
+                        public function foo(string $c): void {}
+                    }',
+                'error_message' => 'ParamNameMismatch',
+            ],
             'classExistsDoesNotCoverTheCodeAfterTheIf' => [
                 'code' => '<?php
                     function foo(): void {

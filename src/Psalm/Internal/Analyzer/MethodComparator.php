@@ -813,6 +813,13 @@ final class MethodComparator
                 && $config->isInProjectDirs(
                     $implementer_param->location->file_path,
                 )
+                && !self::isNamedAsInAnotherOverriddenMethod(
+                    $codebase,
+                    $implementer_classlike_storage,
+                    $implementer_method_storage,
+                    $i,
+                    $implementer_param->name,
+                )
             ) {
                 // even if it's just a single arg, it needs to be renamed in case it's called with a single named arg
                 if ($config->allow_named_arg_calls
@@ -1822,5 +1829,39 @@ final class MethodComparator
                 $codebase,
             );
         }
+    }
+
+    /**
+     * Whether another method the implementer overrides names the parameter as the implementer does: the methods it
+     * overrides disagree, and no name fits them all
+     *
+     * @psalm-capabilities read-props
+     */
+    private static function isNamedAsInAnotherOverriddenMethod(
+        Codebase $codebase,
+        ClassLikeStorage $implementer_classlike_storage,
+        MethodStorage $implementer_method_storage,
+        int $offset,
+        string $name,
+    ): bool {
+        if ($implementer_method_storage->cased_name === null) {
+            return false;
+        }
+
+        $method_name = strtolower($implementer_method_storage->cased_name);
+
+        foreach ($implementer_classlike_storage->overridden_method_ids[$method_name] ?? [] as $overridden_method_id) {
+            if (!$codebase->methods->hasStorage($overridden_method_id)) {
+                continue;
+            }
+
+            $overridden_params = $codebase->methods->getStorage($overridden_method_id)->params;
+
+            if (isset($overridden_params[$offset]) && $overridden_params[$offset]->name === $name) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }
