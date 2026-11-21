@@ -688,7 +688,7 @@ function sscanf(string $string, string $format, &...$vars) {}
  * @psalm-pure
  *
  * @return (
- *     func_num_args() is 1
+ *     $flags is 15
  *     ? (
  *         $path is non-empty-string
  *         ? array{dirname: string, basename: string, extension?: string, filename: string}
@@ -698,7 +698,7 @@ function sscanf(string $string, string $format, &...$vars) {}
  * )
  * @psalm-flow ($path) -> return
  */
-function pathinfo(string $path, int $flags = \PATHINFO_DIRNAME) {}
+function pathinfo(string $path, int $flags = 15) {}
 
 /**
  * @psalm-pure
@@ -1052,6 +1052,8 @@ function htmlspecialchars_decode(string $string, ?int $flags = null) : string {}
  * @psalm-taint-escape has_quotes
  * @psalm-taint-escape url_component
  * @psalm-taint-escape header
+ * @psalm-taint-escape html_attribute
+ * @psalm-taint-escape url_scheme
  * @psalm-flow ($string) -> return
  */
 function urlencode(string $string) : string {}
@@ -1063,6 +1065,8 @@ function urlencode(string $string) : string {}
  * @psalm-taint-escape has_quotes
  * @psalm-taint-escape url_component
  * @psalm-taint-escape header
+ * @psalm-taint-escape html_attribute
+ * @psalm-taint-escape url_scheme
  * @psalm-flow ($string) -> return
  */
 function rawurlencode(string $string) : string {}
@@ -1075,6 +1079,8 @@ function rawurlencode(string $string) : string {}
  * @psalm-taint-escape url_component
  * @psalm-taint-escape url_path
  * @psalm-taint-escape header
+ * @psalm-taint-escape html_attribute
+ * @psalm-taint-escape url_scheme
  * @psalm-flow ($data) -(serialization)-> return
  * @psalm-flow ($numeric_prefix, $arg_separator) -> return
  */
@@ -1799,6 +1805,10 @@ function base64_decode(string $string, bool $strict = false) {}
  * @psalm-pure
  *
  * @psalm-flow ($string) -> return
+ * @psalm-taint-escape html
+ * @psalm-taint-escape has_quotes
+ * @psalm-taint-escape html_attribute
+ * @psalm-taint-escape url_scheme
  * @template T as string
  * @param T $string
  * @return (T is non-empty-string ? non-empty-string : string)
@@ -1922,7 +1932,7 @@ function stream_select(null|array &$read, null|array &$write, null|array &$excep
 /**
  * @psalm-pure
  *
- * @psalm-taint-escape sql
+ * @psalm-taint-escape sql_in_quotes
  * @psalm-flow ($string) -> return
  */
 function mysqli_escape_string(mysqli $mysql, $string) {}
@@ -1930,7 +1940,7 @@ function mysqli_escape_string(mysqli $mysql, $string) {}
 /**
  * @psalm-pure
  *
- * @psalm-taint-escape sql
+ * @psalm-taint-escape sql_in_quotes
  * @psalm-flow ($string) -> return
  */
 function mysqli_real_escape_string(mysqli $mysql, $string) {}
@@ -1938,7 +1948,7 @@ function mysqli_real_escape_string(mysqli $mysql, $string) {}
 /**
  * @psalm-pure
  *
- * @psalm-taint-escape sql
+ * @psalm-taint-escape sql_in_quotes
  * @psalm-flow ($string_literal) -> return
  */
 function db2_escape_string($string_literal) {}
@@ -1946,7 +1956,7 @@ function db2_escape_string($string_literal) {}
 /**
  * @psalm-pure
  *
- * @psalm-taint-escape sql
+ * @psalm-taint-escape sql_in_quotes
  * @psalm-flow ($string) -> return
  */
 function cubrid_real_escape_string($string) {}
@@ -1954,7 +1964,7 @@ function cubrid_real_escape_string($string) {}
 /**
  * @psalm-pure
  *
- * @psalm-taint-escape sql
+ * @psalm-taint-escape sql_in_quotes
  * @psalm-flow ($string1, $string2) -> return
  */
 function pg_escape_bytea($string1, $string2 = null) {}
@@ -1978,7 +1988,7 @@ function pg_escape_literal($string1, $string2 = null) {}
 /**
  * @psalm-pure
  *
- * @psalm-taint-escape sql
+ * @psalm-taint-escape sql_in_quotes
  * @psalm-flow ($string1, $string2) -> return
  */
 function pg_escape_string($string1, $string2 = null) {}

@@ -1493,6 +1493,52 @@ final class ArrayAccessTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'nullOffsetOfAnObjectThatAcceptsItInArrayAccess' => [
+                'code' => '<?php
+                    /** @implements ArrayAccess<string|null, int> */
+                    final class Bag implements ArrayAccess {
+                        #[Override]
+                        public function offsetExists(mixed $offset): bool {
+                            return $offset === null;
+                        }
+
+                        #[Override]
+                        public function offsetGet(mixed $offset): int {
+                            return $offset === null ? 1 : 2;
+                        }
+
+                        #[Override]
+                        public function offsetSet(mixed $offset, mixed $value): void {}
+
+                        #[Override]
+                        public function offsetUnset(mixed $offset): void {}
+                    }
+
+                    function f(Bag $bag, ?string $key): int {
+                        $bag[null] = 3;
+                        unset($bag[null]);
+
+                        return $bag[null] + $bag[$key] + (isset($bag[null]) ? 1 : 0);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
+            'nullOffsetOfAnArrayAccessInterfaceOrItsChild' => [
+                'code' => '<?php
+                    /** @extends ArrayAccess<string|null, int> */
+                    interface Bag extends ArrayAccess {}
+
+                    /** @param ArrayAccess<string|null, int> $a */
+                    function f(ArrayAccess $a, Bag $bag, Countable&ArrayAccess $c): void {
+                        echo $a[null];
+                        echo $bag[null];
+                        echo (string) $c[null];
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'emptyNestedOffsetIsForgottenWhenItsParentOffsetIsAssigned' => [
                 'code' => '<?php
                     function g(array $m, string $l, string $p): string {
@@ -3746,6 +3792,42 @@ final class ArrayAccessTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'nullOffsetOfAnObjectThatRejectsItInArrayAccess' => [
+                'code' => '<?php
+                    /** @implements ArrayAccess<string, int> */
+                    final class Bag implements ArrayAccess {
+                        #[Override]
+                        public function offsetExists(string $offset): bool {
+                            return true;
+                        }
+
+                        #[Override]
+                        public function offsetGet(string $offset): int {
+                            return strlen($offset);
+                        }
+
+                        #[Override]
+                        public function offsetSet(?string $offset, mixed $value): void {}
+
+                        #[Override]
+                        public function offsetUnset(string $offset): void {}
+                    }
+
+                    function f(Bag $bag): int {
+                        return $bag[null];
+                    }',
+                'error_message' => 'NullArgument',
+                'error_levels' => [],
+                'php_version' => '8.3',
+            ],
+            'nullOffsetOfAnArrayIsStillReported' => [
+                'code' => '<?php
+                    /** @param array<string, int> $values */
+                    function f(array $values): void {
+                        echo $values[null];
+                    }',
+                'error_message' => 'NullArrayOffset',
+            ],
             'destructureNullableShapeAndGenericArrayByKey' => [
                 'code' => '<?php
                     /** @return array{x: int}|array<string, string>|null */
