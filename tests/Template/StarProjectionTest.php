@@ -1772,6 +1772,81 @@ final class StarProjectionTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'starProjectionInAnAssertedClassStringHoldsTheBound' => [
+                'code' => '<?php
+                    /** @template-covariant T of Countable */
+                    interface Reader {}
+
+                    /** @param Reader<Countable> $reader */
+                    function takes(Reader $reader): void {}
+
+                    /** @psalm-assert-if-true class-string<Reader<*>> $x */
+                    function isReaderClass(mixed $x): bool {
+                        return true;
+                    }
+
+                    function f(mixed $a): void {
+                        if (isReaderClass($a)) {
+                            takes(new $a);
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'starProjectionInAnAssertedClassStringWhenFalseHoldsTheBound' => [
+                'code' => '<?php
+                    /** @template-covariant T of Countable */
+                    interface Reader {}
+
+                    /** @param Reader<Countable> $reader */
+                    function takes(Reader $reader): void {}
+
+                    /** @psalm-assert-if-false class-string<Reader<*>> $x */
+                    function isNotReaderClass(mixed $x): bool {
+                        return false;
+                    }
+
+                    function f(mixed $a): void {
+                        if (isNotReaderClass($a)) {
+                            return;
+                        }
+
+                        takes(new $a);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'starProjectionInAnAssertedClosureParameterHoldsTheBound' => [
+                'code' => '<?php
+                    /** @template-covariant T of Countable */
+                    interface Reader {}
+
+                    /**
+                     * @template T
+                     * @param Closure(Reader<T>): void $closure
+                     * @return T
+                     */
+                    function readClosure(Closure $closure): mixed {
+                        throw new Exception();
+                    }
+
+                    /** @psalm-assert-if-true Closure(Reader<*>): void $x */
+                    function isReaderClosure(mixed $x): bool {
+                        return true;
+                    }
+
+                    function f(mixed $a): void {
+                        if (isReaderClosure($a)) {
+                            $read = readClosure($a);
+                            /** @psalm-check-type-exact $read = Countable */
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['InvalidTemplateParam'],
+                'php_version' => '8.0',
+            ],
         ];
     }
 

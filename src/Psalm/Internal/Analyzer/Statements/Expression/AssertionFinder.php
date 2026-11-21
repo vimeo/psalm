@@ -91,7 +91,6 @@ use Psalm\Type\Atomic\TArrayKey;
 use Psalm\Type\Atomic\TBool;
 use Psalm\Type\Atomic\TCallable;
 use Psalm\Type\Atomic\TCallableString;
-use Psalm\Type\Atomic\TClassConstant;
 use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TClassStringMap;
 use Psalm\Type\Atomic\TClosedResource;
@@ -100,7 +99,6 @@ use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TInt;
-use Psalm\Type\Atomic\TIterable;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TLiteralClassString;
 use Psalm\Type\Atomic\TLiteralFloat;
@@ -1431,8 +1429,8 @@ final class AssertionFinder
 
     /**
      * The types of `@psalm-assert-if-true` and `-if-false` are expanded here, as those of `@psalm-assert` are (see
-     * CallAnalyzer::applyAssertionsToContext()): a class constant, and the arguments of a generic object or of an
-     * array or iterable (a `*` holds the bound of its template once expanded)
+     * CallAnalyzer::applyAssertionsToContext()): a class constant, and the arguments of any type (a `*` holds the
+     * bound of its template once expanded). A union they expand to is being of one of its types.
      */
     private static function expandTypesOfRules(Possibilities $assertion, Codebase $codebase): Possibilities
     {
@@ -1440,19 +1438,23 @@ final class AssertionFinder
 
         foreach ($assertion->rule as $rule) {
             $rule_type = $rule->getAtomicType();
-            $expanded = $rule_type instanceof TClassConstant
-                || $rule_type instanceof TGenericObject
-                || $rule_type instanceof TArray
-                || $rule_type instanceof TKeyedArray
-                || $rule_type instanceof TIterable
-                ? TypeExpander::expandAtomic($codebase, $rule_type, null, null, null)
-                : [];
 
-            $first_expanded = $expanded[0] ?? null;
+            if ($rule_type === null) {
+                $rules[] = $rule;
+                continue;
+            }
 
-            $rules[] = $first_expanded !== null && ($rule_type instanceof TClassConstant || count($expanded) === 1)
-                ? $rule->setAtomicType($first_expanded)
-                : $rule;
+            $expanded = TypeExpander::expandAtomic($codebase, $rule_type, null, null, null);
+
+            if (count($expanded) === 1) {
+                $rules[] = $rule->setAtomicType($expanded[0]);
+            } elseif ($rule instanceof IsType) {
+                foreach ($expanded as $expanded_atomic) {
+                    $rules[] = new IsType($expanded_atomic);
+                }
+            } else {
+                $rules[] = $rule;
+            }
         }
 
         return new Possibilities($assertion->var_id, $rules);
