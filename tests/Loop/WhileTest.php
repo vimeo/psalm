@@ -403,6 +403,22 @@ final class WhileTest extends TestCase
                     }
                     PHP,
             ],
+            'whileOneIsOnlyLeftByABreak' => [
+                'code' => '<?php
+                    function withOne(): string {
+                        while (1) {
+                            $x = rand(0, 1) ? "s" : null;
+
+                            if ($x === null) {
+                                continue;
+                            }
+
+                            break;
+                        }
+
+                        return $x;
+                    }',
+            ],
             'whileVariableBoundByReferenceInTheConditionOfALoopLeftByABreakIsDefinedAfterTheLoop' => [
                 'code' => <<<'PHP'
                     <?php
