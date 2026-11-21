@@ -740,6 +740,21 @@ final class BuildInfoCollectorTest extends TestCase
                 'CI_REPO_NAME' => 'example',
             ],
         ];
+
+        yield 'GitHub Actions with only its flag' => [
+            ['GITHUB_ACTIONS' => 'true'],
+            null,
+            ['CI_NAME' => 'github-actions', 'GITHUB_ACTIONS' => 'true'],
+        ];
+
+        yield 'Travis CI with a "false" flag' => [['TRAVIS' => 'false', 'TRAVIS_JOB_ID' => '123'], null, []];
+        yield 'CircleCI with a "false" flag' => [['CIRCLECI' => 'false', 'CIRCLE_BUILD_NUM' => '77'], null, []];
+        yield 'AppVeyor with a "false" flag' => [['APPVEYOR' => 'False', 'APPVEYOR_BUILD_NUMBER' => '5'], null, []];
+        yield 'Scrutinizer with a "false" flag' => [['SCRUTINIZER' => 'false'], null, []];
+        yield 'Travis CI without a job id' => [['TRAVIS' => 'true'], null, []];
+        yield 'CircleCI without a build number' => [['CIRCLECI' => 'true'], null, []];
+        yield 'AppVeyor without a build number' => [['APPVEYOR' => 'True'], null, []];
+        yield 'Jenkins without a build number' => [['JENKINS_URL' => 'https://ci.example.com/'], null, []];
     }
 
     /**
