@@ -2485,6 +2485,32 @@ final class UnusedCodeTest extends TestCase
                     $query->where("a");
                     $query->active();',
             ],
+            'overrideInheritingReturnsThisDelegatingToAnotherFluentCallAllowed' => [
+                'code' => '<?php
+                    class ParentQ {
+                        /** @return $this */
+                        public function a() {
+                            echo "p";
+                            return $this;
+                        }
+
+                        /** @return $this */
+                        public function b() {
+                            echo "b";
+                            return $this;
+                        }
+                    }
+
+                    final class ChildQ extends ParentQ {
+                        public function a(): static {
+                            return $this->b();
+                        }
+                    }
+
+                    (new ChildQ())->a();
+                    (new ParentQ())->a();
+                    (new ParentQ())->b();',
+            ],
             'unusedInterfaceReturnValueWithImplementingClassSuppressed' => [
                 'code' => '<?php
                     interface IWorker {
