@@ -24,6 +24,7 @@ use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\Statements\UnsetAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\MixinLookup;
+use Psalm\Internal\Codebase\PhpDeprecations;
 use Psalm\Internal\Codebase\VariableUseGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
@@ -732,6 +733,26 @@ final class AtomicPropertyFetchAnalyzer
                 IssueBuffer::maybeAdd(
                     new DeprecatedProperty(
                         $property_id . ' is marked deprecated',
+                        new CodeLocation($statements_analyzer->getSource(), $stmt),
+                        $property_id,
+                    ),
+                    $statements_analyzer->getSuppressedIssues(),
+                );
+
+                return;
+            }
+        }
+
+        if (!$declaring_class_storage->user_defined) {
+            $builtin_message = PhpDeprecations::getPropertyMessage(
+                $property_id,
+                $declaring_class_storage->name . '::$' . $prop_name,
+            );
+
+            if ($builtin_message !== null) {
+                IssueBuffer::maybeAdd(
+                    new DeprecatedProperty(
+                        $builtin_message,
                         new CodeLocation($statements_analyzer->getSource(), $stmt),
                         $property_id,
                     ),

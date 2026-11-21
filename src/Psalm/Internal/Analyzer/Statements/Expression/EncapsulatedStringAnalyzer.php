@@ -12,10 +12,13 @@ use Psalm\Context;
 use Psalm\Internal\Analyzer\Statements\Expression\BinaryOp\ConcatAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Codebase\PhpDeprecations;
 use Psalm\Internal\Codebase\StringContext;
 use Psalm\Internal\Codebase\VariableUseGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
+use Psalm\Issue\DeprecatedSyntax;
+use Psalm\IssueBuffer;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Type;
 use Psalm\Type\Atomic\TIntRange;
@@ -29,6 +32,7 @@ use Psalm\Type\Atomic\TString;
 use Psalm\Type\Union;
 
 use function count;
+use function substr;
 
 /**
  * @internal
@@ -69,6 +73,8 @@ final class EncapsulatedStringAnalyzer
 
         foreach ($stmt->parts as $part) {
             if ($part instanceof Expr) {
+                self::checkDollarBraceInterpolation($statements_analyzer, $part);
+
                 if (ExpressionAnalyzer::analyze($statements_analyzer, $part, $context) === false) {
                     return false;
                 }
@@ -281,5 +287,29 @@ final class EncapsulatedStringAnalyzer
         }
 
         return true;
+    }
+
+    /**
+     * Reports `"${var}"` and `"${expr}"`, which PHP deprecates whatever PHP version is analysed
+     */
+    private static function checkDollarBraceInterpolation(StatementsAnalyzer $statements_analyzer, Expr $part): void
+    {
+        $start = (int) $part->getAttribute('startFilePos');
+        $contents = $statements_analyzer->getCodebase()->getFileContents($statements_analyzer->getFilePath());
+
+        // `"{${expr}}"` is still allowed
+        if (substr($contents, $start, 2) === '${' && ($start === 0 || $contents[$start - 1] !== '{')) {
+            IssueBuffer::maybeAdd(
+                new DeprecatedSyntax(
+                    PhpDeprecations::getDeprecatedSinceMessage(
+                        'Interpolating "${var}" in a string',
+                        8_02_00,
+                        '"{$var}"',
+                    ),
+                    new CodeLocation($statements_analyzer, $part),
+                ),
+                $statements_analyzer->getSuppressedIssues(),
+            );
+        }
     }
 }
