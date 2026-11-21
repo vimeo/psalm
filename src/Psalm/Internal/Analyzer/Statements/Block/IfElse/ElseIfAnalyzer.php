@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Psalm\Internal\Analyzer\Statements\Block\IfElse;
 
-use Closure;
 use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Codebase;
@@ -12,7 +11,6 @@ use Psalm\Context;
 use Psalm\Exception\ComplicatedExpressionException;
 use Psalm\Exception\ScopeAnalysisException;
 use Psalm\Internal\Algebra;
-use Psalm\Internal\Algebra\FormulaGenerator;
 use Psalm\Internal\Analyzer\AlgebraAnalyzer;
 use Psalm\Internal\Analyzer\ScopeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Block\IfConditionalAnalyzer;
@@ -45,74 +43,6 @@ use function spl_object_id;
  */
 final class ElseIfAnalyzer
 {
-    /**
-     * The clauses of the condition, where a clause about an offset or a property of a mixed variable is unknown, and
-     * a function returning those of its negation
-     *
-     * @return array{list<Clause>, Closure(): list<Clause>}
-     */
-    private static function getClauses(
-        StatementsAnalyzer $statements_analyzer,
-        Codebase $codebase,
-        PhpParser\Node\Stmt\ElseIf_ $elseif,
-        Context $elseif_context,
-        Context $else_context,
-    ): array {
-        $elseif_cond_id = spl_object_id($elseif->cond);
-
-        // whether each mixed variable may be unset
-        $mixed_vars = [];
-
-        foreach ($elseif_context->vars_in_scope as $var_id => $type) {
-            if ($type->hasMixed()) {
-                $mixed_vars[$var_id] = $type->possibly_undefined || $type->possibly_undefined_from_try;
-            }
-        }
-
-        $cond_clauses = FormulaGenerator::getFormula(
-            $elseif_cond_id,
-            $elseif_cond_id,
-            $elseif->cond,
-            $else_context->self,
-            $statements_analyzer,
-            $codebase,
-        );
-
-        if (count($cond_clauses) > 200) {
-            $cond_clauses = [];
-        }
-
-        $elseif_clauses = [];
-
-        foreach ($cond_clauses as $clause) {
-            $mixed_vars = array_diff_key($mixed_vars, $clause->possibilities);
-
-            $elseif_clauses[] = $clause->forgetItemsOfMixedVars($mixed_vars, $elseif_cond_id);
-        }
-
-        $get_negated_clauses = static fn(): array => [
-            ...FormulaGenerator::getNegatedFormula(
-                Algebra::simplifyCNF($elseif_clauses),
-                $elseif->cond,
-                $elseif_cond_id,
-                $else_context->self,
-                $statements_analyzer,
-                $codebase,
-            ),
-            ...FormulaGenerator::getNegatedSetMixedVarClauses(
-                $cond_clauses,
-                $mixed_vars,
-                $elseif->cond,
-                $elseif_cond_id,
-                $else_context->self,
-                $statements_analyzer,
-                $codebase,
-            ),
-        ];
-
-        return [$elseif_clauses, $get_negated_clauses];
-    }
-
     /**
      * @return false|null
      */
@@ -184,12 +114,14 @@ final class ElseIfAnalyzer
 
         $elseif_cond_id = spl_object_id($elseif->cond);
 
-        [$elseif_clauses, $get_negated_clauses] = self::getClauses(
+        [$elseif_clauses, $get_negated_clauses] = IfConditionalAnalyzer::getConditionClauses(
             $statements_analyzer,
-            $codebase,
-            $elseif,
+            $elseif->cond,
+            $elseif_cond_id,
             $elseif_context,
             $else_context,
+            $codebase,
+            false,
         );
 
         $entry_clauses = [];
