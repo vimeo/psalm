@@ -190,9 +190,7 @@ final class GetObjectVarsTest extends TestCase
 
                 $a = get_object_vars(new a("test"));',
             'assertions' => [
-                // `new a("test")` mints a type variable for T (constrainable via the
-                // public $t property); the exact `===` form reveals it in the field.
-                '$a===' => "array{t: `_0:'test'}",
+                '$a===' => "array{t: 'test'}",
             ],
         ];
 
