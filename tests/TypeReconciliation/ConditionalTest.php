@@ -250,6 +250,141 @@ final class ConditionalTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.3',
             ],
+            'negativeCountComparisonsDoNotNarrowTheArray' => [
+                'code' => '<?php
+                    final class Counts {
+                        private const NEG = -1;
+
+                        /** @param list<int> $a */
+                        public static function equalToMinusOne(array $a): int {
+                            if (count($a) === -1) {
+                                return 0;
+                            }
+
+                            /** @psalm-check-type-exact $a = list<int> */
+                            return 0;
+                        }
+
+                        /** @param list<int> $a */
+                        public static function looselyEqualToMinusOne(array $a): int {
+                            if (count($a) == -1) {
+                                return 0;
+                            }
+
+                            /** @psalm-check-type-exact $a = list<int> */
+                            return 0;
+                        }
+
+                        /** @param list<int> $a */
+                        public static function equalToANegativeConstant(array $a): int {
+                            if (count($a) === self::NEG) {
+                                return 0;
+                            }
+
+                            /** @psalm-check-type-exact $a = list<int> */
+                            return 0;
+                        }
+
+                        /** @param list<int> $a */
+                        public static function minusOneOnTheLeft(array $a): int {
+                            if (-1 === count($a)) {
+                                return 0;
+                            }
+
+                            /** @psalm-check-type-exact $a = list<int> */
+                            return 0;
+                        }
+
+                        /** @param list<int> $a */
+                        public static function smallerThanMinusOne(array $a): int {
+                            if (count($a) < -1) {
+                                return 0;
+                            }
+
+                            /** @psalm-check-type-exact $a = list<int> */
+                            return 0;
+                        }
+
+                        /** @param list<int> $a */
+                        public static function smallerThanANegativeConstant(array $a): int {
+                            if (count($a) < self::NEG) {
+                                return 0;
+                            }
+
+                            /** @psalm-check-type-exact $a = list<int> */
+                            return 0;
+                        }
+
+                        /** @param list<int> $a */
+                        public static function smallerThanZero(array $a): int {
+                            if (count($a) < 0) {
+                                return 0;
+                            }
+
+                            /** @psalm-check-type-exact $a = list<int> */
+                            return 0;
+                        }
+
+                        /** @param list<int> $a */
+                        public static function smallerOrEqualToANegativeConstant(array $a): int {
+                            if (count($a) <= self::NEG) {
+                                return 0;
+                            }
+
+                            /** @psalm-check-type-exact $a = list<int> */
+                            return 0;
+                        }
+
+                        /** @param list<int> $a */
+                        public static function greaterThanZeroOnTheLeft(array $a): int {
+                            if (0 > count($a)) {
+                                return 0;
+                            }
+
+                            /** @psalm-check-type-exact $a = list<int> */
+                            return 0;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['TypeDoesNotContainType', 'RedundantCondition'],
+                'php_version' => '8.3',
+            ],
+            'strlenComparedToAClassConstant' => [
+                'code' => '<?php
+                    final class Lengths {
+                        private const ZERO = 0;
+                        private const NEG = -1;
+
+                        public static function greater(string $s): void {
+                            if (strlen($s) > self::ZERO) {
+                                /** @psalm-check-type-exact $s = non-empty-string */
+                            }
+                        }
+
+                        public static function equalToZero(string $s): void {
+                            if (strlen($s) === self::ZERO) {
+                                return;
+                            }
+
+                            /** @psalm-check-type-exact $s = non-empty-string */
+                        }
+
+                        public static function zeroOnTheLeft(string $s): void {
+                            if (self::ZERO < strlen($s)) {
+                                /** @psalm-check-type-exact $s = non-empty-string */
+                            }
+                        }
+
+                        public static function greaterThanANegativeConstant(string $s): void {
+                            if (strlen($s) > self::NEG) {
+                                /** @psalm-check-type-exact $s = string */
+                            }
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
             'negatedIsFloatCombinesTheRemainingTypes' => [
                 'code' => '<?php
                     /** @var numeric|"a" $x */
