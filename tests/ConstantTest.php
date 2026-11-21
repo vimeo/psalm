@@ -309,6 +309,18 @@ final class ConstantTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'overrideNarrowingTheNativeTypeOfTheParentConstant' => [
+                'code' => '<?php
+                    class A {
+                        public const int|string X = 1;
+                    }
+                    final class B extends A {
+                        public const int X = 2;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
             'overrideKeepingTheNativeTypeOfTheParentConstant' => [
                 'code' => '<?php
                     interface HasVersion {
@@ -2818,6 +2830,31 @@ final class ConstantTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'overrideWideningTheNativeTypeOfTheParentConstant' => [
+                'code' => '<?php
+                    class A {
+                        public const int X = 1;
+                    }
+                    final class B extends A {
+                        public const int|string X = 2;
+                    }',
+                'error_message' => 'InvalidClassConstantType - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:49 - The native type "int|string" of B::X is not contained in the native type "int" of A::X',
+                'error_levels' => [],
+                'php_version' => '8.3',
+            ],
+            'overrideDroppingTheNativeTypeOfTheParentConstant' => [
+                'code' => '<?php
+                    interface I {
+                        const int X = 1;
+                    }
+                    final class B implements I {
+                        /** @var int */
+                        const X = 2;
+                    }',
+                'error_message' => 'InvalidClassConstantType - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:31 - B::X must declare a native type contained in the native type "int" of I::X',
+                'error_levels' => [],
+                'php_version' => '8.3',
+            ],
             'constantDeclaredWithClassConstantWildcardTypeRejectsOtherValues' => [
                 'code' => '<?php
                     class Foo

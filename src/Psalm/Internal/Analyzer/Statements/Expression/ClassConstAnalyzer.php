@@ -813,6 +813,8 @@ final class ClassConstAnalyzer
                     ? $parent_const_storage->signature_type
                     : $parent_const_storage->type;
 
+                $reported_type = false;
+
                 // Check covariance
                 if ($const_storage->type !== null
                     && $parent_type !== null
@@ -853,6 +855,35 @@ final class ClassConstAnalyzer
                             $const_storage->suppressed_issues,
                         );
                     }
+
+                    $reported_type = true;
+                }
+
+                // PHP requires an override of a natively typed constant to declare a native type the parent's contains
+                $parent_signature_type = $parent_const_storage->signature_type;
+                if (!$reported_type
+                    && $parent_signature_type !== null
+                    && $parent_const_storage !== $const_storage
+                    && ($const_storage->signature_type === null
+                        || !UnionTypeComparator::isContainedBy(
+                            $codebase,
+                            $const_storage->signature_type,
+                            $parent_signature_type,
+                        ))
+                ) {
+                    IssueBuffer::maybeAdd(
+                        new InvalidClassConstantType(
+                            ($const_storage->signature_type === null
+                                ? "{$class_storage->name}::{$const_name} must declare a native type contained in"
+                                : "The native type \"{$const_storage->signature_type->getId()}\" of "
+                                    . "{$class_storage->name}::{$const_name} is not contained in")
+                                . " the native type \"{$parent_signature_type->getId()}\" of "
+                                . "{$parent_classlike_storage->name}::{$const_name}",
+                            $type_location,
+                            "{$class_storage->name}::{$const_name}",
+                        ),
+                        $const_storage->suppressed_issues,
+                    );
                 }
 
                 // Check overridden final
