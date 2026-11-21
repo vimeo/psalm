@@ -704,13 +704,22 @@ final class AssertionReconciler extends Reconciler
                     || $existing_var_type_part instanceof TTemplateParam
                 ) {
                     $acceptable_atomic_types[] = $existing_var_type_part;
-                } else {
-                    if (AtomicTypeComparator::isContainedBy(
-                        $codebase,
-                        $existing_var_type_part,
-                        $new_as_atomic,
-                    )) {
-                        $acceptable_atomic_types[] = $existing_var_type_part;
+                } elseif (AtomicTypeComparator::isContainedBy(
+                    $codebase,
+                    $existing_var_type_part,
+                    $new_as_atomic,
+                )) {
+                    $acceptable_atomic_types[] = $existing_var_type_part;
+                } elseif (($overlap = Type::intersectUnionTypes(
+                    new Union([$existing_var_type_part]),
+                    new Union([$new_as_atomic]),
+                    $codebase,
+                )) !== null
+                    && !$overlap->isNever()
+                ) {
+                    // a string can be the value of a template of `numeric`: a numeric string
+                    foreach ($overlap->getAtomicTypes() as $overlap_atomic_type) {
+                        $acceptable_atomic_types[] = $overlap_atomic_type;
                     }
                 }
             }

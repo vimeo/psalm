@@ -3458,6 +3458,21 @@ final class FunctionTemplateTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'templateBoundedByNumericCanBeIdenticalToAString' => [
+                'code' => '<?php
+                    /**
+                     * @template T of numeric
+                     * @param T $t
+                     */
+                    function f($t, string $s): void {
+                        if ($t === $s) {
+                            takesNumericString($t);
+                        }
+                    }
+
+                    /** @param numeric-string $s */
+                    function takesNumericString(string $s): void {}',
+            ],
         ];
     }
 
@@ -4397,6 +4412,19 @@ final class FunctionTemplateTest extends TestCase
 
                     (new Garage)->find(Countable::class);',
                 'error_message' => 'InvalidArgument',
+            ],
+            'templateBoundedByIntCannotBeIdenticalToAString' => [
+                'code' => '<?php
+                    /**
+                     * @template T of int
+                     * @param T $t
+                     */
+                    function f($t, string $s): void {
+                        if ($t === $s) {
+                            echo "never";
+                        }
+                    }',
+                'error_message' => 'DocblockTypeContradiction',
             ],
         ];
     }
