@@ -2302,6 +2302,8 @@ final class ClassTemplateExtendsTest extends TestCase
                     }
 
                     ord((new Child())->example("str"));',
+                'assertions' => [],
+                'ignored_issues' => ['DeprecatedFunction'],
             ],
             'keyOfClassTemplateExtended' => [
                 'code' => '<?php
@@ -6945,6 +6947,7 @@ final class ClassTemplateExtendsTest extends TestCase
                         }
                     }',
                 'error_message' => 'ArgumentTypeCoercion',
+                'error_levels' => ['DeprecatedSyntax'],
             ],
             'invalidExtendsAnnotation' => [
                 'code' => '<?php

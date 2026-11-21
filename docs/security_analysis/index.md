@@ -561,7 +561,7 @@ Keep three rules in mind:
 
 ### Classes only instantiated from the command line
 
-Mark a `final` class `@psalm-cli-only-instances` when its constructor and `__wakeup()` (or `__unserialize()`) reject
+Mark a `final` class `@psalm-cli-only-instances` when its constructor and `__unserialize()` (or `__wakeup()`) reject
 non-CLI execution. Holding an instance then proves the code is running on the CLI, so no extra SAPI guard is needed at
 call sites.
 
@@ -588,7 +588,7 @@ final class ConsoleRequest
         }
     }
 
-    public function __wakeup(): void
+    public function __unserialize(array $data): void
     {
         if (PHP_SAPI !== 'cli') {
             throw new LogicException('Run it from the command line');
