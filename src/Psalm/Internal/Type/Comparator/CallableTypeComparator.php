@@ -353,22 +353,30 @@ final class CallableTypeComparator
 
     /**
      * The callable of a method of a generic object (`[$box, 'set']`, an invokable `Box<int>`) with the class
-     * templates bound by the object
+     * templates bound by the object. A class without templates of its own binds the ones of the generic class
+     * it extends (`@extends Box<int>`) the same way.
      */
     private static function bindReceiverTemplates(
         Codebase $codebase,
         TCallable $callable,
-        TGenericObject $receiver,
+        TNamedObject $receiver,
         MethodIdentifier $declaring_method_id,
     ): TCallable {
         if (!$codebase->classOrInterfaceExists($receiver->value)) {
             return $callable;
         }
 
+        $receiver_storage = $codebase->classlike_storage_provider->get($receiver->value);
+
+        // a bare `Box`, `$this` or `static` of a generic class has no arguments to bind
+        if (!$receiver instanceof TGenericObject && $receiver_storage->template_types !== null) {
+            return $callable;
+        }
+
         $receiver_template_types = ClassTemplateParamCollector::collect(
             $codebase,
             $codebase->methods->getClassLikeStorageForMethod($declaring_method_id),
-            $codebase->classlike_storage_provider->get($receiver->value),
+            $receiver_storage,
             $declaring_method_id->method_name,
             $receiver,
         );
@@ -432,7 +440,7 @@ final class CallableTypeComparator
                 $codebase,
             );
 
-            if ($callable_object instanceof TGenericObject) {
+            if ($callable_object instanceof TNamedObject) {
                 $callable = self::bindReceiverTemplates($codebase, $callable, $callable_object, $declaring_method_id);
             }
 
@@ -837,14 +845,12 @@ final class CallableTypeComparator
                         callable_id: strtolower((string) $declaring_method_id),
                     );
 
-                    if ($input_type_part instanceof Atomic\TGenericObject) {
-                        $callable = self::bindReceiverTemplates(
-                            $codebase,
-                            $callable,
-                            $input_type_part,
-                            $declaring_method_id,
-                        );
-                    }
+                    $callable = self::bindReceiverTemplates(
+                        $codebase,
+                        $callable,
+                        $input_type_part,
+                        $declaring_method_id,
+                    );
 
                     if ($template_result) {
                         $callable = TemplateInferredTypeReplacer::replace(
