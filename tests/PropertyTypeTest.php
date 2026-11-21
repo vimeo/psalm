@@ -4801,6 +4801,21 @@ final class PropertyTypeTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'nameOfPhpParserFiveHasNoParts' => [
+                'code' => '<?php
+                    namespace PhpParser\\Node {
+                        class Name {
+                            public string $name = "";
+                        }
+                    }
+
+                    namespace {
+                        function f(PhpParser\\Node\\Name $n): array {
+                            return $n->parts;
+                        }
+                    }',
+                'error_message' => 'UndefinedPropertyFetch',
+            ],
             'staticPropertyOfAStaticTypeInANonFinalClassIsNotTheClass' => [
                 'code' => '<?php
                     class Config {
