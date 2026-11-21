@@ -9,6 +9,7 @@ use PhpParser;
 use function assert;
 use function end;
 use function max;
+use function strtolower;
 use function substr;
 
 /**
@@ -136,6 +137,14 @@ final class FileStatementsDiffer extends AstDiffer
                     $deletion_ranges = [...$deletion_ranges, ...$class_keep[4]];
                 }
             } elseif ($diff_elem->type === DiffElem::TYPE_REMOVE) {
+                // the callers of a function that changed or is gone are analyzed again
+                if ($diff_elem->old instanceof PhpParser\Node\Stmt\Function_
+                    && self::getFunctionCode($diff_elem->old, $a_code)
+                        !== self::findFunctionCode($b, (string) $diff_elem->old->name, $b_code)
+                ) {
+                    $add_or_delete[] = self::getFunctionId($namespace, $diff_elem->old);
+                }
+
                 if ($diff_elem->old instanceof PhpParser\Node\Stmt\Use_
                     || $diff_elem->old instanceof PhpParser\Node\Stmt\GroupUse
                 ) {
@@ -164,6 +173,13 @@ final class FileStatementsDiffer extends AstDiffer
                     ];
                 }
             } elseif ($diff_elem->type === DiffElem::TYPE_ADD) {
+                // and so are those of a function that is new
+                if ($diff_elem->new instanceof PhpParser\Node\Stmt\Function_
+                    && self::findFunctionCode($a, (string) $diff_elem->new->name, $a_code) === null
+                ) {
+                    $add_or_delete[] = self::getFunctionId($namespace, $diff_elem->new);
+                }
+
                 if ($diff_elem->new instanceof PhpParser\Node\Stmt\Use_
                     || $diff_elem->new instanceof PhpParser\Node\Stmt\GroupUse
                 ) {
@@ -187,6 +203,38 @@ final class FileStatementsDiffer extends AstDiffer
     /**
      * The docblock, attributes, modifiers, name and parents of a class-like
      */
+    /**
+     * @return lowercase-string
+     * @psalm-capabilities read-props
+     */
+    private static function getFunctionId(string $namespace, PhpParser\Node\Stmt\Function_ $node): string
+    {
+        return strtolower(($namespace !== '' ? $namespace . '\\' : '') . (string) $node->name);
+    }
+
+    private static function getFunctionCode(PhpParser\Node\Stmt\Function_ $node, string $code): string
+    {
+        $start = $node->getDocComment()?->getStartFilePos() ?? (int) $node->getAttribute('startFilePos');
+
+        return substr($code, $start, (int) $node->getAttribute('endFilePos') - $start + 1);
+    }
+
+    /**
+     * @param array<int, PhpParser\Node\Stmt> $stmts
+     */
+    private static function findFunctionCode(array $stmts, string $name, string $code): ?string
+    {
+        foreach ($stmts as $stmt) {
+            if ($stmt instanceof PhpParser\Node\Stmt\Function_
+                && strtolower((string) $stmt->name) === strtolower($name)
+            ) {
+                return self::getFunctionCode($stmt, $code);
+            }
+        }
+
+        return null;
+    }
+
     private static function getClassHeader(PhpParser\Node\Stmt\ClassLike $node, string $code): string
     {
         $start = (int) $node->getAttribute('startFilePos');

@@ -111,6 +111,92 @@ final class ErrorAfterUpdateTest extends TestCase
     public static function providerTestInvalidUpdates(): array
     {
         return [
+            'invalidateMethodCallingAChangedFunction' => [
+                'file_stages' => [
+                    [
+                        (string) getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'functions.php' => '<?php
+                            namespace Foo;
+
+                            function helper(): int {
+                                return 1;
+                            }',
+                        (string) getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'Caller.php' => '<?php
+                            namespace Foo;
+
+                            require_once __DIR__ . "/functions.php";
+
+                            final class Caller {
+                                public function f(): int {
+                                    return helper();
+                                }
+                            }
+
+                            echo (new Caller())->f();',
+                    ],
+                    [
+                        (string) getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'functions.php' => '<?php
+                            namespace Foo;
+
+                            function helper(): string {
+                                return "";
+                            }',
+                        (string) getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'Caller.php' => '<?php
+                            namespace Foo;
+
+                            require_once __DIR__ . "/functions.php";
+
+                            final class Caller {
+                                public function f(): int {
+                                    return helper();
+                                }
+                            }
+
+                            echo (new Caller())->f();',
+                    ],
+                ],
+                'error_message' => 'InvalidReturnStatement',
+            ],
+            'invalidateFunctionCallingAChangedFunction' => [
+                'file_stages' => [
+                    [
+                        (string) getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'functions.php' => '<?php
+                            namespace Foo;
+
+                            function helper(): int {
+                                return 1;
+                            }',
+                        (string) getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'caller.php' => '<?php
+                            namespace Foo;
+
+                            require_once __DIR__ . "/functions.php";
+
+                            function caller(): int {
+                                return helper();
+                            }
+
+                            echo caller();',
+                    ],
+                    [
+                        (string) getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'functions.php' => '<?php
+                            namespace Foo;
+
+                            function helper(): string {
+                                return "";
+                            }',
+                        (string) getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'caller.php' => '<?php
+                            namespace Foo;
+
+                            require_once __DIR__ . "/functions.php";
+
+                            function caller(): int {
+                                return helper();
+                            }
+
+                            echo caller();',
+                    ],
+                ],
+                'error_message' => 'InvalidReturnStatement',
+            ],
             'invalidateParentCaller' => [
                 'file_stages' => [
                     [

@@ -1052,6 +1052,15 @@ final class FunctionCallAnalyzer extends CallAnalyzer
 
                 $function_call_info->function_params = $function_call_info->function_storage->params;
 
+                // the caller is analyzed again when the function changes
+                if (!$function_call_info->in_call_map) {
+                    $codebase->addReferenceToFunctionLike(
+                        strtolower($function_call_info->function_id),
+                        $code_location,
+                        $context,
+                    );
+                }
+
                 if ($function_call_info->in_call_map && $function_storage->cased_name !== null) {
                     // a function imported with an alias is called by the alias: its name is the imported one
                     $imported_name = count($function_name->getParts()) === 1
