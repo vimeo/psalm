@@ -188,6 +188,10 @@ final class SwitchAnalyzer
             $statements_analyzer->node_data->cache_assertions = true;
         }
 
+        foreach ($switch_scope->forgotten_vars as $var_id => $_) {
+            unset($context->vars_in_scope[$var_id]);
+        }
+
         // only update vars if there is a default or all possible cases accounted for
         // if the default has a throw/return/continue, that should be handled above
         if ($all_options_matched) {

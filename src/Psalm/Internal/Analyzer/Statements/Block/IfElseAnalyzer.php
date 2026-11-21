@@ -516,10 +516,31 @@ final class IfElseAnalyzer
      */
     private static function isForgottenIn(Context $branch_context, string $var_id, array $parent_remove_vars): bool
     {
-        foreach ($branch_context->parent_remove_vars as $changed_var_id => $stamp) {
+        return self::isForgottenSince(
+            $branch_context->parent_remove_vars,
+            $parent_remove_vars,
+            $var_id,
+            isset($branch_context->vars_possibly_in_scope[$var_id]),
+        );
+    }
+
+    /**
+     * The rule of isForgottenIn() for the stamps $stamps of a way out of a branch
+     *
+     * @param array<string, int> $stamps
+     * @param array<string, int> $parent_remove_vars the stamps before the branch
+     * @psalm-pure
+     */
+    public static function isForgottenSince(
+        array $stamps,
+        array $parent_remove_vars,
+        string $var_id,
+        bool $is_possibly_in_scope,
+    ): bool {
+        foreach ($stamps as $changed_var_id => $stamp) {
             if ($stamp !== ($parent_remove_vars[$changed_var_id] ?? null)
                 && ($changed_var_id === $var_id
-                    ? isset($branch_context->vars_possibly_in_scope[$var_id])
+                    ? $is_possibly_in_scope
                     : preg_match('/' . preg_quote($changed_var_id, '/') . '[\]\[\-]/', $var_id) === 1)
             ) {
                 return true;
