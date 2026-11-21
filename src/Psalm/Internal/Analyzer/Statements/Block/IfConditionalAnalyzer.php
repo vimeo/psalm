@@ -460,10 +460,15 @@ final class IfConditionalAnalyzer
             $if_scope->negated_clauses = [];
         }
 
+        $negated_referenced_var_ids = [];
+
         $if_scope->negated_types = Algebra::getTruthsFromFormula(
             Algebra::simplifyCNF(
                 [...$context->clauses, ...$if_scope->negated_clauses],
             ),
+            $cond_object_id,
+            $negated_referenced_var_ids,
+            $if_scope->active_negated_types,
         );
     }
 
@@ -631,7 +636,6 @@ final class IfConditionalAnalyzer
         if ($stmt instanceof PhpParser\Node\Expr\BinaryOp) {
             if ($stmt instanceof PhpParser\Node\Expr\BinaryOp\BooleanAnd
                 || $stmt instanceof PhpParser\Node\Expr\BinaryOp\LogicalAnd
-                || $stmt instanceof PhpParser\Node\Expr\BinaryOp\LogicalXor
             ) {
                 return self::getDefinitelyEvaluatedExpressionAfterIf($stmt->left);
             }
@@ -675,7 +679,6 @@ final class IfConditionalAnalyzer
         if ($stmt instanceof PhpParser\Node\Expr\BinaryOp) {
             if ($stmt instanceof PhpParser\Node\Expr\BinaryOp\BooleanOr
                 || $stmt instanceof PhpParser\Node\Expr\BinaryOp\LogicalOr
-                || $stmt instanceof PhpParser\Node\Expr\BinaryOp\LogicalXor
             ) {
                 return self::getDefinitelyEvaluatedExpressionInsideIf($stmt->left);
             }

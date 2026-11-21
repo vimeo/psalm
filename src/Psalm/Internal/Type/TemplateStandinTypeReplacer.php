@@ -43,6 +43,7 @@ use Psalm\Type\Atomic\TTypeVariable;
 use Psalm\Type\MutableUnion;
 use Psalm\Type\Union;
 
+use function array_any;
 use function array_fill;
 use function array_filter;
 use function array_keys;
@@ -141,6 +142,52 @@ final class TemplateStandinTypeReplacer
             }
 
             $other_input_type = $new_input_type->isUnionEmpty() ? null : $new_input_type->freeze();
+
+            // an input atom contained by a template-free atom of the union, `'a'` for `string`, is that atom's and
+            // not the template's, unless
+            // - it is also contained by an atom that holds a template (`class-string<T>`, `iterable<T>`), which it
+            //   binds, or
+            // - it is all that is left (`notString("only")` binds `'only'`)
+            if ($other_input_type) {
+                $template_free_input_type = $other_input_type->getBuilder();
+
+                $template_free_atomic_types = [];
+                $templated_atomic_types = [];
+
+                foreach ($original_atomic_types as $original_atomic_type) {
+                    $template_collector = new TemplateTypeCollector();
+                    $template_collector->traverseArray([$original_atomic_type]);
+
+                    if (!$template_collector->getTemplateTypes()) {
+                        $template_free_atomic_types[] = $original_atomic_type;
+                    } elseif ($original_atomic_type instanceof TTemplateParamClass) {
+                        $templated_atomic_types[] = new TClassString(
+                            $original_atomic_type->as,
+                            $original_atomic_type->as_type,
+                        );
+                    } elseif (!$original_atomic_type instanceof TTemplateParam) {
+                        $templated_atomic_types[] = $original_atomic_type;
+                    }
+                }
+
+                foreach ($other_input_type->getAtomicTypes() as $input_key => $input_atomic_type) {
+                    if (array_any(
+                        $template_free_atomic_types,
+                        static fn(Atomic $atomic_type): bool
+                            => AtomicTypeComparator::isContainedBy($codebase, $input_atomic_type, $atomic_type),
+                    ) && !array_any(
+                        $templated_atomic_types,
+                        static fn(Atomic $atomic_type): bool
+                            => AtomicTypeComparator::isContainedBy($codebase, $input_atomic_type, $atomic_type),
+                    )) {
+                        $template_free_input_type->removeType($input_key);
+                    }
+                }
+
+                if (!$template_free_input_type->isUnionEmpty()) {
+                    $other_input_type = $template_free_input_type->freeze();
+                }
+            }
 
             // a bare template keeps the subtraction for every atom: its bounds would otherwise
             // compete by depth with the deeper bounds a matched container atom adds
@@ -839,6 +886,8 @@ final class TemplateStandinTypeReplacer
                     );
                 }
 
+                $templates_in_scope = null;
+
                 foreach ($replacement_type->getAtomicTypes() as $replacement_atomic_type) {
                     $replacements_found = false;
 
@@ -878,6 +927,13 @@ final class TemplateStandinTypeReplacer
                     if ($replacement_atomic_type instanceof TTemplateParam
                         && $replacement_atomic_type->defining_class !== $calling_class
                         && $replacement_atomic_type->defining_class !== 'fn-' . $calling_function
+                        // a trait method is analysed as a method of the using class,
+                        // so its own templates don't match the `fn-` id of the calling function
+                        && !isset(
+                            ($templates_in_scope ??= $statements_analyzer?->getTemplateTypeMap() ?? [])
+                                [$replacement_atomic_type->param_name]
+                                [$replacement_atomic_type->defining_class],
+                        )
                     ) {
                         foreach ($replacement_atomic_type->as->getAtomicTypes() as $nested_type_atomic) {
                             $replacements_found = true;

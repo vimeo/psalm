@@ -24,6 +24,7 @@ use function getcwd;
 use function preg_quote;
 use function set_time_limit;
 use function sort;
+use function str_replace;
 use function strpos;
 
 use const DIRECTORY_SEPARATOR;
@@ -115,6 +116,75 @@ final class IncludeTest extends TestCase
         foreach ($files_to_check as $file_path) {
             $file_analyzer = new FileAnalyzer($this->project_analyzer, $file_path, $config->shortenFileName($file_path));
             $file_analyzer->analyze();
+        }
+    }
+
+    /**
+     * The globals `callWriter()` writes are those of the `writeGlobal()` the calling file includes, whichever file
+     * is analyzed first
+     *
+     * @param list<string> $file_names
+     */
+    #[DataProvider('providerGlobalWriteScopesInEntryOrders')]
+    public function testGlobalsWrittenThroughAnotherFunctionAreThoseTheCallingFileSees(
+        string $calls,
+        array $file_names,
+    ): void {
+        $dir = (string) getcwd() . DIRECTORY_SEPARATOR;
+
+        $this->addFile($dir . 'helpers.php', '<?php
+            function writeGlobal(): void {
+                global $x;
+                $x = "written";
+            }
+        ');
+        $this->addFile($dir . 'noop_helpers.php', '<?php
+            function writeGlobal(): void {
+            }
+        ');
+        $this->addFile($dir . 'lib.php', '<?php
+            function callWriter(): void {
+                writeGlobal();
+            }
+        ');
+        $this->addFile($dir . 'entry.php', '<?php
+            require_once "helpers.php";
+            require_once "lib.php";
+            ' . str_replace('{expected}', 'mixed', $calls));
+        $this->addFile($dir . 'other_entry.php', '<?php
+            require_once "noop_helpers.php";
+            require_once "lib.php";
+            ' . str_replace('{expected}', '\'safe\'', $calls));
+
+        $this->assertSame([], $this->analyzeFilesInOrder($file_names));
+    }
+
+    /**
+     * @return iterable<string, array{string, list<string>}>
+     * @psalm-pure
+     */
+    public static function providerGlobalWriteScopesInEntryOrders(): iterable
+    {
+        $scopes = [
+            'file scope, called twice' => '
+                $x = "safe";
+                callWriter();
+                /** @psalm-check-type-exact $x = {expected} */;
+                $x = "safe";
+                callWriter();
+                /** @psalm-check-type-exact $x = {expected} */;',
+            'global in a function' => '
+                function f(): void {
+                    global $x;
+                    $x = "safe";
+                    callWriter();
+                    /** @psalm-check-type-exact $x = {expected} */;
+                }',
+        ];
+
+        foreach ($scopes as $scope => $calls) {
+            yield $scope . ', writing entry first' => [$calls, ['entry.php', 'other_entry.php']];
+            yield $scope . ', no-op entry first' => [$calls, ['other_entry.php', 'entry.php']];
         }
     }
 
@@ -1614,6 +1684,67 @@ final class IncludeTest extends TestCase
         }
 
         return $issues;
+    }
+
+    /**
+     * @param list<string> $expected_issues
+     */
+    #[DataProvider('providerStrictTypesOfIncludedFiles')]
+    public function testStrictTypesAppliesPerFile(string $includer, string $included, array $expected_issues): void
+    {
+        $this->addFile((string) getcwd() . DIRECTORY_SEPARATOR . 'main.php', $includer);
+        $this->addFile((string) getcwd() . DIRECTORY_SEPARATOR . 'inc.php', $included);
+
+        $this->assertSame($expected_issues, $this->analyzeFilesInOrder(['main.php', 'inc.php']));
+    }
+
+    /**
+     * @return iterable<string, array{includer: string, included: string, expected_issues: list<string>}>
+     * @psalm-pure
+     */
+    public static function providerStrictTypesOfIncludedFiles(): iterable
+    {
+        yield 'strict includer, non-strict included file' => [
+            'includer' => '<?php
+                declare(strict_types=1);
+
+                require __DIR__ . "/inc.php";',
+            'included' => '<?php
+                strlen(5);',
+            'expected_issues' => ['inc.php: InvalidScalarArgument@2'],
+        ];
+
+        yield 'non-strict includer, strict included file' => [
+            'includer' => '<?php
+                require __DIR__ . "/inc.php";',
+            'included' => '<?php
+                declare(strict_types=1);
+
+                strlen(5);',
+            'expected_issues' => ['inc.php: InvalidArgument@4'],
+        ];
+
+        yield 'non-strict includer stays non-strict after a strict included file' => [
+            'includer' => '<?php
+                require __DIR__ . "/inc.php";
+
+                strlen(5);',
+            'included' => '<?php
+                declare(strict_types=1);',
+            'expected_issues' => ['main.php: InvalidScalarArgument@4'],
+        ];
+
+        yield 'strict includer stays strict after a non-strict included file' => [
+            'includer' => '<?php
+                declare(strict_types=1);
+
+                require __DIR__ . "/inc.php";
+
+                strlen(5);',
+            'included' => '<?php
+                echo 1;',
+            'expected_issues' => ['main.php: InvalidArgument@6'],
+        ];
     }
 
     /**

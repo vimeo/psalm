@@ -14,6 +14,7 @@ use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TClassString;
+use Psalm\Type\Atomic\TClosure;
 use Psalm\Type\Atomic\TConditional;
 use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TIntersection;
@@ -39,11 +40,13 @@ use Psalm\Type\Atomic\TValueOf;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
+use function array_all;
 use function array_merge;
 use function array_shift;
 use function array_values;
 use function assert;
 use function str_starts_with;
+use function strtolower;
 
 /**
  * @internal
@@ -551,6 +554,21 @@ final class TemplateInferredTypeReplacer
                     continue;
                 }
 
+                // the final Closure has no object in common with such a candidate (an interface it does not
+                // implement): nothing of it is in the if branch, so it stays only in the else one, decidably
+                if (array_all(
+                    $conditional_type->getAtomicTypes(),
+                    static fn(Atomic $conditional_atomic_type): bool
+                        => self::isDisjointFromClosure($codebase, $candidate_atomic_type, $conditional_atomic_type),
+                )) {
+                    continue;
+                }
+
+                // only a candidate that can't be of the condition is decidably in the else branch
+                if (self::isDisjoint($codebase, $candidate_atomic_type, $conditional_type)) {
+                    continue;
+                }
+
                 $if_part = Type::intersectUnionTypes(
                     $candidate,
                     $conditional_type,
@@ -560,11 +578,8 @@ final class TemplateInferredTypeReplacer
                 );
 
                 if ($if_part === null) {
-                    // only a candidate that can't be of the condition is decidably in the else branch: the
-                    // intersection of some overlapping types is unknown
-                    if (!self::isDisjoint($codebase, $candidate_atomic_type, $conditional_type)) {
-                        $is_decidable = false;
-                    }
+                    // the intersection of some overlapping types is unknown
+                    $is_decidable = false;
 
                     continue;
                 }
@@ -725,6 +740,26 @@ final class TemplateInferredTypeReplacer
      */
     private static function isDisjoint(Codebase $codebase, Atomic $candidate, Union $conditional_type): bool
     {
+        // a template is as disjoint as its bound: one bounded by `mixed` is never decidably disjoint
+        if ($candidate instanceof TTemplateParam) {
+            foreach ($candidate->as->getAtomicTypes() as $bound_atomic_type) {
+                if (!self::isDisjoint($codebase, $bound_atomic_type, $conditional_type)) {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        // `Factory&Closure`, what `$factory instanceof Closure` leaves, is of what one of its parts is
+        if ($candidate instanceof TIterable || $candidate instanceof TNamedObject) {
+            foreach ($candidate->getIntersectionTypes() as $intersection_type) {
+                if (!self::isDisjoint($codebase, $intersection_type, $conditional_type)) {
+                    return false;
+                }
+            }
+        }
+
         // the empty array is never a non-empty one, nor the reverse
         $overlapping_atomic_types = [];
 
@@ -746,6 +781,46 @@ final class TemplateInferredTypeReplacer
             new Union($overlapping_atomic_types),
             false,
         );
+    }
+
+    /**
+     * Whether $candidate can't be a Closure: it is final and extends or implements nothing, so only the
+     * class itself, `object`, `callable` and what they bound are possibly one
+     */
+    private static function isDisjointFromClosure(
+        Codebase $codebase,
+        Atomic $candidate,
+        Atomic $conditional_atomic_type,
+    ): bool {
+        if (!$conditional_atomic_type instanceof TClosure) {
+            return false;
+        }
+
+        if ($candidate instanceof TTemplateParam) {
+            return array_all(
+                $candidate->as->getAtomicTypes(),
+                static fn(Atomic $bound): bool
+                    => self::isDisjointFromClosure($codebase, $bound, $conditional_atomic_type)
+                    || !UnionTypeComparator::canExpressionTypesBeIdentical(
+                        $codebase,
+                        new Union([$bound]),
+                        new Union([$conditional_atomic_type]),
+                        false,
+                    ),
+            );
+        }
+
+        // `Factory&Closure`, what `$factory instanceof Closure` leaves, is a Closure
+        if ($candidate instanceof TIterable || $candidate instanceof TNamedObject) {
+            foreach ($candidate->getIntersectionTypes() as $intersection_type) {
+                if (!self::isDisjointFromClosure($codebase, $intersection_type, $conditional_atomic_type)) {
+                    return false;
+                }
+            }
+        }
+
+        return $candidate instanceof TIterable
+            || ($candidate instanceof TNamedObject && strtolower($candidate->value) !== 'closure');
     }
 
     /**

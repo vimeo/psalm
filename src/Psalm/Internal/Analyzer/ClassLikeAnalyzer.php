@@ -12,6 +12,7 @@ use Psalm\CodeLocation;
 use Psalm\Codebase;
 use Psalm\Context;
 use Psalm\Internal\Codebase\MixinLookup;
+use Psalm\Internal\Codebase\PhpDeprecations;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Provider\NodeDataProvider;
@@ -23,6 +24,7 @@ use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Internal\Type\TypeExpander;
 use Psalm\Internal\TypeVisitor\ContainsClassLikeVisitor;
 use Psalm\Internal\TypeVisitor\ContainsStaticVisitor;
+use Psalm\Issue\DeprecatedSyntax;
 use Psalm\Issue\InaccessibleProperty;
 use Psalm\Issue\InvalidClass;
 use Psalm\Issue\InvalidTemplateParam;
@@ -327,6 +329,78 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
             '/(^|\\\)(int|float|bool|string|void|null|false|true|object|mixed)$/i',
             $fq_class_name,
         ) || strtolower($fq_class_name) === 'resource';
+    }
+
+    /**
+     * Reports a static member of the trait $fq_class_name accessed on the trait, and returns whether it is one
+     */
+    public static function checkTraitMemberAccess(
+        StatementsAnalyzer $statements_analyzer,
+        string $fq_class_name,
+        PhpParser\Node $class_node,
+    ): bool {
+        if (!$statements_analyzer->getCodebase()->classlikes->traitExists($fq_class_name)) {
+            return false;
+        }
+
+        IssueBuffer::maybeAdd(
+            new DeprecatedSyntax(
+                PhpDeprecations::getDeprecatedSinceMessage(
+                    'Accessing a static member directly on the trait ' . $fq_class_name,
+                    8_01_00,
+                    null,
+                ) . ', access it on a class using the trait',
+                new CodeLocation($statements_analyzer, $class_node),
+            ),
+            $statements_analyzer->getSuppressedIssues(),
+        );
+
+        return true;
+    }
+
+    /**
+     * Reports a class-like named after a keyword PHP adds
+     *
+     * @param array<array-key, string> $suppressed_issues
+     */
+    public static function checkDeprecatedName(
+        StatementsSource $source,
+        string $kind,
+        PhpParser\Node\Identifier $name,
+        array $suppressed_issues,
+    ): void {
+        $message = PhpDeprecations::getClassLikeNameMessage($kind, $name->name, true);
+
+        if ($message !== null) {
+            IssueBuffer::maybeAdd(
+                new ReservedWord($message, new CodeLocation($source, $name), $name->name),
+                $suppressed_issues,
+            );
+        }
+    }
+
+    /**
+     * Reports the class constants PHP deprecates the names of
+     *
+     * @param array<array-key, string> $suppressed_issues
+     */
+    public static function checkDeprecatedConstantNames(
+        StatementsSource $source,
+        PhpParser\Node\Stmt\ClassConst $stmt,
+        array $suppressed_issues,
+    ): void {
+        foreach ($stmt->consts as $const) {
+            if ($const->name->toLowerString() === 'namespace') {
+                IssueBuffer::maybeAdd(
+                    new DeprecatedSyntax(
+                        PhpDeprecations::getDeprecatedSinceMessage('A class constant named namespace', 8_06_00, null)
+                            . ', rename it',
+                        new CodeLocation($source, $const),
+                    ),
+                    $suppressed_issues,
+                );
+            }
+        }
     }
 
     /**
@@ -955,6 +1029,8 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
         CodeLocation $code_location,
         int $given_param_count,
     ): void {
+        $written_type_args = $storage->template_extended_offsets[strtolower($parent_storage->name)] ?? null;
+
         $expected_param_count = $parent_storage->template_types === null
             ? 0
             : count($parent_storage->template_types);
@@ -969,8 +1045,7 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
                 $storage->suppressed_issues + $this->getSuppressedIssues(),
             );
         } elseif ($expected_param_count < $given_param_count
-            || (isset($storage->template_extended_offsets[$parent_storage->name])
-                && !PurityArguments::fit($storage->template_extended_offsets[$parent_storage->name], $parent_storage))
+            || ($written_type_args !== null && !PurityArguments::fit($written_type_args, $parent_storage))
         ) {
             IssueBuffer::maybeAdd(
                 new TooManyTemplateParams(
@@ -1013,7 +1088,7 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
 
             // the written arguments, but for the purity arguments, which come last
             $written_type_arg_count = $given_param_count
-                - count(PurityArguments::split($storage->template_extended_offsets[$parent_storage->name] ?? [])[1]);
+                - count(PurityArguments::split($written_type_args ?? [])[1]);
 
             // the bounds of type templates may use purity templates, which come after them
             $previous_extended = [];

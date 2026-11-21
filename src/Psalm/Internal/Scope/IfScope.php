@@ -95,6 +95,14 @@ final class IfScope
     public array $negated_types = [];
 
     /**
+     * Of the negated types, by offset, those the negation of the condition itself asserts, not the clauses that
+     * held before it
+     *
+     * @var array<string, array<int, array<int, Assertion>>>
+     */
+    public array $active_negated_types = [];
+
+    /**
      * @var array<string, bool>
      */
     public array $if_cond_changed_var_ids = [];

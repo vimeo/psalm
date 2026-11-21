@@ -15,8 +15,10 @@ use Stringable;
 use function array_column;
 use function array_fill_keys;
 use function array_map;
+use function array_values;
 use function count;
 use function implode;
+use function sort;
 
 /**
  * @api
@@ -171,6 +173,44 @@ abstract class FunctionLikeStorage implements HasAttributesInterface, Stringable
      * @var array<string, CodeLocation>
      */
     public array $throw_locations = [];
+
+    /**
+     * For each thrown class, the other classes of every intersection type (`A&B`) it is part of
+     *
+     * @var array<string, list<list<string>>>
+     */
+    public array $throw_intersections = [];
+
+    /**
+     * What the function declares as `@throws`, one entry per thrown type: a class alone, or the classes of an
+     * intersection (`A&B`)
+     *
+     * @return list<list<string>>
+     * @psalm-mutation-free
+     */
+    public function getThrowGroups(): array
+    {
+        $groups = [];
+
+        foreach ($this->throws ?: [] as $exception_name => $_) {
+            if (!isset($this->throw_intersections[$exception_name])) {
+                $groups[] = [$exception_name];
+
+                continue;
+            }
+
+            foreach ($this->throw_intersections[$exception_name] as $other_members) {
+                $group = [$exception_name, ...$other_members];
+                $sorted_group = $group;
+                sort($sorted_group);
+
+                // the group is stored under each of its classes
+                $groups[implode('&', $sorted_group)] ??= $group;
+            }
+        }
+
+        return array_values($groups);
+    }
 
     public bool $has_yield = false;
 
@@ -343,6 +383,29 @@ abstract class FunctionLikeStorage implements HasAttributesInterface, Stringable
      * @var list<array{store: string, key: ?int, is_list: bool, path_type: string, is_late_bound: bool}>
      */
     public array $taint_store_reads = [];
+
+    /**
+     * What a call of the function-like stores in the database and reads from it: `@psalm-database-query $sql $params`,
+     * ... (see DatabaseTaints), with parameters as offsets
+     *
+     * @var list<array{
+     *     0: 'query'|'prepare'|'execute'|'bind'|'insert'|'update'|'select'|'fetch',
+     *     sql?: int,
+     *     params?: int,
+     *     statement?: int,
+     *     name?: int,
+     *     key?: int,
+     *     value?: int,
+     *     values?: int,
+     *     base?: int,
+     *     table?: int,
+     *     data?: int,
+     *     from?: int,
+     *     result?: 'result'|'rows'|'value'|'column'|'any_value'|'any_column'|'value_or_row'|'none',
+     *     optional_first?: int,
+     * }>
+     */
+    public array $database_calls = [];
 
     /**
      * The flows of arguments into a property of the object a method is called on:

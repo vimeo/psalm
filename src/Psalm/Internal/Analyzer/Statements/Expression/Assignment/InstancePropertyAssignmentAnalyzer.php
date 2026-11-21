@@ -247,21 +247,9 @@ final class InstancePropertyAssignmentAnalyzer
                 && ($union_comparison_results->type_variable_lower_bounds
                     || $union_comparison_results->type_variable_upper_bounds)
             ) {
-                // transfer any type-variable bounds recorded while checking
-                // the assignment; a value that only reaches an upper bound
-                // through mixed is reported as MixedPropertyTypeCoercion at
-                // reconciliation
-                foreach ($union_comparison_results->type_variable_upper_bounds as [$_, $upper_bound]) {
-                    $upper_bound->property_requirement_id = $assigned_property->id;
-                }
-
-                foreach ($union_comparison_results->type_variable_lower_bounds as [$_, $lower_bound]) {
-                    $lower_bound->property_value_id = $assigned_property->id;
-                }
-
-                $statements_analyzer->type_variable_tracker->addBounds(
-                    $union_comparison_results->type_variable_lower_bounds,
-                    $union_comparison_results->type_variable_upper_bounds,
+                $statements_analyzer->type_variable_tracker->addPropertyAssignmentBounds(
+                    $union_comparison_results,
+                    $assigned_property->id,
                     new CodeLocation(
                         $statements_analyzer->getSource(),
                         $assignment_value ?? $stmt,
@@ -1745,7 +1733,8 @@ final class InstancePropertyAssignmentAnalyzer
 
         $property_storage = $declaring_class_storage->properties[$prop_name] ?? null;
         if ($property_storage !== null) {
-            if ($property_storage->deprecated) {
+            // a promoted property is initialized from its own parameter, which is not a use of it
+            if ($property_storage->deprecated && $stmt->getAttribute('promoted_parameter') !== true) {
                 IssueBuffer::maybeAdd(
                     new DeprecatedProperty(
                         $property_id . ' is marked deprecated',

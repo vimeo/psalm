@@ -169,7 +169,7 @@ final class TernaryAnalyzer
         if ($if_scope->negated_types) {
             [$t_else_context->vars_in_scope, $t_else_context->references_in_scope] = Reconciler::reconcileKeyedTypes(
                 $if_scope->negated_types,
-                $if_scope->negated_types,
+                $if_scope->active_negated_types,
                 $t_else_context->vars_in_scope,
                 $t_else_context->references_in_scope,
                 $changed_var_ids,
@@ -239,6 +239,8 @@ final class TernaryAnalyzer
                 ...$completing_context->cond_referenced_var_ids,
             ];
 
+            $context->keepReferencesPossiblyBoundIn($completing_context);
+
             return self::setResultType($statements_analyzer, $stmt, $context);
         }
 
@@ -247,6 +249,9 @@ final class TernaryAnalyzer
 
         $context->mergeConstraintsOfReferencesReboundIn($if_context, $stmt->if ? [$stmt->if] : [], $codebase);
         $context->mergeConstraintsOfReferencesReboundIn($t_else_context, [$stmt->else], $codebase);
+
+        $context->keepReferencesPossiblyBoundIn($if_context);
+        $context->keepReferencesPossiblyBoundIn($t_else_context);
 
         // the branches start with the assignments made before the ternary
         $assign_var_ifs = array_diff_assoc($if_context->assigned_var_ids, $context->assigned_var_ids);
