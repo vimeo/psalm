@@ -13,7 +13,6 @@ use Psalm\CodeLocation\Raw;
 use Psalm\Internal\Analyzer\CommentAnalyzer;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Storage\ImmutableNonCloneableTrait;
-use Psalm\Storage\UnserializeMemoryUsageSuppressionTrait;
 use ReflectionClass;
 use UnexpectedValueException;
 
@@ -36,13 +35,30 @@ use function trim;
 use const PREG_OFFSET_CAPTURE;
 
 /**
+ * @psalm-type SerializedLocation = array{
+ *     0: string,
+ *     1: string,
+ *     2: int,
+ *     3: int,
+ *     4: int,
+ *     5: int,
+ *     6: int,
+ *     7: bool,
+ *     8: int,
+ *     9: ?int,
+ *     10: ?int,
+ *     11: ?int,
+ *     12: ?int,
+ *     13: ?string,
+ *     14: ?CodeLocation,
+ *     15?: array{int, int, int, int, int, int, string},
+ * }
  * @psalm-immutable
  * @api
  */
 class CodeLocation
 {
     use ImmutableNonCloneableTrait;
-    use UnserializeMemoryUsageSuppressionTrait;
 
     public string $file_path;
 
@@ -143,6 +159,87 @@ class CodeLocation
         $this->raw_line_number = $stmt->getStartLine();
 
         $this->docblock_line_number = $comment_line;
+    }
+
+    /**
+     * @return SerializedLocation
+     * @psalm-mutation-free
+     */
+    public function __serialize(): array
+    {
+        $properties = [
+            $this->file_path,
+            $this->file_name,
+            $this->raw_line_number,
+            $this->raw_file_start,
+            $this->raw_file_end,
+            $this->file_start,
+            $this->file_end,
+            $this->single_line,
+            $this->preview_start,
+            $this->docblock_start,
+            $this->docblock_start_line_number,
+            $this->docblock_line_number,
+            $this->regex_type,
+            $this->text,
+            $this->previous_location,
+        ];
+
+        // Only a location asked for its end line, snippet, selection or columns has the computed ones set (see
+        // calculateRealLocation()). Most are not, so they stay out: forked workers send many of these locations.
+        if ($this->have_recalculated) {
+            $properties[] = [
+                $this->end_line_number,
+                $this->preview_end,
+                $this->selection_start,
+                $this->selection_end,
+                $this->column_from,
+                $this->column_to,
+                $this->snippet,
+            ];
+        }
+
+        return $properties;
+    }
+
+    /**
+     * Mirrors __serialize().
+     *
+     * @param SerializedLocation $properties
+     * @psalm-mutation-free
+     */
+    public function __unserialize(array $properties): void
+    {
+        [
+            $this->file_path,
+            $this->file_name,
+            $this->raw_line_number,
+            $this->raw_file_start,
+            $this->raw_file_end,
+            $this->file_start,
+            $this->file_end,
+            $this->single_line,
+            $this->preview_start,
+            $this->docblock_start,
+            $this->docblock_start_line_number,
+            $this->docblock_line_number,
+            $this->regex_type,
+            $this->text,
+            $this->previous_location,
+        ] = $properties;
+
+        if (isset($properties[15])) {
+            $this->have_recalculated = true;
+            [
+                $this->end_line_number,
+                $this->preview_end,
+                $this->selection_start,
+                $this->selection_end,
+                $this->column_from,
+                $this->column_to,
+                $this->snippet,
+            ] = $properties[15];
+        }
     }
 
     /**
