@@ -2846,6 +2846,109 @@ final class CallableTest extends TestCase
                         }
                     }',
             ],
+            'finalClassForwardsItsClosureOfStaticParam' => [
+                'code' => '<?php
+                    trait HasConditions {
+                        /** @param Closure(static): mixed $callback */
+                        public function when(bool $condition, Closure $callback): static {
+                            if ($condition) {
+                                $callback($this);
+                            }
+                            return $this;
+                        }
+
+                        /** @param Closure(static): mixed $callback */
+                        public function unless(bool $condition, Closure $callback): static {
+                            return $this->when(!$condition, $callback);
+                        }
+                    }
+
+                    final class Query {
+                        use HasConditions;
+                    }',
+            ],
+            'finalClassForwardsItsCallableOfListOfStaticParamFromATrait' => [
+                'code' => '<?php
+                    trait Visits {
+                        /** @param callable(list<static>): mixed $callback */
+                        public function visit(callable $callback): void {}
+
+                        /** @param callable(list<static>): mixed $callback */
+                        public function forward(callable $callback): void {
+                            $this->visit($callback);
+                        }
+                    }
+
+                    final class Box {
+                        use Visits;
+                    }',
+            ],
+            'finalGenericClassForwardsItsClosureOfStaticParamFromATrait' => [
+                'code' => '<?php
+                    trait HasConditions {
+                        /** @param Closure(static): mixed $callback */
+                        public function when(Closure $callback): void {}
+
+                        /** @param Closure(static): mixed $callback */
+                        public function unless(Closure $callback): void {
+                            $this->when($callback);
+                        }
+                    }
+
+                    /** @template T */
+                    final class Collection {
+                        use HasConditions;
+                    }',
+            ],
+            'enumForwardsItsClosureOfStaticParamFromATrait' => [
+                'code' => '<?php
+                    trait HasConditions {
+                        /** @param Closure(static): mixed $callback */
+                        public function when(Closure $callback): void {}
+
+                        /** @param Closure(static): mixed $callback */
+                        public function unless(Closure $callback): void {
+                            $this->when($callback);
+                        }
+                    }
+
+                    enum Suit {
+                        use HasConditions;
+
+                        case Hearts;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'finalClassInstancePassedToItsStaticParam' => [
+                'code' => '<?php
+                    final class Node {
+                        /** @param static $other */
+                        public function link($other): void {}
+
+                        public function linkTo(Node $other): void {
+                            $this->link($other);
+                        }
+                    }',
+            ],
+            'docblockFinalClassForwardsItsClosureOfStaticParamFromATrait' => [
+                'code' => '<?php
+                    trait HasConditions {
+                        /** @param Closure(static): mixed $callback */
+                        public function when(Closure $callback): void {}
+
+                        /** @param Closure(static): mixed $callback */
+                        public function unless(Closure $callback): void {
+                            $this->when($callback);
+                        }
+                    }
+
+                    /** @final */
+                    class Query {
+                        use HasConditions;
+                    }',
+            ],
             'callableStaticReturn' => [
                 'code' => '<?php
                     class A {}
@@ -3961,6 +4064,19 @@ final class CallableTest extends TestCase
                 'error_message' => 'InvalidArgument',
                 'error_levels' => [],
                 'php_version' => '8.0',
+            ],
+            'nonFinalClassInstancePassedToItsStaticParam' => [
+                'code' => '<?php
+                    class Node {
+                        /** @param static $other */
+                        public function link($other): void {}
+
+                        public function linkTo(Node $other): void {
+                            $this->link($other);
+                        }
+                    }',
+                'error_message' => 'ArgumentTypeCoercion - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:41'
+                    . ' - Argument 1 of Node::link expects Node&static, but parent type Node provided',
             ],
             'arrayCallableNamingNoClass' => [
                 'code' => '<?php
