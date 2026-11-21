@@ -78,6 +78,7 @@ use Psalm\Storage\Assertion\IsNotType;
 use Psalm\Storage\Assertion\IsType;
 use Psalm\Storage\Assertion\MatchesPattern;
 use Psalm\Storage\Assertion\NestedAssertions;
+use Psalm\Storage\Assertion\NonEmpty;
 use Psalm\Storage\Assertion\NonEmptyCountable;
 use Psalm\Storage\Assertion\NotNonEmptyCountable;
 use Psalm\Storage\Assertion\Truthy;
@@ -274,6 +275,20 @@ final class AssertionFinder
 
         if ($conditional instanceof PhpParser\Node\Expr\BooleanNot) {
             return [];
+        }
+
+        // `($a['k'] ?? false)` is truthy when `$a['k']` is set and truthy, as for `!empty($a['k'])`; the other falsy
+        // defaults (`?? 0`, `?? ''`, `?? []`) mean the same
+        if ($conditional instanceof PhpParser\Node\Expr\BinaryOp\Coalesce
+            && FormulaGenerator::isFalsyLiteral($conditional->right)
+            && ($coalesced_var_name = ExpressionIdentifier::getExtendedVarId(
+                $conditional->left,
+                $this_class_name,
+                $source,
+            )) !== null
+        ) {
+            // as `!empty($a['k'])`, which also holds for an item that may be missing
+            return [[$coalesced_var_name => [[new NonEmpty()]]]];
         }
 
         $string_length_assertions = self::getStringLengthAssertions($conditional, $this_class_name, $source);
