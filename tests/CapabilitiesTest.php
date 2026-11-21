@@ -5794,6 +5794,34 @@ final class CapabilitiesTest extends TestCase
                     }',
                 'error_message' => 'ImpureMethodCall',
             ],
+            'impureToStringOfATemplateIntersectedWithStringableInACast' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @param T&Stringable $n
+                     * @psalm-pure
+                     */
+                    function cast($n): string {
+                        return (string) $n;
+                    }',
+                'error_message' => 'possibly-mutating method Stringable::__toString',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'impureToStringOfATemplateIntersectedWithStringableInALooseComparison' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @param T&Stringable $n
+                     * @psalm-pure
+                     */
+                    function compare($n): bool {
+                        return $n == "x";
+                    }',
+                'error_message' => 'possibly-mutating method Stringable::__toString',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
             'impureToStringInStrval' => [
                 'code' => '<?php
                     final class Name {
