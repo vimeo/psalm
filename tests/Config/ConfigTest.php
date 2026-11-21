@@ -3017,7 +3017,9 @@ final class ConfigTest extends DeferredAnalyzerTestCase
             $package = $root . '/vendor/acme/lib';
             $this->assertTrue($config->isInUnrequiredPackage($package . '/src/functions.php'));
             $this->assertTrue($config->isInUnrequiredPackage($package));
-            $this->assertTrue($config->isInUnrequiredPackage(str_replace('/', '\\', $package . '/functions.php')));
+            $this->assertTrue($config->isInUnrequiredPackage(
+                str_replace('/', DIRECTORY_SEPARATOR, $package . '/functions.php'),
+            ));
             $this->assertFalse($config->isInUnrequiredPackage($root . '/vendor/acme/lib-extra/functions.php'));
             $this->assertFalse($config->isInUnrequiredPackage($root . '/vendor/acme'));
             $this->assertFalse($config->isInUnrequiredPackage($root . '/src/functions.php'));
