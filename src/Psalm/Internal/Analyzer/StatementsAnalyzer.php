@@ -635,7 +635,17 @@ final class StatementsAnalyzer extends SourceAnalyzer
 
         $checked_types = [];
         $hasParsed = false;
-        foreach ($stmt->getComments() as $docblock) {
+
+        $comments = $stmt->getComments();
+
+        // a short echo tag has no room for a docblock before it: one before an echoed expression is the echo's
+        if ($stmt instanceof PhpParser\Node\Stmt\Echo_) {
+            foreach ($stmt->exprs as $echoed_expr) {
+                $comments = [...$comments, ...$echoed_expr->getComments()];
+            }
+        }
+
+        foreach ($comments as $docblock) {
             if (!$docblock instanceof Doc) {
                 continue;
             }
@@ -674,21 +684,24 @@ final class StatementsAnalyzer extends SourceAnalyzer
             if (isset($statements_analyzer->parsed_docblock->tags['psalm-suppress'])) {
                 $suppressed = $statements_analyzer->parsed_docblock->tags['psalm-suppress'];
                 if ($suppressed) {
-                    $new_issues = [];
+                    $docblock_issues = [];
 
                     foreach ($suppressed as $offset => $suppress_entry) {
                         foreach (DocComment::parseSuppressList($suppress_entry) as $issue_offset => $issue_type) {
-                            $new_issues[$issue_offset + $offset] = $issue_type;
+                            $docblock_issues[$issue_offset + $offset] = $issue_type;
                         }
                     }
 
+                    // the suppressions of every docblock of the statement are removed after it
+                    $new_issues = ($new_issues ?? []) + $docblock_issues;
+
                     if ($codebase->track_unused_suppressions
                         && (
-                            (count($new_issues) === 1) // UnusedPsalmSuppress by itself should be marked as unused
-                            || !$codebase->config->suppressesIssueType($new_issues, 'UnusedPsalmSuppress')
+                            (count($docblock_issues) === 1) // UnusedPsalmSuppress by itself should be marked as unused
+                            || !$codebase->config->suppressesIssueType($docblock_issues, 'UnusedPsalmSuppress')
                         )
                     ) {
-                        foreach ($new_issues as $offset => $issue_type) {
+                        foreach ($docblock_issues as $offset => $issue_type) {
                             if ($issue_type === 'InaccessibleMethod') {
                                 continue;
                             }
@@ -702,7 +715,7 @@ final class StatementsAnalyzer extends SourceAnalyzer
                         }
                     }
 
-                    $statements_analyzer->addSuppressedIssues($new_issues);
+                    $statements_analyzer->addSuppressedIssues($docblock_issues);
                 }
             }
 
