@@ -19,6 +19,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodCallProhibit
 use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodCallPurityAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\NewAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\NoDiscardAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Call\OverloadSelector;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\StaticCallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\GlobalStateAnalyzer;
@@ -41,6 +42,7 @@ use Psalm\IssueBuffer;
 use Psalm\Plugin\EventHandler\Event\AfterMethodCallAnalysisEvent;
 use Psalm\Storage\Capabilities;
 use Psalm\Storage\ClassLikeStorage;
+use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Storage\Possibilities;
 use Psalm\Type;
 use Psalm\Type\Atomic;
@@ -172,6 +174,20 @@ final class ExistingAtomicStaticCallAnalyzer
             $template_result->lower_bounds += $inferred_template_result->lower_bounds;
         }
 
+        $method_storage = $codebase->methods->getUserMethodStorage($method_id);
+
+        $overload = null;
+
+        if ($method_storage && $method_storage->overloads !== [] && !$stmt->isFirstClassCallable()) {
+            $overload = OverloadSelector::select(
+                $statements_analyzer,
+                $codebase,
+                $args,
+                $context,
+                $method_storage->overloads,
+            );
+        }
+
         // a static call naming a class does not forward the late static binding: `static` is that class
         $static_is_called_class = $stmt->class instanceof PhpParser\Node\Name
             && !in_array(strtolower($stmt->class->getFirst()), ['self', 'static', 'parent'], true)
@@ -196,6 +212,7 @@ final class ExistingAtomicStaticCallAnalyzer
             new CodeLocation($statements_analyzer->getSource(), $stmt),
             $statements_analyzer,
             $static_is_called_class,
+            $overload,
         ) === false) {
             return;
         }
@@ -279,10 +296,9 @@ final class ExistingAtomicStaticCallAnalyzer
                 $fq_class_name,
                 $class_storage,
                 $config,
+                $overload,
             );
         }
-
-        $method_storage = $codebase->methods->getUserMethodStorage($method_id);
 
         if ($method_storage) {
             if ($method_storage->abstract
@@ -694,6 +710,7 @@ final class ExistingAtomicStaticCallAnalyzer
         string $fq_class_name,
         ClassLikeStorage $class_storage,
         Config $config,
+        ?FunctionLikeStorage $overload = null,
     ): ?Union {
         $return_type_candidate = $codebase->methods->getMethodReturnType(
             $codebase,
@@ -702,6 +719,8 @@ final class ExistingAtomicStaticCallAnalyzer
             $statements_analyzer,
             $args,
         );
+
+        $return_type_candidate = $overload->return_type ?? $return_type_candidate;
 
         if ($return_type_candidate) {
             if ($template_result->template_types) {

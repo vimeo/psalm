@@ -7399,6 +7399,67 @@ final class TaintTest extends TestCase
     public static function providerInvalidCodeParse(): array
     {
         return [
+            'taintSinkOfAFunctionWithOverloadsIsStillChecked' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-taint-sink html $x
+                     * @psalm-overload (int $x): string
+                     * @psalm-overload (string $x): string
+                     */
+                    function show(int|string $x): string {
+                        return "static";
+                    }
+
+                    show($_GET["a"]);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintSinkOfAMethodWithOverloadsIsStillChecked' => [
+                'code' => '<?php
+                    final class View {
+                        /**
+                         * @psalm-taint-sink html $x
+                         * @psalm-overload (int $x): string
+                         * @psalm-overload (string $x): string
+                         */
+                        public function show(int|string $x): string {
+                            return "static";
+                        }
+                    }
+
+                    (new View())->show($_GET["a"]);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintSinkOfAConstructorWithOverloadsIsStillChecked' => [
+                'code' => '<?php
+                    final class View {
+                        /**
+                         * @psalm-taint-sink html $x
+                         * @psalm-overload (int $x)
+                         * @psalm-overload (string $x)
+                         */
+                        public function __construct(int|string $x) {
+                        }
+                    }
+
+                    new View($_GET["a"]);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintSinkOfAStaticMethodWithOverloadsIsStillChecked' => [
+                'code' => '<?php
+                    final class View {
+                        /**
+                         * @psalm-taint-sink html $x
+                         * @psalm-overload (int $x): string
+                         * @psalm-overload (string $x): string
+                         */
+                        public static function show(int|string $x): string {
+                            return "static";
+                        }
+                    }
+
+                    View::show($_GET["a"]);',
+                'error_message' => 'TaintedHtml',
+            ],
             'superglobalIsStillTaintedAfterEval' => [
                 'code' => '<?php // --taint-analysis
                     eval("return 1;");

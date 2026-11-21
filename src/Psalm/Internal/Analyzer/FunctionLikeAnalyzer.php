@@ -51,6 +51,7 @@ use Psalm\Internal\Type\TypeExpander;
 use Psalm\Internal\TypeVisitor\TypeChecker;
 use Psalm\Issue\DeprecatedSyntax;
 use Psalm\Issue\ImpureFunctionCall;
+use Psalm\Issue\InvalidDocblock;
 use Psalm\Issue\InvalidDocblockParamName;
 use Psalm\Issue\InvalidOverride;
 use Psalm\Issue\InvalidParamDefault;
@@ -358,6 +359,8 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
         foreach ($storage->docblock_issues as $docblock_issue) {
             IssueBuffer::maybeAdd($docblock_issue);
         }
+
+        $this->checkOverloadsAgainstSignature($storage);
 
         TemplateDefaults::checkBounds(
             $this,
@@ -1835,6 +1838,113 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 $context,
             );
         }
+    }
+
+    /**
+     * An `@psalm-overload` is a way to call the function, so what it declares has to be what the function accepts
+     * and returns: its parameters are parameters of the signature (a call by name has to work at run time) and
+     * their types fit those of the signature, and its return type fits the declared one
+     */
+    private function checkOverloadsAgainstSignature(FunctionLikeStorage $storage): void
+    {
+        $codebase = $this->codebase;
+        $location = new CodeLocation($this, $this->function, null, true);
+        $function_name = $storage->cased_name ?? $this->getId();
+
+        $real_params = [];
+
+        foreach ($storage->params as $real_param) {
+            $real_params[$real_param->name] = $real_param;
+        }
+
+        $last_real_param = $storage->params === [] ? null : $storage->params[count($storage->params) - 1];
+
+        foreach ($storage->overloads as $overload) {
+            foreach ($overload->params as $position => $param) {
+                // by name where the signature has it, else by position: an overload may name its parameters
+                // differently, which a call by name can't use
+                $real_param = $real_params[$param->name]
+                    ?? $storage->params[$position]
+                    ?? ($param->is_variadic && $last_real_param !== null && $last_real_param->is_variadic
+                        ? $last_real_param
+                        : null);
+
+                if ($real_param === null) {
+                    IssueBuffer::maybeAdd(
+                        new InvalidDocblock(
+                            'Parameter $' . $param->name . ' of an @psalm-overload of ' . $function_name
+                                . ' is not a parameter of its signature',
+                            $location,
+                        ),
+                        $this->getSuppressedIssues(),
+                    );
+
+                    continue;
+                }
+
+                if (self::isOverloadTypeOutsideOfTheSignature($codebase, $param->type, $real_param->type)) {
+                    IssueBuffer::maybeAdd(
+                        new InvalidDocblock(
+                            'The type ' . $param->type?->getId() . ' of parameter $' . $param->name
+                                . ' of an @psalm-overload of ' . $function_name
+                                . ' is not accepted by its signature, which declares ' . $real_param->type?->getId(),
+                            $location,
+                        ),
+                        $this->getSuppressedIssues(),
+                    );
+                }
+            }
+
+            if (self::isOverloadTypeOutsideOfTheSignature($codebase, $overload->return_type, $storage->return_type)) {
+                IssueBuffer::maybeAdd(
+                    new InvalidDocblock(
+                        'The return type ' . $overload->return_type?->getId() . ' of an @psalm-overload of '
+                            . $function_name . ' is not contained by the declared one, '
+                            . $storage->return_type?->getId(),
+                        $location,
+                    ),
+                    $this->getSuppressedIssues(),
+                );
+            }
+        }
+    }
+
+    /**
+     * `self` and `static` stand for the class a call is made on, so what an overload says of them is not compared
+     *
+     * @psalm-pure
+     */
+    private static function isSelfOrStatic(Union $type): bool
+    {
+        foreach ($type->getAtomicTypes() as $atomic_type) {
+            if ($atomic_type instanceof TNamedObject
+                && ($atomic_type->is_static || in_array(strtolower($atomic_type->value), ['self', 'static'], true))
+            ) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Whether the type an overload declares is not contained by the one of the signature: only decided for types
+     * without templates, which the overload may bind differently
+     */
+    private static function isOverloadTypeOutsideOfTheSignature(
+        Codebase $codebase,
+        ?Union $overload_type,
+        ?Union $signature_type,
+    ): bool {
+        return $overload_type !== null
+            && $signature_type !== null
+            && !self::isSelfOrStatic($overload_type)
+            && !self::isSelfOrStatic($signature_type)
+            && !$overload_type->hasTemplate()
+            && !$signature_type->hasTemplate()
+            && $overload_type->getTemplateTypes() === []
+            && $signature_type->getTemplateTypes() === []
+            && !UnionTypeComparator::isContainedBy($codebase, $overload_type, $signature_type);
     }
 
     /**
