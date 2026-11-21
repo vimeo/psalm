@@ -84,7 +84,6 @@ use function array_merge;
 use function array_pad;
 use function array_pop;
 use function array_shift;
-use function array_unique;
 use function array_values;
 use function assert;
 use function basename;
@@ -1970,25 +1969,29 @@ final class Config
             }
         }
 
+        // a plugin is one class or one file, whatever it is called: the first spelling is shown
         $names = [];
         foreach ($this->plugin_classes as $plugin_entry) {
             $class = ltrim($plugin_entry['class'], '\\');
+            $key = 'class:' . strtolower($class);
             $package = $package_by_class[strtolower($class)] ?? null;
             if ($package !== null) {
-                $names[] = self::stripPluginAffixes($package);
+                $names[$key] ??= self::stripPluginAffixes($package);
                 continue;
             }
 
             $last_separator = strrpos($class, '\\');
             $short_name = $last_separator === false ? $class : substr($class, $last_separator + 1);
-            $names[] = strcasecmp($short_name, 'Plugin') === 0 ? $class : $short_name;
+            $names[$key] ??= strcasecmp($short_name, 'Plugin') === 0 ? $class : $short_name;
         }
 
         foreach ($this->plugin_paths as $path) {
-            $names[] = Path::isAbsolute($path) ? $this->shortenFileName($path) : $path;
+            $names['file:' . (realpath($path) ?: Path::canonicalize($path))] ??= Path::isAbsolute($path)
+                ? $this->shortenFileName($path)
+                : $path;
         }
 
-        return array_values(array_unique($names));
+        return array_values($names);
     }
 
     /**

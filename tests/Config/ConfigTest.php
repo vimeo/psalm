@@ -3836,13 +3836,14 @@ final class ConfigTest extends DeferredAnalyzerTestCase
                     <pluginClass class="Vendor\\Library\\Plugin" />
                     <pluginClass class="Vendor\\Extra\\Plugin" />
                     <pluginClass class="Foo\\Plugin" />
-                    <pluginClass class="Acme\\Bar\\MyPlugin" />
+                    <pluginClass class="Acme\\One\\MyPlugin" />
+                    <pluginClass class="Other\\MyPlugin" />
                     <pluginClass class="Acme\\PLUGIN" />
                     <pluginClass class="Psalm\\LaravelPlugin\\Plugin" />
                 </plugins>
             </psalm>',
             // as the --plugin option adds them: relative to the working directory
-            ['examples/plugins/InternalChecker.php'],
+            ['examples/plugins/InternalChecker.php', './examples/plugins/InternalChecker.php'],
         );
 
         $this->assertSame(
@@ -3852,6 +3853,7 @@ final class ConfigTest extends DeferredAnalyzerTestCase
                 'vendor/library',
                 'vendor/extra',
                 'foo/psalm-plugin',
+                'MyPlugin',
                 'MyPlugin',
                 'Acme\\PLUGIN',
                 'examples/plugins/InternalChecker.php',
