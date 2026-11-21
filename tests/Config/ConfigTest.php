@@ -2929,6 +2929,13 @@ final class ConfigTest extends DeferredAnalyzerTestCase
                 ],
                 true,
             ],
+            'requiredWithACustomVendorDirectory' => [
+                [
+                    'composer.json' => '{"config": {"vendor-dir": "lib"}, "require": {"amphp/amp": "^3"}}',
+                    'lib/composer/installed.json' => '{"packages": [' . $amp . ']}',
+                ],
+                true,
+            ],
             'requiredOnlyThroughPsalm' => [
                 [
                     'composer.json' => '{"require-dev": {"vimeo/psalm": "^7"}}',
