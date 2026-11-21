@@ -274,6 +274,7 @@
             <xs:element name="DeprecatedInterface" type="ClassIssueHandlerType" minOccurs="0" />
             <xs:element name="DeprecatedMethod" type="MethodIssueHandlerType" minOccurs="0" />
             <xs:element name="DeprecatedProperty" type="PropertyIssueHandlerType" minOccurs="0" />
+            <xs:element name="DeprecatedSyntax" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="DeprecatedTrait" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="DirectConstructorCall" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="DocblockTypeContradiction" type="IssueHandlerType" minOccurs="0" />
@@ -510,11 +511,13 @@
             <xs:element name="TaintedFile" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="TaintedHeader" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="TaintedHtml" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="TaintedHtmlAttribute" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="TaintedInclude" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="TaintedInput" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="TaintedLdap" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="TaintedLlmPrompt" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="TaintedNosql" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="TaintedRedirect" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="TaintedShell" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="TaintedSleep" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="TaintedSql" type="IssueHandlerType" minOccurs="0" />
@@ -524,6 +527,7 @@
             <xs:element name="TaintedUnserialize" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="TaintedUrlComponent" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="TaintedUrlPath" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="TaintedUrlScheme" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="TaintedUserSecret" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="TaintedXpath" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="TooFewArguments" type="ArgumentIssueHandlerType" minOccurs="0" />

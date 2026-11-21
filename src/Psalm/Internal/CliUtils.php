@@ -396,7 +396,8 @@ final class CliUtils
     }
 
     /**
-     * Marks the command-line arguments or options Psalm was run with as chosen by the person running it.
+     * Marks the command-line arguments or options Psalm was run with, or an environment variable it reads, as chosen by
+     * the person running it.
      *
      * They name the files and directories Psalm reads and writes, the code it scans and reflects on,
      * the config, plugins and autoloaders it loads, the Shepherd and language client addresses it
@@ -405,7 +406,7 @@ final class CliUtils
      * (see getPathsToCheckFromStdin()). The other kinds of taint stay, so that an argument still has
      * to be escaped for a shell, for example.
      *
-     * @template T of array|false
+     * @template T of array|string|false
      * @param T $arguments
      * @return T
      * @psalm-pure
@@ -418,12 +419,15 @@ final class CliUtils
      * @psalm-taint-escape url_component
      * @psalm-taint-escape url_path
      */
-    public static function chosenByOperator(array|false $arguments): array|false
+    public static function chosenByOperator(array|string|false $arguments): array|string|false
     {
         return $arguments;
     }
 
     /**
+     * The value of --move, --into, --rename or --to is kept even when realpath() accepts it,
+     * because a symbol name can also match an existing path, such as a directory named src.
+     *
      * @return list<string>
      */
     public static function getArguments(): array
@@ -433,12 +437,13 @@ final class CliUtils
 
         for ($i = 0, $iMax = count($argv); $i < $iMax; ++$i) {
             $input_path = $argv[$i];
+            $is_refactor_value = $i > 0 && in_array($argv[$i - 1], ['--move', '--into', '--rename', '--to'], true);
 
-            if (realpath($input_path) !== false) {
+            if (!$is_refactor_value && realpath($input_path) !== false) {
                 continue;
             }
 
-            if ($input_path[0] === '-' && strlen($input_path) === 2) {
+            if (strlen($input_path) === 2 && $input_path[0] === '-') {
                 if ($input_path[1] === 'c' || $input_path[1] === 'f' || $input_path[1] === 'r') {
                     ++$i;
                 }

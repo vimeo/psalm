@@ -63,7 +63,7 @@ jobs:
       - name: Set up PHP
         uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # v2
         with:
-          php-version: '8.5'
+          php-version: '8.6'
           #ini-values: zend.assertions=1, assert.exception=1, opcache.enable_cli=1, opcache.jit=function, opcache.jit_buffer_size=512M
           # Windows workers share OPcache; cached final classes bypass BypassFinals' source rewriting.
           ini-values: zend.assertions=1, assert.exception=1, opcache.enable_cli=0, opcache.jit=off

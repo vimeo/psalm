@@ -83,6 +83,46 @@ final class KeyOfTemplateTest extends TestCase
                     }
                 ',
             ],
+            'issetOfAnOffsetOfATemplateArrayNarrowsTheKeyToKeyOf' => [
+                'code' => '<?php
+                    /**
+                     * @template T of array
+                     * @param T $array
+                     * @return key-of<T>|null
+                     */
+                    function getKey(string $key, $array) {
+                        if (isset($array[$key])) {
+                            return $key;
+                        }
+                        return null;
+                    }
+
+                    /**
+                     * @template T of array<string, array>
+                     * @param T $array
+                     * @return key-of<T>|null
+                     */
+                    function getKeyOfNested(string $key, $array) {
+                        if (isset($array[$key]["x"])) {
+                            return $key;
+                        }
+                        return null;
+                    }
+
+                    /**
+                     * @template T of array
+                     * @param T $array
+                     * @param key-of<T> $key
+                     * @return key-of<T>
+                     */
+                    function notSetMayStillBeAKey($array, $key) {
+                        if (!isset($array[$key])) {
+                            return $key;
+                        }
+                        return $key;
+                    }
+                ',
+            ],
             'useAfterArrayKeyExistsOnTemplate' => [
                 'code' => '<?php
                     /**

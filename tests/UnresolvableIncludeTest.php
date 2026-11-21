@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Psalm\Tests;
 
 use PHPUnit\Framework\Attributes\DataProvider;
+use Psalm\Config;
 use Psalm\Context;
 use Psalm\Exception\CodeException;
 
@@ -28,6 +29,7 @@ final class UnresolvableIncludeTest extends TestCase
         $this->addFile('somefile.php', '<?php
             include ASSERT_ACTIVE;
         ');
+        $this->project_analyzer->getConfig()->setCustomErrorLevel('DeprecatedConstant', Config::REPORT_SUPPRESS);
 
         $this->expectException(CodeException::class);
         $this->expectExceptionMessage('UnresolvableInclude - somefile.php:2:');
