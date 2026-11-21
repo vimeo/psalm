@@ -96,6 +96,49 @@ final class TypeAlgebraTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'instanceofNarrowingAUnionOfClassesReadsThePropertyOfTheClassKept' => [
+                'code' => '<?php
+                    final class IntValue {
+                        public function __construct(public int $value) {}
+                    }
+
+                    final class StringValue {
+                        public function __construct(public string $value) {}
+                    }
+
+                    function f(IntValue|StringValue $v): bool {
+                        $any = $v->value;
+                        if ($v instanceof StringValue) {
+                            return ctype_digit($v->value);
+                        }
+                        return $any > 0;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'instanceofNarrowingAnObjectKeepsWhatIsKnownOfItsProperties' => [
+                'code' => '<?php
+                    class A {
+                        public ?C $value = null;
+                    }
+
+                    final class B extends A {}
+
+                    final class C {
+                        public function yay(): string {
+                            return "yay";
+                        }
+                    }
+
+                    function t(A $v): void {
+                        if ($v->value) {
+                            if ($v instanceof B && "yay" === $v->value->yay()) {
+                                echo "yay";
+                            }
+                        }
+                    }',
+            ],
             'isArrayAndNotListThatDoesNotHoldKeepsTheOtherTypesOfTheUnion' => [
                 'code' => '<?php
                     function test(array|int $value): void {
