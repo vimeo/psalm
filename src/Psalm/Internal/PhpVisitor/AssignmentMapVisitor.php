@@ -15,6 +15,8 @@ use function array_map;
 use function count;
 use function is_string;
 use function spl_object_id;
+use function strrpos;
+use function substr;
 
 /**
  * @internal
@@ -135,8 +137,6 @@ final class AssignmentMapVisitor extends PhpParser\NodeVisitorAbstract
                 $read_var_ids = array_diff_key($read_var_ids, array_flip($left_var_ids));
             }
 
-            $this->addFeedingVarIds($read_var_ids);
-
             foreach ($left_var_ids as $left_var_id) {
                 $this->assignment_map[$left_var_id][$right_var_id ?? 'isset'] = true;
                 $this->written_var_ids[$left_var_id] = true;
@@ -157,12 +157,16 @@ final class AssignmentMapVisitor extends PhpParser\NodeVisitorAbstract
             $this->written_var_ids += $inner_visitor->written_var_ids;
             $this->by_ref_arg_var_ids += $inner_visitor->by_ref_arg_var_ids;
 
+            // after the writes of the sides: `($p = f())->b` doesn't read the `$p->b` written before
+            $this->addFeedingVarIds($read_var_ids);
+
             // the sides are evaluated before the variable is overwritten
-            if ($node->var instanceof PhpParser\Node\Expr\Variable
-                && is_string($node->var->name)
-                && isset($this->statement_expr_ids[spl_object_id($node)])
-            ) {
-                $this->overwritten_var_ids['$' . $node->var->name] = true;
+            if (isset($this->statement_expr_ids[spl_object_id($node)])) {
+                $overwritten_var_id = $this->getPlainVarId($node->var);
+
+                if ($overwritten_var_id !== null) {
+                    $this->overwritten_var_ids[$overwritten_var_id] = true;
+                }
             }
 
             return PhpParser\NodeVisitor::DONT_TRAVERSE_CHILDREN;
@@ -321,7 +325,45 @@ final class AssignmentMapVisitor extends PhpParser\NodeVisitorAbstract
      */
     private function isOverwritten(string $var_id): bool
     {
-        return isset($this->overwritten_var_ids[$var_id]) || $this->outer_visitor?->isOverwritten($var_id);
+        return (isset($this->overwritten_var_ids[$var_id]) && !$this->isObjectOfPropertyWritten($var_id))
+            || $this->outer_visitor?->isOverwritten($var_id);
+    }
+
+    /**
+     * Whether the loop body has so far written what `$a->b` in `$a->b->c` goes through: it may be another object now
+     *
+     * @psalm-mutation-free
+     */
+    private function isObjectOfPropertyWritten(string $var_id): bool
+    {
+        while (($arrow = strrpos($var_id, '->')) !== false) {
+            $var_id = substr($var_id, 0, $arrow);
+
+            if (isset($this->written_var_ids[$var_id])
+                || isset($this->defined_var_ids[$var_id])
+                || isset($this->by_ref_arg_var_ids[$var_id])
+            ) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * The id of a variable or of a chain of properties; null when an offset makes it stand for several values
+     */
+    private function getPlainVarId(PhpParser\Node\Expr $expr): ?string
+    {
+        if ($expr instanceof PhpParser\Node\Expr\PropertyFetch) {
+            return $expr->name instanceof PhpParser\Node\Identifier && $this->getPlainVarId($expr->var) !== null
+                ? ExpressionIdentifier::getRootVarId($expr, $this->this_class_name)
+                : null;
+        }
+
+        return $expr instanceof PhpParser\Node\Expr\Variable || $expr instanceof PhpParser\Node\Expr\StaticPropertyFetch
+            ? ExpressionIdentifier::getRootVarId($expr, $this->this_class_name)
+            : null;
     }
 
     /**
