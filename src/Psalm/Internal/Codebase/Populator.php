@@ -232,7 +232,7 @@ final class Populator
             }
         }
 
-        return $atomic_types === [] ? null : $type->setTypes($atomic_types);
+        return $type->setTypes($atomic_types);
     }
 
     /**
@@ -1737,6 +1737,8 @@ final class Populator
                 $class_constant_storage->attributes,
                 $class_constant_storage->suppressed_issues,
                 $class_constant_storage->description,
+                $class_constant_storage->since_php_version_id,
+                $class_constant_storage->signature_type,
             );
         }
     }
