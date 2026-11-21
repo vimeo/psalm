@@ -11,6 +11,7 @@ use Psalm\Exception\TypeParseTreeException;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Type;
 use Psalm\Type\Atomic\TClassConstant;
+use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TLiteralFloat;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
@@ -21,6 +22,7 @@ use ReflectionParameter;
 use Stringable;
 use Traversable;
 
+use function array_keys;
 use function array_map;
 use function function_exists;
 use function mb_substr;
@@ -770,7 +772,19 @@ final class TypeParseTest extends TestCase
     public function testTKeyedArrayWithQuotedKeys(): void
     {
         $this->assertSame('array{\'\\"\': int, \'\\\'\': string}', (string) Type::parseString('array{\'"\': int, \'\\\'\': string}'));
-        $this->assertSame('array{\'\\"\': int, \'\\\'\': string}', (string) Type::parseString('array{"\\"": int, "\\\'": string}'));
+        // `\'` is no escape in a double-quoted string: the key holds the backslash too
+        $this->assertSame(
+            'array{\'\\"\': int, \'\\\\\\\'\': string}',
+            (string) Type::parseString('array{"\\"": int, "\\\'": string}'),
+        );
+    }
+
+    public function testTKeyedArrayWithEscapeSequencesInKeys(): void
+    {
+        $type = Type::parseString('array{"a\\r\\nb": int, \'c\\nd\': string}')->getSingleAtomic();
+
+        $this->assertInstanceOf(TKeyedArray::class, $type);
+        $this->assertSame(["a\r\nb", 'c\\nd'], array_keys($type->properties));
     }
 
     public function testTKeyedArrayWithClassConstantValueType(): void
