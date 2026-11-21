@@ -15,6 +15,7 @@ use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Union;
 
 use function count;
+use function is_int;
 
 /**
  * @internal
@@ -84,7 +85,9 @@ final class PowReturnTypeProvider implements FunctionReturnTypeProviderInterface
             return Type::getInt(true, 1);
         }
         if ($first_arg_literal !== null && $second_arg_literal !== null) {
-            return Type::getFloat($first_arg_literal ** $second_arg_literal);
+            $result = $first_arg_literal ** $second_arg_literal;
+
+            return is_int($result) ? Type::getInt(true, $result) : Type::getFloat($result);
         }
         if ($first_arg_is_int && $second_arg_is_int) {
             return Type::getInt();
