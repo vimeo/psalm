@@ -425,7 +425,10 @@ final class ClassLikeNodeScanner
             }
 
             // like `@psalm-type`, an import is read from any docblock before the class, not only from the last one
-            if ($comment !== $doc_comment && str_contains($comment->getText(), '@psalm-import-type')) {
+            if ($comment !== $doc_comment
+                && (str_contains($comment->getText(), '@psalm-import-type')
+                    || str_contains($comment->getText(), '@phpstan-import-type'))
+            ) {
                 try {
                     $this->type_aliases += $this->getImportedTypeAliases(
                         ClassLikeDocblockParser::parse($node, $comment, $this->aliases),

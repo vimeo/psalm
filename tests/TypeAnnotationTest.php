@@ -100,6 +100,32 @@ final class TypeAnnotationTest extends TestCase
                     '$x===' => 'array{a: int}',
                 ],
             ],
+            'phpstanTypeImportInADocblockSeparateFromTheClassDocblock' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-type Original = array{a: int}
+                     */
+                    final class Other {}
+
+                    /**
+                     * @phpstan-import-type Original from Other as X
+                     */
+
+                    /**
+                     * Class doc
+                     */
+                    final class A {
+                        /** @return X */
+                        public function x(): array {
+                            return ["a" => 1];
+                        }
+                    }
+
+                    $x = (new A())->x();',
+                'assertions' => [
+                    '$x===' => 'array{a: int}',
+                ],
+            ],
             'importedTypeAliasInAnIntersectionOfAnotherAlias' => [
                 'code' => '<?php
                     /**
