@@ -2492,6 +2492,39 @@ final class WhileTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'whileWithACallInItsConditionMayNotRunEvenIfTheOtherOperandHolds' => [
+                'code' => '<?php
+                    function foo(): bool {
+                        return (bool) rand(0, 1);
+                    }
+
+                    function f(?int $x): void {
+                        if ($x !== null) {
+                            $seen = [];
+                            while ($x !== null && foo()) {
+                                $seen[] = $x;
+                                $x = null;
+                            }
+                            /** @psalm-check-type-exact $seen = list<int> */;
+                        }
+                    }',
+            ],
+            'whileThatAssignsInItsConditionMayNotRun' => [
+                'code' => '<?php
+                    function next_val(): ?int {
+                        return rand(0, 1) ? 1 : null;
+                    }
+
+                    function f(?int $n): void {
+                        if ($n !== null) {
+                            $seen = [];
+                            while (($n = next_val()) !== null) {
+                                $seen[] = $n;
+                            }
+                            /** @psalm-check-type-exact $seen = list<int> */;
+                        }
+                    }',
+            ],
         ];
     }
 
@@ -2502,6 +2535,24 @@ final class WhileTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'forWhoseEarlierConditionChangesTheVariableMayNotRun' => [
+                'code' => '<?php
+                    /** @param non-empty-list<int> $l */
+                    function take(array $l): void {}
+
+                    function setNull(?int &$x): void { $x = null; }
+
+                    function f(?int $x): void {
+                        if ($x !== null) {
+                            $seen = [];
+                            for (; setNull($x), $x !== null;) {
+                                $seen[] = $x;
+                            }
+                            take($seen);
+                        }
+                    }',
+                'error_message' => 'InvalidArgument',
+            ],
             'whileAnonymousClassPropertyNotSetInConstructor' => [
                 'code' => <<<'PHP'
                     <?php

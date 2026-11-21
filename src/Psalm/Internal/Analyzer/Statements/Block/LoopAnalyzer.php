@@ -983,6 +983,7 @@ final class LoopAnalyzer
             || self::isConditionTrueOnEntry(
                 $statements_analyzer,
                 $context,
+                $pre_conditions,
                 // all the `&&` operands of a while hold where it is entered, only the last comma condition of a for
                 $stmt instanceof PhpParser\Node\Stmt\For_ ? array_slice($pre_conditions, -1) : $pre_conditions,
                 $entry_vars_in_scope,
@@ -1467,19 +1468,21 @@ final class LoopAnalyzer
      * Whether the condition holds the first time it is evaluated, as the types of the variables before the loop rule
      * out its negation: `while ($value instanceof Link)` inside `if ($value instanceof Link)`
      *
+     * @param list<PhpParser\Node\Expr> $evaluated_conditions the conditions that run before the loop is entered
      * @param list<PhpParser\Node\Expr> $conditions the conditions that all hold where the loop is entered
      * @param array<string, Union> $entry_vars_in_scope
      */
     private static function isConditionTrueOnEntry(
         StatementsAnalyzer $statements_analyzer,
         Context $context,
+        array $evaluated_conditions,
         array $conditions,
         array $entry_vars_in_scope,
     ): bool {
         // what the conditions change is not known on entry
         if ($conditions === []
             || (new PhpParser\NodeFinder())->findFirst(
-                $conditions,
+                $evaluated_conditions,
                 static fn(PhpParser\Node $node): bool => $node instanceof PhpParser\Node\Expr\Assign
                     || $node instanceof PhpParser\Node\Expr\AssignOp
                     || $node instanceof PhpParser\Node\Expr\AssignRef
