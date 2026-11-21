@@ -123,6 +123,55 @@ final class ReturnTypeTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.3',
             ],
+            'returnTypeIsInheritedFromTwoGenericInterfacesResolvingToTheSameOne' => [
+                'code' => '<?php
+                    /** @template T */
+                    interface First {
+                        /** @return T */
+                        public function get(): mixed;
+                    }
+
+                    /** @template T */
+                    interface Second {
+                        /** @return T */
+                        public function get(): mixed;
+                    }
+
+                    /**
+                     * @implements First<int>
+                     * @implements Second<int>
+                     */
+                    final class IntHolder implements First, Second {
+                        #[Override]
+                        public function get(): mixed {
+                            return 1;
+                        }
+                    }
+
+                    /**
+                     * @template U
+                     * @implements First<U>
+                     * @implements Second<U>
+                     */
+                    final class Holder implements First, Second {
+                        /** @param U $value */
+                        public function __construct(private mixed $value) {}
+
+                        #[Override]
+                        public function get(): mixed {
+                            return $this->value;
+                        }
+                    }
+
+                    $int = (new IntHolder())->get();
+                    $string = (new Holder("a"))->get();',
+                'assertions' => [
+                    '$int===' => 'int',
+                    '$string===' => '\'a\'',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
             'doWhileBodyAlwaysReturning' => [
                 'code' => '<?php
                     function f(int $i): string {
@@ -2764,6 +2813,34 @@ final class ReturnTypeTest extends TestCase
                         #[Override]
                         public function getClass(): string {
                             return First::class;
+                        }
+                    }',
+                'error_message' => 'LessSpecificImplementedReturnType',
+                'error_levels' => [],
+                'php_version' => '8.3',
+            ],
+            'returnTypeOfTwoGenericInterfacesResolvingToDifferentOnesIsNotInherited' => [
+                'code' => '<?php
+                    /** @template T */
+                    interface First {
+                        /** @return T */
+                        public function get(): mixed;
+                    }
+
+                    /** @template T */
+                    interface Second {
+                        /** @return T */
+                        public function get(): mixed;
+                    }
+
+                    /**
+                     * @implements First<int>
+                     * @implements Second<string>
+                     */
+                    final class Holder implements First, Second {
+                        #[Override]
+                        public function get(): mixed {
+                            return 1;
                         }
                     }',
                 'error_message' => 'LessSpecificImplementedReturnType',
