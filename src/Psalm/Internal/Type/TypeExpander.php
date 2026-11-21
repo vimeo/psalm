@@ -1010,7 +1010,8 @@ final class TypeExpander
                 $return_type->value === $self_class
                 || ($self_class !== null &&
                     ($codebase->classExtends($return_type->value, $self_class)
-                        || $codebase->classExtends($self_class, $return_type->value)
+                        // `I&static` in a final class implementing I is that class
+                        || $codebase->classExtendsOrImplements($self_class, $return_type->value)
                     )
                 )
             )
