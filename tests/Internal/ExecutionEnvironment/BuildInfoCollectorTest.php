@@ -723,6 +723,36 @@ final class BuildInfoCollectorTest extends TestCase
     }
 
     /**
+     * @return iterable<string, array{string}>
+     * @psalm-pure
+     */
+    public static function provideScrutinizerProjectThatIsNotOnGithub(): iterable
+    {
+        yield 'Bitbucket' => ['b/psalm/example'];
+        yield 'no host' => ['psalm/example'];
+        yield 'no repository' => ['g/psalm'];
+    }
+
+    #[DataProvider('provideScrutinizerProjectThatIsNotOnGithub')]
+    public function testScrutinizerSendsNoRepositoryForAProjectThatIsNotOnGithub(string $project): void
+    {
+        foreach (['', '42'] as $pull_request_number) {
+            $info = (new BuildInfoCollector([
+                'SCRUTINIZER' => 'true',
+                'SCRUTINIZER_BRANCH' => 'master',
+                'SCRUTINIZER_PROJECT' => $project,
+                'SCRUTINIZER_PR_NUMBER' => $pull_request_number,
+            ]))->collect();
+
+            self::assertSame('Scrutinizer', $info['CI_NAME']);
+            self::assertArrayNotHasKey('CI_REPO_OWNER', $info);
+            self::assertArrayNotHasKey('CI_REPO_NAME', $info);
+            self::assertArrayNotHasKey('CI_PR_REPO_OWNER', $info);
+            self::assertArrayNotHasKey('CI_PR_REPO_NAME', $info);
+        }
+    }
+
+    /**
      * @param array<string, string> $remotes name => URL
      */
     private static function git(string $branch, array $remotes): GitInfo

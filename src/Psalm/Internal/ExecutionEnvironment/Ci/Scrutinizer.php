@@ -11,7 +11,8 @@ use Psalm\Internal\ExecutionEnvironment\PullRequest;
 use Psalm\Internal\ExecutionEnvironment\Repository;
 use Psalm\SourceControl\Git\GitInfo;
 
-use function strpos;
+use function str_starts_with;
+use function strlen;
 use function substr;
 
 /**
@@ -27,6 +28,7 @@ final class Scrutinizer implements CiProvider
     private const BRANCH = 'SCRUTINIZER_BRANCH';
     private const PULL_REQUEST = 'SCRUTINIZER_PR_NUMBER';
     private const PROJECT = 'SCRUTINIZER_PROJECT';
+    private const GITHUB_PROJECT_PREFIX = 'g/';
 
     #[Override]
     public function detects(Env $env, ?GitInfo $git_info): bool
@@ -50,18 +52,17 @@ final class Scrutinizer implements CiProvider
     }
 
     /**
-     * The repository of a project, which is named like "g/owner/name".
+     * The repository of a project, which is named like "g/owner/name" on GitHub and "b/owner/name" on Bitbucket.
+     * Shepherd only knows GitHub.
      *
      * @psalm-pure
      */
     private static function repository(?string $project): ?Repository
     {
-        if ($project === null) {
+        if ($project === null || !str_starts_with($project, self::GITHUB_PROJECT_PREFIX)) {
             return null;
         }
 
-        $slash = strpos($project, '/');
-
-        return $slash === false ? null : Repository::fromSlug(substr($project, $slash + 1));
+        return Repository::fromSlug(substr($project, strlen(self::GITHUB_PROJECT_PREFIX)));
     }
 }
