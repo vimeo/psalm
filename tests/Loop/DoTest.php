@@ -52,7 +52,7 @@ final class DoTest extends TestCase
                         do {
                             echo "a";
                         } while (($r += rand(1, 3)) < 100);
-                        /** @psalm-check-type-exact $i = int<1, max> */;
+                        /** @psalm-check-type-exact $i = int<100, 102> */;
                     }
                     PHP,
             ],
