@@ -23,6 +23,39 @@ final class ForTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'forFromAnIntBelowEveryValueOfTheEndIsEntered' => [
+                'code' => '<?php
+                    /**
+                     * @param int<1, max> $size
+                     * @return non-empty-list<int>
+                     */
+                    function reproduce(int $size): array {
+                        $result = [];
+                        for ($i = 1; $i <= $size; $i++) {
+                            $result[] = $i;
+                        }
+
+                        return $result;
+                    }
+
+                    /** @param int<min, 9> $n */
+                    function countDown(int $n): int {
+                        for ($i = 10; $i > $n; $i--) {
+                            $last = $i;
+                        }
+
+                        return $last;
+                    }
+
+                    /** @param non-empty-list<int> $a */
+                    function lastItem(array $a): int {
+                        for ($i = 0; $i < count($a); $i++) {
+                            $item = $a[$i];
+                        }
+
+                        return $item;
+                    }',
+            ],
             'forCounterIncrementedThroughAReferenceIsWidened' => [
                 'code' => <<<'PHP'
                     <?php
@@ -591,6 +624,35 @@ final class ForTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'forToAnEndItsStartMayExceedMayNotBeEntered' => [
+                'code' => '<?php
+                    /**
+                     * @param int<0, max> $size
+                     * @return non-empty-list<int>
+                     */
+                    function reproduce(int $size): array {
+                        $result = [];
+                        for ($i = 1; $i <= $size; $i++) {
+                            $result[] = $i;
+                        }
+
+                        return $result;
+                    }',
+                'error_message' => 'InvalidReturnStatement',
+            ],
+            'forToAnEndTheBodyLowersMayNotBeEntered' => [
+                'code' => '<?php
+                    function f(): int {
+                        $n = 1;
+                        for ($i = 0; $i < $n; $i++) {
+                            $n = 0;
+                            $x = 1;
+                        }
+
+                        return $x;
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable',
+            ],
             'forBreakBeforeDefinitionAndBreakAfter' => [
                 'code' => '<?php
                     for ($i = 0; $i < 4; $i++) {
