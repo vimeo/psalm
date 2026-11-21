@@ -1475,38 +1475,27 @@ final class Context
         return $bound_var_ids;
     }
 
-    /**
-     * @param bool $keeps_list_keys the variable is written to under one of its offsets: the keys of a list that were
-     *                              taken from it stay valid
-     */
     public function removeVarFromConflictingClauses(
         string $remove_var_id,
         ?Union $new_type = null,
         ?StatementsAnalyzer $statements_analyzer = null,
-        bool $keeps_list_keys = false,
     ): void {
         $this->clauses = self::filterClauses($remove_var_id, $this->clauses, $new_type, $statements_analyzer);
         $this->parent_remove_vars[$remove_var_id] = ++self::$clause_removal_count;
 
-        if (!$keeps_list_keys) {
-            $this->releaseKeysBoundToList($remove_var_id);
-        }
 
         foreach ($this->getVarsBoundTo($remove_var_id) as $bound_var_id) {
             $this->clauses = self::filterClauses($bound_var_id, $this->clauses, $new_type, $statements_analyzer);
             $this->parent_remove_vars[$bound_var_id] = ++self::$clause_removal_count;
-
-            if (!$keeps_list_keys) {
-                $this->releaseKeysBoundToList($bound_var_id);
-            }
         }
     }
 
     /**
      * A key of a list (the one of `array_key_last()`, of a foreach) is a key the list has only as long as the list
-     * is the one it was taken from: the types of the variables bound to $list_var_id are free of the binding
+     * is the one it was taken from: the types of the variables bound to $list_var_id are free of the binding once
+     * the list is assigned, passed by reference, unset from or forgotten. A write under one of its offsets keeps it.
      */
-    private function releaseKeysBoundToList(string $list_var_id): void
+    public function releaseKeysBoundToList(string $list_var_id): void
     {
         if (!isset($this->list_key_bound_lists[$list_var_id])) {
             return;
@@ -1543,6 +1532,13 @@ final class Context
         Context $nested_context,
         ?StatementsAnalyzer $statements_analyzer = null,
     ): void {
+        // a list the nested scope released the keys of
+        foreach ($this->list_key_bound_lists as $list_var_id => $_) {
+            if (!isset($nested_context->list_key_bound_lists[$list_var_id])) {
+                $this->releaseKeysBoundToList($list_var_id);
+            }
+        }
+
         foreach ($nested_context->parent_remove_vars as $var_id => $stamp) {
             // an older stamp than this context's is one the nested scope was cloned with before a sibling scope
             // changed the variable (an else after its if), not a change of its own
@@ -1923,6 +1919,7 @@ final class Context
         }
 
         foreach ($vars_to_remove as $var_id) {
+            $this->releaseKeysBoundToList($var_id);
             $this->forgetPropertyBoundByReference($var_id, false);
             // forgotten, not unset: Context::update() tells the two apart
             $this->vars_possibly_in_scope[$var_id] = true;
@@ -2011,6 +2008,7 @@ final class Context
     public function forgetPropertyDescendents(string $property_id): void
     {
         $this->forgetNullArrayOffsets($property_id);
+        $this->releaseKeysBoundToList($property_id);
         $this->removeVarFromConflictingClauses($property_id);
 
         // `$a[$this->p]` too

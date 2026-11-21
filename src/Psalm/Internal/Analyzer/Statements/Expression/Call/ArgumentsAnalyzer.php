@@ -159,6 +159,7 @@ final class ArgumentsAnalyzer
             );
 
             foreach ($written_var_ids as $var_id => $_) {
+                $context->releaseKeysBoundToList($var_id);
                 $context->removeVarFromConflictingClauses(
                     $var_id,
                     $context->vars_in_scope[$var_id] ?? null,
