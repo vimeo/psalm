@@ -520,6 +520,7 @@ function checkDirRegression(): int
                 </plugins>
             </psalm>',
         );
+        $config->php_extensions_not_supported['foo'] = true;
         $config->setIncludeCollector(self::getIncludeCollectorWithAutoloadFile());
         $this->project_analyzer = new ProjectAnalyzer(
             $config,
@@ -539,6 +540,7 @@ function checkDirRegression(): int
         $output = str_replace("\r\n", "\n", $output);
 
         $this->assertStringContainsString("Target PHP version: 8.1 (set by tests)\n", $output);
+        $this->assertStringContainsString("\nUnsupported extensions: foo\nEnabled plugins: ", $output);
         $this->assertStringContainsString(
             "\nEnabled plugins: ScanHookPlugin, "
             . "examples/plugins/StringChecker.php\n\nScanning files",
