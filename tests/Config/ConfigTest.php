@@ -3776,4 +3776,64 @@ final class ConfigTest extends DeferredAnalyzerTestCase
         // an accepted call: the analysis went through without an exception
         $this->addToAssertionCount(1);
     }
+
+    public function testPluginNamesArePackagesWithoutPluginAffixes(): void
+    {
+        $root = sys_get_temp_dir() . DIRECTORY_SEPARATOR . uniqid('psalm-plugin-names-');
+        mkdir($root . '/vendor/composer', 0777, true);
+        $installed_path = $root . '/vendor/composer/installed.json';
+        $packages = [
+            'psalm/plugin-laravel' => 'Psalm\\LaravelPlugin\\Plugin',
+            'weirdan/doctrine-psalm-plugin' => 'Weirdan\\Doctrine\\Plugin',
+            'vendor/library-plugin' => 'Vendor\\Library\\Plugin',
+            'vendor/psalm-plugin-psalm-plugin-extra' => 'Vendor\\Extra\\Plugin',
+            'foo/psalm-plugin' => 'Foo\\Plugin',
+        ];
+        file_put_contents($installed_path, json_encode(['packages' => array_map(
+            static fn(string $name, string $class): array => ['name' => $name, 'extra' => ['psalm' => ['pluginClass' => $class]]],
+            array_keys($packages),
+            $packages,
+        )], JSON_THROW_ON_ERROR));
+
+        try {
+            $config = Config::loadFromXML(
+                $root,
+                '<?xml version="1.0"?>
+                <psalm loadLibraryPlugins="false">
+                    <plugins>
+                        <pluginClass class="\\psalm\\laravelplugin\\plugin" />
+                        <pluginClass class="Weirdan\\Doctrine\\Plugin" />
+                        <pluginClass class="Vendor\\Library\\Plugin" />
+                        <pluginClass class="Vendor\\Extra\\Plugin" />
+                        <pluginClass class="Foo\\Plugin" />
+                        <pluginClass class="Acme\\Bar\\MyPlugin" />
+                        <pluginClass class="Acme\\PLUGIN" />
+                        <pluginClass class="Psalm\\LaravelPlugin\\Plugin" />
+                    </plugins>
+                </psalm>',
+            );
+            // a plugin file relative to the working directory, as the --plugin option adds it
+            $config->addPluginPath('examples/plugins/InternalChecker.php');
+            $names = $config->getPluginNames();
+        } finally {
+            unlink($installed_path);
+            rmdir($root . '/vendor/composer');
+            rmdir($root . '/vendor');
+            rmdir($root);
+        }
+
+        $this->assertSame(
+            [
+                'psalm/laravel',
+                'weirdan/doctrine',
+                'vendor/library',
+                'vendor/extra',
+                'foo/psalm-plugin',
+                'MyPlugin',
+                'Acme\\PLUGIN',
+                'examples/plugins/InternalChecker.php',
+            ],
+            $names,
+        );
+    }
 }

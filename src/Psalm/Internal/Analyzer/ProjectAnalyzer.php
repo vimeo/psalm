@@ -420,9 +420,6 @@ final class ProjectAnalyzer
         return isset($list[$file_path]);
     }
 
-    /**
-     * @psalm-mutation-free
-     */
     private function generatePHPVersionMessage(): string
     {
         $codebase = $this->codebase;
@@ -445,30 +442,35 @@ final class ProjectAnalyzer
                 break;
         }
 
+        $config = $codebase->config;
+
         $unsupported_php_extensions = array_diff(
-            array_keys($codebase->config->php_extensions_not_supported),
-            $codebase->config->php_extensions_supported_by_psalm_callmaps,
+            array_keys($config->php_extensions_not_supported),
+            $config->php_extensions_supported_by_psalm_callmaps,
         );
 
-        $message = "Target PHP version: "
-            .$codebase->getMajorAnalysisPhpVersion()."."
-            .$codebase->getMinorAnalysisPhpVersion()." "
-            .$source.'.'
-        ;
+        $lines = [
+            'Target PHP version: '
+            . $codebase->getMajorAnalysisPhpVersion() . '.' . $codebase->getMinorAnalysisPhpVersion()
+            . ' ' . $source,
+        ];
 
-        $enabled_extensions_names = array_keys(array_filter($codebase->config->php_extensions));
+        $enabled_extensions_names = array_keys(array_filter($config->php_extensions));
         if (count($enabled_extensions_names) > 0) {
-            $message .= ' Enabled extensions: ' . implode(', ', $enabled_extensions_names);
+            $lines[] = 'Enabled extensions: ' . implode(', ', $enabled_extensions_names);
         }
 
         if (count($unsupported_php_extensions) > 0) {
-            $message .= ' (unsupported extensions: ' . implode(', ', $unsupported_php_extensions) . ')';
+            $lines[] = 'Unsupported extensions: ' . implode(', ', $unsupported_php_extensions);
         }
 
-        // each sentence ends with a dot: the target version always, the extensions when there are any
-        $message .= (str_ends_with($message, '.') ? '' : '.') . PHP_EOL . PHP_EOL;
+        $plugins = $config->getPluginNames();
+        if (count($plugins) > 0) {
+            $lines[] = 'Enabled plugins: ' . implode(', ', $plugins);
+        }
 
-        return $message;
+        // startPhase(Phase::SCAN) begins with the blank line
+        return implode(PHP_EOL, $lines) . PHP_EOL;
     }
 
     public function check(string $base_dir, bool $is_diff = false): void

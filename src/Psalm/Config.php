@@ -84,6 +84,8 @@ use function array_merge;
 use function array_pad;
 use function array_pop;
 use function array_shift;
+use function array_unique;
+use function array_values;
 use function assert;
 use function basename;
 use function chdir;
@@ -139,6 +141,7 @@ use function str_contains;
 use function str_ends_with;
 use function str_replace;
 use function str_starts_with;
+use function strcasecmp;
 use function strlen;
 use function strpos;
 use function strrpos;
@@ -1939,6 +1942,61 @@ final class Config
         return $this->plugin_classes;
     }
 
+    /**
+     * The names the startup output shows for the enabled plugins: the name of the Composer package declaring a plugin
+     * class, without the plugin/psalm affixes (`psalm/plugin-phpunit` is `psalm/phpunit`); the short name of a class no
+     * installed package declares, or its full name when that is `Plugin`; the path of a file plugin, shortened when
+     * absolute
+     *
+     * @internal
+     * @return list<string>
+     */
+    public function getPluginNames(): array
+    {
+        $packages_by_class = [];
+        foreach ($this->getProjectInstalledPackages() as $package) {
+            if ($package['plugin_class'] !== null) {
+                $packages_by_class[strtolower(ltrim($package['plugin_class'], '\\'))] = $package['name'];
+            }
+        }
+
+        $names = [];
+        foreach ($this->plugin_classes as $plugin_entry) {
+            $class = ltrim($plugin_entry['class'], '\\');
+            $package = $packages_by_class[strtolower($class)] ?? null;
+            if ($package !== null) {
+                $names[] = self::stripPluginAffixes($package);
+                continue;
+            }
+
+            $last_separator = strrpos($class, '\\');
+            $short_name = $last_separator === false ? $class : substr($class, $last_separator + 1);
+            $names[] = strcasecmp($short_name, 'Plugin') === 0 ? $class : $short_name;
+        }
+
+        foreach ($this->plugin_paths as $path) {
+            $names[] = Path::isAbsolute($path) ? $this->shortenFileName($path) : $path;
+        }
+
+        return array_values(array_unique($names));
+    }
+
+    /**
+     * @psalm-pure
+     */
+    private static function stripPluginAffixes(string $package_name): string
+    {
+        [$vendor, $name] = explode('/', $package_name, 2) + [1 => ''];
+
+        do {
+            $stripped = (string) preg_replace(['/^(?:plugin|psalm)-/', '/-(?:plugin|psalm)$/'], '', $name, 1);
+            $changed = $stripped !== $name;
+            $name = $stripped;
+        } while ($changed);
+
+        return $name === '' || $name === 'plugin' || $name === 'psalm' ? $package_name : $vendor . '/' . $name;
+    }
+
     public function processPluginFileExtensions(ProjectAnalyzer $projectAnalyzer): void
     {
         $projectAnalyzer->progress->debug('Process plugin adjustments...' . PHP_EOL);
@@ -3387,7 +3445,13 @@ final class Config
     /**
      * The packages of the project's installed.json
      *
-     * @return list<array{name: string, install_path: ?string, require: list<array-key>, replace: list<array-key>}>
+     * @return list<array{
+     *     name: string,
+     *     install_path: ?string,
+     *     require: list<array-key>,
+     *     replace: list<array-key>,
+     *     plugin_class: ?string
+     * }>
      */
     private function getProjectInstalledPackages(): array
     {
@@ -3412,6 +3476,12 @@ final class Config
                     'replace' => isset($package['replace']) && is_array($package['replace'])
                         ? array_keys($package['replace'])
                         : [],
+                    'plugin_class' => isset($package['extra']) && is_array($package['extra'])
+                        && isset($package['extra']['psalm']) && is_array($package['extra']['psalm'])
+                        && isset($package['extra']['psalm']['pluginClass'])
+                        && is_string($package['extra']['psalm']['pluginClass'])
+                            ? $package['extra']['psalm']['pluginClass']
+                            : null,
                 ];
             }
         }
