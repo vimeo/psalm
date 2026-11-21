@@ -112,6 +112,51 @@ final class StubsGeneratorTest extends TestCase
         self::assertSame(1, substr_count($stub, '@throws RuntimeException'));
     }
 
+    public function testTheGeneratedStubKeepsTheTraitsAndInterfacesOfAClass(): void
+    {
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                namespace App;
+
+                interface I {}
+
+                class P {}
+
+                trait Bar {
+                    public function bar(): int { return 1; }
+                    public function f(): int { return 1; }
+                }
+
+                trait Baz {
+                    public function baz(): int { return 2; }
+                    public function f(): int { return 2; }
+                }
+
+                class Foo extends P implements I {
+                    use Bar, Baz {
+                        Bar::bar as protected aliased;
+                        Baz::f insteadof Bar;
+                        baz as private;
+                    }
+                }',
+        );
+        $this->analyzeFile('somefile.php', new Context());
+
+        $codebase = $this->project_analyzer->getCodebase();
+        $stub = StubsGenerator::getAll(
+            $codebase,
+            $codebase->classlike_storage_provider,
+            $codebase->file_storage_provider,
+        );
+
+        self::assertStringContainsString('class Foo extends \\App\\P implements \\App\\I', $stub);
+        self::assertStringContainsString('use \\App\\Bar, \\App\\Baz {', $stub);
+        self::assertStringContainsString('\\App\\Baz::f insteadof \\App\\Bar;', $stub);
+        self::assertStringContainsString('\\App\\Bar::bar as protected aliased;', $stub);
+        self::assertStringContainsString('baz as private;', $stub);
+    }
+
     public function testAnIntIsAnIdentifier(): void
     {
         $type = StubsGenerator::getParserTypeFromPsalmType(Type::getInt());
