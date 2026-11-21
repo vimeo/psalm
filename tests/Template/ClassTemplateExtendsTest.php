@@ -1632,6 +1632,34 @@ final class ClassTemplateExtendsTest extends TestCase
                         }
                     }',
             ],
+            'propertyOfAParentGivenATypeNamingAnImportedAliasIsExpanded' => [
+                'code' => '<?php
+                    /** @template T */
+                    abstract class A {
+                        /** @var T */
+                        public $value;
+
+                        /** @param T $value */
+                        public function __construct($value) {
+                            $this->value = $value;
+                        }
+                    }
+
+                    /** @psalm-type Foo=string */
+                    class B {}
+
+                    /**
+                     * @psalm-import-type Foo from B
+                     * @extends A<list<Foo>>
+                     */
+                    class C extends A {}
+
+                    $instance = new C(["hello"]);
+                    $output = $instance->value;',
+                'assertions' => [
+                    '$output===' => 'list<string>',
+                ],
+            ],
             'propertyOfAParentGivenATypeMentioningTheTemplatesOfTheChildIsLocalized' => [
                 'code' => '<?php
                     /** @template T */

@@ -997,7 +997,13 @@ final class AtomicPropertyFetchAnalyzer
                     continue;
                 }
 
-                $mapped_type = $extended_types[$property_declaring_class_storage->name][$type_name];
+                $mapped_type = TypeExpander::expandUnion(
+                    $codebase,
+                    $extended_types[$property_declaring_class_storage->name][$type_name],
+                    $property_class_storage->name,
+                    $property_class_storage->name,
+                    $property_class_storage->parent_class,
+                );
 
                 for ($depth = 0; $depth < 10; $depth++) {
                     $replaced_type = TemplateInferredTypeReplacer::replace(
