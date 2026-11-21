@@ -1810,7 +1810,7 @@ final class ForeachTest extends TestCase
                       continue;
                     }',
                 'assertions' => [
-                    '$a' => 'bool',
+                    '$a' => 'true',
                 ],
             ],
             'falseToBoolInBreak' => [
@@ -3173,6 +3173,55 @@ final class ForeachTest extends TestCase
                     PHP,
                 'assertions' => [],
                 'ignored_issues' => ['PossiblyNullIterator'],
+            ],
+            'foreachOverANonEmptyArrayWithAContinueRunsAtLeastOnce' => [
+                'code' => '<?php
+                    final class Flag {
+                        public function equals(Flag $other): bool {
+                            return $this === $other;
+                        }
+                    }
+
+                    /** @param non-empty-array<Flag> $items */
+                    function withContinue(array $items): Flag {
+                        $last = null;
+                        foreach ($items as $item) {
+                            if ($last === null) {
+                                $last = $item;
+                                continue;
+                            }
+                            if (!$last->equals($item)) {
+                                return new Flag();
+                            }
+                        }
+                        return $last;
+                    }
+
+                    /** @param array<Flag> $items */
+                    function maybeEmpty(array $items): ?Flag {
+                        $last = null;
+                        foreach ($items as $item) {
+                            if ($last === null) {
+                                $last = $item;
+                                continue;
+                            }
+                        }
+                        /** @psalm-check-type-exact $last = Flag|null */;
+                        return $last;
+                    }
+
+                    /** @param non-empty-list<int> $items */
+                    function unchangedOnSomePaths(array $items): bool {
+                        $seen = false;
+                        foreach ($items as $item) {
+                            if ($item > 3) {
+                                $seen = true;
+                                continue;
+                            }
+                        }
+                        /** @psalm-check-type-exact $seen = bool */;
+                        return $seen;
+                    }',
             ],
         ];
     }

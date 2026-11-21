@@ -6,6 +6,12 @@ const REPORT_MAX_BYTES = 60_000;
 const DETAILS_BUDGET_BYTES = 40_000;
 const LOG_TAIL_LINES = 15;
 const LOG_TAIL_BYTES = 2_000;
+/** Cap on an added or removed issue line, after class names are shortened. */
+const EXAMPLE_CHARS = 300;
+/** Unchanged text kept on each side of a change. */
+const CONTEXT_CHARS = 40;
+/** Cap on each side of one change. */
+const CHANGE_CHARS = 300;
 /** Wall changes within ±this are runner noise; a larger drop counts as an improvement. */
 const WALL_NOISE_PCT = 10.0;
 const VERDICT_ICONS = ['pass' => '✅', 'warn' => '⚠️', 'fail' => '❌', 'skip' => '💥'];
@@ -437,11 +443,27 @@ function detailsBody(array $p): string
 
         $parts[] = implode("\n", $rows);
 
+        if ($i['changed'] > 0) {
+            $shown = array_sum(array_column($i['changed_examples'], 'count'));
+            $hunks = implode("\n\n", array_map(changeHunk(...), $i['changed_examples']));
+            $parts[] = "**Changed in place** ({$i['changed']})"
+                . (str_contains($hunks, '{self}') ? '; `{self}` is the class named after the file' : '')
+                . "\n\n```diff\n{$hunks}\n```"
+                . ($i['changed'] > $shown ? "\n\n… and " . ($i['changed'] - $shown) . ' more' : '');
+        }
+
         foreach (['added', 'removed'] as $kind) {
             if ($i["{$kind}_examples"] !== []) {
-                $more = $i[$kind] - count($i["{$kind}_examples"]);
-                $items = array_map(static fn(string $e): string => '- ' . inlineCode($e), $i["{$kind}_examples"]);
-                $parts[] = '**' . ucfirst($kind) . "** ({$i[$kind]})\n\n" . implode("\n", $items)
+                $total = $i["unpaired_{$kind}"];
+                $more = $total - count($i["{$kind}_examples"]);
+                $items = array_map(static fn(array $e): string => '- ' . inlineCode(mb_strimwidth(
+                    "{$e['file']}:{$e['line']} {$e['type']} ({$e['severity']}): "
+                        . shortClassNames([$e['message']])[0],
+                    0,
+                    EXAMPLE_CHARS,
+                    '…',
+                )), $i["{$kind}_examples"]);
+                $parts[] = '**' . ucfirst($kind) . "** ({$total})\n\n" . implode("\n", $items)
                     . ($more > 0 ? "\n- … and {$more} more" : '');
             }
         }
@@ -479,6 +501,90 @@ function detailsBody(array $p): string
     }
 
     return implode("\n\n", $parts);
+}
+
+/**
+ * One hunk for a group of identical in-place changes: `@@ location type @@` (several locations as context lines),
+ * then the old messages as `-` lines and the new ones as `+` lines, their shared text trimmed alike.
+ *
+ * @param array{
+ *     old: list<array{type: string, message: string}>, new: list<array{type: string, message: string}>,
+ *     locations: list<string>, count: int
+ * } $g
+ */
+function changeHunk(array $g): string
+{
+    $issues = [...$g['old'], ...$g['new']];
+    $messages = shortClassNames(array_column($issues, 'message'));
+    $oldCount = count($g['old']);
+    $segments = changeSegments(array_slice($messages, 0, $oldCount), array_slice($messages, $oldCount));
+    $types = array_values(array_unique(array_column($issues, 'type')));
+    $type = count($types) === 1 ? " {$types[0]}" : '';
+    if ($g['count'] === 1) {
+        $lines = ["@@ {$g['locations'][0]}{$type} @@"];
+    } else {
+        $more = $g['count'] - count($g['locations']);
+        $lines = [
+            "@@ {$g['count']} places{$type} @@",
+            ...array_map(static fn(string $location): string => "  {$location}", $g['locations']),
+            ...($more > 0 ? ["  … and {$more} more"] : []),
+        ];
+    }
+
+    $width = max(array_map(strlen(...), $types));
+    foreach ($issues as $k => $issue) {
+        $lines[] = ($k < $oldCount ? '- ' : '+ ') . ($type === '' ? str_pad("{$issue['type']}:", $width + 2) : '')
+            . changeLine($segments, $k);
+    }
+
+    return implode("\n", $lines);
+}
+
+/**
+ * Message $k of the segments: shared text cut to whole words around the changes, CONTEXT_CHARS or a bit more on
+ * each side, so that the `-` and `+` lines are trimmed alike.
+ *
+ * @param list<list<string>> $segments
+ */
+function changeLine(array $segments, int $k): string
+{
+    $line = '';
+    $last = count($segments) - 1;
+    foreach ($segments as $s => $segment) {
+        $text = $segment[$k];
+        if (!isShared($segment)) {
+            $line .= mb_strimwidth($text, 0, CHANGE_CHARS, '…');
+            continue;
+        }
+
+        $start = contextTokens($text, false);
+        $end = contextTokens($text, true);
+        $line .= match (true) {
+            $last === 0 => mb_strimwidth($text, 0, EXAMPLE_CHARS, '…'),
+            $s === 0 => $end === $text ? $text : "…{$end}",
+            $s === $last => $start === $text ? $text : "{$start}…",
+            mb_strlen($start) + mb_strlen($end) < mb_strlen($text) => "{$start}…{$end}",
+            default => $text,
+        };
+    }
+
+    return $line;
+}
+
+/** Whole tokens from the start (or the end) of $text, at least CONTEXT_CHARS long. */
+function contextTokens(string $text, bool $fromEnd): string
+{
+    $tokens = messageTokens($text);
+    $kept = '';
+    foreach ($fromEnd ? array_reverse($tokens) : $tokens as $token) {
+        if (mb_strlen($kept) >= CONTEXT_CHARS) {
+            break;
+        }
+
+        $kept = $fromEnd ? $token . $kept : $kept . $token;
+    }
+
+    return $kept;
 }
 
 /**
@@ -602,7 +708,7 @@ function runCompare(array $args): int
     requireOptions($options, array_slice($names, 0, 7));
     $summary = compareAll(readJsonFile($options['plan']), $options['in'], $options['deps-changed'] === '1');
     $summary += ['base_sha' => $options['base-sha'], 'head_sha' => $options['head-sha']];
-    writeJsonFile($options['out-json'], ['schema' => 1] + $summary);
+    writeJsonFile($options['out-json'], ['schema' => 2] + $summary);
     if (file_put_contents($options['out-md'], renderReport($summary, $options['run-url'] ?? null)) === false) {
         throw new RuntimeException("cannot write {$options['out-md']}");
     }

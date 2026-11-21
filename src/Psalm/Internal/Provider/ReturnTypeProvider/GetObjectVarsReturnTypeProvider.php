@@ -11,6 +11,7 @@ use Psalm\Internal\Analyzer\ClassAnalyzer;
 use Psalm\Internal\Analyzer\SourceAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\AtomicPropertyFetchAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Type\TypeExpander;
 use Psalm\Plugin\EventHandler\Event\FunctionReturnTypeProviderEvent;
 use Psalm\Plugin\EventHandler\FunctionReturnTypeProviderInterface;
 use Psalm\Type;
@@ -121,6 +122,20 @@ final class GetObjectVarsReturnTypeProvider implements FunctionReturnTypeProvide
                         );
                         if (!$property_type) {
                             continue;
+                        }
+
+                        $declaring_class_name = $codebase->properties->getDeclaringClassForProperty($property_id, true);
+
+                        if ($declaring_class_name !== null) {
+                            $declaring_storage = $codebase->classlike_storage_provider->get($declaring_class_name);
+
+                            $property_type = TypeExpander::expandUnion(
+                                $codebase,
+                                $property_type,
+                                $declaring_storage->name,
+                                $declaring_storage->name,
+                                $declaring_storage->parent_class,
+                            );
                         }
 
                         $property_type = $object_type instanceof TGenericObject

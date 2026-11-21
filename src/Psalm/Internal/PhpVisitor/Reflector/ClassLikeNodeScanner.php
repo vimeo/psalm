@@ -1722,6 +1722,8 @@ final class ClassLikeNodeScanner
                     $const_type = Type::getMixed();
                 }
             }
+            /** @var Identifier|IntersectionType|Name|NullableType|UnionType|null $parser_const_type */
+            $parser_const_type = $stmt->type;
             $storage->constants[$const->name->name] = $constant_storage = new ClassConstantStorage(
                 $const_type,
                 $inferred_type,
@@ -1746,6 +1748,15 @@ final class ClassLikeNodeScanner
                 $suppressed_issues,
                 $description,
                 $since_php_version_id,
+                $parser_const_type === null ? null : TypeHintResolver::resolve(
+                    $parser_const_type,
+                    new CodeLocation($this->file_scanner, $parser_const_type),
+                    $this->codebase,
+                    $this->file_storage,
+                    $storage,
+                    $this->aliases,
+                    $this->codebase->analysis_php_version_id,
+                ),
             );
 
             if ($this->codebase->analysis_php_version_id >= 8_03_00
