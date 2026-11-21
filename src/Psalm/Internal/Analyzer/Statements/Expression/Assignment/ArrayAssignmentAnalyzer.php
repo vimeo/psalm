@@ -845,6 +845,23 @@ final class ArrayAssignmentAnalyzer
                         $properties[$key_value->value] = $current_type;
                     }
                 }
+
+                if ($has_matching_objectlike_property && count($key_values) > 1) {
+                    // only one of the keys is written: each of them keeps what it held or may still be unset
+                    foreach ($key_values as $key_value) {
+                        $old_item_type = $type->properties[$key_value->value]
+                            ?? $type->fallback_params[1] ?? null;
+
+                        $properties[$key_value->value] = ($old_item_type === null
+                            ? $current_type
+                            : Type::combineUnionTypes($old_item_type, $current_type, $codebase))
+                            ->setPossiblyUndefined(
+                                !isset($type->properties[$key_value->value])
+                                    || $type->properties[$key_value->value]->possibly_undefined,
+                            );
+                    }
+                }
+
                 $type = $type->setProperties($properties);
             } elseif ($type instanceof TString) {
                 foreach ($key_values as $key_value) {

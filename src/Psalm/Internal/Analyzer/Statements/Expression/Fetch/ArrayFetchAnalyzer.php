@@ -2077,9 +2077,13 @@ final class ArrayFetchAnalyzer
                     $has_valid_offset = true;
 
                     if ($replacement_type) {
+                        // with several keys, only one of them is written: the others may still be unset
                         $properties[$key_value->value] = Type::combineUnionTypes(
                             $properties[$key_value->value] ?? null,
                             $replacement_type,
+                        )->setPossiblyUndefined(
+                            (count($key_values) > 1 && !isset($type->properties[$key_value->value]))
+                            || ($type->properties[$key_value->value] ?? null)?->possibly_undefined === true,
                         );
                         if (is_int($key_value->value)
                             && !$stmt->dim
@@ -2111,7 +2115,9 @@ final class ArrayFetchAnalyzer
                         $properties[$key_value->value],
                     );
                 } elseif ($in_assignment) {
-                    $properties[$key_value->value] = new Union([new TNever]);
+                    $properties[$key_value->value] = new Union([new TNever], [
+                        'possibly_undefined' => count($key_values) > 1,
+                    ]);
 
                     $array_access_type = Type::combineUnionTypes(
                         $array_access_type,
