@@ -688,6 +688,21 @@ final class AtomicPropertyFetchAnalyzer
             ]);
         }
 
+        // a shape the object also has narrows what the property holds (`V&object{x: string}`)
+        if (!$in_assignment) {
+            foreach ($intersection_types as $intersection_type) {
+                if ($intersection_type instanceof TObjectWithProperties
+                    && isset($intersection_type->properties[$prop_name])
+                ) {
+                    $class_property_type = (Type::intersectUnionTypes(
+                        $class_property_type,
+                        $intersection_type->properties[$prop_name],
+                        $codebase,
+                    ) ?? $class_property_type)->setParentNodes($class_property_type->parent_nodes);
+                }
+            }
+        }
+
         $stmt_type = $statements_analyzer->node_data->getType($stmt);
 
         $has_valid_fetch_type = true;
