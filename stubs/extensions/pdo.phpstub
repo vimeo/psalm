@@ -151,10 +151,10 @@ class PDOStatement implements Traversable
      *
      * @template T of object
      * @param class-string<T> $class
-     * @param array $ctorArgs
+     * @param array $constructorArgs
      * @return false|T
      */
-    public function fetchObject($class = \stdclass::class, array $ctorArgs = array()) {}
+    public function fetchObject($class = \stdclass::class, array $constructorArgs = array()) {}
 
     public function bindValue(string|int $param, mixed $value, int $type = PDO::PARAM_STR): bool {}
 
