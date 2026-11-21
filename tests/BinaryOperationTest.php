@@ -2747,6 +2747,35 @@ final class BinaryOperationTest extends TestCase
                     '$negativeShiftBy===' => 'int',
                 ],
             ],
+            'bitwiseAndWithANonNegativeOperandIsBoundedByIt' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function getInt(): int {
+                        return 1;
+                    }
+                    $i = getInt();
+                    $low = $i & 0x0F;
+                    $lowLeft = 0x0F & $i;
+                    $zero = $i & 0;
+                    $negativeRange = rand(-5, 3) & 6;
+                    /** @var int<0, max> $u */
+                    $u = 5;
+                    $unbounded = $i & $u;
+                    $negative = $i & -1;
+                    $mixedSigns = $i & rand(-5, 3);
+                    $byRange = $i & rand(0, 7);
+                    PHP,
+                'assertions' => [
+                    '$low===' => 'int<0, 15>',
+                    '$lowLeft===' => 'int<0, 15>',
+                    '$zero===' => '0',
+                    '$negativeRange===' => 'int<0, 6>',
+                    '$unbounded===' => 'int<0, max>',
+                    '$negative===' => 'int',
+                    '$mixedSigns===' => 'int',
+                    '$byRange===' => 'int<0, 7>',
+                ],
+            ],
             'bitwiseOperationsOfUnboundedIntRanges' => [
                 'code' => <<<'PHP'
                     <?php
