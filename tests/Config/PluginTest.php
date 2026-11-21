@@ -27,13 +27,16 @@ use Psalm\Plugin\EventHandler\Event\AfterEveryFunctionCallAnalysisEvent;
 use Psalm\Plugin\EventHandler\Event\AfterFunctionCallAnalysisEvent;
 use Psalm\Plugin\EventHandler\Event\AfterMethodCallAnalysisEvent;
 use Psalm\Plugin\EventHandler\Event\BeforeFileAnalysisEvent;
+use Psalm\Plugin\EventHandler\Event\MethodParamsProviderEvent;
 use Psalm\PluginRegistrationSocket;
 use Psalm\Report;
 use Psalm\Report\ReportOptions;
+use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Tests\Config\Plugin\FixableIssuePlugin;
 use Psalm\Tests\DeferredAnalyzerTestCase;
 use Psalm\Tests\Internal\Provider\FakeParserCacheProvider;
 use Psalm\Tests\TestConfig;
+use Psalm\Type;
 
 use function array_fill_keys;
 use function array_keys;
@@ -950,6 +953,88 @@ final class PluginTest extends DeferredAnalyzerTestCase
         );
 
         $this->analyzeFile($file_path, new Context());
+    }
+
+    public function testMethodParamsProviderKeepsTheTemplatesOfTheDocumentingMethod(): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__, 2) . DIRECTORY_SEPARATOR,
+                '<?xml version="1.0"?>
+                <psalm errorLevel="1">
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+                </psalm>',
+            ),
+        );
+
+        $this->project_analyzer->getCodebase()->methods->params_provider->registerClosure(
+            'Ns\Impl',
+            static fn(MethodParamsProviderEvent $event): ?array => $event->getStatementsSource()
+                ?->getCodebase()
+                ->getMethodParams('Ns\Wrapper::wrap'),
+        );
+
+        $file_path = (string) getcwd() . '/src/somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                namespace Ns;
+
+                interface Wrapper
+                {
+                    /**
+                     * @template T
+                     * @param list<T> $items
+                     * @return array<int, T>
+                     */
+                    public function wrap(array $items): array;
+                }
+
+                class Impl implements Wrapper
+                {
+                    public function wrap(array $items): array
+                    {
+                        return $items;
+                    }
+                }
+
+                $result = (new Impl())->wrap([1]);',
+        );
+
+        $context = new Context();
+        $this->analyzeFile($file_path, $context);
+        $this->assertSame('array<int, 1>', $context->vars_in_scope['$result']->getId());
+    }
+
+    public function testMethodParamsProviderGivesTheParamsOfAClassWithoutStorage(): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__, 2) . DIRECTORY_SEPARATOR,
+                '<?xml version="1.0"?>
+                <psalm errorLevel="1">
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+                </psalm>',
+            ),
+        );
+
+        $codebase = $this->project_analyzer->getCodebase();
+        $codebase->methods->params_provider->registerClosure(
+            'Ns\Pending',
+            static fn(): array => [
+                new FunctionLikeParameter('value', false, Type::getString()),
+            ],
+        );
+
+        $params = $codebase->getMethodParams('Ns\Pending::take');
+
+        $this->assertCount(1, $params);
+        $this->assertSame('value', $params[0]->name);
     }
 
     public function testMethodProviderAnalyzesNarrowingArgumentOnce(): void
