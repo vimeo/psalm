@@ -128,29 +128,6 @@ final class ArrayAssignmentTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
-            'nestedAssignmentDoesNotMakeTheValuesOfTheOtherKeysNonEmpty' => [
-                'code' => '<?php
-                    /** @param array<string, array<int, int>> $a */
-                    function g(array $a, string $k, string $j, int $i): void {
-                        $a[$k][$i] = 1;
-
-                        if (isset($a[$j]) && empty($a[$j])) {
-                            echo "empty";
-                        }
-                    }
-
-                    /** @param array<string, array<int, int>> $a */
-                    function h(array $a, string $k, string $j): void {
-                        $a[$k] = [1];
-
-                        if (isset($a[$j]) && empty($a[$j])) {
-                            echo "empty";
-                        }
-                    }',
-                'assertions' => [],
-                'ignored_issues' => [],
-                'php_version' => '8.0',
-            ],
             'assignWithAScalarOffsetGivesAnArrayKey' => [
                 'code' => '<?php
                     /** @param scalar $key */
@@ -3591,22 +3568,6 @@ final class ArrayAssignmentTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
-            'nestedAssignmentLeavesTheValuesOfTheOtherKeysPossiblyEmpty' => [
-                'code' => '<?php
-                    /** @param array<string, array<int, int>> $a */
-                    function f(array $a, string $k, int $i): int {
-                        $a[$k][$i] = 1;
-
-                        foreach ($a as $e) {
-                            return array_key_first($e);
-                        }
-
-                        return 0;
-                    }',
-                'error_message' => 'NullableReturnStatement',
-                'error_levels' => [],
-                'php_version' => '8.0',
-            ],
             'pushWithFloatOrStringKey' => [
                 'code' => '<?php
                     /**

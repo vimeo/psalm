@@ -697,6 +697,7 @@ final class TypeCombiner
                     $combination->array_type_params[$i] ?? null,
                     $type_param,
                     $codebase,
+                    $overwrite_empty_array,
                 );
             }
 
@@ -739,6 +740,7 @@ final class TypeCombiner
                     $combination->array_type_params[$i] ?? null,
                     $type_param,
                     $codebase,
+                    $overwrite_empty_array,
                 );
             }
 
@@ -768,6 +770,7 @@ final class TypeCombiner
                     $combination->builtin_type_params[$type_key][$i] ?? null,
                     $type_param,
                     $codebase,
+                    $overwrite_empty_array,
                 );
             }
 
@@ -781,6 +784,7 @@ final class TypeCombiner
                     $combination->object_type_params[$type_key][$i] ?? null,
                     $type_param,
                     $codebase,
+                    $overwrite_empty_array,
                 );
             }
 
@@ -824,6 +828,7 @@ final class TypeCombiner
                         $value_type,
                         $candidate_property_type,
                         $codebase,
+                        $overwrite_empty_array,
                     );
                     if ((!$value_type->possibly_undefined || !$candidate_property_type->possibly_undefined)
                         && $overwrite_empty_array
@@ -842,6 +847,7 @@ final class TypeCombiner
                         $combination->objectlike_entries[$candidate_property_name],
                         $combination->objectlike_value_type,
                         $codebase,
+                        $overwrite_empty_array,
                     );
                 }
 
@@ -866,11 +872,13 @@ final class TypeCombiner
                     $type->fallback_params[0],
                     $combination->objectlike_key_type,
                     $codebase,
+                    $overwrite_empty_array,
                 );
                 $combination->objectlike_value_type = Type::combineUnionTypes(
                     $type->fallback_params[1],
                     $combination->objectlike_value_type,
                     $codebase,
+                    $overwrite_empty_array,
                 );
             }
 
@@ -909,6 +917,7 @@ final class TypeCombiner
                         $combination->objectlike_entries[$k],
                         $type->fallback_params[1] ?? $combination->objectlike_value_type,
                         $codebase,
+                        $overwrite_empty_array,
                     );
                 }
             }
@@ -1967,6 +1976,7 @@ final class TypeCombiner
                 $combination->objectlike_key_type,
                 $objectlike_key_type,
                 $codebase,
+                $overwrite_empty_array,
             );
 
             $generic_type_params[0] = Type::combineUnionTypes(
