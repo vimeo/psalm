@@ -562,10 +562,9 @@ final class Config
     /**
      * The packages the project depends on, read from its composer.json and vendor/composer/installed.json when null
      *
-     * @internal
      * @var array<lowercase-string, true>|null
      */
-    public ?array $project_packages = null;
+    private ?array $project_packages = null;
 
     /** @var list<string>|null */
     private ?array $unrequired_package_paths = null;
@@ -3279,6 +3278,18 @@ final class Config
         }
 
         return $this->unrequired_package_paths = $paths;
+    }
+
+    /**
+     * Replaces the packages read from the project's composer.json, for the functions collected from now on
+     *
+     * @internal
+     * @param array<lowercase-string, true> $project_packages
+     */
+    public function setProjectPackages(array $project_packages): void
+    {
+        $this->project_packages = $project_packages;
+        $this->unrequired_package_paths = null;
     }
 
     /**

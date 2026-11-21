@@ -306,8 +306,8 @@ final class PsalmEndToEndTest extends PsalmEndToEndTestCase
         $process = $this->runPsalmInTheProject(['--no-cache', '--php-version=8.3', '--output-format=compact']);
         @unlink(self::$tmpDir . '/src/Polyfilled.php');
 
-        $this->assertStringContainsString('Function array_find is not defined', $process->getOutput());
-        $this->assertStringContainsString('Function clamp does not exist', $process->getOutput());
+        $this->assertStringContainsString('UndefinedFunction: Function array_find ', $process->getOutput());
+        $this->assertStringContainsString('UndefinedFunction: Function clamp ', $process->getOutput());
         $this->assertStringContainsString('RoundingMode is not defined', $process->getOutput());
         $this->assertSame(2, $process->getExitCode());
     }
