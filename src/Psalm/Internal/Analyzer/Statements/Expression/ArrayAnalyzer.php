@@ -43,6 +43,7 @@ use Psalm\Type\Atomic\TNonEmptyArray;
 use Psalm\Type\Atomic\TNumericString;
 use Psalm\Type\Atomic\TObjectWithProperties;
 use Psalm\Type\Atomic\TString;
+use Psalm\Type\Atomic\TTemplateKeyOf;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTrue;
 use Psalm\Type\TaintKind;
@@ -168,6 +169,7 @@ final class ArrayAnalyzer
                     && !$atomic_key_type instanceof TInt
                     && !$atomic_key_type instanceof TArrayKey
                     && !$atomic_key_type instanceof TTemplateParam
+                    && !$atomic_key_type instanceof TTemplateKeyOf
                     && !(
                         $atomic_key_type instanceof TObjectWithProperties
                         && isset($atomic_key_type->methods['__tostring'])

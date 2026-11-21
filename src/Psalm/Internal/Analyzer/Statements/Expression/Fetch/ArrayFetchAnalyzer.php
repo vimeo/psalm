@@ -115,6 +115,7 @@ use function count;
 use function implode;
 use function in_array;
 use function is_int;
+use function reset;
 use function spl_object_id;
 use function strlen;
 use function strpbrk;
@@ -1603,6 +1604,28 @@ final class ArrayFetchAnalyzer
     }
 
     /**
+     * `value-of<T>` for `$arr[$k]` with `$arr: T` and `$k: key-of<T>`: an item of `T`
+     *
+     * @psalm-pure
+     */
+    private static function getValueOfTemplateAtItsKey(Atomic $array_type, MutableUnion $offset_type): ?TTemplateValueOf
+    {
+        $offset_atomic_types = $offset_type->getAtomicTypes();
+        $key_of = reset($offset_atomic_types);
+
+        if (!$array_type instanceof TTemplateParam
+            || count($offset_atomic_types) !== 1
+            || !$key_of instanceof TTemplateKeyOf
+            || $key_of->param_name !== $array_type->param_name
+            || $key_of->defining_class !== $array_type->defining_class
+        ) {
+            return null;
+        }
+
+        return new TTemplateValueOf($key_of->param_name, $key_of->defining_class, $key_of->as);
+    }
+
+    /**
      * @param list<string> $expected_offset_types
      * @param TArray|TKeyedArray|TClassStringMap $type
      * @param-out TArray|TKeyedArray|TClassStringMap $type
@@ -1715,6 +1738,10 @@ final class ArrayFetchAnalyzer
                 $replacement_type,
                 $array_access_type,
             );
+        } elseif ($value_of = self::getValueOfTemplateAtItsKey($original_type, $offset_type)) {
+            $array_access_type = Type::combineUnionTypes($array_access_type, new Union([$value_of]));
+
+            $has_valid_offset = true;
         } else {
             self::handleArrayAccessOnKeyedArray(
                 $statements_analyzer,
@@ -1797,7 +1824,11 @@ final class ArrayFetchAnalyzer
 
             $union_comparison_results = new TypeComparisonResult();
 
-            if ($original_type instanceof TTemplateParam && $templated_offset_type) {
+            if ($value_of = self::getValueOfTemplateAtItsKey($original_type, $offset_type)) {
+                $type = $type->setTypeParams([$type->type_params[0], new Union([$value_of])]);
+
+                $has_valid_offset = true;
+            } elseif ($original_type instanceof TTemplateParam && $templated_offset_type) {
                 foreach ($templated_offset_type->as->getAtomicTypes() as $offset_as) {
                     if ($offset_as instanceof TTemplateKeyOf
                         && $offset_as->param_name === $original_type->param_name
