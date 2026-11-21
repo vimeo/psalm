@@ -3177,8 +3177,14 @@ final class AssertionFinder
     {
         $assertions = [];
 
+        // of several values, the operand is only one: not being identical to it, the value may be any other one
+        $has_several_values = count($type->getAtomicTypes()) > 1;
+
         foreach ($type->getAtomicTypes() as $atomic_type) {
-            $assertions[] = new IsIdentical($atomic_type, self::getComparand($atomic_type, $operand_id));
+            $assertions[] = new IsIdentical(
+                $atomic_type,
+                $has_several_values ? $operand_id : self::getComparand($atomic_type, $operand_id),
+            );
         }
 
         return $assertions;
