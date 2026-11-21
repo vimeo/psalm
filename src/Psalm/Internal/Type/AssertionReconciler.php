@@ -81,7 +81,6 @@ use Psalm\Type\Atomic\TValueOf;
 use Psalm\Type\Reconciler;
 use Psalm\Type\Union;
 
-use function array_any;
 use function array_diff_key;
 use function array_intersect_key;
 use function array_keys;
@@ -1031,9 +1030,7 @@ final class AssertionReconciler extends Reconciler
      * Narrowing a `Parent<A, B>` to a child class whose templates are passed straight to Parent's
      * (`@extends Parent<T, U>`, `@implements Iterator[P]<K, V>`) gives the child those arguments:
      * `Iterator[pure]<int, string>` narrowed to `Child` is a `Child[pure]<int, string>`. With
-     * $unknown_as_star, the other type templates are `*` rather than leaving the child without arguments,
-     * and a `*` passed down knows the child template's bound too (`Box<*>` narrowed to a `DateBox` whose
-     * `T of DateTime` is passed to Box is a `DateBox<*>` known to be a DateTime).
+     * $unknown_as_star, the other type templates are `*` rather than leaving the child without arguments.
      */
     private static function inferTemplateParamsFromParent(
         Codebase $codebase,
@@ -1063,8 +1060,7 @@ final class AssertionReconciler extends Reconciler
 
         $parent_template_names = array_keys($parent_storage->template_types);
         $type_params = [];
-        /** @var array<int, Union> what is known of each `*` passed down from the parent, by offset */
-        $parent_stars = [];
+        $projections = [];
 
         foreach ($child_storage->template_types as $template_name => $type_map) {
             $inferred = null;
@@ -1083,6 +1079,11 @@ final class AssertionReconciler extends Reconciler
                     && $extended_atomic->defining_class === $child_storage->name
                 ) {
                     $inferred = $parent->type_params[$offset];
+
+                    if ($parent->getProjection($offset) === TypeArgumentProjection::Star) {
+                        $projections[count($type_params)] = TypeArgumentProjection::Star;
+                    }
+
                     break;
                 }
             }
@@ -1095,41 +1096,29 @@ final class AssertionReconciler extends Reconciler
 
                 // a purity template is left to its bound, which a `*` cannot stand for
                 $bound = reset($type_map);
-                $inferred = Capabilities::isPurityType($bound)
-                    ? PurityArguments::getOmittedArgument($bound)
-                    : StarProjection::create($child->from_docblock);
-            } elseif ($unknown_as_star && StarProjection::isStar($inferred)) {
-                $parent_stars[count($type_params)] = StarProjection::read($inferred);
-                $inferred = StarProjection::create($inferred->from_docblock);
+
+                if (Capabilities::isPurityType($bound)) {
+                    $inferred = PurityArguments::getOmittedArgument($bound);
+                } else {
+                    $inferred = Type::getMixed();
+                    $projections[count($type_params)] = TypeArgumentProjection::Star;
+                }
             }
 
             $type_params[] = $inferred;
         }
 
-        $narrowed = new TGenericObject(
+        $narrowed = (new TGenericObject(
             $child->value,
             $type_params,
             false,
             $child->is_static,
             $child->extra_types,
             $child->from_docblock,
-        );
+        ))->setProjections($projections);
 
-        if (!$unknown_as_star) {
-            return $narrowed;
-        }
-
-        $type_params = StarProjection::boundArguments($narrowed, $codebase)->type_params;
-
-        foreach ($parent_stars as $offset => $parent_as) {
-            $child_as = StarProjection::read($type_params[$offset]);
-            $type_params[$offset] = StarProjection::create(
-                $type_params[$offset]->from_docblock,
-                Type::intersectUnionTypes($parent_as, $child_as, $codebase) ?? $child_as,
-            );
-        }
-
-        return $narrowed->setTypeParams($type_params);
+        // a `*` passed down holds the bound of the child's template, with the child's other arguments applied
+        return StarProjection::resolve($narrowed, $codebase, array_keys($projections));
     }
 
     /**
@@ -1573,7 +1562,7 @@ final class AssertionReconciler extends Reconciler
     ): ?Atomic {
         if ($type_2_atomic::class === TNamedObject::class
             && $type_1_atomic instanceof TGenericObject
-            && array_any($type_1_atomic->type_params, StarProjection::isStar(...))
+            && $type_1_atomic->hasStarProjection()
         ) {
             // what a `*` leaves unknown stays unknown: `Pair<int, *>` narrowed to `Pair` is still a `Pair<int, *>`,
             // and narrowed to a `Child` that `@extends Pair<int, T>` is a `Child<*>`, not one of the template's bound

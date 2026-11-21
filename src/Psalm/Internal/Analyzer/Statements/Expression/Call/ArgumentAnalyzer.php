@@ -28,10 +28,10 @@ use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\Comparator\CallableTypeComparator;
 use Psalm\Internal\Type\Comparator\TypeComparisonResult;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
-use Psalm\Internal\Type\StarProjection;
 use Psalm\Internal\Type\TemplateBound;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
+use Psalm\Internal\Type\TypeArgumentProjection;
 use Psalm\Internal\Type\TypeExpander;
 use Psalm\Internal\TypeVisitor\TypeVariableResolver;
 use Psalm\Issue\ArgumentTypeCoercion;
@@ -2129,7 +2129,7 @@ final class ArgumentAnalyzer
                                 // a `*` param says nothing about what the value holds
                                 if ($type_param->isNever()
                                     && isset($param_atomic_type->type_params[$i])
-                                    && !StarProjection::isStar($param_atomic_type->type_params[$i])
+                                    && $param_atomic_type->getProjection($i) !== TypeArgumentProjection::Star
                                 ) {
                                     $input_type_changed = true;
 
@@ -2137,13 +2137,13 @@ final class ArgumentAnalyzer
                                 }
                             }
                             if ($new_type_params) {
-                                $input_atomic_type = new TGenericObject(
+                                $input_atomic_type = (new TGenericObject(
                                     $input_atomic_type->value,
                                     [...$input_atomic_type->type_params, ...$new_type_params],
                                     $input_atomic_type->remapped_params,
                                     false,
                                     $input_atomic_type->extra_types,
-                                );
+                                ))->setProjections($input_atomic_type->getProjections());
                             }
                         }
                     }

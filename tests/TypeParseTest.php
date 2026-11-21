@@ -16,7 +16,6 @@ use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TLiteralFloat;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
-use Psalm\Type\Atomic\TStarProjection;
 use Psalm\Type\Atomic\TTemplateKeyOf;
 use Psalm\Type\Union;
 use ReflectionFunction;
@@ -2070,20 +2069,26 @@ final class TypeParseTest extends TestCase
         self::assertSame('Relation<Model, TModel, *>', $type->getId(false));
     }
 
-    public function testStarProjectionCombinedWithAnyTypeIsAStar(): void
+    public function testStarProjectionIsKeptWhenCombinedWithAnArgument(): void
     {
-        $star = Type::parseString('Box<*>')->getSingleAtomic();
-        self::assertInstanceOf(TGenericObject::class, $star);
-        $star = $star->type_params[0];
+        $star = Type::parseString('Traversable<*, *>');
+        $concrete = Type::parseString('Traversable<int, string>');
 
         foreach ([
-            Type::combineUnionTypes($star, Type::getInt()),
-            Type::combineUnionTypes(Type::getInt(), $star),
-            Type::combineUnionTypes($star, Type::getMixed()),
-            Type::combineUnionTypes(Type::getMixed(), $star),
+            Type::combineUnionTypes($star, $concrete),
+            Type::combineUnionTypes($concrete, $star),
+            Type::combineUnionTypes($star, $star),
         ] as $combined) {
-            self::assertInstanceOf(TStarProjection::class, $combined->getSingleAtomic());
+            self::assertSame('Traversable<*, *>', $combined->getId());
         }
+    }
+
+    public function testStarProjectionHoldsATypeInTypeParams(): void
+    {
+        $pair = Type::parseString('Pair<int, *>')->getSingleAtomic();
+        self::assertInstanceOf(TGenericObject::class, $pair);
+
+        self::assertSame(['int', 'mixed'], array_map(static fn(Union $param): string => $param->getId(), $pair->type_params));
     }
 
     /**

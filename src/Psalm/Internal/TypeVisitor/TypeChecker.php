@@ -16,11 +16,11 @@ use Psalm\Internal\Analyzer\MethodAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ConstFetchAnalyzer;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\PurityArguments;
-use Psalm\Internal\Type\StarProjection;
 use Psalm\Internal\Type\TemplateBound;
 use Psalm\Internal\Type\TemplateDefaults;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
+use Psalm\Internal\Type\TypeArgumentProjection;
 use Psalm\Internal\Type\TypeExpander;
 use Psalm\Internal\Type\TypeParser;
 use Psalm\Issue\DeprecatedClass;
@@ -45,7 +45,6 @@ use Psalm\Type\Atomic\TIntersection;
 use Psalm\Type\Atomic\TKeyOf;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TResource;
-use Psalm\Type\Atomic\TStarProjection;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTypeAlias;
 use Psalm\Type\Atomic\TValueOf;
@@ -130,11 +129,6 @@ final class TypeChecker extends TypeVisitor
             return self::DONT_TRAVERSE_CHILDREN;
         }
 
-        // what is known of a `*` is the bound of its template, checked where the template is declared
-        if ($type instanceof TStarProjection) {
-            return self::DONT_TRAVERSE_CHILDREN;
-        }
-
         if ($type instanceof TNamedObject) {
             $prevents_covariance = $this->checkNamedObject($type);
 
@@ -149,6 +143,11 @@ final class TypeChecker extends TypeVisitor
                 }
 
                 foreach ($type->type_params as $i => $type_param) {
+                    // what a `*` holds is the bound of its template, checked where the template is declared
+                    if ($type->getProjection($i) === TypeArgumentProjection::Star) {
+                        continue;
+                    }
+
                     $this->prevent_template_covariance = $prevents_covariance[$i] ?? $outer_prevents_covariance;
                     $this->in_invariant_position = $outer_in_invariant_position || ($prevents_covariance[$i] ?? false);
                     $this->traverse($type_param);
@@ -442,7 +441,7 @@ final class TypeChecker extends TypeVisitor
                     );
 
                     // `*` fits any bound, and stands for the bound in those of the other templates
-                    if (StarProjection::isStar($type_param)) {
+                    if ($atomic->getProjection($i) === TypeArgumentProjection::Star) {
                         $template_result->lower_bounds[$expected_template_name][$defining_class][]
                             = new TemplateBound($expected_type_param);
 

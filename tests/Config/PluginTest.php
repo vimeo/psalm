@@ -1078,6 +1078,33 @@ final class PluginTest extends DeferredAnalyzerTestCase
             }');
     }
 
+    public function testPluginReadingTheTypeParamsOfAStarReceiverSeesTheBounds(): void
+    {
+        $this->analyzeWithTemplateParameterPlugin('
+            abstract class Model {
+                public function save(): bool {
+                    return true;
+                }
+            }
+
+            /**
+             * @template TRelated of Model
+             * @template TParent of Model
+             */
+            final class Relation {
+                public function related(): Model {
+                    throw new \Exception();
+                }
+            }
+
+            /** @param Relation<*, *> $any */
+            function run(Relation $any): void {
+                $related = $any->related();
+                /** @psalm-check-type-exact $related = Model */
+                $related->save();
+            }');
+    }
+
     private function analyzeWithTemplateParameterPlugin(string $code): void
     {
         require_once __DIR__ . '/Plugin/TemplateParameterPlugin.php';

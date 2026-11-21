@@ -37,7 +37,6 @@ use Psalm\Internal\Type\AssertionReconciler;
 use Psalm\Internal\Type\Comparator\AtomicTypeComparator;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\PurityWildcardPaths;
-use Psalm\Internal\Type\StarProjection;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TypeExpander;
@@ -1741,7 +1740,7 @@ final class ForeachAnalyzer
                 } elseif ($iterator_atomic_type instanceof TGenericObject
                     && strtolower($iterator_atomic_type->value) === 'generator'
                 ) {
-                    $type_params = StarProjection::readArguments($iterator_atomic_type, $codebase)->type_params;
+                    $type_params = $iterator_atomic_type->type_params;
                     if (isset($type_params[2])
                         && !$type_params[2]->isNullable()
                         && !$type_params[2]->isVoid()
@@ -1879,10 +1878,6 @@ final class ForeachAnalyzer
         ?Union &$key_type,
         ?Union &$value_type,
     ): void {
-        if ($iterator_atomic_type instanceof TGenericObject) {
-            $iterator_atomic_type = StarProjection::readArguments($iterator_atomic_type, $codebase);
-        }
-
         if ($iterator_atomic_type instanceof TIterable
             || ($iterator_atomic_type instanceof TGenericObject
                 && strtolower($iterator_atomic_type->value) === 'traversable')
@@ -2278,9 +2273,7 @@ final class ForeachAnalyzer
             $storage->name,
             $storage->template_extended_params,
             $storage->template_types,
-            $atomic_type instanceof TGenericObject
-                ? StarProjection::readArguments($atomic_type, $codebase)->type_params
-                : null,
+            $atomic_type instanceof TGenericObject ? $atomic_type->type_params : null,
         );
 
         return $value_type?->replaceClassLike('static', $atomic_type->value);

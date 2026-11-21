@@ -53,6 +53,7 @@ use ReflectionProperty;
 
 use function array_all;
 use function array_any;
+use function array_fill;
 use function array_filter;
 use function array_keys;
 use function array_map;
@@ -679,6 +680,7 @@ final class TypeExpander
                 $class_storage = $codebase->classlike_storage_provider->get($return_type->value);
 
                 $type_params = StarProjection::boundStars(
+                    $return_type,
                     PurityArguments::align(
                         TemplateDefaults::fillAndExpandTypeArguments(
                             $type_params,
@@ -909,7 +911,7 @@ final class TypeExpander
                     static fn($type_map): bool => !reset($type_map)->hasMixed(),
                 )
             ) {
-                $return_type = new TGenericObject(
+                $return_type = (new TGenericObject(
                     $return_type->value,
                     array_values(
                         array_map(
@@ -917,8 +919,11 @@ final class TypeExpander
                             $container_class_storage->template_types,
                         ),
                     ),
-                    omitted_params_from: 0,
-                );
+                ))->setProjections(array_fill(
+                    0,
+                    PurityArguments::countTypeTemplates($container_class_storage),
+                    TypeArgumentProjection::Omitted,
+                ));
 
                 // we don't want to expand generic types recursively
                 $expand_generic = false;

@@ -925,7 +925,7 @@ final class AtomicPropertyFetchAnalyzer
         ClassLikeStorage $property_class_storage,
         ClassLikeStorage $property_declaring_class_storage,
     ): Union {
-        $lhs_type_part = StarProjection::boundArguments($lhs_type_part, $codebase);
+        $lhs_type_part = StarProjection::resolve($lhs_type_part, $codebase);
 
         $template_types = CallAnalyzer::getTemplateTypesForCall(
             $codebase,

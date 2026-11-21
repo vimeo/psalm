@@ -36,7 +36,6 @@ use Psalm\Internal\Scanner\ClassLikeDocblockComment;
 use Psalm\Internal\Scanner\FileScanner;
 use Psalm\Internal\Scanner\ParsedDocblock;
 use Psalm\Internal\Scanner\UnresolvedConstantComponent;
-use Psalm\Internal\Type\StarProjection;
 use Psalm\Internal\Type\TemplateDefaults;
 use Psalm\Internal\Type\TypeAlias;
 use Psalm\Internal\Type\TypeAlias\ClassTypeAlias;
@@ -78,7 +77,6 @@ use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
-use function array_any;
 use function array_column;
 use function array_diff_key;
 use function array_fill_keys;
@@ -1512,7 +1510,7 @@ final class ClassLikeNodeScanner
         TGenericObject $atomic_type,
         string $tag,
     ): bool {
-        if (!array_any($atomic_type->type_params, StarProjection::isStar(...))) {
+        if (!$atomic_type->hasStarProjection()) {
             return false;
         }
 

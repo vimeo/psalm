@@ -840,10 +840,16 @@ final class TypeParser
         }
 
         $generic_params = [];
+        /** @var list<Union> the `*` arguments among the generic params, by identity */
+        $star_params = [];
 
         foreach ($parse_tree->children as $i => $child_tree) {
             if ($child_tree instanceof Value && $child_tree->value === StarProjection::NAME) {
-                $generic_params[] = StarProjection::create($from_docblock);
+                // without the class there is no template bound to hold: see StarProjection::resolve()
+                $generic_params[] = $star_params[] = new Union(
+                    [new TMixed(false, $from_docblock)],
+                    ['from_docblock' => $from_docblock],
+                );
 
                 continue;
             }
@@ -891,7 +897,7 @@ final class TypeParser
             true,
         )) {
             foreach ($generic_params as $i => $generic_param) {
-                if (StarProjection::isStar($generic_param)) {
+                if (in_array($generic_param, $star_params, true)) {
                     $generic_params[$i] = new Union([new TMixed(false, $from_docblock)]);
                 }
             }
@@ -902,6 +908,7 @@ final class TypeParser
                 $generic_type_value,
                 $generic_params,
                 $purity_params,
+                $star_params,
                 $from_docblock,
             );
         }
@@ -1060,7 +1067,7 @@ final class TypeParser
             || $generic_type_value === 'enum-string'
         ) {
             // `class-string<*>` is any class-string, as in PHPStan
-            if (StarProjection::isStar($generic_params[0])) {
+            if (in_array($generic_params[0], $star_params, true)) {
                 return new TClassString(
                     'object',
                     null,
@@ -1117,7 +1124,7 @@ final class TypeParser
             }
 
             // the values of a class-string-map are read, and it has no template for `*` to stand for
-            if (StarProjection::isStar($generic_params[1])) {
+            if (in_array($generic_params[1], $star_params, true)) {
                 throw new TypeParseTreeException('class-string-map cannot take a * value');
             }
 
@@ -1402,7 +1409,27 @@ final class TypeParser
             throw new TypeParseTreeException('Cannot create generic object with reserved word');
         }
 
-        return new TGenericObject($generic_type_value, $generic_params, false, false, [], $from_docblock);
+        return (new TGenericObject($generic_type_value, $generic_params, false, false, [], $from_docblock))
+            ->setProjections(self::getStarProjections($generic_params, $star_params));
+    }
+
+    /**
+     * @param list<Union> $generic_params
+     * @param list<Union> $star_params
+     * @return array<int, TypeArgumentProjection>
+     * @psalm-pure
+     */
+    private static function getStarProjections(array $generic_params, array $star_params): array
+    {
+        $projections = [];
+
+        foreach ($generic_params as $offset => $generic_param) {
+            if (in_array($generic_param, $star_params, true)) {
+                $projections[$offset] = TypeArgumentProjection::Star;
+            }
+        }
+
+        return $projections;
     }
 
     /**
@@ -1411,6 +1438,7 @@ final class TypeParser
      *
      * @param list<Union> $generic_params
      * @param non-empty-list<Union> $purity_params
+     * @param list<Union> $star_params the `*` arguments among the generic params, by identity
      * @throws TypeParseTreeException
      * @psalm-pure
      */
@@ -1418,6 +1446,7 @@ final class TypeParser
         string $generic_type_value,
         array $generic_params,
         array $purity_params,
+        array $star_params,
         bool $from_docblock,
     ): TIterable|TGenericObject {
         if (isset(TypeTokenizer::PSALM_RESERVED_WORDS[$generic_type_value])
@@ -1465,14 +1494,14 @@ final class TypeParser
 
         // the purity templates of a class come after its type templates; the type parameters of a
         // class left out are filled in once the class is known (see TypeExpander)
-        return new TGenericObject(
+        return (new TGenericObject(
             $generic_type_value,
             [...$generic_params, ...$purity_params],
             false,
             false,
             [],
             $from_docblock,
-        );
+        ))->setProjections(self::getStarProjections($generic_params, $star_params));
     }
 
     /**

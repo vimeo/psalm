@@ -9,11 +9,13 @@ use Psalm\Codebase;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Type\PurityArguments;
 use Psalm\Internal\Type\TemplateResult;
+use Psalm\Internal\Type\TypeArgumentProjection;
 use Psalm\Type\Atomic;
 use Psalm\Type\Union;
 
 use function count;
 use function implode;
+use function in_array;
 use function strrpos;
 use function substr;
 
@@ -40,12 +42,17 @@ final class TGenericObject extends TNamedObject
     public array $type_params;
 
     /**
+     * What each type argument stands for besides its type, by offset: the type of a `*` or a left out argument is
+     * the bound of its template, with the other arguments applied
+     *
+     * @var array<int, TypeArgumentProjection>
+     */
+    private array $projections = [];
+
+    /**
      * @param string                $value the name of the object
      * @param non-empty-list<Union> $type_params
      * @param array<string, TNamedObject|TTemplateParam|TIterable|TObjectWithProperties|TCallableObject> $extra_types
-     * @param int|null $omitted_params_from the offset of the first type parameter the use of the class left out,
-     *                                      which is its template's bound: 0 for `Pair` written without arguments.
-     *                                      A `*` argument fits a left-out one (`Pair<int, *>` is a `Pair`).
      */
     public function __construct(
         string $value,
@@ -55,7 +62,6 @@ final class TGenericObject extends TNamedObject
         bool $is_static = false,
         array $extra_types = [],
         bool $from_docblock = false,
-        public ?int $omitted_params_from = null,
     ) {
         if ($value[0] === '\\') {
             $value = substr($value, 1);
@@ -79,6 +85,50 @@ final class TGenericObject extends TNamedObject
         return PurityArguments::split($this->type_params);
     }
 
+    /**
+     * @internal
+     * @psalm-mutation-free
+     */
+    public function getProjection(int $offset): ?TypeArgumentProjection
+    {
+        return $this->projections[$offset] ?? null;
+    }
+
+    /**
+     * @internal
+     * @return array<int, TypeArgumentProjection>
+     * @psalm-mutation-free
+     */
+    public function getProjections(): array
+    {
+        return $this->projections;
+    }
+
+    /**
+     * @internal
+     * @psalm-mutation-free
+     */
+    public function hasStarProjection(): bool
+    {
+        return in_array(TypeArgumentProjection::Star, $this->projections, true);
+    }
+
+    /**
+     * @internal
+     * @param array<int, TypeArgumentProjection> $projections
+     */
+    public function setProjections(array $projections): self
+    {
+        if ($this->projections === $projections) {
+            return $this;
+        }
+
+        $cloned = clone $this;
+        $cloned->projections = $projections;
+
+        return $cloned;
+    }
+
     #[Override]
     public function getKey(bool $include_extra = true): string
     {
@@ -88,6 +138,7 @@ final class TGenericObject extends TNamedObject
             $type_params,
             $purity_args,
             static fn(Union $type_param): string => $type_param->getKey(),
+            $this,
         );
 
         $extra_types = '';
@@ -142,7 +193,12 @@ final class TGenericObject extends TNamedObject
         }
 
         foreach ($this->type_params as $i => $type_param) {
-            if (!$type_param->equals($other_type->type_params[$i], $ensure_source_equality, false)) {
+            $is_star = $this->getProjection($i) === TypeArgumentProjection::Star;
+
+            // the type of a `*` is a function of the class and the other arguments
+            if ($is_star !== ($other_type->getProjection($i) === TypeArgumentProjection::Star)
+                || (!$is_star && !$type_param->equals($other_type->type_params[$i], $ensure_source_equality, false))
+            ) {
                 return false;
             }
         }
@@ -214,7 +270,7 @@ final class TGenericObject extends TNamedObject
             $this->remapped_params,
             $this->is_static,
             $intersection ?? $this->extra_types,
-        ))->setIsStatic($this->is_static, $this->is_static_resolved);
+        ))->setIsStatic($this->is_static, $this->is_static_resolved)->setProjections($this->projections);
     }
 
     /**
@@ -240,6 +296,6 @@ final class TGenericObject extends TNamedObject
             true,
             $this->is_static,
             $intersection ?? $this->extra_types,
-        ))->setIsStatic($this->is_static, $this->is_static_resolved);
+        ))->setIsStatic($this->is_static, $this->is_static_resolved)->setProjections($this->projections);
     }
 }

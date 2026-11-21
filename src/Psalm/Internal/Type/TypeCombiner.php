@@ -51,7 +51,6 @@ use Psalm\Type\Atomic\TNumericString;
 use Psalm\Type\Atomic\TObject;
 use Psalm\Type\Atomic\TObjectWithProperties;
 use Psalm\Type\Atomic\TScalar;
-use Psalm\Type\Atomic\TStarProjection;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateKeyOf;
 use Psalm\Type\Atomic\TTemplateParam;
@@ -112,26 +111,6 @@ final class TypeCombiner
             return new Union([$types[0]]);
         }
 
-        foreach ($types as $type) {
-            if ($type instanceof TStarProjection) {
-                return self::combineIntoStar($types, $codebase);
-            }
-        }
-
-        return self::combineTypes($types, $codebase, $overwrite_empty_array, $allow_mixed_union, $literal_limit);
-    }
-
-    /**
-     * @psalm-external-mutation-free
-     * @param  non-empty-list<Atomic> $types
-     */
-    private static function combineTypes(
-        array $types,
-        ?Codebase $codebase,
-        bool $overwrite_empty_array,
-        bool $allow_mixed_union,
-        int $literal_limit,
-    ): Union {
         $combination = new TypeCombination();
 
         $from_docblock = false;
@@ -214,11 +193,7 @@ final class TypeCombiner
             $combined_param_types = [];
 
             foreach ($array_param_types as $i => $array_param_type) {
-                // an iterable has no template a `*` could stand for: it is the bound of Traversable's
-                $combined_param_types[] = Type::combineUnionTypes(
-                    $array_param_type,
-                    StarProjection::read($traversable_param_types[$i]),
-                );
+                $combined_param_types[] = Type::combineUnionTypes($array_param_type, $traversable_param_types[$i]);
             }
 
             assert(count($combined_param_types) <= 2);
@@ -283,15 +258,14 @@ final class TypeCombiner
                 $new_types[] = new TIterable($generic_type_params, [], $from_docblock);
             } else {
                 /** @psalm-suppress ArgumentTypeCoercion Caused by the PropertyTypeCoercion above */
-                $generic_object = new TGenericObject(
+                $generic_object = (new TGenericObject(
                     $generic_type,
                     $generic_type_params,
                     false,
                     false,
                     $combination->extra_types,
                     $from_docblock,
-                    $combination->object_omitted_params_from[$generic_type] ?? null,
-                );
+                ))->setProjections($combination->object_projections[$generic_type] ?? []);
                 $new_types[] = $generic_object;
 
                 if ($combination->named_object_types) {
@@ -301,7 +275,7 @@ final class TypeCombiner
         }
 
         foreach ($combination->object_type_params as $generic_type => $generic_type_params) {
-            $omitted_params_from = $combination->object_omitted_params_from[$generic_type] ?? null;
+            $projections = $combination->object_projections[$generic_type] ?? [];
             $generic_type = substr($generic_type, 0, strcspn($generic_type, '<['));
 
             /** @psalm-suppress ArgumentTypeCoercion Caused by the PropertyTypeCoercion above */
@@ -312,11 +286,10 @@ final class TypeCombiner
                 false,
                 $combination->extra_types,
                 $from_docblock,
-                $omitted_params_from,
             ))->setIsStatic(
                 $combination->object_static[$generic_type] ?? false,
                 $combination->object_static_resolved[$generic_type] ?? false,
-            );
+            )->setProjections($projections);
         }
 
         if ($combination->class_string_types) {
@@ -421,36 +394,6 @@ final class TypeCombiner
         }
 
         return $union_type;
-    }
-
-    /**
-     * A `*` type argument combined with others (`Box<*>|Box<int>`) is a `*` knowing what is known of each `*` and the
-     * types given next to it
-     *
-     * @param  non-empty-list<Atomic> $types
-     * @psalm-external-mutation-free
-     */
-    private static function combineIntoStar(array $types, ?Codebase $codebase): Union
-    {
-        $known_types = [];
-        $from_docblock = false;
-
-        foreach ($types as $type) {
-            $from_docblock = $from_docblock || $type->from_docblock;
-
-            if (!$type instanceof TStarProjection) {
-                $known_types[] = $type;
-            } elseif ($type->as === null) {
-                return new Union([new TStarProjection($from_docblock)]);
-            } else {
-                $known_types = [...$known_types, ...array_values($type->as->getAtomicTypes())];
-            }
-        }
-
-        return new Union([new TStarProjection(
-            $from_docblock,
-            self::combine($known_types, $codebase, false, false),
-        )]);
     }
 
     /**
@@ -685,10 +628,7 @@ final class TypeCombiner
             $traversable_params = $combination->builtin_type_params['Traversable'] ?? null;
             self::addIterablePurity($combination, $traversable_params[2] ?? Type::getImpure());
             $traversable_params = isset($traversable_params[1])
-                ? [
-                    StarProjection::read($traversable_params[0]),
-                    StarProjection::read($traversable_params[1]),
-                ]
+                ? [$traversable_params[0], $traversable_params[1]]
                 : null;
 
             if (!isset($combination->builtin_type_params['iterable'])) {
@@ -816,11 +756,13 @@ final class TypeCombiner
             return null;
         }
 
-        if ($type instanceof TGenericObject && $type->omitted_params_from !== null) {
-            $combination->object_omitted_params_from[$type_key] = min(
-                $type->omitted_params_from,
-                $combination->object_omitted_params_from[$type_key] ?? $type->omitted_params_from,
-            );
+        if ($type instanceof TGenericObject) {
+            foreach ($type->getProjections() as $i => $projection) {
+                // the union holds what any of its types holds: a `*` holds more than a left out argument
+                if (($combination->object_projections[$type_key][$i] ?? null) !== TypeArgumentProjection::Star) {
+                    $combination->object_projections[$type_key][$i] = $projection;
+                }
+            }
         }
 
         if (($type instanceof TGenericObject && ($type->value === 'Traversable' || $type->value === 'Generator'))
@@ -836,7 +778,7 @@ final class TypeCombiner
                 /** @psalm-suppress PropertyTypeCoercion */
                 $combination->builtin_type_params[$type_key][$i] = Type::combineUnionTypes(
                     $combination->builtin_type_params[$type_key][$i] ?? null,
-                    $type_key === 'iterable' ? StarProjection::read($type_param) : $type_param,
+                    $type_param,
                     $codebase,
                     $overwrite_empty_array,
                 );
