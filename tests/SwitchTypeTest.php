@@ -61,6 +61,32 @@ final class SwitchTypeTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'caseOfASwitchTrueIsComparedWhereTheCasesBeforeItDidNotMatch' => [
+                'code' => '<?php
+                    final class O {
+                        public function f(): int {
+                            return rand(0, 5);
+                        }
+                    }
+
+                    function checkedWithInstanceof(?O $v): void {
+                        switch (true) {
+                            case false === ($v instanceof O):
+                                break;
+                            case $v->f() < 3:
+                                break;
+                        }
+                    }
+
+                    function checkedWithNull(?O $v): void {
+                        switch (true) {
+                            case $v === null:
+                                break;
+                            case $v->f() < 3:
+                                break;
+                        }
+                    }',
+            ],
             'switchWithoutDefaultNarrowsTheSubjectWhenEveryCaseReturns' => [
                 'code' => '<?php
                     /** @param "a"|"b"|"c" $letter */
@@ -1867,6 +1893,25 @@ final class SwitchTypeTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'bodyReachedThroughAFallThroughIsNotNarrowedByTheCaseBeforeIt' => [
+                'code' => '<?php
+                    final class O {
+                        public function f(): int {
+                            return rand(0, 5);
+                        }
+                    }
+
+                    function fallThrough(?O $v): void {
+                        switch (true) {
+                            case $v === null:
+                                echo "null";
+                            case rand(0, 1) === 1:
+                                echo $v->f();
+                                break;
+                        }
+                    }',
+                'error_message' => 'PossiblyNullReference',
+            ],
             'varFromBreakTwoOutOfNestedSwitchIsUndefinedAfterIt' => [
                 'code' => '<?php
                     function f(string $s, string $u): void {

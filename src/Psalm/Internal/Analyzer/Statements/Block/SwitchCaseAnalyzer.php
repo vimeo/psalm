@@ -96,6 +96,29 @@ final class SwitchCaseAnalyzer
         $case_scope = $case_context->case_scope = new CaseScope($case_context);
         $case_scope->outer_case_scope = $original_context->case_scope;
 
+        // a case is only compared once the ones before it didn't match
+        if ($case->cond && $switch_scope->negated_clauses && count($switch_scope->negated_clauses) < 50) {
+            $negated_truths = Algebra::getTruthsFromFormula(
+                Algebra::simplifyCNF([...$original_context->clauses, ...$switch_scope->negated_clauses]),
+            );
+
+            if ($negated_truths) {
+                $changed_var_ids = [];
+
+                [$case_context->vars_in_scope, $case_context->references_in_scope] = Reconciler::reconcileKeyedTypes(
+                    $negated_truths,
+                    [],
+                    $case_context->vars_in_scope,
+                    $case_context->references_in_scope,
+                    $changed_var_ids,
+                    [],
+                    $statements_analyzer,
+                    [],
+                    $case_context->inside_loop,
+                );
+            }
+        }
+
         $case_equality_expr = null;
 
         $old_node_data = $statements_analyzer->node_data;
