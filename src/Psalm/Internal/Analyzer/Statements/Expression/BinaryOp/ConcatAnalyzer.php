@@ -13,6 +13,8 @@ use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
+use Psalm\Internal\Codebase\StringContext;
+use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\Comparator\AtomicTypeComparator;
 use Psalm\Internal\Type\Comparator\TypeComparisonResult;
@@ -70,10 +72,11 @@ final class ConcatAnalyzer
     /**
      * The taints a value can't have once appended to $prefix, if $prefix is the start of a URL fixing its origin: a
      * network scheme or `//`, a host and the `/`, `?` or `#` ending it. What follows such a prefix can only change the
-     * path, the query or the fragment of the URL, never the server it is sent to (`ssrf` taint). With a network scheme
-     * it can't make the URL a local file either (`file` taint), unlike with no scheme. After any other scheme, a
-     * stream wrapper (`php://filter/resource=`, `compress.zlib://https://`...), it can still be the URL of any server.
-     * In the query or the fragment, it can't be a `..` segment of the path either (`url_path` taint).
+     * path, the query or the fragment of the URL, never the server it is sent to (`ssrf` taint) or redirects the
+     * client to (`redirect` taint). With a network scheme it can't make the URL a local file either (`file` taint),
+     * unlike with no scheme. After any other scheme, a stream wrapper (`php://filter/resource=`,
+     * `compress.zlib://https://`...), it can still be the URL of any server. In the query or the fragment, it can't be
+     * a `..` segment of the path either (`url_path` taint).
      *
      * A path from the root (`/` followed by anything but another `/` or a backslash) is resolved against the server of
      * the base URL it is sent with, or is a local file: what follows it can't choose a server either.
@@ -83,19 +86,19 @@ final class ConcatAnalyzer
     public static function getTaintsRemovedAfterUrlOrigin(string $prefix): int
     {
         if (preg_match('~^/[^/\\\\]~', $prefix) === 1) {
-            return TaintKind::INPUT_SSRF;
-        }
-
-        if (preg_match('~^(?:(https?|ftps?):)?//[^/?#]+([/?#].*)~is', $prefix, $matches) !== 1) {
+            $removed_taints = TaintKind::INPUT_SSRF | TaintKind::INPUT_REDIRECT;
+            $after_origin = $prefix;
+        } elseif (preg_match('~^(?:(https?|ftps?):)?//[^/?#]+([/?#].*)~is', $prefix, $matches) === 1) {
+            $removed_taints = ($matches[1] ?? '') === ''
+                ? TaintKind::INPUT_SSRF | TaintKind::INPUT_REDIRECT
+                : TaintKind::INPUT_SSRF | TaintKind::INPUT_REDIRECT | TaintKind::INPUT_FILE;
+            // from the `/`, `?` or `#` ending the host
+            $after_origin = $matches[2] ?? '';
+        } else {
             return 0;
         }
 
-        $removed_taints = ($matches[1] ?? '') === ''
-            ? TaintKind::INPUT_SSRF
-            : TaintKind::INPUT_SSRF | TaintKind::INPUT_FILE;
-
-        // from the `/`, `?` or `#` ending the host
-        return strpbrk($matches[2] ?? '', '?#') === false
+        return strpbrk($after_origin, '?#') === false
             ? $removed_taints
             : $removed_taints | TaintKind::INPUT_URL_PATH;
     }
@@ -152,6 +155,63 @@ final class ConcatAnalyzer
 
         /** @var non-empty-list<Atomic> $atomics */
         return new Union($atomics);
+    }
+
+    /**
+     * Adds the sinks of position $context (see StringContext) for a value with $parent_nodes at $location, a part of
+     * the string being built, which can't carry $removed_taints
+     *
+     * @param array<string, DataFlowNode> $parent_nodes
+     */
+    public static function addPositionSinks(
+        StatementsAnalyzer $statements_analyzer,
+        StringContext $context,
+        array $parent_nodes,
+        int $removed_taints,
+        CodeLocation $location,
+    ): void {
+        $sink_taints = $context->getSinkTaints() & ~$removed_taints;
+        $graph = $statements_analyzer->getTaintFlowGraphWithSuppressed();
+
+        if ($sink_taints === 0 || $graph === null || $parent_nodes === []) {
+            return;
+        }
+
+        $sink = DataFlowNode::getForTaint(
+            (($sink_taints & TaintKind::INPUT_URL_SCHEME) !== 0 ? 'URL' : 'unquoted value')
+                . ' of attribute ' . $context->getAttribute(),
+            $location,
+            $sink_taints,
+        );
+
+        $graph->addSink($sink);
+
+        foreach ($parent_nodes as $parent_node) {
+            $graph->addPath($parent_node, $sink, 'arg', 0, $removed_taints);
+        }
+    }
+
+    /**
+     * Adds the sinks of position $context for the value of $expr, already analyzed, a part of the string being built
+     */
+    public static function addPositionSinksForExpression(
+        StatementsAnalyzer $statements_analyzer,
+        StringContext $context,
+        PhpParser\Node\Expr $expr,
+    ): void {
+        $type = $statements_analyzer->node_data->getType($expr);
+
+        if ($type === null || $context->getSinkTaints() === 0) {
+            return;
+        }
+
+        self::addPositionSinks(
+            $statements_analyzer,
+            $context,
+            $type->parent_nodes,
+            $type->getTaintsToRemove($statements_analyzer->getCodebase()->getInputTaints()),
+            new CodeLocation($statements_analyzer, $expr),
+        );
     }
 
     /**

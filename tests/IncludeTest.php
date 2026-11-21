@@ -1687,6 +1687,67 @@ final class IncludeTest extends TestCase
     }
 
     /**
+     * @param list<string> $expected_issues
+     */
+    #[DataProvider('providerStrictTypesOfIncludedFiles')]
+    public function testStrictTypesAppliesPerFile(string $includer, string $included, array $expected_issues): void
+    {
+        $this->addFile((string) getcwd() . DIRECTORY_SEPARATOR . 'main.php', $includer);
+        $this->addFile((string) getcwd() . DIRECTORY_SEPARATOR . 'inc.php', $included);
+
+        $this->assertSame($expected_issues, $this->analyzeFilesInOrder(['main.php', 'inc.php']));
+    }
+
+    /**
+     * @return iterable<string, array{includer: string, included: string, expected_issues: list<string>}>
+     * @psalm-pure
+     */
+    public static function providerStrictTypesOfIncludedFiles(): iterable
+    {
+        yield 'strict includer, non-strict included file' => [
+            'includer' => '<?php
+                declare(strict_types=1);
+
+                require __DIR__ . "/inc.php";',
+            'included' => '<?php
+                strlen(5);',
+            'expected_issues' => ['inc.php: InvalidScalarArgument@2'],
+        ];
+
+        yield 'non-strict includer, strict included file' => [
+            'includer' => '<?php
+                require __DIR__ . "/inc.php";',
+            'included' => '<?php
+                declare(strict_types=1);
+
+                strlen(5);',
+            'expected_issues' => ['inc.php: InvalidArgument@4'],
+        ];
+
+        yield 'non-strict includer stays non-strict after a strict included file' => [
+            'includer' => '<?php
+                require __DIR__ . "/inc.php";
+
+                strlen(5);',
+            'included' => '<?php
+                declare(strict_types=1);',
+            'expected_issues' => ['main.php: InvalidScalarArgument@4'],
+        ];
+
+        yield 'strict includer stays strict after a non-strict included file' => [
+            'includer' => '<?php
+                declare(strict_types=1);
+
+                require __DIR__ . "/inc.php";
+
+                strlen(5);',
+            'included' => '<?php
+                echo 1;',
+            'expected_issues' => ['main.php: InvalidArgument@6'],
+        ];
+    }
+
+    /**
      * The constructor of the parent initializes its property through a helper, in a file that requires the
      * child's file: collecting what the helper does must not be cut short by the include cycle.
      */

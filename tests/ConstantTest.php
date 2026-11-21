@@ -309,6 +309,30 @@ final class ConstantTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'overrideKeepingTheNativeTypeOfTheParentConstant' => [
+                'code' => '<?php
+                    interface HasVersion {
+                        public const string VERSION = "1";
+                    }
+
+                    class Base implements HasVersion {
+                        public const string VERSION = "2";
+                        public const int LIMIT = 10;
+                    }
+
+                    final class Child extends Base {
+                        public const string VERSION = "3";
+                        public const int LIMIT = 20;
+                    }
+
+                    $limit = Child::LIMIT;
+                ',
+                'assertions' => [
+                    '$limit===' => '20',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
             'staticConstantMapOffsetWithANullDefaultOfDestructuredValues' => [
                 'code' => '<?php
                     class Handler
@@ -3348,6 +3372,35 @@ final class ConstantTest extends TestCase
                 'error_message' => "InvalidClassConstantType",
                 'error_levels' => [],
                 'php_version' => '8.1',
+            ],
+            'overrideViolatingTheNativeTypeOfTheParentConstant' => [
+                'code' => '<?php
+                    class Base {
+                        public const int LIMIT = 10;
+                    }
+
+                    final class Child extends Base {
+                        public const int|string LIMIT = "unlimited";
+                    }
+                ',
+                'error_message' => 'does not satisfy the type "int" inherited from Base::LIMIT',
+                'error_levels' => [],
+                'php_version' => '8.3',
+            ],
+            'overrideViolatingTheDocblockTypeOfANativelyTypedConstant' => [
+                'code' => '<?php
+                    class Base {
+                        /** @var positive-int */
+                        public const int LIMIT = 10;
+                    }
+
+                    final class Child extends Base {
+                        public const int LIMIT = -1;
+                    }
+                ',
+                'error_message' => 'InvalidClassConstantType',
+                'error_levels' => [],
+                'php_version' => '8.3',
             ],
             'overrideFinalClassConstFromExtendedClass' => [
                 'code' => '<?php
