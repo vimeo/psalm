@@ -108,6 +108,11 @@ final class ClosureAnalyzer extends FunctionLikeAnalyzer
     public array $captured_by_ref_writes = [];
 
     /**
+     * The type of this closure, which `Closure::getCurrent()` returns in its body
+     */
+    public ?TClosure $closure_type = null;
+
+    /**
      * The types of the variables captured by reference where the closure body returns.
      *
      * @var array<string, list<Union>>
