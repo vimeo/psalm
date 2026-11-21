@@ -1332,6 +1332,45 @@ final class ClassTest extends TestCase
                         Missing\C::run();
                     }',
             ],
+            'classExistsCoversTheCodeAfterAnIfChainOnlyReachedThroughTheBlocksWhereTheClassExists' => [
+                'code' => '<?php
+                    function elseIfFallsThrough(bool $f): void {
+                        if ($f) {
+                            return;
+                        } elseif (class_exists(Missing\A::class)) {
+                            echo 1;
+                        } else {
+                            return;
+                        }
+
+                        Missing\A::run();
+                    }
+
+                    function nestedEarlyReturn(): void {
+                        if (class_exists(Missing\A::class)) {
+                            if (!class_exists(Missing\B::class)) {
+                                return;
+                            }
+                        } else {
+                            return;
+                        }
+
+                        Missing\A::run();
+                        Missing\B::run();
+                    }
+
+                    function bothBlocksFallThrough(bool $f): void {
+                        if ($f && class_exists(Missing\A::class)) {
+                            echo 1;
+                        } elseif (class_exists(Missing\A::class)) {
+                            echo 2;
+                        } else {
+                            return;
+                        }
+
+                        Missing\A::run();
+                    }',
+            ],
             'classExistsCoversTheIfAndElseIfBody' => [
                 'code' => '<?php
                     function foo(): void {
@@ -1944,6 +1983,34 @@ final class ClassTest extends TestCase
                         Missing\Thing::run();
                     }',
                 'error_message' => 'UndefinedClass - src' . DIRECTORY_SEPARATOR . 'somefile.php:11:25',
+            ],
+            'classExistsInOnlyOneOfTheBlocksThatFallThroughDoesNotCoverTheCodeAfterTheIf' => [
+                'code' => '<?php
+                    function foo(bool $flag): void {
+                        if (class_exists(Missing\Thing::class)) {
+                            echo 1;
+                        } elseif ($flag) {
+                            echo 2;
+                        } else {
+                            return;
+                        }
+
+                        Missing\Thing::run();
+                    }',
+                'error_message' => 'UndefinedClass - src' . DIRECTORY_SEPARATOR . 'somefile.php:11:25',
+            ],
+            'classExistsDoesNotCoverItsElse' => [
+                'code' => '<?php
+                    function foo(bool $flag): void {
+                        if (class_exists(Missing\Thing::class)) {
+                            echo 1;
+                        } elseif ($flag) {
+                            echo 2;
+                        } else {
+                            Missing\Thing::run();
+                        }
+                    }',
+                'error_message' => 'UndefinedClass - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:29',
             ],
             'classExistsDoesNotCoverTheCodeAfterTheIfInAMethod' => [
                 'code' => '<?php

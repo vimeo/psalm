@@ -411,6 +411,10 @@ final class ElseIfAnalyzer
 
         $if_scope->final_actions = array_merge($final_actions, $if_scope->final_actions);
 
+        if (in_array(ScopeAnalyzer::ACTION_NONE, $final_actions, true)) {
+            $if_scope->phantom_classes_of_blocks[] = $elseif_context->phantom_classes;
+        }
+
         // update the parent context as necessary
         if (!$has_leaving_statements) {
             IfAnalyzer::updateIfScope(
