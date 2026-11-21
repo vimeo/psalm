@@ -808,18 +808,23 @@ final class ClassConstAnalyzer
             if ($parent_const_storage !== null) {
                 assert($parent_classlike_storage !== null);
 
+                // without a docblock type, the type the parent constant declares natively is what overrides must keep
+                $parent_type = $parent_const_storage->type_location === null && $parent_const_storage->signature_type
+                    ? $parent_const_storage->signature_type
+                    : $parent_const_storage->type;
+
                 // Check covariance
                 if ($const_storage->type !== null
-                    && $parent_const_storage->type !== null
+                    && $parent_type !== null
                     && !UnionTypeComparator::isContainedBy(
                         $codebase,
                         $const_storage->type,
-                        $parent_const_storage->type,
+                        $parent_type,
                     )
                 ) {
                     if (UnionTypeComparator::isContainedBy(
                         $codebase,
-                        $parent_const_storage->type,
+                        $parent_type,
                         $const_storage->type,
                     )) {
                         // Contravariant
@@ -827,7 +832,7 @@ final class ClassConstAnalyzer
                             new LessSpecificClassConstantType(
                                 "The type \"{$const_storage->type->getId()}\" for {$class_storage->name}::"
                                     . "{$const_name} is more general than the type "
-                                    . "\"{$parent_const_storage->type->getId()}\" inherited from "
+                                    . "\"{$parent_type->getId()}\" inherited from "
                                     . "{$parent_classlike_storage->name}::{$const_name}",
                                 $type_location,
                                 "{$class_storage->name}::{$const_name}",
@@ -840,7 +845,7 @@ final class ClassConstAnalyzer
                             new InvalidClassConstantType(
                                 "The type \"{$const_storage->type->getId()}\" for {$class_storage->name}::"
                                     . "{$const_name} does not satisfy the type "
-                                    . "\"{$parent_const_storage->type->getId()}\" inherited from "
+                                    . "\"{$parent_type->getId()}\" inherited from "
                                     . "{$parent_classlike_storage->name}::{$const_name}",
                                 $type_location,
                                 "{$class_storage->name}::{$const_name}",
