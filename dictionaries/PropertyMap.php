@@ -174,7 +174,7 @@ return [
         'nodeName' => 'string',
         'nodeType' => 'int',
         'nodeValue' => 'string|null',
-        'ownerDocument' => 'DOMDocument',
+        'ownerDocument' => 'DOMDocument|null',
         'parentNode' => 'DOMNode|null',
         'prefix' => 'string',
         'previousSibling' => 'DOMNode|null',

@@ -13,6 +13,8 @@ use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
+use Psalm\Internal\Codebase\StringContext;
+use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\Comparator\AtomicTypeComparator;
 use Psalm\Internal\Type\Comparator\TypeComparisonResult;
@@ -153,6 +155,63 @@ final class ConcatAnalyzer
 
         /** @var non-empty-list<Atomic> $atomics */
         return new Union($atomics);
+    }
+
+    /**
+     * Adds the sinks of position $context (see StringContext) for a value with $parent_nodes at $location, a part of
+     * the string being built, which can't carry $removed_taints
+     *
+     * @param array<string, DataFlowNode> $parent_nodes
+     */
+    public static function addPositionSinks(
+        StatementsAnalyzer $statements_analyzer,
+        StringContext $context,
+        array $parent_nodes,
+        int $removed_taints,
+        CodeLocation $location,
+    ): void {
+        $sink_taints = $context->getSinkTaints() & ~$removed_taints;
+        $graph = $statements_analyzer->getTaintFlowGraphWithSuppressed();
+
+        if ($sink_taints === 0 || $graph === null || $parent_nodes === []) {
+            return;
+        }
+
+        $sink = DataFlowNode::getForTaint(
+            (($sink_taints & TaintKind::INPUT_URL_SCHEME) !== 0 ? 'URL' : 'unquoted value')
+                . ' of attribute ' . $context->getAttribute(),
+            $location,
+            $sink_taints,
+        );
+
+        $graph->addSink($sink);
+
+        foreach ($parent_nodes as $parent_node) {
+            $graph->addPath($parent_node, $sink, 'arg', 0, $removed_taints);
+        }
+    }
+
+    /**
+     * Adds the sinks of position $context for the value of $expr, already analyzed, a part of the string being built
+     */
+    public static function addPositionSinksForExpression(
+        StatementsAnalyzer $statements_analyzer,
+        StringContext $context,
+        PhpParser\Node\Expr $expr,
+    ): void {
+        $type = $statements_analyzer->node_data->getType($expr);
+
+        if ($type === null || $context->getSinkTaints() === 0) {
+            return;
+        }
+
+        self::addPositionSinks(
+            $statements_analyzer,
+            $context,
+            $type->parent_nodes,
+            $type->getTaintsToRemove($statements_analyzer->getCodebase()->getInputTaints()),
+            new CodeLocation($statements_analyzer, $expr),
+        );
     }
 
     /**

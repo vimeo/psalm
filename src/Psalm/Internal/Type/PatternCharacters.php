@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace Psalm\Internal\Type;
 
+use Psalm\Internal\Codebase\StringContext;
 use Psalm\Type\TaintKind;
 
 use function array_fill;
 use function chr;
+use function count;
 use function ctype_alnum;
 use function ctype_digit;
 use function hexdec;
@@ -17,8 +19,10 @@ use function preg_match;
 use function str_contains;
 use function str_split;
 use function strlen;
+use function strpbrk;
 use function strpos;
 use function strrpos;
+use function strspn;
 use function strtolower;
 use function strtoupper;
 use function substr;
@@ -52,6 +56,8 @@ final class PatternCharacters
         TaintKind::INPUT_URL_PATH => '.',
         TaintKind::INPUT_HEADER => "\r\n",
         TaintKind::INPUT_COOKIE => ";,= \r\n",
+        TaintKind::INPUT_HTML_ATTRIBUTE => " \t\n\r\x0C>",
+        TaintKind::INPUT_URL_SCHEME => ':',
     ];
 
     /**
@@ -109,7 +115,7 @@ final class PatternCharacters
         }
 
         if (self::holdsOnly($chars, self::SQL_SAFE_CHARACTERS)) {
-            $removed_taints |= TaintKind::INPUT_SQL;
+            $removed_taints |= TaintKind::INPUT_SQL | TaintKind::INPUT_SQL_UNQUOTED;
         }
 
         if (!$trailing_newline && self::holdsOnly($chars, self::SHELL_SAFE_CHARACTERS)) {
@@ -117,6 +123,144 @@ final class PatternCharacters
         }
 
         return $removed_taints;
+    }
+
+    /**
+     * The taints a string matching $pattern can't carry because of how the pattern makes it start: a pattern such as
+     * `~^https?://~` or `~^/~` fixes the scheme of a URL. Only literals, `x?` and a first group of alternatives
+     * (`^(?:https|mailto):`) are understood.
+     *
+     * @psalm-pure
+     */
+    public static function getTaintsRemovedByStart(string $pattern): int
+    {
+        if (strlen($pattern) < 3 || ctype_alnum($pattern[0]) || $pattern[0] === '\\' || $pattern[0] === ' ') {
+            return 0;
+        }
+
+        $closing_delimiter = ['(' => ')', '[' => ']', '{' => '}', '<' => '>'][$pattern[0]] ?? $pattern[0];
+        $end = strrpos($pattern, $closing_delimiter);
+
+        if ($end === false || $end === 0) {
+            return 0;
+        }
+
+        $modifiers = substr($pattern, $end + 1);
+        $body = substr($pattern, 1, $end - 1);
+
+        // m anchors every line, x changes what whitespace means
+        if (strspn($modifiers, 'iusDUSA') !== strlen($modifiers)) {
+            return 0;
+        }
+
+        if (str_contains($modifiers, 'A')) {
+            $offset = 0;
+        } elseif (($body[0] ?? '') === '^') {
+            $offset = 1;
+        } elseif (substr($body, 0, 2) === '\\A') {
+            $offset = 2;
+        } else {
+            return 0;
+        }
+
+        $starts = [''];
+
+        if (($body[$offset] ?? '') === '(') {
+            $offset += substr($body, $offset, 3) === '(?:' ? 3 : 1;
+            $alternatives = [];
+
+            do {
+                $alternative = self::getLiteralStarts($body, $offset);
+
+                if ($alternative === null) {
+                    return 0;
+                }
+
+                [$alternative_starts, $offset] = $alternative;
+                $alternatives = [...$alternatives, ...$alternative_starts];
+                $separator = $body[$offset++] ?? '';
+            } while ($separator === '|');
+
+            // a group that can be left out, or repeated, starts with anything
+            if ($separator !== ')' || in_array($body[$offset] ?? '', ['?', '*', '+', '{'], true)) {
+                return 0;
+            }
+
+            $starts = $alternatives;
+        }
+
+        $rest = self::getLiteralStarts($body, $offset);
+
+        if ($rest === null) {
+            return 0;
+        }
+
+        foreach ($starts as $start) {
+            foreach ($rest[0] as $end_of_start) {
+                if (!StringContext::fixesUrlScheme($start . $end_of_start)) {
+                    return 0;
+                }
+            }
+        }
+
+        return TaintKind::INPUT_URL_SCHEME;
+    }
+
+    /**
+     * The literal strings the part of $body from $offset up to the first character that isn't a literal or `?` can
+     * match, and the offset of that character; null for too many strings
+     *
+     * @return array{non-empty-list<string>, int}|null
+     * @psalm-pure
+     */
+    private static function getLiteralStarts(string $body, int $offset): ?array
+    {
+        $starts = [''];
+
+        for ($length = strlen($body); $offset < $length; $offset++) {
+            $char = $body[$offset];
+
+            if ($char === '\\') {
+                $escaped = $body[$offset + 1] ?? '';
+
+                // \d, \w, \s, ... are classes
+                if ($escaped === '' || ctype_alnum($escaped)) {
+                    break;
+                }
+
+                $char = $escaped;
+                $offset++;
+            } elseif (strpbrk($char, '.[]()|^$*+{}?') !== false) {
+                break;
+            }
+
+            $quantifier = $body[$offset + 1] ?? '';
+
+            // repeated any number of times, it may not be there
+            if ($quantifier === '*' || $quantifier === '{') {
+                break;
+            }
+
+            $optional = $quantifier === '?';
+            $next_starts = [];
+
+            foreach ($starts as $start) {
+                $next_starts[] = $start . $char;
+
+                if ($optional) {
+                    $next_starts[] = $start;
+                }
+            }
+
+            if (count($next_starts) > 16) {
+                return null;
+            }
+
+            $starts = $next_starts;
+            $offset += $optional ? 1 : 0;
+        }
+
+        return [$starts, $offset];
     }
 
     /**

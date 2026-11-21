@@ -654,6 +654,25 @@ final class ArgTest extends TestCase
                         takesScalar($e);
                     }',
             ],
+            'spreadOfAnArrayShapeWithIntegerKeysThatIsNotAListPassesAsManyArguments' => [
+                'code' => '<?php
+                    function add(int $a, int $b): int {
+                        return $a + $b;
+                    }
+
+                    /** @param array{2: int, 5: int} $c */
+                    function f(array $c): int {
+                        return add(...$c);
+                    }
+
+                    /** @param array{0: object, 1: string} $c */
+                    function g(array $c): bool {
+                        return method_exists(...$c);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
         ];
     }
 
@@ -1636,6 +1655,30 @@ final class ArgTest extends TestCase
                         takesEmpty($s);
                     }',
                 'error_message' => 'ArgumentTypeCoercion',
+            ],
+            'spreadOfAnArrayShapeWithIntegerKeysPassesTheValuesInTheOrderOfTheShape' => [
+                'code' => '<?php
+                    /** @param array{1: string, 0: object} $c */
+                    function f(array $c): bool {
+                        return method_exists(...$c);
+                    }',
+                'error_message' => 'ArgumentTypeCoercion',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'spreadOfAnArrayShapeWithIntegerKeysStillReportsTooFewArguments' => [
+                'code' => '<?php
+                    function add(int $a, int $b, int $c): int {
+                        return $a + $b + $c;
+                    }
+
+                    /** @param array{2: int, 5: int} $c */
+                    function f(array $c): int {
+                        return add(...$c);
+                    }',
+                'error_message' => 'TooFewArguments',
+                'error_levels' => [],
+                'php_version' => '8.0',
             ],
         ];
     }

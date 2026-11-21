@@ -480,6 +480,22 @@ final class PartialFunctionApplicationTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.6',
             ],
+            'PartialApplication:SignatureOfTheCallMapFunctionTheArgumentsFit' => [
+                'code' => <<<'PHP'
+                    <?php
+                        $compare = version_compare(?, '8.6', '>=');
+                        $order = version_compare(?, '8.6');
+                        $versions = ['8.4', '8.5', '8.6'];
+                        $supported = array_filter($versions, version_compare(?, '8.6', '>='));
+                    PHP,
+                'assertions' => [
+                    '$compare===' => 'Closure[pure](string):bool',
+                    '$order===' => 'Closure[pure](string):int',
+                    '$supported===' => "array<int<0, 2>, '8.4'|'8.5'|'8.6'>",
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.6',
+            ],
             'PartialApplication:SignatureOfFunctionsWithByReferenceParameters' => [
                 'code' => <<<'PHP'
                     <?php
