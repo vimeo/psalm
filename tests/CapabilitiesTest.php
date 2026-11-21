@@ -1512,6 +1512,25 @@ final class CapabilitiesTest extends TestCase
                             && max($some_names) !== min($some_names[0], $some_names[0]);
                     }',
             ],
+            'noToStringOfValuesArrayMultisortAndStrtrDoNotCompareAsStrings' => [
+                'code' => '<?php
+                    final class Name {
+                        public function __toString(): string { return "name"; }
+                    }
+
+                    /**
+                     * @psalm-pure
+                     * @param list<Name> $names
+                     * @param list<int> $ints
+                     * @param array{string, list<int>} $args
+                     */
+                    function f(array $names, array $ints, array $args, string $s): string {
+                        array_multisort($names, SORT_DESC, SORT_NUMERIC);
+                        array_multisort($ints, SORT_STRING, $names);
+
+                        return strtr($s, "a", "b") . implode(...$args);
+                    }',
+            ],
             'noToStringOfCallbackInArrayDiffUassoc' => [
                 'code' => '<?php
                     final class Comparer {
@@ -5818,6 +5837,51 @@ final class CapabilitiesTest extends TestCase
                      */
                     function f(array $names): string {
                         return implode(",", $names);
+                    }',
+                'error_message' => 'possibly-mutating method Name::__toString',
+            ],
+            'impureToStringInStrtrReplacements' => [
+                'code' => '<?php
+                    final class Name {
+                        public function __toString(): string { return "name"; }
+                    }
+
+                    /** @psalm-pure */
+                    function f(Name $name): string {
+                        return strtr("abc", ["a" => $name]);
+                    }',
+                'error_message' => 'possibly-mutating method Name::__toString',
+            ],
+            'impureToStringInArrayMultisortWithStringFlags' => [
+                'code' => '<?php
+                    final class Name {
+                        public function __toString(): string { return "name"; }
+                    }
+
+                    /**
+                     * @psalm-pure
+                     * @param list<int> $ints
+                     * @param list<Name> $names
+                     */
+                    function f(array $ints, array $names): array {
+                        array_multisort($ints, $names, SORT_DESC, SORT_STRING);
+
+                        return $names;
+                    }',
+                'error_message' => 'possibly-mutating method Name::__toString',
+            ],
+            'impureToStringInUnpackedImplodeArguments' => [
+                'code' => '<?php
+                    final class Name {
+                        public function __toString(): string { return "name"; }
+                    }
+
+                    /**
+                     * @psalm-pure
+                     * @param array{string, list<Name>} $args
+                     */
+                    function f(array $args): string {
+                        return implode(...$args);
                     }',
                 'error_message' => 'possibly-mutating method Name::__toString',
             ],
