@@ -93,9 +93,6 @@
     <PossiblyNullReference>
       <code><![CDATA[addAttribute]]></code>
     </PossiblyNullReference>
-    <PropertyTypeCoercion>
-      <code><![CDATA[$this]]></code>
-    </PropertyTypeCoercion>
     <RiskyTruthyFalsyComparison>
       <code><![CDATA[!$config_path]]></code>
       <code><![CDATA[!$file_path]]></code>
