@@ -24,7 +24,6 @@ use Psalm\Type\Union;
 use UnexpectedValueException;
 
 use function array_diff;
-use function array_diff_key;
 use function array_filter;
 use function array_intersect_key;
 use function array_map;
@@ -585,10 +584,14 @@ final class TryAnalyzer
 
                 // a variable the finally block assigns on some paths only holds, after the try, what the block leaves
                 // when it runs from that state: the type it ends with has the state before the try in it too
-                $partially_assigned_var_ids = array_diff_key(
-                    $finally_context->possibly_assigned_var_ids,
-                    $finally_context->assigned_var_ids,
-                );
+                $partially_assigned_var_ids = [];
+
+                /** @var string $var_id */
+                foreach ($finally_context->possibly_assigned_var_ids as $var_id => $_) {
+                    if (!isset($finally_context->assigned_var_ids[$var_id])) {
+                        $partially_assigned_var_ids[$var_id] = true;
+                    }
+                }
 
                 if ($partially_assigned_var_ids !== []) {
                     $old_node_data = $statements_analyzer->node_data;
