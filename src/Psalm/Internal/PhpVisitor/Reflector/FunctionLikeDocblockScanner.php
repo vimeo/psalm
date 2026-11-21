@@ -2189,6 +2189,13 @@ final class FunctionLikeDocblockScanner
     ): array {
         $storage->template_types = [];
 
+        // a bound may name a template declared after it
+        $declared_template_types = [];
+
+        foreach ($docblock_info->templates as $template_map) {
+            $declared_template_types[$template_map[0]] = ['fn-' . strtolower($cased_function_id) => Type::getMixed()];
+        }
+
         foreach ($docblock_info->templates as $template_map) {
             $template_name = $template_map[0];
 
@@ -2206,11 +2213,11 @@ final class FunctionLikeDocblockScanner
                             TypeTokenizer::getFullyQualifiedTokens(
                                 $type_string,
                                 $aliases,
-                                $storage->template_types + ($template_types ?: []),
+                                $storage->template_types + ($template_types ?: []) + $declared_template_types,
                                 $type_aliases,
                             ),
                             null,
-                            $storage->template_types + ($template_types ?: []),
+                            $storage->template_types + ($template_types ?: []) + $declared_template_types,
                             $type_aliases,
                         );
                     } catch (TypeParseTreeException $e) {

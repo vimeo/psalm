@@ -509,6 +509,13 @@ final class ClassLikeNodeScanner
                     }
                 }
 
+                // a bound may name a template declared after it
+                $declared_template_types = [];
+
+                foreach ($docblock_info->templates as $template_map) {
+                    $declared_template_types[$template_map[0]] = [$fq_classlike_name => Type::getMixed()];
+                }
+
                 foreach ($docblock_info->templates as $i => $template_map) {
                     $template_name = $template_map[0];
 
@@ -530,11 +537,11 @@ final class ClassLikeNodeScanner
                                     TypeTokenizer::getFullyQualifiedTokens(
                                         $type_string,
                                         $this->aliases,
-                                        $storage->template_types + $purity_template_types,
+                                        $storage->template_types + $purity_template_types + $declared_template_types,
                                         $this->type_aliases,
                                     ),
                                     null,
-                                    $storage->template_types + $purity_template_types,
+                                    $storage->template_types + $purity_template_types + $declared_template_types,
                                     $this->type_aliases,
                                 );
                             } catch (TypeParseTreeException $e) {

@@ -111,6 +111,50 @@ final class FunctionTemplateTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'templateBoundNamingATemplateDeclaredAfterIt' => [
+                'code' => '<?php
+                    /** @template-covariant TValue */
+                    interface Box {
+                        /** @return TValue */
+                        public function get();
+                    }
+
+                    /** @implements Box<int> */
+                    final class IntBox implements Box {
+                        public function get(): int {
+                            return 1;
+                        }
+                    }
+
+                    final class Store {
+                        /**
+                         * @template TBox of Box<TValue>
+                         * @template TValue
+                         * @param class-string<TBox> $type
+                         * @return list<TValue>
+                         */
+                        public function get(string $type): array {
+                            return [];
+                        }
+                    }
+
+                    /**
+                     * @template TBox of Box<TValue>
+                     * @template TValue of int
+                     * @param TBox $box
+                     * @return TValue
+                     */
+                    function valueOf(Box $box) {
+                        return $box->get();
+                    }
+
+                    $list = (new Store())->get(IntBox::class);
+                    $value = valueOf(new IntBox());',
+                'assertions' => [
+                    '$list===' => 'list<int>',
+                    '$value===' => 'int',
+                ],
+            ],
             'closureOfATemplateWithANullDefaultOfTheSameTemplate' => [
                 'code' => '<?php
                     /** @template T */
