@@ -593,6 +593,61 @@ final class TypeAlgebraTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'matchingAnotherPatternThatRemovesTheSameTaintsIsADifferentCondition' => [
+                'code' => '<?php
+                    function f(string $value): int {
+                        if ("transparent" === $value) {
+                            return 0;
+                        }
+                        if (preg_match("/^light-dark\\((.+)\\)$/s", $value)) {
+                            return 1;
+                        }
+                        if (preg_match("/^color-mix\\((.+)\\)$/s", $value)) {
+                            return 2;
+                        }
+
+                        return 3;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'matchingTwoPatternsThatRemoveTheSameTaintsIsNotRedundant' => [
+                'code' => '<?php
+                    function f(string $v): int {
+                        if (preg_match(\'/^a\((.+)\)$/s\', $v) && preg_match(\'/^b\((.+)\)$/s\', $v)) {
+                            return 1;
+                        }
+                        return 0;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'notMatchingTwoPatternsThatRemoveTheSameTaintsIsNotRedundant' => [
+                'code' => '<?php
+                    function f(string $v): int {
+                        if (!preg_match(\'/^a\((.+)\)$/s\', $v) && !preg_match(\'/^b\((.+)\)$/s\', $v)) {
+                            return 1;
+                        }
+                        return 0;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'startingWithTwoPrefixesThatFixTheUrlSchemeIsNotRedundant' => [
+                'code' => '<?php
+                    function f(string $u): int {
+                        if (str_starts_with($u, "https://") && str_starts_with($u, "https://example.com/")) {
+                            return 1;
+                        }
+                        return 0;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'comparisonWithAValueThatChangedIsForgotten' => [
                 'code' => '<?php
                     final class C {
