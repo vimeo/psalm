@@ -503,6 +503,9 @@ final class Context
 
     public ?FinallyScope $finally_scope = null;
 
+    /** whether the statements are in a finally block of the function-like they are in, or of the file */
+    public bool $inside_finally = false;
+
     public ?TryScope $try_scope = null;
 
     public ?Context $if_body_context = null;

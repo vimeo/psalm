@@ -29,6 +29,7 @@ use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
 use Psalm\Internal\Codebase\CliOutput;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
+use Psalm\Internal\Codebase\PhpDeprecations;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\Comparator\CallableTypeComparator;
@@ -710,6 +711,20 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                     $statements_analyzer->getSuppressedIssues(),
                 );
             }
+        }
+
+        // a builtin a PHP version deprecates, whether or not a stub declares it
+        $deprecation_message = $function_call_info->function_id !== null
+            && $function_call_info->in_call_map
+            && !$function_call_info->function_storage?->deprecated
+                ? PhpDeprecations::getFunctionMessage($function_call_info->function_id)
+                : null;
+
+        if ($deprecation_message !== null && $function_call_info->function_id !== null) {
+            IssueBuffer::maybeAdd(
+                new DeprecatedFunction($deprecation_message, $code_location, $function_call_info->function_id),
+                $statements_analyzer->getSuppressedIssues(),
+            );
         }
 
         if ($function_name instanceof PhpParser\Node\Name && $function_call_info->function_id) {

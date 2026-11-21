@@ -1061,7 +1061,7 @@ final class InterfaceTest extends TestCase
                     '$i5===' => 'true',
                     '$i6===' => 'true',
                 ],
-                'ignored_issues' => [],
+                'ignored_issues' => ['DeprecatedMethod'],
                 'php_version' => '8.3',
             ],
             'arrayObjectAndIteratorSortFlags' => [
@@ -1084,6 +1084,7 @@ final class InterfaceTest extends TestCase
                     $o = new ArrayObject(["b" => 2, "a" => 1]);
                     $r = $o->asort(SORT_REGULAR);',
                 'assertions' => ['$r===' => 'true'],
+                'ignored_issues' => ['DeprecatedMethod'],
             ],
             'arrayObjectSortFlagsKeepPurityAndOverride' => [
                 'code' => '<?php
@@ -1115,6 +1116,7 @@ final class InterfaceTest extends TestCase
 
                     $sorted = (new Sorted(["a" => 1]))->asort(SORT_NUMERIC);',
                 'assertions' => ['$sorted===' => 'true'],
+                'ignored_issues' => ['DeprecatedMethod'],
             ],
             'implementStaticReturn' => [
                 'code' => '<?php

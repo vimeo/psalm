@@ -427,7 +427,7 @@ final class CliOnlyCallTest extends TestCase
                         array_map(fn(Request $request) => import(), $requests);
                     }',
                 'assertions' => [],
-                'ignored_issues' => [],
+                'ignored_issues' => ['DeprecatedSyntax'],
                 'php_version' => '8.1',
             ],
             'callersOfCliOnlyCodeRequiringACliOnlyInstance' => [
@@ -475,7 +475,7 @@ final class CliOnlyCallTest extends TestCase
                         $cli_request?->run();
                     }',
                 'assertions' => [],
-                'ignored_issues' => [],
+                'ignored_issues' => ['DeprecatedSyntax'],
                 'php_version' => '8.0',
             ],
             'cliOnlyInstancesGuardedByAnAssertionOfTheSapi' => [
@@ -520,7 +520,7 @@ final class CliOnlyCallTest extends TestCase
                         }
                     }',
                 'assertions' => [],
-                'ignored_issues' => [],
+                'ignored_issues' => ['DeprecatedSyntax'],
                 'php_version' => '8.1',
             ],
         ];
@@ -939,6 +939,7 @@ final class CliOnlyCallTest extends TestCase
                         import();
                     }',
                 'error_message' => 'The function import() only runs from the command line',
+                'error_levels' => ['DeprecatedSyntax'],
             ],
             'optionalCliOnlyInstanceParameter' => [
                 'code' => '<?php' . self::REQUEST . '
@@ -949,7 +950,7 @@ final class CliOnlyCallTest extends TestCase
                         import();
                     }',
                 'error_message' => 'CliOnlyCall',
-                'error_levels' => [],
+                'error_levels' => ['DeprecatedSyntax'],
                 'php_version' => '8.1',
             ],
             'variadicCliOnlyInstanceParameter' => [
@@ -961,6 +962,7 @@ final class CliOnlyCallTest extends TestCase
                         import();
                     }',
                 'error_message' => 'CliOnlyCall',
+                'error_levels' => ['DeprecatedSyntax'],
             ],
             'cliOnlyInstanceParameterInAUnion' => [
                 'code' => '<?php' . self::REQUEST . '
@@ -971,7 +973,7 @@ final class CliOnlyCallTest extends TestCase
                         import();
                     }',
                 'error_message' => 'CliOnlyCall',
-                'error_levels' => [],
+                'error_levels' => ['DeprecatedSyntax'],
                 'php_version' => '8.0',
             ],
             'cliOnlyInstanceParameterTypedByADocblock' => [
@@ -984,6 +986,7 @@ final class CliOnlyCallTest extends TestCase
                         import();
                     }',
                 'error_message' => 'CliOnlyCall',
+                'error_levels' => ['DeprecatedSyntax'],
             ],
             'parameterOfAClassWithoutCliOnlyInstances' => [
                 'code' => '<?php
@@ -1022,6 +1025,7 @@ final class CliOnlyCallTest extends TestCase
                         }
                     }',
                 'error_message' => 'CliOnlyCall',
+                'error_levels' => ['DeprecatedSyntax'],
             ],
             'constructorOfAClassWithCliOnlyInstancesBeforeItsGuard' => [
                 'code' => '<?php
@@ -1044,6 +1048,7 @@ final class CliOnlyCallTest extends TestCase
                         }
                     }',
                 'error_message' => 'CliOnlyCall',
+                'error_levels' => ['DeprecatedSyntax'],
             ],
             'traitMethodOfAClassWithoutCliOnlyInstances' => [
                 'code' => '<?php' . self::REQUEST . '
@@ -1077,6 +1082,7 @@ final class CliOnlyCallTest extends TestCase
                         use Logs;
                     }',
                 'error_message' => 'CliOnlyCall',
+                'error_levels' => ['DeprecatedSyntax'],
             ],
             'cliOnlyFunctionCalledWithoutACliOnlyInstance' => [
                 'code' => '<?php' . self::REQUEST . '
@@ -1085,6 +1091,7 @@ final class CliOnlyCallTest extends TestCase
 
                     import(null);',
                 'error_message' => 'CliOnlyCall',
+                'error_levels' => ['DeprecatedSyntax'],
             ],
             'staticMethodOfACliOnlyClassWithCliOnlyInstances' => [
                 'code' => '<?php
@@ -1112,6 +1119,7 @@ final class CliOnlyCallTest extends TestCase
 
                     echo Request::path();',
                 'error_message' => 'CliOnlyCall',
+                'error_levels' => ['DeprecatedSyntax'],
             ],
             'cliOnlyInstancesOfAClassThatIsNotFinal' => [
                 'code' => '<?php
@@ -1130,6 +1138,7 @@ final class CliOnlyCallTest extends TestCase
                         }
                     }',
                 'error_message' => 'CliOnlyInstancesUnguarded - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:27 - The instances of Request may exist outside of the command line (@psalm-cli-only-instances): it isn\'t final',
+                'error_levels' => ['DeprecatedSyntax'],
             ],
             'cliOnlyInstancesWithoutAConstructor' => [
                 'code' => '<?php
@@ -1142,6 +1151,7 @@ final class CliOnlyCallTest extends TestCase
                         }
                     }',
                 'error_message' => 'it doesn\'t declare a constructor',
+                'error_levels' => ['DeprecatedSyntax'],
             ],
             'cliOnlyInstancesWithAnInheritedConstructor' => [
                 'code' => '<?php
@@ -1158,6 +1168,7 @@ final class CliOnlyCallTest extends TestCase
                         }
                     }',
                 'error_message' => 'it doesn\'t declare a constructor',
+                'error_levels' => ['DeprecatedSyntax'],
             ],
             'cliOnlyInstancesWithAnEmptyConstructor' => [
                 'code' => '<?php
@@ -1172,6 +1183,7 @@ final class CliOnlyCallTest extends TestCase
                         }
                     }',
                 'error_message' => 'CliOnlyInstancesUnguarded - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:41 - The method __construct() of a class with @psalm-cli-only-instances has to start with a check that it runs from the command line, like if (PHP_SAPI !== \'cli\') { throw ...; }, before using $this: it is empty',
+                'error_levels' => ['DeprecatedSyntax'],
             ],
             'cliOnlyInstancesWithAConstructorNotStartingWithTheGuard' => [
                 'code' => '<?php
@@ -1193,6 +1205,7 @@ final class CliOnlyCallTest extends TestCase
                         }
                     }',
                 'error_message' => 'its first statement doesn\'t check that PHP_SAPI',
+                'error_levels' => ['DeprecatedSyntax'],
             ],
             'cliOnlyInstancesWithAConstructorReturningBeforeTheGuard' => [
                 'code' => '<?php
@@ -1215,6 +1228,7 @@ final class CliOnlyCallTest extends TestCase
                         }
                     }',
                 'error_message' => 'its first statement doesn\'t check that PHP_SAPI',
+                'error_levels' => ['DeprecatedSyntax'],
             ],
             'cliOnlyInstancesWithAGuardCheckingAnotherSapi' => [
                 'code' => '<?php
@@ -1233,6 +1247,7 @@ final class CliOnlyCallTest extends TestCase
                         }
                     }',
                 'error_message' => 'its first statement doesn\'t check that PHP_SAPI',
+                'error_levels' => ['DeprecatedSyntax'],
             ],
             'cliOnlyInstancesWithAGuardUsingThis' => [
                 'code' => '<?php
@@ -1254,6 +1269,7 @@ final class CliOnlyCallTest extends TestCase
                         public function log(): void {}
                     }',
                 'error_message' => 'its first statement uses $this before the check',
+                'error_levels' => ['DeprecatedSyntax'],
             ],
             'cliOnlyInstancesWithAGuardCallingAMethodThroughSelf' => [
                 'code' => '<?php
@@ -1275,8 +1291,9 @@ final class CliOnlyCallTest extends TestCase
                         public function log(): void {}
                     }',
                 'error_message' => 'its first statement uses $this before the check',
+                'error_levels' => ['DeprecatedSyntax'],
             ],
-            'cliOnlyInstancesWithoutWakeup' => [
+            'cliOnlyInstancesWithoutUnserialize' => [
                 'code' => '<?php
                     /** @psalm-cli-only-instances */
                     final class Request {
@@ -1286,7 +1303,7 @@ final class CliOnlyCallTest extends TestCase
                             }
                         }
                     }',
-                'error_message' => 'it doesn\'t declare __wakeup(), which unserialize() calls instead of the constructor',
+                'error_message' => 'it doesn\'t declare __unserialize(), which unserialize() calls instead of the constructor',
             ],
             'cliOnlyInstancesWithAnUnguardedWakeup' => [
                 'code' => '<?php
@@ -1301,6 +1318,7 @@ final class CliOnlyCallTest extends TestCase
                         public function __wakeup(): void {}
                     }',
                 'error_message' => 'The method __wakeup() of a class with @psalm-cli-only-instances',
+                'error_levels' => ['DeprecatedSyntax'],
             ],
             'cliOnlyInstancesWithAnUnguardedUnserialize' => [
                 'code' => '<?php
@@ -1401,7 +1419,7 @@ final class CliOnlyCallTest extends TestCase
                         }
                     }',
                 'error_message' => 'the hooks of its promoted property $path run before the check',
-                'error_levels' => [],
+                'error_levels' => ['DeprecatedSyntax'],
                 'php_version' => '8.4',
             ],
             'cliOnlyInstancesOnAnInterface' => [
