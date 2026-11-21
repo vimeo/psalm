@@ -266,6 +266,7 @@ final class ParseTreeCreator
         }
 
         $new_parent_leaf->default = $default;
+        $new_parent_leaf->name_offset = $current_token[1];
 
         if ($this->current_leaf !== $current_parent) {
             $new_parent_leaf->children = [$this->current_leaf];

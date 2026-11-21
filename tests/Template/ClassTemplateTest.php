@@ -4053,7 +4053,7 @@ final class ClassTemplateTest extends TestCase
                     }
                 ',
             ],
-            'importAliasNamedLikeClassTemplateInDocblockMethodReturn' => [
+            'classTemplateShadowsImportAliasInDocblockMethodReturn' => [
                 'code' => '<?php
                     namespace Vendor {
                         class Thing {}
@@ -4069,7 +4069,7 @@ final class ClassTemplateTest extends TestCase
                         interface Box {}
 
                         /** @param Box<int> $box */
-                        function f(Box $box): \Vendor\Thing {
+                        function f(Box $box): int {
                             return $box->get();
                         }
                     }
