@@ -242,9 +242,17 @@ final class StaticCallAnalyzer extends CallAnalyzer
                     $self_storage = $codebase->classlike_storage_provider->get($context->self);
 
                     if (isset($self_storage->used_traits[strtolower($fq_class_name)])) {
+                        ClassLikeAnalyzer::checkTraitMemberAccess($statements_analyzer, $fq_class_name, $stmt->class);
+
                         $fq_class_name = $context->self;
                         $does_class_exist = true;
                     }
+                }
+
+                if (!$does_class_exist
+                    && ClassLikeAnalyzer::checkTraitMemberAccess($statements_analyzer, $fq_class_name, $stmt->class)
+                ) {
+                    $does_class_exist = true;
                 }
 
                 if (!isset($context->phantom_classes[strtolower($fq_class_name)])
