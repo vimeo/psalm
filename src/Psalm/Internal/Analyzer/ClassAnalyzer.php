@@ -16,6 +16,7 @@ use Psalm\Codebase;
 use Psalm\Config;
 use Psalm\Context;
 use Psalm\DocComment;
+use Psalm\Exception\CircularReferenceException;
 use Psalm\Exception\DocblockParseException;
 use Psalm\FileManipulation;
 use Psalm\Internal\Analyzer\FunctionLike\ReturnTypeAnalyzer;
@@ -37,6 +38,7 @@ use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Internal\Type\TypeExpander;
+use Psalm\Issue\CircularReference;
 use Psalm\Issue\DeprecatedClass;
 use Psalm\Issue\DeprecatedInterface;
 use Psalm\Issue\DeprecatedTrait;
@@ -2963,8 +2965,20 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
         $storage = $this->storage;
 
         $seen_values = [];
-        foreach ($storage->enum_cases as $case_storage) {
-            $case_value = $case_storage->getValue($this->getCodebase()->classlikes);
+        foreach ($storage->enum_cases as $case_name => $case_storage) {
+            try {
+                $case_value = $case_storage->resolveValue($this->getCodebase()->classlikes);
+            } catch (CircularReferenceException) {
+                IssueBuffer::maybeAdd(
+                    new CircularReference(
+                        'Enum case ' . $storage->name . '::' . $case_name . ' contains a circular reference',
+                        $case_storage->stmt_location,
+                    ),
+                );
+
+                continue;
+            }
+
             if ($case_value !== null && $storage->enum_type === null) {
                 IssueBuffer::maybeAdd(
                     new InvalidEnumCaseValue(
