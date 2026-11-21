@@ -65,6 +65,51 @@ final class MethodCallTest extends TestCase
         );
     }
 
+    public function testMixedMethodCallOnAReceiverWithAMixedPartIsReportedOnceWithOneWording(): void
+    {
+        $this->testConfig->throw_exception = false;
+        $file_path = self::$src_dir_path . 'somefile.php';
+        $this->addFile(
+            $file_path,
+            '<?php
+                /**
+                 * @template T
+                 * @param T|object $o
+                 */
+                function unbounded($o): void {
+                    $o->foo();
+                }
+
+                /**
+                 * @template T of object
+                 * @param T $o
+                 */
+                function bounded($o): void {
+                    $o->foo();
+                }
+
+                /** @param mixed|object $o */
+                function mixedOrObject($o): void {
+                    $o->foo();
+                }',
+        );
+
+        $this->project_analyzer->setPhpVersion('8.1', 'tests');
+        $this->analyzeFile($file_path, new Context(), false);
+
+        self::assertSame(
+            [
+                '7: Cannot determine the type of $o when calling method foo',
+                '15: Cannot determine the methods of $o (object) when calling method foo',
+                '20: Cannot determine the type of $o when calling method foo',
+            ],
+            array_map(
+                static fn(IssueData $issue): string => $issue->line_from . ': ' . $issue->message,
+                IssueBuffer::getIssuesDataForFile($file_path),
+            ),
+        );
+    }
+
     public function testMethodCallMemoize(): void
     {
         $this->project_analyzer->getConfig()->memoize_method_calls = true;
@@ -3462,6 +3507,33 @@ final class MethodCallTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'mixedMethodCallOnAnObjectShapeNamesItsMethods' => [
+                'code' => '<?php
+                    /** @param object{exp_month: int} $card */
+                    function f(object $card): void {
+                        $card->offsetGet("a");
+                    }',
+                'error_message' => 'MixedMethodCall - src' . DIRECTORY_SEPARATOR
+                    . 'somefile.php:4:32 - Cannot determine the methods of $card (object{exp_month:int})'
+                    . ' when calling method offsetGet',
+            ],
+            'mixedMethodCallOnAnObjectNamesItsMethods' => [
+                'code' => '<?php
+                    function f(object $o): void {
+                        $o->foo();
+                    }',
+                'error_message' => 'MixedMethodCall - src' . DIRECTORY_SEPARATOR
+                    . 'somefile.php:3:29 - Cannot determine the methods of $o (object) when calling method foo',
+            ],
+            'mixedMethodCallOnAMixedValueStillNamesItsType' => [
+                'code' => '<?php
+                    /** @param mixed $m */
+                    function f($m): void {
+                        $m->foo();
+                    }',
+                'error_message' => 'MixedMethodCall - src' . DIRECTORY_SEPARATOR
+                    . 'somefile.php:4:29 - Cannot determine the type of $m when calling method foo',
+            ],
             'memoizedGetterForgottenInANestedBranchIsNotNarrowedAfterIt' => [
                 'code' => '<?php
                     final class A {
