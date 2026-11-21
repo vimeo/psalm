@@ -111,6 +111,27 @@ final class ClassTemplateExtendsTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'traitMethodImplementingATemplatedInterfaceMethodTakesTheBoundType' => [
+                'code' => '<?php
+                    /** @template T */
+                    interface Setter {
+                        /** @param T $value */
+                        public function set(mixed $value): void;
+                    }
+
+                    trait SetsInt {
+                        /** @param int $value */
+                        public function set(mixed $value): void {}
+                    }
+
+                    /** @implements Setter<int> */
+                    final class Node implements Setter {
+                        use SetsInt;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'templateTagNamesParentInAnotherCase' => [
                 'code' => '<?php
                     /** @template T */
@@ -5899,6 +5920,27 @@ final class ClassTemplateExtendsTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'traitMethodImplementingATemplatedInterfaceMethodWithAnotherType' => [
+                'code' => '<?php
+                    /** @template T */
+                    interface Setter {
+                        /** @param T $value */
+                        public function set(mixed $value): void;
+                    }
+
+                    trait SetsString {
+                        /** @param string $value */
+                        public function set(mixed $value): void {}
+                    }
+
+                    /** @implements Setter<int> */
+                    final class Node implements Setter {
+                        use SetsString;
+                    }',
+                'error_message' => 'ImplementedParamTypeMismatch',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
             'extendsTagWithoutClass' => [
                 'code' => '<?php
                     /** @template T */
