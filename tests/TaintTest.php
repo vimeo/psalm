@@ -1745,6 +1745,27 @@ final class TaintTest extends TestCase
     public static function providerValidCodeParse(): array
     {
         return [
+            'noTaintOfStrvalAndImplodeOfObjectsWhoseToStringEscapesTheirProperty' => [
+                'code' => '<?php // --taint-analysis
+                    final class Tag {
+                        public string $content = "";
+                        public function __toString(): string {
+                            return htmlspecialchars($this->content, ENT_QUOTES);
+                        }
+                    }
+
+                    final class Plain {
+                        public function __toString(): string {
+                            return "plain";
+                        }
+                    }
+
+                    $tag = new Tag();
+                    $tag->content = (string) $_GET["x"];
+                    echo strval($tag);
+                    echo implode(",", [$tag, new Plain()]);
+                    echo strval(new Plain());',
+            ],
             'deprecatedPromotedPropertyIsNotUsedByItsOwnDeclaration' => [
                 'code' => '<?php
                     final class A {
@@ -13487,6 +13508,48 @@ final class TaintTest extends TestCase
                     $tag = new Tag();
                     $tag->content = (string) $_GET["x"];
                     echo "<p>" . $tag . "</p>";',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintTheStrvalOfAnObjectWhoseToStringReturnsATaintedProperty' => [
+                'code' => '<?php // --taint-analysis
+                    final class Tag {
+                        public string $content = "";
+                        public function __toString(): string {
+                            return $this->content;
+                        }
+                    }
+
+                    $tag = new Tag();
+                    $tag->content = (string) $_GET["x"];
+                    echo strval($tag);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintTheImplodeOfObjectsWhoseToStringReturnsATaintedProperty' => [
+                'code' => '<?php // --taint-analysis
+                    final class Tag {
+                        public string $content = "";
+                        public function __toString(): string {
+                            return $this->content;
+                        }
+                    }
+
+                    $tag = new Tag();
+                    $tag->content = (string) $_GET["x"];
+                    echo implode(",", [$tag]);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintTheVsprintfOfObjectsWhoseToStringReturnsATaintedProperty' => [
+                'code' => '<?php // --taint-analysis
+                    final class Tag {
+                        public string $content = "";
+                        public function __toString(): string {
+                            return $this->content;
+                        }
+                    }
+
+                    $tag = new Tag();
+                    $tag->content = (string) $_GET["x"];
+                    echo vsprintf("<p>%s</p>", [$tag]);',
                 'error_message' => 'TaintedHtml',
             ],
             'taintTheStringPartOfAStringConversionOfAnObjectOrAString' => [
