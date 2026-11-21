@@ -418,6 +418,15 @@ final class IssueSuppressionTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'suppressionBeforeTheExpressionOfAShortEcho' => [
+                'code' => '<?php
+                    function render(): void {
+                        ?>
+                        <?=/** @psalm-suppress UndefinedVariable, MixedArgument */$title?>
+                        <?php
+                        echo /** @psalm-suppress UndefinedVariable, MixedArgument */ $body;
+                    }',
+            ],
             'undefinedClassSimple' => [
                 'code' => '<?php
                     class A {
