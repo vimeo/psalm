@@ -22,7 +22,6 @@ use function array_intersect_key;
 use function array_merge;
 use function count;
 use function in_array;
-use function str_starts_with;
 
 /**
  * @internal
@@ -54,6 +53,8 @@ final class SwitchAnalyzer
             $statements_analyzer,
         );
 
+        $is_temporary_switch_var = false;
+
         if (!$switch_var_id
             && ($stmt->cond instanceof PhpParser\Node\Expr\FuncCall
                 || $stmt->cond instanceof PhpParser\Node\Expr\MethodCall
@@ -61,6 +62,7 @@ final class SwitchAnalyzer
             )
         ) {
             $switch_var_id = '$__tmp_switch__' . (int) $stmt->cond->getAttribute('startFilePos');
+            $is_temporary_switch_var = true;
 
             $condition_type = $statements_analyzer->node_data->getType($stmt->cond) ?? Type::getMixed();
 
@@ -261,7 +263,7 @@ final class SwitchAnalyzer
             ...$switch_scope->new_vars_possibly_in_scope,
         ];
 
-        if ($switch_var_id !== null && str_starts_with($switch_var_id, '$__tmp_switch__')) {
+        if ($is_temporary_switch_var) {
             unset($context->vars_in_scope[$switch_var_id]);
         }
 

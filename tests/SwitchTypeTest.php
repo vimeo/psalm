@@ -61,6 +61,17 @@ final class SwitchTypeTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'switchOnAVariableNamedLikeTheTemporaryOneKeepsIt' => [
+                'code' => '<?php
+                    function bar(int $__tmp_switch__1): int {
+                        switch ($__tmp_switch__1) {
+                            case 1:
+                                break;
+                        }
+
+                        return $__tmp_switch__1;
+                    }',
+            ],
             'switchWithoutDefaultNarrowsTheSubjectWhenEveryCaseReturns' => [
                 'code' => '<?php
                     /** @param "a"|"b"|"c" $letter */
