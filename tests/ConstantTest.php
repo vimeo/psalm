@@ -321,6 +321,61 @@ final class ConstantTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.3',
             ],
+            'dynamicFetchWithLiteralNames' => [
+                'code' => '<?php
+                    final class C {
+                        public const A = 1;
+                        public const B = "b";
+                    }
+                    enum E {
+                        case One;
+                    }
+                    $name = "A";
+                    $a = C::{$name};
+                    $either = C::{rand(0, 1) ? "A" : "B"};
+                    $c = new C();
+                    $b = $c::{"B"};
+                    $case = E::{"One"};
+                    $class = "class";
+                    $className = C::{$class};',
+                'assertions' => [
+                    '$a===' => '1',
+                    '$either===' => "'b'|1",
+                    '$b===' => "'b'",
+                    '$case===' => 'enum(E::One)',
+                    '$className===' => 'C::class',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
+            'dynamicFetchOfTheClassNameOfStatic' => [
+                'code' => '<?php
+                    class A {
+                        public function f(A $o): void {
+                            $static = static::{"class"};
+                            $this_class = $this::{"class"};
+                            $o_class = $o::{"class"};
+                            /** @psalm-check-type-exact $static = class-string<A&static> */
+                            /** @psalm-check-type-exact $this_class = class-string<A&static> */
+                            /** @psalm-check-type-exact $o_class = class-string<A> */
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
+            'dynamicFetchOfLiteralNamesOneOfThemMissing' => [
+                'code' => '<?php
+                    final class C {
+                        public const A = 1;
+                    }
+                    $value = C::{rand(0, 1) ? "A" : "Z"};',
+                'assertions' => [
+                    '$value===' => 'mixed',
+                ],
+                'ignored_issues' => ['UndefinedConstant', 'MixedAssignment'],
+                'php_version' => '8.3',
+            ],
             'overrideKeepingTheNativeTypeOfTheParentConstant' => [
                 'code' => '<?php
                     interface HasVersion {
@@ -2852,6 +2907,37 @@ final class ConstantTest extends TestCase
                         const X = 2;
                     }',
                 'error_message' => 'InvalidClassConstantType - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:31 - B::X must declare a native type contained in the native type "int" of I::X',
+                'error_levels' => [],
+                'php_version' => '8.3',
+            ],
+            'dynamicFetchOfAMissingConstant' => [
+                'code' => '<?php
+                    final class C {
+                        public const A = 1;
+                    }
+                    $name = "Z";
+                    echo C::{$name};',
+                'error_message' => 'UndefinedConstant',
+                'error_levels' => [],
+                'php_version' => '8.3',
+            ],
+            'dynamicFetchWithAnEmptyName' => [
+                'code' => '<?php
+                    final class C {
+                        public const A = 1;
+                    }
+                    $name = "";
+                    echo C::{$name};',
+                'error_message' => 'UndefinedConstant - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:26 - Constant C:: is not defined',
+                'error_levels' => [],
+                'php_version' => '8.3',
+            ],
+            'dynamicFetchOnAMissingClass' => [
+                'code' => '<?php
+                    function f(string $name): mixed {
+                        return Missing::{$name};
+                    }',
+                'error_message' => 'UndefinedClass',
                 'error_levels' => [],
                 'php_version' => '8.3',
             ],
