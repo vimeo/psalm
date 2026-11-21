@@ -564,6 +564,11 @@ final class TemplateInferredTypeReplacer
                     continue;
                 }
 
+                // only a candidate that can't be of the condition is decidably in the else branch
+                if (self::isDisjoint($codebase, $candidate_atomic_type, $conditional_type)) {
+                    continue;
+                }
+
                 $if_part = Type::intersectUnionTypes(
                     $candidate,
                     $conditional_type,
@@ -573,11 +578,8 @@ final class TemplateInferredTypeReplacer
                 );
 
                 if ($if_part === null) {
-                    // only a candidate that can't be of the condition is decidably in the else branch: the
-                    // intersection of some overlapping types is unknown
-                    if (!self::isDisjoint($codebase, $candidate_atomic_type, $conditional_type)) {
-                        $is_decidable = false;
-                    }
+                    // the intersection of some overlapping types is unknown
+                    $is_decidable = false;
 
                     continue;
                 }
@@ -738,6 +740,26 @@ final class TemplateInferredTypeReplacer
      */
     private static function isDisjoint(Codebase $codebase, Atomic $candidate, Union $conditional_type): bool
     {
+        // a template is as disjoint as its bound: one bounded by `mixed` is never decidably disjoint
+        if ($candidate instanceof TTemplateParam) {
+            foreach ($candidate->as->getAtomicTypes() as $bound_atomic_type) {
+                if (!self::isDisjoint($codebase, $bound_atomic_type, $conditional_type)) {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        // `Factory&Closure`, what `$factory instanceof Closure` leaves, is of what one of its parts is
+        if ($candidate instanceof TIterable || $candidate instanceof TNamedObject) {
+            foreach ($candidate->getIntersectionTypes() as $intersection_type) {
+                if (!self::isDisjoint($codebase, $intersection_type, $conditional_type)) {
+                    return false;
+                }
+            }
+        }
+
         // the empty array is never a non-empty one, nor the reverse
         $overlapping_atomic_types = [];
 

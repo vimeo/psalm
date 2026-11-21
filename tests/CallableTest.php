@@ -3048,6 +3048,8 @@ final class CallableTest extends TestCase
                             return -1;
                         }
                     }',
+                'assertions' => [],
+                'ignored_issues' => ['DeprecatedSyntax'],
             ],
             'noFatalErrorOnClassWithSlash' => [
                 'code' => '<?php
@@ -5314,7 +5316,7 @@ final class CallableTest extends TestCase
                         call_user_func($callable);
                     }
                 }',
-                'error_message' => 'DeprecatedConstant',
+                'error_message' => 'DeprecatedSyntax',
                 'error_levels' => [],
                 'php_version' => '8.2',
             ],
@@ -5339,7 +5341,7 @@ final class CallableTest extends TestCase
                         call_user_func($callable);
                     }
                 }',
-                'error_message' => 'DeprecatedConstant',
+                'error_message' => 'DeprecatedSyntax',
                 'error_levels' => [],
                 'php_version' => '8.2',
             ],
@@ -5362,7 +5364,7 @@ final class CallableTest extends TestCase
                         call_user_func($callable);
                     }
                 }',
-                'error_message' => 'DeprecatedConstant',
+                'error_message' => 'DeprecatedSyntax',
                 'error_levels' => [],
                 'php_version' => '8.2',
             ],
@@ -5385,7 +5387,7 @@ final class CallableTest extends TestCase
                         call_user_func($callable);
                     }
                 }',
-                'error_message' => 'DeprecatedConstant',
+                'error_message' => 'DeprecatedSyntax',
                 'error_levels' => [],
                 'php_version' => '8.2',
             ],
@@ -5408,7 +5410,7 @@ final class CallableTest extends TestCase
                         call_user_func($callable);
                     }
                 }',
-                'error_message' => 'DeprecatedConstant',
+                'error_message' => 'DeprecatedSyntax',
                 'error_levels' => [],
                 'php_version' => '8.2',
             ],
@@ -5504,6 +5506,7 @@ final class CallableTest extends TestCase
                     }
                 }',
                 'error_message' => 'ParentNotFound',
+                'error_levels' => ['DeprecatedSyntax'],
             ],
             'parentCallableWithoutParent' => [
                 'code' => '<?php
@@ -5521,6 +5524,7 @@ final class CallableTest extends TestCase
                     }
                 }',
                 'error_message' => 'ParentNotFound',
+                'error_levels' => ['DeprecatedSyntax'],
             ],
             'wrongCallableInUnion' => [
                 'code' => '<?php

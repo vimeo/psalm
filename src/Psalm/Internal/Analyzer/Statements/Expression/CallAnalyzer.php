@@ -17,6 +17,7 @@ use Psalm\Internal\Algebra\FormulaGenerator;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\ArgumentsAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodCallProhibitionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
@@ -382,6 +383,15 @@ abstract class CallAnalyzer
             $template_result,
         ) === false) {
             return false;
+        }
+
+        if (!$class_storage->user_defined) {
+            MethodCallProhibitionAnalyzer::checkDeprecatedArguments(
+                $statements_analyzer,
+                $class_storage->declaring_method_ids[$method_name] ?? $method_id,
+                $args,
+                $code_location,
+            );
         }
 
         if (ArgumentsAnalyzer::checkArgumentsMatch(

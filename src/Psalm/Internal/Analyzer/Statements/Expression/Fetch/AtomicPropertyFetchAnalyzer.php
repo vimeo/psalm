@@ -24,6 +24,7 @@ use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\Statements\UnsetAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\MixinLookup;
+use Psalm\Internal\Codebase\PhpDeprecations;
 use Psalm\Internal\Codebase\VariableUseGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
@@ -288,7 +289,22 @@ final class AtomicPropertyFetchAnalyzer
         // add method before changing fq_class_name
         $get_method_id = new MethodIdentifier($fq_class_name, '__get');
 
-        if (!$naive_property_exists) {
+        // outside the class a property that isn't accessible is read through __get(), which the mixins of the class
+        // document, as they do for a property the class doesn't have
+        $inaccessible_property_read_by_getter = $naive_property_exists
+            && $stmt_var_id !== '$this'
+            && $fq_class_name !== $context->self
+            && isset($class_storage->declaring_method_ids['__get'])
+            && ClassLikeAnalyzer::checkPropertyVisibility(
+                $property_id,
+                $context,
+                $statements_analyzer,
+                new CodeLocation($statements_analyzer->getSource(), $stmt),
+                $statements_analyzer->getSuppressedIssues(),
+                false,
+            ) !== true;
+
+        if (!$naive_property_exists || $inaccessible_property_read_by_getter) {
             // Resolve explicit shape properties before consulting other class-like types.
             // Keep final classes closed unless they provide a magic getter.
             if ($intersection_types !== []
@@ -732,6 +748,26 @@ final class AtomicPropertyFetchAnalyzer
                 IssueBuffer::maybeAdd(
                     new DeprecatedProperty(
                         $property_id . ' is marked deprecated',
+                        new CodeLocation($statements_analyzer->getSource(), $stmt),
+                        $property_id,
+                    ),
+                    $statements_analyzer->getSuppressedIssues(),
+                );
+
+                return;
+            }
+        }
+
+        if (!$declaring_class_storage->user_defined) {
+            $builtin_message = PhpDeprecations::getPropertyMessage(
+                $property_id,
+                $declaring_class_storage->name . '::$' . $prop_name,
+            );
+
+            if ($builtin_message !== null) {
+                IssueBuffer::maybeAdd(
+                    new DeprecatedProperty(
+                        $builtin_message,
                         new CodeLocation($statements_analyzer->getSource(), $stmt),
                         $property_id,
                     ),
