@@ -89,6 +89,28 @@ return array (
         'doctype=' => 'DOMDocumentType|null',
       ),
     ),
+    'eventhttprequest::gethost' => 
+    array (
+      'old' => 
+      array (
+        0 => 'null|string',
+      ),
+      'new' => 
+      array (
+        0 => 'string',
+      ),
+    ),
+    'eventhttprequest::geturi' => 
+    array (
+      'old' => 
+      array (
+        0 => 'null|string',
+      ),
+      'new' => 
+      array (
+        0 => 'string',
+      ),
+    ),
     'finfo::set_flags' => 
     array (
       'old' => 
