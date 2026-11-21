@@ -47,7 +47,6 @@ use Psalm\Type\Atomic\TScalar;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateKeyOf;
 use Psalm\Type\Atomic\TTemplateParam;
-use Psalm\Type\Atomic\TTemplateParamClass;
 use Psalm\Type\Atomic\TTemplateValueOf;
 use Psalm\Type\Atomic\TTypeVariable;
 use Psalm\Type\Atomic\TValueOf;
@@ -1179,16 +1178,13 @@ final class AtomicTypeComparator
             return $type1_part->value === $type2_part->value;
         }
 
-        // the class a template stands for is bounded by what the template is: any class of that bound can be it
         if (($type1_part instanceof TClassString || $type1_part instanceof TDependentGetClass)
             && $type2_part::class === TLiteralString::class
         ) {
             return ClassLikeStringComparator::canLiteralNameBeClassString(
                 $codebase,
                 $type2_part,
-                $type1_part instanceof TTemplateParamClass
-                    ? new TClassString($type1_part->as, $type1_part->as_type)
-                    : $type1_part,
+                $type1_part,
                 $allow_interface_equality,
             );
         }
@@ -1199,9 +1195,7 @@ final class AtomicTypeComparator
             return ClassLikeStringComparator::canLiteralNameBeClassString(
                 $codebase,
                 $type1_part,
-                $type2_part instanceof TTemplateParamClass
-                    ? new TClassString($type2_part->as, $type2_part->as_type)
-                    : $type2_part,
+                $type2_part,
                 $allow_interface_equality,
             );
         }

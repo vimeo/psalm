@@ -340,6 +340,21 @@ final class ClassLikeStringTest extends TestCase
                 'assertions' => [],
                 'ignored_issues' => ['InvalidStringClass'],
             ],
+            'boundedTemplateClassStringIsComparedWithASubclassName' => [
+                'code' => '<?php
+                    abstract class Base {}
+                    final class Child extends Base {}
+
+                    /**
+                     * @template T of Base
+                     * @param class-string<T> $name
+                     */
+                    function isChild(string $name): bool {
+                        return $name === "Child";
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['InvalidStringClass'],
+            ],
             'negatedClassExistsOnTheLeftOfAnOrAllowsTheClassOnTheRight' => [
                 'code' => '<?php
                     function check(): bool {
@@ -1446,6 +1461,20 @@ final class ClassLikeStringTest extends TestCase
                      */
                     function isNope(string $name): bool {
                         return $name === "Nope";
+                    }',
+                'error_message' => 'DocblockTypeContradiction',
+            ],
+            'boundedTemplateClassStringIsNeverAnUnrelatedClass' => [
+                'code' => '<?php
+                    abstract class Base {}
+                    final class Other {}
+
+                    /**
+                     * @template T of Base
+                     * @param class-string<T> $name
+                     */
+                    function isOther(string $name): bool {
+                        return $name === "Other";
                     }',
                 'error_message' => 'DocblockTypeContradiction',
             ],
