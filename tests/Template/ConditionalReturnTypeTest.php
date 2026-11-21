@@ -41,12 +41,34 @@ final class ConditionalReturnTypeTest extends TestCase
                         throw new Exception();
                     }
 
+                    /**
+                     * @template T
+                     * @param list<T> $list
+                     * @return list<T>
+                     */
+                    function same(array $list): array {
+                        return $list;
+                    }
+
+                    /**
+                     * @template T
+                     * @param T ...$values
+                     * @return list<T>
+                     */
+                    function variadic(...$values): array {
+                        return array_values($values);
+                    }
+
                     $c = getCountable();
                     $inline = isObjectValue($c->missing());
-                    $wrapped = wrap($c->missing());',
+                    $wrapped = wrap($c->missing());
+                    $nested = same($c->missing());
+                    $unpacked = variadic($c->missing());',
                 'assertions' => [
                     '$inline===' => 'bool',
                     '$wrapped===' => 'list<mixed>',
+                    '$nested===' => 'list<mixed>',
+                    '$unpacked===' => 'list<mixed>',
                 ],
                 'ignored_issues' => ['MixedArgument', 'UndefinedInterfaceMethod'],
                 'php_version' => '8.0',
