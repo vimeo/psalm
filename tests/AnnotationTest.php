@@ -1422,6 +1422,8 @@ final class AnnotationTest extends TestCase
                     function foo(string $s = null) {
                         return $s;
                     }',
+                'assertions' => [],
+                'ignored_issues' => ['DeprecatedSyntax'],
             ],
             'missingReturnTypeWithBadDocblockIgnoreBoth' => [
                 'code' => '<?php

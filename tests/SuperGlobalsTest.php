@@ -48,6 +48,7 @@ final class SuperGlobalsTest extends TestCase
                 }
             ',
             'assertions' => [],
+            'ignored_issues' => ['DeprecatedSyntax'],
         ];
 
         yield 'COOKIE keys can be ints' => [
@@ -222,6 +223,7 @@ final class SuperGlobalsTest extends TestCase
                 }
             ',
             'error_message' => 'InvalidReturnStatement',
+            'error_levels' => ['DeprecatedSyntax'],
         ];
 
         yield 'aCopyOfHttpResponseHeaderIsPossiblyUndefined' => [
@@ -232,6 +234,7 @@ final class SuperGlobalsTest extends TestCase
                 }
             ',
             'error_message' => 'PossiblyUndefinedVariable',
+            'error_levels' => ['DeprecatedSyntax'],
         ];
 
         yield 'superGlobalPassedByReferenceKeepsItsType' => [

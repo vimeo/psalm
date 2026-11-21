@@ -1375,6 +1375,8 @@ final class SwitchTypeTest extends TestCase
                                 return "foo69";
                         }
                     }',
+                'assertions' => [],
+                'ignored_issues' => ['DeprecatedSyntax'],
             ],
             'switchTruthyWithBoolean' => [
                 'code' => '<?php

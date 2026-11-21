@@ -251,7 +251,7 @@ final class StarProjectionTest extends TestCase
                         nullableGenerator($gen);
                     }',
                 'assertions' => [],
-                'ignored_issues' => [],
+                'ignored_issues' => ['DeprecatedSyntax'],
                 'php_version' => '8.0',
             ],
             'starProjectionLetsTheOtherArgumentsBindTemplates' => [

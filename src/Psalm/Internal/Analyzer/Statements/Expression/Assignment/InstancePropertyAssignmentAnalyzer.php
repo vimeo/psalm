@@ -1733,7 +1733,8 @@ final class InstancePropertyAssignmentAnalyzer
 
         $property_storage = $declaring_class_storage->properties[$prop_name] ?? null;
         if ($property_storage !== null) {
-            if ($property_storage->deprecated) {
+            // a promoted property is initialized from its own parameter, which is not a use of it
+            if ($property_storage->deprecated && $stmt->getAttribute('promoted_parameter') !== true) {
                 IssueBuffer::maybeAdd(
                     new DeprecatedProperty(
                         $property_id . ' is marked deprecated',
