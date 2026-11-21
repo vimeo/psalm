@@ -61,11 +61,12 @@ final class SwitchScope
     public ?array $new_assigned_var_ids = null;
 
     /**
-     * The variables the cases going on after the switch assign as a whole
+     * The offsets and properties known before the switch that a way out of a case to the code after it forgot (e.g.
+     * a case assigned the variable they are keyed by)
      *
-     * @var array<string, bool>
+     * @var array<string, true>
      */
-    public array $fully_assigned_var_ids = [];
+    public array $forgotten_vars = [];
 
     /**
      * The offsets of nullable arrays read on every way out of the cases so far, null before there is one

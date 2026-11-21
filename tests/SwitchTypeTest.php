@@ -1933,6 +1933,28 @@ final class SwitchTypeTest extends TestCase
                     }',
                 'error_message' => 'MixedArgument',
             ],
+            'caseAssigningTheKeyOfANarrowedOffsetBeforeANestedBreakForgetsTheNarrowing' => [
+                'code' => '<?php
+                    function takesInt(int $i): void {}
+
+                    /** @param array<string, mixed> $a */
+                    function f(array $a, string $k, int $c, bool $b): void {
+                        if (is_int($a[$k])) {
+                            switch ($c) {
+                                case 1:
+                                    $k = "zz";
+                                    if ($b) {
+                                        break;
+                                    }
+                                    return;
+                                default:
+                                    break;
+                            }
+                            takesInt($a[$k]);
+                        }
+                    }',
+                'error_message' => 'MixedArgument',
+            ],
             'caseOfASwitchWithoutDefaultAssigningTheKeyOfANarrowedOffsetForgetsTheNarrowing' => [
                 'code' => '<?php
                     function takesInt(int $i): void {}

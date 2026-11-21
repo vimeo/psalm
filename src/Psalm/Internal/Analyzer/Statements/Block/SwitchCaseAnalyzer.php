@@ -51,6 +51,7 @@ use function in_array;
 use function is_string;
 use function preg_match;
 use function spl_object_id;
+use function str_contains;
 use function str_ends_with;
 use function str_starts_with;
 use function strtolower;
@@ -83,7 +84,6 @@ final class SwitchCaseAnalyzer
             || (count($case_actions) && !in_array(ScopeAnalyzer::ACTION_NONE, $case_actions, true));
 
         $case_context = clone $original_context;
-        $case_context->fully_assigned_var_ids = [];
 
         if ($codebase->alter_code && $case_context->branch_point === null) {
             $case_context->branch_point = (int) $stmt->getAttribute('startFilePos');
@@ -442,9 +442,24 @@ final class SwitchCaseAnalyzer
             $context->removeClausesOfVarsChangedIn($case_context);
         }
 
-        // the cases going on after the switch, at its end or through a `break`
-        if ($case_exit_type === 'break' || $case_exit_type === 'hybrid') {
-            $switch_scope->fully_assigned_var_ids += $case_context->fully_assigned_var_ids;
+        $reaches_its_end = !$case_context->has_returned
+            && ($case_exit_type === 'break' || $case_exit_type === 'hybrid');
+
+        foreach ($original_context->vars_in_scope as $var_id => $type) {
+            if ((!str_contains($var_id, '[') && !str_contains($var_id, '->'))
+                || isset($switch_scope->forgotten_vars[$var_id])
+            ) {
+                continue;
+            }
+
+            $break_type = $case_scope->break_vars[$var_id] ?? null;
+
+            if (($case_scope->break_vars !== null
+                    && ($break_type === null || ($break_type->possibly_undefined && !$type->possibly_undefined)))
+                || ($reaches_its_end && !isset($case_context->vars_in_scope[$var_id]))
+            ) {
+                $switch_scope->forgotten_vars[$var_id] = true;
+            }
         }
 
         if ($case_exit_type !== 'return_throw' && !$ends_unless_breaking) {
