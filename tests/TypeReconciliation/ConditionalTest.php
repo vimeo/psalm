@@ -7151,6 +7151,53 @@ final class ConditionalTest extends TestCase
                         }
                     }',
             ],
+            'typeChecksOfAnEmptyOrNonEmptyScalarKeepItsEmptiness' => [
+                'code' => '<?php
+                    /** @param int<1, max>|int<min, -1> $i */
+                    function takesNonZero(int $i): void {}
+                    function takesTrue(true $b): void {}
+                    /** @param non-falsy-string $s */
+                    function takesNonFalsy(string $s): void {}
+                    /** @param float|non-falsy-string|true $x */
+                    function takesNonEmptyNonInt($x): void {}
+                    /** @param 0 $i */
+                    function takesZero(int $i): void {}
+                    function takesFalse(false $b): void {}
+                    /** @param \'\'|\'0\' $s */
+                    function takesEmptyString(string $s): void {}
+
+                    /** @param non-empty-scalar $n */
+                    function nonEmpty($n): void {
+                        if (is_int($n)) {
+                            takesNonZero($n);
+                        }
+                        if (is_bool($n)) {
+                            takesTrue($n);
+                        }
+                        if (is_string($n)) {
+                            takesNonFalsy($n);
+                        }
+                        if (!is_int($n)) {
+                            takesNonEmptyNonInt($n);
+                        }
+                    }
+
+                    /** @param empty-scalar $e */
+                    function emptyScalar($e): void {
+                        if (is_int($e)) {
+                            takesZero($e);
+                        }
+                        if (is_bool($e)) {
+                            takesFalse($e);
+                        }
+                        if (is_string($e)) {
+                            takesEmptyString($e);
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.2',
+            ],
             'looseEqualityWithAStringKeepsTheOtherScalars' => [
                 'code' => '<?php
                     /** @param numeric $n */

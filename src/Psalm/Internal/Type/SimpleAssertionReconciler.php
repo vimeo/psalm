@@ -42,12 +42,14 @@ use Psalm\Type\Atomic\TCallableObject;
 use Psalm\Type\Atomic\TCallableString;
 use Psalm\Type\Atomic\TClassConstant;
 use Psalm\Type\Atomic\TClassString;
+use Psalm\Type\Atomic\TEmptyScalar;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TIntRange;
 use Psalm\Type\Atomic\TIterable;
 use Psalm\Type\Atomic\TKeyedArray;
+use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TLowercaseNumericString;
 use Psalm\Type\Atomic\TLowercaseString;
@@ -1070,6 +1072,13 @@ final class SimpleAssertionReconciler extends Reconciler
             } elseif ($type instanceof TNumeric) {
                 $string_types[] = new TNumericString;
                 $redundant = false;
+            } elseif ($type instanceof TEmptyScalar) {
+                $string_types[] = Type::getAtomicStringFromLiteral('');
+                $string_types[] = Type::getAtomicStringFromLiteral('0');
+                $redundant = false;
+            } elseif ($type instanceof TNonEmptyScalar) {
+                $string_types[] = new TNonFalsyString;
+                $redundant = false;
             } elseif ($type instanceof TScalar || $type instanceof TArrayKey) {
                 $string_types[] = new TString;
                 $redundant = false;
@@ -1158,6 +1167,13 @@ final class SimpleAssertionReconciler extends Reconciler
             } elseif ($type instanceof TNumeric) {
                 $int_types[] = new TInt;
                 $redundant = false;
+            } elseif ($type instanceof TEmptyScalar) {
+                $int_types[] = new TLiteralInt(0);
+                $redundant = false;
+            } elseif ($type instanceof TNonEmptyScalar) {
+                $int_types[] = new TIntRange(null, -1);
+                $int_types[] = new TIntRange(1, null);
+                $redundant = false;
             } elseif ($type instanceof TScalar || $type instanceof TArrayKey) {
                 $int_types[] = new TInt;
                 $redundant = false;
@@ -1231,6 +1247,12 @@ final class SimpleAssertionReconciler extends Reconciler
             if ($type instanceof TBool) {
                 $type = $type->setFromDocblock(false);
                 $bool_types[] = $type;
+            } elseif ($type instanceof TEmptyScalar) {
+                $bool_types[] = new TFalse;
+                $redundant = false;
+            } elseif ($type instanceof TNonEmptyScalar) {
+                $bool_types[] = new TTrue;
+                $redundant = false;
             } elseif ($type instanceof TScalar) {
                 $bool_types[] = new TBool;
                 $redundant = false;
