@@ -1,6 +1,8 @@
 ---
 name: hack-conformance
 description: Use when a Psalm feature is defined by matching Hack, i.e. class-template type variables, capabilities/coeffects, purity templates/contexts, or when adding a TypeVariableTest/CapabilitiesTest case whose expectation is unclear. Covers running the HHVM oracle harness (bin/hack-conformance) via docker, verified Hack facts, and where to look in the HHVM source.
+metadata:
+  internal: "true"
 ---
 
 # Hack conformance (HHVM as the oracle)
