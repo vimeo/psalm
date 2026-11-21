@@ -133,7 +133,6 @@ final class ClosureTest extends TestCase
                 'code' => '<?php
                     $fib = static function (int $n): int {
                         $self = Closure::getCurrent();
-                        /** @psalm-suppress MixedOperand, MixedReturnStatement */
                         return $n < 2 ? $n : $self($n - 1) + $self($n - 2);
                     };
                     $result = $fib(10);',
