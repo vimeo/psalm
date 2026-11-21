@@ -2258,7 +2258,7 @@ final class SwitchTypeTest extends TestCase
                                 break;
                         }
                     }',
-                'error_message' => 'ParadoxicalCondition',
+                'error_message' => 'TypeDoesNotContainNull',
                 'error_levels' => [],
                 'php_version' => '8.1',
             ],
