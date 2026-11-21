@@ -184,6 +184,24 @@ final class TraitTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'selfConstantInTheTypeOfATraitPropertyIsTheOneOfTheUsingClass' => [
+                'code' => '<?php
+                    trait HasKind {
+                        /** @var self::KIND */
+                        public int $kind = 5;
+                    }
+                    final class UsesTrait {
+                        use HasKind;
+                        /** @var 5 */
+                        public const KIND = 5;
+                    }
+                    $kind = (new UsesTrait())->kind;
+                    $vars = get_object_vars(new UsesTrait());',
+                'assertions' => [
+                    '$kind===' => '5',
+                    '$vars===' => 'array{kind: 5}',
+                ],
+            ],
             'staticReturnOfTraitMethodOverriddenByMethodOfLaterTrait' => [
                 'code' => '<?php
                     trait A {
