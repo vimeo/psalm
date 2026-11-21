@@ -22,6 +22,7 @@ use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
 use Psalm\Internal\Codebase\CliOutput;
 use Psalm\Internal\Codebase\ConstantTypeResolver;
+use Psalm\Internal\Codebase\PhpDeprecations;
 use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\MethodIdentifier;
@@ -35,7 +36,7 @@ use Psalm\Internal\Type\TypeExpander;
 use Psalm\Internal\TypeVisitor\TypeVariableResolver;
 use Psalm\Issue\ArgumentTypeCoercion;
 use Psalm\Issue\CallableByReferenceMismatch;
-use Psalm\Issue\DeprecatedConstant;
+use Psalm\Issue\DeprecatedSyntax;
 use Psalm\Issue\ImplicitToStringCast;
 use Psalm\Issue\InvalidArgument;
 use Psalm\Issue\InvalidLiteralArgument;
@@ -1368,22 +1369,8 @@ final class ArgumentAnalyzer
                         continue;
                     }
 
-                    if ($potential_method_id === null && $codebase->analysis_php_version_id >= 8_02_00) {
-                        [$lhs,] = $input_type_part->properties;
-                        if ($lhs->isSingleStringLiteral()
-                            && in_array(
-                                strtolower($lhs->getSingleStringLiteral()->value),
-                                ['self', 'parent', 'static'],
-                                true,
-                            )) {
-                            IssueBuffer::maybeAdd(
-                                new DeprecatedConstant(
-                                    'Use of "' . $lhs->getSingleStringLiteral()->value . '" in callables is deprecated',
-                                    $arg_location,
-                                ),
-                                $statements_analyzer->getSuppressedIssues(),
-                            );
-                        }
+                    if (self::isRelativeCallableArray($input_type_part)) {
+                        self::reportRelativeCallable($statements_analyzer, $arg_location);
                     }
 
                     if ($potential_method_id && $potential_method_id !== 'not-callable') {
@@ -1422,19 +1409,8 @@ final class ArgumentAnalyzer
                         strtolower($parts[1]),
                     );
 
-                    if ($codebase->analysis_php_version_id >= 8_02_00
-                        && in_array(
-                            strtolower($potential_method_id->fq_class_name),
-                            ['self', 'parent', 'static'],
-                            true,
-                        )) {
-                        IssueBuffer::maybeAdd(
-                            new DeprecatedConstant(
-                                'Use of "' . $potential_method_id->fq_class_name . '" in callables is deprecated',
-                                $arg_location,
-                            ),
-                            $statements_analyzer->getSuppressedIssues(),
-                        );
+                    if (in_array(strtolower($potential_method_id->fq_class_name), ['self', 'parent', 'static'], true)) {
+                        self::reportRelativeCallable($statements_analyzer, $arg_location);
                     }
 
                     if (self::verifyCallableInContext(
@@ -3047,5 +3023,45 @@ final class ArgumentAnalyzer
         }
 
         return $type;
+    }
+
+    /**
+     * Whether $array is a callable relative to the calling class, `["parent", "method"]` or
+     * `[$object, "Parent::method"]`
+     *
+     * @psalm-pure
+     */
+    private static function isRelativeCallableArray(TKeyedArray $array): bool
+    {
+        $class = $array->properties[0] ?? null;
+        $method = $array->properties[1] ?? null;
+
+        if ($class === null || $method === null || count($array->properties) !== 2) {
+            return false;
+        }
+
+        return ($class->isSingleStringLiteral()
+                && in_array(strtolower($class->getSingleStringLiteral()->value), ['self', 'parent', 'static'], true))
+            || ($method->isSingleStringLiteral() && str_contains($method->getSingleStringLiteral()->value, '::'));
+    }
+
+    /**
+     * Reports a callable relative to the calling class, which PHP deprecates whatever PHP version is analysed
+     */
+    private static function reportRelativeCallable(
+        StatementsAnalyzer $statements_analyzer,
+        CodeLocation $location,
+    ): void {
+        IssueBuffer::maybeAdd(
+            new DeprecatedSyntax(
+                PhpDeprecations::getDeprecatedSinceMessage(
+                    'A callable relative to the calling class',
+                    8_02_00,
+                    'self::method(...) or [self::class, "method"]',
+                ),
+                $location,
+            ),
+            $statements_analyzer->getSuppressedIssues(),
+        );
     }
 }

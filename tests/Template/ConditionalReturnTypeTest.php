@@ -668,6 +668,8 @@ final class ConditionalReturnTypeTest extends TestCase
 
                         return $return;
                     }',
+                'assertions' => [],
+                'ignored_issues' => ['DeprecatedFunction'],
             ],
             'combineConditionalArray' => [
                 'code' => '<?php
