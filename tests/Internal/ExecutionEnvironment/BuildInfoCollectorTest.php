@@ -690,6 +690,56 @@ final class BuildInfoCollectorTest extends TestCase
             self::git('master', ['origin' => 'git@github.com:psalm/example.git']),
             [],
         ];
+
+        yield 'Travis CI and Jenkins' => [
+            [
+                'TRAVIS' => 'true',
+                'TRAVIS_JOB_ID' => '123',
+                'TRAVIS_REPO_SLUG' => 'psalm/example',
+                'TRAVIS_PULL_REQUEST' => '42',
+                'TRAVIS_BRANCH' => 'master',
+                'JENKINS_URL' => 'https://ci.example.com/',
+                'BUILD_NUMBER' => '9',
+            ],
+            null,
+            [
+                'CI_BUILD_NUMBER' => '9',
+                'CI_BUILD_URL' => 'https://ci.example.com/',
+                'BUILD_NUMBER' => '9',
+                'JENKINS_URL' => 'https://ci.example.com/',
+                'CI_NAME' => 'jenkins',
+            ],
+        ];
+
+        yield 'every known CI service' => [
+            [
+                'GITHUB_ACTIONS' => 'true',
+                'GITHUB_REF' => 'refs/heads/master',
+                'GITHUB_REPOSITORY' => 'psalm/example',
+                'SCRUTINIZER' => 'true',
+                'SCRUTINIZER_INSPECTION_UUID' => 'aaaa-bbbb',
+                'SCRUTINIZER_PROJECT' => 'g/scrutinizer/example',
+                'SCRUTINIZER_PR_NUMBER' => '1',
+                'JENKINS_URL' => 'https://ci.example.com/',
+                'BUILD_NUMBER' => '9',
+                'APPVEYOR' => 'True',
+                'APPVEYOR_BUILD_NUMBER' => '5',
+                'CIRCLECI' => 'true',
+                'CIRCLE_BUILD_NUM' => '77',
+                'TRAVIS' => 'true',
+                'TRAVIS_JOB_ID' => '123',
+                'CI' => 'true',
+            ],
+            self::git('other', ['origin' => 'git@github.com:generic/example.git']),
+            [
+                'CI_NAME' => 'github-actions',
+                'CI_BRANCH' => 'master',
+                'GITHUB_ACTIONS' => 'true',
+                'GITHUB_REF' => 'refs/heads/master',
+                'CI_REPO_OWNER' => 'psalm',
+                'CI_REPO_NAME' => 'example',
+            ],
+        ];
     }
 
     /**
