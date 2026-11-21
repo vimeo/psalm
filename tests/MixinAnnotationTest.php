@@ -26,6 +26,37 @@ final class MixinAnnotationTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'inaccessiblePropertyOfAClassWithGetterIsReadFromItsMixin' => [
+                'code' => '<?php
+                    /** @mixin Extras */
+                    final class Host {
+                        private int $secret = 1;
+                        protected int $hidden = 2;
+
+                        public function __get(string $name): mixed {
+                            return null;
+                        }
+
+                        public function inside(): int {
+                            return $this->secret + $this->hidden;
+                        }
+                    }
+
+                    final class Extras {
+                        public int $secret = 3;
+                        public int $hidden = 4;
+                    }
+
+                    $host = new Host();
+                    $secret = $host->secret;
+                    $hidden = $host->hidden;',
+                'assertions' => [
+                    '$secret===' => 'int',
+                    '$hidden===' => 'int',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
             'ownMixinExtendsInheritedMixins' => [
                 'code' => '<?php
                     final class QueryBuilder
@@ -3107,6 +3138,20 @@ final class MixinAnnotationTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'inaccessiblePropertyOfAClassWithGetterAndNoMixinIsStillReported' => [
+                'code' => '<?php
+                    final class Host {
+                        private int $secret = 1;
+
+                        public function __get(string $name): string {
+                            return "";
+                        }
+                    }
+
+                    $host = new Host();
+                    $secret = $host->secret;',
+                'error_message' => 'InaccessibleProperty',
+            ],
             'undefinedMixinOfATrait' => [
                 'code' => '<?php
                     /** @mixin Missing */
