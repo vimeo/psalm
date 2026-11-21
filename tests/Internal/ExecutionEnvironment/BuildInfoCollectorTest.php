@@ -705,6 +705,26 @@ final class BuildInfoCollectorTest extends TestCase
     }
 
     /**
+     * @return iterable<string, array{string, string}>
+     * @psalm-pure
+     */
+    public static function provideBranchRef(): iterable
+    {
+        yield 'branch' => ['refs/heads/master', 'master'];
+        yield 'branch with a slash' => ['refs/heads/feature/login', 'feature/login'];
+        yield 'branch with "refs/heads/" in its name' => ['refs/heads/feature/refs/heads/login', 'feature/refs/heads/login'];
+        yield 'branch with "refs/tags/" in its name' => ['refs/heads/feature/refs/tags/login', 'feature/refs/tags/login'];
+    }
+
+    #[DataProvider('provideBranchRef')]
+    public function testGithubActionsBranchIsTheRefWithoutItsPrefix(string $ref, string $branch): void
+    {
+        $info = (new BuildInfoCollector(self::githubActions('push', 'push', $ref)))->collect();
+
+        self::assertSame($branch, $info['CI_BRANCH']);
+    }
+
+    /**
      * @param array<string, string> $remotes name => URL
      */
     private static function git(string $branch, array $remotes): GitInfo

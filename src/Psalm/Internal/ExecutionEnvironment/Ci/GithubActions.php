@@ -16,9 +16,9 @@ use function assert;
 use function file_get_contents;
 use function in_array;
 use function json_decode;
-use function str_contains;
-use function str_replace;
+use function str_starts_with;
 use function strtotime;
+use function substr;
 
 use const JSON_THROW_ON_ERROR;
 
@@ -95,10 +95,10 @@ final class GithubActions implements CiProvider
      */
     private static function getBranch(string $ref): ?string
     {
-        if (str_contains($ref, 'refs/heads/')) {
-            $ref = str_replace('refs/heads/', '', $ref);
-        } elseif (str_contains($ref, 'refs/tags/')) {
-            $ref = str_replace('refs/tags/', '', $ref);
+        if (str_starts_with($ref, 'refs/heads/')) {
+            $ref = substr($ref, 11);
+        } elseif (str_starts_with($ref, 'refs/tags/')) {
+            $ref = substr($ref, 10);
         }
 
         return $ref === '' ? null : $ref;
