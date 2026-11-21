@@ -38,6 +38,7 @@ use Psalm\Internal\FileManipulation\FunctionDocblockManipulator;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\PhpVisitor\NodeCounterVisitor;
 use Psalm\Internal\Provider\NodeDataProvider;
+use Psalm\Internal\Type\Comparator\CallableTypeComparator;
 use Psalm\Internal\Type\Comparator\TypeComparisonResult;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\IterationPurity;
@@ -1075,6 +1076,14 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                             $storage->return_type,
                         ))
                 ) {
+                    $new_closure_return_type = $closure_return_type;
+                } elseif ($storage->return_type
+                    && !$storage->return_type_location
+                    && $closure_return_type->isNullable()
+                    && !CallableTypeComparator::isNullContainedByReturnType($codebase, $storage->return_type)
+                ) {
+                    // a return type taken from the callable the closure is returned as accepts null like a
+                    // declared one, but the callable does not: keep what the closure returns, to be checked there
                     $new_closure_return_type = $closure_return_type;
                 }
 
