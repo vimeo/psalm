@@ -1459,6 +1459,26 @@ final class ClassLikeStringTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'getParentClassWithoutArgumentInATraitIsExactlyTheParentOfTheUsingClass' => [
+                'code' => '<?php
+                    class A {}
+                    class B extends A {}
+
+                    trait T {
+                        public function f(): void {
+                            $parent = get_parent_class();
+                            if ($parent !== B::class) {
+                                echo "never";
+                            }
+                        }
+                    }
+
+                    class C extends B {
+                        use T;
+                    }',
+                'error_message' => 'TypeDoesNotContainType',
+                'error_levels' => ['DeprecatedFunction'],
+            ],
             'classExistsOnTheLeftOfAnOrDoesNotAllowTheClassOnTheRight' => [
                 'code' => '<?php
                     function check(): bool {
