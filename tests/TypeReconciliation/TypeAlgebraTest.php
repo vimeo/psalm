@@ -96,6 +96,33 @@ final class TypeAlgebraTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'stringCheckedInTheRightOperandOfAnOrKeepsTheTypeOfANullCoalescedOffset' => [
+                'code' => '<?php
+                    final class VO {
+                        public function __construct(
+                            private readonly string|null $value
+                        ) {
+                        }
+                    }
+
+                    /** @var array{key?: mixed} */
+                    $array = [];
+
+                    $value = $array[\'key\'] ?? null;
+
+                    if (
+                        ($value !== null && ! is_string($value))
+                        ||
+                        (is_string($value) && empty($value))
+                    ) {
+                        throw new \\Exception();
+                    }
+
+                    new VO($value);',
+                'assertions' => [],
+                'ignored_issues' => ['MixedAssignment', 'RiskyTruthyFalsyComparison'],
+                'php_version' => '8.1',
+            ],
             'isArrayAndNotListThatDoesNotHoldKeepsTheOtherTypesOfTheUnion' => [
                 'code' => '<?php
                     function test(array|int $value): void {
