@@ -276,6 +276,134 @@ final class PropertyTypeTest extends TestCase
         $this->analyzeFile('somefile.php', new Context());
     }
 
+    public function testRememberReadonlyPropertiesAfterCall(): void
+    {
+        Config::getInstance()->remember_property_assignments_after_call = false;
+        $this->project_analyzer->setPhpVersion('8.1', 'tests');
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                final class Box {
+                    public int $v = 0;
+                }
+
+                function poke(Box $b): void {
+                    $b->v = 1;
+                }
+
+                final class Num {
+                    public function __construct(public readonly ?int $n) {}
+                }
+
+                final class Holder {
+                    public function __construct(public readonly ?int $own, public readonly Num $num) {}
+
+                    public function own(Box $b): int {
+                        if ($this->own === null) {
+                            return 0;
+                        }
+                        poke($b);
+                        return $this->own;
+                    }
+
+                    public function nested(Box $b): int {
+                        if ($this->num->n === null) {
+                            return 0;
+                        }
+                        poke($b);
+                        return $this->num->n;
+                    }
+                }
+
+                function param(Num $num, Box $b): int {
+                    if ($num->n === null) {
+                        return 0;
+                    }
+                    poke($b);
+                    return $num->n;
+                }',
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    public function testForgetReadonlyPropertyOfAWritablePropertyAfterCall(): void
+    {
+        Config::getInstance()->remember_property_assignments_after_call = false;
+        $this->project_analyzer->setPhpVersion('8.1', 'tests');
+
+        $this->expectExceptionMessage('NullableReturnStatement - somefile.php:22:32');
+        $this->expectException(CodeException::class);
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                final class Box {
+                    public int $v = 0;
+                }
+
+                function poke(Box $b): void {
+                    $b->v = 1;
+                }
+
+                final class Num {
+                    public function __construct(public readonly ?int $n) {}
+                }
+
+                final class Holder {
+                    public function __construct(public Num $num) {}
+
+                    public function nested(Box $b): int {
+                        if ($this->num->n === null) {
+                            return 0;
+                        }
+                        poke($b);
+                        return $this->num->n;
+                    }
+                }',
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    public function testForgetReadonlyPropertyWithPrivateMutationAfterCall(): void
+    {
+        Config::getInstance()->remember_property_assignments_after_call = false;
+
+        $this->expectExceptionMessage('NullableReturnStatement - somefile.php:21:32');
+        $this->expectException(CodeException::class);
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                final class Box {
+                    public int $v = 0;
+                }
+
+                function poke(Box $b): void {
+                    $b->v = 1;
+                }
+
+                final class Num {
+                    /**
+                     * @psalm-readonly-allow-private-mutation
+                     */
+                    public ?int $n = null;
+
+                    public function get(Box $b): int {
+                        if ($this->n === null) {
+                            return 0;
+                        }
+                        poke($b);
+                        return $this->n;
+                    }
+                }',
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
     public function testNoCrashInTryCatch(): void
     {
         Config::getInstance()->remember_property_assignments_after_call = false;
