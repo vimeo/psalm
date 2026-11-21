@@ -20,6 +20,7 @@ use Psalm\Internal\Clause;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\AssertionReconciler;
+use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Internal\Type\TypeExpander;
@@ -77,6 +78,7 @@ use Psalm\Type\Atomic\TTemplateParam;
 use ReflectionProperty;
 use UnexpectedValueException;
 
+use function array_all;
 use function array_key_first;
 use function array_keys;
 use function array_merge;
@@ -595,8 +597,25 @@ class Reconciler
                         $result_type,
                     );
                 } elseif ($key !== '$this') {
+                    // an object narrowed to a subtype of each type it had is the same object of the same class
+                    // hierarchy: what is known of its properties holds (not when it is narrowed to one of several
+                    // classes, whose properties have their own types)
+                    $keeps_properties = $before_adjustment
+                        && $before_adjustment->isObjectType()
+                        && $result_type->isObjectType()
+                        && array_all(
+                            $before_adjustment->getAtomicTypes(),
+                            static fn(Atomic $before_part): bool => UnionTypeComparator::isContainedBy(
+                                $codebase,
+                                $result_type,
+                                new Union([$before_part]),
+                            ),
+                        );
+
                     foreach ($existing_types as $new_key => $_) {
-                        if ($new_key === $key) {
+                        if ($new_key === $key
+                            || ($keeps_properties && str_starts_with($new_key, $key . '->'))
+                        ) {
                             continue;
                         }
 
