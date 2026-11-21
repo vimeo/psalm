@@ -1952,16 +1952,20 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                     );
                 }
 
+                // `static` is what `$this` is, with the templates of the class, and the class itself in a final one
+                $this_type = $context->vars_in_scope['$this'] ?? null;
+                $this_object = $this_type !== null && $this_type->isSingle() ? $this_type->getSingleAtomic() : null;
+
                 try {
                     $param_type = TypeExpander::expandUnion(
                         $codebase,
                         $param_type,
                         $context->self,
-                        $context->self,
+                        $this_object instanceof TNamedObject ? $this_object : $context->self,
                         $this->getParentFQCLN(),
                         true,
                         $param_type->hasConditional(),
-                        false,
+                        $this_object instanceof TNamedObject && !$this_object->is_static,
                         true,
                         false,
                         true,
