@@ -321,27 +321,27 @@ final class ClassTemplateParamCollector
     }
 
     /**
-     * The templates, by name and defining class, that the receiver binds to one of its `*` arguments: its own
+     * Marks the templates, by name and defining class, that the receiver binds to one of its `*` arguments: its own
      * template of that argument, and those of the classes it extends that stand for exactly that template (`true`).
      * A template of a class it extends that stands for a type wrapping one of them (`@implements Getter<Box<T>>`)
-     * is marked with that type, with the `*` in it, as that is what is read from the receiver: the type that its
-     * parameters take stays the one with the bound.
+     * is marked with that type, with the `*` in it, as that is what is read from the receiver (and with `never` in
+     * it as what is written to it): the type that its parameters take stays the one with the bound.
      *
      * @param array<string, array<string, Union>>|null $class_template_params what collect() gave
-     * @return array<string, array<string, true|Union>>
      * @psalm-capabilities read-props|write-this-props|write-props|write-refs
      */
-    public static function getStarBoundTemplates(
+    public static function markStarBindings(
+        TemplateResult $template_result,
         Codebase $codebase,
         ClassLikeStorage $static_class_storage,
         ?Atomic $lhs_type_part,
         ?array $class_template_params,
-    ): array {
+    ): void {
         if (!$lhs_type_part instanceof TGenericObject
             || !$lhs_type_part->hasStarProjection()
             || $class_template_params === null
         ) {
-            return [];
+            return;
         }
 
         $star_templates = [];
@@ -368,6 +368,8 @@ final class ClassTemplateParamCollector
         $bound_result = new TemplateResult($static_class_storage->template_types ?? [], $own_params);
         $star_result = new TemplateResult($static_class_storage->template_types ?? [], $own_params);
         $star_result->markStarBindings($own_stars);
+        $input_result = $star_result->withStarPosition(true);
+        $input_bounds = [];
 
         foreach ($class_template_params as $template_name => $defining_classes) {
             foreach ($defining_classes as $defining_class => $_) {
@@ -380,14 +382,16 @@ final class ClassTemplateParamCollector
 
                 $starred_type = TemplateInferredTypeReplacer::replace($extended_type, $star_result, $codebase);
                 $bound_type = TemplateInferredTypeReplacer::replace($extended_type, $bound_result, $codebase);
+                $input_type = TemplateInferredTypeReplacer::replace($extended_type, $input_result, $codebase);
 
-                if ($starred_type->getId() !== $bound_type->getId()) {
+                if ($starred_type->getId() !== $bound_type->getId() || $input_type->getId() !== $bound_type->getId()) {
                     $star_templates[$template_name][$defining_class] = $starred_type;
+                    $input_bounds[$template_name][$defining_class] = $input_type;
                 }
             }
         }
 
-        return $star_templates;
+        $template_result->markStarBindings($star_templates, $input_bounds);
     }
 
     /**

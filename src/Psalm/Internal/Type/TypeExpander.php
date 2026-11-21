@@ -1423,7 +1423,7 @@ final class TypeExpander
                         $return_type->classlike_type,
                         $storage,
                         $storage,
-                        true,
+                        false,
                     )
                     : $property_type
                 ;

@@ -283,6 +283,15 @@ final class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
             );
         }
 
+        // what is read from a `*` receiver is as unknown as the receiver, and what is written to it is never
+        ClassTemplateParamCollector::markStarBindings(
+            $template_result,
+            $codebase,
+            $class_storage,
+            $lhs_type_part,
+            $class_template_params,
+        );
+
         $is_first_class_callable = $stmt->isFirstClassCallable();
 
         if (!$is_first_class_callable && self::checkMethodArgs(
@@ -295,15 +304,6 @@ final class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
         ) === false) {
             return Type::getMixed();
         }
-
-        // what is read from a `*` receiver, unlike the arguments checked above, is as unknown as the receiver (the
-        // parameter types of a first-class callable's closure are not: see TemplateResult::withoutStarBindings())
-        $template_result->markStarBindings(ClassTemplateParamCollector::getStarBoundTemplates(
-            $codebase,
-            $class_storage,
-            $lhs_type_part,
-            $class_template_params,
-        ));
 
         $return_type_candidate = MethodCallReturnTypeFetcher::fetch(
             $statements_analyzer,

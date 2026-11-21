@@ -184,6 +184,14 @@ final class MissingMethodCallHandler
                 $found_generic_params ?? [],
             );
 
+            ClassTemplateParamCollector::markStarBindings(
+                $template_result,
+                $codebase,
+                $pseudo_method_class_storage,
+                $mixin_type ?? $lhs_type_part,
+                $found_generic_params,
+            );
+
             ArgumentsAnalyzer::analyze(
                 $statements_analyzer,
                 $stmt->getArgs(),
@@ -221,13 +229,6 @@ final class MissingMethodCallHandler
                 $template_result,
                 $found_generic_params ?? [],
             );
-
-            $template_result->markStarBindings(ClassTemplateParamCollector::getStarBoundTemplates(
-                $codebase,
-                $pseudo_method_class_storage,
-                $mixin_type ?? $lhs_type_part,
-                $found_generic_params,
-            ));
 
             if ($pseudo_method_storage->return_type) {
                 $return_type_candidate = MethodCallReturnTypeFetcher::replaceTemplateTypes(
@@ -451,6 +452,14 @@ final class MissingMethodCallHandler
                 $found_generic_params ?? [],
             );
 
+            ClassTemplateParamCollector::markStarBindings(
+                $template_result,
+                $codebase,
+                $class_storage,
+                $lhs_type_part,
+                $found_generic_params,
+            );
+
             if (ArgumentsAnalyzer::analyze(
                 $statements_analyzer,
                 $stmt->getArgs(),
@@ -475,13 +484,6 @@ final class MissingMethodCallHandler
             ) === false) {
                 return;
             }
-
-            $template_result->markStarBindings(ClassTemplateParamCollector::getStarBoundTemplates(
-                $codebase,
-                $class_storage,
-                $lhs_type_part,
-                $found_generic_params,
-            ));
 
             if ($pseudo_method_storage->return_type) {
                 $return_type_candidate = MethodCallReturnTypeFetcher::replaceTemplateTypes(
@@ -588,12 +590,13 @@ final class MissingMethodCallHandler
         );
 
         $template_result = new TemplateResult([], $found_generic_params ?? []);
-        $template_result->markStarBindings(ClassTemplateParamCollector::getStarBoundTemplates(
+        ClassTemplateParamCollector::markStarBindings(
+            $template_result,
             $codebase,
             $class_storage,
             $lhs_type_part,
             $found_generic_params,
-        ));
+        );
 
         return MethodCallReturnTypeFetcher::getFirstClassCallableType(
             $codebase,

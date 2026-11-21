@@ -560,7 +560,7 @@ final class Box {
 function takesAnyBox(Box $box): void {
     $box->get(); // object
     $box->same(); // Box<*>
-    $box->set(new DateTime()); // no issue (writes through `*` are not checked yet)
+    $box->set(new DateTime()); // InvalidArgument: Argument 1 of Box::set expects never, but DateTime provided
 }
 
 /** @param Box<object> $box */
@@ -575,6 +575,39 @@ function f(Box $std, Box $any): void {
     takesBoxOfObject($any); // ArgumentTypeCoercion
 }
 ```
+
+What you read from a `Box<*>` has the bound of the template, and what you write to it has no type that is known to fit, so it is `never`. That holds for method parameters, assigned properties and the parameters of a closure that the object returns:
+
+```php
+<?php
+/** @template T of object */
+final class Cell {
+    /** @var T */
+    public object $value;
+
+    /** @var list<T> */
+    public array $history = [];
+
+    /** @param T $value */
+    public function __construct(object $value) {
+        $this->value = $value;
+    }
+
+    /** @return Closure(T): void */
+    public function setter(): Closure { throw new Exception(); }
+}
+
+/** @param Cell<*> $cell */
+function h(Cell $cell): void {
+    $cell->value; // object
+    $cell->value = new DateTime(); // InvalidPropertyAssignmentValue: $cell->value with declared type 'never' cannot be assigned type 'DateTime'
+    $cell->history = []; // no issue
+    $cell->history[] = new DateTime(); // InvalidPropertyAssignmentValue: $cell->history with declared type 'array<never, never>' cannot be assigned type 'list{DateTime}'
+    $cell->setter(); // Closure(never): void
+}
+```
+
+The parameters of a closure that is a parameter are read again: `each(Closure(T): void $callback)` of a `Box<*>` expects a `Closure(object): void`. A `Box<T>` parameter is `never` too, as the argument may be any `Box`. A `Pair<int, *>` writes its `int` as usual.
 
 A `Box<*>` also fits a `Box` written without arguments, and a covariant argument that holds the whole bound:
 
