@@ -47,7 +47,6 @@ use Psalm\Type\Atomic\TScalar;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateKeyOf;
 use Psalm\Type\Atomic\TTemplateParam;
-use Psalm\Type\Atomic\TTemplateParamClass;
 use Psalm\Type\Atomic\TTemplateValueOf;
 use Psalm\Type\Atomic\TTypeVariable;
 use Psalm\Type\Atomic\TValueOf;
@@ -1186,8 +1185,7 @@ final class AtomicTypeComparator
             return $type1_part->value === $type2_part->value;
         }
 
-        if (($type1_part instanceof TClassString && !$type1_part instanceof TTemplateParamClass
-                || $type1_part instanceof TDependentGetClass)
+        if (($type1_part instanceof TClassString || $type1_part instanceof TDependentGetClass)
             && $type2_part::class === TLiteralString::class
         ) {
             return ClassLikeStringComparator::canLiteralNameBeClassString(
@@ -1198,8 +1196,7 @@ final class AtomicTypeComparator
             );
         }
 
-        if (($type2_part instanceof TClassString && !$type2_part instanceof TTemplateParamClass
-                || $type2_part instanceof TDependentGetClass)
+        if (($type2_part instanceof TClassString || $type2_part instanceof TDependentGetClass)
             && $type1_part::class === TLiteralString::class
         ) {
             return ClassLikeStringComparator::canLiteralNameBeClassString(
