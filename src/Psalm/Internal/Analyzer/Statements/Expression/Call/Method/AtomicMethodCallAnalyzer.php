@@ -44,6 +44,7 @@ use Psalm\Type\Atomic\TObjectWithProperties;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
 
+use function array_any;
 use function array_merge;
 use function array_shift;
 use function array_values;
@@ -778,8 +779,14 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
                     }
 
                     if ($context->check_methods) {
-                        // `object` and an object shape are known types that have no method table
+                        // `object` and an object shape are known types that have no method table; the wording is
+                        // that of the whole receiver, so that all its parts give one message
                         $known_type = $lhs_type_part instanceof TObject
+                            && !array_any(
+                                $lhs_type->getAtomicTypes(),
+                                static fn(Atomic $part): bool => $part instanceof TMixed
+                                    || ($part instanceof TTemplateParam && $part->as->hasMixed()),
+                            )
                             ? ' (' . $lhs_type_part->getId() . ')'
                             : '';
                         $what = $known_type !== '' ? 'the methods of' : 'the type of';
