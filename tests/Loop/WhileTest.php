@@ -217,6 +217,22 @@ final class WhileTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'barePostDecrementConditionIsMinusOneAfterTheLoop' => [
+                'code' => '<?php
+                    $i = 3;
+                    while ($i--) {}
+                    $afterLoop = $i;
+
+                    function getInt(): int {
+                        return 1;
+                    }
+                    $j = getInt();
+                    $afterIncrement = $j++ ? 0 : $j;',
+                'assertions' => [
+                    '$afterLoop===' => '-1',
+                    '$afterIncrement===' => '0|1',
+                ],
+            ],
             'whileCounterIncrementedThroughAReferenceIsWidened' => [
                 'code' => <<<'PHP'
                     <?php
