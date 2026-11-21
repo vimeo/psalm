@@ -1680,6 +1680,14 @@ final class ArgTest extends TestCase
                 'error_levels' => [],
                 'php_version' => '8.0',
             ],
+            'emptyArrayForANonEmptyArrayOrTraversableParam' => [
+                'code' => '<?php
+                    /** @param non-empty-array<int, int>|Traversable<int, int> $x */
+                    function nonEmpty($x): void {}
+
+                    nonEmpty([]);',
+                'error_message' => 'InvalidArgument',
+            ],
         ];
     }
 }
