@@ -343,30 +343,54 @@ final class ClassTemplateParamCollector
             return [];
         }
 
-        $own_template_names = array_keys($static_class_storage->template_types ?? []);
         $star_templates = [];
 
         foreach ($class_template_params as $template_name => $defining_classes) {
             foreach ($defining_classes as $defining_class => $_) {
-                if ($defining_class === $static_class_storage->name) {
-                    $offset = array_search($template_name, $own_template_names, true);
-                } else {
-                    $extended_type = $static_class_storage->template_extended_params[$defining_class][$template_name]
-                        ?? null;
-                    $extended_atomic = $extended_type?->isSingle() ? $extended_type->getSingleAtomic() : null;
-                    $offset = $extended_atomic instanceof TTemplateParam
-                        && $extended_atomic->defining_class === $static_class_storage->name
-                        ? array_search($extended_atomic->param_name, $own_template_names, true)
-                        : false;
-                }
+                $offset = self::getOwnTemplateOffset($static_class_storage, $defining_class, $template_name);
 
-                if ($offset !== false && $lhs_type_part->getProjection($offset) === TypeArgumentProjection::Star) {
+                if ($offset !== null && $lhs_type_part->getProjection($offset) === TypeArgumentProjection::Star) {
                     $star_templates[$template_name][$defining_class] = true;
                 }
             }
         }
 
         return $star_templates;
+    }
+
+    /**
+     * The offset of the template of the class that a template of a class it extends stands for exactly, through the
+     * classes in between (`ParentBox::T` is `Middle::U`, which is `Child::V`)
+     *
+     * @psalm-mutation-free
+     */
+    private static function getOwnTemplateOffset(
+        ClassLikeStorage $static_class_storage,
+        string $defining_class,
+        string $template_name,
+    ): ?int {
+        $seen = [];
+
+        while ($defining_class !== $static_class_storage->name) {
+            if (isset($seen[$defining_class . '::' . $template_name])) {
+                return null;
+            }
+
+            $seen[$defining_class . '::' . $template_name] = true;
+            $extended_type = $static_class_storage->template_extended_params[$defining_class][$template_name] ?? null;
+            $extended_atomic = $extended_type?->isSingle() ? $extended_type->getSingleAtomic() : null;
+
+            if (!$extended_atomic instanceof TTemplateParam) {
+                return null;
+            }
+
+            $defining_class = $extended_atomic->defining_class;
+            $template_name = $extended_atomic->param_name;
+        }
+
+        $offset = array_search($template_name, array_keys($static_class_storage->template_types ?? []), true);
+
+        return $offset === false ? null : $offset;
     }
 
     /**

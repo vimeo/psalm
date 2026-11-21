@@ -1424,6 +1424,32 @@ final class StarProjectionTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'starProjectionStaticOfACovariantArgumentIsTheBound' => [
+                'code' => '<?php
+                    /** @template-covariant T of object */
+                    class Reader {
+                        /** @return Reader<T> */
+                        public function same(): Reader {
+                            return $this;
+                        }
+
+                        /** @return static<T> */
+                        public function staticOf(): static {
+                            return $this;
+                        }
+                    }
+
+                    /** @var Reader<*> $reader */
+                    $reader = new Reader();
+                    $same = $reader->same();
+                    $static = $reader->staticOf();',
+                'assertions' => [
+                    '$same===' => 'Reader<object>',
+                    '$static===' => 'Reader<object>&static',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
         ];
     }
 
@@ -1869,6 +1895,74 @@ final class StarProjectionTest extends TestCase
                         takesBoxOfObject($same());
                     }',
                 'error_message' => 'ArgumentTypeCoercion - src' . DIRECTORY_SEPARATOR . 'somefile.php:16:42 - Argument 1 of takesBoxOfObject expects Box<object>, but parent type Box<*> provided',
+            ],
+            'starProjectionReadThroughTwoLevelsOfInheritanceIsStillAStar' => [
+                'code' => '<?php
+                    /** @template T of object */
+                    class Box {}
+
+                    /** @template T of object */
+                    class ParentBox {
+                        /** @return Box<T> */
+                        public function value(): Box {
+                            throw new Exception();
+                        }
+                    }
+
+                    /**
+                     * @template U of object
+                     * @extends ParentBox<U>
+                     */
+                    class Middle extends ParentBox {}
+
+                    /**
+                     * @template V of object
+                     * @extends Middle<V>
+                     */
+                    final class Child extends Middle {}
+
+                    /** @param Box<object> $b */
+                    function takes(Box $b): void {}
+
+                    /** @param Child<*> $c */
+                    function f(Child $c): void {
+                        takes($c->value());
+                    }',
+                'error_message' => 'ArgumentTypeCoercion - src' . DIRECTORY_SEPARATOR . 'somefile.php:30:31 - Argument 1 of takes expects Box<object>, but parent type Box<*> provided',
+            ],
+            'starProjectionPropertyThroughTwoLevelsOfInheritanceIsStillAStar' => [
+                'code' => '<?php
+                    /** @template T of object */
+                    class Box {}
+
+                    /** @template T of object */
+                    class ParentBox {
+                        /** @var Box<T>|null */
+                        public ?Box $prop = null;
+                    }
+
+                    /**
+                     * @template U of object
+                     * @extends ParentBox<U>
+                     */
+                    class Middle extends ParentBox {}
+
+                    /**
+                     * @template V of object
+                     * @extends Middle<V>
+                     */
+                    final class Child extends Middle {}
+
+                    /** @param Box<object> $b */
+                    function takes(Box $b): void {}
+
+                    /** @param Child<*> $c */
+                    function f(Child $c): void {
+                        if ($c->prop !== null) {
+                            takes($c->prop);
+                        }
+                    }',
+                'error_message' => 'ArgumentTypeCoercion - src' . DIRECTORY_SEPARATOR . 'somefile.php:29:35 - Argument 1 of takes expects Box<object>, but parent type Box<*> provided',
             ],
         ];
     }
