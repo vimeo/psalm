@@ -49,9 +49,11 @@ final class TemplateResult
     public array $upper_bounds_unintersectable_types = [];
 
     /**
-     * The class templates the receiver bound to a `*` (template name => defining class), see markStarBindings()
+     * The class templates the receiver bound to a `*` (template name => defining class => `true`), see
+     * markStarBindings(). A template of a class the receiver extends that stands for a type wrapping them
+     * (`Getter<Box<T>>`) has that type as it is read from the receiver, with the `*`, as the value.
      *
-     * @var array<string, array<string, true>>
+     * @var array<string, array<string, true|Union>>
      */
     public array $star_bindings = [];
 
@@ -80,12 +82,35 @@ final class TemplateResult
     /**
      * Marks the class templates the receiver bound to a `*`, for what is read from the receiver
      *
-     * @param array<string, array<string, true>> $star_templates template name => defining class
+     * @param array<string, array<string, true|Union>> $star_templates template name => defining class => mark
      * @psalm-capabilities read-props|write-this-props
      */
     public function markStarBindings(array $star_templates): void
     {
         $this->star_bindings = array_replace_recursive($this->star_bindings, $star_templates);
+    }
+
+    /**
+     * The lower bounds for replacing the templates of what is read from the receiver: a template of a class it
+     * extends that stands for a type wrapping a template bound to a `*` is that type with the `*` in it, where the
+     * parameters (which have no star marks, see withoutStarBindings()) read the bound
+     *
+     * @return array<string, array<string, non-empty-list<TemplateBound>>>
+     * @psalm-mutation-free
+     */
+    public function getLowerBoundsOfReads(): array
+    {
+        $lower_bounds = $this->lower_bounds;
+
+        foreach ($this->star_bindings as $template_name => $defining_classes) {
+            foreach ($defining_classes as $defining_class => $star_type) {
+                if ($star_type instanceof Union) {
+                    $lower_bounds[$template_name][$defining_class] = [new TemplateBound($star_type)];
+                }
+            }
+        }
+
+        return $lower_bounds;
     }
 
     /**

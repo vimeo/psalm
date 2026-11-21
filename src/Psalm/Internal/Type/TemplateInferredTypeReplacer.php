@@ -67,7 +67,7 @@ final class TemplateInferredTypeReplacer
 
         $is_mixed = false;
 
-        $inferred_lower_bounds = $template_result->lower_bounds ?: [];
+        $inferred_lower_bounds = $template_result->getLowerBoundsOfReads();
 
         $types = [];
 

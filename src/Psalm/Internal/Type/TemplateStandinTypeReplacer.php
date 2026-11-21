@@ -1666,6 +1666,7 @@ final class TemplateStandinTypeReplacer
             $i = 0;
 
             $replacement_templates = [];
+            $star_templates = [];
 
             if ($input_template_types
                 && (!$container_type_part instanceof TGenericObject || !$container_type_part->remapped_params)
@@ -1677,9 +1678,17 @@ final class TemplateStandinTypeReplacer
 
                     $replacement_templates[$template_name][$input_type_part->value] = $input_type_params[$i];
 
+                    if (($input_projections[$i] ?? null) === TypeArgumentProjection::Star) {
+                        // `Box<T>` of the `@implements Getter<Box<T>>` of a `Box<*>` is as unknown as the receiver
+                        $star_templates[$template_name][$input_type_part->value] = true;
+                    }
+
                     $i++;
                 }
             }
+
+            $replacement_result = new TemplateResult([], $replacement_templates);
+            $replacement_result->markStarBindings($star_templates);
 
             $template_extends = $input_class_storage->template_extended_params;
 
@@ -1741,7 +1750,7 @@ final class TemplateStandinTypeReplacer
 
                     $new_input_param = TemplateInferredTypeReplacer::replace(
                         $new_input_param,
-                        new TemplateResult([], $replacement_templates),
+                        $replacement_result,
                         $codebase,
                     );
 

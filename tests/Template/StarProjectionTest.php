@@ -1613,9 +1613,7 @@ final class StarProjectionTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
-            'starProjectionIterationOfAWrappedArgumentIsNotAStarYet' => [
-                // known gap: `@implements IteratorAggregate<int, Box<T>>` reads its `Box<T>` with the bound, so the item
-                // is not a `Box<*>` yet
+            'starProjectionIterationOfAWrappedArgumentIsAStar' => [
                 'code' => '<?php
                     /** @template T of object */
                     final class Box {}
@@ -1637,8 +1635,122 @@ final class StarProjectionTest extends TestCase
                     foreach ($boxes as $item) {
                     }',
                 'assertions' => [
-                    '$item===' => 'Box<object>|null',
+                    '$item===' => 'Box<*>|null',
                 ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'starProjectionInheritedThroughAWrappedImplementsKeepsTheStar' => [
+                'code' => '<?php
+                    /** @template T of object */
+                    interface Getter {
+                        /** @return T */
+                        public function get(): object;
+                    }
+
+                    /**
+                     * @template T of object
+                     * @implements Getter<Box<T>>
+                     */
+                    final class Box implements Getter {
+                        public function get(): object {
+                            return $this;
+                        }
+                    }
+
+                    /**
+                     * @param Box<*> $any
+                     * @param Box<stdClass> $concrete
+                     */
+                    function f(Box $any, Box $concrete): void {
+                        $inherited = $any->get();
+                        /** @psalm-check-type-exact $inherited = Box<*> */
+                        $known = $concrete->get();
+                        /** @psalm-check-type-exact $known = Box<stdClass> */
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'starProjectionSpreadOfAWrappedArgumentIsAStar' => [
+                'code' => '<?php
+                    /** @template T of object */
+                    final class Box {}
+
+                    /**
+                     * @template T of object
+                     * @implements IteratorAggregate<int, Box<T>>
+                     */
+                    final class Boxes implements IteratorAggregate {
+                        public function getIterator(): Iterator {
+                            throw new Exception();
+                        }
+                    }
+
+                    /** @param Boxes<*> $boxes */
+                    function f(Boxes $boxes): void {
+                        $all = [...$boxes];
+                        /** @psalm-check-type-exact $all = list<Box<*>> */
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'starProjectionOfAnInterfaceMethodTagKeepsTheStar' => [
+                'code' => '<?php
+                    /** @template T of object */
+                    final class Box {}
+
+                    /**
+                     * @template T of object
+                     * @method Box<T> boxed()
+                     */
+                    interface Shelf {}
+
+                    /** @param Shelf<*> $shelf */
+                    function f(Shelf $shelf): void {
+                        $boxed = $shelf->boxed();
+                        /** @psalm-check-type-exact $boxed = Box<*> */
+                        $factory = $shelf->boxed(...);
+                        /** @psalm-check-type-exact $factory = Closure():Box<*> */
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'starProjectionOfAStaticCallThroughTheInstanceKeepsTheStar' => [
+                'code' => '<?php
+                    /** @template T of object */
+                    final class Box {
+                        /** @return Box<T> */
+                        public static function make(): Box {
+                            throw new Exception();
+                        }
+                    }
+
+                    /**
+                     * @template T of object
+                     * @method static Box<T> magic()
+                     */
+                    class Shelf {
+                        public static function __callStatic(string $name, array $args): mixed {
+                            return null;
+                        }
+                    }
+
+                    /**
+                     * @param Box<*> $any
+                     * @param Shelf<*> $shelf
+                     */
+                    function f(Box $any, Shelf $shelf): void {
+                        $made = $any::make();
+                        /** @psalm-check-type-exact $made = Box<*> */
+                        $factory = $any::make(...);
+                        /** @psalm-check-type-exact $factory = Closure():Box<*> */
+                        $magic = $shelf::magic();
+                        /** @psalm-check-type-exact $magic = Box<*> */
+                    }',
+                'assertions' => [],
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
@@ -1845,6 +1957,35 @@ final class StarProjectionTest extends TestCase
                     }',
                 'assertions' => [],
                 'ignored_issues' => ['InvalidTemplateParam'],
+                'php_version' => '8.0',
+            ],
+            'starProjectionCallableOfASetterIsNotRestrictedYet' => [
+                // known gap: `Closure::fromCallable([$any, 'set'])` takes the argument of the setter as a `Box<*>`, which
+                // accepts any `Box`, until the write-restriction PR makes it `never`
+                'code' => '<?php
+                    /** @template T of object */
+                    interface Setter {
+                        /** @param T $value */
+                        public function set(object $value): void;
+                    }
+
+                    /**
+                     * @template T of object
+                     * @implements Setter<Box<T>>
+                     */
+                    final class Box implements Setter {
+                        public function set(object $value): void {}
+                    }
+
+                    /**
+                     * @param Box<*> $any
+                     * @param Box<DateTime> $date
+                     */
+                    function f(Box $any, Box $date): void {
+                        Closure::fromCallable([$any, "set"])($date);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
         ];
@@ -2461,6 +2602,110 @@ final class StarProjectionTest extends TestCase
                         }
                     }',
                 'error_message' => 'ArgumentTypeCoercion - src' . DIRECTORY_SEPARATOR . 'somefile.php:15:35 - Argument 1 of takes expects list<Inv<Countable>>, but parent type list<Inv<*>> provided',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'starProjectionCallableOfAMethodReturningTheTemplateIsNotTheBound' => [
+                'code' => '<?php
+                    /** @template T of object */
+                    final class Box {
+                        /** @return Box<T> */
+                        public function same(): Box {
+                            return $this;
+                        }
+                    }
+
+                    /** @param callable(): Box<*> $factory */
+                    function takesStarFactory(callable $factory): void {}
+
+                    /** @param callable(): Box<object> $factory */
+                    function takesFactory(callable $factory): void {}
+
+                    /** @param Box<*> $any */
+                    function f(Box $any): void {
+                        takesStarFactory([$any, "same"]);
+                        takesStarFactory($any->same(...));
+                        takesFactory([$any, "same"]);
+                    }',
+                'error_message' => 'ArgumentTypeCoercion - src' . DIRECTORY_SEPARATOR . 'somefile.php:20:38 - Argument 1 of takesFactory expects callable[impure]():Box<object>, but parent type callable[impure]():Box<*> provided',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'starProjectionOffsetSetOfAWrappedArgumentStillTakesTheBound' => [
+                'code' => '<?php
+                    /** @template T of object */
+                    final class Box {}
+
+                    /**
+                     * @template T of object
+                     * @extends ArrayAccess<int, Box<T>>
+                     */
+                    interface Shelf extends ArrayAccess {}
+
+                    /**
+                     * @param Shelf<*> $shelf
+                     * @param Box<DateTime> $date
+                     */
+                    function f(Shelf $shelf, Box $date): void {
+                        $shelf[0] = $date;
+                    }',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:16:37 - Argument 2 of Shelf::offsetSet expects Box<object>, but Box<DateTime> provided',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'starProjectionFirstClassSetterOfAWrappedArgumentStillTakesTheBound' => [
+                'code' => '<?php
+                    /** @template T of object */
+                    interface Setter {
+                        /** @param T $value */
+                        public function set(object $value): void;
+                    }
+
+                    /**
+                     * @template T of object
+                     * @implements Setter<Box<T>>
+                     */
+                    final class Box implements Setter {
+                        public function set(object $value): void {}
+                    }
+
+                    /**
+                     * @param Box<*> $any
+                     * @param Box<DateTime> $date
+                     */
+                    function f(Box $any, Box $date): void {
+                        $any->set(...)($date);
+                    }',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:21:40 - Argument 1 expects Box<object>, but Box<DateTime> provided',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'starProjectionCallableParameterOfAWrappedArgumentStillTakesTheBound' => [
+                'code' => '<?php
+                    /** @template T of object */
+                    interface Sink {
+                        /** @return Closure(T): void */
+                        public function sink(): Closure;
+                    }
+
+                    /**
+                     * @template T of object
+                     * @implements Sink<Box<T>>
+                     */
+                    final class Box implements Sink {
+                        public function sink(): Closure {
+                            return static function (object $value): void {};
+                        }
+                    }
+
+                    /**
+                     * @param Box<*> $any
+                     * @param Box<DateTime> $date
+                     */
+                    function f(Box $any, Box $date): void {
+                        $any->sink()($date);
+                    }',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:23:38 - Argument 1 expects Box<object>, but Box<DateTime> provided',
                 'error_levels' => [],
                 'php_version' => '8.0',
             ],

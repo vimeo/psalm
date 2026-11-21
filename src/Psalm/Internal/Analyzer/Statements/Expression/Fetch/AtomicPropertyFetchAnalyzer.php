@@ -990,6 +990,7 @@ final class AtomicPropertyFetchAnalyzer
 
             if ($star_reads) {
                 $template_result->markStarBindings(ClassTemplateParamCollector::getStarBoundTemplates(
+                    $codebase,
                     $property_class_storage,
                     $lhs_type_part,
                     $template_types,

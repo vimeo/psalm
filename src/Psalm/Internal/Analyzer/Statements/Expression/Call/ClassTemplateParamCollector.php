@@ -9,6 +9,7 @@ use Psalm\Codebase;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\PurityArguments;
 use Psalm\Internal\Type\TemplateDefaults;
+use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TypeArgumentProjection;
 use Psalm\Internal\Type\TypeExpander;
@@ -321,13 +322,17 @@ final class ClassTemplateParamCollector
 
     /**
      * The templates, by name and defining class, that the receiver binds to one of its `*` arguments: its own
-     * template of that argument, and those of the classes it extends that stand for exactly that template
+     * template of that argument, and those of the classes it extends that stand for exactly that template (`true`).
+     * A template of a class it extends that stands for a type wrapping one of them (`@implements Getter<Box<T>>`)
+     * is marked with that type, with the `*` in it, as that is what is read from the receiver: the type that its
+     * parameters take stays the one with the bound.
      *
      * @param array<string, array<string, Union>>|null $class_template_params what collect() gave
-     * @return array<string, array<string, true>>
-     * @psalm-mutation-free
+     * @return array<string, array<string, true|Union>>
+     * @psalm-capabilities read-props|write-this-props|write-props|write-refs
      */
     public static function getStarBoundTemplates(
+        Codebase $codebase,
         ClassLikeStorage $static_class_storage,
         ?Atomic $lhs_type_part,
         ?array $class_template_params,
@@ -347,6 +352,37 @@ final class ClassTemplateParamCollector
 
                 if ($offset !== null && $lhs_type_part->getProjection($offset) === TypeArgumentProjection::Star) {
                     $star_templates[$template_name][$defining_class] = true;
+                }
+            }
+        }
+
+        $own_stars = [];
+
+        foreach (array_keys($static_class_storage->template_types ?? []) as $offset => $template_name) {
+            if ($lhs_type_part->getProjection($offset) === TypeArgumentProjection::Star) {
+                $own_stars[$template_name][$static_class_storage->name] = true;
+            }
+        }
+
+        $own_params = self::getOwnTemplateParams($codebase, $static_class_storage, $lhs_type_part);
+        $bound_result = new TemplateResult($static_class_storage->template_types ?? [], $own_params);
+        $star_result = new TemplateResult($static_class_storage->template_types ?? [], $own_params);
+        $star_result->markStarBindings($own_stars);
+
+        foreach ($class_template_params as $template_name => $defining_classes) {
+            foreach ($defining_classes as $defining_class => $_) {
+                $extended_type = $static_class_storage->template_extended_params[$defining_class][$template_name]
+                    ?? null;
+
+                if ($extended_type === null || isset($star_templates[$template_name][$defining_class])) {
+                    continue;
+                }
+
+                $starred_type = TemplateInferredTypeReplacer::replace($extended_type, $star_result, $codebase);
+                $bound_type = TemplateInferredTypeReplacer::replace($extended_type, $bound_result, $codebase);
+
+                if ($starred_type->getId() !== $bound_type->getId()) {
+                    $star_templates[$template_name][$defining_class] = $starred_type;
                 }
             }
         }

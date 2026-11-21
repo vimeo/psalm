@@ -633,7 +633,7 @@ function f(
 }
 ```
 
-Reading a template gives its bound (`T`, `list<T>`), but a return or property type that holds the template as a whole generic argument stays a `*`: with `@return Box<T>`, a `Box<*>` receiver gives a `Box<*>`, not a `Box<object>`. Covariant arguments (`Iterator<TKey, TValue>`) read the bound.
+Reading a template gives its bound (`T`, `list<T>`), but a return or property type that holds the template as a whole generic argument stays a `*`: with `@return Box<T>`, a `Box<*>` receiver gives a `Box<*>`, not a `Box<object>`. This holds for methods, `@method` tags, static calls, callables and iteration of the receiver, also when they are inherited through `@extends` or `@implements` (`@implements Getter<Box<T>>`). A type that wraps the template in a list or a callable parameter (`@extends Base<list<T>>`) still reads the bound. Covariant arguments (`Iterator<TKey, TValue>`) read the bound.
 
 ```php
 <?php

@@ -259,6 +259,7 @@ final class MixinLookup
         } else {
             $mixin_template_result = new TemplateResult([], $template_params ?? []);
             $mixin_template_result->markStarBindings(ClassTemplateParamCollector::getStarBoundTemplates(
+                $codebase,
                 $storage,
                 $receiver,
                 $template_params,
