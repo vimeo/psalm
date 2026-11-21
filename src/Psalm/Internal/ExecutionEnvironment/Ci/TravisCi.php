@@ -27,14 +27,12 @@ final class TravisCi implements CiProvider
     private const BRANCH = 'TRAVIS_BRANCH';
 
     #[Override]
-    public function detects(Env $env, ?GitInfo $git_info): bool
+    public function collect(Env $env, ?GitInfo $git_info): ?BuildInfo
     {
-        return $env->isTruthy(self::FLAG) && $env->get(self::JOB_ID) !== null;
-    }
+        if (!$env->isTruthy(self::FLAG) || $env->get(self::JOB_ID) === null) {
+            return null;
+        }
 
-    #[Override]
-    public function collect(Env $env, ?GitInfo $git_info): BuildInfo
-    {
         return new BuildInfo(
             ciName: 'travis-ci',
             // for a tag build, Travis CI sets the branch to the name of the tag

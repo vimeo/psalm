@@ -31,14 +31,12 @@ final class Scrutinizer implements CiProvider
     private const GITHUB_PROJECT_PREFIX = 'g/';
 
     #[Override]
-    public function detects(Env $env, ?GitInfo $git_info): bool
+    public function collect(Env $env, ?GitInfo $git_info): ?BuildInfo
     {
-        return $env->isTruthy(self::FLAG);
-    }
+        if (!$env->isTruthy(self::FLAG)) {
+            return null;
+        }
 
-    #[Override]
-    public function collect(Env $env, ?GitInfo $git_info): BuildInfo
-    {
         $repository = self::repository($env->get(self::PROJECT));
         $pull_request = PullRequest::fromNumber($env->get(self::PULL_REQUEST), $repository);
 

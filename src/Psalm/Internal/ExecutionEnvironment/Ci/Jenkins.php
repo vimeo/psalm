@@ -21,14 +21,12 @@ final class Jenkins implements CiProvider
     private const BUILD_NUMBER = 'BUILD_NUMBER';
 
     #[Override]
-    public function detects(Env $env, ?GitInfo $git_info): bool
+    public function collect(Env $env, ?GitInfo $git_info): ?BuildInfo
     {
-        return $env->get(self::URL) !== null && $env->get(self::BUILD_NUMBER) !== null;
-    }
+        if ($env->get(self::URL) === null || $env->get(self::BUILD_NUMBER) === null) {
+            return null;
+        }
 
-    #[Override]
-    public function collect(Env $env, ?GitInfo $git_info): BuildInfo
-    {
         return new BuildInfo(
             ciName: 'jenkins',
             buildNumber: $env->get(self::BUILD_NUMBER),

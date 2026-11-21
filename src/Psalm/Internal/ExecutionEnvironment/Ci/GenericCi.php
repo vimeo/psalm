@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Psalm\Internal\ExecutionEnvironment\Ci;
 
-use LogicException;
 use Override;
 use Psalm\Internal\ExecutionEnvironment\BuildInfo;
 use Psalm\Internal\ExecutionEnvironment\Env;
@@ -48,20 +47,15 @@ final class GenericCi implements CiProvider
     ];
 
     #[Override]
-    public function detects(Env $env, ?GitInfo $git_info): bool
+    public function collect(Env $env, ?GitInfo $git_info): ?BuildInfo
     {
-        return ($env->isTruthy(self::CI_FLAG) || $env->get(self::AZURE_PIPELINES_FLAG) !== null)
-            && $git_info !== null
-            && self::getGithubRepository($git_info) !== null;
-    }
+        if ((!$env->isTruthy(self::CI_FLAG) && $env->get(self::AZURE_PIPELINES_FLAG) === null) || $git_info === null) {
+            return null;
+        }
 
-    #[Override]
-    public function collect(Env $env, ?GitInfo $git_info): BuildInfo
-    {
-        $repository = $git_info === null ? null : self::getGithubRepository($git_info);
-
-        if ($git_info === null || $repository === null) {
-            throw new LogicException('The environment of a generic CI has the git info of a GitHub repository');
+        $repository = self::getGithubRepository($git_info);
+        if ($repository === null) {
+            return null;
         }
 
         $branch = $git_info->getBranch();

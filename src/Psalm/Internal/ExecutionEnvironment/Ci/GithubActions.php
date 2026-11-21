@@ -43,18 +43,13 @@ final class GithubActions implements CiProvider
 
     private const PULL_REQUEST_EVENTS = ['pull_request', 'pull_request_target'];
 
-    /**
-     * @psalm-mutation-free
-     */
     #[Override]
-    public function detects(Env $env, ?GitInfo $git_info): bool
+    public function collect(Env $env, ?GitInfo $git_info): ?BuildInfo
     {
-        return $env->get(self::FLAG) !== null;
-    }
+        if ($env->get(self::FLAG) === null) {
+            return null;
+        }
 
-    #[Override]
-    public function collect(Env $env, ?GitInfo $git_info): BuildInfo
-    {
         $ref = $env->get(self::REF) ?? '';
         $branch = self::getBranch($ref);
 

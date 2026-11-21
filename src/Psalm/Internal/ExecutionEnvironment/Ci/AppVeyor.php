@@ -28,14 +28,12 @@ final class AppVeyor implements CiProvider
     private const PULL_REQUEST_BRANCH = 'APPVEYOR_PULL_REQUEST_HEAD_REPO_BRANCH';
 
     #[Override]
-    public function detects(Env $env, ?GitInfo $git_info): bool
+    public function collect(Env $env, ?GitInfo $git_info): ?BuildInfo
     {
-        return $env->isTruthy(self::FLAG) && $env->get(self::BUILD_NUMBER) !== null;
-    }
+        if (!$env->isTruthy(self::FLAG) || $env->get(self::BUILD_NUMBER) === null) {
+            return null;
+        }
 
-    #[Override]
-    public function collect(Env $env, ?GitInfo $git_info): BuildInfo
-    {
         return new BuildInfo(
             ciName: 'AppVeyor',
             branch: $env->get(self::PULL_REQUEST_BRANCH, self::BRANCH),

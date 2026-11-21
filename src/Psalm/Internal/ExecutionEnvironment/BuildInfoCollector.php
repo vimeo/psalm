@@ -62,8 +62,10 @@ final class BuildInfoCollector
     public function collect(?GitInfo $git_info = null): array
     {
         foreach ($this->providers as $provider) {
-            if ($provider->detects($this->env, $git_info)) {
-                return $provider->collect($this->env, $git_info)->toArray();
+            $build_info = $provider->collect($this->env, $git_info);
+
+            if ($build_info !== null) {
+                return $build_info->toArray();
             }
         }
 

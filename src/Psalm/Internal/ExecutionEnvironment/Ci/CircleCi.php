@@ -29,14 +29,12 @@ final class CircleCi implements CiProvider
     private const BRANCH = 'CIRCLE_BRANCH';
 
     #[Override]
-    public function detects(Env $env, ?GitInfo $git_info): bool
+    public function collect(Env $env, ?GitInfo $git_info): ?BuildInfo
     {
-        return $env->isTruthy(self::FLAG) && $env->get(self::BUILD_NUMBER) !== null;
-    }
+        if (!$env->isTruthy(self::FLAG) || $env->get(self::BUILD_NUMBER) === null) {
+            return null;
+        }
 
-    #[Override]
-    public function collect(Env $env, ?GitInfo $git_info): BuildInfo
-    {
         return new BuildInfo(
             ciName: 'circleci',
             branch: $env->get(self::BRANCH),

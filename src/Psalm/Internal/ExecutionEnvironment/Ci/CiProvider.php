@@ -17,16 +17,9 @@ use Psalm\SourceControl\Git\GitInfo;
 interface CiProvider
 {
     /**
-     * Whether the environment is the one of this CI service.
+     * The build info of the CI service, or null when the environment is not the one of this CI service.
      *
      * @param ?GitInfo $git_info the git info of the checkout
      */
-    public function detects(Env $env, ?GitInfo $git_info): bool;
-
-    /**
-     * The build info of the CI service. Only valid when it detects the environment.
-     *
-     * @param ?GitInfo $git_info the git info of the checkout
-     */
-    public function collect(Env $env, ?GitInfo $git_info): BuildInfo;
+    public function collect(Env $env, ?GitInfo $git_info): ?BuildInfo;
 }
