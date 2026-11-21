@@ -220,7 +220,12 @@ final class MatchAnalyzer
             }
 
             $ternary = new VirtualTernary(
-                self::convertCondsToConditional($arm->conds, $match_condition, $arm->getAttributes(), $is_match_on_a_bool),
+                self::convertCondsToConditional(
+                    $arm->conds,
+                    $match_condition,
+                    $arm->getAttributes(),
+                    $is_match_on_a_bool,
+                ),
                 $arm->body,
                 $ternary,
                 $arm->getAttributes(),
