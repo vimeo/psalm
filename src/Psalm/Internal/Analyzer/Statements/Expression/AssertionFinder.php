@@ -277,10 +277,10 @@ final class AssertionFinder
             return [];
         }
 
-        // `($a['k'] ?? false)` is truthy when `$a['k']` is set and truthy, as for `!empty($a['k'])`
+        // `($a['k'] ?? false)` is truthy when `$a['k']` is set and truthy, as for `!empty($a['k'])`; the other falsy
+        // defaults (`?? 0`, `?? ''`, `?? []`) mean the same
         if ($conditional instanceof PhpParser\Node\Expr\BinaryOp\Coalesce
-            && $conditional->right instanceof PhpParser\Node\Expr\ConstFetch
-            && in_array(strtolower($conditional->right->name->toString()), ['false', 'null'], true)
+            && FormulaGenerator::isFalsyLiteral($conditional->right)
             && ($coalesced_var_name = ExpressionIdentifier::getExtendedVarId(
                 $conditional->left,
                 $this_class_name,

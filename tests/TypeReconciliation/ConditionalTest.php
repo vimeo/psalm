@@ -196,6 +196,20 @@ final class ConditionalTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'strictFalseComparisonOfACoalesceWithNullIsReachableAfterATruthyCoalesce' => [
+                'code' => '<?php
+                    /** @param array<string, mixed> $context */
+                    function g(array $context): void {
+                        if ($context["k"] ?? false) {
+                            echo 0;
+                        } elseif (false !== ($context["k"] ?? null)) {
+                            echo 1;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.2',
+            ],
             'truthyCoalesceWithFalseEstablishesTheKey' => [
                 'code' => '<?php
                     /** @param array{k?: string} $a */
@@ -214,6 +228,55 @@ final class ConditionalTest extends TestCase
                         }
 
                         return $a["k"];
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['RiskyTruthyFalsyComparison'],
+            ],
+            'truthyCoalesceWithAnotherFalsyDefaultEstablishesTheKey' => [
+                'code' => '<?php
+                    /** @param array{k?: string} $a */
+                    function emptyString(array $a): string {
+                        if (($a["k"] ?? "") && strlen($a["k"]) > 1) {
+                            return $a["k"];
+                        }
+
+                        return "";
+                    }
+
+                    /** @param array{k?: string} $a */
+                    function zeroString(array $a): string {
+                        if (($a["k"] ?? "0") && strlen($a["k"]) > 1) {
+                            return $a["k"];
+                        }
+
+                        return "";
+                    }
+
+                    /** @param array{k?: int} $a */
+                    function zero(array $a): int {
+                        if (($a["k"] ?? 0) && $a["k"] > 1) {
+                            return $a["k"];
+                        }
+
+                        return 0;
+                    }
+
+                    /** @param array{k?: float} $a */
+                    function zeroFloat(array $a): float {
+                        if (($a["k"] ?? 0.0) && $a["k"] > 1) {
+                            return $a["k"];
+                        }
+
+                        return 0.0;
+                    }
+
+                    /** @param array{k?: list<int>} $a */
+                    function emptyArray(array $a): int {
+                        if (($a["k"] ?? []) && count($a["k"]) > 1) {
+                            return count($a["k"]);
+                        }
+
+                        return 0;
                     }',
                 'assertions' => [],
                 'ignored_issues' => ['RiskyTruthyFalsyComparison'],

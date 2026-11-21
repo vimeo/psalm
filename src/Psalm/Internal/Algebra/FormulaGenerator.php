@@ -1579,7 +1579,8 @@ final class FormulaGenerator
         return $expr instanceof PhpParser\Node\Expr\ConstFetch && strtolower($expr->name->getFirst()) === 'null';
     }
 
-    private static function isFalsyLiteral(PhpParser\Node\Expr $expr): bool
+    /** @psalm-pure */
+    public static function isFalsyLiteral(PhpParser\Node\Expr $expr): bool
     {
         return ($expr instanceof PhpParser\Node\Expr\ConstFetch
                 && in_array(strtolower($expr->name->getFirst()), ['false', 'null'], true))
