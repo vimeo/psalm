@@ -300,6 +300,7 @@ final class LanguageServer
             $autoloaders,
         );
         $config->setIncludeCollector($include_collector);
+        CliUtils::initPhpVersion($options, $config);
 
         if ($config->resolve_from_config_file) {
             $current_dir = $config->base_dir;

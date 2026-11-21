@@ -6,6 +6,8 @@ namespace Psalm\Tests\Cache;
 
 use Psalm\Config;
 use Psalm\Internal\Cache;
+use Psalm\Internal\Cache\AnalysisIdentity;
+use Psalm\Internal\CacheMode;
 use Psalm\Internal\Provider\ClassLikeStorageCacheProvider;
 use Psalm\Internal\Provider\FileStorageCacheProvider;
 use Psalm\Storage\ClassLikeStorage;
@@ -15,8 +17,6 @@ use Psalm\Storage\PropertyStorage;
 use Psalm\Tests\TestCase;
 use Psalm\Type;
 
-use function dirname;
-use function filemtime;
 use function hash;
 use function sys_get_temp_dir;
 use function uniqid;
@@ -25,8 +25,14 @@ use const DIRECTORY_SEPARATOR;
 
 final class PropertyHookStorageCacheTest extends TestCase
 {
+    /**
+     * Storages cached before setter parameter types were stored are of another engine, so of another analysis identity
+     */
     public function testStoragesWithoutSetterParameterTypesAreInvalidated(): void
     {
+        $this->assertContains('Storage/PropertyStorage.php', AnalysisIdentity::ENGINE_FILES);
+        $this->assertContains('Storage/PropertyHookStorage.php', AnalysisIdentity::ENGINE_FILES);
+
         $cache_directory = sys_get_temp_dir() . DIRECTORY_SEPARATOR . uniqid('psalm-hook-storage-', true);
         $config = Config::loadFromXML(
             __DIR__ . DIRECTORY_SEPARATOR . 'test_base_dir',
@@ -38,13 +44,8 @@ final class PropertyHookStorageCacheTest extends TestCase
                 XML,
         );
         $config->array_cache = false;
-        $storage_dir = dirname(__DIR__, 2) . '/src/Psalm/Storage/';
-        // These lists mirror the providers before PropertyStorage and PropertyHookStorage
-        // became cache dependencies. Keep this legacy snapshot to seed the old cache namespace.
-        $dependencies = [''];
-        foreach (['FileStorage', 'FunctionLikeStorage', 'ClassLikeStorage', 'MethodStorage'] as $class) {
-            $dependencies[] = filemtime($storage_dir . $class . '.php');
-        }
+        // the directory of the identity the older engine had
+        $old_identity = (string) $config->getCacheDirectory() . DIRECTORY_SEPARATOR . 'older-engine';
 
         $classes = $files = $old_classes = $old_files = null;
         try {
@@ -56,11 +57,10 @@ final class PropertyHookStorageCacheTest extends TestCase
             $storage->properties['value'] = $property;
             $file_storage = new FileStorage($path);
 
-            // Seed the pre-hook-schema cache, including the file entry that would otherwise skip scanning.
-            $old_classes = new Cache($config, 'classlike_cache', $dependencies);
+            // Seed the storages of the older engine, including the file entry that would otherwise skip scanning.
+            $old_classes = new Cache($config, '', [], CacheMode::Persistent, $old_identity . '/classlike_cache/old');
             $old_classes->saveItem($path . "\0contract", $storage, hash('xxh128', $code));
-            $dependencies[] = filemtime($storage_dir . 'FunctionLikeParameter.php');
-            $old_files = new Cache($config, 'file_cache', $dependencies);
+            $old_files = new Cache($config, '', [], CacheMode::Persistent, $old_identity . '/file_cache/old');
             $old_files->saveItem($path, $file_storage, hash('xxh128', $code));
             $old_classes = $old_files = null;
 

@@ -31,6 +31,8 @@ use function str_contains;
 use function strtolower;
 
 use const DIRECTORY_SEPARATOR;
+use const PHP_MAJOR_VERSION;
+use const PHP_MINOR_VERSION;
 
 final class TestConfig extends Config
 {
@@ -60,6 +62,8 @@ final class TestConfig extends Config
         $this->strict_binary_operands = false;
 
         $this->base_dir = (string) getcwd();
+        // the composer.json of the base directory, the Psalm checkout the tests run in, is not the analysed code's
+        $this->setPhpVersionOverride(PHP_MAJOR_VERSION . '.' . PHP_MINOR_VERSION, 'tests');
 
         if (!self::$cached_project_files) {
             self::$cached_project_files = ProjectFileFilter::loadFromXMLElement(

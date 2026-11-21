@@ -14,19 +14,16 @@ use Psalm\Exception\ConfigCreationException;
 use Psalm\Exception\ConfigException;
 use Psalm\Internal\Analyzer\IssueData;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
+use Psalm\Internal\Cache;
+use Psalm\Internal\CacheMode;
 use Psalm\Internal\CliUtils;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Internal\Codebase\ReferenceMapGenerator;
-use Psalm\Internal\Composer;
 use Psalm\Internal\ErrorHandler;
 use Psalm\Internal\Fork\PsalmRestarter;
 use Psalm\Internal\IncludeCollector;
 use Psalm\Internal\Preloader;
-use Psalm\Internal\Provider\ClassLikeStorageCacheProvider;
 use Psalm\Internal\Provider\FileProvider;
-use Psalm\Internal\Provider\FileReferenceCacheProvider;
-use Psalm\Internal\Provider\FileStorageCacheProvider;
-use Psalm\Internal\Provider\ParserCacheProvider;
 use Psalm\Internal\Provider\Providers;
 use Psalm\Internal\Stubs\Generator\StubsGenerator;
 use Psalm\IssueBuffer;
@@ -64,6 +61,7 @@ use function gc_collect_cycles;
 use function gc_disable;
 use function getcwd;
 use function getenv;
+use function glob;
 use function implode;
 use function ini_get;
 use function is_array;
@@ -89,6 +87,7 @@ use function trim;
 use function wordwrap;
 
 use const DIRECTORY_SEPARATOR;
+use const GLOB_ONLYDIR;
 use const JSON_THROW_ON_ERROR;
 use const LC_CTYPE;
 use const PHP_EOL;
@@ -371,18 +370,19 @@ final class Psalm
             ? $options['find-references-to']
             : null;
 
-        self::configureShepherd($config, $options, $plugins);
-
+        // clearing needs no analysis options, so an unsupported PHP version does not keep the cache from being cleared
         if (isset($options['clear-cache'])) {
             self::clearCache($config);
         }
 
-        if (isset($options['consolidate-cache'])) {
-            self::consolidateCache($config, $current_dir);
-        }
-
         if (isset($options['clear-global-cache'])) {
             self::clearGlobalCache($config);
+        }
+
+        ProjectBootstrap::applyAnalysisOptions($options, $config, $plugins, $run_taint_analysis);
+
+        if (isset($options['consolidate-cache'])) {
+            self::consolidateCache($config);
         }
 
         $providers = ProjectBootstrap::initProviders($options, $config, $current_dir);
@@ -409,14 +409,14 @@ final class Psalm
             $threads,
             $scanThreads,
             $progress,
-            $plugins,
             $find_references_to,
-            $run_taint_analysis,
         );
+
+        self::configureShepherd($config, $options);
 
         $start_time = microtime(true);
 
-        if ($config->run_taint_analysis || $run_taint_analysis) {
+        if ($config->run_taint_analysis) {
             $is_diff = false;
         }
 
@@ -950,16 +950,22 @@ final class Psalm
     }
 
 
-    private static function consolidateCache(Config $config, string $current_dir): never
+    /**
+     * Consolidates every cache of every analysis identity this Psalm can read, whatever options and dependencies made
+     * them: the caches are opened where they are, never created
+     */
+    private static function consolidateCache(Config $config): never
     {
         $cache_directory = $config->getCacheDirectory();
 
         if ($cache_directory !== null) {
-            $lock = Composer::getLockFile($current_dir);
-            (new ParserCacheProvider($config, $lock))->consolidate();
-            (new FileStorageCacheProvider($config, $lock))->consolidate();
-            (new ClassLikeStorageCacheProvider($config, $lock))->consolidate();
-            (new FileReferenceCacheProvider($config, $lock))->consolidate();
+            $identity = $config->getAnalysisIdentity();
+            foreach ($identity->getDirectoriesWithTheSameEngine($cache_directory) as $directory) {
+                $caches = glob($directory . DIRECTORY_SEPARATOR . '*' . DIRECTORY_SEPARATOR . '*', GLOB_ONLYDIR);
+                foreach ($caches === false ? [] : $caches as $cache) {
+                    (new Cache($config, '', [], CacheMode::Persistent, $cache))->consolidate();
+                }
+            }
         }
         echo 'Cache consolidated' . PHP_EOL;
         exit;
@@ -1276,14 +1282,15 @@ final class Psalm
         }
     }
 
-    private static function configureShepherd(Config $config, array $options, array &$plugins): void
+    /** Shepherd only reports after the analysis: it is added after the caches opened, so it is not in their identity */
+    private static function configureShepherd(Config $config, array $options): void
     {
         $is_shepherd_enabled = isset($options['shepherd']) || getenv('PSALM_SHEPHERD');
         if (! $is_shepherd_enabled) {
             return;
         }
 
-        $plugins[] = Path::canonicalize(__DIR__ . '/../../Plugin/Shepherd.php');
+        $config->addPluginPath(Path::canonicalize(__DIR__ . '/../../Plugin/Shepherd.php'));
 
         /** @psalm-suppress MixedAssignment */
         $custom_shepherd_endpoint = ($options['shepherd'] ?? CliUtils::chosenByOperator(getenv('PSALM_SHEPHERD')));

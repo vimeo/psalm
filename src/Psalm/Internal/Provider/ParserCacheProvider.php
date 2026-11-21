@@ -10,9 +10,6 @@ use Psalm\Internal\Cache;
 use Psalm\Internal\CacheMode;
 
 use function array_map;
-use function filemtime;
-
-use const DIRECTORY_SEPARATOR;
 
 /** @internal */
 final class ParserCacheProvider
@@ -29,13 +26,7 @@ final class ParserCacheProvider
 
     public function __construct(Config $config, string $composerLock, CacheMode $mode = CacheMode::Persistent)
     {
-        $deps = [
-            $composerLock,
-            PHP_PARSER_VERSION,
-            (string) filemtime(__DIR__.DIRECTORY_SEPARATOR.'StatementsProvider.php'),
-        ];
-
-        $this->stmtCache = new Cache($config, self::PARSER_CACHE_DIRECTORY, $deps, $mode);
+        $this->stmtCache = new Cache($config, self::PARSER_CACHE_DIRECTORY, [$composerLock], $mode);
     }
 
     public function consolidate(): void

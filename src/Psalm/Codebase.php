@@ -358,6 +358,7 @@ final class Codebase
         if ($progress === null) {
             $progress = new VoidProgress();
         }
+        [$this->analysis_php_version_id, $this->php_version_source] = $config->getAnalysisPhpVersion();
         $this->file_storage_provider = $providers->file_storage_provider;
         $this->classlike_storage_provider = $providers->classlike_storage_provider;
         $this->progress = $progress;

@@ -8,16 +8,9 @@ use Psalm\Config;
 use Psalm\Internal\Cache;
 use Psalm\Internal\CacheMode;
 use Psalm\Storage\FileStorage;
-use UnexpectedValueException;
 
-use function array_merge;
-use function dirname;
-use function file_exists;
-use function filemtime;
 use function hash;
 use function strtolower;
-
-use const DIRECTORY_SEPARATOR;
 
 /**
  * @internal
@@ -30,40 +23,9 @@ final class FileStorageCacheProvider
 
     public function __construct(Config $config, string $composerLock, CacheMode $mode = CacheMode::Persistent)
     {
-        $storage_dir = dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . 'Storage' . DIRECTORY_SEPARATOR;
-
-        $dependent_files = [
-            $storage_dir . 'FileStorage.php',
-            $storage_dir . 'FunctionLikeStorage.php',
-            $storage_dir . 'ClassLikeStorage.php',
-            $storage_dir . 'MethodStorage.php',
-            $storage_dir . 'PropertyStorage.php',
-            $storage_dir . 'PropertyHookStorage.php',
-            $storage_dir . 'EnumCaseStorage.php',
-            $storage_dir . 'FunctionLikeParameter.php',
-        ];
-
-        if ($config->eventDispatcher->hasAfterClassLikeVisitHandlers()) {
-            $dependent_files = array_merge($dependent_files, $config->plugin_paths);
-        }
-
-        $dependencies = [$composerLock];
-        foreach ($dependent_files as $dependent_file_path) {
-            if (!file_exists($dependent_file_path)) {
-                throw new UnexpectedValueException($dependent_file_path . ' must exist');
-            }
-
-            $dependencies []= (int) filemtime($dependent_file_path);
-        }
-
-        $this->cache = new Cache($config, self::FILE_STORAGE_CACHE_DIRECTORY, $dependencies, $mode);
+        $this->cache = new Cache($config, self::FILE_STORAGE_CACHE_DIRECTORY, [$composerLock], $mode);
     }
 
-    public function consolidate(): void
-    {
-        $this->cache->consolidate();
-    }
-    
     public function writeToCache(FileStorage $storage, string $file_contents): void
     {
         $this->cache->saveItem(strtolower($storage->file_path), $storage, hash('xxh128', $file_contents));

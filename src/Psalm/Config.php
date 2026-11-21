@@ -35,6 +35,7 @@ use Psalm\Exception\ConfigNotFoundException;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\FileAnalyzer;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
+use Psalm\Internal\Cache\AnalysisIdentity;
 use Psalm\Internal\CliUtils;
 use Psalm\Internal\Composer;
 use Psalm\Internal\EventDispatcher;
@@ -84,6 +85,7 @@ use function array_merge;
 use function array_pad;
 use function array_pop;
 use function array_shift;
+use function array_values;
 use function assert;
 use function basename;
 use function chdir;
@@ -160,7 +162,6 @@ use const LIBXML_NOWARNING;
 use const LOCK_EX;
 use const PHP_EOL;
 use const PHP_VERSION_ID;
-use const PSALM_VERSION;
 use const SCANDIR_SORT_NONE;
 
 /**
@@ -312,6 +313,16 @@ final class Config
      * The PHP version to assume as declared in the config file
      */
     private ?string $configured_php_version = null;
+
+    /**
+     * The PHP version given on the command line (or by the tests), which overrides phpVersion and composer.json
+     *
+     * @var array{string, 'cli'|'tests'}|null
+     */
+    private ?array $php_version_override = null;
+
+    /** The analysis identity, taken when the first cache opens */
+    private ?AnalysisIdentity $analysis_identity = null;
 
     /**
      * @var array<int, string>
@@ -572,6 +583,7 @@ final class Config
     /** @var list<ClassLoader> $autoloaders */
     private array $autoloaders = [];
 
+    /** A digest of the XML the config was loaded from, XIncludes expanded */
     public string $hash = '';
 
     /** Whether loading a config adds the paths passed on the command line to its project files */
@@ -840,7 +852,6 @@ final class Config
 
         try {
             $config = self::loadFromXML($base_dir, $file_contents, $current_dir, $file_path);
-            $config->hash = hash('xxh3', $file_contents . PSALM_VERSION);
         } catch (ConfigException $e) {
             throw new ConfigException(
                 'Problem parsing ' . $file_path . ":\n" . '  ' . $e->getMessage(),
@@ -851,13 +862,23 @@ final class Config
     }
 
     /**
-     * Computes the hash to use for a cache folder from CLI flags and from the config file's xml contents
-     *
-     * @psalm-mutation-free
+     * The fingerprint of the analysis identity of this config (its settings, the PHP version, the runtime, Psalm, the
+     * dependencies and the plugins): every cache directory is keyed by it. It is taken the first time a cache opens
+     * (or this is called) and kept for the life of the config, so that the plugins and stubs that change the config
+     * later in the run do not change it. It reads files, so it is not mutation-free.
      */
     public function computeHash(): string
     {
-        return hash('xxh3', $this->hash . ':' . $this->level);
+        return $this->getAnalysisIdentity()->getFingerprint();
+    }
+
+    /**
+     * @internal
+     * @see computeHash()
+     */
+    public function getAnalysisIdentity(): AnalysisIdentity
+    {
+        return $this->analysis_identity ??= AnalysisIdentity::of($this);
     }
 
     /**
@@ -1151,6 +1172,7 @@ final class Config
         $config = new static();
 
         $dom_document = self::loadDomDocument($base_dir, $file_contents);
+        $config->hash = hash('xxh128', (string) $dom_document->saveXML());
 
         if (null !== $config_path) {
             self::processConfigDeprecations(
@@ -1937,6 +1959,34 @@ final class Config
     public function getPluginClasses(): array
     {
         return $this->plugin_classes;
+    }
+
+    /**
+     * The files of the plugins: plugin files, the files of plugin classes the autoloaders find, and the scanners and
+     * analyzers of file extensions
+     *
+     * @internal
+     * @return list<string>
+     */
+    public function getPluginFiles(): array
+    {
+        $files = [
+            ...array_values($this->plugin_paths),
+            ...array_values($this->filetype_scanner_paths),
+            ...array_values($this->filetype_analyzer_paths),
+        ];
+        foreach ($this->plugin_classes as $plugin_class) {
+            $file = $this->getComposerFilePathForClassLike($plugin_class['class']);
+            // as loadPlugin(), a class Composer does not map may still be loaded or autoloadable
+            if ($file === false && class_exists($plugin_class['class'])) {
+                $file = (new ReflectionClass($plugin_class['class']))->getFileName();
+            }
+            if ($file !== false) {
+                $files[] = $file;
+            }
+        }
+
+        return $files;
     }
 
     public function processPluginFileExtensions(ProjectAnalyzer $projectAnalyzer): void
@@ -3702,6 +3752,50 @@ final class Config
     public function getPhpVersionFromConfig(): ?string
     {
         return $this->configured_php_version;
+    }
+
+    /**
+     * Sets the PHP version given on the command line (or by the tests), which overrides phpVersion and composer.json
+     *
+     * @internal
+     * @param 'cli'|'tests' $source
+     * @throws UnexpectedValueException if it is not a version, or not one Psalm supports
+     * @psalm-capabilities read-props|write-this-props|write-refs
+     */
+    public function setPhpVersionOverride(string $version, string $source = 'cli'): void
+    {
+        ProjectAnalyzer::getPhpVersionId($version);
+        $this->php_version_override = [$version, $source];
+    }
+
+    /**
+     * The PHP version to analyse for, and where it comes from: the command line, else phpVersion, else composer.json,
+     * else the PHP that runs Psalm
+     *
+     * @internal
+     * @return array{int, 'cli'|'tests'|'config'|'composer'|'runtime'}
+     * @throws ConfigException if phpVersion is the version to analyse for, and not one Psalm supports
+     */
+    public function getAnalysisPhpVersion(): array
+    {
+        if ($this->php_version_override !== null) {
+            return [ProjectAnalyzer::getPhpVersionId($this->php_version_override[0]), $this->php_version_override[1]];
+        }
+
+        if ($this->configured_php_version !== null) {
+            try {
+                return [ProjectAnalyzer::getPhpVersionId($this->configured_php_version), 'config'];
+            } catch (UnexpectedValueException $e) {
+                throw new ConfigException('phpVersion: ' . $e->getMessage(), 0, $e);
+            }
+        }
+
+        $composer_version = $this->getPHPVersionFromComposerJson();
+        if ($composer_version !== null) {
+            return [ProjectAnalyzer::getPhpVersionId($composer_version), 'composer'];
+        }
+
+        return [PHP_VERSION_ID, 'runtime'];
     }
 
     /**

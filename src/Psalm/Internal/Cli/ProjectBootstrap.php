@@ -95,10 +95,45 @@ final class ProjectBootstrap
     }
 
     /**
+     * Writes the options that change what the analysis finds into the config, before the caches open: they are a part
+     * of the analysis identity, which keys the caches
+     *
+     * @param array<mixed> $plugins paths to plugin files
+     */
+    public static function applyAnalysisOptions(
+        array $options,
+        Config $config,
+        array $plugins,
+        bool $run_taint_analysis,
+    ): void {
+        CliUtils::initPhpVersion($options, $config);
+
+        /** @var string $plugin_path */
+        foreach ($plugins as $plugin_path) {
+            $config->addPluginPath($plugin_path);
+        }
+
+        if ($run_taint_analysis) {
+            $config->run_taint_analysis = true;
+        }
+
+        if (self::shouldFindUnusedCode($options, $config) !== false) {
+            $config->find_unused_code = true;
+        }
+
+        if (isset($options['find-unused-variables'])) {
+            $config->find_unused_variables = true;
+        }
+
+        if (isset($options['find-unused-psalm-suppress'])) {
+            $config->find_unused_psalm_suppress = true;
+        }
+    }
+
+    /**
      * @param list<ReportOptions> $file_report_options
      * @param int<1, max> $threads
      * @param int<1, max> $scan_threads
-     * @param array<mixed> $plugins paths to plugin files
      */
     public static function createProjectAnalyzer(
         array $options,
@@ -109,9 +144,7 @@ final class ProjectBootstrap
         int $threads,
         int $scan_threads,
         Progress $progress,
-        array $plugins,
         ?string $find_references_to,
-        bool $run_taint_analysis,
     ): ProjectAnalyzer {
         $find_unused_code = self::shouldFindUnusedCode($options, $config);
 
@@ -125,22 +158,13 @@ final class ProjectBootstrap
             $progress,
         );
 
-        CliUtils::initPhpVersion($options, $config, $project_analyzer);
-
         self::configureProjectAnalyzer(
             $options,
             $config,
             $project_analyzer,
             $find_references_to,
             $find_unused_code,
-            isset($options['find-unused-variables']),
-            $run_taint_analysis,
         );
-
-        /** @var string $plugin_path */
-        foreach ($plugins as $plugin_path) {
-            $config->addPluginPath($plugin_path);
-        }
 
         return $project_analyzer;
     }
@@ -209,8 +233,6 @@ final class ProjectBootstrap
         ProjectAnalyzer $project_analyzer,
         ?string $find_references_to,
         false|string $find_unused_code,
-        bool $find_unused_variables,
-        bool $run_taint_analysis,
     ): void {
         if (isset($options['generate-json-map']) && is_string($options['generate-json-map'])) {
             $project_analyzer->getCodebase()->store_node_types = true;
@@ -233,7 +255,7 @@ final class ProjectBootstrap
             $project_analyzer->getCodebase()->reportUnusedCode($find_unused_code);
         }
 
-        if ($config->find_unused_variables || $find_unused_variables) {
+        if ($config->find_unused_variables) {
             $project_analyzer->getCodebase()->reportUnusedVariables();
         }
 
@@ -243,11 +265,11 @@ final class ProjectBootstrap
         $project_analyzer->getCodebase()->all_constants_global = $config->all_constants_global;
         $project_analyzer->getCodebase()->all_functions_global = $config->all_functions_global;
 
-        if ($config->run_taint_analysis || $run_taint_analysis) {
+        if ($config->run_taint_analysis) {
             $project_analyzer->trackTaintedInputs();
         }
 
-        if ($config->find_unused_psalm_suppress || isset($options['find-unused-psalm-suppress'])) {
+        if ($config->find_unused_psalm_suppress) {
             $project_analyzer->trackUnusedSuppressions();
         }
     }

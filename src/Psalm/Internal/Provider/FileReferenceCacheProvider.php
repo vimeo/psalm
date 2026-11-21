@@ -38,11 +38,6 @@ final class FileReferenceCacheProvider
         $this->cache = new Cache($config, 'file_reference', [$composerLock], $mode);
     }
 
-    public function consolidate(): void
-    {
-        $this->cache->consolidate();
-    }
-
     public function getCachedFileReferences(): ?array
     {
         return $this->cache->getItem(self::REFERENCE_CACHE_NAME);

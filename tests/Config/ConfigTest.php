@@ -2646,6 +2646,23 @@ final class ConfigTest extends DeferredAnalyzerTestCase
         $project_analyzer->setPhpVersion('8.7', 'tests');
     }
 
+    public function testTheCommandLineVersionOverridesAnUnsupportedPhpVersion(): void
+    {
+        $config = Config::loadFromXML(dirname(__DIR__, 2), '<?xml version="1.0"?><psalm phpVersion="9.9"></psalm>');
+        $config->setPhpVersionOverride('8.1');
+
+        $this->assertSame([8_01_00, 'cli'], $config->getAnalysisPhpVersion());
+    }
+
+    public function testAnUnsupportedPhpVersionIsAConfigErrorWhenItIsTheVersionToAnalyseFor(): void
+    {
+        $config = Config::loadFromXML(dirname(__DIR__, 2), '<?xml version="1.0"?><psalm phpVersion="9.9"></psalm>');
+
+        $this->expectException(ConfigException::class);
+        $this->expectExceptionMessage('phpVersion: Psalm supports PHP version ">=5.4". The specified version 9.9');
+        $config->getAnalysisPhpVersion();
+    }
+
     /**
      * @return array<string, array{array<string, string>, string, list<string>}>
      * @psalm-pure

@@ -324,6 +324,7 @@ final class Refactor
             Report::TYPE_CONSOLE,
             $autoloaders,
         );
+        CliUtils::initPhpVersion($options, $config);
 
         if (isset($options['no-cache'])) {
             $config->cache_directory = null;

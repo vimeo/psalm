@@ -59,6 +59,20 @@ Data from the last run is stored in the *cache directory*, which may be set in [
 If you are running Psalm on a build server, you may want to configure the server to ensure that the cache directory
 is preserved between runs.
 
+The cache directory holds a directory per *analysis identity*: a fingerprint of the configuration (with its XIncluded
+files and the command line options that change the analysis, like `--php-version`, `--error-level` and `--plugin`),
+the PHP version analysed for, the PHP that runs Psalm (its version, extensions and disabled functions and classes),
+Psalm itself, `composer.lock` and the plugin files. A run never reads data stored under another identity, so it gives
+the same answer with a cache as without one. The `identity.json` file of each directory lists the components its
+fingerprint was made from.
+
+A plugin counts with its entry file and, when that file is in a directory of its own inside the project (like
+`tools/psalm/`, or a subdirectory of the project files such as `src/Psalm/`), with every PHP file of that directory,
+except its `vendor`, `node_modules` and hidden directories. Editing any of these files makes the next run a cold one.
+A plugin whose directory is the project root, is in the vendor directory, is outside the project, or is or contains a
+directory of project files counts with its entry file only: when such a plugin has its hooks in other files, run Psalm
+with `--no-cache` (or `--clear-cache`) after changing them.
+
 Running them together (e.g. `--threads=8 --diff`) will result in the fastest possible Psalm run.
 
 ### Consolidating the cache
@@ -72,6 +86,8 @@ vendor/bin/psalm                      # analyses, writes cache entries as separa
 vendor/bin/psalm --consolidate-cache  # no analysis: merges them into an index and a data file per cache
 # save the cache directory with your CI's cache step
 ```
+
+`--consolidate-cache` consolidates the caches of every analysis identity, whatever options the analysis runs were given.
 
 A run reads the index of a consolidated cache and then only the entries it needs.
 Entries written by later runs are stored as separate files again, so consolidate after the last run before saving the cache.

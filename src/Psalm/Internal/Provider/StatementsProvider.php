@@ -95,7 +95,8 @@ final class StatementsProvider
      */
     private const MAX_KEPT_NESTING = 128;
 
-    private static ?Parser $parser = null;
+    /** @var array{int, Parser}|null the parser, and the PHP version it parses */
+    private static ?array $parser = null;
 
     /**
      * @psalm-mutation-free
@@ -419,12 +420,13 @@ final class StatementsProvider
         ?array  $existing_statements = null,
         ?array  $file_changes = null,
     ): array {
-        if (!self::$parser) {
+        if (self::$parser === null || self::$parser[0] !== $analysis_php_version_id) {
             $major_version = Codebase::transformPhpVersionId($analysis_php_version_id, 10_000);
             $minor_version = Codebase::transformPhpVersionId($analysis_php_version_id % 10_000, 100);
             $php_version = PhpVersion::fromComponents($major_version, $minor_version);
-            self::$parser = (new PhpParser\ParserFactory())->createForVersion($php_version);
+            self::$parser = [$analysis_php_version_id, (new PhpParser\ParserFactory())->createForVersion($php_version)];
         }
+        $parser = self::$parser[1];
 
         $used_cached_statements = false;
 
@@ -433,7 +435,7 @@ final class StatementsProvider
         if ($existing_statements && $file_changes && $existing_file_contents) {
             $clashing_traverser = new CustomTraverser;
             $offset_analyzer = new PartialParserVisitor(
-                self::$parser,
+                $parser,
                 $error_handler,
                 $file_changes,
                 $existing_file_contents,
@@ -448,7 +450,7 @@ final class StatementsProvider
             } else {
                 try {
                     /** @var list<Stmt> */
-                    $stmts = self::$parser->parse($file_contents, $error_handler) ?: [];
+                    $stmts = $parser->parse($file_contents, $error_handler) ?? [];
                 } catch (Throwable) {
                     $stmts = [];
 
@@ -458,7 +460,7 @@ final class StatementsProvider
         } else {
             try {
                 /** @var list<Stmt> */
-                $stmts = self::$parser->parse($file_contents, $error_handler) ?: [];
+                $stmts = $parser->parse($file_contents, $error_handler) ?? [];
             } catch (Throwable) {
                 $stmts = [];
 

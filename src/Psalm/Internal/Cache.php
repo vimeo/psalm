@@ -83,7 +83,7 @@ use const LOCK_UN;
 final class Cache
 {
     /** Changing the format of the records or the consolidated files requires changing this. */
-    private const LAYOUT_VERSION = '3';
+    public const LAYOUT_VERSION = '3';
     private const RECORD_PREFIX_LENGTH = 28;
     private const CONSOLIDATED_INDEX = 'consolidated';
     private const TEMP_SUFFIX = '.tmp';
@@ -122,11 +122,16 @@ final class Cache
 
     private readonly bool $read_only;
 
+    /**
+     * @param ?string $directory a directory of a cache to open as it is (to consolidate the caches of every analysis
+     *     identity), instead of the one $config, $subdir and $dependencies give
+     */
     public function __construct(
         Config $config,
         string $subdir,
         array $dependencies = [],
         CacheMode $mode = CacheMode::Persistent,
+        ?string $directory = null,
     ) {
         $this->serializer = $config->getCacheSerializer();
         $this->consolidated_serializer = $this->serializer;
@@ -137,22 +142,21 @@ final class Cache
             return;
         }
 
-        $dir = $mode->getDirectory($config) . DIRECTORY_SEPARATOR . $subdir;
-
-        $hash = hash_init('xxh128');
-        foreach ($dependencies as $dep) {
-            hash_update($hash, (string) $dep);
+        if ($directory === null) {
+            $hash = hash_init('xxh128');
+            foreach ($dependencies as $dep) {
+                hash_update($hash, (string) $dep);
+                hash_update($hash, "\0");
+            }
+            hash_update($hash, $this->serializer->serialize($this->serializer));
             hash_update($hash, "\0");
+            hash_update($hash, self::LAYOUT_VERSION);
+
+            $directory = $mode->getIdentityDirectory($config) . DIRECTORY_SEPARATOR . $subdir
+                . DIRECTORY_SEPARATOR . hash_final($hash);
         }
-        hash_update($hash, $config->computeHash());
-        hash_update($hash, "\0");
-        hash_update($hash, $this->serializer->serialize($this->serializer));
-        hash_update($hash, "\0");
-        hash_update($hash, self::LAYOUT_VERSION);
 
-        $dir .= DIRECTORY_SEPARATOR . hash_final($hash);
-
-        $this->dir = $dir.DIRECTORY_SEPARATOR;
+        $this->dir = $directory . DIRECTORY_SEPARATOR;
         if ($this->read_only) {
             // the lock of a cache that exists keeps consolidate() from replacing the data file under the reader;
             // --clear-cache can delete it after is_file()
