@@ -92,6 +92,7 @@ use Psalm\Node\Expr\BinaryOp\VirtualPlus;
 use Psalm\Node\Expr\BinaryOp\VirtualPow;
 use Psalm\Node\Expr\BinaryOp\VirtualShiftLeft;
 use Psalm\Node\Expr\BinaryOp\VirtualShiftRight;
+use Psalm\Node\Expr\VirtualArrayDimFetch;
 use Psalm\Node\Expr\VirtualAssign;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Storage\Assertion\Falsy;
@@ -1812,6 +1813,32 @@ final class AssignmentAnalyzer
         }
 
         return true;
+    }
+
+    /**
+     * The declared type of the items of the array a property holds that $expr fetches: what a `foreach` by reference
+     * over it may write. Null like for getReferencedPropertyType().
+     */
+    public static function getReferencedPropertyItemType(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr $expr,
+        Context $context,
+    ): ?Union {
+        if (!$expr instanceof PropertyFetch
+            && !$expr instanceof PhpParser\Node\Expr\StaticPropertyFetch
+            && !$expr instanceof ArrayDimFetch
+        ) {
+            return null;
+        }
+
+        $property_ids = [];
+
+        return self::getReferencedPropertyType(
+            $statements_analyzer,
+            new VirtualArrayDimFetch($expr, null, $expr->getAttributes()),
+            $context,
+            $property_ids,
+        );
     }
 
     /**

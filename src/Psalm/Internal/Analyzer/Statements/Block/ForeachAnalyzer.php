@@ -32,6 +32,7 @@ use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Internal\MethodIdentifier;
+use Psalm\Internal\ReferenceConstraint;
 use Psalm\Internal\Scope\LoopScope;
 use Psalm\Internal\Type\AssertionReconciler;
 use Psalm\Internal\Type\Comparator\AtomicTypeComparator;
@@ -385,6 +386,25 @@ final class ForeachAnalyzer
             // TODO support references with destructuring
             $foreach_context->references_to_external_scope['$' . $stmt->valueVar->name] = true;
             $foreach_context->forgetReferencesPossiblyBound('$' . $stmt->valueVar->name);
+
+            $iterated_var_id = ExpressionIdentifier::getExtendedVarId(
+                $stmt->expr,
+                $statements_analyzer->getFQCLN(),
+                $statements_analyzer,
+            );
+
+            // what is written to the value is written to an item of the property
+            $item_type = $iterated_var_id !== null
+                ? AssignmentAnalyzer::getReferencedPropertyItemType($statements_analyzer, $stmt->expr, $foreach_context)
+                : null;
+
+            if ($item_type !== null && !$item_type->hasMixed()) {
+                $foreach_context->byref_constraints['$' . $stmt->valueVar->name] = new ReferenceConstraint(
+                    $item_type,
+                    false,
+                    ['an item of ' . $iterated_var_id],
+                );
+            }
         }
 
         // PHP evaluates the iterated expression once, before it assigns the value and then a key of the same name
