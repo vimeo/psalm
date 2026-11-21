@@ -340,12 +340,8 @@
   <file src="src/Psalm/Internal/Analyzer/MethodComparator.php">
     <ImplicitToStringCast>
       <code><![CDATA[$guide_param_signature_type]]></code>
-      <code><![CDATA[$guide_param_signature_type]]></code>
-      <code><![CDATA[$guide_param_signature_type]]></code>
       <code><![CDATA[$guide_signature_return_type]]></code>
       <code><![CDATA[$guide_signature_return_type]]></code>
-      <code><![CDATA[$implementer_param_signature_type]]></code>
-      <code><![CDATA[$implementer_param_signature_type]]></code>
       <code><![CDATA[$implementer_param_signature_type]]></code>
     </ImplicitToStringCast>
     <RiskyTruthyFalsyComparison>
@@ -1797,7 +1793,6 @@
   <file src="src/Psalm/Internal/PhpVisitor/ReflectorVisitor.php">
     <RiskyTruthyFalsyComparison>
       <code><![CDATA[!$this->aliases->uses_start]]></code>
-      <code><![CDATA[!$this->aliases->uses_start]]></code>
       <code><![CDATA[!$this->skip_if_descendants]]></code>
       <code><![CDATA[!$this->skip_if_descendants]]></code>
       <code><![CDATA[$this->skip_if_descendants]]></code>
@@ -2163,7 +2158,6 @@
   <file src="src/Psalm/Internal/Stubs/Generator/ClassLikeStubGenerator.php">
     <RiskyTruthyFalsyComparison>
       <code><![CDATA[!$method_storage->cased_name]]></code>
-      <code><![CDATA[$method_storage->template_types]]></code>
       <code><![CDATA[$storage->parent_class]]></code>
       <code><![CDATA[$storage->template_types]]></code>
     </RiskyTruthyFalsyComparison>

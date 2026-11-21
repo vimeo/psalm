@@ -606,6 +606,17 @@ final class ExpressionAnalyzer
             return [];
         }
 
+        return self::addSuppressions($statements_analyzer, $suppressed);
+    }
+
+    /**
+     * Suppresses the issues of `@psalm-suppress` tags, and tracks them to report the ones that end up unused
+     *
+     * @param array<int, string> $suppressed the tags, by offset
+     * @return array<int, string>
+     */
+    public static function addSuppressions(StatementsAnalyzer $statements_analyzer, array $suppressed): array
+    {
         $codebase = $statements_analyzer->getCodebase();
         $new_issues = [];
 
@@ -617,7 +628,7 @@ final class ExpressionAnalyzer
 
         if ($codebase->track_unused_suppressions
             && (
-                count($new_issues) === 1
+                count($new_issues) === 1 // UnusedPsalmSuppress by itself should be marked as unused
                 || !$codebase->config->suppressesIssueType($new_issues, 'UnusedPsalmSuppress')
             )
         ) {
