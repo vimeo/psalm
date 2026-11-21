@@ -7,8 +7,7 @@ namespace Psalm\Internal\Provider\ReturnTypeProvider;
 use Override;
 use Psalm\Plugin\EventHandler\Event\FunctionReturnTypeProviderEvent;
 use Psalm\Plugin\EventHandler\FunctionReturnTypeProviderInterface;
-use Psalm\Type\Atomic\TClassString;
-use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Type\Atomic\TLiteralClassString;
 use Psalm\Type\Union;
 
 use function array_values;
@@ -48,8 +47,6 @@ final class GetParentClassReturnTypeProvider implements FunctionReturnTypeProvid
             return null;
         }
 
-        $parent_class = array_values($parent_classes)[0];
-
-        return new Union([new TClassString($parent_class, new TNamedObject($parent_class))]);
+        return new Union([new TLiteralClassString(array_values($parent_classes)[0])]);
     }
 }
