@@ -1418,6 +1418,69 @@ final class WhileTest extends TestCase
                     '$i===' => '0',
                 ],
             ],
+            'counterDecrementedByTheConditionOfALoopLeftByABreakHoldsWhatTheBreakOrTheConditionLeaves' => [
+                'code' => '<?php
+                    $i = 5;
+                    while ($i-- > 0) {
+                        if (rand(0, 1)) {
+                            break;
+                        }
+                    }
+
+                    $j = 5;
+                    while (--$j > 0) {
+                        if (rand(0, 1)) {
+                            break;
+                        }
+                    }
+
+                    $k = 5;
+                    while ($k-- > 0) {
+                        foreach ([1, 2] as $_) {
+                            if (rand(0, 1)) {
+                                break 2;
+                            }
+                        }
+                    }',
+                'assertions' => [
+                    '$i===' => 'int<-1, 4>',
+                    '$j===' => 'int<0, 4>',
+                    '$k===' => 'int<-1, 4>',
+                ],
+            ],
+            'counterReassignedBeforeABreakOfALoopDecrementingItInTheConditionKeepsThatValue' => [
+                'code' => '<?php
+                    $i = 5;
+                    while ($i-- > 0) {
+                        if (rand(0, 1)) {
+                            $i = 5;
+                            break;
+                        }
+                    }
+
+                    $j = 5;
+                    do {
+                        if (rand(0, 1)) {
+                            break;
+                        }
+                    } while ($j-- > 0);
+
+                    $k = 5;
+                    while ($k-- > 0) {
+                        try {
+                            if (rand(0, 1)) {
+                                break;
+                            }
+                        } finally {
+                            $k = 50;
+                        }
+                    }',
+                'assertions' => [
+                    '$i===' => 'int<-1, 5>',
+                    '$j===' => 'int<-1, 5>',
+                    '$k===' => 'int<0, 50>',
+                ],
+            ],
             'incrementOfSeveralLiteralsInALoopIsWidened' => [
                 'code' => '<?php
                     $i = rand(0, 1) ? 0 : 1;
