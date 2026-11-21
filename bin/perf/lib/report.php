@@ -6,6 +6,12 @@ const REPORT_MAX_BYTES = 60_000;
 const DETAILS_BUDGET_BYTES = 40_000;
 const LOG_TAIL_LINES = 15;
 const LOG_TAIL_BYTES = 2_000;
+/** Cap on an added or removed issue line, after class names are shortened. */
+const EXAMPLE_CHARS = 300;
+/** Unchanged text kept on each side of a change. */
+const CONTEXT_CHARS = 40;
+/** Cap on each side of one change. */
+const CHANGE_CHARS = 300;
 /** Wall changes within ±this are runner noise; a larger drop counts as an improvement. */
 const WALL_NOISE_PCT = 10.0;
 const VERDICT_ICONS = ['pass' => '✅', 'warn' => '⚠️', 'fail' => '❌', 'skip' => '💥'];
@@ -66,9 +72,15 @@ function fmtInt(int $n): string
     return number_format($n, 0, '', "\u{A0}");
 }
 
+/** CommonMark strips one space from each end of a code span that starts and ends with a space; NBSP keeps it. */
 function inlineCode(string $text): string
 {
-    return '`' . str_replace('`', "'", $text) . '`';
+    $text = str_replace('`', "'", $text);
+    if (strlen($text) > 1 && $text[0] === ' ' && str_ends_with($text, ' ') && trim($text) !== '') {
+        $text = "\u{A0}" . substr($text, 1);
+    }
+
+    return '`' . $text . '`';
 }
 
 /** Single-line text safe in a table cell or <summary>. */
@@ -437,11 +449,25 @@ function detailsBody(array $p): string
 
         $parts[] = implode("\n", $rows);
 
+        if ($i['changed'] > 0) {
+            $shown = array_sum(array_column($i['changed_examples'], 'count'));
+            $parts[] = "**Changed in place** ({$i['changed']})\n\n"
+                . implode("\n", array_map(changeItem(...), $i['changed_examples']))
+                . ($i['changed'] > $shown ? "\n- … and " . ($i['changed'] - $shown) . ' more' : '');
+        }
+
         foreach (['added', 'removed'] as $kind) {
             if ($i["{$kind}_examples"] !== []) {
-                $more = $i[$kind] - count($i["{$kind}_examples"]);
-                $items = array_map(static fn(string $e): string => '- ' . inlineCode($e), $i["{$kind}_examples"]);
-                $parts[] = '**' . ucfirst($kind) . "** ({$i[$kind]})\n\n" . implode("\n", $items)
+                $total = $i["unpaired_{$kind}"];
+                $more = $total - count($i["{$kind}_examples"]);
+                $items = array_map(static fn(array $e): string => '- ' . inlineCode(mb_strimwidth(
+                    "{$e['file']}:{$e['line']} {$e['type']} ({$e['severity']}): "
+                        . shortClassNames([$e['message']])[0],
+                    0,
+                    EXAMPLE_CHARS,
+                    '…',
+                )), $i["{$kind}_examples"]);
+                $parts[] = '**' . ucfirst($kind) . "** ({$total})\n\n" . implode("\n", $items)
                     . ($more > 0 ? "\n- … and {$more} more" : '');
             }
         }
@@ -479,6 +505,86 @@ function detailsBody(array $p): string
     }
 
     return implode("\n\n", $parts);
+}
+
+/**
+ * One list item for a group of identical in-place changes: the location (or locations), the issue type (`old → new`
+ * when it changed) and the message with the change marked.
+ *
+ * @param array{
+ *     old: list<array{type: string, message: string}>, new: list<array{type: string, message: string}>,
+ *     locations: list<string>, count: int
+ * } $g
+ */
+function changeItem(array $g): string
+{
+    $types = static fn(array $side): string => implode(', ', array_unique(array_column($side, 'type')));
+    [$oldTypes, $newTypes] = [$types($g['old']), $types($g['new'])];
+    $title = $oldTypes === $newTypes ? $oldTypes : "{$oldTypes} → {$newTypes}";
+    $issues = [...$g['old'], ...$g['new']];
+    $issues = array_map(
+        static fn(array $issue, string $message): array => ['message' => $message] + $issue,
+        $issues,
+        shortClassNames(array_column($issues, 'message')),
+    );
+    $old = array_slice($issues, 0, count($g['old']));
+    $body = renderChunks(changeDiff($old, array_slice($issues, count($old))));
+    if ($g['count'] === 1) {
+        return '- ' . inlineCode($g['locations'][0]) . " {$title}: {$body}";
+    }
+
+    $more = $g['count'] - count($g['locations']);
+    $self = str_contains($body, '{self}') ? ' (`{self}`: the class named after the file)' : '';
+
+    return "- {$title}, {$g['count']} places{$self}: {$body}\n  "
+        . implode(', ', array_map(inlineCode(...), $g['locations']))
+        . ($more > 0 ? ", and {$more} more" : '');
+}
+
+/**
+ * Changes as ~~`old`~~**`new`**, unchanged text around them cut to whole words, CONTEXT_CHARS or a bit more.
+ *
+ * @param list<array{string, string}> $chunks
+ */
+function renderChunks(array $chunks): string
+{
+    $out = '';
+    $last = count($chunks) - 1;
+    foreach ($chunks as $k => [$old, $new]) {
+        if ($old !== $new) {
+            $out .= ($old === '' ? '' : '~~' . inlineCode(mb_strimwidth($old, 0, CHANGE_CHARS, '…')) . '~~')
+                . ($new === '' ? '' : '**' . inlineCode(mb_strimwidth($new, 0, CHANGE_CHARS, '…')) . '**');
+            continue;
+        }
+
+        $start = contextTokens($old, false);
+        $end = contextTokens($old, true);
+        $out .= inlineCode(match (true) {
+            $last === 0 => mb_strimwidth($old, 0, EXAMPLE_CHARS, '…'),
+            $k === 0 => $end === $old ? $old : "…{$end}",
+            $k === $last => $start === $old ? $old : "{$start}…",
+            mb_strlen($start) + mb_strlen($end) < mb_strlen($old) => "{$start}…{$end}",
+            default => $old,
+        });
+    }
+
+    return $out;
+}
+
+/** Whole tokens from the start (or the end) of $text, at least CONTEXT_CHARS long. */
+function contextTokens(string $text, bool $fromEnd): string
+{
+    $tokens = messageTokens($text);
+    $kept = '';
+    foreach ($fromEnd ? array_reverse($tokens) : $tokens as $token) {
+        if (mb_strlen($kept) >= CONTEXT_CHARS) {
+            break;
+        }
+
+        $kept = $fromEnd ? $token . $kept : $kept . $token;
+    }
+
+    return $kept;
 }
 
 /**
@@ -602,7 +708,7 @@ function runCompare(array $args): int
     requireOptions($options, array_slice($names, 0, 7));
     $summary = compareAll(readJsonFile($options['plan']), $options['in'], $options['deps-changed'] === '1');
     $summary += ['base_sha' => $options['base-sha'], 'head_sha' => $options['head-sha']];
-    writeJsonFile($options['out-json'], ['schema' => 1] + $summary);
+    writeJsonFile($options['out-json'], ['schema' => 2] + $summary);
     if (file_put_contents($options['out-md'], renderReport($summary, $options['run-url'] ?? null)) === false) {
         throw new RuntimeException("cannot write {$options['out-md']}");
     }
