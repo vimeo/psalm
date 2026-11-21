@@ -233,6 +233,65 @@ final class ForeachTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.3',
             ],
+            'yieldFromAnIteratorAggregateGivenByACoalesceAssignment' => [
+                'code' => '<?php
+                    /** @implements IteratorAggregate<int, string> */
+                    final class Items implements IteratorAggregate {
+                        #[Override]
+                        public function getIterator(): Iterator {
+                            return new ArrayIterator(["a"]);
+                        }
+                    }
+
+                    final class Holder {
+                        private ?Items $items = null;
+
+                        /** @return Generator<int, string, mixed, void> */
+                        public function names(): Generator {
+                            yield from ($this->items ??= new Items());
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
+            'foreachAndYieldFromAnAggregateOfARawIteratorGivenByACoalesceAssignment' => [
+                'code' => '<?php
+                    final class RawIt implements Iterator {
+                        #[Override]
+                        public function current(): string { return "a"; }
+                        #[Override]
+                        public function key(): int { return 0; }
+                        #[Override]
+                        public function next(): void {}
+                        #[Override]
+                        public function rewind(): void {}
+                        #[Override]
+                        public function valid(): bool { return false; }
+                    }
+
+                    final class AggRaw implements IteratorAggregate {
+                        #[Override]
+                        public function getIterator(): RawIt { return new RawIt(); }
+                    }
+
+                    final class H {
+                        private ?AggRaw $aggRaw = null;
+
+                        public function a(): void {
+                            foreach (($this->aggRaw ??= new AggRaw()) as $v) {
+                                echo $v;
+                            }
+                        }
+
+                        public function b(): Generator {
+                            yield from ($this->aggRaw ??= new AggRaw());
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MissingTemplateParam'],
+                'php_version' => '8.3',
+            ],
             'methodCallOnArrayElementSetInLoop' => [
                 'code' => '<?php
                     final class Box {

@@ -1688,13 +1688,20 @@ final class ForeachAnalyzer
                                             && $generic_storage
                                                 ->template_extended_params['Traversable']['TValue']->isMixed())
                                     ) {
+                                        $get_iterator_call = new VirtualMethodCall(
+                                            $foreach_expr,
+                                            new VirtualIdentifier('getIterator', $foreach_expr->getAttributes()),
+                                        );
+
+                                        $statements_analyzer->node_data->setType(
+                                            $get_iterator_call,
+                                            new Union([$array_atomic_type]),
+                                        );
+
                                         self::handleIterable(
                                             $statements_analyzer,
                                             $array_atomic_type,
-                                            new VirtualMethodCall(
-                                                $foreach_expr,
-                                                new VirtualIdentifier('getIterator', $foreach_expr->getAttributes()),
-                                            ),
+                                            $get_iterator_call,
                                             $codebase,
                                             $context,
                                             $key_type,
