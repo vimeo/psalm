@@ -7,6 +7,7 @@ use Psalm\Internal\Provider\ClassLikeStorageProvider;
 use Psalm\Internal\Provider\FileStorageProvider;
 use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Type\Atomic\TArray;
+use Psalm\Type\Atomic\TCallable;
 use Psalm\Type\Atomic\TEnumCase;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TIterable;
@@ -15,11 +16,14 @@ use Psalm\Type\Atomic\TLiteralClassString;
 use Psalm\Type\Atomic\TLiteralFloat;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
+use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Type\Atomic\TNever;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TObject;
 use Psalm\Type\Atomic\TScalar;
 use Psalm\Type\Atomic\TTrue;
+use Psalm\Type\Atomic\TVoid;
 use Psalm\Type\Atomic\Scalar;
 use PhpParser;
 use Psalm\Internal\Scanner\ParsedDocblock;
@@ -27,6 +31,7 @@ use Psalm\Node\Expr\VirtualArray;
 use Psalm\Node\VirtualArrayItem;
 use Psalm\Node\Expr\VirtualClassConstFetch;
 use Psalm\Node\Expr\VirtualConstFetch;
+use Psalm\Node\Expr\VirtualNew;
 use Psalm\Node\Expr\VirtualVariable;
 use Psalm\Node\Name\VirtualFullyQualified;
 use Psalm\Node\Scalar\VirtualFloat;
@@ -52,6 +57,7 @@ use function is_int;
 use function reset;
 use function rtrim;
 use function strpos;
+use function strtolower;
 
 /**
  * @internal
@@ -78,7 +84,8 @@ final class StubsGenerator
                 continue;
             }
 
-            if ($storage->stubbed) {
+            // built-in classes, and classes of stub files
+            if ($storage->stubbed || !$storage->user_defined) {
                 continue;
             }
 
@@ -315,17 +322,36 @@ final class StubsGenerator
     }
 
     /**
-     * @return PhpParser\Node\Identifier|PhpParser\Node\Name\FullyQualified|PhpParser\Node\NullableType|PhpParser\Node\UnionType|null
+     * @return PhpParser\Node\Identifier|PhpParser\Node\Name|PhpParser\Node\NullableType|PhpParser\Node\UnionType|PhpParser\Node\IntersectionType|null
      */
     public static function getParserTypeFromPsalmType(Union $type): ?PhpParser\NodeAbstract
     {
+        if ($type->isSingle()) {
+            $atomic_type = $type->getSingleAtomic();
+
+            // types PHP only allows on their own
+            if ($atomic_type instanceof TNull
+                || $atomic_type instanceof TVoid
+                || $atomic_type instanceof TNever
+                || $atomic_type::class === TMixed::class
+            ) {
+                return new VirtualIdentifier($atomic_type->getKey());
+            }
+        }
+
         $nullable = $type->isNullable();
 
-        /** @var array<string, PhpParser\Node\Identifier|PhpParser\Node\Name\FullyQualified> $nodes */
+        /** @var array<string, PhpParser\Node\Identifier|PhpParser\Node\Name|PhpParser\Node\IntersectionType> $nodes */
         $nodes = [];
 
         foreach ($type->getAtomicTypes() as $atomic_type) {
             if ($atomic_type instanceof TNull) {
+                continue;
+            }
+
+            if ($atomic_type instanceof TTrue || $atomic_type instanceof TFalse) {
+                $nodes[$atomic_type->getKey()] = new VirtualIdentifier($atomic_type->getKey());
+
                 continue;
             }
 
@@ -341,6 +367,7 @@ final class StubsGenerator
                 || $atomic_type instanceof TObject
                 || $atomic_type instanceof TArray
                 || $atomic_type instanceof TIterable
+                || $atomic_type instanceof TCallable
             ) {
                 $identifier_string = $atomic_type->toPhpString(null, [], null, 8_00_00);
 
@@ -350,9 +377,13 @@ final class StubsGenerator
                     continue;
                 }
             } elseif ($atomic_type instanceof TNamedObject) {
-                $nodes[$atomic_type->value] = new VirtualFullyQualified($atomic_type->value);
+                $node = self::getParserTypeFromNamedObject($atomic_type);
 
-                continue;
+                if ($node !== null) {
+                    $nodes[$atomic_type->getKey()] = $node;
+
+                    continue;
+                }
             }
 
             // no PHP type stands for this atomic, and leaving it out would narrow the type
@@ -366,7 +397,13 @@ final class StubsGenerator
         if (count($nodes) === 1) {
             $node = reset($nodes);
 
-            return $nullable ? new VirtualNullableType($node) : $node;
+            if (!$nullable) {
+                return $node;
+            }
+
+            if (!$node instanceof PhpParser\Node\IntersectionType) {
+                return new VirtualNullableType($node);
+            }
         }
 
         if ($nullable) {
@@ -374,6 +411,38 @@ final class StubsGenerator
         }
 
         return new VirtualUnionType(array_values($nodes));
+    }
+
+    private static function getParserTypeFromNamedObject(
+        TNamedObject $atomic_type,
+    ): PhpParser\Node\Name|PhpParser\Node\IntersectionType|null {
+        if ($atomic_type->is_static) {
+            return new VirtualName('static');
+        }
+
+        $name_lc = strtolower($atomic_type->value);
+
+        if ($name_lc === 'static' || $name_lc === 'self' || $name_lc === 'parent') {
+            return new VirtualName($name_lc);
+        }
+
+        $name = new VirtualFullyQualified($atomic_type->value);
+
+        if (!$atomic_type->extra_types) {
+            return $name;
+        }
+
+        $intersected = [$name];
+
+        foreach ($atomic_type->extra_types as $extra_type) {
+            if (!$extra_type instanceof TNamedObject || $extra_type->extra_types) {
+                return null;
+            }
+
+            $intersected[] = new VirtualFullyQualified($extra_type->value);
+        }
+
+        return new PhpParser\Node\IntersectionType($intersected);
     }
 
     public static function getExpressionFromType(Union $type) : PhpParser\Node\Expr
@@ -434,6 +503,11 @@ final class StubsGenerator
 
             if ($atomic_type instanceof TEnumCase) {
                 return new VirtualClassConstFetch(new VirtualName('\\' . $atomic_type->value), new VirtualIdentifier($atomic_type->case_name));
+            }
+
+            // a `new` default: its arguments are not kept
+            if ($atomic_type instanceof TNamedObject) {
+                return new VirtualNew(new VirtualFullyQualified($atomic_type->value));
             }
         }
 
