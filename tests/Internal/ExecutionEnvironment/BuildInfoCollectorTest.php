@@ -496,6 +496,7 @@ final class BuildInfoCollectorTest extends TestCase
                 'CI_NAME' => 'github-actions',
                 'CI_BRANCH' => 'master',
                 'GITHUB_ACTIONS' => 'true',
+                'CI_JOB_ID' => '9876543210',
                 'GITHUB_REF' => 'refs/heads/master',
                 'CI_REPO_OWNER' => 'psalm',
                 'CI_REPO_NAME' => 'example',
@@ -522,6 +523,7 @@ final class BuildInfoCollectorTest extends TestCase
                 'CI_NAME' => 'github-actions',
                 'CI_BRANCH' => 'v1.0.0',
                 'GITHUB_ACTIONS' => 'true',
+                'CI_JOB_ID' => '9876543210',
                 'GITHUB_REF' => 'refs/tags/v1.0.0',
                 'CI_REPO_OWNER' => 'psalm',
                 'CI_REPO_NAME' => 'example',
@@ -548,6 +550,7 @@ final class BuildInfoCollectorTest extends TestCase
                 'CI_NAME' => 'github-actions',
                 'CI_BRANCH' => 'refs/pull/42/merge',
                 'GITHUB_ACTIONS' => 'true',
+                'CI_JOB_ID' => '9876543210',
                 'GITHUB_REF' => 'refs/pull/42/merge',
                 'CI_REPO_OWNER' => 'psalm',
                 'CI_REPO_NAME' => 'example',
@@ -565,6 +568,7 @@ final class BuildInfoCollectorTest extends TestCase
                 'CI_NAME' => 'github-actions',
                 'CI_BRANCH' => 'master',
                 'GITHUB_ACTIONS' => 'true',
+                'CI_JOB_ID' => '9876543210',
                 'GITHUB_REF' => 'refs/heads/master',
                 'CI_REPO_OWNER' => 'psalm',
                 'CI_REPO_NAME' => 'example',
@@ -582,6 +586,7 @@ final class BuildInfoCollectorTest extends TestCase
                 'CI_NAME' => 'github-actions',
                 'CI_BRANCH' => 'refs/pull/42/merge',
                 'GITHUB_ACTIONS' => 'true',
+                'CI_JOB_ID' => '9876543210',
                 'GITHUB_REF' => 'refs/pull/42/merge',
                 'CI_REPO_OWNER' => 'psalm',
                 'CI_REPO_NAME' => 'example',
@@ -599,6 +604,7 @@ final class BuildInfoCollectorTest extends TestCase
                 'CI_NAME' => 'github-actions',
                 'CI_BRANCH' => 'refs/pull/42/merge',
                 'GITHUB_ACTIONS' => 'true',
+                'CI_JOB_ID' => '9876543210',
                 'GITHUB_REF' => 'refs/pull/42/merge',
                 'CI_REPO_OWNER' => 'psalm',
                 'CI_REPO_NAME' => 'example',
@@ -690,6 +696,14 @@ final class BuildInfoCollectorTest extends TestCase
         self::assertSame($expected, $actual);
     }
 
+    public function testGithubActionsWithoutARunIdSendsNoJobId(): void
+    {
+        $env = self::githubActions('push', 'push');
+        unset($env['GITHUB_RUN_ID']);
+
+        self::assertArrayNotHasKey('CI_JOB_ID', (new BuildInfoCollector($env))->collect());
+    }
+
     /**
      * @param array<string, string> $remotes name => URL
      */
@@ -714,6 +728,7 @@ final class BuildInfoCollectorTest extends TestCase
     ): array {
         return [
             'GITHUB_ACTIONS' => 'true',
+            'GITHUB_RUN_ID' => '9876543210',
             'GITHUB_REF' => $ref,
             'GITHUB_REPOSITORY' => 'psalm/example',
             'GITHUB_EVENT_NAME' => $event_name,

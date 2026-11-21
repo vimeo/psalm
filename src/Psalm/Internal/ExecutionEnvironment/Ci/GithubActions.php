@@ -36,6 +36,7 @@ final class GithubActions implements CiProvider
 {
     private const FLAG = 'GITHUB_ACTIONS';
     private const REF = 'GITHUB_REF';
+    private const RUN_ID = 'GITHUB_RUN_ID';
     private const REPOSITORY = 'GITHUB_REPOSITORY';
     private const EVENT_NAME = 'GITHUB_EVENT_NAME';
     private const EVENT_PATH = 'GITHUB_EVENT_PATH';
@@ -83,6 +84,7 @@ final class GithubActions implements CiProvider
             branch: $branch,
             repository: $env->repository(self::REPOSITORY),
             pullRequest: $pull_request,
+            jobId: $env->get(self::RUN_ID),
             raw: $env->pick(self::FLAG, self::REF),
             git: $git,
         );
