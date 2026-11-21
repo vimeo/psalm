@@ -903,6 +903,16 @@ final class TypeParser
             }
         }
 
+        // the rest of the builtin generics read their arguments, they have no template for `*` to stand for
+        if ($star_params !== []
+            && (in_array($generic_type_value, ['int', 'int-mask', 'int-mask-of', 'key-of', 'value-of'], true)
+                || in_array($generic_type_value, TPropertiesOf::tokenNames(), true))
+        ) {
+            throw new TypeParseTreeException(
+                'The * type argument is only for the type arguments of a class, not of ' . $generic_type_value,
+            );
+        }
+
         if ($purity_params !== []) {
             return self::getTypeWithPurityArguments(
                 $generic_type_value,

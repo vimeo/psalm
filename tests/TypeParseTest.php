@@ -2143,12 +2143,44 @@ final class TypeParseTest extends TestCase
         yield 'int-mask-of' => ['int-mask-of<*>'];
         yield 'class-string-map' => ['class-string-map<*, int>'];
         yield 'class-string-map value' => ['class-string-map<T, *>'];
+        yield 'int range max' => ['int<5, *>'];
+        yield 'int-mask' => ['int-mask<*>'];
+        yield 'callable parameter' => ['callable(*): void'];
+        yield 'closure return' => ['Closure(): *'];
+        yield 'parenthesised argument' => ['Pair<int, (*)>'];
+        yield 'intersection argument' => ['Pair<int, *&Countable>'];
     }
 
     #[DataProvider('invalidStarProjectionProvider')]
     public function testInvalidStarProjection(string $string): void
     {
         $this->expectException(TypeParseTreeException::class);
+        Type::parseString($string);
+    }
+
+    /**
+     * @return iterable<string, array{string, string}>
+     * @psalm-pure
+     */
+    public static function starOutsideAClassProvider(): iterable
+    {
+        yield 'int min' => ['int<*, 5>', 'int'];
+        yield 'int max' => ['int<5, *>', 'int'];
+        yield 'int-mask' => ['int-mask<*>', 'int-mask'];
+        yield 'int-mask-of' => ['int-mask-of<*>', 'int-mask-of'];
+        yield 'key-of' => ['key-of<*>', 'key-of'];
+        yield 'value-of' => ['value-of<*>', 'value-of'];
+        yield 'properties-of' => ['properties-of<*>', 'properties-of'];
+        yield 'public-properties-of' => ['public-properties-of<*>', 'public-properties-of'];
+    }
+
+    #[DataProvider('starOutsideAClassProvider')]
+    public function testStarOutsideAClassIsReportedByName(string $string, string $generic): void
+    {
+        $this->expectException(TypeParseTreeException::class);
+        $this->expectExceptionMessage(
+            'The * type argument is only for the type arguments of a class, not of ' . $generic,
+        );
         Type::parseString($string);
     }
 }
