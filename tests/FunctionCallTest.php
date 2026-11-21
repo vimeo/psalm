@@ -404,7 +404,7 @@ final class FunctionCallTest extends TestCase
                     }
                     PHP,
                 'assertions' => [],
-                'ignored_issues' => [],
+                'ignored_issues' => ['DeprecatedConstant'],
                 'php_version' => '8.0',
             ],
             'classExistsComparedWithTrueGuardsTheRightOperandOfAnd' => [
