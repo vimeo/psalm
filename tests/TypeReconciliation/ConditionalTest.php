@@ -219,6 +219,19 @@ final class ConditionalTest extends TestCase
                         }
                     }',
             ],
+            'varAssignedInTheRightOperandOfAnOrIsDefinedUnderTheSameOr' => [
+                'code' => '<?php
+                    final class Progress {
+                        public function advance(): void {
+                            echo ".";
+                        }
+                    }
+
+                    $a = rand(0, 1) === 1;
+
+                    $a || $p = new Progress;
+                    $a || $p->advance();',
+            ],
             'varAssignedUnderNotNullIsDefinedUnderTheSameCheck' => [
                 'code' => '<?php
                     interface Span {
