@@ -15,10 +15,13 @@ use Psalm\Internal\Analyzer\Statements\Expression\SimpleTypeInferer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\ConstantTypeResolver;
+use Psalm\Internal\Codebase\PhpDeprecations;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\Provider\NodeDataProvider;
 use Psalm\Internal\Scanner\UnresolvedConstantComponent;
+use Psalm\Issue\DeprecatedConstant;
 use Psalm\Issue\ForbiddenCode;
+use Psalm\Issue\ReservedWord;
 use Psalm\Issue\UndefinedConstant;
 use Psalm\IssueBuffer;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
@@ -118,6 +121,29 @@ final class ConstFetchAnalyzer
                             . $const_name,
                 );
 
+                // an unqualified name falls back to the global constant
+                $global_const_name = isset($aliased_constants[$const_name]) ? $fq_const_name : $const_name;
+                $deprecation_message = $const_type && !str_contains($global_const_name, '\\')
+                    ? PhpDeprecations::getConstantMessage($global_const_name)
+                    : null;
+
+                $deprecated_name = $deprecation_message === null && $const_type
+                    ? self::getDeprecatedName($statements_analyzer, $const_name, $fq_const_name)
+                    : null;
+                if ($deprecated_name !== null) {
+                    $deprecation_message = 'Constant ' . $deprecated_name . ' is deprecated';
+                }
+
+                if ($deprecation_message !== null) {
+                    IssueBuffer::maybeAdd(
+                        new DeprecatedConstant(
+                            $deprecation_message,
+                            new CodeLocation($statements_analyzer->getSource(), $stmt),
+                        ),
+                        $statements_analyzer->getSuppressedIssues(),
+                    );
+                }
+
                 if ($const_type) {
                     $statements_analyzer->node_data->setType($stmt, $const_type);
                 } elseif ($context->check_consts) {
@@ -176,6 +202,11 @@ final class ConstFetchAnalyzer
             || $const_name === 'STDIN'
         ) {
             return Type::getResource();
+        }
+
+        // defined once a session starts: empty, or the session name and id when the id isn't in a cookie
+        if ($const_name === 'SID') {
+            return Type::getString();
         }
 
         if ($fq_const_name) {
@@ -391,6 +422,38 @@ final class ConstFetchAnalyzer
     }
 
     /**
+     * The name of the constant if it is declared with @deprecated or #[\Deprecated], found like getConstType() does
+     */
+    private static function getDeprecatedName(
+        StatementsAnalyzer $statements_analyzer,
+        string $const_name,
+        string $fq_const_name,
+    ): ?string {
+        $codebase = $statements_analyzer->getCodebase();
+        $file_storage_provider = $codebase->file_storage_provider;
+
+        foreach ([$statements_analyzer->getRootFilePath(), $statements_analyzer->getFilePath()] as $file_path) {
+            $file_storage = $file_storage_provider->get($file_path);
+
+            foreach ([$fq_const_name, $const_name] as $name) {
+                if (isset($file_storage->declaring_constants[$name])) {
+                    $declaring_storage = $file_storage_provider->get($file_storage->declaring_constants[$name]);
+
+                    return isset($declaring_storage->deprecated_constants[$name]) ? $name : null;
+                }
+            }
+        }
+
+        foreach ([$fq_const_name, $const_name] as $name) {
+            if ($codebase->isDeprecatedGlobalConstant($name)) {
+                return $name;
+            }
+        }
+
+        return null;
+    }
+
+    /**
      * The id under which `defined()` records a constant without a declaration, so that a check of it
      * (`defined('X') && is_string(X)`) narrows it; declared constants have their own type and no id
      */
@@ -490,6 +553,12 @@ final class ConstFetchAnalyzer
         Context $context,
     ): void {
         foreach ($stmt->consts as $const) {
+            self::checkDeprecatedName(
+                $statements_analyzer,
+                $const->name->name,
+                new CodeLocation($statements_analyzer, $const->name),
+            );
+
             ExpressionAnalyzer::analyze($statements_analyzer, $const->value, $context);
 
             self::setConstType(
@@ -497,6 +566,26 @@ final class ConstFetchAnalyzer
                 $const->name->name,
                 $statements_analyzer->node_data->getType($const->value) ?? Type::getMixed(),
                 $context,
+            );
+        }
+    }
+
+    /**
+     * Reports a constant, declared with `const` or define(), whose name PHP deprecates
+     */
+    public static function checkDeprecatedName(
+        StatementsAnalyzer $statements_analyzer,
+        string $const_name,
+        CodeLocation $code_location,
+    ): void {
+        $name_parts = explode('\\', $const_name);
+        $name = array_pop($name_parts);
+        $message = PhpDeprecations::getConstantNameMessage($name);
+
+        if ($message !== null) {
+            IssueBuffer::maybeAdd(
+                new ReservedWord($message, $code_location, $name),
+                $statements_analyzer->getSuppressedIssues(),
             );
         }
     }

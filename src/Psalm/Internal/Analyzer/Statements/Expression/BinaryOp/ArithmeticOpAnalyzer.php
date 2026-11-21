@@ -14,11 +14,13 @@ use Psalm\Internal\Analyzer\Statements\Expression\Assignment\ArrayAssignmentAnal
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
+use Psalm\Internal\Codebase\PhpDeprecations;
 use Psalm\Internal\Provider\NodeDataProvider;
 use Psalm\Internal\Type\LiteralCast;
 use Psalm\Internal\Type\TemplateBound;
 use Psalm\Internal\Type\TypeCombiner;
 use Psalm\Internal\Type\TypeExpander;
+use Psalm\Issue\DeprecatedSyntax;
 use Psalm\Issue\FalseOperand;
 use Psalm\Issue\ImplicitFloatToIntCast;
 use Psalm\Issue\InvalidOperand;
@@ -53,6 +55,7 @@ use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTypeVariable;
 use Psalm\Type\Union;
 
+use function abs;
 use function array_diff_key;
 use function array_values;
 use function count;
@@ -233,7 +236,7 @@ final class ArithmeticOpAnalyzer
             $invalid_right_messages = [];
             $has_valid_left_operand = false;
             $has_valid_right_operand = false;
-            $has_string_increment = false;
+            $string_increment_message = null;
 
             $right_type_parts = self::expandNumericTemplates($right_type);
             $left_type_parts = self::expandNumericTemplates($left_type);
@@ -261,7 +264,7 @@ final class ArithmeticOpAnalyzer
                         $invalid_right_messages,
                         $has_valid_left_operand,
                         $has_valid_right_operand,
-                        $has_string_increment,
+                        $string_increment_message,
                         $result_type,
                     );
 
@@ -316,10 +319,10 @@ final class ArithmeticOpAnalyzer
                 }
             }
 
-            if ($has_string_increment && $statements_source) {
+            if ($string_increment_message !== null && $statements_source) {
                 IssueBuffer::maybeAdd(
                     new StringIncrement(
-                        'Incrementing a non-numeric string is deprecated since PHP 8.5, use str_increment() instead',
+                        $string_increment_message,
                         new CodeLocation($statements_source, $left),
                     ),
                     $statements_source->getSuppressedIssues(),
@@ -429,7 +432,7 @@ final class ArithmeticOpAnalyzer
         array &$invalid_right_messages,
         bool &$has_valid_left_operand,
         bool &$has_valid_right_operand,
-        bool &$has_string_increment,
+        ?string &$string_increment_message,
         ?Union &$result_type = null,
     ): ?Union {
         if (($left_type_part instanceof TLiteralInt || $left_type_part instanceof TLiteralFloat)
@@ -518,23 +521,51 @@ final class ArithmeticOpAnalyzer
             return null;
         }
 
+        $is_increment = $parent instanceof PhpParser\Node\Expr\PostInc || $parent instanceof PhpParser\Node\Expr\PreInc;
         if ($left_type_part instanceof TString
             && $right_type_part instanceof TInt
-            && (
-                $parent instanceof PhpParser\Node\Expr\PostInc ||
-                $parent instanceof PhpParser\Node\Expr\PreInc
+            && ($is_increment
+                || $parent instanceof PhpParser\Node\Expr\PostDec
+                || $parent instanceof PhpParser\Node\Expr\PreDec
             )
         ) {
-            if ($left_type_part instanceof TNumericString ||
-                ($left_type_part instanceof TLiteralString && is_numeric($left_type_part->value))
-            ) {
+            $literal_value = $left_type_part instanceof TLiteralString ? $left_type_part->value : null;
+            if ($left_type_part instanceof TNumericString || ($literal_value !== null && is_numeric($literal_value))) {
                 $new_result_type = new Union(
                     [new TFloat(), new TInt()],
                     ['from_calculation' => true],
                 );
-            } else {
+            } elseif ($is_increment) {
                 $new_result_type = Type::getNonEmptyString();
-                $has_string_increment = true;
+                $string_increment_message ??= match (true) {
+                    $literal_value === '' => PhpDeprecations::getDeprecatedSinceMessage(
+                        'Incrementing an empty string',
+                        8_03_00,
+                        null,
+                    ),
+                    $literal_value !== null && !preg_match('/^[a-zA-Z0-9]+$/', $literal_value)
+                        => PhpDeprecations::getDeprecatedSinceMessage(
+                            'Incrementing a non-alphanumeric string',
+                            8_03_00,
+                            null,
+                        ),
+                    default => PhpDeprecations::getDeprecatedSinceMessage(
+                        'Incrementing a non-numeric string',
+                        8_05_00,
+                        'str_increment()',
+                    ),
+                };
+            } else {
+                // '' becomes -1, and the other non-numeric strings stay the same
+                $new_result_type = match (true) {
+                    $literal_value === '' => Type::getInt(false, -1),
+                    $literal_value !== null => new Union([$left_type_part]),
+                    default => new Union([$left_type_part, new TInt(), new TFloat()], ['from_calculation' => true]),
+                };
+                $string_increment_message ??= $literal_value === ''
+                    ? PhpDeprecations::getDeprecatedSinceMessage('Decrementing an empty string', 8_03_00, null)
+                    : PhpDeprecations::getDeprecatedSinceMessage('Decrementing a non-numeric string', 8_03_00, null)
+                        . ', as it has no effect';
             }
 
             $result_type = Type::combineUnionTypes($new_result_type, $result_type);
@@ -975,7 +1006,9 @@ final class ArithmeticOpAnalyzer
 
                     if ($parent instanceof PhpParser\Node\Expr\BinaryOp\Mod) {
                         if ($right_type_part instanceof TLiteralInt) {
-                            $literal_value_max = $right_type_part->value - 1;
+                            $literal_value_max = $right_type_part->value === PHP_INT_MIN
+                                ? PHP_INT_MAX
+                                : abs($right_type_part->value) - 1;
                             if ($always_positive) {
                                 $result_type = Type::getIntRange(0, $literal_value_max);
                             } else {
@@ -1838,28 +1871,16 @@ final class ArithmeticOpAnalyzer
             if ($right_type_part->max_bound === 0) {
                 $new_result_type = Type::getNever();
             } else {
+                // the result takes the sign of the dividend and is less than the divisor in absolute value
+                $max = $right_type_part->min_bound === PHP_INT_MIN
+                    ? PHP_INT_MAX
+                    : abs($right_type_part->min_bound) - 1;
+
                 if ($left_type_part->isPositiveOrZero()) {
-                    if ($right_type_part->isPositive()) {
-                        $max = $right_type_part->min_bound - 1;
-                        $new_result_type = Type::getIntRange(0, $max);
-                    } else {
-                        $max = $right_type_part->min_bound + 1;
-                        $new_result_type = Type::getIntRange($max, 0);
-                    }
+                    $new_result_type = Type::getIntRange(0, $max);
                 } elseif ($left_type_part->isNegativeOrZero()) {
-                    if ($right_type_part->isPositive()) {
-                        $max = $right_type_part->min_bound - 1;
-                        $new_result_type = Type::getIntRange(-$max, 0);
-                    } else {
-                        $max = $right_type_part->min_bound + 1;
-                        $new_result_type = Type::getIntRange(-$max, 0);
-                    }
+                    $new_result_type = Type::getIntRange(-$max, 0);
                 } else {
-                    if ($right_type_part->isPositive()) {
-                        $max = $right_type_part->min_bound - 1;
-                    } else {
-                        $max = -$right_type_part->min_bound - 1;
-                    }
                     $new_result_type = Type::getIntRange(-$max, $max);
                 }
             }
@@ -1879,10 +1900,15 @@ final class ArithmeticOpAnalyzer
                 $new_result_type = Type::getInt(true);
             }
         } elseif ($right_type_part->isNegative()) {
+            // the result is less than the divisor in absolute value, which is at most the lower bound negated
+            $max = $right_type_part->min_bound === null || $right_type_part->min_bound === PHP_INT_MIN
+                ? null
+                : -$right_type_part->min_bound - 1;
+
             if ($left_type_part->isPositiveOrZero()) {
-                $new_result_type = Type::getIntRange(null, 0);
+                $new_result_type = Type::getIntRange(0, $max);
             } elseif ($left_type_part->isNegativeOrZero()) {
-                $new_result_type = Type::getIntRange(null, 0);
+                $new_result_type = Type::getIntRange($max === null ? null : -$max, 0);
             } else {
                 $new_result_type = Type::getInt(true);
             }
@@ -1894,5 +1920,32 @@ final class ArithmeticOpAnalyzer
             $new_result_type,
             $result_type,
         );
+    }
+
+    /**
+     * Reports raising 0 to a negative power, with `**` or pow(), which PHP deprecates whatever PHP version is analysed
+     */
+    public static function checkZeroToNegativePower(
+        StatementsAnalyzer $statements_analyzer,
+        Union $base,
+        Union $exponent,
+        PhpParser\Node $node,
+    ): void {
+        $base_value = $base->isSingleIntLiteral()
+            ? $base->getSingleIntLiteral()->value
+            : ($base->isSingleFloatLiteral() ? $base->getSingleFloatLiteral()->value : null);
+        $exponent_value = $exponent->isSingleIntLiteral()
+            ? $exponent->getSingleIntLiteral()->value
+            : ($exponent->isSingleFloatLiteral() ? $exponent->getSingleFloatLiteral()->value : null);
+
+        if ($base_value !== null && $exponent_value !== null && (float) $base_value === 0.0 && $exponent_value < 0) {
+            IssueBuffer::maybeAdd(
+                new DeprecatedSyntax(
+                    PhpDeprecations::getDeprecatedSinceMessage('Raising 0 to a negative power', 8_04_00, 'fpow()'),
+                    new CodeLocation($statements_analyzer, $node),
+                ),
+                $statements_analyzer->getSuppressedIssues(),
+            );
+        }
     }
 }

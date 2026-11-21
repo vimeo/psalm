@@ -645,7 +645,7 @@ class mysqli
     /**
      * @psalm-pure
      *
-     * @psalm-taint-escape sql
+     * @psalm-taint-escape sql_in_quotes
      * @psalm-flow ($string) -> return
      */
     function escape_string($string) {}
@@ -653,10 +653,20 @@ class mysqli
     /**
      * @psalm-pure
      *
-     * @psalm-taint-escape sql
+     * @psalm-taint-escape sql_in_quotes
      * @psalm-flow ($string) -> return
      */
     function real_escape_string($string) {}
+
+    /**
+     * Escapes the string and puts it in quotes
+     *
+     * @psalm-pure
+     *
+     * @psalm-taint-escape sql
+     * @psalm-flow ($string) -> return
+     */
+    function quote_string($string) {}
 }
 
 class SQLite3
@@ -664,7 +674,7 @@ class SQLite3
     /**
      * @psalm-pure
      *
-     * @psalm-taint-escape sql
+     * @psalm-taint-escape sql_in_quotes
      * @psalm-flow ($string) -> return
      */
     static function escapeString($string) {}
