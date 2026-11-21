@@ -276,15 +276,18 @@ final class AlgebraAnalyzer
     }
 
     /**
-     * `in-array-X` doesn't say which array the value was looked up in: two equal ones are not a repetition
+     * These assertions don't say which pattern or array they were made from: two equal ones are not the same condition
      *
      * @psalm-pure
      */
-    private static function hasInArrayPossibility(Clause $clause): bool
+    private static function hasUnidentifiedPossibility(Clause $clause): bool
     {
         foreach ($clause->possibilities as $keyed_possibilities) {
             foreach ($keyed_possibilities as $possibility) {
-                if ($possibility instanceof InArray || $possibility instanceof NotInArray) {
+                if ($possibility instanceof InArray
+                    || $possibility instanceof NotInArray
+                    || $possibility instanceof MatchesPattern
+                ) {
                     return true;
                 }
             }
@@ -349,7 +352,7 @@ final class AlgebraAnalyzer
                     // isset($x) already says that $x is not null
                     || ($not_null_var_id !== null && isset($isset_var_ids[$not_null_var_id])))
                 && !self::testsAnyVar($formula_2_clause, $new_assigned_var_ids)
-                && !self::hasInArrayPossibility($formula_2_clause)
+                && !self::hasUnidentifiedPossibility($formula_2_clause)
             ) {
                 IssueBuffer::maybeAdd(
                     new RedundantCondition(
@@ -501,7 +504,11 @@ final class AlgebraAnalyzer
             ++$negated_clause_count;
 
             foreach ($formula_1 as $clause_1) {
-                if ($negated_clause_2 === $clause_1 || !$clause_1->reconcilable || $clause_1->wedge) {
+                if ($negated_clause_2 === $clause_1
+                    || !$clause_1->reconcilable
+                    || $clause_1->wedge
+                    || self::hasUnidentifiedPossibility($clause_1)
+                ) {
                     continue;
                 }
 
@@ -516,16 +523,6 @@ final class AlgebraAnalyzer
                     if ($negated_clause_2->possibilities[$key] != $keyed_possibilities) {
                         $negated_clause_2_contains_1_possibilities = false;
                         break;
-                    }
-                    foreach ($keyed_possibilities as $possibility) {
-                        // A pattern assertion only knows the taints its pattern removes, the same for other patterns
-                        if ($possibility instanceof InArray
-                            || $possibility instanceof NotInArray
-                            || $possibility instanceof MatchesPattern
-                        ) {
-                            $negated_clause_2_contains_1_possibilities = false;
-                            break;
-                        }
                     }
                 }
 
