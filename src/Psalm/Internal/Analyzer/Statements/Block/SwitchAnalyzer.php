@@ -148,7 +148,7 @@ final class SwitchAnalyzer
 
         $all_options_matched = $has_default;
 
-        if (!$has_default && $switch_scope->negated_clauses && $switch_var_id) {
+        if (!$has_default && $switch_scope->negated_clauses) {
             $entry_clauses = Algebra::simplifyCNF(
                 [...$original_context->clauses, ...$switch_scope->negated_clauses],
             );
@@ -156,7 +156,7 @@ final class SwitchAnalyzer
             $reconcilable_if_types = Algebra::getTruthsFromFormula($entry_clauses);
 
             // if the if has an || in the conditional, we cannot easily reason about it
-            if ($reconcilable_if_types && isset($reconcilable_if_types[$switch_var_id])) {
+            if ($reconcilable_if_types) {
                 $changed_var_ids = [];
 
                 [$case_vars_in_scope_reconciled, $_] =
@@ -172,14 +172,24 @@ final class SwitchAnalyzer
                         $original_context->inside_loop,
                     );
 
-                if (isset($case_vars_in_scope_reconciled[$switch_var_id])) {
-                    if ($case_vars_in_scope_reconciled[$switch_var_id]->isNever()) {
+                // the cases of `switch (true)` narrow the variables of their conditions
+                foreach ($reconcilable_if_types as $var_id => $_) {
+                    if (isset($case_vars_in_scope_reconciled[$var_id])
+                        && $case_vars_in_scope_reconciled[$var_id]->isNever()
+                    ) {
                         $all_options_matched = true;
-                    } elseif ($all_options_returned) {
-                        // every case leaves the switch, so only no case matching reaches the code after it (cases
-                        // sharing a body, `case 'a': case 'b': return;`, are not narrowed)
-                        $context->vars_in_scope[$switch_var_id] = $case_vars_in_scope_reconciled[$switch_var_id];
+                        break;
                     }
+                }
+
+                if (!$all_options_matched
+                    && $all_options_returned
+                    && $switch_var_id !== null
+                    && isset($case_vars_in_scope_reconciled[$switch_var_id])
+                ) {
+                    // every case leaves the switch, so only no case matching reaches the code after it (cases
+                    // sharing a body, `case 'a': case 'b': return;`, are not narrowed)
+                    $context->vars_in_scope[$switch_var_id] = $case_vars_in_scope_reconciled[$switch_var_id];
                 }
             }
         }

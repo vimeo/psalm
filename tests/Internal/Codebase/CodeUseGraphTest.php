@@ -485,6 +485,71 @@ final class CodeUseGraphTest extends TestCase
         self::assertSame([$other_method], array_keys($graph->getMutationInfo()));
     }
 
+    public function testMutationInfoOfAFunctionAnalysedTwiceInARunIsCombined(): void
+    {
+        $method = CodeUseGraph::functionLikeNode('a\\c::m');
+        $graph = new CodeUseGraph();
+
+        // a branch only reachable in the first analysis calls n and k
+        $first = self::mutationInfo('/a.php');
+        $first['intrinsic'] = 1;
+        $first['callees'] = ['n' => true, 'k' => true];
+        $first['default_intrinsic'] = 2;
+        $first['default_callees'] = ['d' => true];
+        $first['wildcards'] = ['p' => ['x']];
+        $graph->addMutationInfo($method, $first);
+
+        // the second one only calls k, on an object that is not fresh
+        $second = self::mutationInfo('/a.php');
+        $second['intrinsic'] = 4;
+        $second['callees'] = ['k' => false];
+        $second['default_callees'] = ['d' => false];
+        $second['wildcards'] = ['p' => ['y', 'x']];
+        $graph->addMutationInfo($method, $second);
+
+        $info = $graph->getMutationInfo()[$method];
+        self::assertSame(5, $info['intrinsic']);
+        self::assertSame(['k' => false, 'n' => true], $info['callees']);
+        self::assertSame(2, $info['default_intrinsic']);
+        self::assertSame(['d' => false], $info['default_callees']);
+        self::assertSame(['p' => ['y', 'x']], $info['wildcards'] ?? null);
+    }
+
+    public function testMutationInfoOfAFunctionAnalysedInTwoProcessesIsCombined(): void
+    {
+        $method = CodeUseGraph::functionLikeNode('a\\c::m');
+        $graph = new CodeUseGraph();
+        $other = new CodeUseGraph();
+
+        $info = self::mutationInfo('/a.php');
+        $info['callees'] = ['n' => true];
+        $graph->addMutationInfo($method, $info);
+
+        // the worker did not reach the call of n
+        $other->addMutationInfo($method, self::mutationInfo('/a.php'));
+        $graph->addGraph($other);
+
+        self::assertSame(['n' => true], $graph->getMutationInfo()[$method]['callees']);
+    }
+
+    public function testMutationInfoOfAnEarlierRunIsReplaced(): void
+    {
+        $method = CodeUseGraph::functionLikeNode('a\\c::m');
+        $graph = new CodeUseGraph();
+
+        $old = self::mutationInfo('/a.php');
+        $old['intrinsic'] = 1;
+        $old['callees'] = ['n' => true];
+        $graph->addMutationInfo($method, $old);
+        $graph->markMutationInfoStale($method);
+
+        $graph->addMutationInfo($method, self::mutationInfo('/a.php'));
+
+        $info = $graph->getMutationInfo()[$method];
+        self::assertSame(0, $info['intrinsic']);
+        self::assertSame([], $info['callees']);
+    }
+
     /**
      * @return MutationInfo
      * @psalm-pure
