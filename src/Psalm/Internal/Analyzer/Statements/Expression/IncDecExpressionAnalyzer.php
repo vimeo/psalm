@@ -21,6 +21,12 @@ use Psalm\Node\Expr\BinaryOp\VirtualPlus;
 use Psalm\Node\Expr\VirtualAssign;
 use Psalm\Node\Scalar\VirtualInt;
 use Psalm\Type;
+use Psalm\Type\Atomic\TLiteralString;
+use Psalm\Type\Atomic\TNumericString;
+use Psalm\Type\Atomic\TString;
+use Psalm\Type\Union;
+
+use function is_numeric;
 
 /**
  * @internal
@@ -54,7 +60,7 @@ final class IncDecExpressionAnalyzer
 
         if (($stmt_var_type = $statements_analyzer->node_data->getType($stmt->var))
             && $stmt_var_type->hasString()
-            && ($stmt instanceof PostInc || $stmt instanceof PreInc)
+            && ($stmt instanceof PostInc || $stmt instanceof PreInc || self::mayBeNonNumericString($stmt_var_type))
         ) {
             $return_type = null;
 
@@ -79,7 +85,7 @@ final class IncDecExpressionAnalyzer
                 $stmt,
                 $stmt->var,
                 $fake_right_expr,
-                'inc',
+                $stmt instanceof PostInc || $stmt instanceof PreInc ? 'inc' : 'dec',
             );
 
             $var_id = ExpressionIdentifier::getExtendedVarId($stmt->var, null);
@@ -152,6 +158,25 @@ final class IncDecExpressionAnalyzer
         self::markPreIncrementUsed($statements_analyzer, $stmt, $context);
 
         return true;
+    }
+
+    /**
+     * Decrementing a numeric string is plain arithmetic, while ArithmeticOpAnalyzer reports the other strings
+     *
+     * @psalm-pure
+     */
+    private static function mayBeNonNumericString(Union $type): bool
+    {
+        foreach ($type->getAtomicTypes() as $atomic) {
+            if ($atomic instanceof TString
+                && !$atomic instanceof TNumericString
+                && !($atomic instanceof TLiteralString && is_numeric($atomic->value))
+            ) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**

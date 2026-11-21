@@ -25,6 +25,19 @@ class A {
 }
 ```
 
+`mysqli::real_escape_string()` and the other escaping functions of the database extensions only protect a value
+inside SQL quotes:
+
+```php
+<?php
+
+function findUser(mysqli $db): void {
+    $id = (string) $_GET['id'];
+    $db->query("SELECT * FROM users WHERE id = '" . $db->real_escape_string($id) . "'"); // no issue
+    $db->query('SELECT * FROM users WHERE id = ' . $db->real_escape_string($id)); // TaintedSql: `1 OR 1=1` needs no quotes
+}
+```
+
 ## Mitigations
 
 - Use prepared statements with bound parameters (`$pdo->prepare('… where user_id = ?')`) instead of concatenating values.

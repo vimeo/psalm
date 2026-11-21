@@ -22,6 +22,7 @@ use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
 use Psalm\Internal\Codebase\CliOutput;
 use Psalm\Internal\Codebase\ConstantTypeResolver;
+use Psalm\Internal\Codebase\PhpDeprecations;
 use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\MethodIdentifier;
@@ -35,7 +36,7 @@ use Psalm\Internal\Type\TypeExpander;
 use Psalm\Internal\TypeVisitor\TypeVariableResolver;
 use Psalm\Issue\ArgumentTypeCoercion;
 use Psalm\Issue\CallableByReferenceMismatch;
-use Psalm\Issue\DeprecatedConstant;
+use Psalm\Issue\DeprecatedSyntax;
 use Psalm\Issue\ImplicitToStringCast;
 use Psalm\Issue\InvalidArgument;
 use Psalm\Issue\InvalidLiteralArgument;
@@ -437,11 +438,13 @@ final class ArgumentAnalyzer
             }
         }
 
+        // `static` is the object the method is called on, with its template arguments, as for the params of closures
+        $static_class_type = $template_result?->static_class_type;
         $param_type = TypeExpander::expandUnion(
             $codebase,
             $param_type,
             $classlike_storage->name ?? null,
-            $static_classlike_storage->name ?? null,
+            $static_class_type instanceof TNamedObject ? $static_class_type : ($static_classlike_storage->name ?? null),
             $parent_class,
             true,
             false,
@@ -1366,22 +1369,8 @@ final class ArgumentAnalyzer
                         continue;
                     }
 
-                    if ($potential_method_id === null && $codebase->analysis_php_version_id >= 8_02_00) {
-                        [$lhs,] = $input_type_part->properties;
-                        if ($lhs->isSingleStringLiteral()
-                            && in_array(
-                                strtolower($lhs->getSingleStringLiteral()->value),
-                                ['self', 'parent', 'static'],
-                                true,
-                            )) {
-                            IssueBuffer::maybeAdd(
-                                new DeprecatedConstant(
-                                    'Use of "' . $lhs->getSingleStringLiteral()->value . '" in callables is deprecated',
-                                    $arg_location,
-                                ),
-                                $statements_analyzer->getSuppressedIssues(),
-                            );
-                        }
+                    if (self::isRelativeCallableArray($input_type_part)) {
+                        self::reportRelativeCallable($statements_analyzer, $arg_location);
                     }
 
                     if ($potential_method_id && $potential_method_id !== 'not-callable') {
@@ -1420,19 +1409,8 @@ final class ArgumentAnalyzer
                         strtolower($parts[1]),
                     );
 
-                    if ($codebase->analysis_php_version_id >= 8_02_00
-                        && in_array(
-                            strtolower($potential_method_id->fq_class_name),
-                            ['self', 'parent', 'static'],
-                            true,
-                        )) {
-                        IssueBuffer::maybeAdd(
-                            new DeprecatedConstant(
-                                'Use of "' . $potential_method_id->fq_class_name . '" in callables is deprecated',
-                                $arg_location,
-                            ),
-                            $statements_analyzer->getSuppressedIssues(),
-                        );
+                    if (in_array(strtolower($potential_method_id->fq_class_name), ['self', 'parent', 'static'], true)) {
+                        self::reportRelativeCallable($statements_analyzer, $arg_location);
                     }
 
                     if (self::verifyCallableInContext(
@@ -2505,6 +2483,20 @@ final class ArgumentAnalyzer
             $removed_taints,
         );
 
+        if ($taint_flow_graph && $method_id && $function_storage) {
+            self::addInheritedParamSinks(
+                $codebase,
+                $taint_flow_graph,
+                $method_id,
+                $function_storage,
+                $function_param,
+                $argument_offset,
+                $cased_method_id,
+                $arg_location,
+                $argument_value_node,
+            );
+        }
+
         if ($taint_flow_graph) {
             foreach ($dispatch_routes as [$dispatch_node, $element_type]) {
                 if ($element_type === null) {
@@ -2541,6 +2533,124 @@ final class ArgumentAnalyzer
             $taint_source = $argument_value_node->setTaints($taints);
             $taint_flow_graph->addSource($taint_source);
         }
+    }
+
+    /**
+     * The sinks of the parameters of the methods $method_id implements or overrides, unless the parameter has sinks of
+     * its own, those of the closest methods declaring them, on nodes of this call: the node of the parameter is also
+     * where the calls of the methods it overrides go, which their own sinks report already
+     */
+    private static function addInheritedParamSinks(
+        Codebase $codebase,
+        TaintFlowGraph $taint_flow_graph,
+        MethodIdentifier $method_id,
+        FunctionLikeStorage $function_storage,
+        FunctionLikeParameter $function_param,
+        int $argument_offset,
+        string $cased_method_id,
+        CodeLocation $arg_location,
+        DataFlowNode $argument_value_node,
+    ): void {
+        if (self::declaresSinks($function_param)) {
+            return;
+        }
+
+        $sinks = 0;
+        $value_sinks = 0;
+        $declarations = self::getParamSinkDeclarations(
+            $codebase,
+            $method_id,
+            DataFlowNode::getParameterOffset($function_storage, $function_param, $argument_offset),
+            [],
+        );
+
+        foreach ($declarations as $class => $param) {
+            foreach ($declarations as $other_class => $_) {
+                $other_class_storage = $codebase->classlike_storage_provider->get($other_class);
+
+                // a declaration of a class extending or implementing this one's replaces it
+                if (isset($other_class_storage->parent_classes[$class])
+                    || isset($other_class_storage->class_implements[$class])
+                    || isset($other_class_storage->parent_interfaces[$class])
+                ) {
+                    continue 2;
+                }
+            }
+
+            $sinks |= $param->sinks;
+            $value_sinks |= $param->value_sinks;
+        }
+
+        if ($sinks !== 0) {
+            $inherited_sink = DataFlowNode::getForTaint(
+                $cased_method_id . '#' . ($argument_offset + 1),
+                $arg_location,
+                $sinks,
+            );
+            $taint_flow_graph->addSink($inherited_sink);
+            $taint_flow_graph->addPath($argument_value_node, $inherited_sink, 'arg');
+        }
+
+        if ($value_sinks !== 0) {
+            $taint_flow_graph->addArgumentValuesSink($argument_value_node, $value_sinks);
+        }
+    }
+
+    /**
+     * Whether the parameter has sinks of its own: `@psalm-taint-sink` names it (`none` included), or the sink map of
+     * the builtin functions gives it some
+     *
+     * @psalm-mutation-free
+     */
+    private static function declaresSinks(FunctionLikeParameter $param): bool
+    {
+        return $param->declares_sinks || ($param->sinks | $param->value_sinks) !== 0;
+    }
+
+    /**
+     * The parameters at $offset (see DataFlowNode::getParameterOffset()) of the methods $method_id implements or
+     * overrides that have sinks of their own (see declaresSinks()), by the lowercase name of their class
+     *
+     * @param array<string, true> $visited
+     * @return array<lowercase-string, FunctionLikeParameter>
+     * @psalm-capabilities read-props
+     */
+    private static function getParamSinkDeclarations(
+        Codebase $codebase,
+        MethodIdentifier $method_id,
+        int $offset,
+        array $visited,
+    ): array {
+        $visited[(string) $method_id] = true;
+
+        if (!$codebase->classlike_storage_provider->has($method_id->fq_class_name)) {
+            return [];
+        }
+
+        $class_storage = $codebase->classlike_storage_provider->get($method_id->fq_class_name);
+        $declarations = [];
+
+        foreach ($class_storage->overridden_method_ids[$method_id->method_name] ?? [] as $overridden_method_id) {
+            if (isset($visited[(string) $overridden_method_id])
+                || !$codebase->methods->hasStorage($overridden_method_id)
+            ) {
+                continue;
+            }
+
+            $visited[(string) $overridden_method_id] = true;
+            $overridden_params = $codebase->methods->getStorage($overridden_method_id)->params;
+            $last_param = $overridden_params === [] ? null : $overridden_params[count($overridden_params) - 1];
+            // an argument after the first its variadic parameter is given has the offset of its own position
+            $overridden_param = $overridden_params[$offset] ?? ($last_param?->is_variadic ? $last_param : null);
+
+            if ($overridden_param !== null && self::declaresSinks($overridden_param)) {
+                $declarations[strtolower($overridden_method_id->fq_class_name)] = $overridden_param;
+            }
+
+            $declarations += self::getParamSinkDeclarations($codebase, $overridden_method_id, $offset, $visited);
+        }
+
+        return $declarations;
     }
 
     /**
@@ -2913,5 +3023,45 @@ final class ArgumentAnalyzer
         }
 
         return $type;
+    }
+
+    /**
+     * Whether $array is a callable relative to the calling class, `["parent", "method"]` or
+     * `[$object, "Parent::method"]`
+     *
+     * @psalm-pure
+     */
+    private static function isRelativeCallableArray(TKeyedArray $array): bool
+    {
+        $class = $array->properties[0] ?? null;
+        $method = $array->properties[1] ?? null;
+
+        if ($class === null || $method === null || count($array->properties) !== 2) {
+            return false;
+        }
+
+        return ($class->isSingleStringLiteral()
+                && in_array(strtolower($class->getSingleStringLiteral()->value), ['self', 'parent', 'static'], true))
+            || ($method->isSingleStringLiteral() && str_contains($method->getSingleStringLiteral()->value, '::'));
+    }
+
+    /**
+     * Reports a callable relative to the calling class, which PHP deprecates whatever PHP version is analysed
+     */
+    private static function reportRelativeCallable(
+        StatementsAnalyzer $statements_analyzer,
+        CodeLocation $location,
+    ): void {
+        IssueBuffer::maybeAdd(
+            new DeprecatedSyntax(
+                PhpDeprecations::getDeprecatedSinceMessage(
+                    'A callable relative to the calling class',
+                    8_02_00,
+                    'self::method(...) or [self::class, "method"]',
+                ),
+                $location,
+            ),
+            $statements_analyzer->getSuppressedIssues(),
+        );
     }
 }

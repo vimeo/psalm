@@ -388,6 +388,8 @@ final class ImmutableAnnotationTest extends TestCase
                             return $this->data;
                         }
                     }',
+                'assertions' => [],
+                'ignored_issues' => ['DeprecatedInterface'],
             ],
             'allowPropertyAssignmentInMagicUnserialize' => [
                 'code' => '<?php

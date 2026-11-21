@@ -12,9 +12,13 @@ use Psalm\Context;
 use Psalm\Internal\Analyzer\Statements\Expression\BinaryOp\ConcatAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Codebase\PhpDeprecations;
+use Psalm\Internal\Codebase\StringContext;
 use Psalm\Internal\Codebase\VariableUseGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
+use Psalm\Issue\DeprecatedSyntax;
+use Psalm\IssueBuffer;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Type;
 use Psalm\Type\Atomic\TIntRange;
@@ -28,6 +32,7 @@ use Psalm\Type\Atomic\TString;
 use Psalm\Type\Union;
 
 use function count;
+use function substr;
 
 /**
  * @internal
@@ -60,10 +65,16 @@ final class EncapsulatedStringAnalyzer
         $literal_prefixes = [''];
         $literal_prefixes_extendable = true;
 
+        // where the parts so far end, for the parts embedded after them (see StringContext)
+        $tracks_contexts = $statements_analyzer->taint_flow_graph !== null;
+        $string_context = null;
+
         $single_part_type = null;
 
         foreach ($stmt->parts as $part) {
             if ($part instanceof Expr) {
+                self::checkDollarBraceInterpolation($statements_analyzer, $part);
+
                 if (ExpressionAnalyzer::analyze($statements_analyzer, $part, $context) === false) {
                     return false;
                 }
@@ -76,6 +87,11 @@ final class EncapsulatedStringAnalyzer
                 if ($literal_prefixes_extendable) {
                     $literal_prefixes = ConcatAnalyzer::concatLiterals($literal_prefixes, [$part->value])
                         ?? $literal_prefixes;
+                }
+                if ($tracks_contexts) {
+                    $string_context = $string_context === null
+                        ? StringContext::getForLiterals([$part->value])
+                        : $string_context->afterLiterals([$part->value]);
                 }
                 $non_empty = $non_empty || $part->value !== "";
                 $non_falsy = $non_falsy || ($part->value !== "" && $part->value !== "0");
@@ -139,6 +155,11 @@ final class EncapsulatedStringAnalyzer
                         // after the start of a URL fixing its server, the part can't choose it
                         $removed_taints |= ConcatAnalyzer::getTaintsRemovedAfterUrlOrigins($literal_prefixes);
 
+                        if ($string_context !== null) {
+                            $removed_taints |= $string_context->getRemovedTaints();
+                            ConcatAnalyzer::addPositionSinksForExpression($statements_analyzer, $string_context, $part);
+                        }
+
                         foreach ($casted_part_type->parent_nodes as $parent_node) {
                             $graph->addPath(
                                 $parent_node,
@@ -163,6 +184,12 @@ final class EncapsulatedStringAnalyzer
                     $literal_prefixes = $extended_prefixes ?? $literal_prefixes;
                 }
 
+                if ($tracks_contexts) {
+                    $string_context = $string_context === null
+                        ? StringContext::getForExpression($statements_analyzer, $part)
+                        : $string_context->afterExpression($statements_analyzer, $part);
+                }
+
                 $single_part_type = $casted_part_type;
             } else {
                 $all_literals = false;
@@ -173,6 +200,10 @@ final class EncapsulatedStringAnalyzer
 
         if ($statements_analyzer->getDataFlowGraphWithSuppressed()) {
             $statements_analyzer->node_data->setLiteralPrefixes($stmt, $literal_prefixes);
+        }
+
+        if ($tracks_contexts) {
+            $statements_analyzer->node_data->setStringContext($stmt, $string_context ?? StringContext::getUnknown());
         }
 
         if ($has_never_part) {
@@ -256,5 +287,29 @@ final class EncapsulatedStringAnalyzer
         }
 
         return true;
+    }
+
+    /**
+     * Reports `"${var}"` and `"${expr}"`, which PHP deprecates whatever PHP version is analysed
+     */
+    private static function checkDollarBraceInterpolation(StatementsAnalyzer $statements_analyzer, Expr $part): void
+    {
+        $start = (int) $part->getAttribute('startFilePos');
+        $contents = $statements_analyzer->getCodebase()->getFileContents($statements_analyzer->getFilePath());
+
+        // `"{${expr}}"` is still allowed
+        if (substr($contents, $start, 2) === '${' && ($start === 0 || $contents[$start - 1] !== '{')) {
+            IssueBuffer::maybeAdd(
+                new DeprecatedSyntax(
+                    PhpDeprecations::getDeprecatedSinceMessage(
+                        'Interpolating "${var}" in a string',
+                        8_02_00,
+                        '"{$var}"',
+                    ),
+                    new CodeLocation($statements_analyzer, $part),
+                ),
+                $statements_analyzer->getSuppressedIssues(),
+            );
+        }
     }
 }
