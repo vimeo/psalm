@@ -5108,6 +5108,28 @@ final class TypeAlgebraTest extends TestCase
                         return 0;
                     }',
             ],
+            'orOfANegatedAndAPositiveDocblockArrayAssertionKeepsTheNonArrays' => [
+                'code' => '<?php
+                    /** @psalm-assert-if-true list<mixed> $x */
+                    function isList(mixed $x): bool {
+                        return is_array($x) && array_is_list($x);
+                    }
+
+                    /** @psalm-assert-if-true array<string, int> $x */
+                    function isMapInt(mixed $x): bool {
+                        return is_array($x);
+                    }
+
+                    /** @param array<array-key, mixed>|bool $x */
+                    function f(array|bool $x): void {
+                        if (!isList($x) || isMapInt($x)) {
+                            /** @psalm-check-type-exact $x = array<string, int>|bool */;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
         ];
     }
 
