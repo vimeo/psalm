@@ -163,6 +163,24 @@ final class ArrayFunctionCallTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'countOfAnArrayThatMayBeEmptyAfterUnsetMakesItNonEmpty' => [
+                'code' => '<?php
+                    /** @var list<int> $values */
+                    $values = [];
+                    unset($values[rand(0, 1)]);
+
+                    $first = null;
+                    $items = null;
+
+                    if (count($values) === 1) {
+                        $first = array_key_first($values);
+                        $items = $values;
+                    }',
+                'assertions' => [
+                    '$first===' => 'int<0, max>|null',
+                    '$items===' => 'non-empty-array<int<0, max>, int>|null',
+                ],
+            ],
             'arrayColumnAndGetObjectVarsResolveClassConstantsOfThePropertyType' => [
                 'code' => '<?php
                     class Level {
