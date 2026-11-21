@@ -1564,10 +1564,11 @@ final class AssertionReconciler extends Reconciler
             && $type_1_atomic instanceof TGenericObject
             && $type_1_atomic->hasStarProjection()
         ) {
-            // what a `*` leaves unknown stays unknown: `Pair<int, *>` narrowed to `Pair` is still a `Pair<int, *>`,
-            // and narrowed to a `Child` that `@extends Pair<int, T>` is a `Child<*>`, not one of the template's bound
+            // what a `*` leaves unknown stays unknown: `Pair<int, *>` narrowed to `Pair` is still a `Pair<int, *>`
+            // (with the intersection asserted next to it), and narrowed to a `Child` that `@extends Pair<int, T>` is a
+            // `Child<*>`, not one of the template's bound
             return strtolower($type_2_atomic->value) === strtolower($type_1_atomic->value)
-                ? $type_1_atomic
+                ? $type_1_atomic->setIntersectionTypes([...$type_1_atomic->extra_types, ...$type_2_atomic->extra_types])
                 : self::inferTemplateParamsFromParent($codebase, $type_2_atomic, $type_1_atomic, true);
         }
 

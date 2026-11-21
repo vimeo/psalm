@@ -1663,6 +1663,23 @@ final class StarProjectionTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'starProjectionAssertedIntersectionKeepsTheStar' => [
+                'code' => '<?php
+                    /** @template T of object */
+                    class Box {}
+
+                    /** @psalm-assert Box&Countable $x */
+                    function assertCountableBox(mixed $x): void {}
+
+                    /** @param Box<*> $box */
+                    function f(Box $box): void {
+                        assertCountableBox($box);
+                        /** @psalm-check-type-exact $box = Box<*>&Countable */
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
         ];
     }
 
