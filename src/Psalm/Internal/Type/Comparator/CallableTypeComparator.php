@@ -352,9 +352,10 @@ final class CallableTypeComparator
     }
 
     /**
-     * The callable of a method of a generic object (`[$box, 'set']`, an invokable `Box<int>`) with the class
-     * templates bound by the object. A class without templates of its own binds the ones of the generic class
-     * it extends (`@extends Box<int>`) the same way.
+     * The callable of a method of an object (`[$box, 'set']`, an invokable `Box<int>`) with the class templates
+     * bound by the object: by its type arguments, and by the arguments it gives the generic classes it extends
+     * (`@extends Box<int>`). A class extending a generic class without saying so binds them to `mixed`. A bare
+     * class with templates of its own leaves them to the callable, where no argument binds them.
      */
     private static function bindReceiverTemplates(
         Codebase $codebase,
@@ -368,17 +369,13 @@ final class CallableTypeComparator
 
         $receiver_storage = $codebase->classlike_storage_provider->get($receiver->value);
 
-        // a bare `Box` of a generic class has no arguments to bind, its templates stay the callable's own
-        if (!$receiver instanceof TGenericObject && ($receiver_storage->template_types ?? []) !== []) {
-            return $callable;
-        }
-
         $receiver_template_types = ClassTemplateParamCollector::collect(
             $codebase,
             $codebase->methods->getClassLikeStorageForMethod($declaring_method_id),
             $receiver_storage,
             $declaring_method_id->method_name,
             $receiver,
+            !$receiver instanceof TGenericObject && ($receiver_storage->template_types ?? []) !== [],
         );
 
         if ($receiver_template_types === null) {
@@ -440,22 +437,33 @@ final class CallableTypeComparator
                 $codebase,
             );
 
-            if ($callable_object instanceof TNamedObject) {
-                // of an intersection, the receiver is the member that has the method: when several do, their
-                // signatures may differ, and only a generic first member (as before) binds
-                $suppliers = [];
+            // a receiver of a template type is the type it is bound by
+            if ($callable_object instanceof TTemplateParam && $callable_object->as->isSingle()) {
+                $callable_object = $callable_object->as->getSingleAtomic();
+            }
 
-                foreach ([$callable_object, ...$callable_object->getIntersectionTypes()] as $member) {
-                    if ($member instanceof TNamedObject
-                        && self::classHasMethod($codebase, $member->value, $method_id->method_name)
-                    ) {
-                        $suppliers[] = $member;
+            if ($callable_object instanceof TNamedObject) {
+                $receiver = $callable_object;
+
+                // of an intersection, the receiver is the member that has the method. Where several do, their
+                // signatures may differ, so only a generic first member binds
+                if ($callable_object->getIntersectionTypes() !== []) {
+                    $suppliers = [];
+
+                    foreach ([$callable_object, ...$callable_object->getIntersectionTypes()] as $member) {
+                        if ($member instanceof TNamedObject
+                            && self::classHasMethod($codebase, $member->value, $method_id->method_name)
+                        ) {
+                            $suppliers[] = $member;
+                        }
+                    }
+
+                    if (count($suppliers) === 1) {
+                        $receiver = $suppliers[0];
+                    } elseif (count($suppliers) > 1 && !$callable_object instanceof TGenericObject) {
+                        $receiver = null;
                     }
                 }
-
-                $receiver = count($suppliers) > 1
-                    ? ($callable_object instanceof TGenericObject ? $callable_object : null)
-                    : $suppliers[0] ?? $callable_object;
 
                 if ($receiver !== null) {
                     $callable = self::bindReceiverTemplates($codebase, $callable, $receiver, $declaring_method_id);
@@ -876,6 +884,22 @@ final class CallableTypeComparator
                             $template_result,
                             $codebase,
                         )->getSingleAtomic();
+                    }
+
+                    // the types the templates were bound to may name `self` or `static`
+                    if ($callable instanceof TCallable) {
+                        $closure = self::getClosureOfMethod(
+                            $codebase,
+                            $callable->params ?? [],
+                            $callable->return_type,
+                            $callable->getCapabilities(),
+                            ($codebase->methods->getAppearingMethodId($invoke_id) ?? $declaring_method_id)
+                                ->fq_class_name,
+                            $method_fqcln,
+                            $codebase->classlike_storage_provider->get($method_fqcln)->final,
+                        );
+
+                        $callable = $callable->replace($closure->params, $closure->return_type);
                     }
 
                     /** @psalm-suppress LessSpecificReturnStatement */

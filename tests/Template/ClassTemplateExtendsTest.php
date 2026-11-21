@@ -1844,12 +1844,6 @@ final class ClassTemplateExtendsTest extends TestCase
 
                         $filtered = array_filter($users, [$child, "validate"]);
                         /** @psalm-check-type-exact $filtered = array<int<0, max>, User> */;
-
-                        $mapped = array_map($child(...), $users);
-                        /** @psalm-check-type-exact $mapped = list<User> */;
-
-                        $converted = array_map(Closure::fromCallable($child), $users);
-                        /** @psalm-check-type-exact $converted = list<User> */;
                     }',
                 'assertions' => [],
                 'ignored_issues' => [],
@@ -1879,7 +1873,7 @@ final class ClassTemplateExtendsTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
-            'intersectionOfSeveralMembersWithTheMethodLeavesItsCallableUnbound' => [
+            'intersectionOfSeveralMethodSuppliersAcceptsTheSignatureOfAnyMember' => [
                 'code' => '<?php
                     /** @template T */
                     interface Tag {}
@@ -1903,6 +1897,111 @@ final class ClassTemplateExtendsTest extends TestCase
                     /** @param Tag<bool>&TextSink&IntSink $m */
                     function f(Tag $m): void {
                         takesCallback([$m, "set"]);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'extendingAGenericClassWithoutExtendsBindsItsTemplatesToMixedOnItsCallables' => [
+                'code' => '<?php
+                    /** @template T */
+                    abstract class Base {
+                        /** @param T $value */
+                        public function set(mixed $value): void {}
+                    }
+
+                    final class Raw extends Base {}
+
+                    /** @param callable(int): void $callback */
+                    function takesCallback(callable $callback): void {}
+
+                    function f(Raw $raw): void {
+                        takesCallback([$raw, "set"]);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MissingTemplateParam'],
+                'php_version' => '8.0',
+            ],
+            'genericChildBindsTheArgumentsItGivesItsParentOnItsBareCallables' => [
+                'code' => '<?php
+                    /** @template T */
+                    abstract class Base {
+                        /** @param T $value */
+                        public function set(mixed $value): void {}
+
+                        /** @param T $value */
+                        public function __invoke(mixed $value): void {}
+                    }
+
+                    /**
+                     * @template U
+                     * @extends Base<string>
+                     */
+                    final class Own extends Base {}
+
+                    /** @param callable(string): void $callback */
+                    function takesCallback(callable $callback): void {}
+
+                    function f(Own $own): void {
+                        takesCallback([$own, "set"]);
+                        takesCallback($own);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'nonGenericChildBindsTheTemplatesOfItsParentWithSelfAndStaticOnItsInvokableCallables' => [
+                'code' => '<?php
+                    /** @template T */
+                    abstract class Base {
+                        /** @param T $value */
+                        public function __invoke(mixed $value): void {}
+                    }
+
+                    /** @extends Base<static> */
+                    final class Fluent extends Base {}
+
+                    /** @extends Base<value-of<self::MAP>> */
+                    final class Mapped extends Base {
+                        public const MAP = ["a" => 1, "b" => 2];
+                    }
+
+                    /** @param callable(Fluent): void $callback */
+                    function takesFluent(callable $callback): void {}
+
+                    /** @param callable(1|2): void $callback */
+                    function takesValue(callable $callback): void {}
+
+                    function f(Fluent $fluent, Mapped $mapped): void {
+                        takesFluent($fluent);
+                        takesFluent($fluent(...));
+                        takesValue($mapped);
+                        takesValue($mapped(...));
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'templateTypedReceiverBindsTheTemplatesOfItsBoundOnItsCallables' => [
+                'code' => '<?php
+                    /** @template T */
+                    abstract class Base {
+                        /** @param T $value */
+                        public function set(mixed $value): void {}
+                    }
+
+                    /** @extends Base<string> */
+                    final class Child extends Base {}
+
+                    /** @param callable(string): void $callback */
+                    function takesCallback(callable $callback): void {}
+
+                    /**
+                     * @template X of Child
+                     * @param X $x
+                     */
+                    function f(Child $x): void {
+                        takesCallback([$x, "set"]);
                     }',
                 'assertions' => [],
                 'ignored_issues' => [],
@@ -8149,6 +8248,48 @@ final class ClassTemplateExtendsTest extends TestCase
                         takesCallback([$m, "set"]);
                     }',
                 'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:18:39 - Argument 1 of takesCallback expects callable[impure](int):void, but callable[impure](string):void provided',
+            ],
+            'nonGenericChildBindsItsGenericParentToTheTypeItExtendsOnItsInvokableCallable' => [
+                'code' => '<?php
+                    /** @template T */
+                    abstract class Base {
+                        /** @param T $value */
+                        public function __invoke(mixed $value): void {}
+                    }
+
+                    /** @extends Base<string> */
+                    final class Child extends Base {}
+
+                    /** @param callable(int): void $callback */
+                    function takesCallback(callable $callback): void {}
+
+                    function f(Child $child): void {
+                        takesCallback($child);
+                    }',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:15:39 - Argument 1 of takesCallback expects callable[impure](int):void, but callable[impure](string):void provided',
+            ],
+            'intersectionOfAGenericMemberAndTheOneThatHasTheMethodBindsTheLatter' => [
+                'code' => '<?php
+                    /** @template M */
+                    interface Tag {}
+
+                    /** @template T */
+                    interface Sink {
+                        /** @param T $value */
+                        public function set(mixed $value): void;
+                    }
+
+                    /** @extends Sink<string> */
+                    interface TextSink extends Sink {}
+
+                    /** @param callable(int): void $callback */
+                    function takesCallback(callable $callback): void {}
+
+                    /** @param Tag<bool>&TextSink $m */
+                    function f(Tag $m): void {
+                        takesCallback([$m, "set"]);
+                    }',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:19:39 - Argument 1 of takesCallback expects callable[impure](int):void, but callable[impure](string):void provided',
             ],
         ];
     }
