@@ -128,6 +128,22 @@ final class ArrayAssignmentTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'nestedWriteKeepsTheItemsTheArrayHeld' => [
+                'code' => '<?php
+                    /** @return array<string, list<int>> */
+                    function lists(): array { return []; }
+                    /** @return array<string, array<string, int>> */
+                    function maps(): array { return []; }
+
+                    $a = lists();
+                    $a["k"][] = 1;
+                    $b = maps();
+                    $b["x"]["y"] = 2;',
+                'assertions' => [
+                    '$a===' => 'array{k: non-empty-list<int>, ...<string, list<int>>}',
+                    '$b===' => 'array{x: array{y: 2, ...<string, int>}, ...<string, array<string, int>>}',
+                ],
+            ],
             'assignWithAScalarOffsetGivesAnArrayKey' => [
                 'code' => '<?php
                     /** @param scalar $key */
