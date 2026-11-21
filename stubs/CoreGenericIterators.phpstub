@@ -322,7 +322,7 @@ class ArrayIterator implements SeekableIterator, ArrayAccess, Serializable, Coun
     public function offsetGet($offset) { }
 
     /**
-     * @param TKey $offset The index to set for.
+     * @param TKey|null $offset The index to set for, null to append.
      * @param TValue $value The new value to store at the index.
      * @return void
      *

@@ -229,7 +229,7 @@ class ArrayObject implements IteratorAggregate, ArrayAccess, Serializable, Count
      * Sets the value at the specified index to newval
      * @link http://php.net/manual/en/arrayobject.offsetset.php
      *
-     * @param TKey $offset  The index being set.
+     * @param TKey|null $offset The index being set, null to append.
      * @param TValue $value The new value for the index.
      * @return void
      *

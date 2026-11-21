@@ -1493,6 +1493,28 @@ final class ArrayAccessTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'appendToATypedArrayObjectOrArrayIterator' => [
+                'code' => '<?php
+                    final class Bag {
+                        public ArrayObject $items;
+                        /** @var ArrayObject<int, int> */
+                        public ArrayObject $typed;
+                        /** @var ArrayIterator<int, int> */
+                        public ArrayIterator $iterator;
+
+                        public function __construct() {
+                            $this->items = new ArrayObject();
+                            $this->typed = new ArrayObject();
+                            $this->iterator = new ArrayIterator();
+                        }
+                    }
+
+                    $bag = new Bag();
+                    $bag->items[] = 1;
+                    $bag->typed[] = 1;
+                    $bag->iterator[] = 1;
+                    $bag->typed->offsetSet(null, 2);',
+            ],
             'nullOffsetOfAnObjectThatAcceptsItInArrayAccess' => [
                 'code' => '<?php
                     /** @implements ArrayAccess<string|null, int> */
@@ -3792,6 +3814,13 @@ final class ArrayAccessTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'stringOffsetOfAnIntKeyedArrayObject' => [
+                'code' => '<?php
+                    /** @var ArrayObject<int, int> */
+                    $typed = new ArrayObject();
+                    $typed["x"] = 1;',
+                'error_message' => 'InvalidArgument',
+            ],
             'nullOffsetOfAnObjectThatRejectsItInArrayAccess' => [
                 'code' => '<?php
                     /** @implements ArrayAccess<string, int> */
