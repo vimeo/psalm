@@ -16,6 +16,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\Statements\Expression\NullsafeChainState;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TypeExpander;
 use Psalm\Internal\TypeVisitor\TypeVariableResolver;
@@ -79,6 +80,18 @@ final class MethodCallAnalyzer extends CallAnalyzer
 
         if ($existing_stmt_var_type) {
             $statements_analyzer->node_data->setType($stmt->var, $existing_stmt_var_type);
+
+            // the call uses its receiver, which may have been analysed only as the target of an assignment
+            // (offsetSet() for `$a[] = $v`)
+            if ($receiver_analyzed && $statements_analyzer->data_flow_graph) {
+                foreach ($existing_stmt_var_type->parent_nodes as $parent_node) {
+                    $statements_analyzer->data_flow_graph->addPath(
+                        $parent_node,
+                        DataFlowNode::getForVariableUse(),
+                        'use-inside-call',
+                    );
+                }
+            }
         } elseif (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->var, $context) === false) {
             $context->inside_call = $was_inside_call;
 
