@@ -22,6 +22,7 @@ use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
 use Psalm\Internal\Codebase\CliOutput;
 use Psalm\Internal\Codebase\ConstantTypeResolver;
+use Psalm\Internal\Codebase\PhpDeprecations;
 use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\MethodIdentifier;
@@ -35,7 +36,7 @@ use Psalm\Internal\Type\TypeExpander;
 use Psalm\Internal\TypeVisitor\TypeVariableResolver;
 use Psalm\Issue\ArgumentTypeCoercion;
 use Psalm\Issue\CallableByReferenceMismatch;
-use Psalm\Issue\DeprecatedConstant;
+use Psalm\Issue\DeprecatedSyntax;
 use Psalm\Issue\ImplicitToStringCast;
 use Psalm\Issue\InvalidArgument;
 use Psalm\Issue\InvalidLiteralArgument;
@@ -58,7 +59,9 @@ use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArray;
+use Psalm\Type\Atomic\TArrayKey;
 use Psalm\Type\Atomic\TCallable;
+use Psalm\Type\Atomic\TCallableString;
 use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TClassStringMap;
 use Psalm\Type\Atomic\TClosure;
@@ -68,18 +71,26 @@ use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Type\Atomic\TNumericString;
 use Psalm\Type\Atomic\TObjectWithProperties;
+use Psalm\Type\Atomic\TScalar;
+use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTypeVariable;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
+use function array_all;
 use function array_filter;
+use function array_keys;
 use function array_shift;
+use function array_values;
 use function count;
 use function explode;
 use function implode;
 use function in_array;
+use function is_int;
+use function is_numeric;
 use function is_string;
 use function max;
 use function mb_ord;
@@ -431,11 +442,13 @@ final class ArgumentAnalyzer
             }
         }
 
+        // `static` is the object the method is called on, with its template arguments, as for the params of closures
+        $static_class_type = $template_result?->static_class_type;
         $param_type = TypeExpander::expandUnion(
             $codebase,
             $param_type,
             $classlike_storage->name ?? null,
-            $static_classlike_storage->name ?? null,
+            $static_class_type instanceof TNamedObject ? $static_class_type : ($static_classlike_storage->name ?? null),
             $parent_class,
             true,
             false,
@@ -613,7 +626,7 @@ final class ArgumentAnalyzer
             }
 
             if ($arg_value_type->hasArray()) {
-                $unpacked_atomic_array = $arg_value_type->getArray();
+                $unpacked_atomic_array = self::getPositionalShape($arg_value_type->getArray());
                 $arg_key_allowed = true;
 
                 // a template param is as iterable as its bound
@@ -952,6 +965,27 @@ final class ArgumentAnalyzer
             false,
             true,
         );
+    }
+
+    /**
+     * A sealed shape with integer keys that is not a list passes its values in the order of the shape, whatever the
+     * keys are, as the list of them. A shape with an optional item is left as it is.
+     *
+     * @psalm-pure
+     */
+    private static function getPositionalShape(
+        TKeyedArray|TArray|TClassStringMap $array,
+    ): TKeyedArray|TArray|TClassStringMap {
+        if (!$array instanceof TKeyedArray
+            || $array->is_list
+            || $array->fallback_params
+            || !array_all(array_keys($array->properties), static fn(int|string $key): bool => is_int($key))
+            || !array_all($array->properties, static fn(Union $property): bool => !$property->possibly_undefined)
+        ) {
+            return $array;
+        }
+
+        return TKeyedArray::make(array_values($array->properties), null, null, true);
     }
 
     /**
@@ -1359,22 +1393,8 @@ final class ArgumentAnalyzer
                         continue;
                     }
 
-                    if ($potential_method_id === null && $codebase->analysis_php_version_id >= 8_02_00) {
-                        [$lhs,] = $input_type_part->properties;
-                        if ($lhs->isSingleStringLiteral()
-                            && in_array(
-                                strtolower($lhs->getSingleStringLiteral()->value),
-                                ['self', 'parent', 'static'],
-                                true,
-                            )) {
-                            IssueBuffer::maybeAdd(
-                                new DeprecatedConstant(
-                                    'Use of "' . $lhs->getSingleStringLiteral()->value . '" in callables is deprecated',
-                                    $arg_location,
-                                ),
-                                $statements_analyzer->getSuppressedIssues(),
-                            );
-                        }
+                    if (self::isRelativeCallableArray($input_type_part)) {
+                        self::reportRelativeCallable($statements_analyzer, $arg_location);
                     }
 
                     if ($potential_method_id && $potential_method_id !== 'not-callable') {
@@ -1413,19 +1433,8 @@ final class ArgumentAnalyzer
                         strtolower($parts[1]),
                     );
 
-                    if ($codebase->analysis_php_version_id >= 8_02_00
-                        && in_array(
-                            strtolower($potential_method_id->fq_class_name),
-                            ['self', 'parent', 'static'],
-                            true,
-                        )) {
-                        IssueBuffer::maybeAdd(
-                            new DeprecatedConstant(
-                                'Use of "' . $potential_method_id->fq_class_name . '" in callables is deprecated',
-                                $arg_location,
-                            ),
-                            $statements_analyzer->getSuppressedIssues(),
-                        );
+                    if (in_array(strtolower($potential_method_id->fq_class_name), ['self', 'parent', 'static'], true)) {
+                        self::reportRelativeCallable($statements_analyzer, $arg_location);
                     }
 
                     if (self::verifyCallableInContext(
@@ -1708,6 +1717,28 @@ final class ArgumentAnalyzer
     }
 
     /**
+     * Whether the function that calls the callback does not run in the scope of the class of the method
+     * (a native function outside of PHP_NATIVE_NON_PUBLIC_CB, or a function or method of another class),
+     * so only a public callback is reachable
+     *
+     * @psalm-capabilities read-props
+     */
+    private static function isCalledOutsideOfTheClassScope(
+        MethodIdentifier $potential_method_id,
+        ?string $cased_method_id,
+        ?MethodIdentifier $method_id,
+        Context $context,
+    ): bool {
+        return $potential_method_id->fq_class_name !== $context->self
+            || ($cased_method_id !== null
+                && !$method_id
+                && !in_array($cased_method_id, self::PHP_NATIVE_NON_PUBLIC_CB, true))
+            || ($method_id
+                && $method_id->fq_class_name !== $context->self
+                && $method_id->fq_class_name !== 'Closure');
+    }
+
+    /**
      * A `callable` parameter checks the callable in the scope of the function it is declared by, and a protected
      * method is accessible from that scope when its class and the scope's class are in one hierarchy.
      *
@@ -1764,14 +1795,12 @@ final class ArgumentAnalyzer
                         || ($lhs_atomic instanceof TNamedObject
                             && !$lhs_atomic->definite_class
                             && $lhs_atomic->value === $context->self))) {
-                    if ($potential_method_id->fq_class_name !== $context->self
-                        || ($cased_method_id !== null
-                            && !$method_id
-                            && !in_array($cased_method_id, self::PHP_NATIVE_NON_PUBLIC_CB, true))
-                        || ($method_id
-                            && $method_id->fq_class_name !== $context->self
-                            && $method_id->fq_class_name !== 'Closure')
-                    ) {
+                    if (self::isCalledOutsideOfTheClassScope(
+                        $potential_method_id,
+                        $cased_method_id,
+                        $method_id,
+                        $context,
+                    )) {
                         if ($method_storage->visibility !== ClassLikeAnalyzer::VISIBILITY_PUBLIC
                             && !self::isProtectedCallableAccessibleFromCallee(
                                 $codebase,
@@ -1793,9 +1822,23 @@ final class ArgumentAnalyzer
                         }
                     }
                 } elseif ($lhs->isSingle()) {
+                    // a function calling the callback from the class of its method reaches the non-public ones
+                    $non_public_reachable = !self::isCalledOutsideOfTheClassScope(
+                        $potential_method_id,
+                        $cased_method_id,
+                        $method_id,
+                        $context,
+                    ) || self::isProtectedCallableAccessibleFromCallee(
+                        $codebase,
+                        $method_storage->visibility,
+                        $potential_method_id,
+                        $method_id,
+                    );
+
                     // instance from e.g. new Foo() or static string like Foo::bar
                     if ((!$method_storage->is_static && !$lhs->hasNamedObjectType())
-                        || $method_storage->visibility !== ClassLikeAnalyzer::VISIBILITY_PUBLIC) {
+                        || ($method_storage->visibility !== ClassLikeAnalyzer::VISIBILITY_PUBLIC
+                            && !$non_public_reachable)) {
                         IssueBuffer::maybeAdd(
                             new InvalidArgument(
                                 'Argument ' . ($argument_offset + 1) . $method_identifier
@@ -1819,6 +1862,37 @@ final class ArgumentAnalyzer
         }
 
         return null;
+    }
+
+    /**
+     * Whether a member of the union other than a class-string takes the string literal for what it is: the same
+     * literal, `numeric-string` for a numeric one, any other `string`, `array-key`, `scalar` or `mixed`
+     *
+     * @psalm-pure
+     */
+    private static function acceptsAStringThatIsNoClassString(Union $type, string $literal): bool
+    {
+        foreach ($type->getAtomicTypes() as $atomic_type) {
+            if ($atomic_type instanceof TLiteralString) {
+                if ($atomic_type->value === $literal) {
+                    return true;
+                }
+            } elseif ($atomic_type instanceof TNumericString) {
+                if (is_numeric($literal)) {
+                    return true;
+                }
+            } elseif (($atomic_type instanceof TString
+                    && !$atomic_type instanceof TClassString
+                    && !$atomic_type instanceof TCallableString)
+                || $atomic_type instanceof TArrayKey
+                || $atomic_type instanceof TScalar
+                || $atomic_type instanceof TMixed
+            ) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
@@ -1855,7 +1929,12 @@ final class ArgumentAnalyzer
                 foreach ($param_type_part->type_params[1]->getAtomicTypes() as $param_array_type_part) {
                     if ($param_array_type_part instanceof TClassString) {
                         foreach ($input_expr->items as $item) {
-                            if ($item->value instanceof PhpParser\Node\Scalar\String_) {
+                            if ($item->value instanceof PhpParser\Node\Scalar\String_
+                                && !self::acceptsAStringThatIsNoClassString(
+                                    $param_type_part->type_params[1],
+                                    $item->value->value,
+                                )
+                            ) {
                                 if (ClassLikeAnalyzer::checkFullyQualifiedClassLikeName(
                                     $statements_analyzer,
                                     $item->value->value,
@@ -2428,6 +2507,20 @@ final class ArgumentAnalyzer
             $removed_taints,
         );
 
+        if ($taint_flow_graph && $method_id && $function_storage) {
+            self::addInheritedParamSinks(
+                $codebase,
+                $taint_flow_graph,
+                $method_id,
+                $function_storage,
+                $function_param,
+                $argument_offset,
+                $cased_method_id,
+                $arg_location,
+                $argument_value_node,
+            );
+        }
+
         if ($taint_flow_graph) {
             foreach ($dispatch_routes as [$dispatch_node, $element_type]) {
                 if ($element_type === null) {
@@ -2464,6 +2557,124 @@ final class ArgumentAnalyzer
             $taint_source = $argument_value_node->setTaints($taints);
             $taint_flow_graph->addSource($taint_source);
         }
+    }
+
+    /**
+     * The sinks of the parameters of the methods $method_id implements or overrides, unless the parameter has sinks of
+     * its own, those of the closest methods declaring them, on nodes of this call: the node of the parameter is also
+     * where the calls of the methods it overrides go, which their own sinks report already
+     */
+    private static function addInheritedParamSinks(
+        Codebase $codebase,
+        TaintFlowGraph $taint_flow_graph,
+        MethodIdentifier $method_id,
+        FunctionLikeStorage $function_storage,
+        FunctionLikeParameter $function_param,
+        int $argument_offset,
+        string $cased_method_id,
+        CodeLocation $arg_location,
+        DataFlowNode $argument_value_node,
+    ): void {
+        if (self::declaresSinks($function_param)) {
+            return;
+        }
+
+        $sinks = 0;
+        $value_sinks = 0;
+        $declarations = self::getParamSinkDeclarations(
+            $codebase,
+            $method_id,
+            DataFlowNode::getParameterOffset($function_storage, $function_param, $argument_offset),
+            [],
+        );
+
+        foreach ($declarations as $class => $param) {
+            foreach ($declarations as $other_class => $_) {
+                $other_class_storage = $codebase->classlike_storage_provider->get($other_class);
+
+                // a declaration of a class extending or implementing this one's replaces it
+                if (isset($other_class_storage->parent_classes[$class])
+                    || isset($other_class_storage->class_implements[$class])
+                    || isset($other_class_storage->parent_interfaces[$class])
+                ) {
+                    continue 2;
+                }
+            }
+
+            $sinks |= $param->sinks;
+            $value_sinks |= $param->value_sinks;
+        }
+
+        if ($sinks !== 0) {
+            $inherited_sink = DataFlowNode::getForTaint(
+                $cased_method_id . '#' . ($argument_offset + 1),
+                $arg_location,
+                $sinks,
+            );
+            $taint_flow_graph->addSink($inherited_sink);
+            $taint_flow_graph->addPath($argument_value_node, $inherited_sink, 'arg');
+        }
+
+        if ($value_sinks !== 0) {
+            $taint_flow_graph->addArgumentValuesSink($argument_value_node, $value_sinks);
+        }
+    }
+
+    /**
+     * Whether the parameter has sinks of its own: `@psalm-taint-sink` names it (`none` included), or the sink map of
+     * the builtin functions gives it some
+     *
+     * @psalm-mutation-free
+     */
+    private static function declaresSinks(FunctionLikeParameter $param): bool
+    {
+        return $param->declares_sinks || ($param->sinks | $param->value_sinks) !== 0;
+    }
+
+    /**
+     * The parameters at $offset (see DataFlowNode::getParameterOffset()) of the methods $method_id implements or
+     * overrides that have sinks of their own (see declaresSinks()), by the lowercase name of their class
+     *
+     * @param array<string, true> $visited
+     * @return array<lowercase-string, FunctionLikeParameter>
+     * @psalm-capabilities read-props
+     */
+    private static function getParamSinkDeclarations(
+        Codebase $codebase,
+        MethodIdentifier $method_id,
+        int $offset,
+        array $visited,
+    ): array {
+        $visited[(string) $method_id] = true;
+
+        if (!$codebase->classlike_storage_provider->has($method_id->fq_class_name)) {
+            return [];
+        }
+
+        $class_storage = $codebase->classlike_storage_provider->get($method_id->fq_class_name);
+        $declarations = [];
+
+        foreach ($class_storage->overridden_method_ids[$method_id->method_name] ?? [] as $overridden_method_id) {
+            if (isset($visited[(string) $overridden_method_id])
+                || !$codebase->methods->hasStorage($overridden_method_id)
+            ) {
+                continue;
+            }
+
+            $visited[(string) $overridden_method_id] = true;
+            $overridden_params = $codebase->methods->getStorage($overridden_method_id)->params;
+            $last_param = $overridden_params === [] ? null : $overridden_params[count($overridden_params) - 1];
+            // an argument after the first its variadic parameter is given has the offset of its own position
+            $overridden_param = $overridden_params[$offset] ?? ($last_param?->is_variadic ? $last_param : null);
+
+            if ($overridden_param !== null && self::declaresSinks($overridden_param)) {
+                $declarations[strtolower($overridden_method_id->fq_class_name)] = $overridden_param;
+            }
+
+            $declarations += self::getParamSinkDeclarations($codebase, $overridden_method_id, $offset, $visited);
+        }
+
+        return $declarations;
     }
 
     /**
@@ -2836,5 +3047,45 @@ final class ArgumentAnalyzer
         }
 
         return $type;
+    }
+
+    /**
+     * Whether $array is a callable relative to the calling class, `["parent", "method"]` or
+     * `[$object, "Parent::method"]`
+     *
+     * @psalm-pure
+     */
+    private static function isRelativeCallableArray(TKeyedArray $array): bool
+    {
+        $class = $array->properties[0] ?? null;
+        $method = $array->properties[1] ?? null;
+
+        if ($class === null || $method === null || count($array->properties) !== 2) {
+            return false;
+        }
+
+        return ($class->isSingleStringLiteral()
+                && in_array(strtolower($class->getSingleStringLiteral()->value), ['self', 'parent', 'static'], true))
+            || ($method->isSingleStringLiteral() && str_contains($method->getSingleStringLiteral()->value, '::'));
+    }
+
+    /**
+     * Reports a callable relative to the calling class, which PHP deprecates whatever PHP version is analysed
+     */
+    private static function reportRelativeCallable(
+        StatementsAnalyzer $statements_analyzer,
+        CodeLocation $location,
+    ): void {
+        IssueBuffer::maybeAdd(
+            new DeprecatedSyntax(
+                PhpDeprecations::getDeprecatedSinceMessage(
+                    'A callable relative to the calling class',
+                    8_02_00,
+                    'self::method(...) or [self::class, "method"]',
+                ),
+                $location,
+            ),
+            $statements_analyzer->getSuppressedIssues(),
+        );
     }
 }

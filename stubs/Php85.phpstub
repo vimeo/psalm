@@ -1,0 +1,9 @@
+<?php
+namespace {
+    final class Closure {
+        /**
+         * @psalm-pure
+         */
+        public static function getCurrent(): Closure {}
+    }
+}

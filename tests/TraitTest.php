@@ -836,6 +836,8 @@ final class TraitTest extends TestCase
                             T::foo();
                         }
                     }',
+                'assertions' => [],
+                'ignored_issues' => ['DeprecatedSyntax'],
             ],
             'abstractTraitMethod' => [
                 'code' => '<?php
@@ -1101,6 +1103,8 @@ final class TraitTest extends TestCase
 
                         }
                     }',
+                'assertions' => [],
+                'ignored_issues' => ['DeprecatedSyntax'],
             ],
             'aliasedMethodInternalCallNoReplacement' => [
                 'code' => '<?php
@@ -1820,6 +1824,77 @@ final class TraitTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'traitClassTemplateAndMethodTemplateAreKeptInAClosureOfTheTraitMethod' => [
+                'code' => '<?php
+                    interface Base {}
+
+                    /** @template T of Base */
+                    trait Tr {
+                        /** @param class-string<T> $c */
+                        public function useIt(string $c): string {
+                            $f = function () use ($c): string {
+                                return $c;
+                            };
+
+                            return $f();
+                        }
+
+                        /**
+                         * @template U
+                         * @param U $u
+                         * @return U
+                         */
+                        public function other($u) {
+                            $g = function (mixed $x): mixed {
+                                return $x;
+                            };
+
+                            return $g($u);
+                        }
+                    }
+
+                    final class Impl implements Base {
+                        /** @use Tr<Impl> */
+                        use Tr;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'traitMethodTemplatePassedThroughAClosureParam' => [
+                'code' => '<?php
+                    class Service
+                    {
+                        /**
+                         * @template T
+                         * @param class-string<T> $type
+                         * @param Closure(T): void $callback
+                         */
+                        public function run(string $type, Closure $callback): void
+                        {
+                            echo $type;
+                            echo $callback::class;
+                        }
+                    }
+
+                    trait SomeTrait
+                    {
+                        /**
+                         * @template T
+                         * @param class-string<T> $type
+                         * @param Closure(T): void $callback
+                         */
+                        protected function bar(string $type, Closure $callback): void
+                        {
+                            (new Service())->run($type, $callback);
+                        }
+                    }
+
+                    class Bar
+                    {
+                        use SomeTrait;
+                    }',
+            ],
             'traitReadsAClassConstantWithTheLiteralTheUsingClassesGiveIt' => [
                 'code' => '<?php
                     /** @param positive-int $i */
@@ -1932,6 +2007,67 @@ final class TraitTest extends TestCase
                 'assertions' => [],
                 'ignored_issues' => [],
                 'php_version' => '8.3',
+            ],
+            'privatelyAliasedTraitMethodResolvesThroughMagicCall' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @method int product() */
+                    class ParentClass {
+                        public function __call(string $name, array $args): int {
+                            return 1;
+                        }
+                    }
+
+                    trait RealTrait {
+                        public function product(): string {
+                            return "Screen";
+                        }
+                    }
+
+                    final class Child extends ParentClass {
+                        use RealTrait {
+                            product as private;
+                        }
+                    }
+
+                    $a = (new Child)->product();
+                PHP,
+                'assertions' => [
+                    '$a===' => 'int',
+                ],
+            ],
+            'privateTraitMethodMadeProtectedIsVisibleFromAChildClass' => [
+                'code' => <<<'PHP'
+                    <?php
+                    class GrandParent {
+                        public function __call(string $name, array $args): int {
+                            return 1;
+                        }
+                    }
+
+                    trait SecretTrait {
+                        private function secret(): string {
+                            return "x";
+                        }
+                    }
+
+                    class Middle extends GrandParent {
+                        use SecretTrait {
+                            secret as protected;
+                        }
+                    }
+
+                    final class Leaf extends Middle {
+                        public function go(): string {
+                            return $this->secret();
+                        }
+                    }
+
+                    $a = (new Leaf)->go();
+                PHP,
+                'assertions' => [
+                    '$a===' => 'string',
+                ],
             ],
         ];
     }
@@ -2425,6 +2561,50 @@ final class TraitTest extends TestCase
                         }
                     }',
                 'error_message' => 'RedundantCondition',
+            ],
+            'privatelyAliasedTraitMethodGoesThroughMagicCallWithoutAMethodTag' => [
+                'code' => <<<'PHP'
+                    <?php
+                    class ParentClass {
+                        public function __call(string $name, array $args): int {
+                            return 1;
+                        }
+                    }
+
+                    trait RealTrait {
+                        public function product(): string {
+                            return "Screen";
+                        }
+                    }
+
+                    final class Child extends ParentClass {
+                        use RealTrait {
+                            product as private;
+                        }
+                    }
+
+                    (new Child)->product();
+                PHP,
+                'error_message' => 'UndefinedMagicMethod',
+            ],
+            'privatelyAliasedTraitMethodIsInaccessibleWithoutMagicCall' => [
+                'code' => <<<'PHP'
+                    <?php
+                    trait RealTrait {
+                        public function product(): string {
+                            return "Screen";
+                        }
+                    }
+
+                    final class Child {
+                        use RealTrait {
+                            product as private;
+                        }
+                    }
+
+                    (new Child)->product();
+                PHP,
+                'error_message' => 'InaccessibleMethod',
             ],
         ];
     }

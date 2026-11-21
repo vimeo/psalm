@@ -5,8 +5,13 @@ declare(strict_types=1);
 namespace Psalm\Tests;
 
 use Override;
+use Psalm\Context;
+use Psalm\Internal\Analyzer\IssueData;
+use Psalm\IssueBuffer;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
+
+use function array_map;
 
 use const DIRECTORY_SEPARATOR;
 
@@ -14,6 +19,30 @@ final class UnusedVariableTest extends TestCase
 {
     use ValidCodeAnalysisTestTrait;
     use InvalidCodeAnalysisTestTrait;
+
+    public function testStaticCallOnUndefinedClassReportsOnlyTheClassWhenItsArgumentUsesAVariable(): void
+    {
+        $this->testConfig->throw_exception = false;
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                $foo = "foo";
+
+                return Missing::config(["foo" => $foo]);',
+        );
+
+        $this->analyzeFile($file_path, new Context(), false);
+
+        self::assertSame(
+            ['UndefinedClass'],
+            array_map(
+                static fn(IssueData $issue): string => $issue->type,
+                IssueBuffer::getIssuesDataForFile($file_path),
+            ),
+        );
+    }
 
     #[Override]
     public function setUp(): void
@@ -29,6 +58,26 @@ final class UnusedVariableTest extends TestCase
     public static function providerValidCodeParse(): array
     {
         return [
+            'variableUsedInArgumentOfStaticCallOnUndefinedClass' => [
+                'code' => '<?php
+                    $foo = "foo";
+
+                    return Missing::config(["foo" => $foo]);',
+                'assertions' => [],
+                'ignored_issues' => ['UndefinedClass'],
+            ],
+            'variableUsedInArgumentOfStaticCallOnUndefinedClassInFunction' => [
+                'code' => '<?php
+                    function f(string $a): string {
+                        $b = strtoupper($a);
+
+                        return Missing::config($b);
+                    }
+
+                    echo f("x");',
+                'assertions' => [],
+                'ignored_issues' => ['UndefinedClass', 'MixedReturnStatement', 'MixedInferredReturnType'],
+            ],
             'assignmentBeforeABreakInTheElseIsReadAfterTheIf' => [
                 'code' => '<?php
                     /** @param list<string> $list */
@@ -710,6 +759,8 @@ final class UnusedVariableTest extends TestCase
                     }
 
                     bar();',
+                'assertions' => [],
+                'ignored_issues' => ['DeprecatedSyntax'],
             ],
             'foreachReassigned' => [
                 'code' => '<?php
@@ -1673,6 +1724,8 @@ final class UnusedVariableTest extends TestCase
                         $m = new \ReflectionProperty($mock, "bar");
                         $m->setValue([get_class($mock) => "hello"]);
                     }',
+                'assertions' => [],
+                'ignored_issues' => ['DeprecatedMethod'],
             ],
             'defineBeforeAssignmentInConditional' => [
                 'code' => '<?php
@@ -2625,6 +2678,8 @@ final class UnusedVariableTest extends TestCase
 
                         return $arr;
                     }',
+                'assertions' => [],
+                'ignored_issues' => ['DeprecatedFunction'],
             ],
             'memoryFree' => [
                 'code' => '<?php
@@ -2990,6 +3045,27 @@ final class UnusedVariableTest extends TestCase
                         $l = 4;
                         $d += $l;
                     }',
+            ],
+            'arrayAccessObjectWrittenThroughAnOffset' => [
+                'code' => '<?php
+                    /** @implements ArrayAccess<int, string> */
+                    final class Bag implements ArrayAccess {
+                        public function offsetExists(mixed $offset): bool { return false; }
+                        public function offsetGet(mixed $offset): string { return ""; }
+                        public function offsetSet(mixed $offset, mixed $value): void { echo "set"; }
+                        public function offsetUnset(mixed $offset): void { echo "unset"; }
+                    }
+
+                    function push(Bag $bag): void { $bag[] = "a"; }                    function set(Bag $bag): void { $bag[1] = "a"; }
+                    function setArrayObject(ArrayObject $object): void { $object["k"] = "a"; }
+                    function setLocal(): void { $bag = new Bag(); $bag[] = "a"; }
+                    function unsetOffset(Bag $bag): void { unset($bag[1]); }
+                    function coalesce(Bag $bag): void { $bag[1] ??= "a"; }
+                    function concat(Bag $bag): void { $bag[1] .= "a"; }
+                    function byReference(Bag &$bag): void { $bag[] = "a"; }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'mixedArrayAccessMightBeObject' => [
                 'code' => '<?php
@@ -3407,6 +3483,67 @@ final class UnusedVariableTest extends TestCase
                 'assertions' => [],
                 'ignored_issues' => ['RedundantCondition'],
                 'php_version' => '8.0',
+            ],
+            'writeAfterLoopToVariableBoundToItemsOfArrayUnitedSinceIsUsed' => [
+                'code' => '<?php
+                    /** @param list<string> $keys */
+                    function f(array $keys): array {
+                        $x = 1;
+                        $out = [];
+                        foreach ($keys as $k) {
+                            $out[$k] = &$x;
+                        }
+                        $out = $out + ["q" => 3];
+                        $x = "z";
+                        return $out;
+                    }
+                ',
+            ],
+            'writeAfterLoopToVariableBoundToItemsOfArrayUnitedSinceOnTheRightIsUsed' => [
+                'code' => '<?php
+                    /** @param list<string> $keys */
+                    function f(array $keys): array {
+                        $x = 1;
+                        $out = [];
+                        foreach ($keys as $k) {
+                            $out[$k] = &$x;
+                        }
+                        $out = ["q" => 3] + $out;
+                        $x = "z";
+                        return $out;
+                    }
+                ',
+            ],
+            'writeAfterSwitchToVariableBoundToArrayItemInACaseIsUsed' => [
+                'code' => '<?php
+                    function f(string $k, int $c): array {
+                        $x = 1;
+                        $out = [];
+                        switch ($c) {
+                            case 1:
+                                $out[$k] = &$x;
+                                break;
+                            default:
+                                echo "d";
+                        }
+                        $x = "z";
+                        return $out;
+                    }
+                ',
+            ],
+            'writeAfterLoopToVariableBoundToArrayItemsIsUsed' => [ // #14206
+                'code' => '<?php
+                    /** @param list<string> $keys */
+                    function f(array $keys): array {
+                        $x = 1;
+                        $out = [];
+                        foreach ($keys as $k) {
+                            $out[$k] = &$x;
+                        }
+                        $x = "z";
+                        return $out;
+                    }
+                ',
             ],
         ];
     }
@@ -4708,6 +4845,22 @@ final class UnusedVariableTest extends TestCase
                 'error_message' => 'UnusedVariable',
                 'error_levels' => [],
                 'php_version' => '8.4',
+            ],
+            'writeAfterLoopToVariableBoundToItemsOfArrayAssignedSinceIsUnused' => [
+                'code' => '<?php
+                    /** @param list<string> $keys */
+                    function f(array $keys): array {
+                        $x = 1;
+                        $out = [];
+                        foreach ($keys as $k) {
+                            $out[$k] = &$x;
+                        }
+                        $out = ["a" => 5];
+                        $x = "z";
+                        return $out;
+                    }
+                ',
+                'error_message' => 'UnusedVariable - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:25',
             ],
         ];
     }

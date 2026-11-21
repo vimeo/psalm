@@ -230,6 +230,17 @@ namespace Psr\Http\Message
         public function getStream();
 
         /**
+         * @return void
+         *
+         * @throws \InvalidArgumentException if the $targetPath specified is invalid.
+         * @throws \RuntimeException on any error during the move operation, or on the second or subsequent call to
+         *     the method.
+         *
+         * @psalm-taint-sink file $targetPath
+         */
+        public function moveTo(string $targetPath);
+
+        /**
          * @return string|null
          *
          * @psalm-taint-source input

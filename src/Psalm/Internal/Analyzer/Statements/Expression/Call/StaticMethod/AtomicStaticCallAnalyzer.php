@@ -102,21 +102,24 @@ final class AtomicStaticCallAnalyzer
         if ($lhs_type_part instanceof TNamedObject) {
             $fq_class_name = $lhs_type_part->value;
 
-            if (!ClassLikeAnalyzer::checkFullyQualifiedClassLikeName(
-                $statements_analyzer,
-                $fq_class_name,
-                new CodeLocation($statements_analyzer, $stmt->class),
-                !$context->collect_initializations
-                    ? $context
-                    : null,
-                $statements_analyzer->getSuppressedIssues(),
-                new ClassLikeNameOptions(
-                    $stmt->class instanceof PhpParser\Node\Name
-                        && count($stmt->class->getParts()) === 1
-                        && in_array(strtolower($stmt->class->getFirst()), ['self', 'static'], true),
-                    context: $context,
-                ),
-            )) {
+            // StaticCallAnalyzer reports calling a method directly on a trait
+            if (!$statements_analyzer->getCodebase()->classlikes->traitExists($fq_class_name)
+                && !ClassLikeAnalyzer::checkFullyQualifiedClassLikeName(
+                    $statements_analyzer,
+                    $fq_class_name,
+                    new CodeLocation($statements_analyzer, $stmt->class),
+                    !$context->collect_initializations
+                        ? $context
+                        : null,
+                    $statements_analyzer->getSuppressedIssues(),
+                    new ClassLikeNameOptions(
+                        $stmt->class instanceof PhpParser\Node\Name
+                            && count($stmt->class->getParts()) === 1
+                            && in_array(strtolower($stmt->class->getFirst()), ['self', 'static'], true),
+                        context: $context,
+                    ),
+                )
+            ) {
                 return;
             }
 
@@ -687,6 +690,9 @@ final class AtomicStaticCallAnalyzer
                 );
 
                 if ($is_dynamic_this_method) {
+                    // the forwarded instance call analyses the arguments
+                    $args_analyzed = true;
+
                     return self::forwardCallToInstanceMethod(
                         $statements_analyzer,
                         $stmt,
@@ -1066,6 +1072,7 @@ final class AtomicStaticCallAnalyzer
             $context->mergeFunctionExceptions(
                 $pseudo_method_storage,
                 new CodeLocation($statements_analyzer, $stmt),
+                $statements_analyzer->getCodebase(),
             );
         }
 

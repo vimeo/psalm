@@ -17,6 +17,7 @@ use Psalm\Internal\Algebra\FormulaGenerator;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\ArgumentsAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodCallProhibitionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
@@ -35,8 +36,11 @@ use Psalm\Issue\ArgumentTypeCoercion;
 use Psalm\Issue\InvalidArgument;
 use Psalm\Issue\InvalidScalarArgument;
 use Psalm\Issue\MixedArgumentTypeCoercion;
+use Psalm\Issue\RedundantCondition;
+use Psalm\Issue\RedundantConditionGivenDocblockType;
 use Psalm\Issue\TypeDoesNotContainType;
 use Psalm\Issue\UndefinedFunction;
+use Psalm\Issue\WrongCaseFunction;
 use Psalm\IssueBuffer;
 use Psalm\Node\Expr\BinaryOp\VirtualIdentical;
 use Psalm\Node\Expr\VirtualConstFetch;
@@ -51,6 +55,7 @@ use Psalm\Storage\Assertion\IsType;
 use Psalm\Storage\Assertion\Truthy;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\FunctionLikeStorage;
+use Psalm\Storage\FunctionStorage;
 use Psalm\Storage\MethodStorage;
 use Psalm\Storage\Possibilities;
 use Psalm\Type;
@@ -64,7 +69,9 @@ use Psalm\Type\Reconciler;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
+use function array_any;
 use function array_filter;
+use function array_keys;
 use function array_map;
 use function array_merge;
 use function array_unique;
@@ -82,7 +89,9 @@ use function spl_object_id;
 use function str_contains;
 use function str_replace;
 use function str_starts_with;
+use function strrpos;
 use function strtolower;
+use function substr;
 
 /**
  * @internal
@@ -357,7 +366,11 @@ abstract class CallAnalyzer
             }
 
             if (!$context->isSuppressingExceptions($statements_analyzer)) {
-                $context->mergeFunctionExceptions($method_storage, $code_location);
+                $context->mergeFunctionExceptions(
+                    $method_storage,
+                    $code_location,
+                    $statements_analyzer->getCodebase(),
+                );
             }
         }
 
@@ -370,6 +383,15 @@ abstract class CallAnalyzer
             $template_result,
         ) === false) {
             return false;
+        }
+
+        if (!$class_storage->user_defined) {
+            MethodCallProhibitionAnalyzer::checkDeprecatedArguments(
+                $statements_analyzer,
+                $class_storage->declaring_method_ids[$method_name] ?? $method_id,
+                $args,
+                $code_location,
+            );
         }
 
         if (ArgumentsAnalyzer::checkArgumentsMatch(
@@ -659,8 +681,12 @@ abstract class CallAnalyzer
                 $method_id = $type_part->value . '::' . $method_name;
 
                 foreach ($type_part->extra_types as $extra_type) {
+                    // the property shape `method_exists()` adds says nothing about the class of the method
+                    if ($extra_type instanceof TObjectWithProperties) {
+                        continue;
+                    }
+
                     if ($extra_type instanceof TTemplateParam
-                        || $extra_type instanceof TObjectWithProperties
                         || $extra_type instanceof TCallableObject
                     ) {
                         throw new UnexpectedValueException('Shouldn’t get a generic param here');
@@ -674,6 +700,51 @@ abstract class CallAnalyzer
         }
 
         return $method_ids;
+    }
+
+    /**
+     * @psalm-pure
+     */
+    public static function getUnqualifiedFunctionName(string $function_id): string
+    {
+        $separator_position = strrpos($function_id, '\\');
+
+        return $separator_position === false ? $function_id : substr($function_id, $separator_position + 1);
+    }
+
+    /**
+     * Reports a function that is called with another casing than the one it is declared with
+     *
+     * @param string $written_name the name of the call, qualified or not
+     */
+    public static function checkFunctionNameCase(
+        StatementsAnalyzer $statements_analyzer,
+        FunctionStorage $function_storage,
+        string $written_name,
+        CodeLocation $code_location,
+        string $function_id,
+    ): void {
+        if ($function_storage->cased_name === null) {
+            return;
+        }
+
+        if ($function_storage->cased_name === $written_name) {
+            return;
+        }
+
+        $declared_name = self::getUnqualifiedFunctionName($function_storage->cased_name);
+        $written_name = self::getUnqualifiedFunctionName($written_name);
+
+        if ($declared_name !== $written_name) {
+            IssueBuffer::maybeAdd(
+                new WrongCaseFunction(
+                    'Function ' . $written_name . ' is declared as ' . $declared_name . ' and has wrong casing',
+                    $code_location,
+                    $function_id,
+                ),
+                $statements_analyzer->getSuppressedIssues(),
+            );
+        }
     }
 
     /**
@@ -730,6 +801,14 @@ abstract class CallAnalyzer
         } catch (UnexpectedValueException) {
             return true;
         }
+
+        self::checkFunctionNameCase(
+            $statements_analyzer,
+            $function_storage,
+            $cased_function_id,
+            $code_location,
+            $function_id,
+        );
 
         $since_php_version_id = $function_storage->since_php_version_id;
 
@@ -1266,6 +1345,8 @@ abstract class CallAnalyzer
         if ($type_assertions) {
             $template_type_map = [];
 
+            IssueBuffer::startRecording();
+
             // while in an and, we allow scope to boil over to support
             // statements of the form if ($x && $x->foo())
             [$op_vars_in_scope, $op_references_in_scope] = Reconciler::reconcileKeyedTypes(
@@ -1280,6 +1361,28 @@ abstract class CallAnalyzer
                 $context->inside_loop,
                 new CodeLocation($statements_analyzer->getSource(), $expr),
             );
+
+            $recorded_issues = IssueBuffer::clearRecordingLevel();
+            IssueBuffer::stopRecording();
+
+            $changes_a_type = array_any(
+                array_keys($type_assertions),
+                static fn(string $var_id): bool => !isset($context->vars_in_scope[$var_id])
+                    || !isset($op_vars_in_scope[$var_id])
+                    || $op_vars_in_scope[$var_id]->getId(true) !== $context->vars_in_scope[$var_id]->getId(true),
+            );
+
+            foreach ($recorded_issues as $recorded_issue) {
+                // a call is only redundant if every assertion it makes is
+                if ($changes_a_type
+                    && ($recorded_issue instanceof RedundantCondition
+                        || $recorded_issue instanceof RedundantConditionGivenDocblockType)
+                ) {
+                    continue;
+                }
+
+                IssueBuffer::bubbleUp($recorded_issue);
+            }
 
             foreach ($changed_var_ids as $var_id => $_) {
                 if (isset($op_vars_in_scope[$var_id])) {
