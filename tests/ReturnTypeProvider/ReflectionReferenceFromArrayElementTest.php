@@ -196,6 +196,53 @@ final class ReflectionReferenceFromArrayElementTest extends TestCase
             'php_version' => '8.3',
         ];
 
+        yield 'byRefArrayElementOrStaticProperty' => [
+            'code' => '<?php
+                class K {
+                    public static int $s = 1;
+                }
+                $x = ["k" => ["l" => 1]];
+                $r = ReflectionReference::fromArrayElement([&$x["k"]["l"]], 0);
+                $s = ReflectionReference::fromArrayElement([&K::$s], 0);
+            ',
+            'assertions' => [
+                '$r===' => 'ReflectionReference',
+                '$s===' => 'ReflectionReference',
+            ],
+            'ignored_issues' => [],
+            'php_version' => '8.0',
+        ];
+
+        yield 'byRefTemporaryStaysNullable' => [
+            'code' => '<?php
+                /** @return list{int} */
+                function makeArray(): array {
+                    return [1];
+                }
+                $r = ReflectionReference::fromArrayElement([&makeArray()[0]], 0);
+            ',
+            'assertions' => [
+                '$r===' => 'ReflectionReference|null',
+            ],
+            'ignored_issues' => [],
+            'php_version' => '8.0',
+        ];
+
+        yield 'byRefObjectPropertyOrOffsetStaysNullable' => [
+            'code' => '<?php
+                /** @param ArrayAccess<string, int> $a */
+                function f(stdClass $o, ArrayAccess $a): void {
+                    $r = ReflectionReference::fromArrayElement([&$o->p], 0);
+                    $s = ReflectionReference::fromArrayElement([&$a["k"]], 0);
+                    /** @psalm-check-type-exact $r = ReflectionReference|null */
+                    /** @psalm-check-type-exact $s = ReflectionReference|null */
+                }
+            ',
+            'assertions' => [],
+            'ignored_issues' => [],
+            'php_version' => '8.0',
+        ];
+
         yield 'spreadStaysNullable' => [
             'code' => '<?php
                 $a = 1;
