@@ -6,10 +6,16 @@ Every non-draft PR to `master` or `6.x` runs Psalm on a pinned corpus of real pr
 - ⚠️ warn: a timeout or memory crash with base already above half of the limit, wall time more than 20 % above base after a re-run, a missing or invalid result, a setup failure, or 💥 (base crashed or timed out, so the project is not comparable).
 - ✅ pass: otherwise. Weighted issues never change the verdict.
 
-An issue removed and added at the same file, line and column is listed under **Changed in place**, with the changed part of its message struck through and the new text in bold (namespaces dropped when the short name is unambiguous). The same change in several files is one entry; `{self}` then stands for the class named after each file:
+An issue removed and added at the same file, line and column is listed under **Changed in place**, as a `diff` block: the old message on a `-` line, the new one on a `+` line, the text both share trimmed alike, namespaces dropped when the short name is unambiguous. The same change in several files is one hunk, and `{self}` then stands for the class named after each file:
 
-- `HasMany.php:38` MixedReturnTypeCoercion → InvalidReturnType: `…Model&(TRelatedModel:`~~`HasMany`~~**`HasOneOrMany`**` as Model)>…`
-- PossiblyInvalidArgument, 6 places: `…(TParent:`~~`{self}`~~**`VariableNodeDefinition`**` as NodeParentInterface|null) provided`
+```diff
+@@ 6 places PossiblyInvalidArgument @@
+  src/Symfony/Component/Config/Definition/Builder/BooleanNodeDefinition.php:40
+  src/Symfony/Component/Config/Definition/Builder/EnumNodeDefinition.php:73
+  …
+- …possibly different type NodeInterface|(TParent:{self} as NodeParentInterface|null) provided
++ …possibly different type NodeInterface|(TParent:VariableNodeDefinition as NodeParentInterface|null) provided
+```
 
 The sticky PR comment is posted by `perf-comment.yml` (`workflow_run`), which GitHub only runs from the default branch: until this lands on `master`, `6.x` PRs get the job summary and the check but no comment.
 
