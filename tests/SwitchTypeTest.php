@@ -118,28 +118,29 @@ final class SwitchTypeTest extends TestCase
             ],
             'continueTargetingAnOuterSwitchInALoopLeavesTheSwitchNotTheLoop' => [
                 'code' => '<?php
-                    /** @param list<string> $l */
-                    function f(array $l): int {
-                        foreach ($l as $s) {
-                            switch ($s) {
-                                case "A":
-                                    switch (uniqid()) {
-                                        case "x":
-                                            $q = 1;
-                                            continue 2;
-                                    }
+                    $r = 0;
+                    foreach (["A", "B"] as $s) {
+                        switch ($s) {
+                            case "A":
+                                switch (uniqid()) {
+                                    case "x":
+                                        $q = 1;
+                                        continue 2;
+                                }
 
-                                    $q = 2;
-                                    break;
-                                default:
-                                    $q = 3;
-                            }
-
-                            return $q;
+                                $q = 2;
+                                break;
+                            default:
+                                $q = 3;
                         }
 
-                        return 0;
+                        $r = $q;
                     }',
+                'assertions' => [
+                    '$r===' => '1|2|3',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '7.4',
             ],
             'switchWithoutDefaultNarrowsTheSubjectWhenEveryCaseReturns' => [
                 'code' => '<?php
