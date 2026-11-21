@@ -30,6 +30,8 @@ interface Traversable {
  * the body costs and nothing else: its position is internal engine state, not an effect.
  */
 final class Generator implements Iterator {
+    private function __construct() {}
+
     /**
      * @psalm-pure
      * @psalm-purity-from-template TPurity
@@ -566,8 +568,7 @@ interface Serializable {
  */
 final class WeakReference
 {
-    // always fail
-    public function __construct() {}
+    private function __construct() {}
 
     /**
      * @template TIn as object
