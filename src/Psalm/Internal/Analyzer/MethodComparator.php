@@ -1473,7 +1473,8 @@ final class MethodComparator
             $implementer_called_class_name,
             $implementer_classlike_storage->parent_class,
             true,
-            false,
+            // a conditional is compared by its branches, as the guide's is
+            true,
             $implementer_classlike_storage->final,
         );
 

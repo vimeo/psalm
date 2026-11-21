@@ -936,6 +936,39 @@ final class ConditionalReturnTypeTest extends TestCase
                         return $i->deserialize($data, \'array\');
                     }',
             ],
+            'implementedMethodWithTheConditionalReturnTypeOfTheInterface' => [
+                'code' => '<?php
+                    /** @template T = mixed */
+                    interface Box {
+                        /**
+                         * @template U = never
+                         * @param (callable(T): U)|null $f
+                         * @return Box<($f is null ? T : U)>
+                         */
+                        public function map(?callable $f = null): Box;
+                    }
+
+                    /**
+                     * @template T = mixed
+                     * @implements Box<T>
+                     */
+                    final class Just implements Box {
+                        /** @param T $value */
+                        public function __construct(private mixed $value) {}
+
+                        /**
+                         * @template U = never
+                         * @param (callable(T): U)|null $f
+                         * @return Box<($f is null ? T : U)>
+                         */
+                        public function map(?callable $f = null): Box {
+                            return $f === null ? $this : new Just($f($this->value));
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'inheritConditional' => [
                 'code' => '<?php
                     /**
@@ -2733,6 +2766,29 @@ final class ConditionalReturnTypeTest extends TestCase
                         return $key === null ? "a" : $key;
                     }',
                 'error_message' => 'InvalidDocblock',
+            ],
+            'implementedMethodWithAConditionalReturnTypeOutsideTheInterfaces' => [
+                'code' => '<?php
+                    interface Box {
+                        /**
+                         * @param int|null $f
+                         * @return ($f is null ? string : int)
+                         */
+                        public function map(?int $f = null): mixed;
+                    }
+
+                    final class Wrong implements Box {
+                        /**
+                         * @param int|null $f
+                         * @return ($f is null ? array : int)
+                         */
+                        public function map(?int $f = null): mixed {
+                            return $f ?? [];
+                        }
+                    }',
+                'error_message' => 'ImplementedReturnTypeMismatch',
+                'error_levels' => [],
+                'php_version' => '8.0',
             ],
             'typedClosureParamOfCallableOfStaticKeepsItsDeclaredType' => [
                 'code' => '<?php
