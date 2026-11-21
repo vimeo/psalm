@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace Psalm\Tests\EndToEnd;
 
+use Override;
 use Symfony\Component\Process\Process;
 
 use function fclose;
+use function file_exists;
 use function file_get_contents;
 use function file_put_contents;
 use function fread;
@@ -35,22 +37,52 @@ final class PsalmShepherdEndToEndTest extends PsalmEndToEndTestCase
     /** A port nothing listens on, so that the report is refused at once */
     private const UNREACHABLE_HOST = '127.0.0.1:1';
 
+    #[Override]
+    public function tearDown(): void
+    {
+        if (file_exists(self::$tmpDir . '/.git')) {
+            self::recursiveRemoveDirectory(self::$tmpDir . '/.git');
+        }
+
+        parent::tearDown();
+    }
+
     public function testPsalmWarnsWhenShepherdIsEnabledOutsideASupportedCi(): void
     {
         $process = $this->runPsalmWithShepherd(['--shepherd'], []);
 
         $this->assertStringContainsString(
-            'Warning: Results not sent to Shepherd: no supported CI service detected',
+            'Warning: Results not sent to Shepherd: no CI service with a GitHub repository detected',
             $process->getErrorOutput(),
         );
         $this->assertSame(0, $process->getExitCode());
+    }
+
+    public function testPsalmSendsNothingOutsideACiServiceInAGithubCheckout(): void
+    {
+        $this->initGitRepository();
+
+        $process = $this->runPsalmWithShepherd(['--shepherd=http://' . self::UNREACHABLE_HOST], []);
+
+        $this->assertStringContainsString('no CI service with a GitHub repository detected', $process->getErrorOutput());
+        $this->assertStringNotContainsString('Results not sent to Shepherd (127.0.0.1)', $process->getErrorOutput());
+    }
+
+    public function testPsalmSendsNothingFromACiServiceWithoutAGithubRemote(): void
+    {
+        $this->initGitRepository('https://gitlab.com/psalm/example.git');
+
+        $process = $this->runPsalmWithShepherd(['--shepherd=http://' . self::UNREACHABLE_HOST], ['CI' => 'true']);
+
+        $this->assertStringContainsString('no CI service with a GitHub repository detected', $process->getErrorOutput());
+        $this->assertStringNotContainsString('Results not sent to Shepherd (127.0.0.1)', $process->getErrorOutput());
     }
 
     public function testPsalmDoesNotWarnAboutTheCiWhenItSendsTheReport(): void
     {
         $process = $this->runPsalmWithShepherd(['--shepherd=http://' . self::UNREACHABLE_HOST], self::githubActions());
 
-        $this->assertStringNotContainsString('no supported CI service detected', $process->getErrorOutput());
+        $this->assertStringNotContainsString('no CI service with a GitHub repository detected', $process->getErrorOutput());
         $this->assertStringContainsString('Results not sent to Shepherd (127.0.0.1)', $process->getErrorOutput());
         $this->assertSame(0, $process->getExitCode());
     }
@@ -124,6 +156,38 @@ final class PsalmShepherdEndToEndTest extends PsalmEndToEndTestCase
         $this->assertNotSame($head_of_checkout, $report['git']['head']['id']);
     }
 
+    public function testPsalmSendsTheReportOfAGitlabCiJobWithADetachedHead(): void
+    {
+        $head_of_checkout = $this->initGitRepository(
+            'https://gitlab-ci-token:s3cret@github.com/psalm/example.git',
+            true,
+        );
+
+        $report = $this->runPsalmAndReadTheReport([
+            'CI' => 'true',
+            'CI_COMMIT_REF_NAME' => 'feature',
+            'CI_MERGE_REQUEST_IID' => '7',
+        ]);
+
+        $this->assertSame('generic', $report['build']['CI_NAME']);
+        $this->assertSame('psalm', $report['build']['CI_REPO_OWNER']);
+        $this->assertSame('example', $report['build']['CI_REPO_NAME']);
+        $this->assertSame('feature', $report['build']['CI_BRANCH']);
+        $this->assertSame('7', $report['build']['CI_PR_NUMBER']);
+        $this->assertSame($head_of_checkout, $report['git']['head']['id']);
+    }
+
+    public function testPsalmSendsTheReportOfAnAzurePipelinesJob(): void
+    {
+        $this->initGitRepository('git@github.com:psalm/example.git', true);
+
+        $report = $this->runPsalmAndReadTheReport(['TF_BUILD' => 'True', 'BUILD_SOURCEBRANCHNAME' => 'master']);
+
+        $this->assertSame('psalm', $report['build']['CI_REPO_OWNER']);
+        $this->assertSame('master', $report['build']['CI_BRANCH']);
+        $this->assertArrayNotHasKey('CI_PR_NUMBER', $report['build']);
+    }
+
     /**
      * @return array<string, string>
      * @psalm-pure
@@ -168,13 +232,24 @@ final class PsalmShepherdEndToEndTest extends PsalmEndToEndTestCase
     }
 
     /** @return string the hash of the commit the project is on */
-    private function initGitRepository(): string
-    {
-        foreach ([
+    private function initGitRepository(
+        string $remote_url = 'https://github.com/psalm/example.git',
+        bool $detached = false,
+    ): string {
+        $commands = [
             ['init', '--quiet'],
-            ['remote', 'add', 'origin', 'https://github.com/psalm/example.git'],
-            ['-c', 'user.name=Psalm', '-c', 'user.email=psalm@example.com', 'commit', '--quiet', '--allow-empty', '-m', 'Init'],
-        ] as $command) {
+            ['remote', 'add', 'origin', $remote_url],
+            [
+                '-c', 'user.name=Psalm', '-c', 'user.email=psalm@example.com',
+                'commit', '--quiet', '--allow-empty', '-m', 'Init',
+            ],
+        ];
+
+        if ($detached) {
+            $commands[] = ['checkout', '--quiet', '--detach'];
+        }
+
+        foreach ($commands as $command) {
             self::newProcess(['git', ...$command], self::$tmpDir)->mustRun();
         }
 
@@ -242,7 +317,6 @@ final class PsalmShepherdEndToEndTest extends PsalmEndToEndTestCase
             $process->wait();
         } finally {
             fclose($server);
-            self::recursiveRemoveDirectory(self::$tmpDir . '/.git');
         }
 
         /** @var array{build: array<string, string>, git: array{head: array{id: string}}} */
@@ -267,6 +341,20 @@ final class PsalmShepherdEndToEndTest extends PsalmEndToEndTestCase
             'APPVEYOR' => false,
             'JENKINS_URL' => false,
             'SCRUTINIZER' => false,
+            'CI' => false,
+            'TF_BUILD' => false,
+            'CI_COMMIT_BRANCH' => false,
+            'CI_COMMIT_REF_NAME' => false,
+            'BITBUCKET_BRANCH' => false,
+            'BUILDKITE_BRANCH' => false,
+            'BUILD_SOURCEBRANCHNAME' => false,
+            'DRONE_BRANCH' => false,
+            'CI_MERGE_REQUEST_IID' => false,
+            'BITBUCKET_PR_ID' => false,
+            'BUILDKITE_PULL_REQUEST' => false,
+            'SYSTEM_PULLREQUEST_PULLREQUESTNUMBER' => false,
+            'CI_COMMIT_PULL_REQUEST' => false,
+            'DRONE_PULL_REQUEST' => false,
             'PSALM_SHEPHERD' => false,
         ];
     }

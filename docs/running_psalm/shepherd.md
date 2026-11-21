@@ -12,7 +12,9 @@ Add `--shepherd` to the Psalm command that runs in CI on your default branch:
 
 Setting the environment variable `PSALM_SHEPHERD=1` does the same. Psalm prints `Results sent to Shepherd (shepherd.dev)` when the report was accepted. A failed upload never changes Psalm's exit status.
 
-Psalm sends reports only from GitHub Actions, Travis CI, CircleCI, AppVeyor, Jenkins and Scrutinizer. On other CI services it sends nothing and warns `Results not sent to Shepherd: no supported CI service detected`.
+Psalm detects GitHub Actions, Travis CI, CircleCI, AppVeyor, Jenkins and Scrutinizer, and on other CI services uses the GitHub remote of the checkout. Outside CI, or without a GitHub remote, nothing is sent and Psalm warns `Results not sent to Shepherd: no CI service with a GitHub repository detected`.
+
+For pull requests, Shepherd also comments on the changed lines where Psalm finds errors, when it can access the repository.
 
 ## Badges
 
