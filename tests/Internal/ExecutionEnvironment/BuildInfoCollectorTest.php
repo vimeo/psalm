@@ -542,11 +542,11 @@ final class BuildInfoCollectorTest extends TestCase
         ];
 
         yield 'GitHub Actions pull_request' => [
-            self::githubActions('pull_request', 'pull_request', 'refs/pull/42/merge'),
+            self::githubActions('pull_request', 'pull_request', 'refs/pull/42/merge', 'feature'),
             null,
             [
                 'CI_NAME' => 'github-actions',
-                'CI_BRANCH' => 'refs/pull/42/merge',
+                'CI_BRANCH' => 'feature',
                 'GITHUB_ACTIONS' => 'true',
                 'CI_JOB_ID' => '9876543210',
                 'GITHUB_REF' => 'refs/pull/42/merge',
@@ -560,11 +560,11 @@ final class BuildInfoCollectorTest extends TestCase
         ];
 
         yield 'GitHub Actions pull_request_target' => [
-            self::githubActions('pull_request_target', 'pull_request', 'refs/heads/master'),
+            self::githubActions('pull_request_target', 'pull_request', 'refs/heads/master', 'feature'),
             null,
             [
                 'CI_NAME' => 'github-actions',
-                'CI_BRANCH' => 'master',
+                'CI_BRANCH' => 'feature',
                 'GITHUB_ACTIONS' => 'true',
                 'CI_JOB_ID' => '9876543210',
                 'GITHUB_REF' => 'refs/heads/master',
@@ -578,11 +578,11 @@ final class BuildInfoCollectorTest extends TestCase
         ];
 
         yield 'GitHub Actions pull_request from a fork' => [
-            self::githubActions('pull_request', 'pull_request_from_fork', 'refs/pull/42/merge'),
+            self::githubActions('pull_request', 'pull_request_from_fork', 'refs/pull/42/merge', 'feature'),
             null,
             [
                 'CI_NAME' => 'github-actions',
-                'CI_BRANCH' => 'refs/pull/42/merge',
+                'CI_BRANCH' => 'feature',
                 'GITHUB_ACTIONS' => 'true',
                 'CI_JOB_ID' => '9876543210',
                 'GITHUB_REF' => 'refs/pull/42/merge',
@@ -596,7 +596,7 @@ final class BuildInfoCollectorTest extends TestCase
         ];
 
         yield 'GitHub Actions pull_request from a deleted fork' => [
-            self::githubActions('pull_request', 'pull_request_from_deleted_fork', 'refs/pull/42/merge'),
+            self::githubActions('pull_request', 'pull_request_from_deleted_fork', 'refs/pull/42/merge', 'feature'),
             null,
             [
                 'CI_NAME' => 'github-actions',
@@ -700,6 +700,36 @@ final class BuildInfoCollectorTest extends TestCase
         unset($env['GITHUB_RUN_ID']);
 
         self::assertArrayNotHasKey('CI_JOB_ID', (new BuildInfoCollector($env))->collect());
+    }
+
+    public function testGithubActionsPullRequestWithoutAHeadRefKeepsTheRefAsTheBranch(): void
+    {
+        $info = (new BuildInfoCollector(self::githubActions('pull_request', 'pull_request', 'refs/pull/42/merge')))
+            ->collect();
+
+        self::assertSame('refs/pull/42/merge', $info['CI_BRANCH']);
+    }
+
+    public function testGithubActionsPullRequestFromADeletedForkKeepsTheRefAsTheBranch(): void
+    {
+        $env = self::githubActions('pull_request', 'pull_request_from_deleted_fork', 'refs/pull/42/merge', 'master');
+
+        self::assertSame('refs/pull/42/merge', (new BuildInfoCollector($env))->collect()['CI_BRANCH']);
+    }
+
+    public function testGithubActionsPullRequestWithAnEmptyHeadRefKeepsTheRefAsTheBranch(): void
+    {
+        $info = (new BuildInfoCollector(self::githubActions('pull_request', 'pull_request', 'refs/pull/42/merge', '')))
+            ->collect();
+
+        self::assertSame('refs/pull/42/merge', $info['CI_BRANCH']);
+    }
+
+    public function testGithubActionsPushIgnoresTheHeadRef(): void
+    {
+        $info = (new BuildInfoCollector(self::githubActions('push', 'push', 'refs/heads/master', 'feature')))->collect();
+
+        self::assertSame('master', $info['CI_BRANCH']);
     }
 
     /**
@@ -820,6 +850,7 @@ final class BuildInfoCollectorTest extends TestCase
         string $event_name,
         string $event_fixture,
         string $ref = 'refs/heads/master',
+        ?string $head_ref = null,
     ): array {
         return [
             'GITHUB_ACTIONS' => 'true',
@@ -830,6 +861,6 @@ final class BuildInfoCollectorTest extends TestCase
             'GITHUB_EVENT_PATH' => __DIR__ . DIRECTORY_SEPARATOR . '..' . DIRECTORY_SEPARATOR . '..'
                 . DIRECTORY_SEPARATOR . 'fixtures' . DIRECTORY_SEPARATOR . 'GithubEvents'
                 . DIRECTORY_SEPARATOR . $event_fixture . '.json',
-        ];
+        ] + ($head_ref === null ? [] : ['GITHUB_HEAD_REF' => $head_ref]);
     }
 }

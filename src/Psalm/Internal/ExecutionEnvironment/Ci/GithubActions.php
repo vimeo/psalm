@@ -36,6 +36,7 @@ final class GithubActions implements CiProvider
 {
     private const FLAG = 'GITHUB_ACTIONS';
     private const REF = 'GITHUB_REF';
+    private const HEAD_REF = 'GITHUB_HEAD_REF';
     private const RUN_ID = 'GITHUB_RUN_ID';
     private const REPOSITORY = 'GITHUB_REPOSITORY';
     private const EVENT_NAME = 'GITHUB_EVENT_NAME';
@@ -53,6 +54,8 @@ final class GithubActions implements CiProvider
         $ref = $env->get(self::REF) ?? '';
         $branch = self::getBranch($ref);
 
+        $is_pull_request_event = in_array($env->get(self::EVENT_NAME), self::PULL_REQUEST_EVENTS, true);
+
         $git = null;
         $pull_request = null;
 
@@ -65,12 +68,19 @@ final class GithubActions implements CiProvider
 
             $git = self::getHeadCommitGit($event_data, $branch);
 
-            if (in_array($env->get(self::EVENT_NAME), self::PULL_REQUEST_EVENTS, true)) {
+            if ($is_pull_request_event) {
                 $pull_request = self::getPullRequest($event_data);
 
                 if ($pull_request !== null) {
                     $git = self::getPullRequestGit($event_data) ?? $git;
                 }
+            }
+
+            // The ref of a pull request is its merge commit, its branch is the one it comes from. A pull request
+            // from a deleted fork has no repository, so Shepherd would take a branch with the name of the default
+            // one for a commit of it.
+            if ($pull_request?->head !== null) {
+                $branch = $env->get(self::HEAD_REF) ?? $branch;
             }
         }
 
