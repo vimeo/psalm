@@ -118,7 +118,11 @@ final class CoalesceAnalyzer
                 $statements_analyzer,
             ) === null;
 
-        if ($has_call_root || $has_untracked_offset) {
+        // `??=` creates the offsets it reads: a missing one is not a value isset() could narrow
+        $is_offset_assignment = $left_expr instanceof PhpParser\Node\Expr\ArrayDimFetch
+            && $left_expr->getAttribute('coalesceAssignmentTarget') === true;
+
+        if ($has_call_root || $has_untracked_offset || $is_offset_assignment) {
             // the offset makes it unique; issue messages show the code of the operand ({@see self::getDisplayName()})
             $left_offset = (int) $left_expr->getAttribute('startFilePos');
             $left_var_id = self::TEMPORARY_VAR_PREFIX . $left_offset;

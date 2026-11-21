@@ -1334,6 +1334,11 @@ final class AssignmentAnalyzer
         } elseif ($stmt instanceof PhpParser\Node\Expr\AssignOp\BitwiseXor) {
             $operation = new VirtualBitwiseXor($stmt->var, $stmt->expr, $stmt->getAttributes());
         } elseif ($stmt instanceof PhpParser\Node\Expr\AssignOp\Coalesce) {
+            // the offsets `??=` reads may be missing: it creates them
+            for ($var = $stmt->var; $var instanceof PhpParser\Node\Expr\ArrayDimFetch; $var = $var->var) {
+                $var->setAttribute('coalesceAssignmentTarget', true);
+            }
+
             $operation = new VirtualCoalesce($stmt->var, $stmt->expr, $stmt->getAttributes());
         } elseif ($stmt instanceof PhpParser\Node\Expr\AssignOp\Concat) {
             $operation = new VirtualConcat($stmt->var, $stmt->expr, $stmt->getAttributes());
