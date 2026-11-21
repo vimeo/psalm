@@ -2446,6 +2446,17 @@ final class WhileTest extends TestCase
                     }
                 PHP,
             ],
+            'variableAssignedInTheRightOperandOfOrInTheLastForConditionIsDefinedAfterTheLoop' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function f(bool $x): int {
+                        for ($i = 0; $i++, !$x || ($c = rand()) === 3;) {
+                            $x = true;
+                        }
+                        return $c;
+                    }
+                PHP,
+            ],
         ];
     }
 
@@ -2864,6 +2875,30 @@ final class WhileTest extends TestCase
                             $x = true;
                         }
                         return $a;
+                    }
+                PHP,
+                'error_message' => 'PossiblyUndefinedVariable',
+            ],
+            'variableAssignedInAnOrThatIsOneConjunctOfTheWhileConditionIsPossiblyUndefined' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function w(bool $x): int {
+                        while ((!$x || ($a = rand()) === 3) && rand(0, 1)) {
+                            $x = true;
+                        }
+                        return $a;
+                    }
+                PHP,
+                'error_message' => 'PossiblyUndefinedVariable',
+            ],
+            'variableAssignedInAnOrThatIsNotTheLastForConditionIsPossiblyUndefined' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function f(bool $x): int {
+                        for (; !$x || ($b = rand()) === 3, rand(0, 1);) {
+                            $x = true;
+                        }
+                        return $b;
                     }
                 PHP,
                 'error_message' => 'PossiblyUndefinedVariable',

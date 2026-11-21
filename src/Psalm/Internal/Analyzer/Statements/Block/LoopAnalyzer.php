@@ -827,13 +827,9 @@ final class LoopAnalyzer
             if (!$is_do) {
                 $written_when_false_types = [];
 
-                $evaluated_conditions = $only_last_condition_decides
-                    ? $pre_conditions
-                    : array_slice($pre_conditions, 0, 1);
-
-                foreach ($evaluated_conditions as $evaluated) {
+                if ($deciding_condition) {
                     self::addWrittenWhenFalseTypes(
-                        $evaluated,
+                        $deciding_condition,
                         $loop_context->self,
                         $statements_analyzer,
                         $written_when_false_types,
