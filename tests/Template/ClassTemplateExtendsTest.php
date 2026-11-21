@@ -1632,6 +1632,80 @@ final class ClassTemplateExtendsTest extends TestCase
                         }
                     }',
             ],
+            'propertyOfAParentGivenATypeNamingAnImportedAliasIsExpanded' => [
+                'code' => '<?php
+                    /** @template T */
+                    abstract class A {
+                        /** @var T */
+                        public $value;
+
+                        /** @param T $value */
+                        public function __construct($value) {
+                            $this->value = $value;
+                        }
+                    }
+
+                    /** @psalm-type Foo=string */
+                    class B {}
+
+                    /**
+                     * @psalm-import-type Foo from B
+                     * @extends A<list<Foo>>
+                     */
+                    class C extends A {}
+
+                    $instance = new C(["hello"]);
+                    $output = $instance->value;',
+                'assertions' => [
+                    '$output===' => 'list<string>',
+                ],
+            ],
+            'propertyOfAParentGivenATypeMentioningTheTemplatesOfTheChildIsLocalized' => [
+                'code' => '<?php
+                    /** @template T */
+                    abstract class Base {
+                        /** @var T */
+                        public mixed $value;
+                    }
+
+                    /**
+                     * @template U
+                     * @extends Base<list<U>>
+                     */
+                    abstract class Mid extends Base {}
+
+                    /**
+                     * @template K
+                     * @template V
+                     * @extends Base<array<K, V>>
+                     */
+                    abstract class Two extends Base {}
+
+                    /**
+                     * @template W
+                     * @extends Two<string, W>
+                     */
+                    abstract class Grand extends Two {}
+
+                    /**
+                     * @param Mid<DateTime> $mid
+                     * @param Two<int, string> $two
+                     * @param Grand<bool> $grand
+                     */
+                    function read(Mid $mid, Two $two, Grand $grand): void {
+                        $m = $mid->value;
+                        /** @psalm-check-type-exact $m = list<DateTime> */;
+
+                        $t = $two->value;
+                        /** @psalm-check-type-exact $t = array<int, string> */;
+
+                        $g = $grand->value;
+                        /** @psalm-check-type-exact $g = array<string, bool> */;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'composedParentArgumentBindsInheritedProperty' => [
                 'code' => '<?php
                     /** @template T */
