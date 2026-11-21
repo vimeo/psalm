@@ -998,15 +998,6 @@ final class AtomicPropertyFetchAnalyzer
                 $param_offset++;
             }
 
-            // a template of a class in between (`@extends Two<string, W>`) is what the class passes to it
-            $extended_template_types = [];
-
-            foreach ($extended_types ?? [] as $extended_class => $extended_class_types) {
-                foreach ($extended_class_types as $extended_name => $extended_type) {
-                    $extended_template_types[$extended_name][$extended_class] = $extended_type;
-                }
-            }
-
             foreach ($template_types as $type_name => $_) {
                 if (!isset($extended_types[$property_declaring_class_storage->name][$type_name])) {
                     continue;
@@ -1019,20 +1010,6 @@ final class AtomicPropertyFetchAnalyzer
                     $property_class_storage->name,
                     $property_class_storage->parent_class,
                 );
-
-                for ($depth = 0; $depth < 10; $depth++) {
-                    $replaced_type = TemplateInferredTypeReplacer::replace(
-                        $mapped_type,
-                        new TemplateResult([], $extended_template_types),
-                        $codebase,
-                    );
-
-                    if ($replaced_type->getId() === $mapped_type->getId()) {
-                        break;
-                    }
-
-                    $mapped_type = $replaced_type;
-                }
 
                 $template_types[$type_name][$property_declaring_class_storage->name]
                     = TemplateInferredTypeReplacer::replace(
