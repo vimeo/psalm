@@ -30,6 +30,19 @@ final class DoTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'doWhileConditionOnAnOffsetOfAMixedVariableDoesNotHoldAfterTheLoop' => [
+                'code' => '<?php
+                    function f(mixed $m): void {
+                        do {
+                            echo "";
+                        } while ($m["x"]);
+
+                        if ($m["x"]) {}
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedArrayAccess'],
+                'php_version' => '8.0',
+            ],
             'doCounterIncrementedThroughAReferenceIsWidened' => [
                 'code' => <<<'PHP'
                     <?php
