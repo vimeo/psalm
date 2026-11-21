@@ -2908,6 +2908,8 @@ final class AssertAnnotationTest extends TestCase
                             $parameter->getType()->__toString();
                         }
                     }',
+                'assertions' => [],
+                'ignored_issues' => ['DeprecatedMethod'],
             ],
             'reflectionNameTypeClassStringIfNotBuiltin' => [
                 'code' => '<?php
@@ -5521,6 +5523,7 @@ final class AssertAnnotationTest extends TestCase
                         $parameter->getType()->__toString();
                     }',
                 'error_message' => 'PossiblyNullReference',
+                'error_levels' => ['DeprecatedMethod'],
             ],
             'forgetAssertionAfterRelevantNonMutationFreeCall' => [
                 'code' => '<?php
