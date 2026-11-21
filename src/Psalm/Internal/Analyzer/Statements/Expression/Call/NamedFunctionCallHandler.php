@@ -16,7 +16,6 @@ use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ConstFetchAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\IncludeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
-use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Internal\Codebase\PhpDeprecations;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\Type\Comparator\TypeComparisonResult;
@@ -98,6 +97,50 @@ final class NamedFunctionCallHandler
         'pg_execute' => 2, 'pg_lo_export' => 2, 'pg_loexport' => 2, 'pg_lo_open' => 2, 'pg_loopen' => 2,
         'pg_prepare' => 2, 'pg_query_params' => 2,
     ];
+
+    /** the mbstring functions, by the positions of their parameters naming encodings, whatever their name */
+    private const MB_ENCODING_POSITIONS = [
+        'mb_internal_encoding' => [0],
+        'mb_http_output' => [0],
+        'mb_detect_order' => [0],
+        'mb_preferred_mime_name' => [0],
+        'mb_str_split' => [2],
+        'mb_strlen' => [1],
+        'mb_strpos' => [3],
+        'mb_strrpos' => [3],
+        'mb_stripos' => [3],
+        'mb_strripos' => [3],
+        'mb_strstr' => [3],
+        'mb_strrchr' => [3],
+        'mb_stristr' => [3],
+        'mb_strrichr' => [3],
+        'mb_substr_count' => [2],
+        'mb_substr' => [3],
+        'mb_strcut' => [3],
+        'mb_strwidth' => [1],
+        'mb_strimwidth' => [4],
+        'mb_convert_encoding' => [1, 2],
+        'mb_convert_case' => [2],
+        'mb_strtoupper' => [1],
+        'mb_strtolower' => [1],
+        'mb_ucfirst' => [1],
+        'mb_lcfirst' => [1],
+        'mb_trim' => [2],
+        'mb_ltrim' => [2],
+        'mb_rtrim' => [2],
+        'mb_detect_encoding' => [1],
+        'mb_encoding_aliases' => [0],
+        'mb_encode_mimeheader' => [1],
+        'mb_convert_kana' => [2],
+        'mb_convert_variables' => [0, 1],
+        'mb_encode_numericentity' => [2],
+        'mb_decode_numericentity' => [2],
+        'mb_check_encoding' => [1],
+        'mb_scrub' => [1],
+        'mb_ord' => [1],
+        'mb_chr' => [1],
+        'mb_str_pad' => [4],
+        'mb_regex_encoding' => [0],    ];
 
     /** the functions reading CSV, by the position of their escape parameter */
     private const CSV_ESCAPE_POSITIONS = ['fgetcsv' => 4, 'fputcsv' => 4, 'str_getcsv' => 3];
@@ -983,7 +1026,7 @@ final class NamedFunctionCallHandler
             ) . ', pass the connection as the first argument';
         }
 
-        if (str_starts_with($positional_function_id, 'mb_')) {
+        if (isset(self::MB_ENCODING_POSITIONS[$positional_function_id])) {
             self::checkDeprecatedEncodings($statements_analyzer, $stmt, $positional_function_id, $types);
         }
 
@@ -1420,12 +1463,8 @@ final class NamedFunctionCallHandler
         string $function_id,
         array $types,
     ): void {
-        $params = InternalCallMapHandler::getCallablesFromCallMap($function_id)[0]->params ?? [];
-
-        foreach ($params as $position => $param) {
-            if (!isset($types[$position])
-                || !in_array($param->name, ['encoding', 'to_encoding', 'from_encoding', 'encodings', 'charset'], true)
-            ) {
+        foreach (self::MB_ENCODING_POSITIONS[$function_id] ?? [] as $position) {
+            if (!isset($types[$position])) {
                 continue;
             }
 

@@ -352,6 +352,8 @@ final class CapabilitiesTest extends TestCase
                         $storage[$key] = 2;
                         return $storage[$key] + (int) $storage->contains($key);
                     }',
+                'assertions' => [],
+                'ignored_issues' => ['DeprecatedMethod'],
             ],
             'mutatingAnSplContainerForgetsWhatItsReadersReturned' => [
                 'code' => '<?php
@@ -1020,6 +1022,8 @@ final class CapabilitiesTest extends TestCase
                         $storage[$key] = 1;
                         $storage->attach(new stdClass(), 2);
                     }',
+                'assertions' => [],
+                'ignored_issues' => ['DeprecatedMethod'],
             ],
             'fillingAFreshSplObjectStorageWithoutATypeIsPure' => [
                 'code' => '<?php
@@ -1060,6 +1064,8 @@ final class CapabilitiesTest extends TestCase
                             echo "detached";
                         }
                     }',
+                'assertions' => [],
+                'ignored_issues' => ['DeprecatedMethod'],
             ],
             'traversableWithPurityCombinesWithIterable' => [
                 'code' => '<?php
@@ -4177,7 +4183,7 @@ final class CapabilitiesTest extends TestCase
                         return $h->getX();
                     }',
                 'error_message' => 'NullableReturnStatement - src' . DIRECTORY_SEPARATOR . 'somefile.php:19:32',
-                'error_levels' => [],
+                'error_levels' => ['DeprecatedMethod'],
                 'php_version' => '8.0',
             ],
             'itemOfAnObjectWithoutOffsetSetPassedByReference' => [
@@ -4269,6 +4275,7 @@ final class CapabilitiesTest extends TestCase
                         return count($object);
                     }',
                 'error_message' => 'ImpureMethodCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:33 - The context is pure but method ArrayObject::offsetSet requires write-props',
+                'error_levels' => ['DeprecatedMethod'],
             ],
             'conditionalCapabilitiesOfAFunctionCalledWithoutTheArgument' => [
                 'code' => '<?php
@@ -4597,6 +4604,7 @@ final class CapabilitiesTest extends TestCase
                         return count($object);
                     }',
                 'error_message' => 'ImpureMethodCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:25 - The context is pure but method ArrayObject::offsetSet requires write-props',
+                'error_levels' => ['DeprecatedMethod'],
             ],
             'arrayIteratorBackedByAnObjectWritesIt' => [
                 'code' => '<?php
@@ -4607,6 +4615,7 @@ final class CapabilitiesTest extends TestCase
                         return count($iterator);
                     }',
                 'error_message' => 'ImpureMethodCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:25 - The context is pure but method ArrayIterator::offsetSet requires write-props',
+                'error_levels' => ['DeprecatedMethod'],
             ],
             'arrayObjectExchangingItsStorageWritesProps' => [
                 'code' => '<?php
@@ -4618,6 +4627,7 @@ final class CapabilitiesTest extends TestCase
                         return count($object);
                     }',
                 'error_message' => 'ImpureMethodCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:25 - The context is pure but method ArrayObject::exchangeArray requires write-props',
+                'error_levels' => ['DeprecatedMethod'],
             ],
             'arrayObjectOfUnknownStorageWritesProps' => [
                 'code' => '<?php

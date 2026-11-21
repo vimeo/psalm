@@ -7,7 +7,7 @@ Emitted when code uses a statement or declaration that PHP deprecates, whatever 
 
 function load(): string {
     try {
-        return file_get_contents('a.txt') ?: '';
+        return (string) file_get_contents('a.txt');
     } finally {
         return ''; // DeprecatedSyntax: discards the exception and the value returned in try
     }

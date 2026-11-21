@@ -5128,6 +5128,7 @@ final class ArrayFunctionCallTest extends TestCase
                     array_walk($o, "var_dump");
                 ',
                 'error_message' => 'RawObjectIteration',
+                'error_levels' => ['DeprecatedFunction'],
             ],
             'arrayWalkRecursiveOverObject' => [
                 'code' => '<?php
@@ -5135,6 +5136,7 @@ final class ArrayFunctionCallTest extends TestCase
                     array_walk_recursive($o, "var_dump");
                 ',
                 'error_message' => 'RawObjectIteration',
+                'error_levels' => ['DeprecatedFunction'],
             ],
             'implodeWithNonStringableArgs' => [
                 'code' => '<?php

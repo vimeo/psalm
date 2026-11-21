@@ -54,6 +54,20 @@ final class Php86Test extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.6',
             ],
+            'pollWatcherDataFollowsItsModifications' => [
+                'code' => '<?php
+                    use Io\Poll\{Context, Event};
+
+                    $watcher = (new Context())->add(new StreamPollHandle(STDIN), [Event::Read], "server");
+                    $watcher->modifyData(42);
+                    $data = $watcher->getData();',
+                'assertions' => [
+                    '$watcher===' => 'Io\Poll\Watcher<StreamPollHandle, 42>',
+                    '$data===' => '42',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.6',
+            ],
             'pureCodeCanUseDurationsAndBuilders' => [
                 'code' => '<?php
                     /** @psalm-pure */

@@ -89,7 +89,7 @@ final class CoreStubsTest extends TestCase
                 '$period' => 'DatePeriod<string, DateTime>',
                 '$dt' => 'DateTime|null',
             ],
-            'ignored_issues' => [],
+            'ignored_issues' => ['DeprecatedMethod'],
             'php_version' => '8.0',
         ];
         yield 'DatePeriod implements only Traversable on PHP 7' => [
@@ -98,7 +98,7 @@ final class CoreStubsTest extends TestCase
             $period = new DatePeriod("R4/2012-07-01T00:00:00Z/P7D");
             if ($period instanceof IteratorAggregate) {}',
             'assertions' => [],
-            'ignored_issues' => [],
+            'ignored_issues' => ['DeprecatedMethod'],
             'php_version' => '7.3',
         ];
         yield 'DatePeriod implements IteratorAggregate on PHP 8' => [
@@ -107,7 +107,7 @@ final class CoreStubsTest extends TestCase
             $period = new DatePeriod("R4/2012-07-01T00:00:00Z/P7D");
             if ($period instanceof IteratorAggregate) {}',
             'assertions' => [],
-            'ignored_issues' => ['RedundantCondition'],
+            'ignored_issues' => ['RedundantCondition', 'DeprecatedMethod'],
             'php_version' => '8.0',
         ];
         yield 'DatePeriod with TDate template param does not trigger TooManyTemplateParams' => [
@@ -165,7 +165,7 @@ final class CoreStubsTest extends TestCase
             'assertions' => [
                 '$iterator' => 'Iterator<int, DateTime>',
             ],
-            'ignored_issues' => [],
+            'ignored_issues' => ['DeprecatedMethod'],
             'php_version' => '8.2',
         ];
         yield 'sprintf yields a non-empty-string for non-empty-string value' => [

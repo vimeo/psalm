@@ -459,8 +459,10 @@ namespace Io\Poll {
 
         /**
          * @psalm-capabilities read-props|write-this-props|io
+         * @template TNewData
          * @param non-empty-list<Event> $events
-         * @param TData $data
+         * @param TNewData $data
+         * @psalm-this-out self<THandle, TNewData>
          */
         public function modify(array $events, mixed $data = null): void {}
 
@@ -472,7 +474,9 @@ namespace Io\Poll {
 
         /**
          * @psalm-capabilities write-this-props
-         * @param TData $data
+         * @template TNewData
+         * @param TNewData $data
+         * @psalm-this-out self<THandle, TNewData>
          */
         public function modifyData(mixed $data): void {}
 

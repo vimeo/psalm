@@ -1966,6 +1966,8 @@ final class ConditionalTest extends TestCase
 
                       return "backup";
                     }',
+                'assertions' => [],
+                'ignored_issues' => ['DeprecatedSyntax'],
             ],
             'stringOrCallableArg' => [
                 'code' => '<?php
@@ -5981,6 +5983,8 @@ final class ConditionalTest extends TestCase
                     final class B extends A {
                         public function onlyB(): void {}
                     }',
+                'assertions' => [],
+                'ignored_issues' => ['DeprecatedFunction'],
             ],
             'getClassInequalityWithoutArgumentsNarrowsThis' => [
                 'code' => '<?php
@@ -5995,6 +5999,8 @@ final class ConditionalTest extends TestCase
                     final class B extends A {
                         public function onlyB(): void {}
                     }',
+                'assertions' => [],
+                'ignored_issues' => ['DeprecatedFunction'],
             ],
             'privateMethodAnalysedFromTheConstructorIgnoresTheConditionsOfItsCaller' => [
                 'code' => '<?php

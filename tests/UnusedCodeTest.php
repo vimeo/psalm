@@ -1635,6 +1635,7 @@ final class UnusedCodeTest extends TestCase
                     }
 
                     A::foo();',
+                'ignored_issues' => ['DeprecatedSyntax'],
             ],
             'possiblyUnusedParamWithUnusedPrefix' => [
                 'code' => '<?php
@@ -1643,6 +1644,7 @@ final class UnusedCodeTest extends TestCase
                     }
 
                     A::foo();',
+                'ignored_issues' => ['DeprecatedSyntax'],
             ],
             'usedClass' => [
                 'code' => '<?php
@@ -2134,6 +2136,7 @@ final class UnusedCodeTest extends TestCase
                     }
 
                     new Foo();',
+                'ignored_issues' => ['DeprecatedInterface'],
             ],
             'ignoreSerializeAndUnserialize' => [
                 'code' => '<?php
@@ -2558,6 +2561,7 @@ final class UnusedCodeTest extends TestCase
                     /** @psalm-suppress ForbiddenCode */
                     `$used`;
                 ',
+                'ignored_issues' => ['DeprecatedSyntax'],
             ],
             'notUnevaluatedFunction' => [
                 'code' => '<?php
@@ -4138,6 +4142,7 @@ final class UnusedCodeTest extends TestCase
                         return false;
                     }',
                 'error_message' => 'UnevaluatedCode',
+                'error_levels' => ['DeprecatedSyntax'],
             ],
             'UnusedFunctionCallWithOptionalByReferenceParameter' => [
                 'code' => '<?php

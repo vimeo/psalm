@@ -1492,6 +1492,7 @@ final class BinaryOperationTest extends TestCase
                     '$b' => 'float',
                     '$c' => 'float',
                 ],
+                'ignored_issues' => ['DeprecatedSyntax'],
             ],
             'floatOperandsOutsideTheRangeOfAnIntAreNotFolded' => [
                 'code' => '<?php

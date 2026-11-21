@@ -446,7 +446,7 @@ final class NativeSymbolAvailabilityTest extends TestCase
                         ->setQuery("q=1")
                         ->setFragment(null)
                         ->build(null, $softErrors);
-                    echo count($softErrors ?? []);
+                    echo count($softErrors);
                 }
 
                 function rfc3986HostType(Uri\Rfc3986\UriHostType $type): string {
