@@ -10,6 +10,7 @@ use Psalm\SourceControl\Git\GitInfo;
 use function assert;
 use function explode;
 use function file_get_contents;
+use function in_array;
 use function json_decode;
 use function str_contains;
 use function str_replace;
@@ -317,11 +318,57 @@ final class BuildInfoCollector
                     $this->readEnv['git'] = $gitinfo->toArray();
                 }
 
-                if ($this->env['GITHUB_EVENT_PATH'] === 'pull_request') {
-                    $this->readEnv['CI_PR_NUMBER'] = $event_data['number'];
+                if (in_array($this->env['GITHUB_EVENT_NAME'] ?? null, ['pull_request', 'pull_request_target'], true)) {
+                    $this->fillGithubPullRequest($event_data);
                 }
             }
         }
         return $this;
+    }
+
+    /**
+     * Fill the pull request of a GitHub Actions "pull_request" or "pull_request_target" event.
+     *
+     * The repository the pull request comes from is told apart from the one the workflow runs in, as
+     * for the other CI services: a report is only linked to the pull request of its own repository.
+     * The checkout is a merge commit that is not part of the pull request, so its head commit is sent too.
+     *
+     * @psalm-external-mutation-free
+     */
+    private function fillGithubPullRequest(array $event_data): void
+    {
+        /**
+         * @var array{
+         *    number?: int,
+         *    pull_request?: array{
+         *        number?: int,
+         *        head?: array{
+         *            ref?: string,
+         *            sha?: string,
+         *            repo?: array{name?: string, owner?: array{login?: string}}|null
+         *        }
+         *    }
+         * } $event_data
+         */
+        $number = $event_data['pull_request']['number'] ?? $event_data['number'] ?? null;
+        if ($number === null) {
+            return;
+        }
+
+        $this->readEnv['CI_PR_NUMBER'] = (string) $number;
+
+        $head = $event_data['pull_request']['head'] ?? [];
+        $head_owner = $head['repo']['owner']['login'] ?? '';
+        $head_name = $head['repo']['name'] ?? '';
+        if ($head_owner !== '' && $head_name !== '') {
+            $this->readEnv['CI_PR_REPO_OWNER'] = $head_owner;
+            $this->readEnv['CI_PR_REPO_NAME'] = $head_name;
+        }
+
+        $head_sha = $head['sha'] ?? '';
+        if ($head_sha !== '') {
+            $this->readEnv['git'] = (new GitInfo($head['ref'] ?? '', (new CommitInfo())->setId($head_sha), []))
+                ->toArray();
+        }
     }
 }
