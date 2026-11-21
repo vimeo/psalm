@@ -40,6 +40,6 @@ Only what the function-like's own body does counts, not what the closures it cre
 
 The annotation documents what the function may do, and Psalm then enforces it: a later change that adds a side effect is reported as `ImpureFunctionCall` instead of silently making every caller impure.
 
-It also helps [taint analysis](https://psalm.dev/docs/security_analysis/), which keeps the taint of the arguments of each call to a pure function apart. Psalm infers that for functions and for methods that cannot be overridden (`private` or `final` methods, and methods of `final` classes). For an overridable method or a constructor the annotation is the only way to say it: see [specializing taints in functions](../../security_analysis/avoiding_false_positives.md#specializing-taints-in-functions).
+It also helps [taint analysis](https://psalm.dev/docs/security_analysis/), which keeps the taint of the arguments of each call to a pure function apart. Psalm infers that for functions and for methods that cannot be overridden (`private` or `final` methods, and methods of `final` classes). For an overridable method or a constructor the annotation is the only way to say it: see [specializing taints in functions](../../security_analysis/index.md#specializing-functions).
 
 See [inferring annotations](../../annotating_code/purity_model.md#inferring-annotations) in the purity model for how purity is inferred.

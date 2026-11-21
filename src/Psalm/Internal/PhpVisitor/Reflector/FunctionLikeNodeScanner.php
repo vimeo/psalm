@@ -489,13 +489,14 @@ final class FunctionLikeNodeScanner
             && $function_id
             && $storage instanceof FunctionStorage
         ) {
-            // A polyfill of a native function the analysed version predates must not replace the
-            // native signature (and its purity); the polyfill is still known through this file.
+            // A polyfill of a native function must not replace the native signature (and its
+            // purity), whether the analysed version has the function or predates it: PHP skips the
+            // polyfill where the function exists. The polyfill is still known through this file.
             if ($this->codebase->register_stub_files
                 || (($this->codebase->all_functions_global
                         || ($this->codebase->register_autoload_files
                             && !$this->codebase->functions->hasStubbedFunction($function_id)))
-                    && InternalCallMapHandler::getIntroducingPhpVersionId($function_id) === null)
+                    && !InternalCallMapHandler::isNativeFunction($function_id))
             ) {
                 $this->codebase->functions->addGlobalFunction($function_id, $storage);
             }
@@ -1221,7 +1222,7 @@ final class FunctionLikeNodeScanner
                 ) {
                     // see the polyfill rule where the function is first registered
                     if ($this->codebase->register_stub_files
-                        || InternalCallMapHandler::getIntroducingPhpVersionId($function_id) === null
+                        || !InternalCallMapHandler::isNativeFunction($function_id)
                     ) {
                         $this->codebase->functions->addGlobalFunction(
                             $function_id,

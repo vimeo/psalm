@@ -1492,6 +1492,7 @@ final class BinaryOperationTest extends TestCase
                     '$b' => 'float',
                     '$c' => 'float',
                 ],
+                'ignored_issues' => ['DeprecatedSyntax'],
             ],
             'floatOperandsOutsideTheRangeOfAnIntAreNotFolded' => [
                 'code' => '<?php
@@ -2029,6 +2030,21 @@ final class BinaryOperationTest extends TestCase
                     '$d' => 'string',
                 ],
                 'ignored_issues' => ['ImplicitFloatToIntCast'],
+            ],
+            'decrementedStrings' => [
+                'code' => '<?php
+                    $empty = "";
+                    $empty--;
+                    $word = "abc";
+                    $word--;
+                    $number = "7";
+                    $number--;',
+                'assertions' => [
+                    '$empty===' => '-1',
+                    '$word===' => "'abc'",
+                    '$number' => 'int',
+                ],
+                'ignored_issues' => ['StringIncrement'],
             ],
             'stringIncrementSuppressed' => [
                 'code' => '<?php
@@ -3438,6 +3454,47 @@ final class BinaryOperationTest extends TestCase
                 'error_levels' => [],
                 'php_version' => '8.5',
             ],
+            'incrementingAnEmptyString' => [
+                'code' => '<?php
+                    $a = "";
+                    $a++;',
+                'error_message' => 'StringIncrement - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:21 - Incrementing an empty string is deprecated since PHP 8.3',
+                'error_levels' => [],
+                'php_version' => '8.2',
+            ],
+            'incrementingANonAlphanumericString' => [
+                'code' => '<?php
+                    $a = "a-1";
+                    $a++;',
+                'error_message' => 'StringIncrement - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:21 - Incrementing a non-alphanumeric string is deprecated since PHP 8.3',
+                'error_levels' => [],
+                'php_version' => '8.2',
+            ],
+            'decrementingAnEmptyString' => [
+                'code' => '<?php
+                    $a = "";
+                    $a--;',
+                'error_message' => 'StringIncrement - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:21 - Decrementing an empty string is deprecated since PHP 8.3',
+                'error_levels' => [],
+                'php_version' => '8.2',
+            ],
+            'decrementingANonNumericString' => [
+                'code' => '<?php
+                    $a = "abc";
+                    --$a;',
+                'error_message' => 'StringIncrement - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:23 - Decrementing a non-numeric string is deprecated since PHP 8.3, as it has no effect',
+                'error_levels' => [],
+                'php_version' => '8.2',
+            ],
+            'decrementingAString' => [
+                'code' => '<?php
+                    function previous(string $id): void {
+                        $id--;
+                    }',
+                'error_message' => 'StringIncrement - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:25 - Decrementing a non-numeric string is deprecated since PHP 8.3, as it has no effect',
+                'error_levels' => [],
+                'php_version' => '8.2',
+            ],
             'falseIncrement' => [
                 'code' => '<?php
                     $a = false;
@@ -3625,25 +3682,19 @@ final class BinaryOperationTest extends TestCase
 
     public function testBcMathNumberOperations(): void
     {
+        $this->project_analyzer->setPhpVersion('8.4', 'tests');
+
         $this->addFile(
             'somefile.php',
             '<?php
-                namespace BcMath {
-                    final class Number {
-                        public function __construct(string $number) {}
-                    }
-                }
-
-                namespace {
-                    $a = new \BcMath\Number("2");
-                    $b = new \BcMath\Number("4");
-                    $c = $a + $b;
-                    $d = $a - 1;
-                    $e = 2 * $b;
-                    $f = $a / "3";
-                    $g = $a % $b;
-                    $h = $a ** 2;
-                }',
+                $a = new \BcMath\Number("2");
+                $b = new \BcMath\Number("4");
+                $c = $a + $b;
+                $d = $a - 1;
+                $e = 2 * $b;
+                $f = $a / "3";
+                $g = $a % $b;
+                $h = $a ** 2;',
         );
 
         $context = new Context();

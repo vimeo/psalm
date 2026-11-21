@@ -63,6 +63,8 @@ final class ExpressionTest extends TestCase
                 /** @psalm-suppress ForbiddenCode */
                 `ls $a`;
                 PHP,
+            'assertions' => [],
+            'ignored_issues' => ['DeprecatedSyntax'],
         ];
     }
 
