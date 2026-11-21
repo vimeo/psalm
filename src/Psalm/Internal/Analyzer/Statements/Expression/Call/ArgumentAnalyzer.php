@@ -437,11 +437,13 @@ final class ArgumentAnalyzer
             }
         }
 
+        // `static` is the object the method is called on, with its template arguments, as for the params of closures
+        $static_class_type = $template_result?->static_class_type;
         $param_type = TypeExpander::expandUnion(
             $codebase,
             $param_type,
             $classlike_storage->name ?? null,
-            $static_classlike_storage->name ?? null,
+            $static_class_type instanceof TNamedObject ? $static_class_type : ($static_classlike_storage->name ?? null),
             $parent_class,
             true,
             false,
