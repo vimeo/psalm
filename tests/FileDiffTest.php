@@ -2021,7 +2021,7 @@ final class FileDiffTest extends TestCase
                     }',
                 ['foo\a::foo'],
                 [],
-                [],
+                ['foo\bar'],
                 [[0, 0]],
                 [[171, 281]],
             ],
