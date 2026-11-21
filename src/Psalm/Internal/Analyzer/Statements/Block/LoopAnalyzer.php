@@ -839,6 +839,7 @@ final class LoopAnalyzer
                 $loop_parent_context,
                 $loop_scope,
                 $always_assigned_unmodified_vars,
+                is_left_after_an_iteration: $pre_conditions === [],
             );
         }
 
@@ -1338,6 +1339,8 @@ final class LoopAnalyzer
      * @param list<string> $always_assigned_before_loop_body_vars
      * @param bool $is_only_left_by_break whether the loop is only left by a break (`while (true)`): the variables then
      *                                    hold what they held at the breaks, not what an iteration ended with
+     * @param bool $is_left_after_an_iteration whether the loop is left once an iteration ends, with no condition
+     *                                         narrowing what it ends with (`foreach`)
      */
     public static function setLoopVars(
         Context $inner_context,
@@ -1345,6 +1348,7 @@ final class LoopAnalyzer
         LoopScope $loop_scope,
         array $always_assigned_before_loop_body_vars = [],
         bool $is_only_left_by_break = false,
+        bool $is_left_after_an_iteration = false,
     ): void {
         if ($is_only_left_by_break
             && $loop_scope->vars_at_breaks !== null
@@ -1442,8 +1446,12 @@ final class LoopAnalyzer
                             $context->vars_in_scope[$var_id] = $type->setPossiblyUndefined($is_possibly_undefined);
                         }
                     } elseif (!$is_possibly_undefined && isset($context->vars_in_scope[$var_id])) {
-                        $context->vars_in_scope[$var_id] = $context->vars_in_scope[$var_id]
-                            ->setPossiblyUndefined(false);
+                        // a loop left once an iteration ends holds what an iteration ends with, at the end of the
+                        // body or at a continue, not what it held before the loop
+                        $context->vars_in_scope[$var_id] = ($is_left_after_an_iteration
+                            ? Type::combineUnionTypes($type, $loop_scope->vars_at_continues[$var_id])
+                            : $context->vars_in_scope[$var_id]
+                        )->setPossiblyUndefined(false);
                     }
                 }
             } else {

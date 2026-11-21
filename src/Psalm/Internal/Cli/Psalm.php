@@ -1286,7 +1286,7 @@ final class Psalm
         $plugins[] = Path::canonicalize(__DIR__ . '/../../Plugin/Shepherd.php');
 
         /** @psalm-suppress MixedAssignment */
-        $custom_shepherd_endpoint = ($options['shepherd'] ?? getenv('PSALM_SHEPHERD'));
+        $custom_shepherd_endpoint = ($options['shepherd'] ?? CliUtils::chosenByOperator(getenv('PSALM_SHEPHERD')));
         if (is_string($custom_shepherd_endpoint) && strlen($custom_shepherd_endpoint) > 2) {
             if (parse_url($custom_shepherd_endpoint, PHP_URL_SCHEME) === null) {
                 $custom_shepherd_endpoint = 'https://' . $custom_shepherd_endpoint;
@@ -1534,6 +1534,8 @@ final class Psalm
 
             --shepherd[=endpoint]
                 Send analysis statistics to Shepherd (shepherd.dev) or your server.
+                `endpoint` is the full URL the report is posted to, e.g. https://shepherd.example.com/hooks/psalm.
+                A value without a scheme gets https://. Only runs on a CI service with a GitHub repository are sent.
 
             --alter
                 Run Psalter

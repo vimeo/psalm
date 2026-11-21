@@ -17,6 +17,7 @@ use Psalm\Exception\TypeParseTreeException;
 use Psalm\Internal\Analyzer\CommentAnalyzer;
 use Psalm\Internal\Analyzer\NamespaceAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\NewAnalyzer;
+use Psalm\Internal\Codebase\DatabaseTaints;
 use Psalm\Internal\Codebase\ReceiverPropertyTaints;
 use Psalm\Internal\Codebase\TaintFlowAnnotation;
 use Psalm\Internal\Codebase\TaintStore;
@@ -508,6 +509,11 @@ final class FunctionLikeDocblockScanner
         ];
 
         self::handleTaintFlow($docblock_info, $storage, $aliases, $classlike_storage);
+
+        $invalid_annotations = [
+            ...$invalid_annotations,
+            ...DatabaseTaints::addAnnotations($storage, $docblock_info->database_calls),
+        ];
 
         foreach ($docblock_info->assert_untainted_params as $untainted_assert_param) {
             $param_name = substr($untainted_assert_param['name'], 1);

@@ -59,7 +59,7 @@ final class ClosedInheritanceToUnion
             return $input;
         }
 
-        return $new_types ? $input->setTypes($new_types) : $input;
+        return $input->setTypes($new_types);
     }
 
     /**
