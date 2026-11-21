@@ -698,6 +698,7 @@ final class AssertionReconciler extends Reconciler
             $new_as_atomic = $new_type_part->as->getSingleAtomic();
 
             $acceptable_atomic_types = [];
+            $narrowed = false;
 
             foreach ($existing_var_type->getAtomicTypes() as $existing_var_type_part) {
                 if ($existing_var_type_part instanceof TNamedObject
@@ -718,6 +719,8 @@ final class AssertionReconciler extends Reconciler
                     && !$overlap->isNever()
                 ) {
                     // a string can be the value of a template of `numeric`: a numeric string
+                    $narrowed = true;
+
                     foreach ($overlap->getAtomicTypes() as $overlap_atomic_type) {
                         $acceptable_atomic_types[] = $overlap_atomic_type;
                     }
@@ -726,7 +729,7 @@ final class AssertionReconciler extends Reconciler
 
             if ($acceptable_atomic_types) {
                 $acceptable_atomic_types =
-                    count($acceptable_atomic_types) === count($existing_var_type->getAtomicTypes())
+                    !$narrowed && count($acceptable_atomic_types) === count($existing_var_type->getAtomicTypes())
                         ? $existing_var_type
                         : new Union($acceptable_atomic_types);
                 return new Union([$new_type_part->replaceAs($acceptable_atomic_types)]);
