@@ -23,6 +23,39 @@ final class TraitTest extends TestCase
     use InvalidCodeAnalysisTestTrait;
     use ValidCodeAnalysisTestTrait;
 
+    public function testConstantOfTheFirstTraitWinsOverALaterOneLeftByAnEarlierPopulation(): void
+    {
+        $this->project_analyzer->setPhpVersion('8.5', 'tests');
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile($file_path, '<?php
+            trait HasLimit {
+                public const int LIMIT = 10;
+            }
+
+            trait HasDeprecatedLimit {
+                #[\\Deprecated]
+                public const int LIMIT = 10;
+            }
+
+            final class Quota {
+                use HasLimit, HasDeprecatedLimit;
+            }');
+
+        $this->analyzeFile($file_path, new Context());
+
+        $codebase = $this->project_analyzer->getCodebase();
+        $storage = $codebase->classlike_storage_provider->get('Quota');
+        $storage->constants['LIMIT'] = $codebase->classlike_storage_provider->get('HasDeprecatedLimit')
+            ->constants['LIMIT'];
+        $storage->populated = false;
+        $codebase->classlike_storage_provider->makeNew('quota');
+
+        $codebase->populator->populateCodebase();
+
+        self::assertFalse($storage->constants['LIMIT']->deprecated);
+    }
+
     /**
      * @param list<array{int, string}> $expected_issues line and message of each UndefinedTrait
      */
