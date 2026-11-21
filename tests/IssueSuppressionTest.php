@@ -580,6 +580,14 @@ final class IssueSuppressionTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'suppressionsOfSeveralEchoedExpressionsEndWithTheEcho' => [
+                'code' => '<?php
+                    function render(): void {
+                        echo /** @psalm-suppress UndefinedVariable */ $a, /** @psalm-suppress MixedArgument */ $b;
+                        echo $c;
+                    }',
+                'error_message' => 'UndefinedVariable - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:30',
+            ],
             'undefinedClassOneLineWithLineAfter' => [
                 'code' => '<?php
                     class A {
