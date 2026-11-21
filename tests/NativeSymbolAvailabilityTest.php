@@ -216,32 +216,42 @@ final class NativeSymbolAvailabilityTest extends TestCase
 
         yield 'constantAvailableFromItsVersion' => [
             'code' => '<?php
-                $flag = FILTER_THROW_ON_FAILURE;
+                $type = IMAGETYPE_AVIF;
             ',
             'assertions' => [
-                '$flag===' => '268435456',
+                '$type===' => '19',
             ],
             'ignored_issues' => [],
+            'php_version' => '8.1',
+        ];
+
+        // on a runtime older than PHP 8.5, which doesn't define it
+        yield 'constantNewerThanTheRuntime' => [
+            'code' => '<?php
+                echo PHP_BUILD_DATE;
+            ',
+            'assertions' => [],
+            'ignored_issues' => ['MixedArgument'],
             'php_version' => '8.5',
         ];
 
         yield 'constantGuardedBelowItsVersion' => [
             'code' => '<?php
-                function date_of_build(): string {
-                    return PHP_VERSION_ID >= 80500 ? PHP_BUILD_DATE : "";
+                function image_type(): int {
+                    return PHP_VERSION_ID >= 80100 ? IMAGETYPE_AVIF : IMAGETYPE_UNKNOWN;
                 }
 
                 function flags(): int {
-                    if (defined("FILTER_THROW_ON_FAILURE")) {
-                        return FILTER_NULL_ON_FAILURE | FILTER_THROW_ON_FAILURE;
+                    if (defined("FILTER_FLAG_GLOBAL_RANGE")) {
+                        return FILTER_FLAG_NO_RES_RANGE | FILTER_FLAG_GLOBAL_RANGE;
                     }
 
-                    return FILTER_NULL_ON_FAILURE;
+                    return FILTER_FLAG_NO_RES_RANGE;
                 }
             ',
             'assertions' => [],
             'ignored_issues' => [],
-            'php_version' => '8.1',
+            'php_version' => '8.0',
         ];
 
         yield 'constantPolyfilledBelowItsVersion' => [

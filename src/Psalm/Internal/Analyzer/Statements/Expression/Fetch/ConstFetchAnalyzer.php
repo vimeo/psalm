@@ -149,12 +149,18 @@ final class ConstFetchAnalyzer
                     );
                 }
 
-                if ($const_type && !str_contains($global_const_name, '\\')) {
+                // a native constant newer than the PHP Psalm runs on is unknown to it, but not undefined
+                $is_dated_native = !str_contains($global_const_name, '\\')
+                    && self::getIntroduction($global_const_name) !== null;
+
+                if ($const_type || $is_dated_native) {
                     self::checkAvailability($statements_analyzer, $stmt, $context, $global_const_name, $fq_const_name);
                 }
 
                 if ($const_type) {
                     $statements_analyzer->node_data->setType($stmt, $const_type);
+                } elseif ($is_dated_native) {
+                    $statements_analyzer->node_data->setType($stmt, Type::getMixed());
                 } elseif ($context->check_consts) {
                     IssueBuffer::maybeAdd(
                         new UndefinedConstant(
@@ -206,17 +212,25 @@ final class ConstFetchAnalyzer
      */
     public static function getIntroducingPhpVersionId(Codebase $codebase, string $const_name): ?int
     {
+        $since_php_version_id = self::getIntroduction($const_name);
+
+        return $since_php_version_id !== null && $since_php_version_id > $codebase->analysis_php_version_id
+            ? $since_php_version_id
+            : null;
+    }
+
+    /**
+     * The PHP version that introduced a native global constant, if it is dated
+     */
+    private static function getIntroduction(string $const_name): ?int
+    {
         if (self::$constant_introductions === null) {
             /** @var array<string, int> */
             $introductions = require dirname(__DIR__, 7) . '/dictionaries/ConstantIntroductions.php';
             self::$constant_introductions = $introductions;
         }
 
-        $since_php_version_id = self::$constant_introductions[$const_name] ?? null;
-
-        return $since_php_version_id !== null && $since_php_version_id > $codebase->analysis_php_version_id
-            ? $since_php_version_id
-            : null;
+        return self::$constant_introductions[$const_name] ?? null;
     }
 
     /**
