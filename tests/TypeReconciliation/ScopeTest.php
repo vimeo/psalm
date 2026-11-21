@@ -404,6 +404,12 @@ final class ScopeTest extends TestCase
                 ?>
                 <h1><?= $this->getMessage() ?></h1>',
             ],
+            'psalmScopeThisInTemplateIsTheOnlyReferenceToTheClass' => [
+                'code' => '<?php
+                    /** @psalm-scope-this Psalm\Tests\LanguageServer\MockProtocolStream */
+                ?>
+                <h1><?php $this->write(new Psalm\Internal\LanguageServer\Message(new AdvancedJsonRpc\Notification("a"))); ?></h1>',
+            ],
             'psalmScopeThisInTemplateFQCN' => [
                 'code' => '<?php
                     $e = new Exception(); // necessary to trick Psalm’s scanner for test
