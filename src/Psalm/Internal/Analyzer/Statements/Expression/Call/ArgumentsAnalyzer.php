@@ -1618,6 +1618,7 @@ final class ArgumentsAnalyzer
                 $statements_analyzer,
                 $cased_method_id,
                 $args,
+                $function_params,
             );
 
             foreach ($args as $argument_offset => $_) {
@@ -1625,8 +1626,9 @@ final class ArgumentsAnalyzer
                     continue;
                 }
 
+                // the options, also among unpacked arguments
                 if ($in_call_map
-                    && array_key_first($arg_function_params[$argument_offset]) === 1
+                    && isset($arg_function_params[$argument_offset][1])
                     && strtolower($cased_method_id) === 'curl_setopt_array'
                 ) {
                     self::addCurlOptionArraySinks(
@@ -3107,18 +3109,77 @@ final class ArgumentsAnalyzer
 
         if ($param_offset !== 2
             || strtolower($function_id) !== 'curl_setopt'
-            || !($option_arg = self::getArgForParam($args, $function_params, 'option'))
+            || ($option = self::getArgValueForParam($args, $function_params, 'option')) === null
         ) {
             return $sinks;
         }
-
-        $option = $option_arg->value;
 
         if (!$option instanceof PhpParser\Node\Expr\ConstFetch) {
             return self::CURL_ANY_OPTION_SINKS;
         }
 
         return self::CURL_OPTION_SINKS[strtoupper($option->name->toString())] ?? 0;
+    }
+
+    /**
+     * What is passed as the parameter named $param_name: a named or a positional argument, or an item of an array
+     * literal unpacked into the arguments. False if an unpacked argument the analysis can't read may pass it.
+     *
+     * @param array<int, PhpParser\Node\Arg> $args
+     * @param array<int, FunctionLikeParameter> $function_params
+     * @psalm-mutation-free
+     */
+    private static function getArgValueForParam(
+        array $args,
+        array $function_params,
+        string $param_name,
+    ): PhpParser\Node\Expr|false|null {
+        $param_offset = null;
+
+        foreach ($function_params as $offset => $param) {
+            if ($param->name === $param_name) {
+                $param_offset = $offset;
+
+                break;
+            }
+        }
+
+        $position = 0;
+
+        foreach ($args as $arg) {
+            if ($arg->name !== null) {
+                if ($arg->name->name === $param_name) {
+                    return $arg->value;
+                }
+
+                continue;
+            }
+
+            if (!$arg->unpack) {
+                if ($position++ === $param_offset) {
+                    return $arg->value;
+                }
+
+                continue;
+            }
+
+            if (!$arg->value instanceof PhpParser\Node\Expr\Array_) {
+                return false;
+            }
+
+            foreach ($arg->value->items as $item) {
+                // a string key passes a named argument
+                if ($item->unpack || $item->key !== null) {
+                    return false;
+                }
+
+                if ($position++ === $param_offset) {
+                    return $item->value;
+                }
+            }
+        }
+
+        return null;
     }
 
     /**
@@ -3239,6 +3300,7 @@ final class ArgumentsAnalyzer
      * from what sprintf() returns)
      *
      * @param array<int, PhpParser\Node\Arg> $args
+     * @param array<int, FunctionLikeParameter> $function_params
      * @return array<int, int>
      * @psalm-capabilities read-props
      */
@@ -3246,22 +3308,41 @@ final class ArgumentsAnalyzer
         StatementsAnalyzer $statements_analyzer,
         string $function_id,
         array $args,
+        array $function_params,
     ): array {
         $function_id = strtolower($function_id);
 
-        if (($function_id !== 'printf' && $function_id !== 'vprintf') || !isset($args[0])) {
+        if (($function_id !== 'printf' && $function_id !== 'vprintf')
+            || !($format_arg = self::getArgForParam($args, $function_params, 'format'))
+            || $format_arg->unpack
+        ) {
             return [];
         }
 
-        $format_type = $statements_analyzer->node_data->getType($args[0]->value);
+        $format_type = $statements_analyzer->node_data->getType($format_arg->value);
 
-        return $format_type && $format_type->allStringLiterals()
-            ? FunctionCallReturnTypeFetcher::getTaintsRemovedBySprintfFormats(
-                ConcatAnalyzer::getLiteralValues($format_type),
-                $args,
-                $statements_analyzer->getCodebase()->getInputTaints(),
-                $function_id === 'vprintf',
-            )
+        if (!$format_type || !$format_type->allStringLiterals()) {
+            return [];
+        }
+
+        $formats = ConcatAnalyzer::getLiteralValues($format_type);
+        $input_taints = $statements_analyzer->getCodebase()->getInputTaints();
+
+        if ($function_id === 'printf') {
+            return FunctionCallReturnTypeFetcher::getTaintsRemovedBySprintfFormats($formats, $args, $input_taints);
+        }
+
+        // the values of vprintf() are one array, which may be passed before a named format
+        $values_arg = self::getArgForParam($args, $function_params, 'values');
+        $values_offset = $values_arg ? array_search($values_arg, $args, true) : false;
+
+        if (!$values_arg || $values_arg->unpack || $values_offset === false) {
+            return [];
+        }
+
+        // the array holds the values of every conversion
+        return FunctionCallReturnTypeFetcher::getArgsSprintfFormatsAsStrings($formats) === []
+            ? [$values_offset => $input_taints & ~TaintKind::NUMERIC_ONLY]
             : [];
     }
 

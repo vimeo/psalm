@@ -1849,37 +1849,10 @@ final class FunctionCallReturnTypeFetcher
         int $input_taints,
         bool $values_in_array = false,
     ): array {
-        $string_args = [];
+        $string_args = self::getArgsSprintfFormatsAsStrings($formats);
 
-        foreach ($formats as $format) {
-            preg_match_all(
-                '~%(?:(\d+)\$)?(?:[-+ 0]|\'.)*\d*(?:\.\d*)?([bcdeEfFgGhHosuxX%])?~s',
-                $format,
-                $matches,
-                PREG_SET_ORDER,
-            );
-
-            $next_arg = 1;
-
-            foreach ($matches as $match) {
-                $specifier = $match[2] ?? '';
-
-                if ($specifier === '%') {
-                    continue;
-                }
-
-                // `*` width or precision, taken from an argument, or an invalid conversion
-                if ($specifier === '') {
-                    return [];
-                }
-
-                $position = $match[1] ?? '';
-                $arg = $position === '' ? $next_arg++ : (int) $position;
-
-                if ($specifier === 'c' || $specifier === 's') {
-                    $string_args[$arg] = true;
-                }
-            }
+        if ($string_args === null) {
+            return [];
         }
 
         $removed_taints = [];
@@ -1901,6 +1874,52 @@ final class FunctionCallReturnTypeFetcher
         }
 
         return $removed_taints;
+    }
+
+    /**
+     * The positions (from 1) of the values any of $formats formats as strings (`%s`, `%c`), or null when they can't
+     * be told (a `*` width or precision, an invalid conversion)
+     *
+     * @param list<string> $formats
+     * @return array<int, true>|null
+     * @psalm-pure
+     */
+    public static function getArgsSprintfFormatsAsStrings(array $formats): ?array
+    {
+        $string_args = [];
+
+        foreach ($formats as $format) {
+            preg_match_all(
+                '~%(?:(\d+)\$)?(?:[-+ 0]|\'.)*\d*(?:\.\d*)?([bcdeEfFgGhHosuxX%])?~s',
+                $format,
+                $matches,
+                PREG_SET_ORDER,
+            );
+
+            $next_arg = 1;
+
+            foreach ($matches as $match) {
+                $specifier = $match[2] ?? '';
+
+                if ($specifier === '%') {
+                    continue;
+                }
+
+                // `*` width or precision, taken from an argument, or an invalid conversion
+                if ($specifier === '') {
+                    return null;
+                }
+
+                $position = $match[1] ?? '';
+                $arg = $position === '' ? $next_arg++ : (int) $position;
+
+                if ($specifier === 'c' || $specifier === 's') {
+                    $string_args[$arg] = true;
+                }
+            }
+        }
+
+        return $string_args;
     }
 
     /**
