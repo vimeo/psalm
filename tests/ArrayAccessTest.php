@@ -1502,6 +1502,44 @@ final class ArrayAccessTest extends TestCase
                     '$a===' => 'string',
                 ],
             ],
+            'issetOnANullableObjectOffsetKeepsTheOffsetUnknown' => [
+                'code' => '<?php
+                    function f(?SimpleXMLElement $a, bool $b): void {
+                        if (!(isset($a["r"]) || $b)) {
+                            return;
+                        }
+                        echo isset($a["r"]) && $a["r"] ? 1 : 0;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['RiskyTruthyFalsyComparison'],
+            ],
+            'issetOnAnObjectOrFalseOffsetKeepsTheOffsetUnknown' => [
+                'code' => '<?php
+                    /** @implements ArrayAccess<string, mixed> */
+                    final class SomeObject implements ArrayAccess {
+                        public function offsetExists(mixed $offset): bool {
+                            return true;
+                        }
+
+                        public function offsetGet(mixed $offset): mixed {
+                            return 1;
+                        }
+
+                        public function offsetSet(mixed $offset, mixed $value): void {}
+
+                        public function offsetUnset(mixed $offset): void {}
+                    }
+
+                    function f(SomeObject|false $a, bool $b): void {
+                        if (!(isset($a["r"]) || $b)) {
+                            return;
+                        }
+                        echo isset($a["r"]) && $a["r"] ? 1 : 0;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['PossiblyFalseReference', 'MixedArgument'],
+                'php_version' => '8.0',
+            ],
             'issetOnArrayOrArrayAccessNarrowsTheArray' => [
                 'code' => '<?php
                     /** @var array<string, string>|ArrayAccess<string, string> $test */

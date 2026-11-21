@@ -1353,6 +1353,7 @@ class Reconciler
                 if (!isset($existing_keys[$new_base_key])) {
                     $new_base_type = null;
                     $has_object_part = false;
+                    $has_array_part = false;
                     $has_unknown_object_part = false;
                     $object_value_type = null;
 
@@ -1425,6 +1426,16 @@ class Reconciler
                         } elseif ($existing_key_type_part instanceof TNamedObject
                             && ($has_isset || $has_inverted_isset || $has_inverted_key_exists)
                         ) {
+                            // an object that isn't known to be an ArrayAccess may not take the offset at all: nothing
+                            // is known of it, as the read of the offset has to find out
+                            if (!$existing_key_type_part->hasArrayAccessInterface($codebase)) {
+                                $has_object_array_access = true;
+
+                                unset($existing_keys[$new_base_key]);
+
+                                return null;
+                            }
+
                             // the object's offset is unknown, only its array alternatives are narrowed; for the
                             // offset of a path that goes on, what the object gives has to be indexable as well
                             $has_object_array_access = $has_object_part = true;
@@ -1477,6 +1488,9 @@ class Reconciler
                             }
                         }
 
+                        $has_array_part = $has_array_part
+                            || !($existing_key_type_part instanceof TNull || $existing_key_type_part instanceof TFalse);
+
                         $new_base_type = Type::combineUnionTypes(
                             $new_base_type,
                             $new_base_type_candidate,
@@ -1486,8 +1500,13 @@ class Reconciler
                         $existing_keys[$new_base_key] = $new_base_type;
                     }
 
+                    // next to an object, only what an array (or a string) gives is known of the offset: `null`
+                    // alone, from a `?Foo` or `Foo|false`, is not
                     if ($has_object_part
-                        && ($new_base_type === null || $new_base_type->isMixed() || $has_unknown_object_part)
+                        && (!$has_array_part
+                            || $new_base_type === null
+                            || $new_base_type->isMixed()
+                            || $has_unknown_object_part)
                     ) {
                         unset($existing_keys[$new_base_key]);
 
