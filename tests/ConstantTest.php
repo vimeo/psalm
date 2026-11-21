@@ -86,6 +86,95 @@ final class ConstantTest extends TestCase
         $this->analyzeFile($file2, new Context());
     }
 
+    public function testDefineWithInternalFunctionCallValueInOtherFile(): void
+    {
+        $this->project_analyzer->getCodebase()->all_constants_global = true;
+
+        $file1 = (string) getcwd() . DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR . 'file1.php';
+        $file2 = (string) getcwd() . DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR . 'file2.php';
+
+        $this->addFile(
+            $file1,
+            '<?php
+                namespace Foo {
+                    function time(): string {
+                        return "";
+                    }
+                }
+
+                namespace Bar {
+                    use function Foo\time;
+
+                    define("SHADOWED_TIME", time());
+                }
+
+                namespace Baz {
+                    use function microtime;
+
+                    define("IMPORTED_START", microtime(true));
+                }
+
+                namespace {
+                    define("APP_START", microtime(true));
+                    define("NOW", time());
+                    define("TIME_OF_DAY", gettimeofday(true));
+                    define("HOME", getenv("HOME"));
+                    define("RELATIVE_TRUE", microtime(namespace\\true));
+                }
+            ',
+        );
+
+        $this->addFile(
+            $file2,
+            '<?php
+                function appStart(): void {
+                    $x = APP_START;
+                    /** @psalm-check-type-exact $x = float */;
+                }
+
+                function now(): void {
+                    $x = NOW;
+                    /** @psalm-check-type-exact $x = int<1, max> */;
+                }
+
+                function timeOfDay(): void {
+                    /** @psalm-suppress MixedAssignment */
+                    $x = TIME_OF_DAY;
+                    /** @psalm-check-type-exact $x = mixed */;
+                }
+
+                function home(): void {
+                    /** @psalm-suppress MixedAssignment */
+                    $x = HOME;
+                    /** @psalm-check-type-exact $x = mixed */;
+                }
+
+                function relativeTrue(): void {
+                    /** @psalm-suppress MixedAssignment */
+                    $x = RELATIVE_TRUE;
+                    /** @psalm-check-type-exact $x = mixed */;
+                }
+
+                function importedStart(): void {
+                    $x = IMPORTED_START;
+                    /** @psalm-check-type-exact $x = float */;
+                }
+
+                function shadowedTime(): void {
+                    /** @psalm-suppress MixedAssignment */
+                    $x = SHADOWED_TIME;
+                    /** @psalm-check-type-exact $x = mixed */;
+                }
+            ',
+        );
+
+        // Scan file1 without analyzing it, so file2 sees the types inferred by the scanner.
+        $codebase = $this->project_analyzer->getCodebase();
+        $codebase->addFilesToAnalyze([$file1 => $file1]);
+        $codebase->scanFiles();
+        $this->analyzeFile($file2, new Context());
+    }
+
     #[Override]
     public function providerValidCodeParse(): iterable
     {
