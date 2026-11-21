@@ -217,6 +217,21 @@ final class WhileTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'varUnsetBeforeContinueAndAssignedByTheConditionStaysDefined' => [
+                'code' => '<?php
+                    function nextRow(): ?array {
+                        return rand(0, 1) ? [] : null;
+                    }
+                    function f(): ?array {
+                        while ($row = nextRow()) {
+                            if (rand(0, 1)) {
+                                unset($row);
+                                continue;
+                            }
+                        }
+                        return $row;
+                    }',
+            ],
             'whileCounterIncrementedThroughAReferenceIsWidened' => [
                 'code' => <<<'PHP'
                     <?php
@@ -2436,6 +2451,21 @@ final class WhileTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'varUnsetBeforeContinueIsPossiblyUndefinedAfterTheLoop' => [
+                'code' => '<?php
+                    function f(int $n): void {
+                        $x = 0;
+                        while ($n-- > 0) {
+                            if ($n % 2) {
+                                unset($x);
+                                continue;
+                            }
+                            $x = 5;
+                        }
+                        echo $x;
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable',
+            ],
             'whileAnonymousClassPropertyNotSetInConstructor' => [
                 'code' => <<<'PHP'
                     <?php

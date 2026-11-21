@@ -1400,6 +1400,21 @@ final class DoTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'varUnsetBeforeContinueIsPossiblyUndefinedAfterTheLoop' => [
+                'code' => '<?php
+                    function f(): void {
+                        $x = 0;
+                        do {
+                            if (rand(0, 1)) {
+                                unset($x);
+                                continue;
+                            }
+                            $x = 1;
+                        } while (rand(0, 1));
+                        echo $x;
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable',
+            ],
             'doWhilePropertyFetchOnAVariableNullOnlyInTheFirstIteration' => [
                 'code' => <<<'PHP'
                     <?php
