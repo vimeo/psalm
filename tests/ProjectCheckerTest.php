@@ -39,6 +39,7 @@ use function ob_end_clean;
 use function ob_get_clean;
 use function ob_start;
 use function realpath;
+use function str_replace;
 
 use const DIRECTORY_SEPARATOR;
 
@@ -501,6 +502,49 @@ function checkDirRegression(): int
             $codebase->analyzer->getTypeInferenceSummary(
                 $codebase,
             ),
+        );
+    }
+
+    public function testCheckListsEnabledPlugins(): void
+    {
+        $config = Config::loadFromXML(
+            (string) getcwd(),
+            '<?xml version="1.0"?>
+            <psalm loadLibraryPlugins="false">
+                <projectFiles>
+                    <directory name="tests/fixtures/DummyProject" />
+                </projectFiles>
+                <plugins>
+                    <pluginClass class="Psalm\Tests\fixtures\ScanHookAndAutoloadFiles\ScanHookPlugin" />
+                    <plugin filename="examples/plugins/StringChecker.php" />
+                </plugins>
+            </psalm>',
+        );
+        $config->php_extensions_not_supported['foo'] = true;
+        $config->setIncludeCollector(self::getIncludeCollectorWithAutoloadFile());
+        $this->project_analyzer = new ProjectAnalyzer(
+            $config,
+            $this->getInMemoryProviders($config),
+            new ReportOptions(),
+        );
+        $this->project_analyzer->initProjectFiles();
+        $this->project_analyzer->initExtraFiles();
+        $this->project_analyzer->setPhpVersion('8.1', 'tests');
+        $this->project_analyzer->progress = new EchoProgress();
+
+        ob_start();
+        $this->project_analyzer->check('tests/fixtures/DummyProject');
+        $output = (string) ob_get_clean();
+
+        // PHP_EOL is "\r\n" on Windows
+        $output = str_replace("\r\n", "\n", $output);
+
+        $this->assertStringContainsString("Target PHP version: 8.1 (set by tests)\n", $output);
+        $this->assertStringContainsString("\nUnsupported extensions: foo\nEnabled plugins: ", $output);
+        $this->assertStringContainsString(
+            "\nEnabled plugins: ScanHookPlugin, "
+            . "examples/plugins/StringChecker.php\n\nScanning files",
+            $output,
         );
     }
 

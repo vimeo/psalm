@@ -72,6 +72,9 @@ final class TestConfig extends Config
         $this->project_files = self::$cached_project_files;
         $this->setIncludeCollector(new IncludeCollector());
 
+        // the analysed snippets depend on no package, not even the ones Psalm requires
+        $this->setProjectPackages([]);
+
         $this->collectPredefinedConstants();
         $this->collectPredefinedFunctions();
     }

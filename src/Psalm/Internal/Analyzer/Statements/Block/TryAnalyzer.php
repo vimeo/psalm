@@ -556,6 +556,7 @@ final class TryAnalyzer
         if ($stmt->finally) {
             if ($try_context->finally_scope) {
                 $finally_context = clone $context;
+                $finally_context->inside_finally = true;
 
                 $finally_context->assigned_var_ids = [];
                 $finally_context->possibly_assigned_var_ids = [];

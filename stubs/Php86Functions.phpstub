@@ -14,3 +14,13 @@
  * @return T
  */
 function clamp(mixed $value, mixed $min, mixed $max): mixed {}
+
+/**
+ * Escapes the string and puts it in quotes
+ *
+ * @psalm-pure
+ *
+ * @psalm-taint-escape sql
+ * @psalm-flow ($string) -> return
+ */
+function mysqli_quote_string(mysqli $mysql, string $string): string {}
