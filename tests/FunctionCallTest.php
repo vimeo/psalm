@@ -60,6 +60,29 @@ final class FunctionCallTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.4',
             ],
+            'filterVarGlobalRangeFromPhp85KeepsTheFailureValue' => [
+                'code' => '<?php
+                    /** @var string */
+                    $input = $_GET["ip"];
+                    $ip = filter_var($input, FILTER_VALIDATE_IP, FILTER_FLAG_GLOBAL_RANGE);
+                    $fromInput = filter_input(INPUT_GET, "x", FILTER_VALIDATE_IP, FILTER_FLAG_GLOBAL_RANGE);
+
+                    function ip(string $s): string {
+                        $ip = filter_var($s, FILTER_VALIDATE_IP, FILTER_FLAG_GLOBAL_RANGE);
+
+                        if ($ip === false) {
+                            return "not global";
+                        }
+
+                        return $ip;
+                    }',
+                'assertions' => [
+                    '$ip===' => 'false|non-falsy-string',
+                    '$fromInput===' => 'false|non-falsy-string|null',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.5',
+            ],
             'pathinfoWithAllElementsReturnsTheArray' => [
                 'code' => '<?php
                     /** @param non-empty-string $path */
@@ -4460,6 +4483,17 @@ final class FunctionCallTest extends TestCase
                 'error_message' => 'RedundantFlag',
                 'error_levels' => [],
                 'php_version' => '8.1',
+            ],
+            'filterVarNullOnFailureWithThrowOnFailureIsAValueError' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function filter(string $s): void {
+                        filter_var($s, FILTER_VALIDATE_INT, FILTER_NULL_ON_FAILURE | FILTER_THROW_ON_FAILURE);
+                    }
+                    PHP,
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:5 - FILTER_NULL_ON_FAILURE cannot be combined with FILTER_THROW_ON_FAILURE, it is a ValueError',
+                'error_levels' => [],
+                'php_version' => '8.5',
             ],
             'filterVarGlobalRangeBeforePhp85IsNotAFlagOfEveryFilter' => [
                 'code' => <<<'PHP'
