@@ -51,6 +51,46 @@ final class StarProjectionTest extends TestCase
         );
     }
 
+    public function testStarProjectionAddsNoLowerBoundToAnInvariantTemplate(): void
+    {
+        $this->project_analyzer->getConfig()->throw_exception = false;
+
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                /** @template T of object */
+                final class Box {}
+
+                /**
+                 * @template T of object
+                 * @param Box<T> $first
+                 * @param Box<T> $second
+                 * @return T
+                 */
+                function both(Box $first, Box $second): object {
+                    throw new Exception();
+                }
+
+                /**
+                 * @param Box<*> $any
+                 * @param Box<DateTime> $date
+                 */
+                function f(Box $any, Box $date): void {
+                    $result = both($any, $date);
+                    /** @psalm-check-type-exact $result = DateTime */
+                }',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+
+        self::assertSame(
+            ['ArgumentTypeCoercion'],
+            array_column(IssueBuffer::getIssuesDataForFile($file_path), 'type'),
+        );
+    }
+
     /**
      * @psalm-pure
      */
@@ -1085,6 +1125,29 @@ final class StarProjectionTest extends TestCase
                             $this->assertReader();
                             takes($this->prop);
                         }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'starProjectionBindsACovariantTemplateAsTheBound' => [
+                'code' => '<?php
+                    /** @template-covariant T of Countable */
+                    interface Reader {}
+
+                    /**
+                     * @template T of Countable
+                     * @param Reader<T> $reader
+                     * @return T
+                     */
+                    function readOf(Reader $reader): Countable {
+                        throw new Exception();
+                    }
+
+                    /** @param Reader<*> $any */
+                    function f(Reader $any): void {
+                        $read = readOf($any);
+                        /** @psalm-check-type-exact $read = Countable */
                     }',
                 'assertions' => [],
                 'ignored_issues' => [],

@@ -235,6 +235,7 @@ trait GenericTrait
 
 
         $input_object_type_params = [];
+        $input_star_offsets = [];
 
         $container_type_params_covariant = [];
 
@@ -246,6 +247,7 @@ trait GenericTrait
                 $input_type,
                 $this,
                 $container_type_params_covariant,
+                $input_star_offsets,
             );
         }
 
@@ -270,6 +272,17 @@ trait GenericTrait
                 && isset($input_object_type_params[$offset])
             ) {
                 $input_type_param = $input_object_type_params[$offset];
+            }
+
+            // a `*` is no type of its own for an invariant argument to bind a template to, only one bounded by the
+            // bound it holds, which a covariant argument reads; a `*` of the container takes no binding
+            $invariant_star_input = isset($input_star_offsets[$offset])
+                && !($container_type_params_covariant[$offset] ?? true);
+            $star_container_param = $this instanceof TGenericObject
+                && $this->getProjection($offset) === TypeArgumentProjection::Star;
+
+            if ($invariant_star_input || $star_container_param) {
+                $input_type_param = null;
             }
 
             $type_params[$offset] = TemplateStandinTypeReplacer::replace(
