@@ -94,6 +94,7 @@ use Psalm\Node\Expr\BinaryOp\VirtualShiftRight;
 use Psalm\Node\Expr\VirtualAssign;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Storage\Assertion\Falsy;
+use Psalm\Storage\Assertion\Truthy;
 use Psalm\Storage\Capabilities;
 use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Type;
@@ -3228,7 +3229,30 @@ final class AssignmentAnalyzer
                             $cond_object_id,
                         );
                     } catch (ComplicatedExpressionException) {
+                        $right_clauses = [];
                         $assignment_clauses = [];
+                    }
+
+                    // the variable is the result of the condition: where it is falsy, the condition is false
+                    if ($right_clauses !== []) {
+                        try {
+                            $truthy = new Truthy();
+
+                            $assignment_clauses = [
+                                ...$assignment_clauses,
+                                ...Algebra::combineOredClauses(
+                                    [new Clause(
+                                        [$var_id => [(string) $truthy => $truthy]],
+                                        $var_object_id,
+                                        $var_object_id,
+                                    )],
+                                    Algebra::negateFormula($right_clauses),
+                                    $cond_object_id,
+                                ),
+                            ];
+                        } catch (ComplicatedExpressionException) {
+                            // too complicated to negate: only its truthy side is known
+                        }
                     }
 
                     $context->clauses = [...$context->clauses, ...$assignment_clauses];
