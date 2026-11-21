@@ -128,6 +128,43 @@ final class ArrayAssignmentTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'writeUnderAUnionOfLiteralKeysWritesOnlyOneOfThem' => [
+                'code' => '<?php
+                    $k = rand(0, 1) ? "a" : "x";
+
+                    $a = ["a" => 1];
+                    $a[$k] = 2;
+
+                    $o = ["a" => 1, "b" => 2];
+                    $o[$k] = 3;
+
+                    $m = ["a" => [1]];
+                    $m[$k][] = 2;
+
+                    $l = [[1]];
+                    $i = rand(0, 1) ? 0 : 1;
+                    $l[$i][] = 2;',
+                'assertions' => [
+                    '$a===' => 'array{a: 1|2, x?: 2}',
+                    '$o===' => 'array{a: 1|3, b: 2, x?: 3}',
+                    '$m===' => 'array{a: list{0: 1|2, 1?: 2, ...<2>}, x?: list{0: 1|2, 1?: 2, ...<2>}}',
+                    '$l===' => 'list{0: list{0: 1|2, 1?: 2, ...<2>}, 1?: list{0: 1|2, 1?: 2, ...<2>}}',
+                ],
+            ],
+            'writeUnderASingleLiteralKeyOverwritesIt' => [
+                'code' => '<?php
+                    $k = rand(0, 1) ? "a" : "a";
+
+                    $a = ["a" => 1];
+                    $a[$k] = 2;
+
+                    $m = ["a" => [1]];
+                    $m["x"][] = 2;',
+                'assertions' => [
+                    '$a===' => 'array{a: 2}',
+                    '$m===' => 'array{a: list{1}, x: non-empty-list<2>}',
+                ],
+            ],
             'assignWithAScalarOffsetGivesAnArrayKey' => [
                 'code' => '<?php
                     /** @param scalar $key */
