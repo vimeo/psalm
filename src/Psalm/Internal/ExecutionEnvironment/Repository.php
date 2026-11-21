@@ -36,4 +36,14 @@ final class Repository
 
         return new self($parts[0], $parts[1]);
     }
+
+    /**
+     * The repository of an owner and a name, or null when one of them is missing or empty.
+     *
+     * @psalm-pure
+     */
+    public static function fromParts(?string $owner, ?string $name): ?self
+    {
+        return $owner === null || $owner === '' || $name === null || $name === '' ? null : new self($owner, $name);
+    }
 }

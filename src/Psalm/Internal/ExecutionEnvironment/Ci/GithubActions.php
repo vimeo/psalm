@@ -158,13 +158,10 @@ final class GithubActions implements CiProvider
         }
 
         $head = $event_data['pull_request']['head']['repo'] ?? [];
-        $head_owner = $head['owner']['login'] ?? '';
-        $head_name = $head['name'] ?? '';
+        $head_owner = $head['owner']['login'] ?? null;
+        $head_name = $head['name'] ?? null;
 
-        return PullRequest::fromNumber(
-            (string) $number,
-            $head_owner !== '' && $head_name !== '' ? new Repository($head_owner, $head_name) : null,
-        );
+        return PullRequest::fromNumber((string) $number, Repository::fromParts($head_owner, $head_name));
     }
 
     /**

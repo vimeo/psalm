@@ -38,13 +38,13 @@ final class CircleCi implements CiProvider
         return new BuildInfo(
             ciName: 'circleci',
             branch: $env->get(self::BRANCH),
-            repository: self::repository(
+            repository: Repository::fromParts(
                 $env->get(self::REPOSITORY_OWNER),
                 $env->get(self::REPOSITORY_NAME),
             ),
             pullRequest: PullRequest::fromNumber(
                 $env->get(self::PULL_REQUEST),
-                self::repository(
+                Repository::fromParts(
                     $env->get(self::PULL_REQUEST_REPOSITORY_OWNER),
                     $env->get(self::PULL_REQUEST_REPOSITORY_NAME),
                 ),
@@ -52,13 +52,5 @@ final class CircleCi implements CiProvider
             buildNumber: $env->get(self::BUILD_NUMBER),
             raw: $env->pick(self::FLAG, self::BUILD_NUMBER),
         );
-    }
-
-    /**
-     * @psalm-pure
-     */
-    private static function repository(?string $owner, ?string $name): ?Repository
-    {
-        return $owner !== null && $name !== null ? new Repository($owner, $name) : null;
     }
 }
