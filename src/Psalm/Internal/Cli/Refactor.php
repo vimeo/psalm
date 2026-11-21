@@ -6,6 +6,7 @@ namespace Psalm\Internal\Cli;
 
 use AssertionError;
 use Composer\XdebugHandler\XdebugHandler;
+use Psalm\Exception\RefactorException;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\CliUtils;
 use Psalm\Internal\Composer;
@@ -26,6 +27,7 @@ use Psalm\Report\ReportOptions;
 use function array_key_exists;
 use function array_slice;
 use function chdir;
+use function count;
 use function end;
 use function explode;
 use function fwrite;
@@ -37,11 +39,15 @@ use function is_array;
 use function is_string;
 use function microtime;
 use function preg_last_error_msg;
+use function preg_match;
 use function preg_split;
 use function realpath;
+use function str_contains;
+use function str_ends_with;
 use function str_starts_with;
 use function strpos;
 use function substr;
+use function trim;
 
 use const DIRECTORY_SEPARATOR;
 use const PHP_EOL;
@@ -60,6 +66,9 @@ require_once __DIR__ . '/../../IssueBuffer.php';
  */
 final class Refactor
 {
+    private const IDENTIFIER = '[a-zA-Z_\\x80-\\xff][a-zA-Z0-9_\\x80-\\xff]*';
+    private const CLASS_NAME = '(?:' . self::IDENTIFIER . '\\\\)*' . self::IDENTIFIER;
+
     public const LONG_OPTIONS = [
         'help', 'debug', 'debug-by-line', 'debug-emitted-issues', 'config:', 'root:', 'monochrome',
         'scan-threads:', 'threads:', 'memory-limit:', 'use-ini-defaults', 'move:', 'into:', 'rename:', 'to:',
@@ -211,8 +220,9 @@ final class Refactor
 
         $path_to_config = CliUtils::getPathToConfig($options);
 
-        // `--move=X` is the same as `--move X`
+        // `--move=X` is the same as `--move X`.
         $args = [];
+        $expects_destination = false;
 
         foreach (CliUtils::getArguments() as $arg) {
             $separator = strpos($arg, '=');
@@ -221,13 +231,20 @@ final class Refactor
                 $option = substr($arg, 0, $separator);
 
                 if (in_array($option, ['--move', '--into', '--rename', '--to'], true)) {
+                    $value_start = $separator + 1;
+                    if (($option === '--into' || $option === '--to') && substr($arg, $value_start, 1) === '\\') {
+                        ++$value_start;
+                    }
+
                     $args[] = $option;
-                    $args[] = substr($arg, $separator + 1);
+                    $args[] = substr($arg, $value_start);
+                    $expects_destination = false;
                     continue;
                 }
             }
 
-            $args[] = $arg;
+            $args[] = $expects_destination && str_starts_with($arg, '\\') ? substr($arg, 1) : $arg;
+            $expects_destination = $arg === '--into' || $arg === '--to';
         }
 
         $operation = null;
@@ -235,7 +252,15 @@ final class Refactor
 
         $to_refactor = [];
 
+        $expects_a_value = static fn(string $operation): string
+            => ($operation === 'move_into' ? '--into' : '--to') . ' expects a value' . PHP_EOL;
+
         foreach ($args as $arg) {
+            if (($operation === 'move_into' || $operation === 'rename_to') && str_starts_with($arg, '-')) {
+                fwrite(STDERR, $expects_a_value($operation));
+                exit(1);
+            }
+
             if ($arg === '--move') {
                 $operation = 'move';
                 continue;
@@ -278,24 +303,35 @@ final class Refactor
                     exit(1);
                 }
 
+                if (trim($arg) === '') {
+                    fwrite(STDERR, $expects_a_value($operation));
+                    exit(1);
+                }
+
                 if ($operation === 'move_into') {
                     $last_arg_parts = preg_split('/, ?/', $last_arg);
                     if ($last_arg_parts === false) {
                         throw new AssertionError(preg_last_error_msg());
                     }
 
-                    foreach ($last_arg_parts as $last_arg_part) {
+                    foreach ($last_arg_parts as $listed_source) {
+                        $last_arg_part = self::stripLeadingBackslash($listed_source);
                         if (strpos($last_arg_part, '::')) {
                             [, $identifier_name] = explode('::', $last_arg_part);
-                            $to_refactor[$last_arg_part] = $arg . '::' . $identifier_name;
+                            $destination = $arg . '::' . $identifier_name;
                         } else {
                             $namespace_parts = explode('\\', $last_arg_part);
                             $class_name = end($namespace_parts);
-                            $to_refactor[$last_arg_part] = $arg . '\\' . $class_name;
+                            $destination = $arg . '\\' . $class_name;
                         }
+
+                        self::exitOnShapeError($last_arg_part, $destination);
+                        $to_refactor[$last_arg_part] = $destination;
                     }
                 } else {
-                    $to_refactor[$last_arg] = $arg;
+                    $source = self::stripLeadingBackslash($last_arg);
+                    self::exitOnShapeError($source, $arg);
+                    $to_refactor[$source] = $arg;
                 }
 
                 $last_arg = null;
@@ -310,6 +346,11 @@ final class Refactor
             }
 
             fwrite(STDERR, 'Unexpected argument "' . $arg . '"' . PHP_EOL);
+            exit(1);
+        }
+
+        if ($operation === 'move_into' || $operation === 'rename_to') {
+            fwrite(STDERR, $expects_a_value($operation));
             exit(1);
         }
 
@@ -393,8 +434,101 @@ final class Refactor
 
         $start_time = microtime(true);
 
-        $project_analyzer->check($current_dir);
+        try {
+            $project_analyzer->check($current_dir);
+        } catch (RefactorException $e) {
+            fwrite(STDERR, $e->getMessage() . PHP_EOL);
+            exit(1);
+        }
 
         IssueBuffer::finish($project_analyzer, false, $start_time);
+    }
+
+    /**
+     * @psalm-pure
+     */
+    private static function stripLeadingBackslash(string $name): string
+    {
+        return str_starts_with($name, '\\') ? substr($name, 1) : $name;
+    }
+
+    private static function exitOnShapeError(string $source, string $destination): void
+    {
+        $shape_error = self::getShapeError($source, $destination);
+        if ($shape_error !== null) {
+            fwrite(STDERR, $shape_error . PHP_EOL);
+            exit(1);
+        }
+    }
+
+    /**
+     * Checks that a refactor destination has the same shape as its source, before any scanning.
+     *
+     * @psalm-pure
+     */
+    private static function getShapeError(string $source, string $destination): ?string
+    {
+        $class = '/^' . self::CLASS_NAME . '$/D';
+        $member = '/^' . self::IDENTIFIER . '$/D';
+        $property = '/^\\$' . self::IDENTIFIER . '$/D';
+
+        if (str_ends_with($source, '*')) {
+            $prefix = '/^(?:' . self::IDENTIFIER . '\\\\)*(?:' . self::IDENTIFIER . ')?$/D';
+            $source_prefix = substr($source, 0, -1);
+            if ($source_prefix === '' || !preg_match($prefix, $source_prefix)) {
+                return 'Invalid refactor source ' . $source;
+            }
+
+            $destination_prefix = substr($destination, 0, -1);
+            if (!str_ends_with($destination, '*')
+                || $destination_prefix === ''
+                || !preg_match($prefix, $destination_prefix)
+            ) {
+                return 'Destination for ' . $source . ' must be a wildcard like Foo\\*, got ' . $destination;
+            }
+
+            return null;
+        }
+
+        $source_parts = explode('::', $source);
+        $destination_parts = explode('::', $destination);
+
+        if (count($source_parts) === 1) {
+            if (!preg_match($class, $source)) {
+                return 'Invalid refactor source ' . $source;
+            }
+
+            if (!preg_match($class, $destination)) {
+                return 'Destination for ' . $source . ' must be a class name like Foo\\Bar, got ' . $destination;
+            }
+
+            if (str_contains($source, '\\') && !str_contains($destination, '\\')) {
+                return 'Renaming a namespaced class into the global namespace is not supported';
+            }
+
+            return null;
+        }
+
+        if (count($source_parts) !== 2) {
+            return 'Invalid refactor source ' . $source;
+        }
+
+        [$source_class, $source_member] = $source_parts;
+        $is_property = str_starts_with($source_member, '$');
+        $member_pattern = $is_property ? $property : $member;
+
+        if (!preg_match($class, $source_class) || !preg_match($member_pattern, $source_member)) {
+            return 'Invalid refactor source ' . $source;
+        }
+
+        if (count($destination_parts) !== 2
+            || !preg_match($class, $destination_parts[0])
+            || !preg_match($member_pattern, $destination_parts[1])
+        ) {
+            return 'Destination for ' . $source . ' must be of the form '
+                . ($is_property ? 'Foo\\Bar::$baz' : 'Foo\\Bar::baz') . ', got ' . $destination;
+        }
+
+        return null;
     }
 }

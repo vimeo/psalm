@@ -2,7 +2,7 @@
 
 The `@psalm-taint-sink <taint-type> <param-name>` annotation allows you to define a taint sink.
 
-Any tainted value matching the given [taint type](index.md#taint-types) will be reported as an error by Psalm.
+Any tainted value matching the given [taint type](index.md#where-user-input-must-not-go) will be reported as an error by Psalm.
 
 ### Example
 
@@ -79,7 +79,7 @@ Here a tainted template name is not reported, a tainted template source is.
 
 ### Conditional sinks
 
-Like [conditional escapes](avoiding_false_positives.md#conditionally-escaping-tainted-input), the taint type can be a
+Like [conditional escapes](index.md#your-own-escaping-functions), the taint type can be a
 conditional type on the parameters. Each call resolves it with its arguments:
 
 ```php

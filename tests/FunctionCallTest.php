@@ -24,6 +24,26 @@ final class FunctionCallTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'pathinfoWithAllElementsReturnsTheArray' => [
+                'code' => '<?php
+                    /** @param non-empty-string $path */
+                    function f(string $path, int $flags): void {
+                        $all = pathinfo($path, PATHINFO_ALL);
+                        $default = pathinfo($path);
+                        $mask = pathinfo($path, 15);
+                        $extension = pathinfo($path, PATHINFO_EXTENSION);
+                        $unknown = pathinfo($path, $flags);
+
+                        /** @psalm-check-type-exact $all = array{dirname: string, basename: string, extension?: string, filename: string} */
+                        /** @psalm-check-type-exact $default = array{dirname: string, basename: string, extension?: string, filename: string} */
+                        /** @psalm-check-type-exact $mask = array{dirname: string, basename: string, extension?: string, filename: string} */
+                        /** @psalm-check-type-exact $extension = string */
+                        /** @psalm-check-type-exact $unknown = array{dirname: string, basename: string, extension?: string, filename: string}|string */
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.5',
+            ],
             'functionImportedWithAnAliasIsCalledWithoutAWrongCaseIssue' => [
                 'code' => '<?php
                     namespace App;
@@ -284,6 +304,8 @@ final class FunctionCallTest extends TestCase
                     /** @psalm-check-type-exact $sanitize_string = string */
                     /** @psalm-check-type-exact $forced_array = list{''} */
                     PHP,
+                'assertions' => [],
+                'ignored_issues' => ['DeprecatedConstant'],
             ],
             'filterVarSanitizesANullableInputWithoutFailing' => [
                 'code' => <<<'PHP'
@@ -2078,6 +2100,8 @@ final class FunctionCallTest extends TestCase
                             return "here";
                         }
                     }',
+                'assertions' => [],
+                'ignored_issues' => ['DeprecatedFunction'],
             ],
             'getParentClass' => [
                 'code' => '<?php
@@ -2529,6 +2553,7 @@ final class FunctionCallTest extends TestCase
                     '$f===' => 'Closure[time](true=):(false|float|int)',
                     '$g===' => 'Closure[pure](string, string=):lowercase-string',
                 ],
+                'ignored_issues' => ['DeprecatedFunction'],
             ],
             'hrtimePolyfillBeforePhp73KeepsItsDeclaredType' => [
                 'code' => '<?php
@@ -3044,6 +3069,8 @@ final class FunctionCallTest extends TestCase
                         throw new Exception("invalid headers");
                     }
                     print_r(array_map("strval", $headers));',
+                'assertions' => [],
+                'ignored_issues' => ['DeprecatedFunction'],
             ],
             'allowListEqualToRange' => [
                 'code' => '<?php
@@ -3132,7 +3159,7 @@ final class FunctionCallTest extends TestCase
                         }
                     }',
                 'assertions' => [],
-                'ignored_issues' => [],
+                'ignored_issues' => ['DeprecatedSyntax'],
                 'php_version' => '8.0',
             ],
             'getTypeDoubleThenInt' => [
@@ -3542,6 +3569,8 @@ final class FunctionCallTest extends TestCase
 
                     foo(...$arguments);
                     ',
+                'assertions' => [],
+                'ignored_issues' => ['DeprecatedSyntax'],
             ],
             'is_aWithStringableClass' => [
                 'code' => '<?php
@@ -3574,6 +3603,7 @@ final class FunctionCallTest extends TestCase
                     '$t===' => 'non-empty-string',
                     '$u===' => 'string',
                 ],
+                'ignored_issues' => ['DeprecatedFunction'],
             ],
             'mb_strtolowerProducesLowercaseStringWithNullOrAbsentEncoding' => [
                 'code' => '<?php
@@ -4234,6 +4264,24 @@ final class FunctionCallTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'callUserFuncWithADifferentCase' => [
+                'code' => '<?php
+                    function takesInt(int $i): string {
+                        return (string) $i;
+                    }
+
+                    echo CALL_USER_FUNC(\'takesInt\', \'x\');',
+                'error_message' => 'InvalidScalarArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:53',
+            ],
+            'callUserFuncArrayWithADifferentCase' => [
+                'code' => '<?php
+                    function takesInt(int $i): string {
+                        return (string) $i;
+                    }
+
+                    echo Call_User_Func_Array(\'takesInt\', [\'x\']);',
+                'error_message' => 'InvalidScalarArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:59',
+            ],
             'aliasOfAUserFunctionImportedWithAnotherCasingIsReported' => [
                 'code' => '<?php
                     namespace Lib {
@@ -5720,48 +5768,56 @@ final class FunctionCallTest extends TestCase
                     is_a("Foo", Exception::class);
                 ',
                 'error_message' => 'RedundantFunctionCall',
+                'error_levels' => ['DeprecatedFunction'],
             ],
             'is_a_withAStringAndFalseThirdArg' => [
                 'code' => '<?php
                     is_a("Foo", Exception::class, false);
                 ',
                 'error_message' => 'RedundantFunctionCall',
+                'error_levels' => ['DeprecatedFunction'],
             ],
             'is_a_withAUnionOfStringsAndNoThirdArg' => [
                 'code' => '<?php
                     is_a(rand(0, 1) ? "Foo" : "Bar", Exception::class);
                 ',
                 'error_message' => 'RedundantFunctionCall',
+                'error_levels' => ['DeprecatedFunction'],
             ],
             'is_a_withAUnionOfStringsAndFalseThirdArg' => [
                 'code' => '<?php
                     is_a(rand(0, 1) ? "Foo" : "Bar", Exception::class, false);
                 ',
                 'error_message' => 'RedundantFunctionCall',
+                'error_levels' => ['DeprecatedFunction'],
             ],
             'is_a_withAClassStringAndNoThirdArg' => [
                 'code' => '<?php
                     is_a(InvalidArgumentException::class, Exception::class);
                 ',
                 'error_message' => 'RedundantFunctionCall',
+                'error_levels' => ['DeprecatedFunction'],
             ],
             'is_a_withAClassStringAndFalseThirdArg' => [
                 'code' => '<?php
                     is_a(InvalidArgumentException::class, Exception::class, false);
                 ',
                 'error_message' => 'RedundantFunctionCall',
+                'error_levels' => ['DeprecatedFunction'],
             ],
             'is_a_withAUnionOfClassStringsAndNoThirdArg' => [
                 'code' => '<?php
                     is_a(rand(0, 1) ? InvalidArgumentException::class : RuntimeException::class, Exception::class);
                 ',
                 'error_message' => 'RedundantFunctionCall',
+                'error_levels' => ['DeprecatedFunction'],
             ],
             'is_a_withAUnionOfClassStringsAndFalseThirdArg' => [
                 'code' => '<?php
                     is_a(rand(0, 1) ? InvalidArgumentException::class : RuntimeException::class, Exception::class, false);
                 ',
                 'error_message' => 'RedundantFunctionCall',
+                'error_levels' => ['DeprecatedFunction'],
             ],
             'incorrectCallableParamDefault' => [
                 'code' => '<?php
@@ -5964,6 +6020,9 @@ final class FunctionCallTest extends TestCase
         $config = Config::getInstance();
         $config->trigger_error_exits = 'default';
 
+        // E_USER_ERROR is deprecated, but still exits
+        $config->setCustomErrorLevel('DeprecatedFunction', Config::REPORT_SUPPRESS);
+
         $this->addFile(
             'somefile.php',
             '<?php
@@ -5995,6 +6054,9 @@ final class FunctionCallTest extends TestCase
         $config = Config::getInstance();
         $config->trigger_error_exits = 'always';
 
+        // E_USER_ERROR is deprecated, but still exits
+        $config->setCustomErrorLevel('DeprecatedFunction', Config::REPORT_SUPPRESS);
+
         $this->addFile(
             'somefile.php',
             '<?php
@@ -6018,6 +6080,9 @@ final class FunctionCallTest extends TestCase
     {
         $config = Config::getInstance();
         $config->trigger_error_exits = 'never';
+
+        // E_USER_ERROR is deprecated, but still exits
+        $config->setCustomErrorLevel('DeprecatedFunction', Config::REPORT_SUPPRESS);
 
         $this->addFile(
             'somefile.php',

@@ -887,13 +887,14 @@ final class AssignmentAnalyzer
             }
 
             if ($context->vars_in_scope[$var_id]->isNever()) {
+                // an issue only recorded is in a pass a loop analyses again: the value stays never in it
                 if (!IssueBuffer::accepts(
                     new NoValue(
                         'All possible types for this assignment were invalidated - This may be dead code',
                         new CodeLocation($statements_analyzer->getSource(), $assign_var),
                     ),
                     $statements_analyzer->getSuppressedIssues(),
-                )) {
+                ) && !IssueBuffer::isRecording()) {
                     // if the error is suppressed, do not treat it as never anymore
                     $new_mutable = $context->vars_in_scope[$var_id]->getBuilder()->addType(new TMixed);
                     $new_mutable->removeType('never');
