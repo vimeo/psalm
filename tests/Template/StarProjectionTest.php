@@ -2038,6 +2038,32 @@ final class StarProjectionTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'starProjectionReadsAPropertyOfAComposedParentArgument' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class Box {}
+
+                    /** @template T */
+                    abstract class Base {
+                        /** @param T $value */
+                        public function __construct(public mixed $value) {}
+                    }
+
+                    /**
+                     * @template TModel of object
+                     * @extends Base<Box<TModel>>
+                     */
+                    final class Composed extends Base {}
+
+                    /** @param Composed<*> $composed */
+                    function f(Composed $composed): void {
+                        $value = $composed->value;
+                        /** @psalm-check-type-exact $value = Box<*> */
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
         ];
     }
 
@@ -3264,6 +3290,37 @@ final class StarProjectionTest extends TestCase
                         $p->setSecond(new stdClass());
                     }',
                 'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:13:39 - Argument 1 of Pair::setSecond expects never, but stdClass provided',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'starProjectionInvokableOfAComposedParentArgumentExpectsNever' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class Box {}
+
+                    /** @template T */
+                    abstract class Base {
+                        /** @param T $value */
+                        public function __construct(public mixed $value) {}
+
+                        /** @param T $value */
+                        public function __invoke(mixed $value): void {}
+                    }
+
+                    /**
+                     * @template TModel of object
+                     * @extends Base<Box<TModel>>
+                     */
+                    final class Composed extends Base {}
+
+                    /** @param callable(Box<stdClass>): void $callback */
+                    function takesCallback(callable $callback): void {}
+
+                    /** @param Composed<*> $composed */
+                    function f(Composed $composed): void {
+                        takesCallback($composed);
+                    }',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:25:39 - Argument 1 of takesCallback expects callable[impure](Box<stdClass>):void, but callable[impure](never):void provided',
                 'error_levels' => [],
                 'php_version' => '8.0',
             ],
