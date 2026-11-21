@@ -138,7 +138,7 @@ final class DocblockParser
                 // the space before the closing `*/` of a single-line docblock is not part of the tag
                 $data = rtrim($data, " \t");
 
-                if (empty($special[$type])) {
+                if (!isset($special[$type])) {
                     $special[$type] = [];
                 }
 
