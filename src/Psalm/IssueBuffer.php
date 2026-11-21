@@ -905,13 +905,14 @@ final class IssueBuffer
 
         if ($codebase->config->eventDispatcher->after_analysis) {
             $source_control_info = null;
-            $build_info = (new BuildInfoCollector(self::$server))->collect();
 
             try {
                 $source_control_info = (new GitInfoCollector())->collect();
             } catch (RuntimeException) {
                 // do nothing
             }
+
+            $build_info = (new BuildInfoCollector(self::$server))->collect($source_control_info);
 
             /** @psalm-suppress ArgumentTypeCoercion due to Psalm bug */
             $event = new AfterAnalysisEvent(

@@ -1973,6 +1973,40 @@ final class InterfaceTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'implementedReturnTypeMismatchNamesTheMethodAsWritten' => [
+                'code' => '<?php
+                    interface I {
+                        /** @return int */
+                        public function voidImpl();
+                    }
+
+                    final class C implements I {
+                        /** @return string */
+                        public function voidImpl() { return ""; }
+                    }',
+                'error_message' => 'ImplementedReturnTypeMismatch - src' . DIRECTORY_SEPARATOR
+                    . 'somefile.php:8:37 - The inherited return type \'int\' for I::voidImpl is different to the implemented return type for C::voidImpl',
+            ],
+            'implementedReturnTypeMismatchNamesAnAliasedTraitMethod' => [
+                'code' => '<?php
+                    interface I {
+                        /** @return void */
+                        public function run();
+                    }
+
+                    trait T {
+                        /** @return bool */
+                        public function traitRun() { return true; }
+                    }
+
+                    final class C implements I {
+                        use T {
+                            traitRun as run;
+                        }
+                    }',
+                'error_message' => 'ImplementedReturnTypeMismatch - src' . DIRECTORY_SEPARATOR
+                    . 'somefile.php:8:37 - The inherited return type \'null\' for I::run is different to the implemented return type for T::traitRun',
+            ],
             'arrayObjectSortOverrideWithoutFlags' => [
                 'code' => '<?php
                     /**

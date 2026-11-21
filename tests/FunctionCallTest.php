@@ -24,6 +24,26 @@ final class FunctionCallTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'pathinfoWithAllElementsReturnsTheArray' => [
+                'code' => '<?php
+                    /** @param non-empty-string $path */
+                    function f(string $path, int $flags): void {
+                        $all = pathinfo($path, PATHINFO_ALL);
+                        $default = pathinfo($path);
+                        $mask = pathinfo($path, 15);
+                        $extension = pathinfo($path, PATHINFO_EXTENSION);
+                        $unknown = pathinfo($path, $flags);
+
+                        /** @psalm-check-type-exact $all = array{dirname: string, basename: string, extension?: string, filename: string} */
+                        /** @psalm-check-type-exact $default = array{dirname: string, basename: string, extension?: string, filename: string} */
+                        /** @psalm-check-type-exact $mask = array{dirname: string, basename: string, extension?: string, filename: string} */
+                        /** @psalm-check-type-exact $extension = string */
+                        /** @psalm-check-type-exact $unknown = array{dirname: string, basename: string, extension?: string, filename: string}|string */
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.5',
+            ],
             'functionImportedWithAnAliasIsCalledWithoutAWrongCaseIssue' => [
                 'code' => '<?php
                     namespace App;
@@ -566,6 +586,62 @@ final class FunctionCallTest extends TestCase
                     /** @psalm-check-type-exact $hostname = false */
                     /** @psalm-check-type-exact $regexp = ''|false */
                     PHP,
+            ],
+            'filterVarValidatesABoolAsAString' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function f(bool $b): void {
+                        $true_domain = filter_var(true, FILTER_VALIDATE_DOMAIN);
+                        $false_hostname = filter_var(false, FILTER_VALIDATE_DOMAIN, FILTER_FLAG_HOSTNAME);
+                        $domain = filter_var($b, FILTER_VALIDATE_DOMAIN);
+                        $hostname = filter_var($b, FILTER_VALIDATE_DOMAIN, FILTER_FLAG_HOSTNAME);
+                        $regexp = filter_var($b, FILTER_VALIDATE_REGEXP, ['options' => ['regexp' => '/^1?$/']]);
+
+                        /** @psalm-check-type-exact $true_domain = '1' */
+                        /** @psalm-check-type-exact $false_hostname = false */
+                        /** @psalm-check-type-exact $domain = ''|'1' */
+                        /** @psalm-check-type-exact $hostname = '1'|false */
+                        /** @psalm-check-type-exact $regexp = ''|'1'|false */
+                    }
+                    PHP,
+            ],
+            'filterVarSanitizesAnEmptyLiteralToTheEmptyString' => [
+                'code' => <<<'PHP'
+                    <?php
+                    $special = filter_var('', FILTER_SANITIZE_SPECIAL_CHARS);
+                    $full = filter_var('', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+                    $encoded = filter_var('', FILTER_SANITIZE_ENCODED);
+                    $slashes = filter_var('', FILTER_SANITIZE_ADD_SLASHES);
+                    $email = filter_var('', FILTER_SANITIZE_EMAIL);
+                    $url = filter_var('', FILTER_SANITIZE_URL);
+                    $stripped = filter_var('', FILTER_DEFAULT, FILTER_FLAG_STRIP_LOW);
+
+                    /** @psalm-check-type-exact $special = '' */
+                    /** @psalm-check-type-exact $full = '' */
+                    /** @psalm-check-type-exact $encoded = '' */
+                    /** @psalm-check-type-exact $slashes = '' */
+                    /** @psalm-check-type-exact $email = '' */
+                    /** @psalm-check-type-exact $url = '' */
+                    /** @psalm-check-type-exact $stripped = '' */
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'filterVarSanitizeStringWithEmptyStringNull' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function f(string $s): void {
+                        $empty = filter_var('', FILTER_SANITIZE_STRING, FILTER_FLAG_EMPTY_STRING_NULL);
+                        $string = filter_var($s, FILTER_SANITIZE_STRING, FILTER_FLAG_EMPTY_STRING_NULL);
+
+                        /** @psalm-check-type-exact $empty = null */
+                        /** @psalm-check-type-exact $string = null|string */
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => ['DeprecatedConstant'],
+                'php_version' => '8.0',
             ],
             'classExistsComparedWithTrueGuardsTheRightOperandOfAnd' => [
                 'code' => '<?php
@@ -4480,6 +4556,24 @@ final class FunctionCallTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'callUserFuncWithADifferentCase' => [
+                'code' => '<?php
+                    function takesInt(int $i): string {
+                        return (string) $i;
+                    }
+
+                    echo CALL_USER_FUNC(\'takesInt\', \'x\');',
+                'error_message' => 'InvalidScalarArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:53',
+            ],
+            'callUserFuncArrayWithADifferentCase' => [
+                'code' => '<?php
+                    function takesInt(int $i): string {
+                        return (string) $i;
+                    }
+
+                    echo Call_User_Func_Array(\'takesInt\', [\'x\']);',
+                'error_message' => 'InvalidScalarArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:59',
+            ],
             'aliasOfAUserFunctionImportedWithAnotherCasingIsReported' => [
                 'code' => '<?php
                     namespace Lib {
