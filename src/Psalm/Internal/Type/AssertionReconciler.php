@@ -41,6 +41,7 @@ use Psalm\Type\Atomic\Scalar;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TArrayKey;
 use Psalm\Type\Atomic\TCallable;
+use Psalm\Type\Atomic\TCallableObject;
 use Psalm\Type\Atomic\TCallableString;
 use Psalm\Type\Atomic\TClassConstant;
 use Psalm\Type\Atomic\TClassString;
@@ -986,12 +987,13 @@ final class AssertionReconciler extends Reconciler
         $type_2_parts = $type_1_parts === null ? AtomicParts::split($type_2_atomic, $type_1_atomic, $codebase) : null;
 
         if ($type_1_parts === null && $type_2_parts === null) {
-            $refined_type = self::refineWithIntersectionParts(
-                $type_1_atomic,
-                $type_2_atomic,
-                $codebase,
-                $any_scalar_type_match_found,
-            );
+            $refined_type = self::getCallableObject($codebase, $type_1_atomic, $type_2_atomic)
+                ?? self::refineWithIntersectionParts(
+                    $type_1_atomic,
+                    $type_2_atomic,
+                    $codebase,
+                    $any_scalar_type_match_found,
+                );
 
             return $refined_type ? [$refined_type] : [];
         }
@@ -1161,6 +1163,25 @@ final class AssertionReconciler extends Reconciler
         }
 
         return [$type_1_atomic, $type_2_atomic];
+    }
+
+    /**
+     * The object of a non-final class or of an interface that a callable may be (a child or an implementation may
+     * declare __invoke()), or null if one of the types isn't a callable and the other such an object
+     *
+     * @psalm-capabilities read-props
+     */
+    private static function getCallableObject(Codebase $codebase, Atomic $type_1, Atomic $type_2): ?TNamedObject
+    {
+        if (AtomicTypeComparator::mayBeTheSameCallableObject($codebase, $type_1, $type_2)) {
+            return $type_2->addIntersectionType(new TCallableObject());
+        }
+
+        if (AtomicTypeComparator::mayBeTheSameCallableObject($codebase, $type_2, $type_1)) {
+            return $type_1->addIntersectionType(new TCallableObject());
+        }
+
+        return null;
     }
 
     private static function filterAtomicWithAnother(

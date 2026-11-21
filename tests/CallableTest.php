@@ -203,6 +203,117 @@ final class CallableTest extends TestCase
                         }
                     }',
             ],
+            'iterableFoundCallableIsACallable' => [
+                'code' => '<?php
+                    function setCallback(callable $c): void {}
+
+                    /** @param callable|iterable<string>|null $c */
+                    function f(callable|iterable|null $c): void {
+                        if (is_callable($c)) {
+                            setCallback($c);
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'narrowingThisInAConstructorKeepsWhatItsPropertiesAreInitialisedWith' => [
+                'code' => '<?php
+                    interface Marker {}
+
+                    final class Definition {
+                        public function add(): void {}
+                    }
+
+                    class Command {
+                        private Definition $definition;
+                        private ?int $code = null;
+
+                        public function __construct() {
+                            $this->definition = new Definition();
+
+                            if (is_callable($this) && rand(0, 1)) {
+                                $this->code = 1;
+                            }
+
+                            if ($this instanceof Marker && rand(0, 1)) {
+                                $this->code = 2;
+                            }
+
+                            $this->definition->add();
+                        }
+                    }',
+            ],
+            'callableCanBeIdenticalToAnInterfaceOrANonFinalClass' => [
+                'code' => '<?php
+                    interface Handler {}
+
+                    class Command {}
+
+                    function handler(): Handler {
+                        return new class implements Handler {};
+                    }
+
+                    function command(): Command {
+                        return new Command();
+                    }
+
+                    function callback(): callable {
+                        return "strlen";
+                    }
+
+                    $handler = handler();
+                    $command = command();
+                    $callback = callback();
+                    $sameHandler = null;
+                    $sameCommand = null;
+
+                    if ($handler === $callback) {
+                        $sameHandler = $handler;
+                    }
+
+                    if ($callback === $command) {
+                        $sameCommand = $callback;
+                    }',
+                'assertions' => [
+                    '$sameHandler===' => 'Handler&callable-object|null',
+                    '$sameCommand===' => 'Command&callable-object|null',
+                ],
+            ],
+            'isCallableOfAnInterfaceAndOfANonFinalClassKeepsThemCallable' => [
+                'code' => '<?php
+                    interface Handler {}
+
+                    class Command {}
+
+                    function handler(): Handler {
+                        return new class implements Handler {};
+                    }
+
+                    function command(): Command {
+                        return new Command();
+                    }
+
+                    $handler = handler();
+                    $command = command();
+                    $narrowedHandler = null;
+                    $narrowedCommand = null;
+
+                    if (is_callable($handler)) {
+                        $handler();
+                        $narrowedHandler = $handler;
+                    }
+
+                    if (is_callable($command)) {
+                        $command();
+                        $narrowedCommand = $command;
+                    }',
+                'assertions' => [
+                    '$narrowedHandler===' => 'Handler&callable-object|null',
+                    '$narrowedCommand===' => 'Command&callable-object|null',
+                ],
+                'ignored_issues' => ['MixedAssignment'],
+            ],
             'callableArrayNamingAMagicMethodMatchesATypedCallable' => [
                 'code' => '<?php
                     /**
@@ -3915,6 +4026,28 @@ final class CallableTest extends TestCase
                         }
                     }',
                 'error_message' => 'RedundantCondition - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:29',
+            ],
+            'callableCannotBeIdenticalToAFinalClassWithoutInvoke' => [
+                'code' => '<?php
+                    final class Command {}
+
+                    function run(Command $command, callable $callback): void {
+                        if ($command === $callback) {
+                            echo 1;
+                        }
+                    }',
+                'error_message' => 'TypeDoesNotContainType',
+            ],
+            'isCallableOfAFinalClassWithoutInvokeIsNeverTrue' => [
+                'code' => '<?php
+                    final class Command {}
+
+                    function run(Command $command): void {
+                        if (is_callable($command)) {
+                            echo 1;
+                        }
+                    }',
+                'error_message' => 'TypeDoesNotContainType',
             ],
             'callableArrayNamingAMagicMethodMismatchesATypedCallable' => [
                 'code' => '<?php

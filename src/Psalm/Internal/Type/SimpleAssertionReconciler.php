@@ -2429,6 +2429,10 @@ final class SimpleAssertionReconciler extends Reconciler
                 && $codebase->methodExists($type->value . '::__invoke')
             ) {
                 $callable_types[] = $type;
+            } elseif ($type instanceof TNamedObject && self::areIntersectionTypesAllowed($codebase, $type)) {
+                // a class or an interface that doesn't declare __invoke() has implementations or children that do
+                $callable_types[] = $type->addIntersectionType(new TCallableObject());
+                $redundant = false;
             } elseif ($type instanceof TString
                 && !$type instanceof TLiteralString
                 // the name of a function is never numeric, but it can be lowercase and a literal

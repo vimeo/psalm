@@ -882,6 +882,21 @@ final class AtomicTypeComparator
             }
         }
 
+        // an object `is_callable()` found callable, of a class or interface not declaring __invoke() itself
+        if ($container_type_part instanceof TCallable
+            && $input_type_part instanceof TNamedObject
+            && isset($input_type_part->extra_types['callable-object'])
+        ) {
+            return self::isContainedBy(
+                $codebase,
+                $input_type_part->extra_types['callable-object'],
+                $container_type_part,
+                $allow_interface_equality,
+                $allow_float_int_equality,
+                $atomic_comparison_result,
+            );
+        }
+
         if ($container_type_part instanceof TCallable &&
             (
                 $input_type_part instanceof TLiteralString
@@ -1240,6 +1255,12 @@ final class AtomicTypeComparator
             return true;
         }
 
+        if (self::mayBeTheSameCallableObject($codebase, $type1_part, $type2_part)
+            || self::mayBeTheSameCallableObject($codebase, $type2_part, $type1_part)
+        ) {
+            return true;
+        }
+
         // e.g. callable and string can both be a callable-string
         $type1_parts = AtomicParts::split($type1_part, $type2_part, $codebase);
         $type2_parts = $type1_parts === null ? AtomicParts::split($type2_part, $type1_part, $codebase) : null;
@@ -1257,6 +1278,21 @@ final class AtomicTypeComparator
         }
 
         return false;
+    }
+
+    /**
+     * Whether a $callable (`callable`, `callable-object`) may be an $object: a child of its class, or an implementation
+     * of its interface, may declare __invoke()
+     *
+     * @psalm-assert-if-true TNamedObject $object
+     * @psalm-capabilities read-props
+     */
+    public static function mayBeTheSameCallableObject(Codebase $codebase, Atomic $callable, Atomic $object): bool
+    {
+        return ($callable instanceof TCallableObject || $callable::class === TCallable::class)
+            && $object instanceof TNamedObject
+            && $codebase->classlike_storage_provider->has($object->value)
+            && !$codebase->classlike_storage_provider->get($object->value)->final;
     }
 
     /**
