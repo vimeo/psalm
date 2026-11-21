@@ -209,6 +209,7 @@ final class ConditionalTest extends TestCase
                     final class TaggedBox extends Box {
                         public function narrowed(Shape $shape): int {
                             if ($shape instanceof parent) {
+                                /** @psalm-check-type-exact $shape = Box */
                                 return $shape->getSize();
                             }
 
@@ -224,8 +225,100 @@ final class ConditionalTest extends TestCase
                         }
                     }',
                 'assertions' => [],
-                'ignored_issues' => ['MissingOverrideAttribute'],
-                'php_version' => '8.3',
+                'ignored_issues' => [],
+            ],
+            'parentOfTheClassUsingATraitNarrowsInTheTraitCode' => [
+                'code' => '<?php
+                    interface Shape {}
+
+                    class Box implements Shape {
+                        public function getSize(): int {
+                            return 1;
+                        }
+                    }
+
+                    trait T {
+                        public function viaInstanceof(Shape $shape): int {
+                            if ($shape instanceof parent) {
+                                return $shape->getSize();
+                            }
+
+                            return 0;
+                        }
+                    }
+
+                    final class UsesTrait extends Box {
+                        use T;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+            ],
+            'isAParentClassNarrowsToTheParentClass' => [
+                'code' => '<?php
+                    interface Shape {}
+
+                    class Box implements Shape {
+                        public function getSize(): int {
+                            return 1;
+                        }
+                    }
+
+                    final class TaggedBox extends Box {
+                        public function narrowed(Shape $shape): int {
+                            if (is_a($shape, parent::class)) {
+                                /** @psalm-check-type-exact $shape = Box */
+                                return $shape->getSize();
+                            }
+
+                            return 0;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+            ],
+            'getClassIdenticalToParentClassNarrowsToTheParentClass' => [
+                'code' => '<?php
+                    interface Shape {}
+
+                    class Box implements Shape {
+                        public function getSize(): int {
+                            return 1;
+                        }
+                    }
+
+                    final class TaggedBox extends Box {
+                        public function narrowed(Shape $shape): int {
+                            if (get_class($shape) === parent::class) {
+                                return $shape->getSize();
+                            }
+
+                            return 0;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+            ],
+            'classConstantIdenticalToParentClassNarrowsToTheParentClass' => [
+                'code' => '<?php
+                    interface Shape {}
+
+                    class Box implements Shape {
+                        public function getSize(): int {
+                            return 1;
+                        }
+                    }
+
+                    final class TaggedBox extends Box {
+                        public function narrowed(Shape $shape): int {
+                            if ($shape::class === parent::class) {
+                                return $shape->getSize();
+                            }
+
+                            return 0;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
             ],
             'negatedIsFloatCombinesTheRemainingTypes' => [
                 'code' => '<?php
