@@ -1005,6 +1005,7 @@ final class PreloaderList {
         \Psalm\Internal\Provider\ReturnTypeProvider\SprintfReturnTypeProvider::class,
         \Psalm\Internal\Provider\ReturnTypeProvider\StrReplaceReturnTypeProvider::class,
         \Psalm\Internal\Provider\ReturnTypeProvider\StrTrReturnTypeProvider::class,
+        \Psalm\Internal\Provider\ReturnTypeProvider\StrtolowerReturnTypeProvider::class,
         \Psalm\Internal\Provider\ReturnTypeProvider\StrvalReturnTypeProvider::class,
         \Psalm\Internal\Provider\ReturnTypeProvider\TriggerErrorReturnTypeProvider::class,
         \Psalm\Internal\Provider\ReturnTypeProvider\TrimReturnTypeProvider::class,
