@@ -80,6 +80,7 @@ use UnexpectedValueException;
 use function array_column;
 use function array_diff_key;
 use function array_fill_keys;
+use function array_keys;
 use function array_merge;
 use function array_pop;
 use function array_shift;
@@ -235,20 +236,36 @@ final class ClassLikeNodeScanner
                     // we're overwriting some methods
                     $storage = $this->storage = $duplicate_storage;
                     $this->codebase->classlike_storage_provider->makeNew(strtolower($fq_classlike_name));
-                    $storage->populated = false;
+                    $storage->unpopulate();
                     $storage->class_implements = []; // we do this because reflection reports
                     $storage->parent_interfaces = [];
                     $storage->stubbed = true;
                     $storage->aliases = $this->aliases;
 
-                    foreach ($storage->dependent_classlikes as $dependent_name_lc => $_) {
+                    // every class that inherits from the overridden one, however far down: a class lists only the
+                    // ones that were populated after it, in the same batch, as its dependents
+                    $dependent_names_lc = array_keys($storage->dependent_classlikes);
+                    $unpopulated = [$fq_classlike_name_lc => true];
+
+                    while (($dependent_name_lc = array_pop($dependent_names_lc)) !== null) {
+                        if (isset($unpopulated[$dependent_name_lc])) {
+                            continue;
+                        }
+
+                        $unpopulated[$dependent_name_lc] = true;
+
                         try {
                             $dependent_storage = $this->codebase->classlike_storage_provider->get($dependent_name_lc);
                         } catch (InvalidArgumentException) {
                             continue;
                         }
-                        $dependent_storage->populated = false;
+
+                        $dependent_storage->unpopulate();
                         $this->codebase->classlike_storage_provider->makeNew($dependent_name_lc);
+
+                        foreach ($dependent_storage->dependent_classlikes as $next_dependent_name_lc => $_) {
+                            $dependent_names_lc[] = $next_dependent_name_lc;
+                        }
                     }
                 }
             }
