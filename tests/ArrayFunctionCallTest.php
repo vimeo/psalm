@@ -163,6 +163,36 @@ final class ArrayFunctionCallTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'arrayColumnAndGetObjectVarsResolveClassConstantsOfThePropertyType' => [
+                'code' => '<?php
+                    class Level {
+                        private const HIGH = 3;
+                        private const MID = 1;
+                        private const LOW = 0;
+
+                        /** @var self::HIGH|self::MID|self::LOW */
+                        public int $value = 1;
+                    }
+
+                    class Base {
+                        public const A = 1;
+
+                        /** @var self::A|2 */
+                        public int $inherited = 1;
+                    }
+
+                    final class Child extends Base {}
+
+                    $level = new Level();
+                    $column = array_column([$level], "value");
+                    $vars = get_object_vars($level);
+                    $inherited = get_object_vars(new Child());',
+                'assertions' => [
+                    '$column===' => 'list{0|1|3}',
+                    '$vars===' => 'array{value: 0|1|3, ...<string, mixed>}',
+                    '$inherited===' => 'array{inherited: 1|2}',
+                ],
+            ],
             'arrayWalkRecursiveUsesCallbackOutType' => [
                 'code' => <<<'PHP'
                     <?php

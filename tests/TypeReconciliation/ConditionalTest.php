@@ -8304,7 +8304,8 @@ final class ConditionalTest extends TestCase
                     function getData(): ?array { return null; }
                     function check(): bool { return true; }
                     $r = (check() && ($data = getData()) !== null) ? 1 : $data;',
-                'error_message' => 'UndefinedGlobalVariable',
+                // assigned only when check() is true, so possibly undefined
+                'error_message' => 'PossiblyUndefinedGlobalVariable',
             ],
             'orWhoseLeftSideIsAConjunctionAndRightSideReassignsAVariableKeepsTheLeftNullable' => [
                 'code' => '<?php

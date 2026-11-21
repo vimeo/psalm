@@ -93,9 +93,6 @@
     <PossiblyNullReference>
       <code><![CDATA[addAttribute]]></code>
     </PossiblyNullReference>
-    <PropertyTypeCoercion>
-      <code><![CDATA[$this]]></code>
-    </PropertyTypeCoercion>
     <RiskyTruthyFalsyComparison>
       <code><![CDATA[!$config_path]]></code>
       <code><![CDATA[!$file_path]]></code>
@@ -347,8 +344,6 @@
       <code><![CDATA[$guide_param_signature_type]]></code>
       <code><![CDATA[$guide_signature_return_type]]></code>
       <code><![CDATA[$guide_signature_return_type]]></code>
-      <code><![CDATA[$implementer_declaring_method_id]]></code>
-      <code><![CDATA[$implementer_declaring_method_id]]></code>
       <code><![CDATA[$implementer_param_signature_type]]></code>
       <code><![CDATA[$implementer_param_signature_type]]></code>
       <code><![CDATA[$implementer_param_signature_type]]></code>
