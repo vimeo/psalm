@@ -8,6 +8,7 @@ use Amp\Serialization\NativeSerializer;
 use Amp\Serialization\Serializer;
 use Closure;
 use Composer\Autoload\ClassLoader;
+use Composer\InstalledVersions;
 use Composer\Semver\Constraint\Constraint;
 use Composer\Semver\VersionParser;
 use DOMAttr;
@@ -65,6 +66,7 @@ use Psalm\Type\TaintKind;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
 use ReflectionClass;
+use ReflectionFunction;
 use RuntimeException;
 use SimpleXMLElement;
 use SplFileInfo;
@@ -75,6 +77,7 @@ use stdClass;
 
 use function array_any;
 use function array_column;
+use function array_filter;
 use function array_key_exists;
 use function array_keys;
 use function array_merge;
@@ -555,6 +558,17 @@ final class Config
 
     /** @var array<callable-string, bool> */
     private array $predefined_functions = [];
+
+    /**
+     * The packages the project depends on, read from its composer.json and vendor/composer/installed.json when null
+     *
+     * @internal
+     * @var array<lowercase-string, true>|null
+     */
+    public ?array $project_packages = null;
+
+    /** @var list<string>|null */
+    private ?array $unrequired_package_paths = null;
 
     /** @var list<ClassLoader> $autoloaders */
     private array $autoloaders = [];
@@ -3209,11 +3223,147 @@ final class Config
     {
         $defined_functions = get_defined_functions();
         foreach ($defined_functions['user'] as $function_name) {
+            $file_name = (new ReflectionFunction($function_name))->getFileName();
+            if ($file_name !== false && $this->isInUnrequiredPackage($file_name)) {
+                continue;
+            }
+
             $this->predefined_functions[$function_name] = true;
         }
         foreach ($defined_functions['internal'] as $function_name) {
             $this->predefined_functions[$function_name] = true;
         }
+    }
+
+    /**
+     * The install paths of the Composer packages, in Psalm's process or in the project's vendor directory, that the
+     * project doesn't depend on, like the polyfills Psalm itself requires: their functions don't exist when the
+     * project runs.
+     *
+     * @return list<string>
+     */
+    private function getUnrequiredPackagePaths(): array
+    {
+        if ($this->unrequired_package_paths !== null) {
+            return $this->unrequired_package_paths;
+        }
+
+        $install_paths = [];
+        foreach (InstalledVersions::getAllRawData() as $installed) {
+            foreach ($installed['versions'] as $name => $package) {
+                if (isset($package['install_path']) && $name !== $installed['root']['name']) {
+                    $install_paths[] = [$name, $package['install_path']];
+                }
+            }
+        }
+
+        $composer_dir = $this->base_dir . DIRECTORY_SEPARATOR . 'vendor' . DIRECTORY_SEPARATOR . 'composer';
+        foreach ($this->getProjectInstalledPackages() as $package) {
+            if ($package['install_path'] !== null) {
+                $install_paths[] = [$package['name'], Path::makeAbsolute($package['install_path'], $composer_dir)];
+            }
+        }
+
+        $project_packages = $this->project_packages ??= $this->readProjectPackageNames();
+        $paths = [];
+        foreach ($install_paths as [$name, $path]) {
+            if (!isset($project_packages[strtolower($name)])) {
+                $paths[] = Path::canonicalize($path);
+            }
+        }
+
+        return $this->unrequired_package_paths = $paths;
+    }
+
+    private function isInUnrequiredPackage(string $file_path): bool
+    {
+        return array_any(
+            $this->getUnrequiredPackagePaths(),
+            static fn(string $path): bool => Path::isBasePath($path, $file_path),
+        );
+    }
+
+    /**
+     * The packages the project's composer.json requires, directly or through other packages but not through Psalm
+     *
+     * @return array<lowercase-string, true>
+     */
+    private function readProjectPackageNames(): array
+    {
+        $composer_json_path = Composer::getJsonFilePath($this->base_dir);
+        $composer_json = is_file($composer_json_path)
+            ? json_decode((string) file_get_contents($composer_json_path), true)
+            : null;
+        if (!is_array($composer_json)) {
+            return [];
+        }
+
+        $requires_by_name = [];
+        foreach ($this->getProjectInstalledPackages() as $package) {
+            foreach ([$package['name'], ...$package['replace']] as $name) {
+                $requires_by_name[strtolower((string) $name)] = [$package['name'], $package['require']];
+            }
+        }
+
+        $queue = [];
+        if (isset($composer_json['require']) && is_array($composer_json['require'])) {
+            $queue = array_keys($composer_json['require']);
+        }
+        if (isset($composer_json['require-dev']) && is_array($composer_json['require-dev'])) {
+            $queue = [...$queue, ...array_keys($composer_json['require-dev'])];
+        }
+
+        $project_packages = [];
+        while (($name = array_pop($queue)) !== null) {
+            $name = strtolower((string) $name);
+            if ($name === 'vimeo/psalm' || $name === 'psalm/phar' || !isset($requires_by_name[$name])) {
+                continue;
+            }
+
+            [$package_name, $requires] = $requires_by_name[$name];
+            $package_name = strtolower($package_name);
+            if (!isset($project_packages[$package_name])) {
+                $project_packages[$package_name] = true;
+                $queue = [...$queue, ...$requires];
+            }
+        }
+
+        return $project_packages;
+    }
+
+    /**
+     * The packages of the project's vendor/composer/installed.json
+     *
+     * @return list<array{name: string, install_path: ?string, require: list<array-key>, replace: list<array-key>}>
+     */
+    private function getProjectInstalledPackages(): array
+    {
+        $installed_path = $this->base_dir . DIRECTORY_SEPARATOR . 'vendor' . DIRECTORY_SEPARATOR . 'composer'
+            . DIRECTORY_SEPARATOR . 'installed.json';
+        $installed = is_file($installed_path) ? json_decode((string) file_get_contents($installed_path), true) : null;
+        if (!is_array($installed) || !isset($installed['packages']) || !is_array($installed['packages'])) {
+            return [];
+        }
+
+        $packages = [];
+        foreach (array_filter($installed['packages'], is_array(...)) as $package) {
+            if (isset($package['name']) && is_string($package['name'])) {
+                $packages[] = [
+                    'name' => $package['name'],
+                    'install_path' => isset($package['install-path']) && is_string($package['install-path'])
+                        ? $package['install-path']
+                        : null,
+                    'require' => isset($package['require']) && is_array($package['require'])
+                        ? array_keys($package['require'])
+                        : [],
+                    'replace' => isset($package['replace']) && is_array($package['replace'])
+                        ? array_keys($package['replace'])
+                        : [],
+                ];
+            }
+        }
+
+        return $packages;
     }
 
     /**
@@ -3263,7 +3413,10 @@ final class Config
 
         $this->collectPredefinedConstants();
 
-        $autoload_included_files = $this->include_collector->getFilteredIncludedFiles();
+        $autoload_included_files = array_filter(
+            $this->include_collector->getFilteredIncludedFiles(),
+            fn(string $file_path): bool => !$this->isInUnrequiredPackage($file_path),
+        );
 
         if ($autoload_included_files) {
             $codebase->register_autoload_files = true;
