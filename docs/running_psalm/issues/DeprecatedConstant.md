@@ -20,6 +20,17 @@ enum B {
 echo B::B;
 ```
 
+Global constants are deprecated the same way, or with `#[\Deprecated]` since PHP 8.5:
+
+```php
+<?php
+
+#[\Deprecated]
+const RETRIES = 3;
+
+echo RETRIES; // DeprecatedConstant
+```
+
 Psalm also reports the builtin constants PHP deprecates, whatever PHP version you analyse:
 
 ```php

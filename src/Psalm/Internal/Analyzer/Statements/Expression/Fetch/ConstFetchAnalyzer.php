@@ -127,6 +127,13 @@ final class ConstFetchAnalyzer
                     ? PhpDeprecations::getConstantMessage($global_const_name)
                     : null;
 
+                $deprecated_name = $deprecation_message === null && $const_type
+                    ? self::getDeprecatedName($statements_analyzer, $const_name, $fq_const_name)
+                    : null;
+                if ($deprecated_name !== null) {
+                    $deprecation_message = 'Constant ' . $deprecated_name . ' is deprecated';
+                }
+
                 if ($deprecation_message !== null) {
                     IssueBuffer::maybeAdd(
                         new DeprecatedConstant(
@@ -412,6 +419,38 @@ final class ConstFetchAnalyzer
 
         return self::getGlobalConstType($codebase, $fq_const_name, $const_name)
             ?? self::getGlobalConstType($codebase, $const_name, $const_name);
+    }
+
+    /**
+     * The name of the constant if it is declared with @deprecated or #[\Deprecated], found like getConstType() does
+     */
+    private static function getDeprecatedName(
+        StatementsAnalyzer $statements_analyzer,
+        string $const_name,
+        string $fq_const_name,
+    ): ?string {
+        $codebase = $statements_analyzer->getCodebase();
+        $file_storage_provider = $codebase->file_storage_provider;
+
+        foreach ([$statements_analyzer->getRootFilePath(), $statements_analyzer->getFilePath()] as $file_path) {
+            $file_storage = $file_storage_provider->get($file_path);
+
+            foreach ([$fq_const_name, $const_name] as $name) {
+                if (isset($file_storage->declaring_constants[$name])) {
+                    $declaring_storage = $file_storage_provider->get($file_storage->declaring_constants[$name]);
+
+                    return isset($declaring_storage->deprecated_constants[$name]) ? $name : null;
+                }
+            }
+        }
+
+        foreach ([$fq_const_name, $const_name] as $name) {
+            if ($codebase->isDeprecatedGlobalConstant($name)) {
+                return $name;
+            }
+        }
+
+        return null;
     }
 
     /**

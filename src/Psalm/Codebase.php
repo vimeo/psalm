@@ -171,6 +171,13 @@ final class Codebase
     private static array $unresolved_stubbed_constants = [];
 
     /**
+     * The global constants of stubs and autoloaded files that are deprecated
+     *
+     * @var array<string, true>
+     */
+    private static array $deprecated_stubbed_constants = [];
+
+    /**
      * Whether to register autoloaded information
      */
     public bool $register_autoload_files = false;
@@ -361,6 +368,7 @@ final class Codebase
 
         self::$stubbed_constants = [];
         self::$unresolved_stubbed_constants = [];
+        self::$deprecated_stubbed_constants = [];
 
         $reflection = new Reflection($providers->classlike_storage_provider, $this);
 
@@ -1271,6 +1279,24 @@ final class Codebase
     public function addGlobalConstantType(string $const_id, Union $type): void
     {
         self::$stubbed_constants[$const_id] = $type;
+    }
+
+    /**
+     * @internal
+     * @psalm-capabilities read-globals|write-globals
+     */
+    public function addDeprecatedGlobalConstant(string $const_id): void
+    {
+        self::$deprecated_stubbed_constants[$const_id] = true;
+    }
+
+    /**
+     * @internal
+     * @psalm-capabilities read-globals
+     */
+    public function isDeprecatedGlobalConstant(string $const_id): bool
+    {
+        return isset(self::$deprecated_stubbed_constants[$const_id]);
     }
 
     /**

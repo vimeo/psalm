@@ -998,6 +998,38 @@ final class StubTest extends DeferredAnalyzerTestCase
     }
 
     #[RunInSeparateProcess]
+    public function testDeprecatedConstantOfAnAutoloadedFile(): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__),
+                '<?xml version="1.0"?>
+                <psalm
+                    errorLevel="1"
+                    autoloader="tests/fixtures/stubs/deprecated_constant.phpstub"
+                >
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+                </psalm>',
+            ),
+        );
+
+        $file_path = (string) getcwd() . '/src/somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                echo AUTOLOADED_OLD;',
+        );
+
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessage('DeprecatedConstant - src' . DIRECTORY_SEPARATOR . 'somefile.php:2:22 - Constant AUTOLOADED_OLD is deprecated');
+
+        $this->analyzeFile($file_path, new Context());
+    }
+
+    #[RunInSeparateProcess]
     public function testConditionalConstantDefined(): void
     {
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
