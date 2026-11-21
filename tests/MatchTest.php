@@ -55,6 +55,45 @@ final class MatchTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'matchFalseOverExhaustiveTypeChecksHasNoImpossibleArm' => [
+                'code' => '<?php
+                    function f(int|string $x): int|string {
+                        return match (false) {
+                            is_string($x) => $x,
+                            is_int($x) => $x,
+                        };
+                    }
+
+                    function g(int|string $x): int|string {
+                        return match (true) {
+                            !is_string($x) => $x,
+                            !is_int($x) => $x,
+                        };
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'matchFalseArmWithSeveralConditions' => [
+                'code' => '<?php
+                    function f(int $a, int $b): int {
+                        return match (false) {
+                            $a > 0, $b > 0 => 1,
+                            default => 2,
+                        };
+                    }
+
+                    /** @param int|string $x */
+                    function g($x, bool $flag): string {
+                        return match (false) {
+                            is_int($x), $flag => (string) $x,
+                            default => "",
+                        };
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'exhaustiveMatchOverAnEnumWithMoreCasesThanTheMaximumShapedArraySize' => [
                 'code' => '<?php
                     enum Id: string {
@@ -442,6 +481,18 @@ final class MatchTest extends TestCase
                         };
                     }',
                 'error_message' => 'InvalidReturnStatement',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'matchFalseImpossibleArmIsReported' => [
+                'code' => '<?php
+                    function f(int $x): int {
+                        return match (false) {
+                            is_int($x) => $x,
+                            default => 0,
+                        };
+                    }',
+                'error_message' => 'TypeDoesNotContainType - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:29',
                 'error_levels' => [],
                 'php_version' => '8.0',
             ],
