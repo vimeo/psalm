@@ -24,6 +24,18 @@ final class FunctionCallTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'negatedArrayIsListKeepsAnArrayThatMayBeAList' => [
+                'code' => '<?php
+                    /** @param array<int, int> $a */
+                    function f(array $a): void {
+                        if (!array_is_list($a)) {
+                            /** @psalm-check-type-exact $a = array<int, int> */;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'pathinfoWithAllElementsReturnsTheArray' => [
                 'code' => '<?php
                     /** @param non-empty-string $path */
@@ -4320,6 +4332,18 @@ final class FunctionCallTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'negatedArrayIsListOfAList' => [
+                'code' => '<?php
+                    function f(): void {
+                        $ids = [1, 2];
+                        if (!array_is_list($ids)) {
+                            echo "never";
+                        }
+                    }',
+                'error_message' => 'TypeDoesNotContainType',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
             'callUserFuncWithADifferentCase' => [
                 'code' => '<?php
                     function takesInt(int $i): string {
