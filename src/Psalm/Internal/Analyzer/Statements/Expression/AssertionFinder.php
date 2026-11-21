@@ -1891,11 +1891,10 @@ final class AssertionFinder
             return false;
         }
 
-        // TODO get node type provider here somehow and check literal ints and int ranges
-        if ($compare_to instanceof PhpParser\Node\Scalar\Int_
-            && $compare_to->value > (-1 * $comparison_adjustment)
-        ) {
-            $min_count = $compare_to->value + $comparison_adjustment;
+        $compared_count = self::getIntLiteralValue($source, $compare_to);
+
+        if ($compared_count !== null && $compared_count > (-1 * $comparison_adjustment)) {
+            $min_count = $compared_count + $comparison_adjustment;
 
             return $assignment_to;
         }
@@ -1918,14 +1917,16 @@ final class AssertionFinder
             $conditional instanceof PhpParser\Node\Expr\BinaryOp\SmallerOrEqual
             || $conditional instanceof PhpParser\Node\Expr\BinaryOp\Smaller;
 
-        if ($left_count
-            && $operator_less_than_or_equal
-            && $conditional->right instanceof PhpParser\Node\Scalar\Int_
-        ) {
-            $max_count = $conditional->right->value -
+        $right_value = $left_count && $operator_less_than_or_equal
+            ? self::getIntLiteralValue($source, $conditional->right)
+            : null;
+
+        if ($right_value !== null) {
+            $max_count = $right_value -
                 ($conditional instanceof PhpParser\Node\Expr\BinaryOp\Smaller ? 1 : 0);
 
-            return self::ASSIGNMENT_TO_RIGHT;
+            // no count is below zero: the comparison tells nothing about the array
+            return $max_count < 0 ? false : self::ASSIGNMENT_TO_RIGHT;
         }
 
         $right_count = self::isFunctionCallToOneOf($conditional->right, $source, ['count', 'sizeof'], 1);
@@ -1934,14 +1935,15 @@ final class AssertionFinder
             $conditional instanceof PhpParser\Node\Expr\BinaryOp\GreaterOrEqual
             || $conditional instanceof PhpParser\Node\Expr\BinaryOp\Greater;
 
-        if ($right_count
-            && $operator_greater_than_or_equal
-            && $conditional->left instanceof PhpParser\Node\Scalar\Int_
-        ) {
-            $max_count = $conditional->left->value -
+        $left_value = $right_count && $operator_greater_than_or_equal
+            ? self::getIntLiteralValue($source, $conditional->left)
+            : null;
+
+        if ($left_value !== null) {
+            $max_count = $left_value -
                 ($conditional instanceof PhpParser\Node\Expr\BinaryOp\Greater ? 1 : 0);
 
-            return self::ASSIGNMENT_TO_LEFT;
+            return $max_count < 0 ? false : self::ASSIGNMENT_TO_LEFT;
         }
 
         return false;
@@ -1958,16 +1960,21 @@ final class AssertionFinder
     ): bool|int {
         $left_count = self::isFunctionCallToOneOf($conditional->left, $source, ['count', 'sizeof'], 1);
 
-        if ($left_count && $conditional->right instanceof PhpParser\Node\Scalar\Int_) {
-            $count = $conditional->right->value;
+        $right_value = $left_count ? self::getIntLiteralValue($source, $conditional->right) : null;
+
+        // no count is negative: the comparison tells nothing about the array
+        if ($right_value !== null && $right_value >= 0) {
+            $count = $right_value;
 
             return self::ASSIGNMENT_TO_RIGHT;
         }
 
         $right_count = self::isFunctionCallToOneOf($conditional->right, $source, ['count', 'sizeof'], 1);
 
-        if ($right_count && $conditional->left instanceof PhpParser\Node\Scalar\Int_) {
-            $count = $conditional->left->value;
+        $left_value = $right_count ? self::getIntLiteralValue($source, $conditional->left) : null;
+
+        if ($left_value !== null && $left_value >= 0) {
+            $count = $left_value;
 
             return self::ASSIGNMENT_TO_LEFT;
         }
@@ -2039,8 +2046,8 @@ final class AssertionFinder
         FileSource $source,
     ): bool {
         return self::isFunctionCallToOneOf($conditional->left, $source, ['count', 'sizeof'])
-            && $conditional->right instanceof PhpParser\Node\Scalar\Int_
-            && $conditional->right->value === ($conditional instanceof PhpParser\Node\Expr\BinaryOp\Greater ? 0 : 1);
+            && self::getIntLiteralValue($source, $conditional->right)
+                === ($conditional instanceof PhpParser\Node\Expr\BinaryOp\Greater ? 0 : 1);
     }
 
     /**
@@ -4006,12 +4013,15 @@ final class AssertionFinder
 
         $left_argument = self::getStringLengthArgument($conditional->left, $source);
         $right_argument = self::getStringLengthArgument($conditional->right, $source);
-        if ($left_argument && $conditional->right instanceof PhpParser\Node\Scalar\Int_) {
+        $right_value = $left_argument ? self::getIntLiteralValue($source, $conditional->right) : null;
+        $left_value = $right_argument ? self::getIntLiteralValue($source, $conditional->left) : null;
+
+        if ($left_argument && $right_value !== null) {
             $length_argument = $left_argument;
-            $compared_length = $conditional->right->value;
-        } elseif ($right_argument && $conditional->left instanceof PhpParser\Node\Scalar\Int_) {
+            $compared_length = $right_value;
+        } elseif ($right_argument && $left_value !== null) {
             $length_argument = $right_argument;
-            $compared_length = $conditional->left->value;
+            $compared_length = $left_value;
             $operator = match ($operator) {
                 '>' => '<',
                 '>=' => '<=',
