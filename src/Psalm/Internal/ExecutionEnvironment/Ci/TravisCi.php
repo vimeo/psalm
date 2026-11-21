@@ -43,7 +43,7 @@ final class TravisCi implements CiProvider
                 $env->repository(self::PULL_REQUEST_REPOSITORY),
             ),
             jobId: $env->get(self::JOB_ID),
-            raw: $env->pick(self::FLAG, self::JOB_ID, self::TAG) + [self::TAG => ''],
+            raw: $env->pick(self::FLAG, self::JOB_ID, self::TAG),
         );
     }
 }
