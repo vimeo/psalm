@@ -111,6 +111,108 @@ final class ClassTemplateExtendsTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'staticOfAnImplementedTemplateIsTheObjectItIsInferredFrom' => [
+                'code' => '<?php
+                    /** @template T */
+                    interface Wrapper {}
+
+                    /** @implements Wrapper<static> */
+                    class Node implements Wrapper {}
+
+                    /** @template T */
+                    final class Box {
+                        /** @return self<T> */
+                        public function same(): self {
+                            return $this;
+                        }
+                    }
+
+                    /**
+                     * @template T
+                     * @param Wrapper<T> $value
+                     * @return Box<T>
+                     */
+                    function unwrap(Wrapper $value): Box {
+                        return new Box();
+                    }
+
+                    $a = unwrap(new Node());',
+                'assertions' => [
+                    '$a===' => 'Box<Node>',
+                ],
+            ],
+            'staticNestedInAnImplementedTemplateIsTheObjectItIsInferredFrom' => [
+                'code' => '<?php
+                    /** @template T */
+                    interface Wrapper {}
+
+                    /** @implements Wrapper<list<static>> */
+                    class Node implements Wrapper {}
+
+                    /** @template T */
+                    final class Box {}
+
+                    /**
+                     * @template T
+                     * @param Wrapper<T> $value
+                     * @return Box<T>
+                     */
+                    function unwrap(Wrapper $value): Box {
+                        return new Box();
+                    }
+
+                    $a = unwrap(new Node());',
+                'assertions' => [
+                    '$a===' => 'Box<list<Node>>',
+                ],
+            ],
+            'chainedCallOnATemplateInferredFromAnImplementedStatic' => [
+                'code' => '<?php
+                    /** @implements IteratorAggregate<int, static> */
+                    final class Node implements IteratorAggregate {
+                        #[Override]
+                        public function getIterator(): Iterator {
+                            return new ArrayIterator([$this]);
+                        }
+
+                        /** @return list<static> */
+                        public function all(): array {
+                            return wrap($this)->same()->items();
+                        }
+                    }
+
+                    /** @template T */
+                    final class Box {
+                        /** @param list<T> $items */
+                        public function __construct(private array $items) {}
+
+                        /** @return self<T> */
+                        public function same(): self {
+                            return $this;
+                        }
+
+                        /** @return list<T> */
+                        public function items(): array {
+                            return $this->items;
+                        }
+                    }
+
+                    /**
+                     * @template T
+                     * @param iterable<T> $value
+                     * @return Box<T>
+                     */
+                    function wrap(iterable $value): Box {
+                        return new Box([]);
+                    }
+
+                    $n = wrap(new Node())->same();',
+                'assertions' => [
+                    '$n===' => 'Box<Node>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
             'templateTagNamesParentInAnotherCase' => [
                 'code' => '<?php
                     /** @template T */

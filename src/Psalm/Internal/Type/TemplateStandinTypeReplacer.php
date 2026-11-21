@@ -47,6 +47,7 @@ use function array_any;
 use function array_fill;
 use function array_filter;
 use function array_keys;
+use function array_map;
 use function array_merge;
 use function array_search;
 use function array_slice;
@@ -1585,6 +1586,48 @@ final class TemplateStandinTypeReplacer
     }
 
     /**
+     * @psalm-pure
+     */
+    private static function replaceStatic(Union $type, TNamedObject $object): Union
+    {
+        $atomic_types = [];
+
+        foreach ($type->getAtomicTypes() as $atomic_type) {
+            if ($atomic_type instanceof TNamedObject && ($atomic_type->is_static || $atomic_type->value === 'static')) {
+                $atomic_type = $object;
+            } elseif ($atomic_type instanceof TGenericObject) {
+                $atomic_type = $atomic_type->setTypeParams(array_map(
+                    static fn(Union $type_param): Union => self::replaceStatic($type_param, $object),
+                    $atomic_type->type_params,
+                ));
+            } elseif ($atomic_type instanceof TArray || $atomic_type instanceof TIterable) {
+                $atomic_type = $atomic_type->setTypeParams([
+                    self::replaceStatic($atomic_type->type_params[0], $object),
+                    self::replaceStatic($atomic_type->type_params[1], $object),
+                ]);
+            } elseif ($atomic_type instanceof TKeyedArray && !$atomic_type->is_callable) {
+                $atomic_type = TKeyedArray::make(
+                    array_map(
+                        static fn(Union $property): Union => self::replaceStatic($property, $object),
+                        $atomic_type->properties,
+                    ),
+                    $atomic_type->class_strings,
+                    $atomic_type->fallback_params === null ? null : [
+                        $atomic_type->fallback_params[0],
+                        self::replaceStatic($atomic_type->fallback_params[1], $object),
+                    ],
+                    $atomic_type->is_list,
+                    $atomic_type->from_docblock,
+                );
+            }
+
+            $atomic_types[] = $atomic_type;
+        }
+
+        return $type->setTypes($atomic_types);
+    }
+
+    /**
      * @param TGenericObject|TNamedObject|TIterable $input_type_part
      * @param TGenericObject|TNamedObject|TIterable $container_type_part
      * @psalm-capabilities read-props|write-this-props|write-props|write-refs
@@ -1683,6 +1726,11 @@ final class TemplateStandinTypeReplacer
 
                 foreach ($params as $extended_input_param_type) {
                     $new_input_param = null;
+
+                    // `static` in `@implements Wrapper<static>` is the object the params are read from
+                    if ($input_type_part instanceof TNamedObject) {
+                        $extended_input_param_type = self::replaceStatic($extended_input_param_type, $input_type_part);
+                    }
 
                     foreach ($extended_input_param_type->getAtomicTypes() as $extended_template) {
                         $extended_templates = $extended_template instanceof TTemplateParam
