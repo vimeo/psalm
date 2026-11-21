@@ -2964,6 +2964,10 @@ final class Config
             $this->internal_stubs[] = $stubsDir . 'Php84.phpstub';
         }
 
+        if ($codebase->analysis_php_version_id >= 8_05_00) {
+            $this->internal_stubs[] = $stubsDir . 'Php85.phpstub';
+        }
+
         if ($codebase->analysis_php_version_id >= 8_06_00) {
             $this->internal_stubs[] = $stubsDir . 'Php86.phpstub';
             $this->internal_stubs[] = $stubsDir . 'Php86Functions.phpstub';

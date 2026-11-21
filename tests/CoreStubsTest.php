@@ -494,7 +494,7 @@ final class CoreStubsTest extends TestCase
                 $globBrace = glob('abc', GLOB_BRACE);
                 PHP,
         ];
-        yield "ownerDocument's type is non-nullable DOMDocument and always null on DOMDocument itself" => [
+        yield "ownerDocument's type is nullable DOMDocument and always null on DOMDocument itself" => [
             'code' => '<?php
                 $a = (new DOMDocument())->ownerDocument;
                 $b = (new DOMNode())->ownerDocument;
@@ -503,9 +503,19 @@ final class CoreStubsTest extends TestCase
             ',
             'assertions' => [
                 '$a===' => 'null',
-                '$b===' => 'DOMDocument',
-                '$c===' => 'DOMDocument',
-                '$d===' => 'DOMDocument',
+                '$b===' => 'DOMDocument|null',
+                '$c===' => 'DOMDocument|null',
+                '$d===' => 'DOMDocument|null',
+            ],
+        ];
+        yield 'ownerDocument of a node without a document is checked before it is used' => [
+            'code' => '<?php
+                $node = new DOMElement("foo");
+                assert($node->ownerDocument instanceof DOMDocument);
+                $document = $node->ownerDocument;
+            ',
+            'assertions' => [
+                '$document===' => 'DOMDocument',
             ],
         ];
     }
