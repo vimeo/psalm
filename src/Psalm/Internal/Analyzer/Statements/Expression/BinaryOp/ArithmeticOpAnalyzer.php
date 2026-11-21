@@ -235,7 +235,7 @@ final class ArithmeticOpAnalyzer
             $invalid_right_messages = [];
             $has_valid_left_operand = false;
             $has_valid_right_operand = false;
-            $has_string_increment = false;
+            $string_increment_message = null;
 
             $right_type_parts = self::expandNumericTemplates($right_type);
             $left_type_parts = self::expandNumericTemplates($left_type);
@@ -263,7 +263,7 @@ final class ArithmeticOpAnalyzer
                         $invalid_right_messages,
                         $has_valid_left_operand,
                         $has_valid_right_operand,
-                        $has_string_increment,
+                        $string_increment_message,
                         $result_type,
                     );
 
@@ -318,10 +318,10 @@ final class ArithmeticOpAnalyzer
                 }
             }
 
-            if ($has_string_increment && $statements_source) {
+            if ($string_increment_message !== null && $statements_source) {
                 IssueBuffer::maybeAdd(
                     new StringIncrement(
-                        'Incrementing a non-numeric string is deprecated since PHP 8.5, use str_increment() instead',
+                        $string_increment_message,
                         new CodeLocation($statements_source, $left),
                     ),
                     $statements_source->getSuppressedIssues(),
@@ -431,7 +431,7 @@ final class ArithmeticOpAnalyzer
         array &$invalid_right_messages,
         bool &$has_valid_left_operand,
         bool &$has_valid_right_operand,
-        bool &$has_string_increment,
+        ?string &$string_increment_message,
         ?Union &$result_type = null,
     ): ?Union {
         if (($left_type_part instanceof TLiteralInt || $left_type_part instanceof TLiteralFloat)
@@ -520,23 +520,51 @@ final class ArithmeticOpAnalyzer
             return null;
         }
 
+        $is_increment = $parent instanceof PhpParser\Node\Expr\PostInc || $parent instanceof PhpParser\Node\Expr\PreInc;
         if ($left_type_part instanceof TString
             && $right_type_part instanceof TInt
-            && (
-                $parent instanceof PhpParser\Node\Expr\PostInc ||
-                $parent instanceof PhpParser\Node\Expr\PreInc
+            && ($is_increment
+                || $parent instanceof PhpParser\Node\Expr\PostDec
+                || $parent instanceof PhpParser\Node\Expr\PreDec
             )
         ) {
-            if ($left_type_part instanceof TNumericString ||
-                ($left_type_part instanceof TLiteralString && is_numeric($left_type_part->value))
-            ) {
+            $literal_value = $left_type_part instanceof TLiteralString ? $left_type_part->value : null;
+            if ($left_type_part instanceof TNumericString || ($literal_value !== null && is_numeric($literal_value))) {
                 $new_result_type = new Union(
                     [new TFloat(), new TInt()],
                     ['from_calculation' => true],
                 );
-            } else {
+            } elseif ($is_increment) {
                 $new_result_type = Type::getNonEmptyString();
-                $has_string_increment = true;
+                $string_increment_message ??= match (true) {
+                    $literal_value === '' => PhpDeprecations::getDeprecatedSinceMessage(
+                        'Incrementing an empty string',
+                        8_03_00,
+                        null,
+                    ),
+                    $literal_value !== null && !preg_match('/^[a-zA-Z0-9]+$/', $literal_value)
+                        => PhpDeprecations::getDeprecatedSinceMessage(
+                            'Incrementing a non-alphanumeric string',
+                            8_03_00,
+                            null,
+                        ),
+                    default => PhpDeprecations::getDeprecatedSinceMessage(
+                        'Incrementing a non-numeric string',
+                        8_05_00,
+                        'str_increment()',
+                    ),
+                };
+            } else {
+                // '' becomes -1, and the other non-numeric strings stay the same
+                $new_result_type = match (true) {
+                    $literal_value === '' => Type::getInt(false, -1),
+                    $literal_value !== null => new Union([$left_type_part]),
+                    default => new Union([$left_type_part, new TInt(), new TFloat()], ['from_calculation' => true]),
+                };
+                $string_increment_message ??= $literal_value === ''
+                    ? PhpDeprecations::getDeprecatedSinceMessage('Decrementing an empty string', 8_03_00, null)
+                    : PhpDeprecations::getDeprecatedSinceMessage('Decrementing a non-numeric string', 8_03_00, null)
+                        . ', as it has no effect';
             }
 
             $result_type = Type::combineUnionTypes($new_result_type, $result_type);

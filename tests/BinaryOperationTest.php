@@ -2031,6 +2031,21 @@ final class BinaryOperationTest extends TestCase
                 ],
                 'ignored_issues' => ['ImplicitFloatToIntCast'],
             ],
+            'decrementedStrings' => [
+                'code' => '<?php
+                    $empty = "";
+                    $empty--;
+                    $word = "abc";
+                    $word--;
+                    $number = "7";
+                    $number--;',
+                'assertions' => [
+                    '$empty===' => '-1',
+                    '$word===' => "'abc'",
+                    '$number' => 'int',
+                ],
+                'ignored_issues' => ['StringIncrement'],
+            ],
             'stringIncrementSuppressed' => [
                 'code' => '<?php
                     $a = "hello";
@@ -3438,6 +3453,47 @@ final class BinaryOperationTest extends TestCase
                 'error_message' => 'StringIncrement - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:34 - Incrementing a non-numeric string is deprecated since PHP 8.5, use str_increment() instead',
                 'error_levels' => [],
                 'php_version' => '8.5',
+            ],
+            'incrementingAnEmptyString' => [
+                'code' => '<?php
+                    $a = "";
+                    $a++;',
+                'error_message' => 'StringIncrement - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:21 - Incrementing an empty string is deprecated since PHP 8.3',
+                'error_levels' => [],
+                'php_version' => '8.2',
+            ],
+            'incrementingANonAlphanumericString' => [
+                'code' => '<?php
+                    $a = "a-1";
+                    $a++;',
+                'error_message' => 'StringIncrement - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:21 - Incrementing a non-alphanumeric string is deprecated since PHP 8.3',
+                'error_levels' => [],
+                'php_version' => '8.2',
+            ],
+            'decrementingAnEmptyString' => [
+                'code' => '<?php
+                    $a = "";
+                    $a--;',
+                'error_message' => 'StringIncrement - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:21 - Decrementing an empty string is deprecated since PHP 8.3',
+                'error_levels' => [],
+                'php_version' => '8.2',
+            ],
+            'decrementingANonNumericString' => [
+                'code' => '<?php
+                    $a = "abc";
+                    --$a;',
+                'error_message' => 'StringIncrement - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:23 - Decrementing a non-numeric string is deprecated since PHP 8.3, as it has no effect',
+                'error_levels' => [],
+                'php_version' => '8.2',
+            ],
+            'decrementingAString' => [
+                'code' => '<?php
+                    function previous(string $id): void {
+                        $id--;
+                    }',
+                'error_message' => 'StringIncrement - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:25 - Decrementing a non-numeric string is deprecated since PHP 8.3, as it has no effect',
+                'error_levels' => [],
+                'php_version' => '8.2',
             ],
             'falseIncrement' => [
                 'code' => '<?php
