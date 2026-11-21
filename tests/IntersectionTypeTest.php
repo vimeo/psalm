@@ -538,6 +538,35 @@ final class IntersectionTypeTest extends TestCase
                         $value->__invoke();
                     }',
             ],
+            'objectShapeAndClassOfAnIntersectionGiveThePropertiesOfAShape' => [
+                'code' => '<?php
+                    class Card {
+                        public string $brand = "visa";
+                    }
+
+                    /** @param object{brand: string, last4: string} $shape */
+                    function takesShape(object $shape): void {}
+
+                    /** @param Card&object{last4: string} $card */
+                    function pay(object $card): void {
+                        takesShape($card);
+                    }',
+            ],
+            'onePropertyTypeOfAnIntersectionFittingTheShapeIsEnough' => [
+                'code' => '<?php
+                    class Wide {
+                        /** @var int|string */
+                        public $p = 1;
+                    }
+
+                    /** @param object{p: int} $shape */
+                    function takesShape(object $shape): void {}
+
+                    /** @param Wide&object{p: int} $value */
+                    function pay(object $value): void {
+                        takesShape($value);
+                    }',
+            ],
             'methodOfAnObjectShapeDeclaredByMethodExistsIsCaseInsensitive' => [
                 'code' => '<?php
                     final class Card {}
@@ -584,6 +613,74 @@ final class IntersectionTypeTest extends TestCase
                 'error_message' => 'UndefinedPropertyAssignment',
                 'error_levels' => [],
                 'php_version' => '8.0',
+            ],
+            'objectShapeAndClassOfAnIntersectionLackAPropertyTypeOfAShape' => [
+                'code' => '<?php
+                    class Card {
+                        public string $brand = "visa";
+                    }
+
+                    /** @param object{brand: string, last4: string} $shape */
+                    function takesShape(object $shape): void {}
+
+                    /** @param Card&object{last4: int} $card */
+                    function pay(object $card): void {
+                        takesShape($card);
+                    }',
+                'error_message' => 'InvalidArgument',
+            ],
+            'memberNotFittingAPropertyThatAnotherMemberFitsIsNoCoercion' => [
+                'code' => '<?php
+                    class Wide {
+                        /** @var int|string */
+                        public $p = 1;
+                        public string $q = "a";
+                    }
+
+                    /** @param object{p: int, q: bool} $shape */
+                    function takesShape(object $shape): void {}
+
+                    /** @param Wide&object{p: int} $value */
+                    function pay(object $value): void {
+                        takesShape($value);
+                    }',
+                'error_message' => 'InvalidArgument',
+            ],
+            'memberThatCannotHoldThePropertyTypeIsNoCoercion' => [
+                'code' => '<?php
+                    class Wide {
+                        /** @var int|string */
+                        public $p = 1;
+                    }
+
+                    class Str {
+                        public string $p = "a";
+                    }
+
+                    /** @param object{p: int} $shape */
+                    function takesShape(object $shape): void {}
+
+                    /** @param Wide&Str $value */
+                    function pay(object $value): void {
+                        takesShape($value);
+                    }',
+                'error_message' => 'InvalidArgument',
+            ],
+            'everyMemberHoldingThePropertyTypeIsACoercion' => [
+                'code' => '<?php
+                    class Wide {
+                        /** @var int|string */
+                        public $p = 1;
+                    }
+
+                    /** @param object{p: int} $shape */
+                    function takesShape(object $shape): void {}
+
+                    /** @param Wide&object{p: int|string} $value */
+                    function pay(object $value): void {
+                        takesShape($value);
+                    }',
+                'error_message' => 'ArgumentTypeCoercion',
             ],
             'methodMissingInAllIntersectedTypesGoesThroughMagicCall' => [
                 'code' => '<?php
