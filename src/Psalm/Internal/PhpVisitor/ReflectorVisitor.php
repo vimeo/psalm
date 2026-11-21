@@ -140,10 +140,8 @@ final class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements Fi
 
         if ($node instanceof PhpParser\Node\Stmt\Namespace_) {
             $this->handleNamespace($node);
-        } elseif ($node instanceof PhpParser\Node\Stmt\Use_) {
+        } elseif ($node instanceof PhpParser\Node\Stmt\Use_ || $node instanceof PhpParser\Node\Stmt\GroupUse) {
             $this->handleUse($node);
-        } elseif ($node instanceof PhpParser\Node\Stmt\GroupUse) {
-            $this->handleGroupUse($node);
         } elseif ($node instanceof PhpParser\Node\Stmt\ClassLike) {
             if ($this->skip_if_descendants) {
                 return null;
@@ -730,44 +728,12 @@ final class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements Fi
         }
     }
 
-    private function handleUse(PhpParser\Node\Stmt\Use_ $node): void
+    private function handleUse(PhpParser\Node\Stmt\Use_|PhpParser\Node\Stmt\GroupUse $node): void
     {
-        foreach ($node->uses as $use) {
-            $use_path = $use->name->toString();
-
-            $use_alias = $use->alias->name ?? $use->name->getLast();
-
-            switch ($use->type !== PhpParser\Node\Stmt\Use_::TYPE_UNKNOWN ? $use->type : $node->type) {
-                case PhpParser\Node\Stmt\Use_::TYPE_FUNCTION:
-                    $this->aliases->functions[strtolower($use_alias)] = $use_path;
-                    $this->aliases->functions_flipped[strtolower($use_path)] = $use_alias;
-                    break;
-
-                case PhpParser\Node\Stmt\Use_::TYPE_CONSTANT:
-                    $this->aliases->constants[$use_alias] = $use_path;
-                    $this->aliases->constants_flipped[$use_path] = $use_alias;
-                    break;
-
-                case PhpParser\Node\Stmt\Use_::TYPE_NORMAL:
-                    $this->aliases->uses[strtolower($use_alias)] = $use_path;
-                    $this->aliases->uses_flipped[strtolower($use_path)] = $use_alias;
-                    break;
-            }
-        }
-
-        if (!$this->aliases->uses_start) {
-            $this->aliases->uses_start = (int) $node->getAttribute('startFilePos');
-        }
-
-        $this->aliases->uses_end = (int) $node->getAttribute('endFilePos') + 1;
-    }
-
-    private function handleGroupUse(PhpParser\Node\Stmt\GroupUse $node): void
-    {
-        $use_prefix = $node->prefix->toString();
+        $use_prefix = $node instanceof PhpParser\Node\Stmt\GroupUse ? $node->prefix->toString() . '\\' : '';
 
         foreach ($node->uses as $use) {
-            $use_path = $use_prefix . '\\' . $use->name->toString();
+            $use_path = $use_prefix . $use->name->toString();
             $use_alias = $use->alias->name ?? $use->name->getLast();
 
             switch ($use->type !== PhpParser\Node\Stmt\Use_::TYPE_UNKNOWN ? $use->type : $node->type) {
