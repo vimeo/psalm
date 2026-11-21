@@ -77,6 +77,21 @@ final class IssueSuppressionTest extends TestCase
         $this->analyzeFile((string) getcwd() . DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR . 'somefile.php', new Context());
     }
 
+    public function testUnusedFixmeIsReported(): void
+    {
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessage('UnusedPsalmSuppress');
+
+        $this->addFile(
+            (string) getcwd() . DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR . 'somefile.php',
+            '<?php
+                /** @psalm-fixme InvalidArgument */
+                echo strlen("hello");',
+        );
+
+        $this->analyzeFile((string) getcwd() . DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR . 'somefile.php', new Context());
+    }
+
     public function testUnusedSuppressAllOnFunction(): void
     {
         $this->expectException(CodeException::class);
@@ -417,6 +432,38 @@ final class IssueSuppressionTest extends TestCase
                      */
                     break;
                 ',
+            ],
+            'fixmeSuppressesIssueOnStatement' => [
+                'code' => '<?php
+                    function verify_return_type(): DateTime {
+                        /** @psalm-fixme UndefinedFunction */
+                        unknown_function_call();
+
+                        return new DateTime();
+                    }',
+            ],
+            'fixmeSuppressesMultipleIssuesOnFunction' => [
+                'code' => '<?php
+                    class A {
+                        /**
+                         * @psalm-fixme UndefinedClass, MixedMethodCall, MissingReturnType
+                         */
+                        public function b() {
+                            B::fooFoo()->barBar();
+                        }
+                    }',
+            ],
+            'fixmeAlongsideSuppress' => [
+                'code' => '<?php
+                    class A {
+                        /**
+                         * @psalm-suppress MissingReturnType
+                         * @psalm-fixme UndefinedClass, MixedMethodCall
+                         */
+                        public function b() {
+                            B::fooFoo()->barBar();
+                        }
+                    }',
             ],
         ];
     }
