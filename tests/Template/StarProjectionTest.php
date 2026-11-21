@@ -888,13 +888,11 @@ final class StarProjectionTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
-            'starProjectionReadsAComposedParentArgument' => [
-                // known gap: `@extends Base<list<TModel>>` is read as a `Base<list<Model>>`, which the write-restriction
-                // PR restricts
+            'starProjectionReadsACovariantComposedParentArgument' => [
                 'code' => '<?php
                     abstract class Model {}
 
-                    /** @template T */
+                    /** @template-covariant T */
                     abstract class Base {}
 
                     /**
@@ -1227,32 +1225,21 @@ final class StarProjectionTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
-            'starProjectionWritesAreNotRestrictedYet' => [
-                // known gap: the write-restriction PR makes `set()` expect `never` and `sink()` a `Closure(never): void`
+            'starProjectionClosureReturnedFromAReceiverTakesNever' => [
                 'code' => '<?php
                     /** @template T of object */
                     final class Box {
-                        /** @param T $value */
-                        public function set(object $value): void {}
-
                         /** @return Closure(T): void */
                         public function sink(): Closure {
-                            throw new Exception();
-                        }
-
-                        /** @return Closure(T): void */
-                        public function setter(): Closure {
                             throw new Exception();
                         }
                     }
 
                     /** @var Box<*> $b */
                     $b = new Box();
-                    $b->set(new stdClass());
-                    $sink = $b->sink();
-                    ($b->setter())(new DateTime());',
+                    $sink = $b->sink();',
                 'assertions' => [
-                    '$sink===' => 'Closure[impure](object):void',
+                    '$sink===' => 'Closure[impure](never):void',
                 ],
                 'ignored_issues' => [],
                 'php_version' => '8.0',
@@ -1395,8 +1382,7 @@ final class StarProjectionTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
-            'starProjectionInAClosureParamOfAReadTypeIsTheBound' => [
-                // known gap: a callable parameter is a write, which the write-restriction PR restricts to `never`
+            'starProjectionInAClosureParamOfAReadTypeIsNever' => [
                 'code' => '<?php
                     /** @template T of object */
                     final class Box {
@@ -1410,14 +1396,12 @@ final class StarProjectionTest extends TestCase
                     $b = new Box();
                     $deep = $b->deep();',
                 'assertions' => [
-                    '$deep===' => 'Closure[impure](Closure[impure]():Box<object>):void',
+                    '$deep===' => 'Closure[impure](Closure[impure]():never):void',
                 ],
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
-            'starProjectionParamOutIsNotAStarYet' => [
-                // known gap: the out type is read with the arguments, before the receiver's `*` is marked, so it is
-                // not a `Box<*>` yet (the write-restriction PR flips it)
+            'starProjectionParamOutIsAStar' => [
                 'code' => '<?php
                     /** @template T of object */
                     final class Box {
@@ -1431,31 +1415,8 @@ final class StarProjectionTest extends TestCase
                     $b = new Box();
                     $b->fill($out);',
                 'assertions' => [
-                    '$out===' => 'Box<object>',
+                    '$out===' => 'Box<*>',
                 ],
-                'ignored_issues' => [],
-                'php_version' => '8.0',
-            ],
-            'starProjectionNestedReadIsWrittenToAsTheBoundYet' => [
-                // known gap: `set()` on the `Box<*>` of `nested()` expects `never` once the write-restriction PR lands
-                'code' => '<?php
-                    /** @template T of object */
-                    final class Box {
-                        /** @return Box<Box<T>> */
-                        public function nested(): Box {
-                            throw new Exception();
-                        }
-
-                        /** @param T $value */
-                        public function set(object $value): void {}
-                    }
-
-                    /** @var Box<*> $b */
-                    $b = new Box();
-                    /** @var Box<stdClass> $box_of_std_class */
-                    $box_of_std_class = new Box();
-                    $b->nested()->set($box_of_std_class);',
-                'assertions' => [],
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
@@ -1959,30 +1920,119 @@ final class StarProjectionTest extends TestCase
                 'ignored_issues' => ['InvalidTemplateParam'],
                 'php_version' => '8.0',
             ],
-            'starProjectionCallableOfASetterIsNotRestrictedYet' => [
-                // known gap: `Closure::fromCallable([$any, 'set'])` takes the argument of the setter as a `Box<*>`, which
-                // accepts any `Box`, until the write-restriction PR makes it `never`
+            'starProjectionSetterOfAKnownArgumentTakesThatArgument' => [
                 'code' => '<?php
-                    /** @template T of object */
-                    interface Setter {
-                        /** @param T $value */
-                        public function set(object $value): void;
+                    /**
+                     * @template TFirst of object
+                     * @template TSecond of object
+                     */
+                    final class Pair {
+                        /** @param TFirst $value */
+                        public function setFirst(object $value): void {}
+
+                        /** @return TSecond */
+                        public function second(): object {
+                            throw new Exception();
+                        }
                     }
 
-                    /**
-                     * @template T of object
-                     * @implements Setter<Box<T>>
-                     */
-                    final class Box implements Setter {
+                    /** @param Pair<DateTime, *> $pair */
+                    function f(Pair $pair): void {
+                        $pair->setFirst(new DateTime());
+                        $second = $pair->second();
+                        /** @psalm-check-type-exact $second = object */
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'starProjectionEmptyListFitsAListOfNever' => [
+                'code' => '<?php
+                    /** @template T of object */
+                    final class Box {
+                        /** @param list<T> $values */
+                        public function setAll(array $values): void {}
+                    }
+
+                    /** @param Box<*> $any */
+                    function f(Box $any): void {
+                        $any->setAll([]);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'starProjectionSelfOutAndThisOutKeepTheStar' => [
+                'code' => '<?php
+                    /** @template T of object */
+                    final class Cell {
+                        /** @psalm-this-out Cell<T> */
+                        public function keepThis(): void {}
+
+                        /** @psalm-self-out Cell<T> */
+                        public function keepSelf(): void {}
+                    }
+
+                    /** @param Cell<*> $this_out */
+                    function f(Cell $this_out, Cell $self_out): void {
+                        $this_out->keepThis();
+                        /** @psalm-check-type-exact $this_out = Cell<*> */
+                        /** @var Cell<*> $self_out */
+                        $self_out->keepSelf();
+                        /** @psalm-check-type-exact $self_out = Cell<*> */
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'starProjectionCallbackOfAReceiverMethodTakesTheBound' => [
+                'code' => '<?php
+                    /** @template T of object */
+                    final class Box {
+                        /** @param Closure(T): void $callback */
+                        public function each(Closure $callback): void {}
+                    }
+
+                    /** @param Box<*> $any */
+                    function f(Box $any): void {
+                        $any->each(static function (object $value): void {});
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'starProjectionFirstClassCallableOfASetterIsAClosureOfNever' => [
+                'code' => '<?php
+                    /** @template T of object */
+                    final class Box {
+                        /** @param T $value */
                         public function set(object $value): void {}
                     }
 
-                    /**
-                     * @param Box<*> $any
-                     * @param Box<DateTime> $date
-                     */
-                    function f(Box $any, Box $date): void {
-                        Closure::fromCallable([$any, "set"])($date);
+                    /** @param Box<*> $b */
+                    function f(Box $b): void {
+                        $set = $b->set(...);
+                        /** @psalm-check-type-exact $set = Closure(never): void */
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'starProjectionClosurePropertyIsWrittenAsTheBound' => [
+                'code' => '<?php
+                    /** @template T of object */
+                    final class Box {
+                        /** @var Closure(T): void */
+                        public Closure $cb;
+
+                        public function __construct() {
+                            $this->cb = static function (object $value): void {};
+                        }
+                    }
+
+                    /** @param Box<*> $b */
+                    function f(Box $b): void {
+                        $b->cb = static function (object $value): void {};
                     }',
                 'assertions' => [],
                 'ignored_issues' => [],
@@ -2254,7 +2304,7 @@ final class StarProjectionTest extends TestCase
                     }',
                 'error_message' => 'ArgumentTypeCoercion - src' . DIRECTORY_SEPARATOR . 'somefile.php:15:42 - Argument 1 of takesBoxOfObject expects Box<object>, but parent type Box<*> provided',
             ],
-            'starProjectionParamOfAReceiverKeepsTheBound' => [
+            'starProjectionParamOfAReceiverExpectsNever' => [
                 'code' => '<?php
                     /** @template T of object */
                     final class Box {
@@ -2269,7 +2319,7 @@ final class StarProjectionTest extends TestCase
                     function f(Box $any, Box $date): void {
                         $any->merge($date);
                     }',
-                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:13:37 - Argument 1 of Box::merge expects Box<object>, but Box<DateTime> provided',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:13:37 - Argument 1 of Box::merge expects never, but Box<DateTime> provided',
             ],
             'starProjectionBareParamRejectsAConcreteArgument' => [
                 // a `*` and a bare `Box` both leave the argument unknown, a `Box<stdClass>` is not a bare `Box`: the
@@ -2325,7 +2375,7 @@ final class StarProjectionTest extends TestCase
                     }',
                 'error_message' => 'LessSpecificImplementedReturnType',
             ],
-            'starProjectionPropertyAssignmentKeepsTheBound' => [
+            'starProjectionPropertyAssignmentExpectsNever' => [
                 'code' => '<?php
                     /** @template T of object */
                     final class Box {
@@ -2340,9 +2390,9 @@ final class StarProjectionTest extends TestCase
                     function f(Box $any, Box $date): void {
                         $any->prop = $date;
                     }',
-                'error_message' => 'InvalidPropertyAssignmentValue - src' . DIRECTORY_SEPARATOR . 'somefile.php:13:38 - $any->prop with declared type \'Box<object>|null\' cannot be assigned type',
+                'error_message' => 'InvalidPropertyAssignmentValue - src' . DIRECTORY_SEPARATOR . 'somefile.php:13:38 - $any->prop with declared type \'null\' cannot be assigned type',
             ],
-            'starProjectionListPropertyAppendKeepsTheBound' => [
+            'starProjectionListPropertyAppendExpectsNever' => [
                 'code' => '<?php
                     /** @template T of object */
                     final class Box {
@@ -2357,9 +2407,9 @@ final class StarProjectionTest extends TestCase
                     function f(Box $any, Box $date): void {
                         $any->boxes[] = $date;
                     }',
-                'error_message' => 'InvalidPropertyAssignmentValue - src' . DIRECTORY_SEPARATOR . 'somefile.php:13:25 - $any->boxes with declared type \'list<Box<object>>\' cannot be assigned type',
+                'error_message' => 'InvalidPropertyAssignmentValue - src' . DIRECTORY_SEPARATOR . 'somefile.php:13:25 - $any->boxes with declared type \'array<never, never>\' cannot be assigned type',
             ],
-            'starProjectionFirstClassCallableKeepsTheBound' => [
+            'starProjectionFirstClassCallableExpectsNever' => [
                 'code' => '<?php
                     /** @template T of object */
                     final class Box {
@@ -2375,9 +2425,9 @@ final class StarProjectionTest extends TestCase
                         $merge = $any->merge(...);
                         $merge($date);
                     }',
-                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:14:32 - Argument 1 expects Box<object>, but Box<DateTime> provided',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:14:32 - Argument 1 expects never, but Box<DateTime> provided',
             ],
-            'starProjectionClosureParamKeepsTheBound' => [
+            'starProjectionClosureParamExpectsNever' => [
                 'code' => '<?php
                     /** @template T of object */
                     final class Box {
@@ -2394,7 +2444,7 @@ final class StarProjectionTest extends TestCase
                     function f(Box $any, Box $date): void {
                         $any->sinkBox()($date);
                     }',
-                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:15:41 - Argument 1 expects Box<object>, but Box<DateTime> provided',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:15:41 - Argument 1 expects never, but Box<DateTime> provided',
             ],
             'starProjectionCombinedWithABareClassIsNotTheBound' => [
                 // `Box<*>|Box<object>` stays two members: the arguments print differently, so the types differ
@@ -2631,7 +2681,7 @@ final class StarProjectionTest extends TestCase
                 'error_levels' => [],
                 'php_version' => '8.0',
             ],
-            'starProjectionOffsetSetOfAWrappedArgumentStillTakesTheBound' => [
+            'starProjectionOffsetSetOfAWrappedArgumentExpectsNever' => [
                 'code' => '<?php
                     /** @template T of object */
                     final class Box {}
@@ -2649,11 +2699,11 @@ final class StarProjectionTest extends TestCase
                     function f(Shelf $shelf, Box $date): void {
                         $shelf[0] = $date;
                     }',
-                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:16:37 - Argument 2 of Shelf::offsetSet expects Box<object>, but Box<DateTime> provided',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:16:37 - Argument 2 of Shelf::offsetSet expects never, but Box<DateTime> provided',
                 'error_levels' => [],
                 'php_version' => '8.0',
             ],
-            'starProjectionFirstClassSetterOfAWrappedArgumentStillTakesTheBound' => [
+            'starProjectionFirstClassSetterOfAWrappedArgumentExpectsNever' => [
                 'code' => '<?php
                     /** @template T of object */
                     interface Setter {
@@ -2676,11 +2726,11 @@ final class StarProjectionTest extends TestCase
                     function f(Box $any, Box $date): void {
                         $any->set(...)($date);
                     }',
-                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:21:40 - Argument 1 expects Box<object>, but Box<DateTime> provided',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:21:40 - Argument 1 expects never, but Box<DateTime> provided',
                 'error_levels' => [],
                 'php_version' => '8.0',
             ],
-            'starProjectionCallableParameterOfAWrappedArgumentStillTakesTheBound' => [
+            'starProjectionCallableParameterOfAWrappedArgumentExpectsNever' => [
                 'code' => '<?php
                     /** @template T of object */
                     interface Sink {
@@ -2705,7 +2755,515 @@ final class StarProjectionTest extends TestCase
                     function f(Box $any, Box $date): void {
                         $any->sink()($date);
                     }',
-                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:23:38 - Argument 1 expects Box<object>, but Box<DateTime> provided',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:23:38 - Argument 1 expects never, but Box<DateTime> provided',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'starProjectionSetterOfAReceiverExpectsNever' => [
+                'code' => '<?php
+                    /** @template T of object */
+                    final class Box {
+                        /** @param T $value */
+                        public function set(object $value): void {}
+                    }
+
+                    /** @var Box<*> $b */
+                    $b = new Box();
+                    $b->set(new stdClass());',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:29 - Argument 1 of Box::set expects never, but stdClass provided',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'starProjectionClosureReturnedFromAReceiverExpectsNever' => [
+                'code' => '<?php
+                    /** @template T of object */
+                    final class Box {
+                        /** @return Closure(T): void */
+                        public function setter(): Closure {
+                            throw new Exception();
+                        }
+                    }
+
+                    /** @var Box<*> $b */
+                    $b = new Box();
+                    ($b->setter())(new DateTime());',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:12:36 - Argument 1 expects never, but DateTime provided',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'starProjectionNestedReadIsWrittenToAsNever' => [
+                'code' => '<?php
+                    /** @template T of object */
+                    final class Box {
+                        /** @return Box<Box<T>> */
+                        public function nested(): Box {
+                            throw new Exception();
+                        }
+
+                        /** @param T $value */
+                        public function set(object $value): void {}
+                    }
+
+                    /** @var Box<*> $b */
+                    $b = new Box();
+                    /** @var Box<stdClass> $box_of_std_class */
+                    $box_of_std_class = new Box();
+                    $b->nested()->set($box_of_std_class);',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:17:39 - Argument 1 of Box::set expects never, but Box<stdClass> provided',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'starProjectionCallableOfASetterExpectsNever' => [
+                'code' => '<?php
+                    /** @template T of object */
+                    interface Setter {
+                        /** @param T $value */
+                        public function set(object $value): void;
+                    }
+
+                    /**
+                     * @template T of object
+                     * @implements Setter<Box<T>>
+                     */
+                    final class Box implements Setter {
+                        public function set(object $value): void {}
+                    }
+
+                    /**
+                     * @param Box<*> $any
+                     * @param Box<DateTime> $date
+                     */
+                    function f(Box $any, Box $date): void {
+                        Closure::fromCallable([$any, "set"])($date);
+                    }',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:21:62 - Argument 1 expects never, but Box<DateTime> provided',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'starProjectionPropertyWriteExpectsNever' => [
+                'code' => '<?php
+                    /** @template T of object */
+                    final class Box {
+                        /** @var T */
+                        public object $value;
+
+                        /** @param T $value */
+                        public function __construct(object $value) {
+                            $this->value = $value;
+                        }
+                    }
+
+                    /** @param Box<*> $any */
+                    function f(Box $any): void {
+                        $any->value = new stdClass();
+                    }',
+                'error_message' => 'InvalidPropertyAssignmentValue - src' . DIRECTORY_SEPARATOR . 'somefile.php:15:39 - $any->value with declared type \'never\' cannot be assigned type',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'starProjectionSetterOfAKnownArgumentStillTakesThatArgument' => [
+                'code' => '<?php
+                    /**
+                     * @template TFirst of object
+                     * @template TSecond of object
+                     */
+                    final class Pair {
+                        /** @param TFirst $value */
+                        public function setFirst(object $value): void {}
+                    }
+
+                    /** @param Pair<DateTime, *> $pair */
+                    function f(Pair $pair): void {
+                        $pair->setFirst(new stdClass());
+                    }',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:13:41 - Argument 1 of Pair::setFirst expects DateTime, but stdClass provided',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'starProjectionFirstClassCallableOfASetterExpectsNever' => [
+                'code' => '<?php
+                    /** @template T of object */
+                    final class Box {
+                        /** @param T $value */
+                        public function set(object $value): void {}
+                    }
+
+                    /** @param Box<*> $b */
+                    function f(Box $b): void {
+                        $set = $b->set(...);
+                        $set(new stdClass());
+                    }',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:11:30 - Argument 1 expects never, but stdClass provided',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'starProjectionCallableOfASetterIsNotACallableOfAKnownType' => [
+                'code' => '<?php
+                    /** @template T of object */
+                    final class Box {
+                        /** @param T $value */
+                        public function set(object $value): void {}
+                    }
+
+                    /** @param callable(stdClass): void $callback */
+                    function takesCallable(callable $callback): void {}
+
+                    /** @param Box<*> $any */
+                    function f(Box $any): void {
+                        takesCallable([$any, "set"]);
+                    }',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:13:39 - Argument 1 of takesCallable expects callable[impure](stdClass):void, but callable[impure](never):void provided',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'starProjectionCallbackOfACovariantReceiverExpectsTheBound' => [
+                'code' => '<?php
+                    /** @template-covariant T of object */
+                    final class Reader {
+                        /** @param Closure(T): void $callback */
+                        public function each(Closure $callback): void {}
+                    }
+
+                    /** @param Reader<*> $any */
+                    function f(Reader $any): void {
+                        $any->each(static function (int $value): void {});
+                    }',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:36 - Argument 1 of Reader::each expects Closure[impure](object):void, but Closure[pure](int):void provided',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'starProjectionSetterOfAnIntersectionReceiverExpectsNever' => [
+                'code' => '<?php
+                    /** @template T of object */
+                    class Box {
+                        /** @param T $value */
+                        public function set(object $value): void {}
+                    }
+
+                    /** @param Box<*>&Countable $any */
+                    function f(Box $any): void {
+                        $any->set(new stdClass());
+                    }',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:35 - Argument 1 of Box::set expects never, but stdClass provided',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'starProjectionSetterForwardedByAMixinExpectsNever' => [
+                'code' => '<?php
+                    /** @template T of object */
+                    final class Setter {
+                        /** @param T $value */
+                        public function set(object $value): void {}
+                    }
+
+                    /**
+                     * @template T of object
+                     * @mixin Setter<T>
+                     */
+                    final class Box {
+                        public function __call(string $name, array $arguments): mixed {
+                            return null;
+                        }
+                    }
+
+                    /** @param Box<*> $any */
+                    function f(Box $any): void {
+                        $any->set(new stdClass());
+                    }',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:20:35 - Argument 1 of Setter::set expects never, but stdClass provided',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'starProjectionOffsetSetOfATemplateExpectsNever' => [
+                'code' => '<?php
+                    /**
+                     * @template T of object
+                     * @extends ArrayAccess<int, T>
+                     */
+                    interface Shelf extends ArrayAccess {}
+
+                    /** @param Shelf<*> $shelf */
+                    function f(Shelf $shelf): void {
+                        $shelf[0] = new stdClass();
+                    }',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:37 - Argument 2 of Shelf::offsetSet expects never, but stdClass provided',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'starProjectionSelfOutOfAReceiverWritesNever' => [
+                'code' => '<?php
+                    /** @template T of object */
+                    final class Cell {
+                        /**
+                         * @param T $value
+                         * @psalm-self-out Cell<T>
+                         */
+                        public function fill(object $value): void {}
+                    }
+
+                    /** @param Cell<*> $any */
+                    function f(Cell $any): void {
+                        $any->fill(new stdClass());
+                    }',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:13:36 - Argument 1 of Cell::fill expects never, but stdClass provided',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'starProjectionListOfTemplateParamIsAListOfNever' => [
+                'code' => '<?php
+                    /** @template T of object */
+                    final class Box {
+                        /** @param list<T> $values */
+                        public function setAll(array $values): void {}
+                    }
+
+                    /** @param Box<*> $any */
+                    function f(Box $any): void {
+                        $any->setAll([new stdClass()]);
+                    }',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:38 - Argument 1 of Box::setAll expects array<never, never>, but list{stdClass} provided',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'starProjectionInvariantArgumentOfAParamIsNever' => [
+                'code' => '<?php
+                    /** @template T of object */
+                    final class Box {
+                        /** @param Box<T> $other */
+                        public function merge(Box $other): void {}
+                    }
+
+                    /**
+                     * @param Box<*> $any
+                     * @param Box<*> $other
+                     */
+                    function f(Box $any, Box $other): void {
+                        $any->merge($other);
+                    }',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:13:37 - Argument 1 of Box::merge expects never, but Box<*> provided',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'starProjectionComposedParentArgumentIsNotAnInvariantBase' => [
+                'code' => '<?php
+                    abstract class Model {}
+
+                    /** @template T */
+                    abstract class Base {}
+
+                    /**
+                     * @template TModel of Model
+                     * @extends Base<list<TModel>>
+                     */
+                    final class Listed extends Base {}
+
+                    /** @param Base<list<Model>> $base */
+                    function takesModels(Base $base): void {}
+
+                    /** @param Listed<*> $listed */
+                    function f(Listed $listed): void {
+                        takesModels($listed);
+                    }',
+                'error_message' => 'ArgumentTypeCoercion - src' . DIRECTORY_SEPARATOR . 'somefile.php:18:37 - Argument 1 of takesModels expects Base<list<Model>>, but parent type Listed<*> provided',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'starProjectionParamOfAComposedParentArgumentIsAListOfNever' => [
+                'code' => '<?php
+                    abstract class Model {}
+
+                    /** @template T */
+                    abstract class Base {
+                        /** @param T $value */
+                        public function set(mixed $value): void {}
+                    }
+
+                    /**
+                     * @template TModel of Model
+                     * @extends Base<list<TModel>>
+                     */
+                    final class Listed extends Base {}
+
+                    /** @param Listed<*> $listed */
+                    function f(Listed $listed, Model $model): void {
+                        $listed->set([$model]);
+                    }',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:18:38 - Argument 1 of Listed::set expects array<never, never>, but list{Model} provided',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'starProjectionKeyOfATemplateIsNever' => [
+                'code' => '<?php
+                    /** @template T of array<string, int> */
+                    final class Arr {
+                        /** @param key-of<T> $key */
+                        public function get(string $key): void {}
+                    }
+
+                    /** @param Arr<*> $any */
+                    function f(Arr $any): void {
+                        $any->get("a");
+                    }',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:35 - Argument 1 of Arr::get expects never, but \'a\' provided',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'starProjectionValueOfATemplateIsNever' => [
+                'code' => '<?php
+                    /** @template T of array<string, int> */
+                    final class Arr {
+                        /** @param value-of<T> $value */
+                        public function put(int $value): void {}
+                    }
+
+                    /** @param Arr<*> $any */
+                    function f(Arr $any): void {
+                        $any->put(1);
+                    }',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:35 - Argument 1 of Arr::put expects never, but 1 provided',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'starProjectionClassStringOfATemplateIsNever' => [
+                'code' => '<?php
+                    /** @template T of object */
+                    final class Box {
+                        /** @param class-string<T> $class */
+                        public function make(string $class): void {}
+                    }
+
+                    /** @param Box<*> $any */
+                    function f(Box $any): void {
+                        $any->make(stdClass::class);
+                    }',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:36 - Argument 1 of Box::make expects never, but stdClass::class provided',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'starProjectionConditionalOnATemplateIsNever' => [
+                'code' => '<?php
+                    /** @template T of array<string, int> */
+                    final class Arr {
+                        /** @param (T is array{} ? int : string) $value */
+                        public function put(mixed $value): void {}
+                    }
+
+                    /** @param Arr<*> $any */
+                    function f(Arr $any): void {
+                        $any->put(1);
+                    }',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:35 - Argument 1 of Arr::put expects never, but 1 provided',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'starProjectionIntersectionWithATemplateIsNever' => [
+                'code' => '<?php
+                    /** @template T of object */
+                    final class Box {
+                        /** @param T&Countable $value */
+                        public function set(object $value): void {}
+                    }
+
+                    /** @param Box<*> $any */
+                    function f(Box $any): void {
+                        $any->set(new ArrayObject());
+                    }',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:35 - Argument 1 of Box::set expects never, but ArrayObject[pure]<`_0:never, `_1:never> provided',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'starProjectionUnionWithATemplateIsTheOtherMember' => [
+                'code' => '<?php
+                    /** @template T of object */
+                    final class Box {
+                        /** @param T|Countable $value */
+                        public function set(object $value): void {}
+                    }
+
+                    /** @param Box<*> $any */
+                    function f(Box $any): void {
+                        $any->set(new stdClass());
+                    }',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:35 - Argument 1 of Box::set expects Countable, but stdClass provided',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'starProjectionMagicMethodParamIsNever' => [
+                'code' => '<?php
+                    /**
+                     * @template T of object
+                     * @method void put(T $value)
+                     */
+                    final class Box {
+                        public function __call(string $name, array $arguments): mixed {
+                            return null;
+                        }
+                    }
+
+                    /** @param Box<*> $b */
+                    function f(Box $b): void {
+                        $b->put(new stdClass());
+                    }',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:14:33 - Argument 1 of put expects never, but stdClass provided',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'starProjectionClosurePropertyWriteOfANarrowerParameterIsACoercionToTheBound' => [
+                'code' => '<?php
+                    /** @template T of object */
+                    final class Box {
+                        /** @var Closure(T): void */
+                        public Closure $cb;
+
+                        public function __construct() {
+                            $this->cb = static function (object $value): void {};
+                        }
+                    }
+
+                    /** @param Box<*> $b */
+                    function f(Box $b): void {
+                        $b->cb = static function (stdClass $value): void {};
+                    }',
+                'error_message' => 'PropertyTypeCoercion - src' . DIRECTORY_SEPARATOR . 'somefile.php:14:34 - $b->cb expects \'Closure[impure](object):void\',  parent type \'Closure[pure](stdClass):void\' provided',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'starProjectionClosurePropertyWriteOfAnotherParameterTypeExpectsTheBound' => [
+                'code' => '<?php
+                    /** @template T of object */
+                    final class Box {
+                        /** @var Closure(T): void */
+                        public Closure $cb;
+
+                        public function __construct() {
+                            $this->cb = static function (object $value): void {};
+                        }
+                    }
+
+                    /** @param Box<*> $b */
+                    function f(Box $b): void {
+                        $b->cb = static function (int $value): void {};
+                    }',
+                'error_message' => 'InvalidPropertyAssignmentValue - src' . DIRECTORY_SEPARATOR . 'somefile.php:14:34 - $b->cb with declared type \'Closure[impure](object):void\' cannot be assigned type',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'starProjectionSetterOfTheUnknownArgumentOfAPairExpectsNever' => [
+                'code' => '<?php
+                    /**
+                     * @template TFirst
+                     * @template TSecond of object
+                     */
+                    final class Pair {
+                        /** @param TSecond $second */
+                        public function setSecond(object $second): void {}
+                    }
+
+                    /** @param Pair<int, *> $p */
+                    function f(Pair $p): void {
+                        $p->setSecond(new stdClass());
+                    }',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:13:39 - Argument 1 of Pair::setSecond expects never, but stdClass provided',
                 'error_levels' => [],
                 'php_version' => '8.0',
             ],
