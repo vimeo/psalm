@@ -1493,6 +1493,33 @@ final class ArrayAccessTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'issetOfASealedArrayWithATemplateOffsetBoundedByAUnion' => [
+                'code' => '<?php
+                    final class Types {
+                        const SCALAR = ["int" => true, "bool" => true];
+
+                        /**
+                         * @template TObject of object
+                         * @template TType of string|class-string<TObject>
+                         * @param TType $type
+                         */
+                        public static function isScalar(string $type): bool {
+                            return isset(self::SCALAR[$type]);
+                        }
+                    }',
+            ],
+            'issetOfASealedArrayWithATemplateOffsetBoundedByATemplate' => [
+                'code' => '<?php
+                    /**
+                     * @template TKey of int|string
+                     * @template TOffset of TKey
+                     * @param array{a: true, b: true} $array
+                     * @param TOffset $offset
+                     */
+                    function has(array $array, $offset): bool {
+                        return isset($array[$offset]);
+                    }',
+            ],
             'nullOffsetOfAnObjectThatAcceptsItInArrayAccess' => [
                 'code' => '<?php
                     /** @implements ArrayAccess<string|null, int> */
@@ -3792,6 +3819,18 @@ final class ArrayAccessTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'issetOfASealedArrayWithATemplateOffsetBoundedByATypeOfNoKey' => [
+                'code' => '<?php
+                    /**
+                     * @template T of int
+                     * @param array{a: true, b: true} $array
+                     * @param T $offset
+                     */
+                    function has(array $array, $offset): bool {
+                        return isset($array[$offset]);
+                    }',
+                'error_message' => 'InvalidArrayOffset',
+            ],
             'nullOffsetOfAnObjectThatRejectsItInArrayAccess' => [
                 'code' => '<?php
                     /** @implements ArrayAccess<string, int> */
