@@ -3776,4 +3776,125 @@ final class ConfigTest extends DeferredAnalyzerTestCase
         // an accepted call: the analysis went through without an exception
         $this->addToAssertionCount(1);
     }
+
+    /**
+     * @param array<string, string> $installed_plugins package => plugin class, of the project's installed.json
+     * @param list<string> $file_plugins
+     * @return list<string>
+     */
+    private static function getPluginNamesOfProject(
+        array $installed_plugins,
+        string $composer_json,
+        string $config_xml,
+        array $file_plugins = [],
+    ): array {
+        $root = sys_get_temp_dir() . DIRECTORY_SEPARATOR . uniqid('psalm-plugin-names-');
+        mkdir($root . '/vendor/composer', 0777, true);
+        $composer_json_path = $root . '/composer.json';
+        $installed_path = $root . '/vendor/composer/installed.json';
+        file_put_contents($composer_json_path, $composer_json);
+        file_put_contents($installed_path, json_encode(['packages' => array_map(
+            static fn(string $name, string $class): array => [
+                'name' => $name,
+                'extra' => ['psalm' => ['pluginClass' => $class]],
+            ],
+            array_keys($installed_plugins),
+            $installed_plugins,
+        )], JSON_THROW_ON_ERROR));
+
+        try {
+            $config = Config::loadFromXML($root, '<?xml version="1.0"?>' . $config_xml);
+            foreach ($file_plugins as $file_plugin) {
+                $config->addPluginPath($file_plugin);
+            }
+
+            return $config->getPluginNames();
+        } finally {
+            unlink($composer_json_path);
+            unlink($installed_path);
+            rmdir($root . '/vendor/composer');
+            rmdir($root . '/vendor');
+            rmdir($root);
+        }
+    }
+
+    public function testPluginNamesArePackagesWithoutPluginAffixes(): void
+    {
+        $names = self::getPluginNamesOfProject(
+            [
+                'psalm/plugin-laravel' => 'Psalm\\LaravelPlugin\\Plugin',
+                'weirdan/doctrine-psalm-plugin' => 'Weirdan\\Doctrine\\Plugin',
+                'vendor/library-plugin' => 'Vendor\\Library\\Plugin',
+                'vendor/psalm-plugin-psalm-plugin-extra' => 'Vendor\\Extra\\Plugin',
+                'foo/psalm-plugin' => 'Foo\\Plugin',
+            ],
+            '{}',
+            '<psalm loadLibraryPlugins="false">
+                <plugins>
+                    <pluginClass class="\\psalm\\laravelplugin\\plugin" />
+                    <pluginClass class="Weirdan\\Doctrine\\Plugin" />
+                    <pluginClass class="Vendor\\Library\\Plugin" />
+                    <pluginClass class="Vendor\\Extra\\Plugin" />
+                    <pluginClass class="Foo\\Plugin" />
+                    <pluginClass class="Acme\\One\\MyPlugin" />
+                    <pluginClass class="Other\\MyPlugin" />
+                    <pluginClass class="Acme\\PLUGIN" />
+                    <pluginClass class="Psalm\\LaravelPlugin\\Plugin" />
+                </plugins>
+            </psalm>',
+            // as the --plugin option adds them: relative to the working directory
+            ['examples/plugins/InternalChecker.php', './examples/plugins/InternalChecker.php'],
+        );
+
+        $this->assertSame(
+            [
+                'psalm/laravel',
+                'weirdan/doctrine',
+                'vendor/library',
+                'vendor/extra',
+                'foo/psalm-plugin',
+                'MyPlugin',
+                'MyPlugin',
+                'Acme\\PLUGIN',
+                'examples/plugins/InternalChecker.php',
+            ],
+            $names,
+        );
+    }
+
+    /**
+     * @param array<string, string> $installed_plugins
+     * @param list<string> $expected
+     */
+    #[DataProvider('providerNamesOfAutoEnabledPlugins')]
+    public function testAutoEnabledPluginsAreNamedByTheirPackages(array $installed_plugins, array $expected): void
+    {
+        $this->assertSame(
+            $expected,
+            self::getPluginNamesOfProject(
+                $installed_plugins,
+                '{"require": {"symfony/framework-bundle": "^7", "laravel/framework": "^12", "doctrine/orm": "^3"},'
+                . ' "require-dev": {"phpunit/phpunit": "^12", "mockery/mockery": "^1"}}',
+                '<psalm></psalm>',
+            ),
+        );
+    }
+
+    /**
+     * @return array<string, array{array<string, string>, list<string>}>
+     * @psalm-pure
+     */
+    public static function providerNamesOfAutoEnabledPlugins(): array
+    {
+        $own = ['psalm/symfony', 'psalm/laravel', 'weirdan/doctrine', 'psalm/phpunit', 'psalm/mockery'];
+
+        return [
+            // Psalm is not in the vendor directory of the project: the packages of its own installation name them
+            'pluginPackagesNotInTheProject' => [[], $own],
+            'pluginPackageInTheProject' => [
+                ['acme/phpunit-plugin' => 'Psalm\\PhpUnitPlugin\\Plugin'],
+                ['psalm/symfony', 'psalm/laravel', 'weirdan/doctrine', 'acme/phpunit', 'psalm/mockery'],
+            ],
+        ];
+    }
 }

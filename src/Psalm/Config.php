@@ -84,6 +84,7 @@ use function array_merge;
 use function array_pad;
 use function array_pop;
 use function array_shift;
+use function array_values;
 use function assert;
 use function basename;
 use function chdir;
@@ -139,6 +140,7 @@ use function str_contains;
 use function str_ends_with;
 use function str_replace;
 use function str_starts_with;
+use function strcasecmp;
 use function strlen;
 use function strpos;
 use function strrpos;
@@ -1939,6 +1941,74 @@ final class Config
         return $this->plugin_classes;
     }
 
+    /**
+     * The names the startup output shows for the enabled plugins:
+     * - `psalm/phpunit` for a class a Composer package declares (see stripPluginAffixes());
+     * - `MyPlugin` for any other class, `Acme\Foo\Plugin` when its short name is `Plugin`;
+     * - `plugins/a.php` for a file, relative to the base dir when inside it, as given otherwise.
+     *
+     * @internal
+     * @return list<string>
+     */
+    public function getPluginNames(): array
+    {
+        $package_by_class = [];
+        if ($this->plugin_classes !== []) {
+            $installed_paths = [];
+            foreach ([self::getPsalmInstalledJsonPath(), $this->getProjectInstalledJsonPath()] as $installed_path) {
+                $installed_paths[self::resolvePath($installed_path)] = $installed_path;
+            }
+
+            // the packages of the project win over the ones of Psalm's own installation
+            foreach ($installed_paths as $installed_path) {
+                foreach (self::readInstalledPackages($installed_path) as $package) {
+                    if ($package['plugin_class'] !== null) {
+                        $package_by_class[strtolower(ltrim($package['plugin_class'], '\\'))] = $package['name'];
+                    }
+                }
+            }
+        }
+
+        // a plugin is one class or one file, whatever it is called: the first spelling is shown
+        $names = [];
+        foreach ($this->plugin_classes as $plugin_entry) {
+            $class = ltrim($plugin_entry['class'], '\\');
+            $key = 'class:' . strtolower($class);
+            $package = $package_by_class[strtolower($class)] ?? null;
+            if ($package !== null) {
+                $names[$key] ??= self::stripPluginAffixes($package);
+                continue;
+            }
+
+            $last_separator = strrpos($class, '\\');
+            $short_name = $last_separator === false ? $class : substr($class, $last_separator + 1);
+            $names[$key] ??= strcasecmp($short_name, 'Plugin') === 0 ? $class : $short_name;
+        }
+
+        foreach ($this->plugin_paths as $path) {
+            $names['file:' . self::resolvePath($path)] ??= Path::isAbsolute($path)
+                ? $this->shortenFileName($path)
+                : $path;
+        }
+
+        return array_values($names);
+    }
+
+    /**
+     * The package name without the plugin/psalm affixes of its name, repeated ones included
+     * (`weirdan/doctrine-psalm-plugin` is `weirdan/doctrine`); the full name when nothing but an affix would remain
+     * (`foo/psalm-plugin`)
+     *
+     * @psalm-pure
+     */
+    private static function stripPluginAffixes(string $package_name): string
+    {
+        [$vendor, $name] = explode('/', $package_name, 2) + [1 => ''];
+        $name = (string) preg_replace('/^(?:(?:plugin|psalm)-)+|(?:-(?:plugin|psalm))+$/', '', $name);
+
+        return $name === '' || $name === 'plugin' || $name === 'psalm' ? $package_name : $vendor . '/' . $name;
+    }
+
     public function processPluginFileExtensions(ProjectAnalyzer $projectAnalyzer): void
     {
         $projectAnalyzer->progress->debug('Process plugin adjustments...' . PHP_EOL);
@@ -3267,7 +3337,7 @@ final class Config
         }
 
         $composer_dir = $this->getProjectVendorDir() . DIRECTORY_SEPARATOR . 'composer';
-        foreach ($this->getProjectInstalledPackages() as $package) {
+        foreach (self::readInstalledPackages($this->getProjectInstalledJsonPath()) as $package) {
             if ($package['install_path'] !== null) {
                 $install_paths[] = [$package['name'], Path::makeAbsolute($package['install_path'], $composer_dir)];
             }
@@ -3321,7 +3391,7 @@ final class Config
         }
 
         $requires_by_name = [];
-        foreach ($this->getProjectInstalledPackages() as $package) {
+        foreach (self::readInstalledPackages($this->getProjectInstalledJsonPath()) as $package) {
             foreach ([$package['name'], ...$package['replace']] as $name) {
                 $requires_by_name[strtolower((string) $name)] = [$package['name'], $package['require']];
             }
@@ -3385,14 +3455,18 @@ final class Config
     }
 
     /**
-     * The packages of the project's installed.json
+     * The packages of an installed.json
      *
-     * @return list<array{name: string, install_path: ?string, require: list<array-key>, replace: list<array-key>}>
+     * @return list<array{
+     *     name: string,
+     *     install_path: ?string,
+     *     require: list<array-key>,
+     *     replace: list<array-key>,
+     *     plugin_class: ?string
+     * }>
      */
-    private function getProjectInstalledPackages(): array
+    private static function readInstalledPackages(string $installed_path): array
     {
-        $installed_path = $this->getProjectVendorDir() . DIRECTORY_SEPARATOR . 'composer'
-            . DIRECTORY_SEPARATOR . 'installed.json';
         $installed = is_file($installed_path) ? json_decode((string) file_get_contents($installed_path), true) : null;
         if (!is_array($installed) || !isset($installed['packages']) || !is_array($installed['packages'])) {
             return [];
@@ -3412,11 +3486,41 @@ final class Config
                     'replace' => isset($package['replace']) && is_array($package['replace'])
                         ? array_keys($package['replace'])
                         : [],
+                    'plugin_class' => isset($package['extra']['psalm']['pluginClass'])
+                        && is_array($package['extra'])
+                        && is_array($package['extra']['psalm'])
+                        && is_string($package['extra']['psalm']['pluginClass'])
+                            ? $package['extra']['psalm']['pluginClass']
+                            : null,
                 ];
             }
         }
 
         return $packages;
+    }
+
+    private static function resolvePath(string $path): string
+    {
+        $real_path = realpath($path);
+
+        return $real_path === false ? Path::canonicalize($path) : $real_path;
+    }
+
+    private function getProjectInstalledJsonPath(): string
+    {
+        return $this->getProjectVendorDir() . DIRECTORY_SEPARATOR . 'composer' . DIRECTORY_SEPARATOR . 'installed.json';
+    }
+
+    /**
+     * The installed.json of Psalm's own installation: it lists the first-party plugins Psalm requires, which a
+     * project outside Psalm's vendor directory (a phar, a global install) does not have
+     *
+     * @psalm-pure
+     */
+    private static function getPsalmInstalledJsonPath(): string
+    {
+        return dirname((string) (new ReflectionClass(InstalledVersions::class))->getFileName())
+            . DIRECTORY_SEPARATOR . 'installed.json';
     }
 
     /**
