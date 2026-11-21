@@ -544,6 +544,8 @@ final class TryCatchTest extends TestCase
                             return true;
                         }
                     }',
+                'assertions' => [],
+                'ignored_issues' => ['DeprecatedSyntax'],
             ],
             'catchWithNoReturnButFinallyReturns' => [
                 'code' => '<?php
@@ -557,6 +559,8 @@ final class TryCatchTest extends TestCase
                             return true;
                         }
                     }',
+                'assertions' => [],
+                'ignored_issues' => ['DeprecatedSyntax'],
             ],
             'stopAnalysisAfterBadTryIssue' => [
                 'code' => '<?php
@@ -668,6 +672,8 @@ final class TryCatchTest extends TestCase
                             return $errors;
                         }
                     }',
+                'assertions' => [],
+                'ignored_issues' => ['DeprecatedSyntax'],
             ],
             'typeDoesNotContainTypeInCatch' => [
                 'code' => '<?php
