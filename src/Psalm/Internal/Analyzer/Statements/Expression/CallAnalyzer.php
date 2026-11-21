@@ -23,6 +23,7 @@ use Psalm\Internal\Analyzer\TraitAnalyzer;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Provider\NodeDataProvider;
+use Psalm\Internal\Type\Comparator\CallableTypeComparator;
 use Psalm\Internal\Type\Comparator\TypeComparisonResult;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\TemplateBound;
@@ -60,9 +61,7 @@ use Psalm\Storage\MethodStorage;
 use Psalm\Storage\Possibilities;
 use Psalm\Type;
 use Psalm\Type\Atomic\Scalar;
-use Psalm\Type\Atomic\TCallableObject;
 use Psalm\Type\Atomic\TNamedObject;
-use Psalm\Type\Atomic\TObjectWithProperties;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTrue;
 use Psalm\Type\Reconciler;
@@ -680,35 +679,8 @@ abstract class CallAnalyzer
             if ($type_part instanceof TNamedObject) {
                 $method_id = $type_part->value . '::' . $method_name;
 
-                foreach ($type_part->extra_types as $extra_type) {
-                    // the property shape `method_exists()` adds says nothing about the class of the method
-                    if ($extra_type instanceof TObjectWithProperties) {
-                        continue;
-                    }
-
-                    // `callable-object` says nothing about the class either
-                    if ($extra_type instanceof TCallableObject) {
-                        continue;
-                    }
-
-                    // a template stands for the classes of its bound
-                    if ($extra_type instanceof TTemplateParam) {
-                        foreach ($extra_type->as->getAtomicTypes() as $bound_type) {
-                            if (!$bound_type instanceof TNamedObject) {
-                                continue;
-                            }
-
-                            foreach ([$bound_type, ...$bound_type->extra_types] as $bound_part) {
-                                if ($bound_part instanceof TNamedObject) {
-                                    $method_id .= '&' . $bound_part->value . '::' . $method_name;
-                                }
-                            }
-                        }
-
-                        continue;
-                    }
-
-                    $method_id .= '&' . $extra_type->value . '::' . $method_name;
+                foreach (CallableTypeComparator::getIntersectionClassNames($type_part->extra_types) as $class_name) {
+                    $method_id .= '&' . $class_name . '::' . $method_name;
                 }
 
                 $method_ids[] = '$' . $method_id;

@@ -190,6 +190,56 @@ final class CallableTest extends TestCase
                         return array_map([$x, "bar"], [1]);
                     }',
             ],
+            'callableArrayOnAnIntersectionWithATemplateBoundToAnIntersection' => [
+                'code' => '<?php
+                    interface Foo {}
+                    interface Baz {}
+                    interface Bar {
+                        public function bar(int $i): int;
+                    }
+
+                    /**
+                     * @template T of Baz&Bar
+                     * @param Foo&T $x
+                     * @return list<int>
+                     */
+                    function f($x): array {
+                        return array_map([$x, "bar"], [1]);
+                    }',
+            ],
+            'callableArrayOnAnIntersectionWithATemplateBoundToATemplate' => [
+                'code' => '<?php
+                    interface Foo {}
+                    interface Bar {
+                        public function bar(int $i): int;
+                    }
+
+                    /**
+                     * @template U of Bar
+                     * @template T of U
+                     * @param Foo&T $x
+                     * @return list<int>
+                     */
+                    function f($x): array {
+                        return array_map([$x, "bar"], [1]);
+                    }',
+            ],
+            'callableArrayOnATemplateIntersectedWithTheClassOfTheMethod' => [
+                'code' => '<?php
+                    interface Foo {}
+                    interface Bar {
+                        public function bar(int $i): int;
+                    }
+
+                    /**
+                     * @template T of Foo
+                     * @param T&Bar $x
+                     * @return list<int>
+                     */
+                    function f($x): array {
+                        return array_map([$x, "bar"], [1]);
+                    }',
+            ],
             'callableOfThisTakesTheTemplatesOfTheObject' => [
                 'code' => '<?php
                     /**
