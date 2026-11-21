@@ -443,6 +443,28 @@ final class TypeVariableTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'falseArgumentRecordsABoundOnATypeVariable' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     */
+                    final class A {
+                        /**
+                         * @param T $value
+                         */
+                        public function __construct($value) {}
+
+                        /**
+                         * @param T $value
+                         */
+                        public function takeValue($value): void {}
+                    }
+
+                    /** @var bool */
+                    $value = true;
+                    $obj = new A($value);
+                    $obj->takeValue(false);',
+            ],
             'magicPropertyOfObjectsBuiltEmptyOnEachBranch' => [
                 'code' => '<?php
                     /**
@@ -2432,6 +2454,28 @@ final class TypeVariableTest extends TestCase
                         return new Coll();
                     }',
                 'error_message' => 'MixedReturnTypeCoercion',
+            ],
+            'falseArgumentIsCheckedAgainstADeclaredTypeArgument' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     */
+                    final class A {
+                        /**
+                         * @param T $value
+                         */
+                        public function __construct($value) {}
+
+                        /**
+                         * @param T $value
+                         */
+                        public function takeValue($value): void {}
+                    }
+
+                    /** @var A<int> */
+                    $obj = new A(1);
+                    $obj->takeValue(false);',
+                'error_message' => 'InvalidArgument',
             ],
             'mixedConstructionCallableParamRequirement' => [
                 // a value that entered the variable as mixed is then required to
