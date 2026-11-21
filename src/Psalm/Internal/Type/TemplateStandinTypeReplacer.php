@@ -1598,6 +1598,10 @@ final class TemplateStandinTypeReplacer
         ?array &$container_type_params_covariant = null,
         ?array &$input_star_offsets = null,
     ): array {
+        if ($input_type_part instanceof TGenericObject) {
+            $input_type_part = StarProjection::resolve($input_type_part, $codebase);
+        }
+
         if ($input_type_part instanceof TGenericObject || $input_type_part instanceof TIterable) {
             $input_type_params = $input_type_part->type_params;
 

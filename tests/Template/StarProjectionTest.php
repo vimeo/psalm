@@ -1489,6 +1489,44 @@ final class StarProjectionTest extends TestCase
                 'ignored_issues' => ['MixedAssignment', 'MixedPropertyTypeCoercion'],
                 'php_version' => '8.0',
             ],
+            'starProjectionOfAConditionalAssertionIsIteratedWithItsBound' => [
+                'code' => '<?php
+                    /**
+                     * @template TKey of array-key
+                     * @template TValue of object
+                     * @implements IteratorAggregate<TKey, TValue>
+                     */
+                    final class Collection implements IteratorAggregate {
+                        public function getIterator(): Iterator {
+                            throw new Exception();
+                        }
+                    }
+
+                    /** @psalm-assert-if-true Collection<*, *> $x */
+                    function isCollection(mixed $x): bool {
+                        return true;
+                    }
+
+                    /** @psalm-assert-if-false Collection<*, *> $x */
+                    function isNotCollection(mixed $x): bool {
+                        return true;
+                    }
+
+                    function f(mixed $a, mixed $b): void {
+                        if (isCollection($a)) {
+                            [$first] = [...$a];
+                            /** @psalm-check-type-exact $first = object */
+                        }
+
+                        if (!isNotCollection($b)) {
+                            [$second] = [...$b];
+                            /** @psalm-check-type-exact $second = object */
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
         ];
     }
 

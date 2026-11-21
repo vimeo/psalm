@@ -5,9 +5,11 @@ declare(strict_types=1);
 namespace Psalm\Storage;
 
 use Psalm\Codebase;
+use Psalm\Internal\Type\StarProjection;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Type\Atomic;
+use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Union;
 
@@ -66,6 +68,11 @@ final class Possibilities
                         && ($atomic_type->is_static || strtolower($atomic_type->value) === 'static')
                     ) {
                         $atomic_type = $static_type;
+                    }
+
+                    // an assertion's type is not expanded: a `*` holds `mixed` until its bound is known
+                    if ($atomic_type instanceof TGenericObject && $codebase !== null) {
+                        $atomic_type = StarProjection::resolve($atomic_type, $codebase);
                     }
 
                     $assertion = $assertion->setAtomicType($atomic_type);
