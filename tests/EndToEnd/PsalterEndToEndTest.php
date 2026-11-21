@@ -518,6 +518,49 @@ final class PsalterEndToEndTest extends PsalmEndToEndTestCase
         yield 'psalm --language-server' => [__DIR__ . '/../../psalm', ['--language-server', '-z']];
     }
 
+    /**
+     * @param list<string> $args
+     */
+    #[DataProvider('provideCommandsWithAnEmptyOptionValue')]
+    public function testAnEmptyValueOfAnOptionThatRequiresOneIsRejected(
+        string $script,
+        array $args,
+        string $option,
+    ): void {
+        $this->runPsalmInit();
+
+        $process = self::newProcess([PHP_BINARY, $script, ...$args], self::$tmpDir, self::agentEnvVarsToUnset());
+        $process->run();
+
+        $this->assertSame(1, $process->getExitCode(), $process->getOutput() . $process->getErrorOutput());
+        $this->assertStringContainsString('Argument "' . $option . '" requires a value', $process->getErrorOutput());
+    }
+
+    /**
+     * @return iterable<string, array{string, list<string>, string}>
+     * @psalm-pure
+     */
+    public static function provideCommandsWithAnEmptyOptionValue(): iterable
+    {
+        yield 'psalm' => [__DIR__ . '/../../psalm', ['--threads='], '--threads'];
+        yield 'psalm php-version' => [__DIR__ . '/../../psalm', ['--php-version='], '--php-version'];
+        yield 'psalter' => [__DIR__ . '/../../psalter', ['--issues=', '--dry-run'], '--issues'];
+        yield 'psalm-refactor' => [__DIR__ . '/../../psalm-refactor', ['--move=', '--into', 'C'], '--move'];
+        yield 'psalm-language-server' => [__DIR__ . '/../../psalm-language-server', ['--config='], '--config'];
+    }
+
+    public function testAnOptionalOptionValueMayStayEmpty(): void
+    {
+        $process = self::newProcess(
+            [PHP_BINARY, __DIR__ . '/../../psalm', '--version', '--find-dead-code='],
+            self::$tmpDir,
+            self::agentEnvVarsToUnset(),
+        );
+        $process->run();
+
+        $this->assertSame(0, $process->getExitCode(), $process->getOutput() . $process->getErrorOutput());
+    }
+
     public function testAValidOptionAfterLanguageServerIsAccepted(): void
     {
         $process = self::newProcess(
