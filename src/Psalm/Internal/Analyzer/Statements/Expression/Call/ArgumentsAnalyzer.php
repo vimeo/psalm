@@ -871,6 +871,13 @@ final class ArgumentsAnalyzer
                                 );
                             }
 
+                            // a callable never called with this argument (as `Err<E>`, a `Result<never, E>`, calls its
+                            // callback for an `Ok`) says nothing about the type the closure takes: it narrows neither a
+                            // declared type nor one inferred for another receiver of the call
+                            if ($replaced_param_type->isNever() && $param_storage->type !== null) {
+                                continue;
+                            }
+
                             if ($param_storage->type && !$param_type_inferred) {
                                 $param_comparison_result = new TypeComparisonResult();
 
