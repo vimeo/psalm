@@ -1174,11 +1174,23 @@ final class AssertionFinder
     }
 
     /**
-     * @param  PhpParser\Node\Expr\FuncCall|PhpParser\Node\Expr\MethodCall|PhpParser\Node\Expr\StaticCall $expr
+     * The assertions a call declares for where it returns true or false, as recorded on its node
+     *
+     * @return list<non-empty-array<string, non-empty-list<non-empty-list<Assertion>>>>
+     */
+    public static function getCustomAssertions(
+        PhpParser\Node\Expr\NullsafeMethodCall $expr,
+        ?string $this_class_name,
+        FileSource $source,
+    ): array {
+        return self::processCustomAssertion($expr, $this_class_name, $source);
+    }
+
+    /**
      * @return list<non-empty-array<string, non-empty-list<non-empty-list<Assertion>>>>
      */
     private static function processCustomAssertion(
-        PhpParser\Node\Expr $expr,
+        PhpParser\Node\Expr\CallLike $expr,
         ?string $this_class_name,
         FileSource $source,
     ): array {
@@ -1224,7 +1236,9 @@ final class AssertionFinder
                         $if_types[$var_name] = self::getAlternatives($assertion->rule);
                     }
                 } elseif ($assertion->var_id === '$this') {
-                    if (!$expr instanceof PhpParser\Node\Expr\MethodCall) {
+                    if (!$expr instanceof PhpParser\Node\Expr\MethodCall
+                        && !$expr instanceof PhpParser\Node\Expr\NullsafeMethodCall
+                    ) {
                         IssueBuffer::maybeAdd(
                             new InvalidDocblock(
                                 'Assertion of $this can be done only on method of a class',

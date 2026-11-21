@@ -138,10 +138,12 @@ final class NullsafeAnalyzer
                 $stmt->getAttributes(),
             );
         } else {
+            $method_call = new VirtualMethodCall($tmp_var, $stmt->name, $stmt->args, $stmt->getAttributes());
+
             $ternary = new VirtualTernary(
                 $null_comparison,
                 $null_value2,
-                new VirtualMethodCall($tmp_var, $stmt->name, $stmt->args, $stmt->getAttributes()),
+                $method_call,
                 $stmt->getAttributes(),
             );
         }
@@ -170,7 +172,20 @@ final class NullsafeAnalyzer
             $call_type = $statements_analyzer->node_data->getType($fetch);
         }
 
+        // what the method asserts when it returns true holds where the nullsafe call is truthy (not where it is falsy:
+        // the receiver may be null)
+        $if_true_assertions = isset($method_call)
+            ? $statements_analyzer->node_data->getIfTrueAssertions($method_call)
+            : null;
+
         $statements_analyzer->node_data = $old_node_data;
+
+        if ($stmt instanceof PhpParser\Node\Expr\NullsafeMethodCall
+            && $if_true_assertions !== null
+            && $if_true_assertions !== []
+        ) {
+            $statements_analyzer->node_data->setIfTrueAssertions($stmt, $if_true_assertions);
+        }
 
         // a non-null receiver never short-circuits: the null branch is dead
         if ($call_type

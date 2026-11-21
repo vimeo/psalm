@@ -294,6 +294,38 @@ final class AssertAnnotationTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'assertIfTrueOfANullsafeMethodCallHoldsWhereItIsTruthy' => [
+                'code' => '<?php
+                    final class M {
+                        /** @psalm-assert-if-true non-falsy-string $a */
+                        public function isText(string $a): bool {
+                            return $a !== "" && $a !== "0";
+                        }
+                        /** @psalm-assert-if-false non-falsy-string $a */
+                        public function isNotText(string $a): bool {
+                            return $a === "" || $a === "0";
+                        }
+                    }
+
+                    /** @param non-falsy-string $s */
+                    function useText(string $s): void {}
+
+                    function inTheIf(string $s, ?M $m): void {
+                        if ($m?->isText($s)) {
+                            useText($s);
+                        }
+                    }
+
+                    function afterAnEarlyReturn(string $s, ?M $m): void {
+                        if (!$m?->isText($s)) {
+                            return;
+                        }
+                        useText($s);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'parentCallKeepsTemplatedAssertIfTrueOfAnUndocumentedOverride' => [
                 'code' => '<?php
                     interface Item { public function name(): string; }
@@ -5074,6 +5106,31 @@ final class AssertAnnotationTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'assertIfFalseOfANullsafeMethodCallDoesNotHoldWhereItIsFalsy' => [
+                'code' => '<?php
+                    final class M {
+                        /** @psalm-assert-if-true non-falsy-string $a */
+                        public function isText(string $a): bool {
+                            return $a !== "" && $a !== "0";
+                        }
+                        /** @psalm-assert-if-false non-falsy-string $a */
+                        public function isNotText(string $a): bool {
+                            return $a === "" || $a === "0";
+                        }
+                    }
+
+                    /** @param non-falsy-string $s */
+                    function useText(string $s): void {}
+
+                    function f(string $s, ?M $m): void {
+                        if (!$m?->isNotText($s)) {
+                            useText($s);
+                        }
+                    }',
+                'error_message' => 'ArgumentTypeCoercion',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
             'assertOfAMethodCalledTwiceInTheArgumentsOfASelfCall' => [
                 'code' => '<?php
                     class Entity {
