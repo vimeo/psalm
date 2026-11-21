@@ -28,6 +28,33 @@ final class InternalAnnotationTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'traitReachesTheInternalMembersOfTheClassUsingIt' => [
+                'code' => '<?php
+                    namespace App {
+                        trait HasGreeting {
+                            public function greet(): string {
+                                return self::PREFIX . $this->name() . static::suffix() . (new self())->name();
+                            }
+                        }
+                    }
+
+                    namespace Tests {
+                        /** @psalm-internal Tests */
+                        final class Greeter {
+                            use \App\HasGreeting;
+
+                            public const PREFIX = "Hi ";
+
+                            public function name(): string {
+                                return "x";
+                            }
+
+                            public static function suffix(): string {
+                                return "!";
+                            }
+                        }
+                    }',
+            ],
             'psalmInternalMethodCalledFromFunctionInSameNamespace' => [
                 'code' => '<?php
                     namespace A\B {
@@ -891,6 +918,24 @@ final class InternalAnnotationTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'internalMembersOfAClassReachedFromAnotherNamespaceAreStillReported' => [
+                'code' => '<?php
+                    namespace Tests {
+                        /** @psalm-internal Tests */
+                        final class Greeter {
+                            public function name(): string {
+                                return "x";
+                            }
+                        }
+                    }
+
+                    namespace Other {
+                        function greet(\Tests\Greeter $greeter): string {
+                            return $greeter->name();
+                        }
+                    }',
+                'error_message' => 'InternalMethod',
+            ],
             'internalConstructorCalledFromNamespacedFunction' => [
                 'code' => '<?php
                     namespace A\B {
