@@ -209,7 +209,7 @@ final class MethodComparator
                 $implementer_method_storage->return_type,
                 $cased_guide_method_id,
                 $implementer_called_class_name,
-                $implementer_declaring_method_id,
+                $cased_implementer_method_id,
                 $code_location,
                 $suppressed_issues,
                 $inherits_return_type,
@@ -1459,7 +1459,7 @@ final class MethodComparator
         Union $implementer_return_type,
         string $cased_guide_method_id,
         string $implementer_called_class_name,
-        ?MethodIdentifier $implementer_declaring_method_id,
+        string $cased_implementer_method_id,
         CodeLocation $code_location,
         array $suppressed_issues,
         bool $inherits_return_type,
@@ -1618,7 +1618,7 @@ final class MethodComparator
                     new LessSpecificImplementedReturnType(
                         'The inherited return type \'' . $guide_method_storage_return_type->getId()
                             . '\' for ' . $cased_guide_method_id . ' is more specific than the implemented '
-                            . 'return type for ' . $implementer_declaring_method_id . ' \''
+                            . 'return type for ' . $cased_implementer_method_id . ' \''
                             . $implementer_method_storage_return_type->getId() . '\'',
                         $implementer_method_storage->return_type_location
                             ?: $code_location,
@@ -1641,7 +1641,7 @@ final class MethodComparator
                     new ImplementedReturnTypeMismatch(
                         'The inherited return type \'' . $guide_method_storage_return_type->getId()
                             . '\' for ' . $cased_guide_method_id . ' is different to the implemented '
-                            . 'return type for ' . $implementer_declaring_method_id . ' \''
+                            . 'return type for ' . $cased_implementer_method_id . ' \''
                             . $implementer_method_storage_return_type->getId() . '\'',
                         $implementer_method_storage->return_type_location
                             ?: $code_location,

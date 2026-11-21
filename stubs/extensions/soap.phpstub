@@ -1,5 +1,7 @@
 <?php
 
+namespace {
+
 /**
  * Constants that should be available via ext-soap in case the extension is not
  * enabled in the Psalm-executing environment.
@@ -406,4 +408,14 @@ class SoapHeader {
         // Same as $data, no default. The documentation specifies this as a `string` but it accepts null.
         ?string $actor = null
     ) {}
+}
+
+}
+
+namespace Soap {
+    /** @since 8.4 */
+    final class Url {}
+
+    /** @since 8.4 */
+    final class Sdl {}
 }
