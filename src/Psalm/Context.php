@@ -1601,6 +1601,18 @@ final class Context
                 }
             }
         }
+
+        // a variable the branch defined first is only possibly defined where the branch may have been skipped
+        foreach ($branch->assigned_var_ids as $assigned_var_id => $_) {
+            if (!isset($this->vars_in_scope[$assigned_var_id])
+                && isset($branch->vars_in_scope[$assigned_var_id])
+                && preg_match('/^\$\w+$/', $assigned_var_id) === 1
+            ) {
+                $this->vars_in_scope[$assigned_var_id] = $branch->vars_in_scope[$assigned_var_id]
+                    ->setPossiblyUndefined(true);
+                $this->vars_possibly_in_scope[$assigned_var_id] = true;
+            }
+        }
     }
 
     /**

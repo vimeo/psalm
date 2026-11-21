@@ -65,6 +65,7 @@ use Psalm\Type\Atomic\TNonFalsyLowercaseString;
 use Psalm\Type\Atomic\TNonFalsyNumericString;
 use Psalm\Type\Atomic\TNonFalsyString;
 use Psalm\Type\Atomic\TNonspecificLiteralString;
+use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TNumeric;
 use Psalm\Type\Atomic\TNumericString;
 use Psalm\Type\Atomic\TObject;
@@ -1058,6 +1059,17 @@ final class SimpleAssertionReconciler extends Reconciler
                     $type = $type->setFromDocblock(false);
                 }
                 $string_types[] = $type;
+            } elseif ($assertion instanceof IsLooselyEqual
+                && ($type instanceof TNumeric
+                    || $type instanceof TScalar
+                    || $type instanceof TArrayKey
+                    || $type instanceof TFloat
+                    || $type instanceof TBool
+                    || $type instanceof TNull)
+            ) {
+                // a non-strict comparison with a string juggles the types: `1 == "1"`, `true == "a"`, `null == ""`
+                $string_types[] = $type;
+                $redundant = false;
             } elseif ($type instanceof TCallable) {
                 $string_types[] = new TCallableString;
                 $redundant = false;
