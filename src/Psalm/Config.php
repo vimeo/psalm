@@ -1956,7 +1956,7 @@ final class Config
         if ($this->plugin_classes !== []) {
             $installed_paths = [];
             foreach ([self::getPsalmInstalledJsonPath(), $this->getProjectInstalledJsonPath()] as $installed_path) {
-                $installed_paths[realpath($installed_path) ?: $installed_path] = $installed_path;
+                $installed_paths[self::resolvePath($installed_path)] = $installed_path;
             }
 
             // the packages of the project win over the ones of Psalm's own installation
@@ -1986,7 +1986,7 @@ final class Config
         }
 
         foreach ($this->plugin_paths as $path) {
-            $names['file:' . (realpath($path) ?: Path::canonicalize($path))] ??= Path::isAbsolute($path)
+            $names['file:' . self::resolvePath($path)] ??= Path::isAbsolute($path)
                 ? $this->shortenFileName($path)
                 : $path;
         }
@@ -3499,6 +3499,13 @@ final class Config
         return $packages;
     }
 
+    private static function resolvePath(string $path): string
+    {
+        $real_path = realpath($path);
+
+        return $real_path === false ? Path::canonicalize($path) : $real_path;
+    }
+
     private function getProjectInstalledJsonPath(): string
     {
         return $this->getProjectVendorDir() . DIRECTORY_SEPARATOR . 'composer' . DIRECTORY_SEPARATOR . 'installed.json';
@@ -3507,6 +3514,8 @@ final class Config
     /**
      * The installed.json of Psalm's own installation: it lists the first-party plugins Psalm requires, which a
      * project outside Psalm's vendor directory (a phar, a global install) does not have
+     *
+     * @psalm-pure
      */
     private static function getPsalmInstalledJsonPath(): string
     {
