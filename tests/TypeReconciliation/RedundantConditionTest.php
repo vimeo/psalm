@@ -249,6 +249,27 @@ final class RedundantConditionTest extends TestCase
                         }
 
                         return 2;
+                    }
+
+                    /**
+                     * @template U of scalar
+                     * @param U $u
+                     */
+                    function scalarBound($u): void {
+                        if ($u !== true) {
+                            echo 1;
+                        }
+                    }
+
+                    /**
+                     * @template T
+                     * @template U of T
+                     * @param U $u
+                     */
+                    function boundOfAMixedTemplate($u): void {
+                        if ($u !== true) {
+                            echo 1;
+                        }
                     }',
             ],
             'coalesceInAnElseIfAfterACountCondition' => [
