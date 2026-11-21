@@ -29,6 +29,9 @@ use Psalm\Type\Union;
 use ReflectionProperty;
 use UnexpectedValueException;
 use function array_slice;
+use function in_array;
+use function is_int;
+use function is_string;
 use function rtrim;
 
 /**
@@ -115,16 +118,39 @@ final class ClassLikeStubGenerator
         }
 
         if ($storage->is_enum) {
-            $case_nodes = [];
+            $case_values = [];
 
             foreach ($storage->enum_cases as $case_name => $case_storage) {
-                $case_value = $case_storage->getValue($codebase->classlikes);
+                $case_values[$case_name] = $case_storage->getValue($codebase->classlikes)?->value;
+            }
+
+            $case_nodes = [];
+
+            foreach ($case_values as $case_name => $case_value) {
+                // a backed case needs a value, and a unique one: give the cases Psalm can't resolve a placeholder
+                if ($case_value === null && $storage->enum_type === 'int') {
+                    $case_value = 0;
+
+                    while (in_array($case_value, $case_values, true)) {
+                        $case_value++;
+                    }
+
+                    $case_values[$case_name] = $case_value;
+                } elseif ($case_value === null && $storage->enum_type === 'string') {
+                    $case_value = StubsGenerator::UNKNOWN_VALUE . ': ' . $case_name;
+
+                    while (in_array($case_value, $case_values, true)) {
+                        $case_value .= '_';
+                    }
+
+                    $case_values[$case_name] = $case_value;
+                }
 
                 $case_nodes[] = new PhpParser\Node\Stmt\EnumCase(
                     $case_name,
-                    $case_value instanceof TLiteralInt
-                        ? new VirtualInt($case_value->value)
-                        : ($case_value instanceof TLiteralString ? new VirtualString($case_value->value) : null),
+                    is_int($case_value)
+                        ? new VirtualInt($case_value)
+                        : (is_string($case_value) ? new VirtualString($case_value) : null),
                 );
             }
 
@@ -180,11 +206,19 @@ final class ClassLikeStubGenerator
                 throw new UnexpectedValueException('bad');
             }
 
+            $value = StubsGenerator::getExpressionFromType($type);
+
+            // the placeholder of a value Psalm can't infer would not match the type
+            $signature_type = $value instanceof PhpParser\Node\Scalar\String_
+                && $value->value === StubsGenerator::UNKNOWN_VALUE
+                ? null
+                : $constant_storage->signature_type;
+
             $constant_nodes[] = new VirtualClassConst(
                 [
                     new VirtualConst(
                         $constant_name,
-                        StubsGenerator::getExpressionFromType($type)
+                        $value
                     )
                 ],
                 ($constant_storage->visibility === ClassLikeAnalyzer::VISIBILITY_PUBLIC
@@ -195,8 +229,8 @@ final class ClassLikeStubGenerator
                     | ($constant_storage->final ? PhpParser\Modifiers::FINAL : 0),
                 [],
                 [],
-                $constant_storage->signature_type
-                    ? StubsGenerator::getParserTypeFromPsalmType($constant_storage->signature_type)
+                $signature_type
+                    ? StubsGenerator::getParserTypeFromPsalmType($signature_type)
                     : null,
             );
         }

@@ -148,7 +148,7 @@ final class StubsGenerator
                 [
                     new VirtualConst(
                         $constant_name,
-                        self::getExpressionFromType($type)
+                        self::getExpressionFromType($type, true)
                     )
                 ]
             );
@@ -198,7 +198,7 @@ final class StubsGenerator
                     [
                         new VirtualConst(
                             $constant_name,
-                            self::getExpressionFromType($type)
+                            self::getExpressionFromType($type, true)
                         )
                     ]
                 );
@@ -308,7 +308,7 @@ final class StubsGenerator
             $param_nodes[] = new VirtualParam(
                 new VirtualVariable($param->name),
                 $param->default_type instanceof Union
-                    ? self::getExpressionFromType($param->default_type)
+                    ? self::getExpressionFromType($param->default_type, true)
                     : null,
                 $param->signature_type
                     ? self::getParserTypeFromPsalmType($param->signature_type)
@@ -445,7 +445,12 @@ final class StubsGenerator
         return new PhpParser\Node\IntersectionType($intersected);
     }
 
-    public static function getExpressionFromType(Union $type) : PhpParser\Node\Expr
+    public const UNKNOWN_VALUE = 'Psalm could not infer this type';
+
+    /**
+     * @param bool $allow_new whether PHP allows a `new` expression there: in parameter defaults and global constants
+     */
+    public static function getExpressionFromType(Union $type, bool $allow_new = false) : PhpParser\Node\Expr
     {
         foreach ($type->getAtomicTypes() as $atomic_type) {
             if ($atomic_type instanceof TLiteralClassString) {
@@ -493,7 +498,7 @@ final class StubsGenerator
                     }
 
                     $new_items[] = new VirtualArrayItem(
-                        self::getExpressionFromType($property_type),
+                        self::getExpressionFromType($property_type, $allow_new),
                         $key_type
                     );
                 }
@@ -506,11 +511,11 @@ final class StubsGenerator
             }
 
             // a `new` default: its arguments are not kept
-            if ($atomic_type instanceof TNamedObject) {
+            if ($allow_new && $atomic_type instanceof TNamedObject) {
                 return new VirtualNew(new VirtualFullyQualified($atomic_type->value));
             }
         }
 
-        return new VirtualString('Psalm could not infer this type');
+        return new VirtualString(self::UNKNOWN_VALUE);
     }
 }

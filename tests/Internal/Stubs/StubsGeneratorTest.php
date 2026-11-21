@@ -8,6 +8,7 @@ use PhpParser\Node\Identifier;
 use PhpParser\Node\IntersectionType;
 use PhpParser\Node\Name;
 use PhpParser\Node\UnionType;
+use Psalm\Config;
 use Psalm\Context;
 use Psalm\Internal\Stubs\Generator\StubsGenerator;
 use Psalm\Tests\TestCase;
@@ -20,9 +21,17 @@ use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TScalar;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Union;
+use Symfony\Component\Process\Process;
 
 use function array_map;
+use function file_put_contents;
 use function substr_count;
+use function sys_get_temp_dir;
+use function tempnam;
+use function unlink;
+
+use const PHP_BINARY;
+use const PHP_VERSION_ID;
 
 final class StubsGeneratorTest extends TestCase
 {
@@ -283,9 +292,99 @@ final class StubsGeneratorTest extends TestCase
         self::assertDoesNotMatchRegularExpression('/(class|interface) (BadMethodCallException|Closure|Countable|ArrayObject)\\b/', $stub);
     }
 
-    private function getStub(string $code): string
+    public function testTheGeneratedStubIsValidPhp(): void
+    {
+        if (PHP_VERSION_ID < 8_03_00) {
+            self::markTestSkipped('The stub has typed class constants, which need PHP 8.3 to lint');
+        }
+
+        $stub = $this->getStub('<?php
+            namespace App;
+
+            interface I {}
+            interface J {}
+            interface K { const string KEY = "k"; }
+            class Base implements K { final public const int MAX = 3; }
+            final class Dep {}
+
+            readonly class A extends Base implements I {
+                const string NAME = "a";
+                public function __construct(public int $id, private Dep $dep = new Dep()) {}
+                public function both(I&J $x): (I&J)|null { return $x; }
+                public function yes(): true { return true; }
+                public function up(): parent { return $this; }
+                public function same(): static { return $this; }
+                public function stop(): never { throw new \Exception(); }
+                public function suit(): Suit { return Suit::Hearts; }
+            }
+
+            enum Suit: string implements I { case Hearts = "h"; case Spades = "s"; const DEFAULT = self::Hearts; }
+            enum Unit { case A; }
+
+            enum Late: string { case A = self::P . "c"; case B = "b"; const P = "x"; }
+
+            enum Unknown: int { case A = \Missing\K::V; case B = 1; case C = \Missing\K::W; }
+            enum Big: int { case A = 9223372036854775807; case B = \Missing\K::V; }
+
+            define("App\\OBJ", new Dep());
+            class UsesGlobal { const G = OBJ; const Dep TYPED = OBJ; }
+
+            /** @psalm-suppress ImmutableDependency, MissingTemplateParam */
+            class MyAO extends \ArrayObject {}
+            class MyDate extends \DateTimeImmutable {}', ['InvalidEnumCaseValue', 'UndefinedClass', 'MissingClassConstType']);
+
+        $file = tempnam(sys_get_temp_dir(), 'psalm-stub');
+        self::assertIsString($file);
+        file_put_contents($file, $stub);
+        $process = new Process([PHP_BINARY, '-l', $file]);
+        $process->run();
+        unlink($file);
+
+        self::assertTrue($process->isSuccessful(), $process->getOutput() . $process->getErrorOutput() . $stub);
+    }
+
+    public function testABackedEnumCaseWithoutAResolvedValueGetsAUniquePlaceholder(): void
+    {
+        $stub = $this->getStub('<?php
+            enum Late: string { case A = self::P . "c"; case B = "Psalm could not infer this type: A"; const P = "x"; }
+
+            enum Unknown: int { case A = \Missing\K::V; case B = 0; case C = \Missing\K::W; case D = 2; }
+            enum Big: int { case A = 9223372036854775807; case B = \Missing\K::V; }', ['InvalidEnumCaseValue', 'UndefinedClass']);
+
+        self::assertStringContainsString("case A = 'Psalm could not infer this type: A_';", $stub);
+        self::assertStringContainsString("case B = 'Psalm could not infer this type: A';", $stub);
+        self::assertStringContainsString('enum Unknown : int
+    {
+        case A = 1;
+        case B = 0;
+        case C = 3;
+        case D = 2;', $stub);
+        self::assertStringContainsString('case A = 9223372036854775807;
+        case B = 0;', $stub);
+    }
+
+    public function testAClassConstantIsNeverANewExpression(): void
+    {
+        $stub = $this->getStub('<?php
+            final class Dep {}
+            define("OBJ", new Dep());
+            class UsesGlobal { const G = OBJ; const Dep TYPED = OBJ; }', ['MissingClassConstType']);
+
+        self::assertStringContainsString("public const G = 'Psalm could not infer this type';", $stub);
+        self::assertStringContainsString("public const TYPED = 'Psalm could not infer this type';", $stub);
+        self::assertStringContainsString('const OBJ = new \\Dep();', $stub);
+    }
+
+    /**
+     * @param list<string> $ignored_issues
+     */
+    private function getStub(string $code, array $ignored_issues = []): string
     {
         $this->project_analyzer->setPhpVersion('8.4', 'tests');
+
+        foreach ($ignored_issues as $issue_name) {
+            Config::getInstance()->setCustomErrorLevel($issue_name, Config::REPORT_SUPPRESS);
+        }
 
         $this->addFile('somefile.php', $code);
         $this->analyzeFile('somefile.php', new Context());
