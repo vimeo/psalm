@@ -540,123 +540,69 @@ This is perfectly valid, and Psalm won't complain.
 
 ## Star projection
 
-A `*` type argument (`Pair<int, *>`) stands for some unknown type within the template's bound, with the other type arguments applied. It is known as a [star projection](https://kotlinlang.org/docs/generics.html#star-projections) in Kotlin, and as an unbounded wildcard (`Pair<Integer, ?>`) in Java. Any argument fits it, and reading the template gives that bound:
-
-```php
-<?php
-/**
- * @template TFirst
- * @template TSecond of object
- */
-final class Pair {
-    /** @return TSecond */
-    public function second(): object { throw new Exception(); }
-}
-
-/** @param Pair<int, *> $pair */
-function takesAnyPair(Pair $pair): object {
-    return $pair->second(); // object
-}
-
-/** @param Pair<int, stdClass> $pair */
-function takesPairOfStdClass(Pair $pair): void {}
-
-/**
- * @param Pair<int, stdClass> $concrete
- * @param Pair<string, stdClass> $other
- * @param Pair<int, *> $any
- */
-function f(Pair $concrete, Pair $other, Pair $any): void {
-    takesAnyPair($concrete); // no issue
-    takesAnyPair($other); // InvalidArgument
-    takesPairOfStdClass($any); // ArgumentTypeCoercion
-}
-```
-
-A `*` fits only another `*`, an argument left out, or a covariant argument that holds the whole bound:
-
-```php
-<?php
-/** @template T of object */
-class Box {}
-
-/** @template-covariant T of object */
-interface Reader {}
-
-/**
- * @template A
- * @template B of list<A>
- */
-final class Dependent {
-    /** @return B */
-    public function second(): array { throw new Exception(); }
-}
-
-/** @extends Box<*> */
-final class StarBox extends Box {} // InvalidDocblock, and MissingTemplateParam as the `@extends` is dropped
-
-/** @param Box<*> $any */
-function takesAnyBox(Box $any): void {}
-
-/** @param Box<object> $box */
-function takesBoxOfObject(Box $box): void {}
-
-/** @param Reader<object> $reader */
-function takesReaderOfObject(Reader $reader): void {}
-
-/**
- * @param Box<*> $star
- * @param Box<stdClass> $concrete
- * @param Box $left_out
- * @param Reader<*> $reader
- * @param Dependent<int, *> $dependent
- * @param class-string<*> $class
- * @param list<*> $list
- */
-function f(
-    Box $star,
-    Box $concrete,
-    Box $left_out,
-    Reader $reader,
-    Dependent $dependent,
-    string $class,
-    array $list,
-): void {
-    takesAnyBox($concrete); // no issue
-    takesAnyBox($star); // no issue
-    takesBoxOfObject($star); // ArgumentTypeCoercion
-    takesBoxOfObject($left_out); // no issue
-    takesReaderOfObject($reader); // no issue
-    $dependent->second(); // list<int>
-    $class; // class-string
-    $list; // list<mixed>
-}
-```
-
-Reading a template gives its bound (`T`, `list<T>`), but a return or property type that holds the template as a whole generic argument stays a `*`: with `@return Box<T>`, a `Box<*>` receiver gives a `Box<*>`, not a `Box<object>`. This holds for methods, `@method` tags, static calls, callables and iteration of the receiver, also when they are inherited through `@extends` or `@implements` (`@implements Getter<Box<T>>`). A type that wraps the template in a list or a callable parameter (`@extends Base<list<T>>`) still reads the bound. Covariant arguments (`Iterator<TKey, TValue>`) read the bound.
+`Box<*>` is a `Box` of some type you don't know. Kotlin calls it a [star projection](https://kotlinlang.org/docs/generics.html#star-projections), Java an unbounded wildcard (`Box<?>`).
 
 ```php
 <?php
 /** @template T of object */
 final class Box {
+    /** @return T */
+    public function get(): object { throw new Exception(); }
+
     /** @return Box<T> */
     public function same(): Box { return $this; }
 
-    /** @return T */
-    public function get(): object { throw new Exception(); }
+    /** @param T $value */
+    public function set(object $value): void {}
+}
+
+/** @param Box<*> $box */
+function takesAnyBox(Box $box): void {
+    $box->get(); // object
+    $box->same(); // Box<*>
+    $box->set(new DateTime()); // no issue (writes through `*` are not checked yet)
 }
 
 /** @param Box<object> $box */
 function takesBoxOfObject(Box $box): void {}
 
-/** @param Box<*> $any */
-function f(Box $any): void {
-    $any->get(); // object
-    takesBoxOfObject($any->same()); // ArgumentTypeCoercion
+/**
+ * @param Box<stdClass> $std
+ * @param Box<*> $any
+ */
+function f(Box $std, Box $any): void {
+    takesAnyBox($std); // no issue
+    takesBoxOfObject($any); // ArgumentTypeCoercion
 }
 ```
 
-Writes through a `*` are not restricted yet: `$any->set(new stdClass())` for a `set(T $value)` method is accepted, although it should expect `never`.
+A `Box<*>` also fits a `Box` written without arguments, and a covariant argument that holds the whole bound:
+
+```php
+<?php
+/** @template-covariant T of Countable */
+interface Reader {}
+
+function takesBareBox(Box $box): void {}
+
+/** @param Reader<Countable> $reader */
+function takesReaderOfCountable(Reader $reader): void {}
+
+/**
+ * @param Box<*> $box
+ * @param Reader<*> $reader
+ * @param class-string<*> $class
+ * @param list<*> $list
+ */
+function g(Box $box, Reader $reader, string $class, array $list): void {
+    takesBareBox($box); // no issue
+    takesReaderOfCountable($reader); // no issue
+    $class; // class-string
+    $list; // list<mixed>
+}
+```
+
+`*` is not allowed in `@extends`, `@implements` or `@use`.
 
 ## Builtin templated classes and interfaces
 
