@@ -252,6 +252,33 @@ return '.var_export($callMap, true).';');
 }
 
 /**
+ * Writes the callmap version (e.g. 83) that introduced each key missing from the oldest callmap.
+ *
+ * @param array<int, array<string, mixed>> $callMaps the callmaps by version
+ */
+function writeCallMapIntroductions(string $file, array $callMaps): void
+{
+    ksort($callMaps);
+    $oldest = array_key_first($callMaps);
+    $introductions = [];
+    foreach ($callMaps as $version => $callMap) {
+        if ($version === $oldest) {
+            continue;
+        }
+        foreach ($callMap as $key => $_) {
+            if (!isset($callMaps[$oldest][$key])) {
+                $introductions[$key] ??= $version;
+            }
+        }
+    }
+    ksort($introductions);
+
+    file_put_contents($file, '<?php // phpcs:ignoreFile
+
+return '.var_export($introductions, true).';');
+}
+
+/**
  * @template K as array-key
  * @template V
  * @param array<K, V> $a
