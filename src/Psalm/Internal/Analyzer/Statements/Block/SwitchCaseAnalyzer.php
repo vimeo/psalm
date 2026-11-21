@@ -442,7 +442,8 @@ final class SwitchCaseAnalyzer
             $context->removeClausesOfVarsChangedIn($case_context);
         }
 
-        if ($case_exit_type !== 'return_throw') {
+        // the cases going on after the switch, at its end or through a `break`
+        if ($case_exit_type === 'break' || $case_exit_type === 'hybrid') {
             $switch_scope->fully_assigned_var_ids += $case_context->fully_assigned_var_ids;
         }
 
