@@ -11,14 +11,17 @@ use Psalm\Context;
 use Psalm\Exception\DocblockParseException;
 use Psalm\Internal\Analyzer\CommentAnalyzer;
 use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
+use Psalm\Internal\Analyzer\MethodAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\ClassTemplateParamCollector;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\AtomicPropertyFetchAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
+use Psalm\Internal\Codebase\PhpDeprecations;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Internal\Type\TypeExpander;
+use Psalm\Issue\DeprecatedSyntax;
 use Psalm\Issue\InvalidDocblock;
 use Psalm\Issue\UnnecessaryVarAnnotation;
 use Psalm\IssueBuffer;
@@ -39,6 +42,8 @@ final class YieldAnalyzer
         PhpParser\Node\Expr\Yield_ $stmt,
         Context $context,
     ): bool {
+        self::checkGeneratorConstructorOrDestructor($statements_analyzer, $stmt);
+
         $doc_comment = $stmt->getDocComment();
 
         $var_comments = [];
@@ -399,5 +404,26 @@ final class YieldAnalyzer
         return $source->getSource() instanceof TraitAnalyzer
             ? $source->getCorrectlyCasedMethodId($context->self)
             : $source->getCorrectlyCasedMethodId();
+    }
+
+    public static function checkGeneratorConstructorOrDestructor(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr\Yield_|PhpParser\Node\Expr\YieldFrom $stmt,
+    ): void {
+        $method_name = MethodAnalyzer::getConstructorOrDestructorName($statements_analyzer);
+
+        if ($method_name !== null) {
+            IssueBuffer::maybeAdd(
+                new DeprecatedSyntax(
+                    PhpDeprecations::getDeprecatedSinceMessage(
+                        'Making ' . $method_name . '() a generator',
+                        8_06_00,
+                        null,
+                    ),
+                    new CodeLocation($statements_analyzer, $stmt),
+                ),
+                $statements_analyzer->getSuppressedIssues(),
+            );
+        }
     }
 }

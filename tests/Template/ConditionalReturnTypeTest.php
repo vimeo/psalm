@@ -49,6 +49,49 @@ final class ConditionalReturnTypeTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'conditionalReturnTypeOnNonEmptyMixedTakesTheElseBranchOfAFalsyCondition' => [
+                'code' => '<?php
+                    /**
+                     * @param mixed $arg
+                     * @return ($arg is false ? string|false : int)
+                     */
+                    function bar($arg) {
+                        /** @var string|false|int $result */
+                        $result = $arg;
+
+                        return $result;
+                    }
+
+                    /** @var mixed $foo */
+                    if (empty($foo)) {
+                        exit;
+                    }
+
+                    $result = bar($foo);',
+                'assertions' => [
+                    '$result===' => 'int',
+                ],
+                'ignored_issues' => [],
+            ],
+            'conditionalReturnTypeOnNonEmptyMixedKeepsBothBranchesOfATruthyCondition' => [
+                'code' => '<?php
+                    /**
+                     * @param mixed $arg
+                     * @return ($arg is string ? string : int)
+                     */
+                    function bar($arg) { throw new Exception(); }
+
+                    /** @var mixed $foo */
+                    if (empty($foo)) {
+                        exit;
+                    }
+
+                    $result = bar($foo);',
+                'assertions' => [
+                    '$result===' => 'int|string',
+                ],
+                'ignored_issues' => [],
+            ],
             'conditionalOnNeverOfAnOptionalKeyIsTheKeyTypeWhenSet' => [
                 'code' => '<?php
                     /**
@@ -668,6 +711,8 @@ final class ConditionalReturnTypeTest extends TestCase
 
                         return $return;
                     }',
+                'assertions' => [],
+                'ignored_issues' => ['DeprecatedFunction'],
             ],
             'combineConditionalArray' => [
                 'code' => '<?php
@@ -1903,6 +1948,170 @@ final class ConditionalReturnTypeTest extends TestCase
                     '$tapped===' => 'Items',
                 ],
             ],
+            'typedClosureParamOfCallableOfListOfStaticIsTheCalledClass' => [
+                'code' => '<?php
+                    class Source {
+                        /** @param callable(list<static>): mixed $callback */
+                        public function visit(callable $callback): void {}
+
+                        public function sourceOnly(): void {}
+                    }
+
+                    class Child extends Source {
+                        public function childOnly(): void {}
+                    }
+
+                    final class Caller {
+                        public function run(Source $source, Child $child): void {
+                            $source->visit(function (array $items): void {
+                                foreach ($items as $item) {
+                                    /** @psalm-check-type-exact $item = Source */
+                                    $item->sourceOnly();
+                                }
+                            });
+
+                            $child->visit(function (iterable $items): void {
+                                foreach ($items as $item) {
+                                    /** @psalm-check-type-exact $item = Child */
+                                    $item->childOnly();
+                                }
+                            });
+                        }
+                    }',
+            ],
+            'typedClosureParamOfCallableOfShapeOfStaticIsTheCalledClass' => [
+                'code' => '<?php
+                    class Source {
+                        /** @param callable(array{item: static}): mixed $callback */
+                        public function visit(callable $callback): void {}
+                    }
+
+                    final class Caller {
+                        public function run(Source $source): void {
+                            $source->visit(function (array $shape): void {
+                                /** @psalm-check-type-exact $shape = array{item: Source} */
+                            });
+                        }
+                    }',
+            ],
+            'typedClosureParamOfCallableOfCallableOfStaticIsTheCalledClass' => [
+                'code' => '<?php
+                    class Source {
+                        /** @param callable(callable(static): void): mixed $callback */
+                        public function visit(callable $callback): void {}
+                    }
+
+                    final class Leaf extends Source {}
+
+                    final class Caller {
+                        public function run(Leaf $leaf): void {
+                            $leaf->visit(function (callable $visit) use ($leaf): void {
+                                /** @psalm-check-type-exact $visit = callable(Leaf):void */
+                                $visit($leaf);
+                            });
+                        }
+                    }',
+            ],
+            'typedClosureParamOfCallableOfListOfStaticInStaticCallAndNewIsTheCalledClass' => [
+                'code' => '<?php
+                    class Source {
+                        /** @param callable(list<static>): mixed $callback */
+                        public function __construct(?callable $callback = null) {}
+
+                        /** @param callable(list<static>): mixed $callback */
+                        public static function visitAll(callable $callback): void {}
+                    }
+
+                    final class Leaf extends Source {}
+
+                    final class Caller {
+                        public function run(): void {
+                            Leaf::visitAll(function (array $items): void {
+                                /** @psalm-check-type-exact $items = list<Leaf> */
+                            });
+
+                            new Leaf(function (array $items): void {
+                                /** @psalm-check-type-exact $items = list<Leaf> */
+                            });
+                        }
+                    }',
+            ],
+            'typedClosureParamOfCallableOfListOfStaticOnGenericReceiverIsTheCalledClass' => [
+                'code' => '<?php
+                    /** @template T */
+                    class Coll {
+                        /** @param callable(list<static>): mixed $callback */
+                        public function visit(callable $callback): void {}
+
+                        public function collOnly(): void {}
+                    }
+
+                    /** @param Coll<int> $coll */
+                    function run(Coll $coll): void {
+                        $coll->visit(function (array $items): void {
+                            foreach ($items as $item) {
+                                /** @psalm-check-type-exact $item = Coll */
+                                $item->collOnly();
+                            }
+                        });
+                    }',
+            ],
+            'typedClosureParamOfCallableOfStaticOnThisOfBoundedGenericClassIsAccepted' => [
+                'code' => '<?php
+                    class Model {}
+
+                    /** @template TModel of Model */
+                    class Builder {
+                        /**
+                         * @param (Closure(static): mixed)|string $column
+                         * @return $this
+                         */
+                        public function where($column) {
+                            return $this;
+                        }
+
+                        /** @return $this */
+                        public function whereKey(int $id) {
+                            return $this;
+                        }
+
+                        /** @return $this */
+                        public function orWhereKey(int $id) {
+                            return $this->where(fn (self $query) => $query->whereKey($id));
+                        }
+                    }',
+            ],
+            'typedClosureParamOfCallableOfListOfStaticOnThisKeepsTheStaticOfTheClosure' => [
+                'code' => '<?php
+                    class Base {
+                        /** @param callable(list<static>): mixed $callback */
+                        public function each(callable $callback): void {}
+
+                        /** @return static */
+                        public static function make() {
+                            throw new RuntimeException();
+                        }
+
+                        public function run(): void {
+                            $this->each(function (array $items): static {
+                                /** @psalm-check-type-exact $items = list<Base&static> */
+                                return $items[0];
+                            });
+
+                            static::make()->each(function (array $items): static {
+                                return $items[0];
+                            });
+                        }
+                    }
+
+                    final class Leaf extends Base {
+                        public function runLeaf(): void {
+                            $this->each(function (array $items): void {
+                                /** @psalm-check-type-exact $items = list<Leaf> */
+                            });
+                        }
+                    }',
+            ],
             'paramConditionalKeepsTheStaticOfTheCallerInTheBound' => [
                 'code' => '<?php
                     class Base {
@@ -2444,6 +2653,30 @@ final class ConditionalReturnTypeTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'conditionalReturnOfAMixedTemplateArgumentKeepsBothBranches' => [
+                'code' => '<?php
+                    /**
+                     * @param mixed $arg
+                     * @return ($arg is (Countable|array<mixed>) ? string : int)
+                     */
+                    function inner($arg) {
+                        return 1;
+                    }
+
+                    /**
+                     * @param mixed $arg
+                     * @return ($arg is (Countable|array<mixed>) ? string : int)
+                     */
+                    function outer($arg) {
+                        $r = inner($arg);
+                        /** @psalm-check-type-exact $r = int|string */
+
+                        return $r;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
         ];
     }
 
@@ -2516,6 +2749,36 @@ final class ConditionalReturnTypeTest extends TestCase
                         }
                     }',
                 'error_message' => 'LessSpecificReturnStatement',
+            ],
+            'typedClosureParamOfCallableOfListOfStaticKeepsTheStaticOfTheClosure' => [
+                'code' => '<?php
+                    class Base {
+                        /** @param callable(list<static>): mixed $callback */
+                        public function each(callable $callback): void {}
+
+                        public function run(Base $other): void {
+                            $other->each(function (array $items): static {
+                                return $items[0];
+                            });
+                        }
+                    }',
+                'error_message' => 'LessSpecificReturnStatement',
+            ],
+            'typedClosureParamOfCallableOfListOfStaticReportsMethodsOfTheCalledClass' => [
+                'code' => '<?php
+                    class Source {
+                        /** @param callable(list<static>): mixed $callback */
+                        public function visit(callable $callback): void {}
+                    }
+
+                    final class Caller {
+                        public function run(Source $source): void {
+                            $source->visit(function (array $items): void {
+                                $items[0]->missing();
+                            });
+                        }
+                    }',
+                'error_message' => 'Method Source::missing does not exist',
             ],
             'untypedClosureParamOfCallableOfStaticInTraitIsNotSharedWithOtherUsers' => [
                 'code' => '<?php

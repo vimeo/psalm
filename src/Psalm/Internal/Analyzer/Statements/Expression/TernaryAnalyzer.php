@@ -168,7 +168,7 @@ final class TernaryAnalyzer
         if ($if_scope->negated_types) {
             [$t_else_context->vars_in_scope, $t_else_context->references_in_scope] = Reconciler::reconcileKeyedTypes(
                 $if_scope->negated_types,
-                $if_scope->negated_types,
+                $if_scope->active_negated_types,
                 $t_else_context->vars_in_scope,
                 $t_else_context->references_in_scope,
                 $changed_var_ids,

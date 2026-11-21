@@ -155,6 +155,46 @@ final class CallableTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'callableOfThisTakesTheTemplatesOfTheObject' => [
+                'code' => '<?php
+                    /**
+                     * @template TKey of array-key
+                     * @template TValue
+                     */
+                    interface Items extends Countable {
+                        /** @param callable($this): void $callback */
+                        public function each(callable $callback): void;
+
+                        /** @param callable(static): void $callback */
+                        public function eachStatic(callable $callback): void;
+                    }
+
+                    /** @template T */
+                    final class Box {
+                        /** @param callable($this): void $callback */
+                        public function each(callable $callback): void { $callback($this); }
+
+                        /** @param callable(static): void $callback */
+                        public function eachStatic(callable $callback): void { $callback($this); }
+                    }
+
+                    /** @param Items<int, string> $items */
+                    function useItems(Items $items): void {
+                        $items->each(function ($i): void { echo count($i); });
+                        $items->eachStatic(
+                            /** @param Items<int, string> $i */
+                            function (Items $i): void { echo count($i); }
+                        );
+                    }
+
+                    /** @param Box<int> $box */
+                    function useBox(Box $box): void {
+                        $box->eachStatic(function ($_b): void {});
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'truthyCheckOfANullableCallableIsNotRisky' => [
                 'code' => '<?php
                     function f(?callable $c): void {
@@ -3008,6 +3048,8 @@ final class CallableTest extends TestCase
                             return -1;
                         }
                     }',
+                'assertions' => [],
+                'ignored_issues' => ['DeprecatedSyntax'],
             ],
             'noFatalErrorOnClassWithSlash' => [
                 'code' => '<?php
@@ -3837,6 +3879,23 @@ final class CallableTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'callableOfStaticChecksTheTemplatesOfTheObject' => [
+                'code' => '<?php
+                    /** @template T */
+                    class Box {
+                        /** @param callable(static): void $callback */
+                        public function each(callable $callback): void { $callback($this); }
+                    }
+
+                    /** @param Box<int> $box */
+                    function useBox(Box $box): void {
+                        $box->each(
+                            /** @param Box<string> $_b */
+                            function (Box $_b): void {}
+                        );
+                    }',
+                'error_message' => 'InvalidArgument',
+            ],
             'truthyCheckOfACallableOrStringIsRisky' => [
                 'code' => '<?php
                     function f(callable|string $c): void {
@@ -5257,7 +5316,7 @@ final class CallableTest extends TestCase
                         call_user_func($callable);
                     }
                 }',
-                'error_message' => 'DeprecatedConstant',
+                'error_message' => 'DeprecatedSyntax',
                 'error_levels' => [],
                 'php_version' => '8.2',
             ],
@@ -5282,7 +5341,7 @@ final class CallableTest extends TestCase
                         call_user_func($callable);
                     }
                 }',
-                'error_message' => 'DeprecatedConstant',
+                'error_message' => 'DeprecatedSyntax',
                 'error_levels' => [],
                 'php_version' => '8.2',
             ],
@@ -5305,7 +5364,7 @@ final class CallableTest extends TestCase
                         call_user_func($callable);
                     }
                 }',
-                'error_message' => 'DeprecatedConstant',
+                'error_message' => 'DeprecatedSyntax',
                 'error_levels' => [],
                 'php_version' => '8.2',
             ],
@@ -5328,7 +5387,7 @@ final class CallableTest extends TestCase
                         call_user_func($callable);
                     }
                 }',
-                'error_message' => 'DeprecatedConstant',
+                'error_message' => 'DeprecatedSyntax',
                 'error_levels' => [],
                 'php_version' => '8.2',
             ],
@@ -5351,7 +5410,7 @@ final class CallableTest extends TestCase
                         call_user_func($callable);
                     }
                 }',
-                'error_message' => 'DeprecatedConstant',
+                'error_message' => 'DeprecatedSyntax',
                 'error_levels' => [],
                 'php_version' => '8.2',
             ],
@@ -5447,6 +5506,7 @@ final class CallableTest extends TestCase
                     }
                 }',
                 'error_message' => 'ParentNotFound',
+                'error_levels' => ['DeprecatedSyntax'],
             ],
             'parentCallableWithoutParent' => [
                 'code' => '<?php
@@ -5464,6 +5524,7 @@ final class CallableTest extends TestCase
                     }
                 }',
                 'error_message' => 'ParentNotFound',
+                'error_levels' => ['DeprecatedSyntax'],
             ],
             'wrongCallableInUnion' => [
                 'code' => '<?php
