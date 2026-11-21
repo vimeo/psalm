@@ -61,6 +61,15 @@ final class InterfaceAnalyzer extends ClassLikeAnalyzer
 
         $class_storage = $codebase->classlike_storage_provider->get($fq_interface_name);
 
+        if ($this->class->name) {
+            self::checkDeprecatedName(
+                $this,
+                'an interface',
+                $this->class->name,
+                $class_storage->suppressed_issues + $this->getSuppressedIssues(),
+            );
+        }
+
         $class_context = new Context($fq_interface_name);
 
         if ($this->class->extends) {
@@ -120,7 +129,7 @@ final class InterfaceAnalyzer extends ClassLikeAnalyzer
                     $class_storage,
                     $extended_interface_storage,
                     $code_location,
-                    $class_storage->template_type_extends_count[$extended_interface_name] ?? 0,
+                    $class_storage->template_type_extends_count[strtolower($extended_interface_name)] ?? 0,
                 );
             }
         }
@@ -226,6 +235,11 @@ final class InterfaceAnalyzer extends ClassLikeAnalyzer
             } elseif ($stmt instanceof PhpParser\Node\Stmt\ClassConst) {
                 $member_stmts[] = $stmt;
                 AttributesAnalyzer::reportPlaceholders($this, $stmt->attrGroups, $this->getSuppressedIssues());
+                self::checkDeprecatedConstantNames(
+                    $this,
+                    $stmt,
+                    $class_storage->suppressed_issues + $this->getSuppressedIssues(),
+                );
 
                 foreach ($stmt->consts as $const) {
                     $const_id = strtolower($this->fq_class_name) . '::' . $const->name;

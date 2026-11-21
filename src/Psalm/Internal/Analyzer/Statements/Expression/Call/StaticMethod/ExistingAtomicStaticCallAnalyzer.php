@@ -95,6 +95,12 @@ final class ExistingAtomicStaticCallAnalyzer
             $statements_analyzer->getSuppressedIssues(),
         );
 
+        MethodCallProhibitionAnalyzer::checkDeprecatedStaticCall(
+            $statements_analyzer,
+            $method_id,
+            new CodeLocation($statements_analyzer->getSource(), $stmt),
+        );
+
         if ($class_storage->user_defined
             && $context->self
             && $context->collect_initializations
