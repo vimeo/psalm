@@ -90,6 +90,15 @@ use function trim;
  */
 final class FunctionLikeDocblockScanner
 {
+    /**
+     * The tokens of a conditional return type that a generated int template stands for
+     */
+    private const SPECIAL_RETURN_TEMPLATES = [
+        'func_num_args()' => 'TFunctionArgCount',
+        'PHP_MAJOR_VERSION' => 'TPhpMajorVersion',
+        'PHP_VERSION_ID' => 'TPhpVersionId',
+    ];
+
     private static function scanThrows(
         Codebase $codebase,
         FileScanner $file_scanner,
@@ -827,33 +836,8 @@ final class FunctionLikeDocblockScanner
                 }
             }
 
-            if ($token_body === 'func_num_args()') {
-                $template_name = 'TFunctionArgCount';
-                $storage->template_types[$template_name] = [
-                    'fn-' . strtolower($storage->cased_name ?? '') => Type::getInt(),
-                ];
-
-                $function_template_types[$template_name]
-                    = $storage->template_types[$template_name];
-
-                $fixed_type_tokens[$i][0] = $template_name;
-            }
-
-            if ($token_body === 'PHP_MAJOR_VERSION') {
-                $template_name = 'TPhpMajorVersion';
-
-                $storage->template_types[$template_name] = [
-                    'fn-' . strtolower($storage->cased_name ?? '') => Type::getInt(),
-                ];
-
-                $function_template_types[$template_name]
-                    = $storage->template_types[$template_name];
-
-                $fixed_type_tokens[$i][0] = $template_name;
-            }
-
-            if ($token_body === 'PHP_VERSION_ID') {
-                $template_name = 'TPhpVersionId';
+            if (isset(self::SPECIAL_RETURN_TEMPLATES[$token_body])) {
+                $template_name = self::SPECIAL_RETURN_TEMPLATES[$token_body];
 
                 $storage->template_types[$template_name] = [
                     'fn-' . strtolower($storage->cased_name ?? '') => Type::getInt(),
