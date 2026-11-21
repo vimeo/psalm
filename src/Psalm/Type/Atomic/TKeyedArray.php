@@ -89,14 +89,28 @@ final class TKeyedArray extends Atomic
         if ($is_list && $fallback_params) {
             $fallback_params[0] = Type::getListKey();
         }
-        if (count($properties) === 1
-            && $properties[array_key_first($properties)]->isNever()
-            && ($fallback_params === null || $fallback_params[1]->isNever())
-        ) {
-            $never = $properties[array_key_first($properties)]->setPossiblyUndefined(false);
-            return new TArray([
-                $never, $never,
-            ], $from_docblock);
+        if ($fallback_params === null || $fallback_params[1]->isNever()) {
+            if (count($properties) === 1 && $properties[array_key_first($properties)]->isNever()) {
+                $never = $properties[array_key_first($properties)]->setPossiblyUndefined(false);
+                return new TArray([
+                    $never, $never,
+                ], $from_docblock);
+            }
+
+            // a shape whose keys are all optional and of the type never can only be empty
+            $all_optional_never = true;
+            foreach ($properties as $property) {
+                if (!$property->possibly_undefined || !$property->isNever()) {
+                    $all_optional_never = false;
+                    break;
+                }
+            }
+            if ($all_optional_never) {
+                $never = Type::getNever($from_docblock);
+                return new TArray([
+                    $never, $never,
+                ], $from_docblock);
+            }
         }
         if ($is_list) {
             $last_k = -1;
