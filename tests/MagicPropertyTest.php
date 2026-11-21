@@ -216,6 +216,19 @@ final class MagicPropertyTest extends TestCase
                         return $bag->known;
                     }',
             ],
+            'notSetChildOfASimpleXmlElementIsStillReadThroughGet' => [
+                'code' => '<?php
+                    function f(SimpleXMLElement $xml): string {
+                        if (!isset($xml->title)) {
+                            return $xml->title->getName();
+                        }
+
+                        return "";
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'magicPropertyThatIsNotSetIsStillReadThroughGet' => [
                 'code' => '<?php
                     final class Node {

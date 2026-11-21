@@ -2713,8 +2713,8 @@ final class PropertyTypeTest extends TestCase
                     $b = $a->b;',
                 'assertions' => [
                     '$a' => 'SimpleXMLElement',
-                    '$a->b' => 'SimpleXMLElement|null',
-                    '$b' => 'SimpleXMLElement|null',
+                    '$a->b' => 'SimpleXMLElement',
+                    '$b' => 'SimpleXMLElement',
                 ],
             ],
             'allowLessSpecificReturnTypeForOverriddenMethod' => [
