@@ -55,6 +55,13 @@ final class FileStorage
     public array $declaring_constants = [];
 
     /**
+     * The constants declared here with @deprecated or #[\Deprecated]
+     *
+     * @var array<string, true>
+     */
+    public array $deprecated_constants = [];
+
+    /**
      * The values of the constants whose types depend on classes, e.g. enum cases, resolved when they are fetched
      *
      * @var array<string, UnresolvedConstantComponent>
