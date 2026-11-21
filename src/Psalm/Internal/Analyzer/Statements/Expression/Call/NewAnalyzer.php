@@ -77,6 +77,7 @@ use Psalm\Type\Atomic\TTypeVariable;
 use Psalm\Type\Atomic\TUnknownClassString;
 use Psalm\Type\TaintKind;
 use Psalm\Type\Union;
+use UnexpectedValueException;
 
 use function array_key_first;
 use function array_map;
@@ -1980,7 +1981,7 @@ final class NewAnalyzer extends CallAnalyzer
      * @return array<string, true>
      * @psalm-mutation-free
      */
-    private static function getUnconstrainableTemplates(ClassLikeStorage $storage): array
+    private static function getUnconstrainableTemplates(Codebase $codebase, ClassLikeStorage $storage): array
     {
         $unconstrainable = [];
 
@@ -1988,34 +1989,47 @@ final class NewAnalyzer extends CallAnalyzer
             $unconstrainable[$template_name] = true;
         }
 
-        foreach ($storage->methods as $method_name => $method_storage) {
+        // the members the class inherits constrain its templates through what it passes to the parent's
+        foreach ($storage->declaring_method_ids as $method_name => $declaring_method_id) {
             if (!$unconstrainable) {
                 break;
             }
 
-            if ($method_name === '__construct'
-                || $method_storage->visibility !== ClassLikeAnalyzer::VISIBILITY_PUBLIC
+            if ($method_name === '__construct') {
+                continue;
+            }
+
+            try {
+                $method_storage = $codebase->methods->getStorage($declaring_method_id);
+            } catch (UnexpectedValueException) {
+                continue;
+            }
+
+            if (($storage->trait_visibility_map[$method_name] ?? $method_storage->visibility)
+                !== ClassLikeAnalyzer::VISIBILITY_PUBLIC
             ) {
                 continue;
             }
 
             foreach ($method_storage->params as $param) {
                 if ($param->type) {
-                    foreach ($param->type->getTemplateTypes() as $template_type) {
-                        unset($unconstrainable[$template_type->param_name]);
-                    }
+                    self::removeConstrainableTemplates($unconstrainable, $param->type, $storage);
                 }
             }
         }
 
-        foreach ($storage->properties as $property_storage) {
+        foreach ($storage->declaring_property_ids as $property_name => $declaring_class) {
             if (!$unconstrainable) {
                 break;
             }
 
+            $property_storage = $codebase->classlike_storage_provider->get($declaring_class)
+                ->properties[$property_name] ?? null;
+
             // A `readonly` property cannot be assigned after construction unless it is
             // `public(set)` and not promoted, so it is not a channel through which the template can be constrained.
-            if ($property_storage->visibility !== ClassLikeAnalyzer::VISIBILITY_PUBLIC
+            if ($property_storage === null
+                || $property_storage->visibility !== ClassLikeAnalyzer::VISIBILITY_PUBLIC
                 || ($property_storage->readonly
                     && (!$property_storage->readonly_public_set || $property_storage->is_promoted))
             ) {
@@ -2023,9 +2037,7 @@ final class NewAnalyzer extends CallAnalyzer
             }
 
             if ($property_storage->type) {
-                foreach ($property_storage->type->getTemplateTypes() as $template_type) {
-                    unset($unconstrainable[$template_type->param_name]);
-                }
+                self::removeConstrainableTemplates($unconstrainable, $property_storage->type, $storage);
             }
         }
 
@@ -2040,6 +2052,36 @@ final class NewAnalyzer extends CallAnalyzer
         }
 
         return $unconstrainable;
+    }
+
+    /**
+     * Removes from $unconstrainable the templates of the class $type mentions, directly or through a template of a
+     * parent class, interface or trait the class passes them to
+     *
+     * @param array<string, true> $unconstrainable
+     * @psalm-mutation-free
+     */
+    private static function removeConstrainableTemplates(
+        array &$unconstrainable,
+        Union $type,
+        ClassLikeStorage $storage,
+    ): void {
+        foreach ($type->getTemplateTypes() as $template_type) {
+            $extended_type = $storage->template_extended_params[$template_type->defining_class]
+                [$template_type->param_name] ?? null;
+
+            if ($extended_type === null) {
+                unset($unconstrainable[$template_type->param_name]);
+
+                continue;
+            }
+
+            foreach ($extended_type->getTemplateTypes() as $extended_template_type) {
+                if ($extended_template_type->defining_class === $storage->name) {
+                    unset($unconstrainable[$extended_template_type->param_name]);
+                }
+            }
+        }
     }
 
     /**
@@ -2103,7 +2145,7 @@ final class NewAnalyzer extends CallAnalyzer
         ?MethodStorage $method_storage,
     ): array {
         $codebase = $statements_analyzer->getCodebase();
-        $unconstrainable_templates = self::getUnconstrainableTemplates($storage);
+        $unconstrainable_templates = self::getUnconstrainableTemplates($codebase, $storage);
         $inferred_lower_bounds = self::getInferredLowerBounds($template_result);
         $generic_param_types = [];
 

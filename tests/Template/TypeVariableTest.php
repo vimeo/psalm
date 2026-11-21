@@ -1428,6 +1428,63 @@ final class TypeVariableTest extends TestCase
                         return $n;
                     }',
             ],
+            'constructionOfATemplateConstrainedThroughInheritedMembers' => [
+                'code' => '<?php
+                    /** @template T */
+                    class Collection {
+                        public function __construct() {}
+
+                        /** @param T $x */
+                        public function add($x): void {}
+                    }
+
+                    /**
+                     * @template U
+                     * @extends Collection<U>
+                     */
+                    final class ChildCollection extends Collection {
+                        public function __construct() {}
+                    }
+
+                    /** @template T */
+                    trait Pushes {
+                        /** @param T $x */
+                        public function push($x): void {}
+                    }
+
+                    /** @template V */
+                    final class Stack {
+                        /** @use Pushes<V> */
+                        use Pushes;
+                    }
+
+                    /** @template T */
+                    class Slot {
+                        /** @var T|null */
+                        public $item = null;
+                    }
+
+                    /**
+                     * @template W
+                     * @extends Slot<W>
+                     */
+                    final class ChildSlot extends Slot {}
+
+                    /** @return ChildCollection<int> */
+                    function collection(): ChildCollection {
+                        return new ChildCollection();
+                    }
+
+                    /** @return Stack<int> */
+                    function stack(): Stack {
+                        return new Stack();
+                    }
+
+                    /** @return ChildSlot<int> */
+                    function slot(): ChildSlot {
+                        return new ChildSlot();
+                    }',
+            ],
             'constructorlessConstructionOfUnconstrainableTemplate' => [
                 'code' => '<?php
                     /** @template T = int */
@@ -2116,6 +2173,26 @@ final class TypeVariableTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'constructionOfATemplateOnlyAProtectedInheritedMethodTakes' => [
+                'code' => '<?php
+                    /** @template T */
+                    class Collection {
+                        /** @param T $x */
+                        protected function add($x): void {}
+                    }
+
+                    /**
+                     * @template U
+                     * @extends Collection<U>
+                     */
+                    final class ChildCollection extends Collection {}
+
+                    /** @return ChildCollection<int> */
+                    function collection(): ChildCollection {
+                        return new ChildCollection();
+                    }',
+                'error_message' => 'MixedReturnTypeCoercion',
+            ],
             'mixedConstructionCallableParamRequirement' => [
                 // a value that entered the variable as mixed is then required to
                 // be a Foo by the callable's parameter: reported at the call, as
