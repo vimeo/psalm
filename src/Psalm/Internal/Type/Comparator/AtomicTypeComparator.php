@@ -336,6 +336,23 @@ final class AtomicTypeComparator
                 }
             }
 
+            // a closure of unknown signature (narrowed by an assertion or `instanceof Closure`) is any closure
+            if ($input_type_part instanceof TNamedObject
+                && !$input_type_part instanceof TClosure
+                && strtolower($input_type_part->value) === 'closure'
+            ) {
+                if ($container_type_part->params === null
+                    && $container_type_part->return_type === null
+                    && $container_type_part->getCapabilities() === Capabilities::ALL
+                ) {
+                    return true;
+                }
+
+                if ($atomic_comparison_result) {
+                    $atomic_comparison_result->type_coerced = true;
+                }
+            }
+
             return false;
         }
 
