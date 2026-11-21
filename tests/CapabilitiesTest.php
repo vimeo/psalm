@@ -37,6 +37,13 @@ final class CapabilitiesTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'aSodiumKeyPairFromASeedIsPure' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function keyPair(string $seed): string {
+                        return sodium_crypto_sign_seed_keypair($seed);
+                    }',
+            ],
             'externalMutationFreeCalleesCostWriteRefsOnlyThroughTheirByReferenceArguments' => [
                 'code' => '<?php
                     final class Box {
@@ -3446,6 +3453,69 @@ final class CapabilitiesTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'generatingASodiumKeyIsImpure' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function newKey(): string {
+                        return sodium_crypto_secretbox_keygen();
+                    }',
+                'error_message' => 'function call on sodium_crypto_secretbox_keygen requires io',
+                'error_levels' => [],
+            ],
+            'generatingASodiumKeyPairIsImpure' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function newKeyPair(): string {
+                        return sodium_crypto_sign_keypair();
+                    }',
+                'error_message' => 'function call on sodium_crypto_sign_keypair requires io',
+                'error_levels' => [],
+            ],
+            'sealingASodiumBoxIsImpure' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function seal(string $message, string $publicKey): string {
+                        return sodium_crypto_box_seal($message, $publicKey);
+                    }',
+                'error_message' => 'ImpureFunctionCall',
+                'error_levels' => [],
+            ],
+            'hashingAPasswordWithSodiumIsImpure' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function hashPassword(string $password): string {
+                        return sodium_crypto_pwhash_str($password, 2, 67108864);
+                    }',
+                'error_message' => 'ImpureFunctionCall',
+                'error_levels' => [],
+            ],
+            'hashingAPasswordIsImpure' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function hashPassword(string $password): string {
+                        return password_hash($password, PASSWORD_DEFAULT);
+                    }',
+                'error_message' => 'ImpureFunctionCall',
+                'error_levels' => [],
+            ],
+            'opensslRandomBytesAreImpure' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function bytes(): string {
+                        return openssl_random_pseudo_bytes(16);
+                    }',
+                'error_message' => 'ImpureFunctionCall',
+                'error_levels' => [],
+            ],
+            'gmpRandomNumbersAreImpure' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function number(): GMP {
+                        return gmp_random_bits(16);
+                    }',
+                'error_message' => 'ImpureFunctionCall',
+                'error_levels' => [],
+            ],
             'impureInstanceMethodCostsWriteRefsLikeAnImpureFunction' => [
                 'code' => '<?php
                     final class Impure {
