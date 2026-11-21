@@ -210,7 +210,21 @@ final class NegatedAssertionReconciler extends Reconciler
         ) {
             // do nothing
         } elseif ($assertion instanceof IsClassNotEqual) {
-            // do nothing
+            // an object of a final class is of exactly that class: one whose class isn't that one is not of it
+            $codebase = $statements_analyzer->getCodebase();
+
+            if (!$existing_var_type->isSingle()
+                && $codebase->classlike_storage_provider->has($assertion->type)
+                && $codebase->classlike_storage_provider->get($assertion->type)->final
+            ) {
+                foreach ($existing_var_type->getAtomicTypes() as $key_type => $existing_atomic_type) {
+                    if ($existing_atomic_type instanceof TNamedObject
+                        && strtolower($existing_atomic_type->value) === strtolower($assertion->type)
+                    ) {
+                        $existing_var_type->removeType($key_type);
+                    }
+                }
+            }
         } elseif (($assertion_type instanceof TClassString || $assertion_type instanceof TTraitString)
             && $assertion_type->is_loaded
         ) {
