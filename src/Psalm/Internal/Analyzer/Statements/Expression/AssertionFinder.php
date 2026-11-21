@@ -990,7 +990,7 @@ final class AssertionFinder
 
     /**
      * A `function_exists()`, `class_exists()`, `interface_exists()`, `enum_exists()` or
-     * `method_exists()` check of a native symbol newer than the analysed PHP version: where it
+     * `method_exists()` or `defined()` check of a native symbol newer than the analysed PHP version: where it
      * holds, PHP_VERSION_ID is at least the version that introduced the symbol, so the symbol
      * can be used there (see Codebase::getGuardedPhpVersionId()).
      */
@@ -1038,6 +1038,15 @@ final class AssertionFinder
                 if (!$class_storage->user_defined && !$codebase->isClassLikePolyfilled($class_storage->name)) {
                     $since_php_version_id = $class_storage->since_php_version_id;
                 }
+            }
+        } elseif ($function_id === 'defined'
+            && isset($args[0])
+            && $args[0]->value instanceof PhpParser\Node\Scalar\String_
+        ) {
+            $guarded_const_name = ltrim($args[0]->value->value, '\\');
+
+            if (!ConstFetchAnalyzer::isDeclaredInCode($codebase, $guarded_const_name)) {
+                $since_php_version_id = ConstFetchAnalyzer::getIntroducingPhpVersionId($codebase, $guarded_const_name);
             }
         } elseif ($function_id === 'method_exists'
             && isset($args[0], $args[1])
