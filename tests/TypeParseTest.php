@@ -10,6 +10,7 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use Psalm\Codebase;
 use Psalm\Exception\TypeParseTreeException;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
+use Psalm\Internal\Type\TypeArgumentProjection;
 use Psalm\Type;
 use Psalm\Type\Atomic\TClassConstant;
 use Psalm\Type\Atomic\TGenericObject;
@@ -2089,6 +2090,27 @@ final class TypeParseTest extends TestCase
         self::assertInstanceOf(TGenericObject::class, $pair);
 
         self::assertSame(['int', 'mixed'], array_map(static fn(Union $param): string => $param->getId(), $pair->type_params));
+    }
+
+    public function testStarProjectionOutweighsALeftOutArgumentWhenCombined(): void
+    {
+        $star = Type::parseString('Traversable<*, mixed>');
+        $left_out = new Union([
+            (new TGenericObject('Traversable', [Type::getMixed(), Type::getMixed()]))->setProjections([
+                0 => TypeArgumentProjection::Omitted,
+                1 => TypeArgumentProjection::Omitted,
+            ]),
+        ]);
+
+        foreach ([Type::combineUnionTypes($star, $left_out), Type::combineUnionTypes($left_out, $star)] as $combined) {
+            self::assertSame('Traversable<*, mixed>', $combined->getId());
+            $atomic = $combined->getSingleAtomic();
+            self::assertInstanceOf(TGenericObject::class, $atomic);
+            self::assertSame(
+                [0 => TypeArgumentProjection::Star, 1 => TypeArgumentProjection::Omitted],
+                $atomic->getProjections(),
+            );
+        }
     }
 
     /**
