@@ -408,8 +408,10 @@ final class ClassLikeStubGenerator
                     'flags' => $flag
                         | ($method_storage->is_static ? PhpParser\Modifiers::STATIC : 0)
                         | ($method_storage->abstract ? PhpParser\Modifiers::ABSTRACT : 0)
-                        // the methods of a final class are final too
-                        | ($method_storage->final && !$storage->final && !$method_storage->final_from_docblock
+                        // the methods of a class written as final are final too
+                        | ($method_storage->final
+                            && !($storage->final && !$storage->final_from_docblock)
+                            && !$method_storage->final_from_docblock
                             ? PhpParser\Modifiers::FINAL
                             : 0),
                     'params' => StubsGenerator::getFunctionParamNodes($method_storage),

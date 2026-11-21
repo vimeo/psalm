@@ -1407,11 +1407,12 @@ final class FunctionLikeNodeScanner
                 } else {
                     $storage->final = true;
                 }
+                $storage->final_from_docblock = $classlike_storage->final_from_docblock;
             } else {
                 $storage->final = $classlike_storage->final || $stmt->isFinal();
+                // a method declared final is final natively, even in a class that is final only in its docblock
+                $storage->final_from_docblock = $classlike_storage->final_from_docblock && !$stmt->isFinal();
             }
-
-            $storage->final_from_docblock = $classlike_storage->final_from_docblock;
 
             if ($stmt->isPrivate()) {
                 $storage->visibility = ClassLikeAnalyzer::VISIBILITY_PRIVATE;

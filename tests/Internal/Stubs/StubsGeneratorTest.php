@@ -228,6 +228,11 @@ final class StubsGeneratorTest extends TestCase
                 public readonly int $ro;
                 public function __construct(public readonly string $promoted) { $this->ro = 1; }
                 public function f(): void {}
+            }
+            /** @final */
+            class DocFinal {
+                final public function nativeFinal(): void {}
+                public function notFinal(): void {}
             }');
 
         self::assertStringContainsString('abstract class Base implements \\K', $stub);
@@ -243,6 +248,11 @@ final class StubsGeneratorTest extends TestCase
         self::assertStringContainsString('public readonly string $promoted;', $stub);
         // the methods of a final class are final already
         self::assertStringContainsString('    public function f(): void', $stub);
+        // a class that is only final in its docblock is written without final, so its final methods keep it
+        self::assertStringContainsString("    class DocFinal\n", $stub);
+        self::assertStringContainsString('final public function nativeFinal(): void', $stub);
+        self::assertStringContainsString('    public function notFinal(): void', $stub);
+        self::assertStringNotContainsString('final public function notFinal', $stub);
     }
 
     public function testAClassKeepsItsInterfacesAndNotTheConstantsItInherits(): void
