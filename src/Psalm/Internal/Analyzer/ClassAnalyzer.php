@@ -793,8 +793,8 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
             }
 
             // PHP 8.5: #[\Override] on a property needs a property of the same name that isn't private in a parent
-            // class or an interface
-            if ($property_class_name === $fq_class_name
+            // class or an interface; a property of a trait is checked in the class using it
+            if (explode('::$', $appearing_property_id)[0] === $fq_class_name
                 && $codebase->analysis_php_version_id >= 8_05_00
                 && !self::overridesAParentProperty($storage, $property_name, $codebase)
             ) {
@@ -802,11 +802,10 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                     if ($attribute->fq_class_name === 'Override') {
                         IssueBuffer::maybeAdd(
                             new InvalidOverride(
-                                'Property ' . $fq_class_name . '::$' . $property_name
-                                    . ' does not match any parent property',
+                                'Property $' . $property_name . ' does not match any parent property',
                                 $attribute->name_location,
                             ),
-                            $property_storage->suppressed_issues ?: $storage->suppressed_issues,
+                            [...$property_storage->suppressed_issues, ...$storage->suppressed_issues],
                         );
                     }
                 }

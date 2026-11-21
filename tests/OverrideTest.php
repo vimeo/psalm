@@ -31,6 +31,29 @@ final class OverrideTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'overrideOfAPropertyFromATraitAndOfAPromotedPropertyWithAParentProperty' => [
+                'code' => '<?php
+                    class Base {
+                        public int $x = 1;
+                        public int $y = 1;
+                    }
+
+                    trait T {
+                        #[Override]
+                        public int $x = 2;
+                    }
+
+                    final class FromTrait extends Base {
+                        use T;
+                    }
+
+                    final class Promoted extends Base {
+                        public function __construct(#[Override] public int $y = 3) {}
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.5',
+            ],
             'overrideOfAPropertyOfAParentClassOrAnInterface' => [
                 'code' => '<?php
                     interface HasName {
@@ -358,6 +381,50 @@ final class OverrideTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'overrideOfAPropertyOfATraitWithoutAParentProperty' => [
+                'code' => '<?php
+                    trait T {
+                        #[Override]
+                        public int $x = 1;
+                    }
+
+                    final class A {
+                        use T;
+                    }',
+                'error_message' => 'InvalidOverride - src' . DIRECTORY_SEPARATOR
+                    . 'somefile.php:3:27 - Property $x does not match any parent property',
+                'error_levels' => [],
+                'php_version' => '8.5',
+            ],
+            'overrideOfAPropertyOfATraitWhoseParentPropertyIsPrivate' => [
+                'code' => '<?php
+                    class Base {
+                        private int $x = 1;
+                    }
+
+                    trait T {
+                        #[Override]
+                        public int $x = 2;
+                    }
+
+                    final class A extends Base {
+                        use T;
+                    }',
+                'error_message' => 'InvalidOverride - src' . DIRECTORY_SEPARATOR
+                    . 'somefile.php:7:27 - Property $x does not match any parent property',
+                'error_levels' => [],
+                'php_version' => '8.5',
+            ],
+            'overrideOfAPromotedPropertyWithoutAParentProperty' => [
+                'code' => '<?php
+                    final class C {
+                        public function __construct(#[Override] public int $x) {}
+                    }',
+                'error_message' => 'InvalidOverride - src' . DIRECTORY_SEPARATOR
+                    . 'somefile.php:3:55 - Property $x does not match any parent property',
+                'error_levels' => [],
+                'php_version' => '8.5',
+            ],
             'overrideOfAPropertyWithoutAParentProperty' => [
                 'code' => '<?php
                     class Base {
@@ -370,7 +437,7 @@ final class OverrideTest extends TestCase
                         public int $b = 2;
                     }',
                 'error_message' => 'InvalidOverride - src' . DIRECTORY_SEPARATOR
-                    . 'somefile.php:8:27 - Property Child::$b does not match any parent property',
+                    . 'somefile.php:8:27 - Property $b does not match any parent property',
                 'error_levels' => [],
                 'php_version' => '8.5',
             ],
