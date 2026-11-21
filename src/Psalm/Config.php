@@ -3285,6 +3285,7 @@ final class Config
      *
      * @internal
      * @param array<lowercase-string, true> $project_packages
+     * @psalm-capabilities read-props|write-this-props|write-refs
      */
     public function setProjectPackages(array $project_packages): void
     {
