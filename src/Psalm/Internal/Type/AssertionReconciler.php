@@ -1935,6 +1935,8 @@ final class AssertionReconciler extends Reconciler
 
     /**
      * What `is_numeric()` tells for the PHP version analysed: a trailing whitespace is allowed as of PHP 8
+     *
+     * @psalm-pure
      */
     public static function isNumericString(string $value, int $analysis_php_version_id): bool
     {
