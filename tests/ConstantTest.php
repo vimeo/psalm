@@ -309,6 +309,28 @@ final class ConstantTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'constantOfAnObjectOfSeveralClassesIsTheConstantOfEach' => [
+                'code' => '<?php
+                    final class A {
+                        const NAME = 10;
+                    }
+
+                    final class D {
+                        const NAME = "x";
+                    }
+
+                    function object(): A|D {
+                        return new A();
+                    }
+
+                    $object = object();
+                    $name = $object::NAME;',
+                'assertions' => [
+                    '$name===' => '\'x\'|10',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'overrideNarrowingTheNativeTypeOfTheParentConstant' => [
                 'code' => '<?php
                     class A {
@@ -2885,6 +2907,22 @@ final class ConstantTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'constantMissingFromOneClassOfAnObjectIsUndefined' => [
+                'code' => '<?php
+                    final class A {
+                        const NAME = 10;
+                    }
+
+                    final class B {}
+
+                    /** @param A|B $object */
+                    function name($object): int {
+                        return $object::NAME;
+                    }',
+                'error_message' => 'UndefinedConstant - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:32 - Constant B::NAME is not defined',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
             'overrideWideningTheNativeTypeOfTheParentConstant' => [
                 'code' => '<?php
                     class A {

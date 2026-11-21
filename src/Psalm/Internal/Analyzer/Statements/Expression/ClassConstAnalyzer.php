@@ -57,8 +57,10 @@ use Psalm\Type\Atomic\TTemplateParamClass;
 use Psalm\Type\Union;
 use ReflectionProperty;
 
+use function array_filter;
 use function array_values;
 use function assert;
+use function count;
 use function explode;
 use function in_array;
 use function ltrim;
@@ -388,31 +390,33 @@ final class ClassConstAnalyzer
             }
         }
 
-        if ($stmt->class instanceof PhpParser\Node\Expr\Variable) {
-            $fq_class_name = null;
-            $lhs_type_definite_class = null;
-            $lhs_is_static = false;
-            if ($lhs_type->isSingle()) {
-                $atomic_type = $lhs_type->getSingleAtomic();
-                if ($atomic_type instanceof TNamedObject || $atomic_type instanceof TLiteralClassString) {
-                    $fq_class_name = $atomic_type->value;
-                    $lhs_type_definite_class = $atomic_type->definite_class;
-                    $lhs_is_static = $atomic_type instanceof TNamedObject && $atomic_type->is_static;
-                } elseif ($atomic_type::class === TLiteralString::class
-                    && $codebase->config->allow_string_standin_for_class
-                ) {
-                    $class_name = ltrim($atomic_type->value, '\\');
-                    if ($codebase->classlike_storage_provider->has($class_name)) {
-                        $fq_class_name = $class_name;
-                        $lhs_type_definite_class = true;
-                    }
-                }
-            }
+        if (!$stmt->class instanceof PhpParser\Node\Expr\Variable) {
+            return true;
+        }
 
-            if ($fq_class_name === null || $lhs_type_definite_class === null) {
+        // each class the variable may be an object or a name of
+        $lhs_classes = [];
+
+        foreach ($lhs_type->getAtomicTypes() as $atomic_type) {
+            if ($atomic_type instanceof TNamedObject || $atomic_type instanceof TLiteralClassString) {
+                $lhs_classes[] = [
+                    $atomic_type->value,
+                    $atomic_type->definite_class,
+                    $atomic_type instanceof TNamedObject && $atomic_type->is_static,
+                ];
+            } elseif ($atomic_type::class === TLiteralString::class
+                && $codebase->config->allow_string_standin_for_class
+                && $codebase->classlike_storage_provider->has(ltrim($atomic_type->value, '\\'))
+            ) {
+                $lhs_classes[] = [ltrim($atomic_type->value, '\\'), true, false];
+            } else {
                 return true;
             }
+        }
 
+        $stmt_types = [];
+
+        foreach ($lhs_classes as [$fq_class_name, $lhs_type_definite_class, $lhs_is_static]) {
             $fq_class_name = $codebase->classlikes->getUnAliasedName($fq_class_name);
 
             $moved_class = false;
@@ -442,8 +446,10 @@ final class ClassConstAnalyzer
                 );
             }
 
+            $statements_analyzer->node_data->clearNodeOfTypeAndAssertions($stmt);
+
             if (!$stmt->name instanceof PhpParser\Node\Identifier) {
-                return self::analyzeLiteralNamedFetch(
+                $analyzed = self::analyzeLiteralNamedFetch(
                     $statements_analyzer,
                     $stmt,
                     $stmt->name,
@@ -453,17 +459,37 @@ final class ClassConstAnalyzer
                     !$lhs_type_definite_class,
                     $lhs_is_static,
                 );
+            } else {
+                $analyzed = self::analyzeIdentifiedFetch(
+                    $statements_analyzer,
+                    $stmt,
+                    $stmt->name,
+                    $context,
+                    $fq_class_name,
+                    $moved_class,
+                    !$lhs_type_definite_class,
+                );
             }
 
-            return self::analyzeIdentifiedFetch(
-                $statements_analyzer,
-                $stmt,
-                $stmt->name,
-                $context,
-                $fq_class_name,
-                $moved_class,
-                !$lhs_type_definite_class,
-            );
+            if ($analyzed === false) {
+                return false;
+            }
+
+            $stmt_types[] = $statements_analyzer->node_data->getType($stmt);
+        }
+
+        // the constant of each class the expression may be
+        if (count($stmt_types) > 1) {
+            $statements_analyzer->node_data->clearNodeOfTypeAndAssertions($stmt);
+
+            $known_stmt_types = array_filter($stmt_types);
+
+            if ($known_stmt_types !== [] && count($known_stmt_types) === count($stmt_types)) {
+                $statements_analyzer->node_data->setType(
+                    $stmt,
+                    Type::combineUnionTypeArray(array_values($known_stmt_types), $codebase),
+                );
+            }
         }
 
         return true;
