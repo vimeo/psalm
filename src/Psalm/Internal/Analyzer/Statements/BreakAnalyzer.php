@@ -74,6 +74,14 @@ final class BreakAnalyzer
 
             if ($ends_this_loop) {
                 $loop_scope->addBreak($context);
+
+                // a finally the break runs through may assign what the break removed
+                if ($context->finally_scope === $loop_scope->loop_parent_context->finally_scope) {
+                    $loop_scope->loop_parent_context->removeVarsRemovedIn(
+                        $context,
+                        $loop_scope->loop_parent_context->parent_remove_vars,
+                    );
+                }
             }
 
             $redefined_vars = $context->getRedefinedVars($loop_scope->loop_parent_context->vars_in_scope);
@@ -138,6 +146,13 @@ final class BreakAnalyzer
                     $target_scope->final_actions[] = ScopeAnalyzer::ACTION_BREAK;
                     $target_scope->addJump($context);
                     $target_scope->addBreak($context);
+
+                    if ($context->finally_scope === $target_scope->loop_parent_context->finally_scope) {
+                        $target_scope->loop_parent_context->removeVarsRemovedIn(
+                            $context,
+                            $target_scope->loop_parent_context->parent_remove_vars,
+                        );
+                    }
 
                     $target_redefined_vars = $context->getRedefinedVars(
                         $target_scope->loop_parent_context->vars_in_scope,

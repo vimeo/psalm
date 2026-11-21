@@ -496,6 +496,8 @@ final class TryAnalyzer
 
                 $has_continuing_catch = true;
 
+                $context->removeVarsRemovedIn($catch_context, $original_context->parent_remove_vars);
+
                 foreach ($catch_context->vars_in_scope as $var_id => $type) {
                     if ($is_first_continuing_catch) {
                         $context->vars_in_scope[$var_id] = $type;
@@ -575,6 +577,7 @@ final class TryAnalyzer
 
                 // the code after the try runs after the finally
                 $context->intersectNullArrayOffsets($finally_context);
+                $context->removeVarsRemovedIn($finally_context, $context->parent_remove_vars);
                 $context->removeClausesOfVarsChangedIn($finally_context);
 
                 $context->constructor_exits?->applyFinally(
