@@ -1006,8 +1006,10 @@ final class TemplateStandinTypeReplacer
                         $matching_input_keys,
                     )
                 ) {
-                    if ($matching_input_keys) {
-                        self::keepMatchingInputTypes($codebase, $generic_param, $matching_input_keys, $atomic_type->as);
+                    if ($matching_input_keys
+                        && self::keepMatchingInputTypes($codebase, $generic_param, $matching_input_keys, $atomic_type->as)
+                    ) {
+                        $generic_param = null;
                     }
                 } else {
                     // no part is of the bound: the input stands for the parts of the bound it contains, if any (a
@@ -1537,13 +1539,14 @@ final class TemplateStandinTypeReplacer
      * of the bound it contains, e.g. a scalar for a string|array bound to a string.
      *
      * @param array<array-key, mixed> $matching_input_keys
+     * @return bool whether a part taken from the bound is generic in other templates, which are not known yet
      */
     private static function keepMatchingInputTypes(
         Codebase $codebase,
         MutableUnion $input_type,
         array $matching_input_keys,
         Union $bound,
-    ): void {
+    ): bool {
         $bounded_input_types = [];
 
         foreach ($input_type->getAtomicTypes() as $atomic_key => $input_atomic_type) {
@@ -1566,11 +1569,20 @@ final class TemplateStandinTypeReplacer
             }
         }
 
+        $has_template = false;
+
         foreach ($bounded_input_types as $bounded_input_type) {
             if (!$input_type->hasType($bounded_input_type->getKey())) {
                 $input_type->addType($bounded_input_type);
+
+                $template_collector = new TemplateTypeCollector();
+                $template_collector->traverseArray([$bounded_input_type]);
+
+                $has_template = $has_template || $template_collector->getTemplateTypes() !== [];
             }
         }
+
+        return $has_template;
     }
 
     /**
