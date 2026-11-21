@@ -989,7 +989,7 @@ final class ArrayAssignmentTest extends TestCase
                     $e["x"]["y"] = 1;
                     $e["x"][(string) rand()] = "b";
                     $f = $e["x"]["y"];
-                    /** @psalm-check-type-exact $f = \'b\'|1 */;
+                    /** @psalm-check-type-exact $f = int|string */;
 
                     $g = ["y" => 1];
                     $g["x"] = 1;
