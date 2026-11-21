@@ -354,6 +354,7 @@ final class BuildInfoCollectorTest extends TestCase
             [
                 'CIRCLECI' => 'true',
                 'CIRCLE_BUILD_NUM' => '77',
+                'CI_BUILD_NUMBER' => '77',
                 'CI_NAME' => 'circleci',
                 'CI_REPO_OWNER' => 'psalm',
                 'CI_REPO_NAME' => 'example',
@@ -376,6 +377,7 @@ final class BuildInfoCollectorTest extends TestCase
             [
                 'CIRCLECI' => 'true',
                 'CIRCLE_BUILD_NUM' => '77',
+                'CI_BUILD_NUMBER' => '77',
                 'CI_NAME' => 'circleci',
                 'CI_PR_REPO_OWNER' => 'contributor',
                 'CI_PR_REPO_NAME' => 'example',

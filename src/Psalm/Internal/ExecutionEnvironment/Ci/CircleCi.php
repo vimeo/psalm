@@ -51,6 +51,7 @@ final class CircleCi implements CiProvider
                     $env->get(self::PULL_REQUEST_REPOSITORY_NAME),
                 ),
             ),
+            buildNumber: $env->get(self::BUILD_NUMBER),
             raw: $env->pick(self::FLAG, self::BUILD_NUMBER),
         );
     }
