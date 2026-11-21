@@ -759,6 +759,41 @@ final class PropertyTypeTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'propertyNamedByOneOfSeveralLiteralsHasTheTypeOfEach' => [
+                'code' => '<?php
+                    final class A {
+                        public string $x = "";
+                        public bool $y = false;
+                    }
+
+                    final class B {
+                        public int $x = 1;
+                        public float $y = 1.2;
+                    }
+
+                    final class C {
+                        public string $x = "";
+                        private int $z = 0;
+
+                        /** @param "x"|"z" $p */
+                        public function own(string $p): int|string {
+                            return $this->{$p};
+                        }
+                    }
+
+                    /** @param "x"|"y" $p */
+                    function get(A|B $o, string $p): bool|float|string|int {
+                        return $o->{$p};
+                    }
+
+                    $p = rand(0, 1) ? "x" : "y";
+                    $value = (new A())->{$p};',
+                'assertions' => [
+                    '$value===' => 'bool|string',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'propertySetInConstructorStaysSetAfterAnIfNarrowingThis' => [
                 'code' => '<?php
                     interface Configurable {
@@ -4801,6 +4836,18 @@ final class PropertyTypeTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'propertyNamedByOneOfSeveralLiteralsIsUndefinedForOneOfThem' => [
+                'code' => '<?php
+                    final class A {
+                        public string $x = "";
+                    }
+
+                    /** @param "x"|"w" $p */
+                    function get(A $o, string $p): string {
+                        return (string) $o->{$p};
+                    }',
+                'error_message' => 'UndefinedPropertyFetch',
+            ],
             'staticPropertyOfAStaticTypeInANonFinalClassIsNotTheClass' => [
                 'code' => '<?php
                     class Config {
