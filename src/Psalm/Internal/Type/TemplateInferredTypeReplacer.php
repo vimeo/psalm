@@ -10,6 +10,7 @@ use Psalm\Internal\Type\Comparator\TypeComparisonResult;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\TypeVisitor\ConditionalSubjectReplacer;
 use Psalm\Internal\TypeVisitor\ContainsStaticVisitor;
+use Psalm\Internal\TypeVisitor\TemplateTypeCollector;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArray;
@@ -43,6 +44,7 @@ use Psalm\Type\Union;
 use UnexpectedValueException;
 
 use function array_all;
+use function array_any;
 use function array_filter;
 use function array_merge;
 use function array_shift;
@@ -314,6 +316,26 @@ final class TemplateInferredTypeReplacer
     }
 
     /**
+     * Whether the bound of a template of the method (`@template U of T`) names a template bound to a `*`: no value
+     * is known to be of it
+     *
+     * @psalm-pure
+     */
+    private static function isBoundedByAStarTemplate(Union $as, TemplateResult $template_result): bool
+    {
+        $collector = new TemplateTypeCollector(true);
+        $collector->traverseArray($as->getAtomicTypes());
+
+        return array_any(
+            $collector->getTemplateTypes(),
+            static fn(TTemplateParam $template): bool => $template_result->isStarInput(
+                $template->param_name,
+                $template->defining_class,
+            ),
+        );
+    }
+
+    /**
      * Whether no value is of a type as an input, as it is of a template bound to a `*` where it is only known to be
      * that: `Box<T>` for the `*` of a `Box<*>` too, as the argument may be any of its `Box`es
      *
@@ -337,6 +359,9 @@ final class TemplateInferredTypeReplacer
             $atomic_type instanceof TTemplatePropertiesOf,
             $atomic_type instanceof TConditional
                 => $template_result->isStarInput($atomic_type->param_name, $atomic_type->defining_class),
+            $atomic_type instanceof TTemplateParam
+                => !$template_result->isStarInput($atomic_type->param_name, $atomic_type->defining_class)
+                    && self::isBoundedByAStarTemplate($atomic_type->as, $template_result),
             $atomic_type instanceof TTemplateIndexedAccess
                 => $template_result->isStarInput($atomic_type->array_param_name, $atomic_type->defining_class)
                     || $template_result->isStarInput($atomic_type->offset_param_name, $atomic_type->defining_class),

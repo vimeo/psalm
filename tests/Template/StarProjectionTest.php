@@ -2064,6 +2064,28 @@ final class StarProjectionTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'starProjectionMethodTemplateNotBoundedByAStarTemplateTakesTheArgument' => [
+                'code' => '<?php
+                    /** @template T of object */
+                    final class Box {
+                        /**
+                         * @template U of object
+                         * @param U $x
+                         * @return U
+                         */
+                        public function id(object $x): object {
+                            return $x;
+                        }
+                    }
+
+                    /** @param Box<*> $b */
+                    function f(Box $b): void {
+                        $b->id(new stdClass());
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
         ];
     }
 
@@ -2139,7 +2161,7 @@ final class StarProjectionTest extends TestCase
                     }',
                 'error_message' => 'ArgumentTypeCoercion - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:36 - Argument 1 of takesMixed expects Box<mixed>, but parent type Box<*> provided',
             ],
-            'starProjectionKeepsTheBoundOfAMethodTemplate' => [
+            'starProjectionMethodTemplateBoundedByAStarTemplateOfACountableIsNever' => [
                 'code' => '<?php
                     /** @template T of Countable */
                     final class Box {
@@ -2154,7 +2176,7 @@ final class StarProjectionTest extends TestCase
                     function f(Box $box): void {
                         $box->sub(new stdClass());
                     }',
-                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:13:35 - Argument 1 of Box::sub expects Countable, but stdClass provided',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:13:35 - Argument 1 of Box::sub expects never, but stdClass provided',
             ],
             'starProjectionOfAnUnboundedTemplateIsNotAMixedValue' => [
                 'code' => '<?php
@@ -3321,6 +3343,47 @@ final class StarProjectionTest extends TestCase
                         takesCallback($composed);
                     }',
                 'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:25:39 - Argument 1 of takesCallback expects callable[impure](Box<stdClass>):void, but callable[impure](never):void provided',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'starProjectionMethodTemplateBoundedByAStarTemplateIsNever' => [
+                'code' => '<?php
+                    /** @template T of object */
+                    final class Box {
+                        /**
+                         * @template U of T
+                         * @param U $x
+                         */
+                        public function setGeneric(object $x): void {}
+                    }
+
+                    /** @param Box<*> $b */
+                    function f(Box $b): void {
+                        $b->setGeneric(new stdClass());
+                    }',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:13:40 - Argument 1 of Box::setGeneric expects never, but stdClass provided',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'starProjectionReferenceToAPropertyIsWrittenAsNever' => [
+                'code' => '<?php
+                    /** @template T of object */
+                    final class Box {
+                        /** @var T */
+                        public object $value;
+
+                        /** @param T $value */
+                        public function __construct(object $value) {
+                            $this->value = $value;
+                        }
+                    }
+
+                    /** @param Box<*> $b */
+                    function f(Box $b): void {
+                        $ref =& $b->value;
+                        $ref = new stdClass();
+                    }',
+                'error_message' => 'ReferenceConstraintViolation - src' . DIRECTORY_SEPARATOR . 'somefile.php:16:25 - Variable $ref is limited to values of type never because it is a reference to $b->value, stdClass type found',
                 'error_levels' => [],
                 'php_version' => '8.0',
             ],

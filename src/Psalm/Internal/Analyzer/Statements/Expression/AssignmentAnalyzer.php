@@ -2019,7 +2019,7 @@ final class AssignmentAnalyzer
                 $receiver,
                 $class_storage,
                 $declaring_class_storage,
-                null,
+                true,
             )
             : $property_type;
     }
