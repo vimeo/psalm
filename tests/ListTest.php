@@ -22,6 +22,29 @@ final class ListTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'keyedDestructuringIntoAnOffsetUpdatesTheArray' => [
+                'code' => '<?php
+                    $users = [];
+                    [
+                        "user" => $users[],
+                        "name" => $name,
+                    ] = ["user" => "test@user.com", "name" => "Test User"];
+
+                    $named = [];
+                    ["user" => $named["u"]] = ["user" => "a"];
+
+                    /** @param list<array{id: int}> $rows */
+                    function ids(array $rows): array {
+                        $ids = [];
+                        foreach ($rows as ["id" => $ids[]]) {}
+
+                        return $ids;
+                    }',
+                'assertions' => [
+                    '$users===' => 'list{\'test@user.com\'}',
+                    '$named===' => 'array{u: \'a\'}',
+                ],
+            ],
             'keyedDestructuringOfATypedValueIsNotAMixedAssignment' => [
                 'code' => '<?php
                     /** @return array{name: string, tags: list<string>} */
@@ -247,6 +270,17 @@ final class ListTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'keyedDestructuringIntoAPropertyChecksItsType' => [
+                'code' => '<?php
+                    final class O {
+                        public int $p = 0;
+                    }
+
+                    function f(O $o): void {
+                        ["k" => $o->p] = ["k" => "str"];
+                    }',
+                'error_message' => 'InvalidPropertyAssignmentValue',
+            ],
             'keyedDestructuringOfAMixedValueIsAMixedAssignment' => [
                 'code' => '<?php
                     /** @return array{name: mixed} */

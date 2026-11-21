@@ -2614,11 +2614,47 @@ final class AssignmentAnalyzer
         Codebase $codebase,
         Context $context,
         PhpParser\Node\Expr $var,
-        string $list_var_id,
+        ?string $list_var_id,
         ?Union $new_assign_type,
         bool $has_comment_type,
         int &$removed_taints,
+        ?PhpParser\Comment\Doc $doc_comment,
     ): void {
+        if ($var instanceof PhpParser\Node\Expr\ArrayDimFetch
+            || $var instanceof PhpParser\Node\Expr\PropertyFetch
+            || $var instanceof PhpParser\Node\Expr\StaticPropertyFetch
+        ) {
+            // an offset or a property is assigned like by `$a['k'] = ...`, which updates what holds it. A value of no
+            // known type is reported once for the whole destructuring, and a property is not reported for being
+            // assigned a mixed item
+            $suppressed_issues = $statements_analyzer->getSuppressedIssues();
+            $suppress_mixed_assignment = !isset($suppressed_issues['MixedAssignment'])
+                && ($new_assign_type === null || !$var instanceof PhpParser\Node\Expr\ArrayDimFetch);
+
+            if ($suppress_mixed_assignment) {
+                $statements_analyzer->addSuppressedIssues(['MixedAssignment']);
+            }
+
+            self::analyze(
+                $statements_analyzer,
+                $var,
+                null,
+                $new_assign_type ?? Type::getMixed(),
+                $context,
+                $doc_comment,
+            );
+
+            if ($suppress_mixed_assignment) {
+                $statements_analyzer->removeSuppressedIssues(['MixedAssignment']);
+            }
+
+            return;
+        }
+
+        if ($list_var_id === null) {
+            return;
+        }
+
         if ($new_assign_type !== null
             && $new_assign_type->hasMixed()
             && !$has_comment_type
@@ -2864,14 +2900,16 @@ final class AssignmentAnalyzer
                     continue;
                 }
 
-                if ($list_var_id) {
-                    $context->vars_possibly_in_scope[$list_var_id] = true;
-                    $context->assigned_var_ids[$list_var_id] = (int)$var->getAttribute('startFilePos');
-                    $context->possibly_assigned_var_ids[$list_var_id] = true;
+                // an appended item (`$a[]`) has no id, but its type is needed all the same
+                if ($list_var_id !== null || $var instanceof PhpParser\Node\Expr\ArrayDimFetch) {
+                    if ($list_var_id !== null) {
+                        $context->vars_possibly_in_scope[$list_var_id] = true;
+                        $context->assigned_var_ids[$list_var_id] = (int)$var->getAttribute('startFilePos');
+                        $context->possibly_assigned_var_ids[$list_var_id] = true;
+                    }
 
-                    $already_in_scope = isset($context->vars_in_scope[$list_var_id]);
-
-                    if (!str_contains($list_var_id, '-')
+                    if ($list_var_id !== null
+                        && !str_contains($list_var_id, '-')
                         && !str_contains($list_var_id, '[')
                         && !str_contains($list_var_id, '::')
                     ) {
@@ -2929,7 +2967,7 @@ final class AssignmentAnalyzer
                         $new_assign_type = Type::combineUnionTypes($item_type, $new_assign_type);
                     }
 
-                    if ($already_in_scope) {
+                    if ($list_var_id !== null && isset($context->vars_in_scope[$list_var_id])) {
                         // removes dependent vars from $context
                         $context->removeDescendents(
                             $list_var_id,
@@ -2987,18 +3025,17 @@ final class AssignmentAnalyzer
                     }
                 }
 
-                if ($list_var_id) {
-                    self::assignDestructuredItem(
-                        $statements_analyzer,
-                        $codebase,
-                        $context,
-                        $var,
-                        $list_var_id,
-                        $new_assign_type,
-                        $has_comment_type,
-                        $removed_taints,
-                    );
-                }
+                self::assignDestructuredItem(
+                    $statements_analyzer,
+                    $codebase,
+                    $context,
+                    $var,
+                    $list_var_id,
+                    $new_assign_type,
+                    $has_comment_type,
+                    $removed_taints,
+                    $doc_comment,
+                );
             }
 
             // an array-dim target (e.g. $a['b']) never enters the scope when its root var is undefined
