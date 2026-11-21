@@ -238,6 +238,7 @@ final class StubsGenerator
      * The docblock of a function or method stub: its templates, and the types its signature doesn't express
      *
      * @return list<PhpParser\Comment\Doc>
+     * @psalm-capabilities read-props
      */
     public static function getDocblockComments(FunctionLikeStorage $function_storage, string $namespace_name): array
     {
