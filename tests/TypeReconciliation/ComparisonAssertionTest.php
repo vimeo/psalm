@@ -148,6 +148,37 @@ final class ComparisonAssertionTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'nullsafePropertyNotIdenticalToAValueNarrowsTheReceiverWhereItIsIdentical' => [
+                'code' => '<?php
+                    final class Item {
+                        public bool $flag = true;
+
+                        public function ok(): bool {
+                            return true;
+                        }
+                    }
+
+                    function f(?Item $item): bool {
+                        if ($item?->flag !== true) {
+                            /** @psalm-check-type-exact $item = Item|null */;
+                            return false;
+                        }
+
+                        /** @psalm-check-type-exact $item = Item */;
+                        return $item->flag;
+                    }
+
+                    function g(?Item $item): bool {
+                        if ($item?->ok() !== true) {
+                            return false;
+                        }
+
+                        return $item->ok();
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'identicalToTrue' => [
                 'code' => '<?php
                     /** @param int|bool $b */
@@ -414,6 +445,23 @@ final class ComparisonAssertionTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'nullsafePropertyNeverIdenticalToAValueStaysARedundantCondition' => [
+                'code' => '<?php
+                    final class Item {
+                        public bool $flag = true;
+                    }
+
+                    function f(?Item $item): bool {
+                        if ($item?->flag !== "x") {
+                            return false;
+                        }
+
+                        return true;
+                    }',
+                'error_message' => 'RedundantCondition',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
             'nullNeverIdenticalToANonNullableValue' => [
                 'code' => '<?php
                     function f(string $s): void {
