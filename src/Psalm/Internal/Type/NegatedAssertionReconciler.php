@@ -44,7 +44,6 @@ use Psalm\Type\Union;
 
 use function array_filter;
 use function count;
-use function is_numeric;
 use function strtolower;
 
 /**
@@ -458,9 +457,13 @@ final class NegatedAssertionReconciler extends Reconciler
                     $did_match_literal_type = true;
 
                     // PHP compares two numeric strings by their numbers: `"1" == "01"`
-                    if ($assertion instanceof IsNotLooselyEqual && is_numeric($assertion_type->value)) {
+                    $php_version_id = $statements_analyzer->getCodebase()->analysis_php_version_id;
+
+                    if ($assertion instanceof IsNotLooselyEqual
+                        && AssertionReconciler::isNumericString($assertion_type->value, $php_version_id)
+                    ) {
                         foreach ($existing_var_type->getLiteralStrings() as $literal_key => $literal_string) {
-                            if (is_numeric($literal_string->value)
+                            if (AssertionReconciler::isNumericString($literal_string->value, $php_version_id)
                                 && $literal_string->value == $assertion_type->value
                             ) {
                                 $existing_var_type->removeType($literal_key);
