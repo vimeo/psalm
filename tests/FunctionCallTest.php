@@ -80,6 +80,242 @@ final class FunctionCallTest extends TestCase
                     '$c===' => 'int<1, max>',
                 ],
             ],
+            'psalmOverloadIsChosenByTheTypeOfTheArgument' => [
+                'code' => '<?php
+                    interface Query {}
+                    final class LimitedQuery implements Query {}
+                    final class UnlimitedQuery implements Query {}
+                    final class PagedResult {}
+                    final class PlainResult {}
+
+                    /**
+                     * @psalm-overload (LimitedQuery $query): PagedResult
+                     * @psalm-overload (UnlimitedQuery $query): PlainResult
+                     */
+                    function search(Query $query): object {
+                        return new PlainResult();
+                    }
+
+                    $paged = search(new LimitedQuery());
+                    $plain = search(new UnlimitedQuery());',
+                'assertions' => [
+                    '$paged===' => 'PagedResult',
+                    '$plain===' => 'PlainResult',
+                ],
+            ],
+            'psalmOverloadIsChosenByTheNumberOfArguments' => [
+                'code' => '<?php
+                    /**
+                     * @param string|int $a
+                     * @return int|string|float
+                     * @psalm-overload (string $a): int
+                     * @psalm-overload (int $a, int $b): string
+                     * @psalm-overload (int $a, int $b, int $c, int ...$more): float
+                     */
+                    function pick($a, ?int $b = null, ?int $c = null, int ...$more) {
+                        return 0;
+                    }
+
+                    $one = pick("a");
+                    $two = pick(1, 2);
+                    $many = pick(1, 2, 3, 4, 5);',
+                'assertions' => [
+                    '$one===' => 'int',
+                    '$two===' => 'string',
+                    '$many===' => 'float',
+                ],
+            ],
+            'psalmOverloadIsChosenByTheNamesOfTheArguments' => [
+                'code' => '<?php
+                    /**
+                     * @param string $name
+                     * @param int $id
+                     * @return int|string
+                     * @psalm-overload (string $name): int
+                     * @psalm-overload (int $id): string
+                     */
+                    function pick($name = "", $id = 0) {
+                        return 0;
+                    }
+
+                    $byName = pick(name: "a");
+                    $byId = pick(id: 5);',
+                'assertions' => [
+                    '$byName===' => 'int',
+                    '$byId===' => 'string',
+                ],
+            ],
+            'psalmOverloadOfNestedCallsOfTheSameFunction' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-overload (int $x): int
+                     * @psalm-overload (string $x): string
+                     */
+                    function pick(int|string $x): int|string {
+                        return $x;
+                    }
+
+                    $nested = pick(pick(pick(1)));
+                    $text = pick(pick(pick("a")));',
+                'assertions' => [
+                    '$nested===' => 'int',
+                    '$text===' => 'string',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'psalmOverloadOfAFunctionWithATemplate' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @psalm-overload (T $x): T
+                     * @psalm-overload (T $x, int $n): list<T>
+                     */
+                    function dup(mixed $x, int $n = 0): mixed {
+                        return $x;
+                    }
+
+                    $one = dup("a");
+                    $many = dup(5, 2);',
+                'assertions' => [
+                    '$one===' => "'a'",
+                    '$many===' => 'list<5>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'psalmOverloadOfAUnionArgumentFallsBackToTheRealSignature' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-overload (int $x): int
+                     * @psalm-overload (string $x): string
+                     */
+                    function pick(int|string $x): int|string {
+                        return $x;
+                    }
+
+                    /** @var int|string $v */
+                    $either = pick($v);
+                    $int = pick(1);',
+                'assertions' => [
+                    '$either===' => 'int|string',
+                    '$int===' => 'int',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'psalmOverloadWithoutAReturnTypeKeepsTheRealOne' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-overload (string $x)
+                     * @psalm-overload (int $x, int $y)
+                     */
+                    function pick(string|int $x, int $y = 0): int {
+                        return 0;
+                    }
+
+                    $a = pick("a");
+                    $b = pick(1, 2);',
+                'assertions' => [
+                    '$a===' => 'int',
+                    '$b===' => 'int',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'psalmOverloadSkipsAnOptionalParameterWithANamedArgument' => [
+                'code' => '<?php
+                    /**
+                     * @return int|string
+                     * @psalm-overload (string $a, int $b = 0): int
+                     * @psalm-overload (string $a, string $c): string
+                     */
+                    function pick(string $a, int|string $b = 0, string $c = "") {
+                        return 0;
+                    }
+
+                    $first = pick("x", b: 1);
+                    $second = pick("x", c: "y");',
+                'assertions' => [
+                    '$first===' => 'int',
+                    '$second===' => 'string',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'psalmOverloadWithAnUnpackedArgumentChecksTheArgumentsBeforeIt' => [
+                'code' => '<?php
+                    /**
+                     * @param string|int $a
+                     * @param string|int ...$rest
+                     * @return int|string
+                     * @psalm-overload (string $a, string ...$rest): int
+                     * @psalm-overload (int $a, int ...$rest): string
+                     */
+                    function pick($a, ...$rest) {
+                        return 0;
+                    }
+
+                    /** @var list<string> $strings */
+                    $strings = [];
+
+                    /** @var list<int> $numbers */
+                    $numbers = [];
+
+                    $byString = pick("a", ...$strings);
+                    $byInt = pick(1, ...$numbers);',
+                'assertions' => [
+                    '$byString===' => 'int',
+                    '$byInt===' => 'string',
+                ],
+            ],
+            'psalmOverloadOfAFunctionInANamespaceUsesTheImports' => [
+                'code' => '<?php
+                    namespace Domain {
+                        final class Order {}
+                        final class Invoice {}
+                    }
+
+                    namespace Api {
+                        use Domain\Invoice;
+                        use Domain\Order;
+
+                        /**
+                         * @psalm-overload (Order $document): int
+                         * @psalm-overload (Invoice $document): string
+                         */
+                        function number(object $document): int|string {
+                            return 0;
+                        }
+
+                        $order = number(new Order());
+                        $invoice = number(new Invoice());
+                    }',
+                'assertions' => [
+                    '$order===' => 'int',
+                    '$invoice===' => 'string',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'functionWithOverloadsAsAFirstClassCallableKeepsItsOwnSignature' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-overload (string $a): int
+                     * @psalm-overload (int $a): string
+                     */
+                    function pick(string|int $a): int|string {
+                        return 0;
+                    }
+
+                    $callable = pick(...);
+                    $result = $callable("a");',
+                'assertions' => [
+                    '$result===' => 'int|string',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'fileTestFunctionsKeepAMixedArgument' => [
                 'code' => <<<'PHP'
                     <?php
@@ -4397,6 +4633,111 @@ final class FunctionCallTest extends TestCase
                     echo STRLEN("foo");',
                 'error_message' => 'WrongCaseFunction - src' . DIRECTORY_SEPARATOR . 'somefile.php:2:26 - '
                     . 'Function STRLEN is declared as strlen and has wrong casing',
+            ],
+            'psalmOverloadReportsAMethodOfTheOtherResult' => [
+                'code' => '<?php
+                    final class PagedResult {
+                        public function getPageCount(): int {
+                            return 1;
+                        }
+                    }
+
+                    final class PlainResult {
+                        public function getAllRecords(): array {
+                            return [];
+                        }
+                    }
+
+                    /**
+                     * @psalm-overload (int $page): PagedResult
+                     * @psalm-overload (string $query): PlainResult
+                     */
+                    function search(int|string $argument): object {
+                        return new PlainResult();
+                    }
+
+                    search(1)->getAllRecords();',
+                'error_message' => 'UndefinedMethod - src' . DIRECTORY_SEPARATOR . 'somefile.php:22:32 - '
+                    . 'Method PagedResult::getAllRecords does not exist',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'psalmOverloadWithoutAMatchingOneReportsTheLastDeclared' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-overload (string $a): int
+                     * @psalm-overload (int $a): string
+                     */
+                    function pick(string|int $a): int|string {
+                        return 0;
+                    }
+
+                    pick(1.5);',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:26',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'psalmOverloadWithANamedArgumentOfAWrongTypeReportsTheLastDeclared' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-overload (string $name): int
+                     * @psalm-overload (int $id): string
+                     */
+                    function pick(string|int $name = "", int $id = 0): int|string {
+                        return 0;
+                    }
+
+                    pick(id: "a");',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:30',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'psalmOverloadWithAParameterTypeTheSignatureDoesNotAccept' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-overload (int $x): int
+                     */
+                    function pick(string $x): int {
+                        return 0;
+                    }',
+                'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:21 - '
+                    . 'The type int of parameter $x of an @psalm-overload of pick is not accepted by its '
+                    . 'signature, which declares string',
+            ],
+            'psalmOverloadWithAParameterTheSignatureDoesNotHave' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-overload (string $x, int $extra): int
+                     */
+                    function pick(string $x): int {
+                        return 0;
+                    }',
+                'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:21 - '
+                    . 'Parameter $extra of an @psalm-overload of pick is not a parameter of its signature',
+            ],
+            'psalmOverloadWithAReturnTypeTheSignatureDoesNotDeclare' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-overload (string $x): string
+                     */
+                    function pick(string $x): int {
+                        return 0;
+                    }',
+                'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:21 - '
+                    . 'The return type string of an @psalm-overload of pick is not contained by the declared '
+                    . 'one, int',
+            ],
+            'psalmOverloadWithAnInvalidSignature' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-overload (string $a: int
+                     */
+                    function pick(string $a): int {
+                        return 0;
+                    }',
+                'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:21 - '
+                    . '@psalm-overload (string $a: int is not a valid overload: Unterminated method '
+                    . 'in docblock for pick',
             ],
             'fileTestFunctionOnAnEmptyStringIsAlwaysFalse' => [
                 'code' => '<?php
