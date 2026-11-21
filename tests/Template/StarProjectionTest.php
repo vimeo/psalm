@@ -1050,6 +1050,7 @@ final class StarProjectionTest extends TestCase
 
                     function f(mixed $a): void {
                         if (isReader($a)) {
+                            /** @psalm-check-type-exact $a = Reader<*> */
                             takes($a);
                         }
                     }',
@@ -1072,6 +1073,7 @@ final class StarProjectionTest extends TestCase
 
                     function f(mixed $a): void {
                         if (!isNotReader($a)) {
+                            /** @psalm-check-type-exact $a = Reader<*> */
                             takes($a);
                         }
                     }',
@@ -1092,6 +1094,7 @@ final class StarProjectionTest extends TestCase
 
                     function f(mixed $a): void {
                         assertReader($a);
+                        /** @psalm-check-type-exact $a = Reader<*> */
                         takes($a);
                     }',
                 'assertions' => [],
@@ -2149,6 +2152,68 @@ final class StarProjectionTest extends TestCase
                         }
                     }',
                 'error_message' => 'ArgumentTypeCoercion - src' . DIRECTORY_SEPARATOR . 'somefile.php:29:35 - Argument 1 of takes expects Box<object>, but parent type Box<*> provided',
+            ],
+            'starProjectionAssertedIfTrueOfAnInvariantClassIsStillAStar' => [
+                'code' => '<?php
+                    /** @template T of Countable */
+                    final class Inv {}
+
+                    /** @param Inv<Countable> $i */
+                    function takes(Inv $i): void {}
+
+                    /** @psalm-assert-if-true Inv<*> $x */
+                    function isInv(mixed $x): bool {
+                        return true;
+                    }
+
+                    function f(mixed $a): void {
+                        if (isInv($a)) {
+                            takes($a);
+                        }
+                    }',
+                'error_message' => 'ArgumentTypeCoercion - src' . DIRECTORY_SEPARATOR . 'somefile.php:15:35 - Argument 1 of takes expects Inv<Countable>, but parent type Inv<*> provided',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'starProjectionAssertedIfFalseOfAnInvariantClassIsStillAStar' => [
+                'code' => '<?php
+                    /** @template T of Countable */
+                    final class Inv {}
+
+                    /** @param Inv<Countable> $i */
+                    function takes(Inv $i): void {}
+
+                    /** @psalm-assert-if-false Inv<*> $x */
+                    function isNotInv(mixed $x): bool {
+                        return true;
+                    }
+
+                    function f(mixed $a): void {
+                        if (!isNotInv($a)) {
+                            takes($a);
+                        }
+                    }',
+                'error_message' => 'ArgumentTypeCoercion - src' . DIRECTORY_SEPARATOR . 'somefile.php:15:35 - Argument 1 of takes expects Inv<Countable>, but parent type Inv<*> provided',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'starProjectionOfAnExplicitAndABareClassIsNotTheBareClass' => [
+                // `Box<object>|Box` leaves the argument out of only one of its members: it is not a bare `Box`
+                'code' => '<?php
+                    /** @template T of object */
+                    final class Box {}
+
+                    /** @param Box<object>|Box $b */
+                    function explicitThenBare(Box $b): void {}
+
+                    /** @param Box<object> $b */
+                    function explicitOnly(Box $b): void {}
+
+                    /** @param Box<*> $star */
+                    function f(Box $star): void {
+                        explicitThenBare($star);
+                    }',
+                'error_message' => 'ArgumentTypeCoercion - src' . DIRECTORY_SEPARATOR . 'somefile.php:13:42 - Argument 1 of explicitThenBare expects Box<object>, but parent type Box<*> provided',
             ],
             'starProjectionNestedReadIsAStarAtTheOutermostArgument' => [
                 'code' => '<?php

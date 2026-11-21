@@ -1180,7 +1180,7 @@ final class AssertionFinder
             foreach ($if_true_assertions as $assertion) {
                 $if_types = [];
 
-                $assertion = self::expandClassConstantsOfRules($assertion, $source->getCodebase());
+                $assertion = self::expandTypesOfRules($assertion, $source->getCodebase());
 
                 if (is_int($assertion->var_id) && isset($expr->getArgs()[$assertion->var_id])) {
                     if ($assertion->var_id === 0) {
@@ -1276,7 +1276,7 @@ final class AssertionFinder
             foreach ($if_false_assertions as $assertion) {
                 $if_types = [];
 
-                $assertion = self::expandClassConstantsOfRules($assertion, $source->getCodebase());
+                $assertion = self::expandTypesOfRules($assertion, $source->getCodebase());
 
                 if (is_int($assertion->var_id) && isset($expr->getArgs()[$assertion->var_id])) {
                     if ($assertion->var_id === 0) {
@@ -1428,14 +1428,19 @@ final class AssertionFinder
         return $arg_var_id . substr($assertion_id, strlen($var_id));
     }
 
-    private static function expandClassConstantsOfRules(Possibilities $assertion, Codebase $codebase): Possibilities
+    /**
+     * The types of `@psalm-assert-if-true` and `-if-false` are expanded here, as those of `@psalm-assert` are (see
+     * CallAnalyzer::applyAssertionsToContext()): a class constant and the arguments of a generic object (a `*` holds
+     * the bound of its template once expanded)
+     */
+    private static function expandTypesOfRules(Possibilities $assertion, Codebase $codebase): Possibilities
     {
         $rules = [];
 
         foreach ($assertion->rule as $rule) {
             $rule_type = $rule->getAtomicType();
 
-            $rules[] = $rule_type instanceof TClassConstant
+            $rules[] = $rule_type instanceof TClassConstant || $rule_type instanceof TGenericObject
                 ? $rule->setAtomicType(TypeExpander::expandAtomic($codebase, $rule_type, null, null, null)[0])
                 : $rule;
         }

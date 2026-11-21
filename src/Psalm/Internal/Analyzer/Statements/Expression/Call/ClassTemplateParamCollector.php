@@ -8,7 +8,6 @@ use AssertionError;
 use Psalm\Codebase;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\PurityArguments;
-use Psalm\Internal\Type\StarProjection;
 use Psalm\Internal\Type\TemplateDefaults;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TypeArgumentProjection;
@@ -74,9 +73,6 @@ final class ClassTemplateParamCollector
         $e = $static_class_storage->template_extended_params;
 
         if ($lhs_type_part instanceof TGenericObject) {
-            // a template of a `Pair<int, *>` is bound to the `*`, knowing the template's bound
-            $lhs_type_part = StarProjection::resolve($lhs_type_part, $codebase);
-
             if ($class_storage === $static_class_storage && $class_storage->template_types) {
                 $class_template_params = self::getOwnTemplateParams($codebase, $class_storage, $lhs_type_part);
             }

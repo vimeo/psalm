@@ -1549,7 +1549,7 @@ final class TemplateStandinTypeReplacer
      * The object as the base it is matched against, if its class extends it: with the params that the templates of
      * the base map to for this object, an object without type params leaving them at those of its class.
      *
-     * @psalm-impure
+     * @psalm-capabilities read-props|write-this-props|write-props|write-refs
      */
     private static function getObjectMatchingBase(
         Codebase $codebase,
@@ -1587,7 +1587,7 @@ final class TemplateStandinTypeReplacer
     /**
      * @param TGenericObject|TNamedObject|TIterable $input_type_part
      * @param TGenericObject|TNamedObject|TIterable $container_type_part
-     * @psalm-impure
+     * @psalm-capabilities read-props|write-this-props|write-props|write-refs
      * @param-out array<int, true> $input_star_offsets the offsets of the returned params that are a `*`
      * @return list<Union>
      */
@@ -1598,10 +1598,6 @@ final class TemplateStandinTypeReplacer
         ?array &$container_type_params_covariant = null,
         ?array &$input_star_offsets = null,
     ): array {
-        if ($input_type_part instanceof TGenericObject) {
-            $input_type_part = StarProjection::resolve($input_type_part, $codebase);
-        }
-
         if ($input_type_part instanceof TGenericObject || $input_type_part instanceof TIterable) {
             $input_type_params = $input_type_part->type_params;
 
