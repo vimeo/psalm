@@ -538,6 +538,72 @@ class Collection {
 
 This is perfectly valid, and Psalm won't complain.
 
+## Star projection
+
+`Box<*>` is a `Box` of some type you don't know. Kotlin calls it a [star projection](https://kotlinlang.org/docs/generics.html#star-projections), Java an unbounded wildcard (`Box<?>`).
+
+```php
+<?php
+/** @template T of object */
+final class Box {
+    /** @return T */
+    public function get(): object { throw new Exception(); }
+
+    /** @return Box<T> */
+    public function same(): Box { return $this; }
+
+    /** @param T $value */
+    public function set(object $value): void {}
+}
+
+/** @param Box<*> $box */
+function takesAnyBox(Box $box): void {
+    $box->get(); // object
+    $box->same(); // Box<*>
+    $box->set(new DateTime()); // no issue (writes through `*` are not checked yet)
+}
+
+/** @param Box<object> $box */
+function takesBoxOfObject(Box $box): void {}
+
+/**
+ * @param Box<stdClass> $std
+ * @param Box<*> $any
+ */
+function f(Box $std, Box $any): void {
+    takesAnyBox($std); // no issue
+    takesBoxOfObject($any); // ArgumentTypeCoercion
+}
+```
+
+A `Box<*>` also fits a `Box` written without arguments, and a covariant argument that holds the whole bound:
+
+```php
+<?php
+/** @template-covariant T of Countable */
+interface Reader {}
+
+function takesBareBox(Box $box): void {}
+
+/** @param Reader<Countable> $reader */
+function takesReaderOfCountable(Reader $reader): void {}
+
+/**
+ * @param Box<*> $box
+ * @param Reader<*> $reader
+ * @param class-string<*> $class
+ * @param list<*> $list
+ */
+function g(Box $box, Reader $reader, string $class, array $list): void {
+    takesBareBox($box); // no issue
+    takesReaderOfCountable($reader); // no issue
+    $class; // class-string
+    $list; // list<mixed>
+}
+```
+
+`*` is not allowed in `@extends`, `@implements` or `@use`.
+
 ## Builtin templated classes and interfaces
 
 Psalm has support for a number of builtin classes and interfaces that you can extend/implement in your own code.

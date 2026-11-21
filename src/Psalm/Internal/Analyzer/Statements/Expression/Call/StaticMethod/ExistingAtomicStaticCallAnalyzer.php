@@ -194,6 +194,14 @@ final class ExistingAtomicStaticCallAnalyzer
             return;
         }
 
+        // what is read from a `*` receiver is as unknown as the receiver (`$any::make()` of a `Box<*>`)
+        $template_result->markStarBindings(ClassTemplateParamCollector::getStarBoundTemplates(
+            $codebase,
+            $class_storage,
+            $lhs_type_part,
+            $found_generic_params,
+        ));
+
         $declaring_method_id = $codebase->methods->getDeclaringMethodId($method_id) ?? $method_id;
         $static_property_mutations = $codebase->methods->getStorage($declaring_method_id, true)
             ->static_property_mutations;

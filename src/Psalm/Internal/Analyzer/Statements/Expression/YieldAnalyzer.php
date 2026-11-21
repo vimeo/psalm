@@ -227,6 +227,7 @@ final class YieldAnalyzer
                     $expression_atomic_type,
                     $classlike_storage,
                     $declaring_classlike_storage,
+                    true,
                 );
             }
 

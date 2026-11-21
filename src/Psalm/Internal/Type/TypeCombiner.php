@@ -258,14 +258,14 @@ final class TypeCombiner
                 $new_types[] = new TIterable($generic_type_params, [], $from_docblock);
             } else {
                 /** @psalm-suppress ArgumentTypeCoercion Caused by the PropertyTypeCoercion above */
-                $generic_object = new TGenericObject(
+                $generic_object = (new TGenericObject(
                     $generic_type,
                     $generic_type_params,
                     false,
                     false,
                     $combination->extra_types,
                     $from_docblock,
-                );
+                ))->setProjections($combination->getProjections($generic_type));
                 $new_types[] = $generic_object;
 
                 if ($combination->named_object_types) {
@@ -275,6 +275,7 @@ final class TypeCombiner
         }
 
         foreach ($combination->object_type_params as $generic_type => $generic_type_params) {
+            $projections = $combination->getProjections($generic_type);
             $generic_type = substr($generic_type, 0, strcspn($generic_type, '<['));
 
             /** @psalm-suppress ArgumentTypeCoercion Caused by the PropertyTypeCoercion above */
@@ -288,7 +289,7 @@ final class TypeCombiner
             ))->setIsStatic(
                 $combination->object_static[$generic_type] ?? false,
                 $combination->object_static_resolved[$generic_type] ?? false,
-            );
+            )->setProjections($projections);
         }
 
         if ($combination->class_string_types) {
@@ -753,6 +754,22 @@ final class TypeCombiner
             }
 
             return null;
+        }
+
+        if ($type instanceof TGenericObject) {
+            $combination->object_member_counts[$type_key] = ($combination->object_member_counts[$type_key] ?? 0) + 1;
+
+            foreach ($type->getProjections() as $i => $projection) {
+                if ($projection === TypeArgumentProjection::Omitted) {
+                    $combination->object_omitted_counts[$type_key][$i]
+                        = ($combination->object_omitted_counts[$type_key][$i] ?? 0) + 1;
+                }
+
+                // the union holds what any of its types holds: a `*` holds more than a left out argument
+                if (($combination->object_projections[$type_key][$i] ?? null) !== TypeArgumentProjection::Star) {
+                    $combination->object_projections[$type_key][$i] = $projection;
+                }
+            }
         }
 
         if (($type instanceof TGenericObject && ($type->value === 'Traversable' || $type->value === 'Generator'))

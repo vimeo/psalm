@@ -401,18 +401,28 @@ final class CallableTypeComparator
             if ($callable_object instanceof TGenericObject
                 && $codebase->classOrInterfaceExists($callable_object->value)
             ) {
+                $callable_class_storage = $codebase->classlike_storage_provider->get($callable_object->value);
                 $class_template_params = ClassTemplateParamCollector::collect(
                     $codebase,
                     $codebase->methods->getClassLikeStorageForMethod($method_id),
-                    $codebase->classlike_storage_provider->get($callable_object->value),
+                    $callable_class_storage,
                     $method_id->method_name,
                     $callable_object,
                 );
 
                 if ($class_template_params !== null) {
+                    // what the method returns from a `Box<*>` is as unknown as the receiver
+                    $class_template_result = new TemplateResult([], $class_template_params);
+                    $class_template_result->markStarBindings(ClassTemplateParamCollector::getStarBoundTemplates(
+                        $codebase,
+                        $callable_class_storage,
+                        $callable_object,
+                        $class_template_params,
+                    ));
+
                     $replaced = TemplateInferredTypeReplacer::replace(
                         new Union([$callable]),
-                        new TemplateResult([], $class_template_params),
+                        $class_template_result,
                         $codebase,
                     )->getSingleAtomic();
 

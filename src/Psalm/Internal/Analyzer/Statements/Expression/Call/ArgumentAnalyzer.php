@@ -31,6 +31,7 @@ use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\TemplateBound;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
+use Psalm\Internal\Type\TypeArgumentProjection;
 use Psalm\Internal\Type\TypeExpander;
 use Psalm\Internal\TypeVisitor\TypeVariableResolver;
 use Psalm\Issue\ArgumentTypeCoercion;
@@ -2125,20 +2126,24 @@ final class ArgumentAnalyzer
                         ) {
                             $new_type_params = [];
                             foreach ($input_atomic_type->type_params as $i => $type_param) {
-                                if ($type_param->isNever() && isset($param_atomic_type->type_params[$i])) {
+                                // a `*` param says nothing about what the value holds
+                                if ($type_param->isNever()
+                                    && isset($param_atomic_type->type_params[$i])
+                                    && $param_atomic_type->getProjection($i) !== TypeArgumentProjection::Star
+                                ) {
                                     $input_type_changed = true;
 
                                     $new_type_params[$i] = $param_atomic_type->type_params[$i];
                                 }
                             }
                             if ($new_type_params) {
-                                $input_atomic_type = new TGenericObject(
+                                $input_atomic_type = (new TGenericObject(
                                     $input_atomic_type->value,
                                     [...$input_atomic_type->type_params, ...$new_type_params],
                                     $input_atomic_type->remapped_params,
                                     false,
                                     $input_atomic_type->extra_types,
-                                );
+                                ))->setProjections($input_atomic_type->getProjections());
                             }
                         }
                     }

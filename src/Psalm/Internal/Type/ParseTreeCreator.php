@@ -380,7 +380,10 @@ final class ParseTreeCreator
             throw new TypeParseTreeException('Unexpected token [');
         }
 
-        if ($this->current_leaf instanceof KeyedArrayPropertyTree) {
+        // `*[]` would read as `array<*>`, an array of mixed
+        if ($this->current_leaf instanceof KeyedArrayPropertyTree
+            || ($this->current_leaf instanceof Value && $this->current_leaf->value === StarProjection::NAME)
+        ) {
             throw new TypeParseTreeException('Unexpected token [');
         }
 

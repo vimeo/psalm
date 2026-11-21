@@ -222,6 +222,13 @@ final class MissingMethodCallHandler
                 $found_generic_params ?? [],
             );
 
+            $template_result->markStarBindings(ClassTemplateParamCollector::getStarBoundTemplates(
+                $codebase,
+                $pseudo_method_class_storage,
+                $mixin_type ?? $lhs_type_part,
+                $found_generic_params,
+            ));
+
             if ($pseudo_method_storage->return_type) {
                 $return_type_candidate = MethodCallReturnTypeFetcher::replaceTemplateTypes(
                     $pseudo_method_storage->return_type,
@@ -469,6 +476,13 @@ final class MissingMethodCallHandler
                 return;
             }
 
+            $template_result->markStarBindings(ClassTemplateParamCollector::getStarBoundTemplates(
+                $codebase,
+                $class_storage,
+                $lhs_type_part,
+                $found_generic_params,
+            ));
+
             if ($pseudo_method_storage->return_type) {
                 $return_type_candidate = MethodCallReturnTypeFetcher::replaceTemplateTypes(
                     $pseudo_method_storage->return_type,
@@ -573,6 +587,14 @@ final class MissingMethodCallHandler
             !$statements_analyzer->isStatic() && $method_id->fq_class_name === $context->self,
         );
 
+        $template_result = new TemplateResult([], $found_generic_params ?? []);
+        $template_result->markStarBindings(ClassTemplateParamCollector::getStarBoundTemplates(
+            $codebase,
+            $class_storage,
+            $lhs_type_part,
+            $found_generic_params,
+        ));
+
         return MethodCallReturnTypeFetcher::getFirstClassCallableType(
             $codebase,
             $stmt,
@@ -581,7 +603,7 @@ final class MissingMethodCallHandler
                 $pseudo_method_storage->return_type,
                 $pseudo_method_storage->capabilities,
             ),
-            new TemplateResult([], $found_generic_params ?? []),
+            $template_result,
             $pseudo_method_storage->template_types ?? [],
             $defining_class_storage->name,
             $lhs_type_part instanceof Atomic\TNamedObject ? $lhs_type_part : $method_id->fq_class_name,
