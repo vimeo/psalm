@@ -540,7 +540,7 @@ This is perfectly valid, and Psalm won't complain.
 
 ## Star projection
 
-A `*` type argument (`Pair<int, *>`, as in PHPStan) stands for some unknown type within the template's bound, with the other type arguments applied. Any argument fits it, and reading the template gives that bound:
+A `*` type argument (`Pair<int, *>`) stands for some unknown type within the template's bound, with the other type arguments applied. It is known as a [star projection](https://kotlinlang.org/docs/generics.html#star-projections) in Kotlin, and as an unbounded wildcard (`Pair<Integer, ?>`) in Java. Any argument fits it, and reading the template gives that bound:
 
 ```php
 <?php
