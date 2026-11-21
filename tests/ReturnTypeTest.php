@@ -128,6 +128,126 @@ final class ReturnTypeTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.3',
             ],
+            'returnTypeWithATemplateOfTheOverriddenMethodIsNotInheritedByAMethodDocumentingItsParams' => [
+                'code' => '<?php
+                    class P {
+                        /**
+                         * @template T
+                         * @param T $x
+                         * @return list<T>
+                         */
+                        public function f($x): array {
+                            return [$x];
+                        }
+                    }
+
+                    final class C extends P {
+                        /** @param int $x */
+                        #[Override]
+                        public function f($x): array {
+                            return [$x];
+                        }
+                    }
+
+                    $d = (new C())->f(3);',
+                'assertions' => [
+                    '$d===' => 'array<array-key, mixed>',
+                ],
+                'ignored_issues' => ['LessSpecificImplementedReturnType', 'MoreSpecificImplementedParamType'],
+                'php_version' => '8.3',
+            ],
+            'returnTypeWithATemplateOfTheOverriddenMethodMeetsTheTemplateOfTheOverridingMethod' => [
+                'code' => '<?php
+                    class P {
+                        /**
+                         * @template T
+                         * @param T $x
+                         * @return list<T>
+                         */
+                        public function f($x): array {
+                            return [$x];
+                        }
+                    }
+
+                    final class C extends P {
+                        /**
+                         * @template U of int
+                         * @param U $x
+                         */
+                        #[Override]
+                        public function f($x): array {
+                            return [$x];
+                        }
+                    }
+
+                    $d = (new C())->f(3);',
+                'assertions' => [
+                    '$d===' => 'array<array-key, mixed>',
+                ],
+                'ignored_issues' => ['LessSpecificImplementedReturnType', 'MoreSpecificImplementedParamType'],
+                'php_version' => '8.3',
+            ],
+            'nativeReturnTypeOfTheMethodIsKeptWhenTheOverriddenOneDocumentsOnlyItsParams' => [
+                'code' => '<?php
+                    interface Console {
+                        /** @param positive-int $n */
+                        public function times(int $n): self;
+                        /** @param positive-int $n */
+                        public function twice(int $n): self;
+                    }
+
+                    trait HasTimes {
+                        /** @param positive-int $n */
+                        public function times(int $n): static {
+                            return $this;
+                        }
+
+                        /** @param positive-int $n */
+                        public function twice(int $n): static {
+                            return $this->times($n);
+                        }
+                    }
+
+                    final class GenericConsole implements Console {
+                        use HasTimes;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MissingOverrideAttribute'],
+                'php_version' => '8.3',
+            ],
+            'nativeReturnTypeOfTheMethodIsKeptWhenTheOverriddenClassMethodDocumentsOnlyItsParams' => [
+                'code' => '<?php
+                    class Console {
+                        /** @param positive-int $n */
+                        public function times(int $n): self {
+                            return $this;
+                        }
+
+                        /** @param positive-int $n */
+                        public function twice(int $n): self {
+                            return $this;
+                        }
+                    }
+
+                    trait HasTimes {
+                        /** @param positive-int $n */
+                        public function times(int $n): static {
+                            return $this;
+                        }
+
+                        /** @param positive-int $n */
+                        public function twice(int $n): static {
+                            return $this->times($n);
+                        }
+                    }
+
+                    final class GenericConsole extends Console {
+                        use HasTimes;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MissingOverrideAttribute'],
+                'php_version' => '8.3',
+            ],
             'returnTypeIsInheritedFromTwoInterfacesThatDocumentTheSameOne' => [
                 'code' => '<?php
                     interface InstanceHandler {
