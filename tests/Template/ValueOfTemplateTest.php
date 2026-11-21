@@ -629,6 +629,24 @@ final class ValueOfTemplateTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'writeUnderTheKeyOfATemplateBoundedByAShapeWidensTheArray' => [
+                'code' => '<?php
+                    /**
+                     * @template T of array{a: int, b: string}
+                     * @param T $t
+                     * @param key-of<T> $k
+                     * @return T
+                     */
+                    function w(array $t, string $k): array {
+                        $t[$k] = 1;
+
+                        return $t;
+                    }',
+                'error_message' => 'InvalidReturnStatement - src' . DIRECTORY_SEPARATOR
+                    . "somefile.php:11:32 - The inferred type 'non-empty-array<'a'|'b'|(key-of",
+                'error_levels' => [],
+                'php_version' => '8.2',
+            ],
             'itemOfATemplateArrayAtTheKeyOfAnotherTemplateIsNotItsValue' => [
                 'code' => '<?php
                     /**

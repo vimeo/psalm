@@ -1738,7 +1738,9 @@ final class ArrayFetchAnalyzer
                 $replacement_type,
                 $array_access_type,
             );
-        } elseif ($value_of = self::getValueOfTemplateAtItsKey($original_type, $offset_type)) {
+        } elseif (!$in_assignment
+            && ($value_of = self::getValueOfTemplateAtItsKey($original_type, $offset_type)) !== null
+        ) {
             $array_access_type = Type::combineUnionTypes($array_access_type, new Union([$value_of]));
 
             $has_valid_offset = true;
