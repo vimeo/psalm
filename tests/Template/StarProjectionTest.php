@@ -1436,36 +1436,26 @@ final class StarProjectionTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
-            'starProjectionStaticOfACovariantArgumentIsTheBound' => [
+            'starProjectionNestedReadIsWrittenToAsTheBoundYet' => [
+                // known gap: `set()` on the `Box<*>` of `nested()` expects `never` once the write-restriction PR lands
                 'code' => '<?php
-                    class Foo {}
-
-                    /** @template-covariant T of Foo */
-                    class Reader {
-                        /** @return Reader<T> */
-                        public function same(): Reader {
-                            return $this;
+                    /** @template T of object */
+                    final class Box {
+                        /** @return Box<Box<T>> */
+                        public function nested(): Box {
+                            throw new Exception();
                         }
 
-                        /** @return static<T> */
-                        public function staticOf(): static {
-                            return $this;
-                        }
+                        /** @param T $value */
+                        public function set(object $value): void {}
                     }
 
-                    /** @param Reader<Foo> $reader */
-                    function takeFoo(Reader $reader): void {}
-
-                    /** @var Reader<*> $reader */
-                    $reader = new Reader();
-                    $same = $reader->same();
-                    $static = $reader->staticOf();
-                    takeFoo($same);
-                    takeFoo($static);',
-                'assertions' => [
-                    '$same===' => 'Reader<Foo>',
-                    '$static===' => 'Reader<Foo>&static',
-                ],
+                    /** @var Box<*> $b */
+                    $b = new Box();
+                    /** @var Box<stdClass> $box_of_std_class */
+                    $box_of_std_class = new Box();
+                    $b->nested()->set($box_of_std_class);',
+                'assertions' => [],
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],

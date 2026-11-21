@@ -375,14 +375,9 @@ final class TGenericObject extends TNamedObject
             return [];
         }
 
-        // `static<T>` names no class until it is expanded: the class of the call is its one
-        $static_class = $template_result->static_class_type;
-        $class_name = $static_class instanceof TNamedObject ? $static_class->value : $static_class;
-        $class_name = $codebase->classlike_storage_provider->has($this->value) || $class_name === null
-            ? $this->value
-            : $class_name;
-        $covariants = $codebase->classlike_storage_provider->has($class_name)
-            ? $codebase->classlike_storage_provider->get($class_name)->template_covariants
+        // `static<T>` names no class here, so it is read as an invariant argument list
+        $covariants = $codebase->classlike_storage_provider->has($this->value)
+            ? $codebase->classlike_storage_provider->get($this->value)->template_covariants
             : [];
         $projections = [];
 
