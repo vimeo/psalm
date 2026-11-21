@@ -23,6 +23,39 @@ final class TraitTest extends TestCase
     use InvalidCodeAnalysisTestTrait;
     use ValidCodeAnalysisTestTrait;
 
+    public function testConstantOfTheFirstTraitWinsOverALaterOneLeftByAnEarlierPopulation(): void
+    {
+        $this->project_analyzer->setPhpVersion('8.5', 'tests');
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile($file_path, '<?php
+            trait HasLimit {
+                public const int LIMIT = 10;
+            }
+
+            trait HasDeprecatedLimit {
+                #[\\Deprecated]
+                public const int LIMIT = 10;
+            }
+
+            final class Quota {
+                use HasLimit, HasDeprecatedLimit;
+            }');
+
+        $this->analyzeFile($file_path, new Context());
+
+        $codebase = $this->project_analyzer->getCodebase();
+        $storage = $codebase->classlike_storage_provider->get('Quota');
+        $storage->constants['LIMIT'] = $codebase->classlike_storage_provider->get('HasDeprecatedLimit')
+            ->constants['LIMIT'];
+        $storage->populated = false;
+        $codebase->classlike_storage_provider->makeNew('quota');
+
+        $codebase->populator->populateCodebase();
+
+        self::assertFalse($storage->constants['LIMIT']->deprecated);
+    }
+
     /**
      * @param list<array{int, string}> $expected_issues line and message of each UndefinedTrait
      */
@@ -184,6 +217,65 @@ final class TraitTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'constantOfTheFirstTraitDeclaringItWins' => [
+                'code' => '<?php
+                    trait HasLimit {
+                        public const int LIMIT = 10;
+                    }
+
+                    trait HasDeprecatedLimit {
+                        #[\\Deprecated]
+                        public const int LIMIT = 10;
+                    }
+
+                    final class Quota {
+                        use HasLimit, HasDeprecatedLimit;
+                    }
+
+                    $limit = Quota::LIMIT;',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.5',
+            ],
+            'traitConstantIsNotChangedByTheAdaptationOfAMethodOfItsName' => [
+                'code' => '<?php
+                    trait Greets {
+                        public const string hello = "hi";
+
+                        public function hello(): string {
+                            return self::hello;
+                        }
+                    }
+
+                    final class Greeter {
+                        use Greets {
+                            hello as greet;
+                        }
+                    }
+
+                    trait Counts {
+                        public const int count = 1;
+
+                        public function count(): int {
+                            return self::count;
+                        }
+                    }
+
+                    final class Counter {
+                        use Counts {
+                            count as protected;
+                        }
+                    }
+
+                    $hello = Greeter::hello;
+                    $count = Counter::count;',
+                'assertions' => [
+                    '$hello===' => "'hi'",
+                    '$count===' => '1',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
             'staticReturnOfTraitMethodOverriddenByMethodOfLaterTrait' => [
                 'code' => '<?php
                     trait A {
@@ -1616,17 +1708,6 @@ final class TraitTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.2',
             ],
-            'constant in trait with alias' => [
-                'code' => <<<'PHP'
-                    <?php
-                    trait TraitA { private const PRIVATE_CONST = 'PRIVATE_CONST'; }
-                    class ClassB { use TraitA { PRIVATE_CONST as public PUBLIC_CONST; } }
-                    $c = ClassB::PUBLIC_CONST;
-                    PHP,
-                'assertions' => ['$c' => 'string'],
-                'ignored_issues' => [],
-                'php_version' => '8.2',
-            ],
             'thisInGenericReturnTypeParam' => [
                 'code' => '<?php
                     /**
@@ -2018,6 +2099,58 @@ final class TraitTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'constantOfTheFirstTraitDeclaringItIsDeprecated' => [
+                'code' => '<?php
+                    trait HasLimit {
+                        public const int LIMIT = 10;
+                    }
+
+                    trait HasDeprecatedLimit {
+                        #[\\Deprecated]
+                        public const int LIMIT = 10;
+                    }
+
+                    final class Quota {
+                        use HasDeprecatedLimit, HasLimit;
+                    }
+
+                    $limit = Quota::LIMIT;',
+                'error_message' => 'DeprecatedConstant',
+                'error_levels' => [],
+                'php_version' => '8.5',
+            ],
+            'traitConstantHasNoAlias' => [
+                'code' => <<<'PHP'
+                    <?php
+                    trait TraitA { private const PRIVATE_CONST = 'PRIVATE_CONST'; }
+                    class ClassB { use TraitA { PRIVATE_CONST as public PUBLIC_CONST; } }
+                    $c = ClassB::PUBLIC_CONST;
+                    PHP,
+                'error_message' => 'UndefinedConstant',
+                'error_levels' => [],
+                'php_version' => '8.2',
+            ],
+            'traitMethodAliasIsNotAConstant' => [
+                'code' => '<?php
+                    trait Greets {
+                        public const string hello = "hi";
+
+                        public function hello(): string {
+                            return self::hello;
+                        }
+                    }
+
+                    final class Greeter {
+                        use Greets {
+                            hello as greet;
+                        }
+                    }
+
+                    $greet = Greeter::greet;',
+                'error_message' => 'UndefinedConstant - src' . DIRECTORY_SEPARATOR . 'somefile.php:16:30 - Constant Greeter::greet is not defined',
+                'error_levels' => [],
+                'php_version' => '8.3',
+            ],
             'staticReturnOfTraitMethodOverriddenByUnrelatedReturnTypeOfLaterTrait' => [
                 'code' => '<?php
                     class Foo {}

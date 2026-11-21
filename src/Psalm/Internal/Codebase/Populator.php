@@ -44,7 +44,6 @@ use Psalm\Type\Union;
 use UnitEnum;
 
 use function array_filter;
-use function array_flip;
 use function array_intersect_key;
 use function array_keys;
 use function array_merge;
@@ -1699,19 +1698,17 @@ final class Populator
             return;
         }
 
+        // the aliases and visibility changes of `use T { ... }` are of methods only
         foreach ($trait_storage->constants as $constant_name => $class_constant_storage) {
-            $trait_alias_map_cased = array_flip($storage->trait_alias_map_cased);
-            if (isset($trait_alias_map_cased[$constant_name])) {
-                $aliased_constant_name_lc = strtolower($trait_alias_map_cased[$constant_name]);
-                $aliased_constant_name = $trait_alias_map_cased[$constant_name];
-            } else {
-                $aliased_constant_name_lc = strtolower($constant_name);
-                $aliased_constant_name = $constant_name;
+            // PHP keeps the constant of the first trait declaring it
+            if ($this->isConstantOfAnotherUsedTrait($storage, $trait_storage, $constant_name)) {
+                continue;
             }
+
             // The class's own declaration wins over the constant of the trait. A plain isset() can't tell it from
             // an inherited one: when a storage is populated again (the Populator resets `populated`), constants
             // already holds the copies of the parent and of the trait from the first run.
-            $own_location = ($storage->constants[$aliased_constant_name] ?? null)?->location;
+            $own_location = ($storage->constants[$constant_name] ?? null)?->location;
             if ($own_location !== null
                 && $storage->stmt_location !== null
                 && $own_location->file_path === $storage->stmt_location->file_path
@@ -1721,18 +1718,15 @@ final class Populator
                 continue;
             }
 
-            $visibility = $storage->trait_visibility_map[$aliased_constant_name_lc]
-                ?? $class_constant_storage->visibility;
-            $final = $storage->trait_final_map[$aliased_constant_name_lc] ?? $class_constant_storage->final;
-            $storage->constants[$aliased_constant_name] = new ClassConstantStorage(
+            $storage->constants[$constant_name] = new ClassConstantStorage(
                 $class_constant_storage->type,
                 $class_constant_storage->inferred_type,
-                $visibility,
+                $class_constant_storage->visibility,
                 $class_constant_storage->location,
                 $class_constant_storage->type_location,
                 $class_constant_storage->stmt_location,
                 $class_constant_storage->deprecated,
-                $final,
+                $class_constant_storage->final,
                 $class_constant_storage->unresolved_node,
                 $class_constant_storage->attributes,
                 $class_constant_storage->suppressed_issues,
@@ -1741,6 +1735,51 @@ final class Populator
                 $class_constant_storage->signature_type,
             );
         }
+    }
+
+    /**
+     * Whether the constant the class holds under $constant_name is the one of a trait it uses before $trait_storage
+     * (also when it was taken in an earlier run, which a later trait can't have left there for an earlier one)
+     *
+     * @psalm-capabilities read-props
+     */
+    private function isConstantOfAnotherUsedTrait(
+        ClassLikeStorage $storage,
+        ClassLikeStorage $trait_storage,
+        string $constant_name,
+    ): bool {
+        $location = ($storage->constants[$constant_name] ?? null)?->location;
+
+        if ($location === null) {
+            return false;
+        }
+
+        $trait_name_lc = strtolower($trait_storage->name);
+
+        foreach ($storage->used_traits as $used_trait_lc => $_) {
+            try {
+                $used_trait_storage = $this->classlike_storage_provider->get(
+                    $this->classlikes->getUnAliasedName($used_trait_lc),
+                );
+            } catch (InvalidArgumentException) {
+                continue;
+            }
+
+            if (strtolower($used_trait_storage->name) === $trait_name_lc) {
+                return false;
+            }
+
+            $used_location = ($used_trait_storage->constants[$constant_name] ?? null)?->location;
+
+            if ($used_location !== null
+                && $used_location->file_path === $location->file_path
+                && $used_location->raw_file_start === $location->raw_file_start
+            ) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
