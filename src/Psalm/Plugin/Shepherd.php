@@ -76,6 +76,11 @@ final class Shepherd implements AfterAnalysisInterface
         $rawPayload = self::collectPayloadToSend($event);
 
         if ($rawPayload === null) {
+            $progress->warning(
+                'Results not sent to Shepherd: no supported CI service detected'
+                . ' (GitHub Actions, Travis CI, CircleCI, AppVeyor, Jenkins or Scrutinizer)',
+            );
+
             return;
         }
 

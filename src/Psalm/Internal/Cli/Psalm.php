@@ -1534,6 +1534,8 @@ final class Psalm
 
             --shepherd[=endpoint]
                 Send analysis statistics to Shepherd (shepherd.dev) or your server.
+                `endpoint` is the full URL the report is posted to, e.g. https://shepherd.example.com/hooks/psalm.
+                A value without a scheme gets https://. Only runs on a supported CI service are sent.
 
             --alter
                 Run Psalter
