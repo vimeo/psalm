@@ -1318,6 +1318,7 @@ final class StarProjectionTest extends TestCase
                 'php_version' => '8.0',
             ],
             'starProjectionCombinedWithAnArgumentKeepsBoth' => [
+                // `Box<*>|Box<DateTime>` stays two members: the arguments print differently, so the types differ
                 'code' => '<?php
                     /** @template T of object */
                     final class Box {}
@@ -1338,6 +1339,87 @@ final class StarProjectionTest extends TestCase
                     '$with_bare===' => 'Box|Box<*>',
                     '$with_date===' => 'Box<*>|Box<DateTime>',
                     '$with_itself===' => 'Box<*>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'starProjectionReadsOfAnObjectsMembersKeepTheStar' => [
+                'code' => '<?php
+                    /**
+                     * @template T of object
+                     * @method Box<T> magic()
+                     */
+                    class Box {
+                        /** @var Box<T> */
+                        public $prop;
+
+                        public function __construct() {
+                            $this->prop = $this;
+                        }
+
+                        public function __call(string $name, array $args): mixed {
+                            return null;
+                        }
+                    }
+
+                    /** @return properties-of<Box<*>> */
+                    function props() {
+                        throw new Exception();
+                    }
+
+                    /** @var Box<*> $b */
+                    $b = new Box();
+                    $vars = get_object_vars($b);
+                    $object_var = $vars["prop"];
+                    $properties = props();
+                    $properties_of = $properties["prop"];
+                    $magic = $b->magic();
+                    $nested = $b->prop->prop;',
+                'assertions' => [
+                    '$object_var===' => 'Box<*>',
+                    '$properties_of===' => 'Box<*>',
+                    '$magic===' => 'Box<*>',
+                    '$nested===' => 'Box<*>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'starProjectionInAClosureParamOfAReadTypeIsTheBound' => [
+                'code' => '<?php
+                    /** @template T of object */
+                    final class Box {
+                        /** @return Closure(Closure(): Box<T>): void */
+                        public function deep(): Closure {
+                            throw new Exception();
+                        }
+                    }
+
+                    /** @var Box<*> $b */
+                    $b = new Box();
+                    $deep = $b->deep();',
+                'assertions' => [
+                    '$deep===' => 'Closure[impure](Closure[impure]():Box<object>):void',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'starProjectionParamOutIsNotAStarYet' => [
+                // known gap: the out type is read with the arguments, before the receiver's `*` is marked, so it is
+                // not a `Box<*>` yet (the write-restriction PR flips it)
+                'code' => '<?php
+                    /** @template T of object */
+                    final class Box {
+                        /** @param-out Box<T> $out */
+                        public function fill(mixed &$out): void {
+                            $out = $this;
+                        }
+                    }
+
+                    /** @var Box<*> $b */
+                    $b = new Box();
+                    $b->fill($out);',
+                'assertions' => [
+                    '$out===' => 'Box<object>',
                 ],
                 'ignored_issues' => [],
                 'php_version' => '8.0',
@@ -1751,6 +1833,7 @@ final class StarProjectionTest extends TestCase
                 'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:15:41 - Argument 1 expects Box<object>, but Box<DateTime> provided',
             ],
             'starProjectionCombinedWithABareClassIsNotTheBound' => [
+                // `Box<*>|Box<object>` stays two members: the arguments print differently, so the types differ
                 'code' => '<?php
                     /** @template T of object */
                     final class Box {}
@@ -1766,6 +1849,26 @@ final class StarProjectionTest extends TestCase
                         takesDate($flag ? $any : $bare);
                     }',
                 'error_message' => 'ArgumentTypeCoercion - src' . DIRECTORY_SEPARATOR . 'somefile.php:13:35 - Argument 1 of takesDate expects Box<DateTime>, but parent type Box<*>|Box<object> provided',
+            ],
+            'starProjectionFirstClassCallableReturnIsStillAStar' => [
+                'code' => '<?php
+                    /** @template T of object */
+                    final class Box {
+                        /** @return Box<T> */
+                        public function same(): Box {
+                            return $this;
+                        }
+                    }
+
+                    /** @param Box<object> $b */
+                    function takesBoxOfObject(Box $b): void {}
+
+                    /** @param Box<*> $any */
+                    function f(Box $any): void {
+                        $same = $any->same(...);
+                        takesBoxOfObject($same());
+                    }',
+                'error_message' => 'ArgumentTypeCoercion - src' . DIRECTORY_SEPARATOR . 'somefile.php:16:42 - Argument 1 of takesBoxOfObject expects Box<object>, but parent type Box<*> provided',
             ],
         ];
     }

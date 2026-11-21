@@ -1842,6 +1842,7 @@ final class InstancePropertyAssignmentAnalyzer
                     $localizing_type_part,
                     $class_storage,
                     $declaring_class_storage,
+                    false,
                 );
             }
 
@@ -1904,6 +1905,7 @@ final class InstancePropertyAssignmentAnalyzer
                     $lhs_type_part,
                     $codebase->classlike_storage_provider->get($fq_class_name),
                     $declaring_class_storage,
+                    false,
                 );
             }
         }

@@ -930,7 +930,7 @@ final class AtomicPropertyFetchAnalyzer
         TGenericObject $lhs_type_part,
         ClassLikeStorage $property_class_storage,
         ClassLikeStorage $property_declaring_class_storage,
-        bool $star_reads = false,
+        bool $star_reads,
     ): Union {
         $lhs_type_part = StarProjection::resolve($lhs_type_part, $codebase);
 
