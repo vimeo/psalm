@@ -481,6 +481,8 @@ final class BuildInfoCollectorTest extends TestCase
                 'CI_BRANCH' => 'master',
                 'CI_PR_NUMBER' => '42',
                 'CI_NAME' => 'Scrutinizer',
+                'CI_REPO_OWNER' => 'psalm',
+                'CI_REPO_NAME' => 'example',
                 'CI_PR_REPO_OWNER' => 'psalm',
                 'CI_PR_REPO_NAME' => 'example',
             ],

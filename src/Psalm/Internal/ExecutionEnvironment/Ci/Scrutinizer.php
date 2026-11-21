@@ -38,12 +38,14 @@ final class Scrutinizer implements CiProvider
         }
 
         $repository = self::repository($env->get(self::PROJECT));
+
+        // the project is the inspected one; Scrutinizer does not tell the repository a pull request comes from
         $pull_request = PullRequest::fromNumber($env->get(self::PULL_REQUEST), $repository);
 
         return new BuildInfo(
             ciName: 'Scrutinizer',
             branch: $env->get(self::BRANCH),
-            repository: $pull_request === null ? $repository : null,
+            repository: $repository,
             pullRequest: $pull_request,
             jobId: $env->get(self::JOB_ID),
         );
