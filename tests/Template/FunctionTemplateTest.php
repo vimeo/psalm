@@ -111,6 +111,72 @@ final class FunctionTemplateTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'argumentOfUnknownTypeBindsTheTemplateLikeAMixedOne' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class Box {
+                        /** @var T */
+                        public $v;
+
+                        /** @param T $v */
+                        public function __construct($v) {
+                            $this->v = $v;
+                        }
+
+                        /**
+                         * @template U
+                         * @param U $u
+                         * @return Box<U>
+                         */
+                        public function with($u): Box {
+                            return new Box($u);
+                        }
+                    }
+
+                    /**
+                     * @template T
+                     * @param T $x
+                     * @return list<T>
+                     */
+                    function wrap($x): array {
+                        return [$x];
+                    }
+
+                    /**
+                     * @template T
+                     * @param T $a
+                     * @param T $b
+                     * @return list<T>
+                     */
+                    function both($a, $b): array {
+                        return [$a, $b];
+                    }
+
+                    /**
+                     * @template T
+                     * @param T $a
+                     * @param mixed $b
+                     * @param-out T $b
+                     */
+                    function copyTo($a, &$b): void {
+                        $b = $a;
+                    }
+
+                    $wrapped = wrap(undefined_fn());
+                    $both = both(1, undefined_fn());
+                    $box = new Box(undefined_fn());
+                    $with = (new Box(1))->with(undefined_fn());
+                    copyTo(1, $copied);
+                ',
+                'assertions' => [
+                    '$wrapped===' => 'list<mixed>',
+                    '$both===' => 'list<1|mixed>',
+                    '$box===' => 'Box<mixed>',
+                    '$with===' => 'Box<mixed>',
+                    '$copied===' => '1',
+                ],
+                'ignored_issues' => ['MixedArgument', 'UndefinedFunction'],
+            ],
             'closureOfATemplateWithANullDefaultOfTheSameTemplate' => [
                 'code' => '<?php
                     /** @template T */

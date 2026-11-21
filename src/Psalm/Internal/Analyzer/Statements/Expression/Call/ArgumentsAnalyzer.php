@@ -426,6 +426,11 @@ final class ArgumentsAnalyzer
 
             $inferred_arg_type = $statements_analyzer->node_data->getType($arg->value);
 
+            // an argument of unknown type (e.g. an undefined call) binds the param's templates like a mixed one
+            if ($inferred_arg_type === null && $param && !$param->by_ref) {
+                $inferred_arg_type = Type::getMixed();
+            }
+
             if (null !== $inferred_arg_type
                 && null !== $template_result
                 && null !== $param

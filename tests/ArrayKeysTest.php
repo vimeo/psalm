@@ -20,6 +20,38 @@ final class ArrayKeysTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'arrayKeysOfAnUndefinedCallIsAListOfArrayKeys' => [
+                'code' => '<?php
+                    interface FD {}
+                    final class C {}
+
+                    function fd(): FD {
+                        throw new RuntimeException();
+                    }
+
+                    $method = array_keys(fd()->getColumns());
+                    $function = array_keys(undefined_fn());
+                    $static_method = array_keys(C::nope());
+                    $unknown_class = array_keys(Nope::nope());
+                    $constant = array_keys(NOPE);
+                ',
+                'assertions' => [
+                    '$method===' => 'list<array-key>',
+                    '$function===' => 'list<array-key>',
+                    '$static_method===' => 'list<array-key>',
+                    '$unknown_class===' => 'list<array-key>',
+                    '$constant===' => 'list<array-key>',
+                ],
+                'ignored_issues' => [
+                    'MixedArgument',
+                    'MixedAssignment',
+                    'UndefinedClass',
+                    'UndefinedConstant',
+                    'UndefinedFunction',
+                    'UndefinedInterfaceMethod',
+                    'UndefinedMethod',
+                ],
+            ],
             'arrayKeysOfEmptyArrayReturnsListOfEmpty' => [
                 'code' => '<?php
                     $keys = array_keys([]);

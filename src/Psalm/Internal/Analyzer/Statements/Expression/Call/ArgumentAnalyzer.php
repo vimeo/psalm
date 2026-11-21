@@ -244,6 +244,23 @@ final class ArgumentAnalyzer
                         $statements_analyzer->getSuppressedIssues(),
                     );
                 }
+
+                // binds the param's templates like a mixed argument, as ArgumentsAnalyzer::analyze() does
+                if ($function_param->type && $template_result && $template_result->template_types) {
+                    TemplateStandinTypeReplacer::replace(
+                        $function_param->type,
+                        $template_result,
+                        $codebase,
+                        $statements_analyzer,
+                        Type::getMixed(),
+                        $argument_offset,
+                        !$statements_analyzer->isStatic()
+                            && (!$method_id || $method_id->method_name !== '__construct')
+                            ? $context->self
+                            : null,
+                        $context->calling_method_id ?? $context->calling_function_id,
+                    );
+                }
             }
 
             return null;
