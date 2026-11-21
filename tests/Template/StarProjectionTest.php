@@ -993,6 +993,103 @@ final class StarProjectionTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'starProjectionAssertedIfTrueHoldsTheBound' => [
+                'code' => '<?php
+                    /** @template-covariant T of Countable */
+                    interface Reader {}
+
+                    /** @param Reader<Countable> $r */
+                    function takes(Reader $r): void {}
+
+                    /** @psalm-assert-if-true Reader<*> $x */
+                    function isReader(mixed $x): bool {
+                        return true;
+                    }
+
+                    function f(mixed $a): void {
+                        if (isReader($a)) {
+                            takes($a);
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'starProjectionAssertedIfFalseHoldsTheBound' => [
+                'code' => '<?php
+                    /** @template-covariant T of Countable */
+                    interface Reader {}
+
+                    /** @param Reader<Countable> $r */
+                    function takes(Reader $r): void {}
+
+                    /** @psalm-assert-if-false Reader<*> $x */
+                    function isNotReader(mixed $x): bool {
+                        return true;
+                    }
+
+                    function f(mixed $a): void {
+                        if (!isNotReader($a)) {
+                            takes($a);
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'starProjectionAssertedHoldsTheBound' => [
+                'code' => '<?php
+                    /** @template-covariant T of Countable */
+                    interface Reader {}
+
+                    /** @param Reader<Countable> $r */
+                    function takes(Reader $r): void {}
+
+                    /** @psalm-assert Reader<*> $x */
+                    function assertReader(mixed $x): void {}
+
+                    function f(mixed $a): void {
+                        assertReader($a);
+                        takes($a);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'starProjectionAssertedOnAPropertyHoldsTheBound' => [
+                'code' => '<?php
+                    /** @template-covariant T of Countable */
+                    interface Reader {}
+
+                    /** @param Reader<Countable> $r */
+                    function takes(Reader $r): void {}
+
+                    final class Holder {
+                        public mixed $prop = null;
+
+                        /** @psalm-assert-if-true Reader<*> $this->prop */
+                        public function hasReader(): bool {
+                            return true;
+                        }
+
+                        /** @psalm-assert Reader<*> $this->prop */
+                        public function assertReader(): void {}
+
+                        public function ifTrue(): void {
+                            if ($this->hasReader()) {
+                                takes($this->prop);
+                            }
+                        }
+
+                        public function asserted(): void {
+                            $this->assertReader();
+                            takes($this->prop);
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
         ];
     }
 

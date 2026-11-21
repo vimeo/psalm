@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Psalm\Internal\Type\Comparator;
 
 use Psalm\Codebase;
+use Psalm\Internal\Type\StarProjection;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Internal\Type\TypeArgumentProjection;
 use Psalm\Type\Atomic;
@@ -53,6 +54,11 @@ final class GenericTypeComparator
             }
 
             return false;
+        }
+
+        // a type that was not expanded (an assertion's, a plugin's) holds `mixed` for a `*` until its bound is known
+        if ($input_type_part instanceof TGenericObject) {
+            $input_type_part = StarProjection::resolve($input_type_part, $codebase);
         }
 
         $container_type_params_covariant = [];
