@@ -46,12 +46,15 @@ use function str_contains;
 use function str_ends_with;
 use function str_starts_with;
 use function strpos;
+use function strtolower;
 use function substr;
+use function token_get_all;
 use function trim;
 
 use const DIRECTORY_SEPARATOR;
 use const PHP_EOL;
 use const STDERR;
+use const T_STRING;
 
 // phpcs:disable PSR1.Files.SideEffects
 
@@ -68,6 +71,14 @@ final class Refactor
 {
     private const IDENTIFIER = '[a-zA-Z_\\x80-\\xff][a-zA-Z0-9_\\x80-\\xff]*';
     private const CLASS_NAME = '(?:' . self::IDENTIFIER . '\\\\)*' . self::IDENTIFIER;
+
+    /**
+     * Names PHP reserves for types, which are not keywords but still cannot name a class.
+     */
+    private const RESERVED_CLASS_NAMES = [
+        'bool', 'false', 'float', 'int', 'iterable', 'mixed', 'never', 'null', 'object', 'parent', 'self', 'string',
+        'true', 'void',
+    ];
 
     public const LONG_OPTIONS = [
         'help', 'debug', 'debug-by-line', 'debug-emitted-issues', 'config:', 'root:', 'monochrome',
@@ -452,6 +463,19 @@ final class Refactor
         return str_starts_with($name, '\\') ? substr($name, 1) : $name;
     }
 
+    /**
+     * @psalm-pure
+     */
+    private static function isReservedClassName(string $name): bool
+    {
+        $tokens = token_get_all('<?php ' . $name);
+
+        return count($tokens) !== 2
+            || !is_array($tokens[1])
+            || $tokens[1][0] !== T_STRING
+            || in_array(strtolower($name), self::RESERVED_CLASS_NAMES, true);
+    }
+
     private static function exitOnShapeError(string $source, string $destination): void
     {
         $shape_error = self::getShapeError($source, $destination);
@@ -504,6 +528,12 @@ final class Refactor
 
             if (str_contains($source, '\\') && !str_contains($destination, '\\')) {
                 return 'Renaming a namespaced class into the global namespace is not supported';
+            }
+
+            $destination_segments = explode('\\', $destination);
+            $short_name = end($destination_segments);
+            if (self::isReservedClassName($short_name)) {
+                return 'Cannot use ' . $short_name . ' as a class name as it is reserved';
             }
 
             return null;
