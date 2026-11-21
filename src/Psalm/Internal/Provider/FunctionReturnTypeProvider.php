@@ -17,6 +17,7 @@ use Psalm\Internal\Provider\ReturnTypeProvider\ArrayFilterReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\ArrayFindReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\ArrayFirstLastReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\ArrayIntersectKeyReturnTypeProvider;
+use Psalm\Internal\Provider\ReturnTypeProvider\ArrayKeyFirstLastReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\ArrayMapReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\ArrayMergeReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\ArrayPadReturnTypeProvider;
@@ -99,6 +100,7 @@ final class FunctionReturnTypeProvider
         $this->registerClass(ArrayMergeReturnTypeProvider::class);
         $this->registerClass(ArrayPadReturnTypeProvider::class);
         $this->registerClass(ArrayPointerAdjustmentReturnTypeProvider::class);
+        $this->registerClass(ArrayKeyFirstLastReturnTypeProvider::class);
         $this->registerClass(ArrayPopReturnTypeProvider::class);
         $this->registerClass(ArrayRandReturnTypeProvider::class);
         $this->registerClass(ArrayReduceReturnTypeProvider::class);

@@ -4707,6 +4707,37 @@ final class ArrayFunctionCallTest extends TestCase
                     '$merged===' => "array<'age'|'name', 'a'|'b'|1>",
                 ],
             ],
+            'writeUnderTheLastKeyOfAListKeepsAList' => [
+                'code' => '<?php
+                    /**
+                     * @param list<string> $names
+                     * @return list<array{name: string, note: ?string}>
+                     */
+                    function annotate(array $names, string $note): array {
+                        $entries = [];
+                        foreach ($names as $name) {
+                            $entries[] = ["name" => $name, "note" => null];
+                            $key = array_key_last($entries);
+                            $entries[$key]["note"] = $note;
+                        }
+                        return $entries;
+                    }
+
+                    /** @param list<array{n: int}> $l */
+                    function maybeEmpty(array $l): void {
+                        $k = array_key_first($l);
+                        if ($k !== null) {
+                            $l[$k]["n"] = 2;
+                        }
+                        /** @psalm-check-type-exact $l = list<array{n: int}> */;
+                    }
+
+                    /** @param list<array{n: int}> $l */
+                    function anyKey(array $l, int $k): void {
+                        $l[$k]["n"] = 2;
+                        /** @psalm-check-type-exact $l = non-empty-array<int, array{n: int}> */;
+                    }',
+            ],
         ];
     }
 
