@@ -431,8 +431,10 @@ final class ClassConstAnalyzer
                 );
             }
 
-            // if we're ignoring that the class doesn't exist, exit anyway
+            // if we're ignoring that the class doesn't exist, exit anyway, and without the type of the classes before
             if (!$codebase->classlikes->classOrInterfaceOrEnumExists($fq_class_name, null, $context)) {
+                $statements_analyzer->node_data->clearNodeOfTypeAndAssertions($stmt);
+
                 return true;
             }
 
