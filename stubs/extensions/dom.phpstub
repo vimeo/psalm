@@ -156,7 +156,7 @@ class DOMNode
      */
     public ?DOMNamedNodeMap $attributes;
     /** @readonly */
-    public DOMDocument $ownerDocument;
+    public ?DOMDocument $ownerDocument;
     /** @readonly */
     public ?string $namespaceURI;
     public string $prefix;
@@ -244,7 +244,7 @@ class DOMNameSpaceNode
     /** @readonly */
     public ?string $namespaceURI;
     /** @readonly */
-    public DOMDocument $ownerDocument;
+    public ?DOMDocument $ownerDocument;
     /** @readonly */
     public ?DOMNode $parentNode;
 }
