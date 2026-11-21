@@ -443,6 +443,45 @@ final class MethodAnalyzer extends FunctionLikeAnalyzer
         }
     }
 
+    /**
+     * Reports a __sleep() or __wakeup(), which PHP 8.5 soft-deprecates, unless the class has the replacement: then
+     * serialize() and unserialize() don't call it, and a subclass may still call it as the parent method
+     *
+     * @param array<string> $suppressed_issues
+     */
+    public static function checkSoftDeprecatedMagicMethod(
+        MethodStorage $method_storage,
+        ClassLikeStorage $class_storage,
+        CodeLocation $code_location,
+        array $suppressed_issues,
+    ): void {
+        if ($method_storage->cased_name === null) {
+            return;
+        }
+
+        $replacement = match (strtolower($method_storage->cased_name)) {
+            '__sleep' => '__serialize',
+            '__wakeup' => '__unserialize',
+            default => null,
+        };
+
+        if ($replacement === null || isset($class_storage->declaring_method_ids[$replacement])) {
+            return;
+        }
+
+        IssueBuffer::maybeAdd(
+            new DeprecatedSyntax(
+                PhpDeprecations::getDeprecatedSinceMessage(
+                    'Declaring ' . $method_storage->cased_name . '()',
+                    8_05_00,
+                    $replacement . '()',
+                ),
+                $code_location,
+            ),
+            $suppressed_issues,
+        );
+    }
+
     public static function checkMethodSignatureMustOmitReturnType(
         MethodStorage $method_storage,
         CodeLocation $code_location,

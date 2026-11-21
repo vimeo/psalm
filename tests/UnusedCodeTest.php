@@ -2167,6 +2167,7 @@ final class UnusedCodeTest extends TestCase
 
                         return true;
                     }',
+                'ignored_issues' => ['DeprecatedSyntax'],
             ],
             'useIteratorMethodsWhenCallingForeach' => [
                 'code' => '<?php

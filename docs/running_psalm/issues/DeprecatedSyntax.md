@@ -40,6 +40,15 @@ final class Connection
     }
 
     public function connect(DateTimeZone $zone = null, int $retries = 1, string $dsn): void {} // DeprecatedSyntax: ?DateTimeZone, no default before $dsn
+
+    public function __wakeup(): void {} // DeprecatedSyntax: __unserialize()
+}
+
+final class Session
+{
+    public function __serialize(): array { return []; }
+
+    public function __sleep(): array { return []; } // no issue: serialize() calls __serialize()
 }
 
 function &nothing(): void {} // DeprecatedSyntax: a void function returns no reference

@@ -249,6 +249,25 @@ final class PhpDeprecationTest extends TestCase
                 'assertions' => [],
                 'ignored_issues' => ['MissingOverrideAttribute'],
             ],
+            'sleepAndWakeupBesideTheirReplacements' => [
+                'code' => '<?php
+                    final class A {
+                        public function __serialize(): array { return []; }
+                        public function __unserialize(array $data): void {}
+                        public function __sleep(): array { return []; }
+                        public function __wakeup(): void {}
+                    }',
+            ],
+            'wakeupBesideAnInheritedUnserialize' => [
+                'code' => '<?php
+                    abstract class A {
+                        public function __unserialize(array $data): void {}
+                    }
+
+                    final class B extends A {
+                        public function __wakeup(): void {}
+                    }',
+            ],
             'deprecatedSyntaxSuppressedOnTheClass' => [
                 'code' => '<?php
                     /** @psalm-suppress DeprecatedSyntax */
@@ -724,6 +743,29 @@ final class PhpDeprecationTest extends TestCase
                 'code' => '<?php
                     function f(stdClass $a = null): void {}',
                 'error_message' => 'Making the type of $a nullable with its null default is deprecated since PHP 8.4, declare the type nullable',
+            ],
+            'declaringSleep' => [
+                'code' => '<?php
+                    final class A {
+                        public function __sleep(): array { return []; }
+                    }',
+                'error_message' => 'DeprecatedSyntax - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:25 - Declaring __sleep()'
+                    . ' is deprecated since PHP 8.5, use __serialize() instead',
+            ],
+            'declaringWakeup' => [
+                'code' => '<?php
+                    final class A {
+                        public function __wakeup(): void {}
+                    }',
+                'error_message' => 'Declaring __wakeup() is deprecated since PHP 8.5, use __unserialize() instead',
+            ],
+            'declaringWakeupBesideOnlySerialize' => [
+                'code' => '<?php
+                    final class A {
+                        public function __serialize(): array { return []; }
+                        public function __wakeup(): void {}
+                    }',
+                'error_message' => 'Declaring __wakeup() is deprecated since PHP 8.5, use __unserialize() instead',
             ],
             'sleepNotReturningAnArray' => [
                 'code' => '<?php

@@ -3307,6 +3307,12 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
 
             MethodAnalyzer::checkMethodSignatureMustOmitReturnType($storage, $codeLocation);
             MethodAnalyzer::checkDeprecatedMagicMethodSignature($storage, $codeLocation, $this->getSuppressedIssues());
+            MethodAnalyzer::checkSoftDeprecatedMagicMethod(
+                $storage,
+                $appearing_class_storage,
+                $codeLocation,
+                $this->getSuppressedIssues(),
+            );
 
             if ($appearing_class_storage->is_enum) {
                 MethodAnalyzer::checkForbiddenEnumMethod(
