@@ -15,6 +15,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\Statements\Expression\NullsafeChainState;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
+use Psalm\Internal\Analyzer\ClosureAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\Type\TemplateResult;
@@ -123,8 +124,12 @@ final class MethodCallAnalyzer extends CallAnalyzer
                 }
             }
 
+            $source = $statements_analyzer->getSource();
+
             if ($stmt->name instanceof PhpParser\Node\Identifier
                 && strtolower($stmt->name->name) === '__construct'
+                // a lazy ghost initializer constructs the object it is given
+                && !($source instanceof ClosureAnalyzer && $source->getInitializedObjectParam() === $stmt->var->name)
             ) {
                 IssueBuffer::maybeAdd(
                     new DirectConstructorCall(

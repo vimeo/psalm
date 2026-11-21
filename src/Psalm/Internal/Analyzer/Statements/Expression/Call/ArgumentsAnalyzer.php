@@ -100,6 +100,12 @@ use function strtoupper;
  */
 final class ArgumentsAnalyzer
 {
+    /** The offset of the initializer argument of the methods creating a lazy ghost */
+    private const LAZY_GHOST_INITIALIZER_OFFSETS = [
+        'reflectionclass::newlazyghost' => 0,
+        'reflectionclass::resetaslazyghost' => 1,
+    ];
+
     /**
      * @see self::getByRefFlowInputs()
      * @var array<lowercase-string, array<string, array<int|string, string>>>|null
@@ -366,6 +372,12 @@ final class ArgumentsAnalyzer
                         $arg,
                         $param,
                     );
+                }
+
+                if ((self::LAZY_GHOST_INITIALIZER_OFFSETS[strtolower((string) $method_id)] ?? null)
+                    === $argument_offset
+                ) {
+                    $arg->value->setAttribute(ClosureAnalyzer::LAZY_GHOST_INITIALIZER_ATTRIBUTE, true);
                 }
             }
 

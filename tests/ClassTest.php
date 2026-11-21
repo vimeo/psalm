@@ -159,6 +159,23 @@ final class ClassTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'aLazyGhostInitializerConstructsTheObject' => [
+                'code' => '<?php
+                    final class Example {
+                        public function __construct(public int $prop) {}
+                    }
+                    $reflector = new ReflectionClass(Example::class);
+                    $ghost = $reflector->newLazyGhost(function (Example $object): void {
+                        $object->__construct(1);
+                    });
+                    $reset = new Example(2);
+                    $reflector->resetAsLazyGhost($reset, static function (Example $object): void {
+                        $object->__construct(3);
+                    });',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.4',
+            ],
             'arrayOfLiteralStringOrClassStringIsNotCheckedAsClassName' => [
                 'code' => '<?php
                     /** @param array<"string"|"int"|class-string> $input */
@@ -2780,6 +2797,20 @@ final class ClassTest extends TestCase
                     $a->__construct();
                 ',
                 'error_message' => 'DirectConstructorCall',
+            ],
+            'directConstructorCallOfAnotherObjectInALazyGhostInitializer' => [
+                'code' => '<?php
+                    final class Example {
+                        public function __construct(public int $prop) {}
+                    }
+                    $other = new Example(1);
+                    $reflector = new ReflectionClass(Example::class);
+                    $ghost = $reflector->newLazyGhost(function (Example $object) use ($other): void {
+                        $other->__construct(2);
+                    });',
+                'error_message' => 'DirectConstructorCall',
+                'error_levels' => [],
+                'php_version' => '8.4',
             ],
             'directConstructorCallOnThis' => [
                 'code' => '<?php
