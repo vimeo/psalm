@@ -4738,6 +4738,17 @@ final class ArrayFunctionCallTest extends TestCase
                         /** @psalm-check-type-exact $l = non-empty-array<int, array{n: int}> */;
                     }',
             ],
+            'writeUnderTheLastKeyOfAListPassedByNameKeepsAList' => [
+                'code' => '<?php
+                    /** @param non-empty-list<array{n: int}> $l */
+                    function named(array $l): void {
+                        $l[array_key_last(array: $l)]["n"] = 2;
+                        /** @psalm-check-type-exact $l = non-empty-list<array{n: int}> */;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
         ];
     }
 

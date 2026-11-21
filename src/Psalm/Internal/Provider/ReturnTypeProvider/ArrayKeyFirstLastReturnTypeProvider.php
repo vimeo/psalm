@@ -40,7 +40,7 @@ final class ArrayKeyFirstLastReturnTypeProvider implements FunctionReturnTypePro
         if (!$statements_source instanceof StatementsAnalyzer
             || $array_arg === null
             || $array_arg->unpack
-            || $array_arg->name !== null
+            || ($array_arg->name !== null && $array_arg->name->name !== 'array')
         ) {
             return null;
         }
