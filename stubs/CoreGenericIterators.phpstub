@@ -307,6 +307,7 @@ class ArrayIterator implements SeekableIterator, ArrayAccess, Serializable, Coun
     /**
      * @param TKey $key The offset being checked.
      * @return bool true if the offset exists, otherwise false
+     * @no-named-arguments because of conflict with ArrayAccess
      *
      * @psalm-mutation-free
      */
@@ -316,6 +317,7 @@ class ArrayIterator implements SeekableIterator, ArrayAccess, Serializable, Coun
      * @param TKey $key The offset to get the value from.
      * @return TValue|null The value at offset index, null when accessing invalid indexes
      * @psalm-ignore-nullable-return
+     * @no-named-arguments because of conflict with ArrayAccess
      *
      * @psalm-mutation-free
      */
@@ -325,6 +327,7 @@ class ArrayIterator implements SeekableIterator, ArrayAccess, Serializable, Coun
      * @param TKey $key The index to set for.
      * @param TValue $value The new value to store at the index.
      * @return void
+     * @no-named-arguments because of conflict with ArrayAccess
      *
      * @psalm-capabilities read-props|write-this-props
      * @psalm-purity-from-template TStorage
@@ -334,6 +337,7 @@ class ArrayIterator implements SeekableIterator, ArrayAccess, Serializable, Coun
     /**
      * @param TKey $key The offset to unset.
      * @return void
+     * @no-named-arguments because of conflict with ArrayAccess
      *
      * @psalm-capabilities read-props|write-this-props
      * @psalm-purity-from-template TStorage
