@@ -1516,10 +1516,6 @@ final class TypeExpander
                 array_values($constant_type->getAtomicTypes()),
             );
         }
-        if ($type_atomics === []) {
-            return [$return_type];
-        }
-
         if ($return_type instanceof TKeyOf) {
             $new_return_types = TKeyOf::getArrayKeyType(new Union($type_atomics));
         } else {

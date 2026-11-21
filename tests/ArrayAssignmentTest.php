@@ -3468,6 +3468,43 @@ final class ArrayAssignmentTest extends TestCase
                         return $l;
                     }',
             ],
+            'classStringKeyStaysAClassStringWhenMergedWithClassStringKeys' => [
+                'code' => <<<'PHP'
+                    <?php
+                    interface Visitor {}
+
+                    /**
+                     * @param array<class-string, string> $extra
+                     * @return array<class-string, string>
+                     */
+                    function tags(array $extra): array
+                    {
+                        $mapping = [Visitor::class => 'visitor'];
+                        foreach ($extra as $class => $tag) {
+                            $mapping[$class] = $tag;
+                        }
+                        return $mapping;
+                    }
+                PHP,
+            ],
+            'literalStringKeyStaysALiteralWhenMergedWithClassStringKeys' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @param array<class-string, string> $extra
+                     * @return array<class-string|'Visitor', string>
+                     */
+                    function tags(array $extra): array
+                    {
+                        $mapping = ['Visitor' => 'visitor'];
+                        foreach ($extra as $class => $tag) {
+                            $mapping[$class] = $tag;
+                        }
+                        /** @psalm-check-type-exact $mapping = non-empty-array<'Visitor'|class-string, string> */
+                        return $mapping;
+                    }
+                PHP,
+            ],
         ];
     }
 

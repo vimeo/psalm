@@ -45,6 +45,8 @@ final class SarifReport extends Report
         'TaintedUserSecret' => '7.5',
         'TaintedSystemSecret' => '7.5',
         'TaintedHtml' => '6.1',
+        'TaintedHtmlAttribute' => '6.1',
+        'TaintedUrlScheme' => '6.1',
         'TaintedTextWithQuotes' => '6.1',
         'TaintedHeader' => '6.1',
         'TaintedRedirect' => '6.1',
