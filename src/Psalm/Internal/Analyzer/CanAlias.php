@@ -9,7 +9,10 @@ use PhpParser;
 use Psalm\Aliases;
 use Psalm\CodeLocation;
 use Psalm\FileManipulation;
+use Psalm\Internal\Codebase\PhpDeprecations;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
+use Psalm\Issue\ReservedWord;
+use Psalm\IssueBuffer;
 
 use function strtolower;
 
@@ -58,8 +61,11 @@ trait CanAlias
             $use_path_lc = strtolower($use_path);
             $use_alias = $use->alias->name ?? $use->name->getLast();
             $use_alias_lc = strtolower($use_alias);
+            $use_type = $use->type !== PhpParser\Node\Stmt\Use_::TYPE_UNKNOWN ? $use->type : $stmt->type;
 
-            switch ($use->type !== PhpParser\Node\Stmt\Use_::TYPE_UNKNOWN ? $use->type : $stmt->type) {
+            $this->checkDeprecatedAlias($use, $use_alias, $use_type);
+
+            switch ($use_type) {
                 case PhpParser\Node\Stmt\Use_::TYPE_FUNCTION:
                     $this->aliased_functions[$use_alias_lc] = $use_path;
                     break;
@@ -107,6 +113,18 @@ trait CanAlias
         }
     }
 
+    private function checkDeprecatedAlias(PhpParser\Node\UseItem $use, string $alias, int $type): void
+    {
+        $message = PhpDeprecations::getUseAliasMessage($alias, $type === PhpParser\Node\Stmt\Use_::TYPE_FUNCTION);
+
+        if ($message !== null) {
+            IssueBuffer::maybeAdd(
+                new ReservedWord($message, new CodeLocation($this, $use->alias ?? $use), $alias),
+                $this->getSuppressedIssues(),
+            );
+        }
+    }
+
     public function visitGroupUse(PhpParser\Node\Stmt\GroupUse $stmt): void
     {
         $use_prefix = $stmt->prefix->toString();
@@ -116,8 +134,11 @@ trait CanAlias
         foreach ($stmt->uses as $use) {
             $use_path = $use_prefix . '\\' . $use->name->toString();
             $use_alias = $use->alias->name ?? $use->name->getLast();
+            $use_type = $use->type !== PhpParser\Node\Stmt\Use_::TYPE_UNKNOWN ? $use->type : $stmt->type;
 
-            switch ($use->type !== PhpParser\Node\Stmt\Use_::TYPE_UNKNOWN ? $use->type : $stmt->type) {
+            $this->checkDeprecatedAlias($use, $use_alias, $use_type);
+
+            switch ($use_type) {
                 case PhpParser\Node\Stmt\Use_::TYPE_FUNCTION:
                     $this->aliased_functions[strtolower($use_alias)] = $use_path;
                     break;

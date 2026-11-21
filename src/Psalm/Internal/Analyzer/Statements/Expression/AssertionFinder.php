@@ -413,6 +413,33 @@ final class AssertionFinder
                         $if_types[$var_name] = [[new IsEqualIsset]];
                     }
                 }
+
+                // each offset of the chain is a key of its array
+                $dim_fetch = $isset_var;
+
+                while ($dim_fetch instanceof PhpParser\Node\Expr\ArrayDimFetch) {
+                    if ($dim_fetch->dim
+                        && $source instanceof StatementsAnalyzer
+                        && ($key_var_name = ExpressionIdentifier::getExtendedVarId(
+                            $dim_fetch->dim,
+                            $this_class_name,
+                            $source,
+                        )) !== null
+                        && ($array_type = $source->node_data->getType($dim_fetch->var))
+                        && ($key_type = $source->node_data->getType($dim_fetch->dim))
+                        && ($key_assertion = self::getKeyOfTemplateAssertion(
+                            $dim_fetch->var,
+                            $array_type,
+                            $key_type,
+                            $this_class_name,
+                            $source,
+                        ))
+                    ) {
+                        $if_types[$key_var_name][] = [$key_assertion];
+                    }
+
+                    $dim_fetch = $dim_fetch->var;
+                }
             }
 
             return $if_types ? [$if_types] : [];
@@ -3564,6 +3591,47 @@ final class AssertionFinder
     }
 
     /**
+     * That a key of an array of a template type T is found: it is a key-of<T>
+     */
+    private static function getKeyOfTemplateAssertion(
+        PhpParser\Node\Expr $array_expr,
+        Union $array_type,
+        Union $key_type,
+        ?string $this_class_name,
+        StatementsAnalyzer $source,
+    ): ?InArray {
+        $array_atomic = $array_type->isSingle() ? $array_type->getSingleAtomic() : null;
+
+        if (!self::isArrayTemplate($array_atomic)) {
+            return null;
+        }
+
+        $key_of_type = new Union([new TTemplateKeyOf(
+            $array_atomic->param_name,
+            $array_atomic->defining_class,
+            new Union([$array_atomic]),
+        )]);
+
+        // only an int finds no other key than itself: '0' finds the key 0, null the key ''. A string that
+        // keys of T can be is still narrowed, though '0' may have found the int key 0
+        if (Type::intersectUnionTypes($key_of_type, $key_type, $source->getCodebase()) === null
+            || !array_all(
+                $key_type->getAtomicTypes(),
+                static fn(Atomic $key_atomic): bool => $key_atomic instanceof TInt
+                    || Type::intersectUnionTypes(
+                        $key_of_type,
+                        new Union([$key_atomic]),
+                        $source->getCodebase(),
+                    ) !== null,
+            )
+        ) {
+            return null;
+        }
+
+        return new InArray($key_of_type, self::getOperandId($array_expr, $this_class_name, $source));
+    }
+
+    /**
      * @return list<non-empty-array<string, non-empty-list<non-empty-list<Assertion>>>>
      */
     private static function getArrayKeyExistsAssertions(
@@ -3637,34 +3705,16 @@ final class AssertionFinder
                 }
             }
 
-            $array_atomic = $second_var_type->isSingle() ? $second_var_type->getSingleAtomic() : null;
+            $template_key_assertion = self::getKeyOfTemplateAssertion(
+                $expr->getArgs()[1]->value,
+                $second_var_type,
+                $first_var_type,
+                $this_class_name,
+                $source,
+            );
 
-            if (self::isArrayTemplate($array_atomic)) {
-                $key_of_type = new Union([new TTemplateKeyOf(
-                    $array_atomic->param_name,
-                    $array_atomic->defining_class,
-                    new Union([$array_atomic]),
-                )]);
-
-                // only an int finds no other key than itself: '0' finds the key 0, null the key ''. A string that
-                // keys of T can be is still narrowed, though '0' may have found the int key 0
-                if (Type::intersectUnionTypes($key_of_type, $first_var_type, $source->getCodebase()) !== null
-                    && array_all(
-                        $first_var_type->getAtomicTypes(),
-                        static fn(Atomic $key_atomic): bool => $key_atomic instanceof TInt
-                            || Type::intersectUnionTypes(
-                                $key_of_type,
-                                new Union([$key_atomic]),
-                                $source->getCodebase(),
-                            ) !== null,
-                    )
-                ) {
-                    $template_key_var_name = $first_var_name;
-                    $template_key_assertion = new InArray(
-                        $key_of_type,
-                        self::getOperandId($expr->getArgs()[1]->value, $this_class_name, $source),
-                    );
-                }
+            if ($template_key_assertion) {
+                $template_key_var_name = $first_var_name;
             }
         }
 
