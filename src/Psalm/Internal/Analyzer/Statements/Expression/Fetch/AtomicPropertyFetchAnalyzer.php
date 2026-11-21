@@ -1004,6 +1004,17 @@ final class AtomicPropertyFetchAnalyzer
                 $template_result,
                 $codebase,
             );
+
+            // a new `*` holds the bound of its own class' template
+            if ($template_result->star_bindings !== []) {
+                $class_property_type = TypeExpander::expandUnion(
+                    $codebase,
+                    $class_property_type,
+                    $property_declaring_class_storage->name,
+                    $property_declaring_class_storage->name,
+                    $property_declaring_class_storage->parent_class,
+                );
+            }
         }
 
         return $class_property_type;

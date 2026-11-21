@@ -1450,6 +1450,45 @@ final class StarProjectionTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'starProjectionReadHoldsTheBoundOfTheClassItIsReadInto' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class Free {
+                        /** @return T */
+                        public function get() {
+                            throw new Exception();
+                        }
+                    }
+
+                    /** @template T of object */
+                    final class Box {
+                        /** @var Free<T> */
+                        public $prop;
+
+                        public function __construct() {
+                            $this->prop = new Free();
+                        }
+
+                        /** @return Free<T> */
+                        public function free(): Free {
+                            return $this->prop;
+                        }
+                    }
+
+                    /** @var Box<*> $b */
+                    $b = new Box();
+                    $from_method = $b->free()->get();
+                    $from_property = $b->prop->get();
+                    $either = rand(0, 1) ? $b->free() : $b->prop;
+                    $from_either = $either->get();',
+                'assertions' => [
+                    '$from_method===' => 'mixed',
+                    '$from_property===' => 'mixed',
+                    '$from_either===' => 'mixed',
+                ],
+                'ignored_issues' => ['MixedAssignment', 'MixedPropertyTypeCoercion'],
+                'php_version' => '8.0',
+            ],
         ];
     }
 
@@ -1963,6 +2002,25 @@ final class StarProjectionTest extends TestCase
                         }
                     }',
                 'error_message' => 'ArgumentTypeCoercion - src' . DIRECTORY_SEPARATOR . 'somefile.php:29:35 - Argument 1 of takes expects Box<object>, but parent type Box<*> provided',
+            ],
+            'starProjectionNestedReadIsAStarAtTheOutermostArgument' => [
+                'code' => '<?php
+                    /** @template T of object */
+                    final class Box {
+                        /** @return Box<Box<T>> */
+                        public function nested(): Box {
+                            throw new Exception();
+                        }
+                    }
+
+                    /** @param Box<Box<DateTime>> $b */
+                    function takesNestedDates(Box $b): void {}
+
+                    /** @param Box<*> $any */
+                    function f(Box $any): void {
+                        takesNestedDates($any->nested());
+                    }',
+                'error_message' => 'ArgumentTypeCoercion - src' . DIRECTORY_SEPARATOR . 'somefile.php:15:42 - Argument 1 of takesNestedDates expects Box<Box<DateTime>>, but parent type Box<*> provided',
             ],
         ];
     }

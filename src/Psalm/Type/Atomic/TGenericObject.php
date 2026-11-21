@@ -10,9 +10,12 @@ use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Type\PurityArguments;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TypeArgumentProjection;
+use Psalm\Internal\TypeVisitor\TemplateTypeCollector;
+use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Union;
 
+use function array_diff_key;
 use function count;
 use function implode;
 use function in_array;
@@ -335,27 +338,36 @@ final class TGenericObject extends TNamedObject
             return $this;
         }
 
+        $projections = $this->projections + $this->getStarBoundProjections($template_result, $codebase);
+        $type_params ??= $this->type_params;
+
+        // a new `*` holds the bound of the template of this class, which resolve() computes from `mixed`
+        foreach (array_diff_key($projections, $this->projections) as $offset => $_) {
+            $type_params[$offset] = Type::getMixed();
+        }
+
         return (new static(
             $this->value,
-            $type_params ?? $this->type_params,
+            $type_params,
             true,
             $this->is_static,
             $intersection ?? $this->extra_types,
         ))
             ->setIsStatic($this->is_static, $this->is_static_resolved)
-            ->setProjections($this->projections + $this->getStarBoundProjections($template_result, $codebase));
+            ->setProjections($projections);
     }
 
     /**
-     * The invariant arguments that are a template the receiver bound to a `*` (`Box<T>` read from a `Box<*>`): what
-     * is read from the receiver is as unknown as the receiver. A covariant argument reads the bound.
+     * The invariant arguments that mention a template the receiver bound to a `*` (`Box<T>`, `Box<Box<T>>` read from
+     * a `Box<*>`): what is read from the receiver is as unknown as the receiver, at the outermost such argument. A
+     * covariant argument reads the bound.
      *
      * @return array<int, TypeArgumentProjection>
      * @psalm-mutation-free
      */
     private function getStarBoundProjections(TemplateResult $template_result, ?Codebase $codebase): array
     {
-        if ($codebase === null) {
+        if ($codebase === null || $template_result->star_bindings === []) {
             return [];
         }
 
@@ -371,16 +383,19 @@ final class TGenericObject extends TNamedObject
         $projections = [];
 
         foreach ($this->type_params as $offset => $type_param) {
-            $atomic = $type_param->isSingle() ? $type_param->getSingleAtomic() : null;
-
-            if (!$atomic instanceof TTemplateParam || ($covariants[$offset] ?? false)) {
+            if ($covariants[$offset] ?? false) {
                 continue;
             }
 
-            $bounds = $template_result->lower_bounds[$atomic->param_name][$atomic->defining_class] ?? [];
+            $collector = new TemplateTypeCollector(true);
+            $collector->traverseArray($type_param->getAtomicTypes());
 
-            if (count($bounds) === 1 && $bounds[0]->from_star_projection) {
-                $projections[$offset] = TypeArgumentProjection::Star;
+            foreach ($collector->getTemplateTypes() as $template) {
+                if (isset($template_result->star_bindings[$template->param_name][$template->defining_class])) {
+                    $projections[$offset] = TypeArgumentProjection::Star;
+
+                    break;
+                }
             }
         }
 
