@@ -201,9 +201,6 @@ final class FileStatementsDiffer extends AstDiffer
     }
 
     /**
-     * The docblock, attributes, modifiers, name and parents of a class-like
-     */
-    /**
      * @return lowercase-string
      * @psalm-capabilities read-props
      */
@@ -235,6 +232,9 @@ final class FileStatementsDiffer extends AstDiffer
         return null;
     }
 
+    /**
+     * The docblock, attributes, modifiers, name and parents of a class-like
+     */
     private static function getClassHeader(PhpParser\Node\Stmt\ClassLike $node, string $code): string
     {
         $start = (int) $node->getAttribute('startFilePos');
