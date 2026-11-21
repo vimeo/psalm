@@ -15,7 +15,6 @@ use Psalm\FileManipulation;
 use Psalm\Internal\Analyzer\AttributesAnalyzer;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\ClassLikeNameOptions;
-use Psalm\Internal\Analyzer\NamespaceAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
@@ -718,7 +717,12 @@ final class ClassConstAnalyzer
         $caller_identifier = $statements_analyzer->getFullyQualifiedFunctionMethodOrNamespaceName() ?? '';
 
         if (!$context->collect_initializations
-            && !NamespaceAnalyzer::isWithinAny($caller_identifier, $const_class_storage->internal)
+            && !$statements_analyzer->getCodebase()->classlikes->mayUseInternal(
+                $caller_identifier,
+                $statements_analyzer->getFilePath(),
+                $const_class_storage->internal,
+                $const_class_storage->unshipped_internal,
+            )
         ) {
             IssueBuffer::maybeAdd(
                 new InternalClass(

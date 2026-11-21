@@ -13,7 +13,6 @@ use Psalm\Internal\Analyzer\ClassAnalyzer;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\ClassLikeNameOptions;
 use Psalm\Internal\Analyzer\MethodAnalyzer;
-use Psalm\Internal\Analyzer\NamespaceAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\ArgumentMapPopulator;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\ArgumentsAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\CallPurityResolver;
@@ -948,7 +947,12 @@ final class AtomicStaticCallAnalyzer
 
         $caller_identifier = $statements_analyzer->getFullyQualifiedFunctionMethodOrNamespaceName() ?? '';
 
-        if (!NamespaceAnalyzer::isWithinAny($caller_identifier, $class_storage->internal)) {
+        if (!$codebase->classlikes->mayUseInternal(
+            $caller_identifier,
+            $statements_analyzer->getFilePath(),
+            $class_storage->internal,
+            $class_storage->unshipped_internal,
+        )) {
             IssueBuffer::maybeAdd(
                 new InternalClass(
                     $fq_class_name . ' is internal to ' . InternalClass::listToPhrase($class_storage->internal)

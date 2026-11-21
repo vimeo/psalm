@@ -141,6 +141,26 @@ final class UnshippedCode
      */
     public function contains(string $fq_class_name, string $file_path): bool
     {
+        return $this->isUnshipped($file_path, strtolower(ltrim($fq_class_name, '\\')));
+    }
+
+    /**
+     * Whether the file is unshipped, whatever the namespace of its code. Unlike contains(), it also holds for the
+     * global-namespace code of a directory that autoload-dev maps to a namespace.
+     *
+     * @psalm-mutation-free
+     */
+    public function containsFile(string $file_path): bool
+    {
+        return $this->isUnshipped($file_path, null);
+    }
+
+    /**
+     * @param lowercase-string|null $fq_class_name_lc the class the file declares, or null for any code of the file
+     * @psalm-mutation-free
+     */
+    private function isUnshipped(string $file_path, ?string $fq_class_name_lc): bool
+    {
         $file_path = self::normalizePath($file_path);
         if (!str_starts_with($file_path, $this->root . '/')) {
             return false;
@@ -148,9 +168,11 @@ final class UnshippedCode
 
         $relative_path = substr($file_path, strlen($this->root) + 1);
 
-        $fq_class_name_lc = strtolower(ltrim($fq_class_name, '\\'));
         foreach ($this->dev_namespaces as [$namespace, $dir]) {
-            if (str_starts_with($fq_class_name_lc, $namespace) && self::isWithin($relative_path, $dir)) {
+            // a namespace mapped to the root directory says nothing about a file whose classes are unknown
+            if (($fq_class_name_lc === null ? $dir !== '' : str_starts_with($fq_class_name_lc, $namespace))
+                && self::isWithin($relative_path, $dir)
+            ) {
                 return true;
             }
         }

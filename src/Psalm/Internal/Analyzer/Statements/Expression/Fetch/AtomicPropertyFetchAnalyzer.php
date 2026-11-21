@@ -14,7 +14,6 @@ use Psalm\Context;
 use Psalm\FileManipulation;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\InheritedMethodTaints;
-use Psalm\Internal\Analyzer\NamespaceAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Assignment\InstancePropertyAssignmentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodCallPurityAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\MethodCallAnalyzer;
@@ -599,7 +598,12 @@ final class AtomicPropertyFetchAnalyzer
 
             $caller_identifier = $statements_analyzer->getFullyQualifiedFunctionMethodOrNamespaceName() ?? '';
 
-            if (!NamespaceAnalyzer::isWithinAny($caller_identifier, $property_storage->internal)) {
+            if (!$codebase->classlikes->mayUseInternal(
+                $caller_identifier,
+                $statements_analyzer->getFilePath(),
+                $property_storage->internal,
+                $property_storage->unshipped_internal,
+            )) {
                 IssueBuffer::maybeAdd(
                     new InternalProperty(
                         $property_id . ' is internal to ' . InternalClass::listToPhrase($property_storage->internal)

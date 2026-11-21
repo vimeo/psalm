@@ -2875,7 +2875,12 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                 );
             }
 
-            if (!NamespaceAnalyzer::isWithinAny($fq_class_name, $parent_class_storage->internal)) {
+            if (!$codebase->classlikes->mayUseInternal(
+                $fq_class_name,
+                $this->getFilePath(),
+                $parent_class_storage->internal,
+                $parent_class_storage->unshipped_internal,
+            )) {
                 IssueBuffer::maybeAdd(
                     new InternalClass(
                         $parent_fq_class_name . ' is internal to '
