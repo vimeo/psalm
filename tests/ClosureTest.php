@@ -165,6 +165,20 @@ final class ClosureTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'closureGetCurrentSinceEightFive' => [
+                'code' => '<?php
+                    $fib = static function (int $n): int {
+                        $self = Closure::getCurrent();
+                        /** @psalm-suppress MixedOperand, MixedReturnStatement */
+                        return $n < 2 ? $n : $self($n - 1) + $self($n - 2);
+                    };
+                    $result = $fib(10);',
+                'assertions' => [
+                    '$result' => 'int',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.5',
+            ],
             'closureFallingOffItsEndReturnsNull' => [
                 'code' => '<?php
                     $f = function(int $x) {
@@ -3289,6 +3303,13 @@ final class ClosureTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'closureGetCurrentBeforeEightFive' => [
+                'code' => '<?php
+                    $self = Closure::getCurrent();',
+                'error_message' => 'UndefinedMethod',
+                'error_levels' => [],
+                'php_version' => '8.4',
+            ],
             'resultOfAClosureFallingOffItsEndIsPossiblyNull' => [
                 'code' => '<?php
                     /** @param list<string> $rows */

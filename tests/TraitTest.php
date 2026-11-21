@@ -2008,6 +2008,67 @@ final class TraitTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.3',
             ],
+            'privatelyAliasedTraitMethodResolvesThroughMagicCall' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @method int product() */
+                    class ParentClass {
+                        public function __call(string $name, array $args): int {
+                            return 1;
+                        }
+                    }
+
+                    trait RealTrait {
+                        public function product(): string {
+                            return "Screen";
+                        }
+                    }
+
+                    final class Child extends ParentClass {
+                        use RealTrait {
+                            product as private;
+                        }
+                    }
+
+                    $a = (new Child)->product();
+                PHP,
+                'assertions' => [
+                    '$a===' => 'int',
+                ],
+            ],
+            'privateTraitMethodMadeProtectedIsVisibleFromAChildClass' => [
+                'code' => <<<'PHP'
+                    <?php
+                    class GrandParent {
+                        public function __call(string $name, array $args): int {
+                            return 1;
+                        }
+                    }
+
+                    trait SecretTrait {
+                        private function secret(): string {
+                            return "x";
+                        }
+                    }
+
+                    class Middle extends GrandParent {
+                        use SecretTrait {
+                            secret as protected;
+                        }
+                    }
+
+                    final class Leaf extends Middle {
+                        public function go(): string {
+                            return $this->secret();
+                        }
+                    }
+
+                    $a = (new Leaf)->go();
+                PHP,
+                'assertions' => [
+                    '$a===' => 'string',
+                ],
+            ],
         ];
     }
 
@@ -2500,6 +2561,50 @@ final class TraitTest extends TestCase
                         }
                     }',
                 'error_message' => 'RedundantCondition',
+            ],
+            'privatelyAliasedTraitMethodGoesThroughMagicCallWithoutAMethodTag' => [
+                'code' => <<<'PHP'
+                    <?php
+                    class ParentClass {
+                        public function __call(string $name, array $args): int {
+                            return 1;
+                        }
+                    }
+
+                    trait RealTrait {
+                        public function product(): string {
+                            return "Screen";
+                        }
+                    }
+
+                    final class Child extends ParentClass {
+                        use RealTrait {
+                            product as private;
+                        }
+                    }
+
+                    (new Child)->product();
+                PHP,
+                'error_message' => 'UndefinedMagicMethod',
+            ],
+            'privatelyAliasedTraitMethodIsInaccessibleWithoutMagicCall' => [
+                'code' => <<<'PHP'
+                    <?php
+                    trait RealTrait {
+                        public function product(): string {
+                            return "Screen";
+                        }
+                    }
+
+                    final class Child {
+                        use RealTrait {
+                            product as private;
+                        }
+                    }
+
+                    (new Child)->product();
+                PHP,
+                'error_message' => 'InaccessibleMethod',
             ],
         ];
     }
