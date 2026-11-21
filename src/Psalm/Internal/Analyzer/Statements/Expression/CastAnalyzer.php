@@ -62,6 +62,7 @@ use Psalm\Type\Atomic\TNonspecificLiteralString;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TNumeric;
 use Psalm\Type\Atomic\TNumericString;
+use Psalm\Type\Atomic\TObject;
 use Psalm\Type\Atomic\TObjectWithProperties;
 use Psalm\Type\Atomic\TResource;
 use Psalm\Type\Atomic\TString;
@@ -72,6 +73,7 @@ use Psalm\Type\Union;
 
 use function array_merge;
 use function array_pop;
+use function array_shift;
 use function array_values;
 use function count;
 use function range;
@@ -355,6 +357,41 @@ final class CastAnalyzer
      * A bare class-template type variable stands for the shape inferred at its construction site, and key-of<T> and
      * value-of<T> for their bound: that is what is being cast
      */
+    /**
+     * The types a value of a template is, as it is one of its bound and every type it is intersected with
+     * (`T&Stringable` of a `T as object` is a `Stringable`)
+     *
+     * @return list<Atomic>
+     * @psalm-pure
+     */
+    public static function getTemplateBoundAtomics(TTemplateParam $template): array
+    {
+        $bound_atomics = array_values($template->as->getAtomicTypes());
+
+        if (!$template->extra_types) {
+            return $bound_atomics;
+        }
+
+        $intersected_types = [];
+
+        foreach ($bound_atomics as $bound_atomic) {
+            if ($bound_atomic instanceof TNamedObject || $bound_atomic instanceof TTemplateParam) {
+                $intersected_types[] = $bound_atomic->setIntersectionTypes(
+                    [...$bound_atomic->extra_types, ...$template->extra_types],
+                );
+            } elseif ($bound_atomic instanceof TObject || $bound_atomic instanceof TMixed) {
+                // an object or anything that is also each of the intersected types is the first of them and the others
+                $extra_types = $template->extra_types;
+                $first_type = array_shift($extra_types);
+                $intersected_types[] = $first_type->setIntersectionTypes($extra_types);
+            } else {
+                $intersected_types[] = $bound_atomic;
+            }
+        }
+
+        return $intersected_types;
+    }
+
     private static function resolveOperandType(Union $type, Codebase $codebase): Union
     {
         return TypeExpander::expandTemplateKeyOfAndValueOf(
@@ -905,7 +942,7 @@ final class CastAnalyzer
             }
 
             if ($atomic_type instanceof TTemplateParam) {
-                $atomic_types = array_merge($atomic_types, $atomic_type->as->getAtomicTypes());
+                $atomic_types = array_merge($atomic_types, self::getTemplateBoundAtomics($atomic_type));
 
                 continue;
             }
@@ -1128,7 +1165,7 @@ final class CastAnalyzer
             $atomic_type = array_pop($atomic_types);
 
             if ($atomic_type instanceof TTemplateParam) {
-                $atomic_types = [...$atomic_types, ...array_values($atomic_type->as->getAtomicTypes())];
+                $atomic_types = [...$atomic_types, ...self::getTemplateBoundAtomics($atomic_type)];
 
                 continue;
             }
