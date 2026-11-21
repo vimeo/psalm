@@ -325,7 +325,7 @@ final class StaticPropertyAssignmentAnalyzer
                         ),
                         $statements_analyzer->getSuppressedIssues(),
                     )) {
-                        return false;
+                        return null;
                     }
                 } else {
                     if (IssueBuffer::accepts(
@@ -341,7 +341,7 @@ final class StaticPropertyAssignmentAnalyzer
                         ),
                         $statements_analyzer->getSuppressedIssues(),
                     )) {
-                        return false;
+                        return null;
                     }
                 }
             }
