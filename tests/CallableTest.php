@@ -168,6 +168,26 @@ final class CallableTest extends TestCase
                      */
                     function f($x): array {
                         return array_map([$x, "bar"], [1]);
+                    }
+
+                    interface Baz {}
+                    interface Qux {}
+
+                    /**
+                     * @template T of Baz&Qux
+                     * @param Foo&T $x
+                     * @return list<int>
+                     */
+                    function g($x): array {
+                        return array_map([$x, "bar"], [1]);
+                    }
+
+                    /**
+                     * @param Foo&Baz $x
+                     * @return list<int>
+                     */
+                    function h($x): array {
+                        return array_map([$x, "bar"], [1]);
                     }',
             ],
             'callableOfThisTakesTheTemplatesOfTheObject' => [

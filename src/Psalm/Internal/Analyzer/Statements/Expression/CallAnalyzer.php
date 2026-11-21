@@ -694,8 +694,14 @@ abstract class CallAnalyzer
                     // a template stands for the classes of its bound
                     if ($extra_type instanceof TTemplateParam) {
                         foreach ($extra_type->as->getAtomicTypes() as $bound_type) {
-                            if ($bound_type instanceof TNamedObject) {
-                                $method_id .= '&' . $bound_type->value . '::' . $method_name;
+                            if (!$bound_type instanceof TNamedObject) {
+                                continue;
+                            }
+
+                            foreach ([$bound_type, ...$bound_type->extra_types] as $bound_part) {
+                                if ($bound_part instanceof TNamedObject) {
+                                    $method_id .= '&' . $bound_part->value . '::' . $method_name;
+                                }
                             }
                         }
 
