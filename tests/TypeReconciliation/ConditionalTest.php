@@ -2000,6 +2000,8 @@ final class ConditionalTest extends TestCase
 
                       return "backup";
                     }',
+                'assertions' => [],
+                'ignored_issues' => ['DeprecatedSyntax'],
             ],
             'stringOrCallableArg' => [
                 'code' => '<?php
@@ -6015,6 +6017,8 @@ final class ConditionalTest extends TestCase
                     final class B extends A {
                         public function onlyB(): void {}
                     }',
+                'assertions' => [],
+                'ignored_issues' => ['DeprecatedFunction'],
             ],
             'getClassInequalityWithoutArgumentsNarrowsThis' => [
                 'code' => '<?php
@@ -6029,6 +6033,8 @@ final class ConditionalTest extends TestCase
                     final class B extends A {
                         public function onlyB(): void {}
                     }',
+                'assertions' => [],
+                'ignored_issues' => ['DeprecatedFunction'],
             ],
             'privateMethodAnalysedFromTheConstructorIgnoresTheConditionsOfItsCaller' => [
                 'code' => '<?php
@@ -7166,6 +7172,24 @@ final class ConditionalTest extends TestCase
                             /** @psalm-check-type-exact $y = 3 */
                         }
                     }',
+            ],
+            'looseEqualityWithAStringKeepsTheOtherScalars' => [
+                'code' => '<?php
+                    /** @param numeric $n */
+                    function f($n, string $s): void {
+                        if ($n == $s) {
+                            /** @psalm-check-type-exact $n = numeric */;
+                        }
+                    }
+
+                    function g(int|float|bool|null $x, string $s): void {
+                        if ($x == $s) {
+                            /** @psalm-check-type-exact $x = bool|float|int|null */;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
         ];
     }
@@ -8315,7 +8339,8 @@ final class ConditionalTest extends TestCase
                     function getData(): ?array { return null; }
                     function check(): bool { return true; }
                     $r = (check() && ($data = getData()) !== null) ? 1 : $data;',
-                'error_message' => 'UndefinedGlobalVariable',
+                // assigned only when check() is true, so possibly undefined
+                'error_message' => 'PossiblyUndefinedGlobalVariable',
             ],
             'orWhoseLeftSideIsAConjunctionAndRightSideReassignsAVariableKeepsTheLeftNullable' => [
                 'code' => '<?php

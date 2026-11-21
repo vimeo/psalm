@@ -71,6 +71,7 @@ final class TaintTest extends TestCase
         'InvalidReturnStatement', 'ArgumentTypeCoercion', 'UnresolvableInclude', 'UndefinedClass', 'RedundantCast',
         'MixedArrayAssignment', 'InvalidReturnStatement', 'InvalidArrayOffset', 'UndefinedFunction', 'ImplicitToStringCast',
         'InvalidArgument', 'UndefinedVariable', 'WeakHash', 'InsecureCookie',
+        'DeprecatedFunction', 'DeprecatedMethod', 'DeprecatedSyntax',
     ];
     public function testTheResultOfAValidationRemovesTheTaintsOfTheValueValidated(): void
     {
@@ -1744,6 +1745,17 @@ final class TaintTest extends TestCase
     public static function providerValidCodeParse(): array
     {
         return [
+            'deprecatedPromotedPropertyIsNotUsedByItsOwnDeclaration' => [
+                'code' => '<?php
+                    final class A {
+                        public function __construct(
+                            /** @deprecated */
+                            public string $foo,
+                        ) {}
+                    }
+
+                    new A("x");',
+            ],
             'annotatedStatementExecutedIntoAResultGivesOnlyTheColumnsStored' => [
                 'code' => '<?php
                     final class Result {
@@ -1854,6 +1866,18 @@ final class TaintTest extends TestCase
                             return;
                         }
                         fsockopen($url, 80);
+                    }',
+            ],
+            'matchingAnotherListOfHostsIsADifferentCondition' => [
+                'code' => '<?php
+                    function fetch(): void {
+                        $url = trim((string) $_GET["next"]);
+                        $host = (string) parse_url($url, PHP_URL_HOST);
+                        if (preg_match("#^(api\.example\.com|cdn\.example\.com)$#", $host)) {
+                            fsockopen($url, 80);
+                        } elseif (preg_match("#^(img\.example\.com|static\.example\.com)$#", $host)) {
+                            fsockopen($url, 443);
+                        }
                     }',
             ],
             'noTaintFromASpecializedPregReplaceCallbackCallbackInItsOtherCalls' => [
@@ -7375,6 +7399,12 @@ final class TaintTest extends TestCase
     public static function providerInvalidCodeParse(): array
     {
         return [
+            'superglobalIsStillTaintedAfterEval' => [
+                'code' => '<?php // --taint-analysis
+                    eval("return 1;");
+                    echo $_GET["a"];',
+                'error_message' => 'TaintedHtml',
+            ],
             'foreachOverANullableArrayKeepsTheTaintOfItsValues' => [
                 'code' => '<?php
                     $a = rand(0, 1) ? null : [(string) $_GET["x"]];
