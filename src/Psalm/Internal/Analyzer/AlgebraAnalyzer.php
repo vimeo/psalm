@@ -21,6 +21,7 @@ use Psalm\Storage\Assertion\Falsy;
 use Psalm\Storage\Assertion\InArray;
 use Psalm\Storage\Assertion\IsIsset;
 use Psalm\Storage\Assertion\IsNotType;
+use Psalm\Storage\Assertion\MatchesPattern;
 use Psalm\Storage\Assertion\NotInArray;
 use Psalm\Storage\Assertion\Truthy;
 use Psalm\Type\Atomic;
@@ -70,37 +71,6 @@ final class AlgebraAnalyzer
 
         foreach ($rejected_clauses as $clause) {
             if (self::isExpressedByTypes($clause, $vars_in_scope, $statements_analyzer)) {
-                $expressed_clauses[] = $clause;
-            } else {
-                $included_clauses[] = $clause;
-            }
-        }
-
-        return [$included_clauses, $expressed_clauses];
-    }
-
-    /**
-     * Context::removeReconciledClauses() that keeps the clauses linking several variables the new types do not express
-     *
-     * @param list<Clause> $clauses
-     * @param array<string, bool> $changed_var_ids
-     * @param array<string, Union> $vars_in_scope
-     * @return array{list<Clause>, list<Clause>}
-     */
-    public static function removeReconciledClausesOfOneVariable(
-        array $clauses,
-        array $changed_var_ids,
-        array $vars_in_scope,
-        StatementsAnalyzer $statements_analyzer,
-    ): array {
-        [$included_clauses, $rejected_clauses] = Context::removeReconciledClauses($clauses, $changed_var_ids);
-
-        $expressed_clauses = [];
-
-        foreach ($rejected_clauses as $clause) {
-            if (count($clause->possibilities) === 1
-                || self::isExpressedByTypes($clause, $vars_in_scope, $statements_analyzer)
-            ) {
                 $expressed_clauses[] = $clause;
             } else {
                 $included_clauses[] = $clause;
@@ -275,15 +245,18 @@ final class AlgebraAnalyzer
     }
 
     /**
-     * `in-array-X` doesn't say which array the value was looked up in: two equal ones are not a repetition
+     * These assertions don't say which pattern or array they were made from: two equal ones are not the same condition
      *
      * @psalm-pure
      */
-    private static function hasInArrayPossibility(Clause $clause): bool
+    private static function hasUnidentifiedPossibility(Clause $clause): bool
     {
         foreach ($clause->possibilities as $keyed_possibilities) {
             foreach ($keyed_possibilities as $possibility) {
-                if ($possibility instanceof InArray || $possibility instanceof NotInArray) {
+                if ($possibility instanceof InArray
+                    || $possibility instanceof NotInArray
+                    || $possibility instanceof MatchesPattern
+                ) {
                     return true;
                 }
             }
@@ -348,7 +321,7 @@ final class AlgebraAnalyzer
                     // isset($x) already says that $x is not null
                     || ($not_null_var_id !== null && isset($isset_var_ids[$not_null_var_id])))
                 && !self::testsAnyVar($formula_2_clause, $new_assigned_var_ids)
-                && !self::hasInArrayPossibility($formula_2_clause)
+                && !self::hasUnidentifiedPossibility($formula_2_clause)
             ) {
                 IssueBuffer::maybeAdd(
                     new RedundantCondition(
@@ -500,7 +473,11 @@ final class AlgebraAnalyzer
             ++$negated_clause_count;
 
             foreach ($formula_1 as $clause_1) {
-                if ($negated_clause_2 === $clause_1 || !$clause_1->reconcilable || $clause_1->wedge) {
+                if ($negated_clause_2 === $clause_1
+                    || !$clause_1->reconcilable
+                    || $clause_1->wedge
+                    || self::hasUnidentifiedPossibility($clause_1)
+                ) {
                     continue;
                 }
 
@@ -515,12 +492,6 @@ final class AlgebraAnalyzer
                     if ($negated_clause_2->possibilities[$key] != $keyed_possibilities) {
                         $negated_clause_2_contains_1_possibilities = false;
                         break;
-                    }
-                    foreach ($keyed_possibilities as $possibility) {
-                        if ($possibility instanceof InArray || $possibility instanceof NotInArray) {
-                            $negated_clause_2_contains_1_possibilities = false;
-                            break;
-                        }
                     }
                 }
 
