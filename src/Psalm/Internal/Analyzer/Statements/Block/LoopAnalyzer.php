@@ -743,7 +743,13 @@ final class LoopAnalyzer
                             $continue_context->vars_in_scope[$var_id],
                         )
                         : $continue_context->vars_in_scope[$var_id];
-                    $loop_parent_context->removeVarFromConflictingClauses($var_id);
+
+                    // what the clauses say of a variable the loop did not change still holds where it is left
+                    if (($continue_context->parent_remove_vars[$var_id] ?? 0)
+                        > ($loop_parent_context->parent_remove_vars[$var_id] ?? 0)
+                    ) {
+                        $loop_parent_context->removeVarFromConflictingClauses($var_id);
+                    }
 
                     continue;
                 }

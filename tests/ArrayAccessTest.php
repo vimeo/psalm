@@ -100,6 +100,52 @@ final class ArrayAccessTest extends TestCase
         $this->analyzeFile('somefile.php', new Context());
     }
 
+    public function testEnsureArrayOffsetsExistAfterNarrowingTheIssetKey(): void
+    {
+        Config::getInstance()->ensure_array_string_offsets_exist = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                /** @param array<string, string> $arr */
+                function takesArray(array $arr, string $key): void {
+                    if (isset($arr[$key])) {
+                        if ("foo" === $key) {
+                            echo $arr[$key];
+                        } elseif ("bar" === $key) {
+                            echo $arr[$key];
+                        } else {
+                            echo $arr[$key];
+                        }
+                    }
+                }',
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    public function testEnsureArrayOffsetsExistAfterAssigningTheIssetKey(): void
+    {
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessage('PossiblyUndefinedStringArrayOffset');
+
+        Config::getInstance()->ensure_array_string_offsets_exist = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                /** @param array<string, string> $arr */
+                function takesArray(array $arr, string $key): void {
+                    if (isset($arr[$key])) {
+                        $key = "foo";
+                        echo $arr[$key];
+                    }
+                }',
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
     public function testEnsureArrayOffsetsExistForOffsetsPassedByReference(): void
     {
         Config::getInstance()->ensure_array_string_offsets_exist = true;
@@ -1493,6 +1539,52 @@ final class ArrayAccessTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'isArrayOfAnOffsetByAVariableIsKeptAfterAnIfThatNarrowsTheVariableAndHasALoop' => [
+                'code' => '<?php
+                    final class Parts {
+                        /** @var array<string, mixed> */
+                        private array $parts = ["select" => [], "join" => []];
+
+                        public function add(string $name, array $part, bool $append = false): void {
+                            $isMultiple = is_array($this->parts[$name]) && ! ($name === "join" && ! $append);
+
+                            if ($name === "join") {
+                                $new = [];
+
+                                foreach ($part as $k => $v) {
+                                    $new[$k] = $v;
+                                }
+
+                                $part = $new;
+                            }
+
+                            if ($append && $isMultiple) {
+                                $this->parts[$name][] = 1;
+                            }
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedAssignment'],
+                'php_version' => '8.0',
+            ],
+            'issetOnAnIndexIsKeptWhenTheIndexIsNarrowedInALoop' => [
+                'code' => '<?php
+                    /** @param string[] $in */
+                    function strip(array $in): array {
+                        $out = [];
+                        foreach (["foo", "bar"] as $key) {
+                            if (isset($in[$key])) {
+                                if ("foo" === $key) {
+                                    $out["baz"] = 1;
+                                } else {
+                                    $out[$key] = substr($in[$key], 0, -1);
+                                }
+                            }
+                        }
+                        return $out;
+                    }',
+                'assertions' => [],
+            ],
             'nullOffsetOfAnObjectThatAcceptsItInArrayAccess' => [
                 'code' => '<?php
                     /** @implements ArrayAccess<string|null, int> */
@@ -3792,6 +3884,24 @@ final class ArrayAccessTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'isArrayClauseOfAVariableTheLoopChangesIsDroppedAfterTheLoop' => [
+                'code' => '<?php
+                    /** @param array<int, mixed> $items */
+                    function f(array $items, mixed $m): void {
+                        $isArray = is_array($m);
+
+                        foreach ($items as $item) {
+                            $m = $item;
+                        }
+
+                        if ($isArray) {
+                            $m[] = 1;
+                        }
+                    }',
+                'error_message' => 'MixedArrayAssignment - src' . DIRECTORY_SEPARATOR . 'somefile.php:11:29',
+                'error_levels' => ['MixedAssignment'],
+                'php_version' => '8.0',
+            ],
             'nullOffsetOfAnObjectThatRejectsItInArrayAccess' => [
                 'code' => '<?php
                     /** @implements ArrayAccess<string, int> */
