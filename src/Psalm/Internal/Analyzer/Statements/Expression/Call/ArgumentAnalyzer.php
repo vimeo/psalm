@@ -80,12 +80,16 @@ use Psalm\Type\Atomic\TTypeVariable;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
+use function array_all;
 use function array_filter;
+use function array_keys;
 use function array_shift;
+use function array_values;
 use function count;
 use function explode;
 use function implode;
 use function in_array;
+use function is_int;
 use function is_numeric;
 use function is_string;
 use function max;
@@ -634,7 +638,7 @@ final class ArgumentAnalyzer
             }
 
             if ($arg_value_type->hasArray()) {
-                $unpacked_atomic_array = $arg_value_type->getArray();
+                $unpacked_atomic_array = self::getPositionalShape($arg_value_type->getArray());
                 $arg_key_allowed = true;
 
                 // a template param is as iterable as its bound
@@ -973,6 +977,27 @@ final class ArgumentAnalyzer
             false,
             true,
         );
+    }
+
+    /**
+     * A sealed shape with integer keys that is not a list passes its values in the order of the shape, whatever the
+     * keys are, as the list of them. A shape with an optional item is left as it is.
+     *
+     * @psalm-pure
+     */
+    private static function getPositionalShape(
+        TKeyedArray|TArray|TClassStringMap $array,
+    ): TKeyedArray|TArray|TClassStringMap {
+        if (!$array instanceof TKeyedArray
+            || $array->is_list
+            || $array->fallback_params
+            || !array_all(array_keys($array->properties), static fn(int|string $key): bool => is_int($key))
+            || !array_all($array->properties, static fn(Union $property): bool => !$property->possibly_undefined)
+        ) {
+            return $array;
+        }
+
+        return TKeyedArray::make(array_values($array->properties), null, null, true);
     }
 
     /**
