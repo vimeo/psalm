@@ -18,15 +18,19 @@ final class IsIdentical extends Assertion
     use UnserializeMemoryUsageSuppressionTrait;
     /**
      * @param ?string $comparand what the value is compared with, when its type has more than one value
+     * @param bool $of_operands the negation of an assertion on an operand of `$a !== $b`, see {@see IsNotIdentical}
      */
-    public function __construct(public readonly Atomic $type, public readonly ?string $comparand = null)
-    {
+    public function __construct(
+        public readonly Atomic $type,
+        public readonly ?string $comparand = null,
+        public readonly bool $of_operands = false,
+    ) {
     }
 
     #[Override]
     public function getNegation(): Assertion
     {
-        return new IsNotIdentical($this->type, $this->comparand);
+        return new IsNotIdentical($this->type, $this->comparand, $this->of_operands);
     }
 
     public function __toString(): string
@@ -56,7 +60,7 @@ final class IsIdentical extends Assertion
     #[Override]
     public function setAtomicType(Atomic $type): self
     {
-        return new static($type, $this->comparand);
+        return new static($type, $this->comparand, $this->of_operands);
     }
 
     #[Override]

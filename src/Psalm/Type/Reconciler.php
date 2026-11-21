@@ -95,6 +95,7 @@ use function ksort;
 use function preg_match;
 use function preg_quote;
 use function reset;
+use function sort;
 use function str_contains;
 use function str_ends_with;
 use function str_split;
@@ -452,6 +453,19 @@ class Reconciler
                 throw new UnexpectedValueException('$result_type should not be null');
             }
 
+            // narrowing a value does not make its false or null (that the config ignores) matter again
+            if ($before_adjustment
+                && (($before_adjustment->ignore_falsable_issues && !$result_type->ignore_falsable_issues)
+                    || ($before_adjustment->ignore_nullable_issues && !$result_type->ignore_nullable_issues))
+            ) {
+                $result_type = $result_type->setProperties([
+                    'ignore_falsable_issues' => $result_type->ignore_falsable_issues
+                        || $before_adjustment->ignore_falsable_issues,
+                    'ignore_nullable_issues' => $result_type->ignore_nullable_issues
+                        || $before_adjustment->ignore_nullable_issues,
+                ]);
+            }
+
             if ($undefined_reads_as_null) {
                 // where the value cannot be null the variable is set
                 $result_type = $result_type->setPossiblyUndefined(
@@ -505,7 +519,8 @@ class Reconciler
                 // parent nodes, that no taint goes through. One that can't carry some taints the type it is
                 // narrowed from could (e.g. a scalar, nosql) gets nodes those don't go through.
                 $narrowed_taints = $can_carry_taints
-                    ? ($taints_to_remove | (self::getTaintsRemovedByPatterns($new_type_parts) & $input_taints))
+                    ? ($taints_to_remove
+                        | (self::getTaintsRemovedByPatterns($new_type_parts, $before_adjustment) & $input_taints))
                         & ~($before_adjustment?->getTaintsToRemove($input_taints) ?? 0)
                     : TaintKind::ALL;
 
@@ -2275,15 +2290,20 @@ class Reconciler
      * @param array<array<Assertion>> $new_type_parts
      * @psalm-pure
      */
-    private static function getTaintsRemovedByPatterns(array $new_type_parts): int
+    private static function getTaintsRemovedByPatterns(array $new_type_parts, ?Union $existing_type): int
     {
+        $existing_node_ids = array_keys($existing_type?->parent_nodes ?? []);
+        sort($existing_node_ids);
+
         $removed_taints = 0;
 
         foreach ($new_type_parts as $alternatives) {
             $removed_by_alternatives = null;
 
             foreach ($alternatives as $alternative) {
-                $removed = $alternative instanceof MatchesPattern && !$alternative->negated
+                $removed = $alternative instanceof MatchesPattern
+                    && !$alternative->negated
+                    && ($alternative->parent_node_ids === null || $alternative->parent_node_ids === $existing_node_ids)
                     ? $alternative->removed_taints
                     : 0;
                 $removed_by_alternatives = $removed_by_alternatives === null
