@@ -706,9 +706,7 @@ final class ValueTest extends TestCase
                     $x = 0;
                     if ($x !== $y) {
                     } else {
-                        if (!is_string($x)) {
-                            chr($x);
-                        }
+                        chr($x);
                     }',
             ],
             'convertNullArrayKeyToEmptyString' => [

@@ -1122,7 +1122,7 @@ final class ClosureTest extends TestCase
 
                     function a(string $arg): int {
                         $v = function() use (&$arg): void {
-                            if (is_integer($arg)) {
+                            if (is_int($arg)) {
                                 echo $arg;
                             }
                             if (random_bytes(1)) {

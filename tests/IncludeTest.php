@@ -24,6 +24,7 @@ use function getcwd;
 use function preg_quote;
 use function set_time_limit;
 use function sort;
+use function str_replace;
 use function strpos;
 
 use const DIRECTORY_SEPARATOR;
@@ -115,6 +116,75 @@ final class IncludeTest extends TestCase
         foreach ($files_to_check as $file_path) {
             $file_analyzer = new FileAnalyzer($this->project_analyzer, $file_path, $config->shortenFileName($file_path));
             $file_analyzer->analyze();
+        }
+    }
+
+    /**
+     * The globals `callWriter()` writes are those of the `writeGlobal()` the calling file includes, whichever file
+     * is analyzed first
+     *
+     * @param list<string> $file_names
+     */
+    #[DataProvider('providerGlobalWriteScopesInEntryOrders')]
+    public function testGlobalsWrittenThroughAnotherFunctionAreThoseTheCallingFileSees(
+        string $calls,
+        array $file_names,
+    ): void {
+        $dir = (string) getcwd() . DIRECTORY_SEPARATOR;
+
+        $this->addFile($dir . 'helpers.php', '<?php
+            function writeGlobal(): void {
+                global $x;
+                $x = "written";
+            }
+        ');
+        $this->addFile($dir . 'noop_helpers.php', '<?php
+            function writeGlobal(): void {
+            }
+        ');
+        $this->addFile($dir . 'lib.php', '<?php
+            function callWriter(): void {
+                writeGlobal();
+            }
+        ');
+        $this->addFile($dir . 'entry.php', '<?php
+            require_once "helpers.php";
+            require_once "lib.php";
+            ' . str_replace('{expected}', 'mixed', $calls));
+        $this->addFile($dir . 'other_entry.php', '<?php
+            require_once "noop_helpers.php";
+            require_once "lib.php";
+            ' . str_replace('{expected}', '\'safe\'', $calls));
+
+        $this->assertSame([], $this->analyzeFilesInOrder($file_names));
+    }
+
+    /**
+     * @return iterable<string, array{string, list<string>}>
+     * @psalm-pure
+     */
+    public static function providerGlobalWriteScopesInEntryOrders(): iterable
+    {
+        $scopes = [
+            'file scope, called twice' => '
+                $x = "safe";
+                callWriter();
+                /** @psalm-check-type-exact $x = {expected} */;
+                $x = "safe";
+                callWriter();
+                /** @psalm-check-type-exact $x = {expected} */;',
+            'global in a function' => '
+                function f(): void {
+                    global $x;
+                    $x = "safe";
+                    callWriter();
+                    /** @psalm-check-type-exact $x = {expected} */;
+                }',
+        ];
+
+        foreach ($scopes as $scope => $calls) {
+            yield $scope . ', writing entry first' => [$calls, ['entry.php', 'other_entry.php']];
+            yield $scope . ', no-op entry first' => [$calls, ['other_entry.php', 'entry.php']];
         }
     }
 

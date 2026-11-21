@@ -647,6 +647,14 @@ final class InternalCallMapHandler
             : null;
     }
 
+    /**
+     * Whether $function_id is a native function in the analysed PHP version, or one a later version introduces
+     */
+    public static function isNativeFunction(string $function_id): bool
+    {
+        return self::inCallMap($function_id) || self::getIntroducingPhpVersionId($function_id) !== null;
+    }
+
     private static function isBundledWithPhp(string $key): bool
     {
         try {

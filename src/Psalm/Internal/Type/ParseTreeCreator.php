@@ -223,6 +223,13 @@ final class ParseTreeCreator
             $byref = true;
             ++$this->t;
             $current_token = $this->t < $this->type_token_count ? $this->type_tokens[$this->t] : null;
+
+            // `&...$args`
+            if ($current_token && $current_token[0] === '...') {
+                $variadic = true;
+                ++$this->t;
+                $current_token = $this->t < $this->type_token_count ? $this->type_tokens[$this->t] : null;
+            }
         } elseif ($current_token[0] === '...') {
             $variadic = true;
 
@@ -884,36 +891,45 @@ final class ParseTreeCreator
 
         $current_parent = $this->current_leaf->parent;
 
-        if ($current_parent instanceof MethodTree) {
-            $this->createMethodParam($this->type_tokens[$this->t], $current_parent);
-            return;
-        }
-
-        if ($current_parent instanceof IntersectionTree) {
-            $this->current_leaf = $current_parent;
-            return;
-        }
-
-        // `callable(int &$i)` and `callable(int &...$i)`: the tokenizer drops the space before `&`
+        // `m(I1 &$x)`, `callable(int &$i)` and `callable(int &...$i)`: the tokenizer drops the space before `&`,
+        // whereas `I1&I2 $x` is an intersection type
         $next_token = $this->t + 1 < $this->type_token_count ? $this->type_tokens[$this->t + 1] : null;
         $token_after_next = $this->t + 2 < $this->type_token_count ? $this->type_tokens[$this->t + 2] : null;
 
         if ($next_token !== null
             && ($next_token[0][0] === '$'
-                || ($next_token[0] === '...' && $token_after_next !== null && $token_after_next[0][0] === '$'))
+                // `m(string & $x)` is rejected as the param it looks like
+                || ($next_token[0] === ' ' && $current_parent instanceof MethodTree)
+                || ($next_token[0] === '...' && ($current_parent instanceof MethodTree
+                    || ($token_after_next !== null && $token_after_next[0][0] === '$'))))
         ) {
-            while ($current_parent
-                && !$current_parent instanceof MethodTree
-                && !$current_parent instanceof CallableTree
+            $leaf = $this->current_leaf;
+            $param_parent = $current_parent;
+
+            while ($param_parent
+                && !$param_parent instanceof MethodTree
+                && !$param_parent instanceof CallableTree
             ) {
-                $this->current_leaf = $current_parent;
-                $current_parent = $current_parent->parent;
+                $leaf = $param_parent;
+                $param_parent = $param_parent->parent;
             }
 
-            if ($current_parent instanceof CallableTree) {
-                $this->parseCallableParam($this->type_tokens[$this->t], $current_parent);
+            if ($param_parent instanceof MethodTree || $param_parent instanceof CallableTree) {
+                $this->current_leaf = $leaf;
+
+                if ($param_parent instanceof MethodTree) {
+                    $this->createMethodParam($this->type_tokens[$this->t], $param_parent);
+                } else {
+                    $this->parseCallableParam($this->type_tokens[$this->t], $param_parent);
+                }
+
                 return;
             }
+        }
+
+        if ($current_parent instanceof IntersectionTree) {
+            $this->current_leaf = $current_parent;
+            return;
         }
 
         $new_parent_leaf = new IntersectionTree($current_parent);

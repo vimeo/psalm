@@ -21,6 +21,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\NullsafeChainState;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\ConditionalTaintSinks;
+use Psalm\Internal\Codebase\DatabaseTaints;
 use Psalm\Internal\Codebase\ReceiverPropertyTaints;
 use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\Codebase\TaintStore;
@@ -241,9 +242,17 @@ final class StaticCallAnalyzer extends CallAnalyzer
                     $self_storage = $codebase->classlike_storage_provider->get($context->self);
 
                     if (isset($self_storage->used_traits[strtolower($fq_class_name)])) {
+                        ClassLikeAnalyzer::checkTraitMemberAccess($statements_analyzer, $fq_class_name, $stmt->class);
+
                         $fq_class_name = $context->self;
                         $does_class_exist = true;
                     }
+                }
+
+                if (!$does_class_exist
+                    && ClassLikeAnalyzer::checkTraitMemberAccess($statements_analyzer, $fq_class_name, $stmt->class)
+                ) {
+                    $does_class_exist = true;
                 }
 
                 if (!isset($context->phantom_classes[strtolower($fq_class_name)])
@@ -671,6 +680,19 @@ final class StaticCallAnalyzer extends CallAnalyzer
                 $cased_method_id,
                 $method_id,
                 $specialization_location,
+            );
+
+            $return_type_candidate = DatabaseTaints::taintCall(
+                $statements_analyzer,
+                $taint_flow_graph,
+                DatabaseTaints::getSpecs(
+                    (string) ($codebase->methods->getDeclaringMethodId($method_id) ?? $method_id),
+                    $method_storage,
+                ),
+                $method_storage,
+                $stmt->getArgs(),
+                $node_location,
+                $return_type_candidate,
             );
 
             ConditionalTaintSinks::taintCall(

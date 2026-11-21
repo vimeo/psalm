@@ -7,12 +7,14 @@ namespace Psalm\Tests\Template;
 use Override;
 use PhpParser\Node\Stmt\Return_;
 use Psalm\Context;
+use Psalm\IssueBuffer;
 use Psalm\Plugin\EventHandler\AfterStatementAnalysisInterface;
 use Psalm\Plugin\EventHandler\Event\AfterStatementAnalysisEvent;
 use Psalm\Tests\TestCase;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
+use function array_column;
 use function count;
 use function get_class;
 
@@ -22,6 +24,32 @@ final class FunctionTemplateTest extends TestCase
 {
     use InvalidCodeAnalysisTestTrait;
     use ValidCodeAnalysisTestTrait;
+
+    public function testLiteralOutsideTheDocblockBoundOfATemplateIsADocblockContradiction(): void
+    {
+        $this->project_analyzer->getConfig()->throw_exception = false;
+
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                /**
+                 * @template T of "x"|"y"
+                 * @param T $a
+                 */
+                function run(string $a): void {
+                    if ($a === "z") {}
+                }',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+
+        self::assertSame(
+            ['DocblockTypeContradiction', 'DocblockTypeContradiction'],
+            array_column(IssueBuffer::getIssuesDataForFile($file_path), 'type'),
+        );
+    }
 
     public function testReturnedLiteralKeepsItsOwnTypeAndProvenance(): void
     {
@@ -213,6 +241,194 @@ final class FunctionTemplateTest extends TestCase
 
                         return $b;
                     }',
+            ],
+            'templateOfIntKeptWhenIdenticalToALiteral' => [
+                'code' => '<?php
+                    /**
+                     * @template T of int
+                     * @param T $a
+                     * @return T
+                     */
+                    function run(int $a): int {
+                        if ($a === 5) {
+                            return $a;
+                        }
+
+                        return $a;
+                    }',
+            ],
+            'templateOfFloatKeptWhenIdenticalToALiteral' => [
+                'code' => '<?php
+                    /**
+                     * @template T of float
+                     * @param T $a
+                     * @return T
+                     */
+                    function run(float $a): float {
+                        if ($a === 1.5) {
+                            return $a;
+                        }
+
+                        return $a;
+                    }',
+            ],
+            'templateOfStringKeptWhenIdenticalToALiteral' => [
+                'code' => '<?php
+                    /**
+                     * @template T of string
+                     * @param T $a
+                     * @return T
+                     */
+                    function run(string $a): string {
+                        if ($a === "a") {
+                            return $a;
+                        }
+
+                        return $a;
+                    }',
+            ],
+            'templateOfFloatOrStringKeptWhenIdenticalToALiteral' => [
+                'code' => '<?php
+                    /**
+                     * @template T of float|string
+                     * @param T $a
+                     * @return T
+                     */
+                    function run($a) {
+                        if ($a === "a") {
+                            return $a;
+                        }
+
+                        if ($a === 1.5) {
+                            return $a;
+                        }
+
+                        return $a;
+                    }',
+            ],
+            'templateOfLiteralStringsKeptWhenIdenticalToOne' => [
+                'code' => '<?php
+                    /**
+                     * @template T of "a"|"b"
+                     * @param T $a
+                     * @return T
+                     */
+                    function run(string $a): string {
+                        if ($a === "a") {
+                            return $a;
+                        }
+
+                        return $a;
+                    }',
+            ],
+            'unboundedTemplateKeptWhenIdenticalToALiteral' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @param T $a
+                     * @return T
+                     */
+                    function run($a) {
+                        if ($a === 5) {
+                            return $a;
+                        }
+
+                        return $a;
+                    }',
+            ],
+            'templateKeptWhenLooselyEqualToALiteral' => [
+                'code' => '<?php
+                    /**
+                     * @template T of float
+                     * @param T $a
+                     * @return T
+                     */
+                    function runFloat(float $a): float {
+                        if ($a == 1.5) {
+                            return $a;
+                        }
+
+                        return $a;
+                    }
+
+                    /**
+                     * @template T of string
+                     * @param T $a
+                     * @return T
+                     */
+                    function runString(string $a): string {
+                        if ($a == "a") {
+                            return $a;
+                        }
+
+                        return $a;
+                    }',
+            ],
+            'templateKeptWhenNotIdenticalToALiteralIsExcluded' => [
+                'code' => '<?php
+                    /**
+                     * @template T of float
+                     * @param T $a
+                     * @return T
+                     */
+                    function run(float $a): float {
+                        if ($a !== 1.5) {
+                            return $a;
+                        }
+
+                        return $a;
+                    }',
+            ],
+            'nullKeptNextToAMixedTemplateLooselyEqualToALiteral' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @param T|null $a
+                     */
+                    function run($a): void {
+                        if ($a == 0) {
+                            if ($a === null) {}
+                        }
+                    }',
+            ],
+            'everyTemplateOfAUnionKeptWhenIdenticalToALiteral' => [
+                'code' => '<?php
+                    /**
+                     * @template T of string
+                     * @template U of string
+                     * @param T|U $a
+                     * @return T|U
+                     */
+                    function run($a) {
+                        if ($a === "a") {
+                            return $a;
+                        }
+
+                        return $a;
+                    }',
+            ],
+            'templateOfEnumKeptWhenIdenticalToACase' => [
+                'code' => '<?php
+                    enum Suit {
+                        case Hearts;
+                        case Spades;
+                    }
+
+                    /**
+                     * @template T of Suit
+                     * @param T $a
+                     * @return T
+                     */
+                    function run(Suit $a): Suit {
+                        if ($a === Suit::Hearts) {
+                            return $a;
+                        }
+
+                        return $a;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
             ],
             'typePredicatesOnATemplateBoundedByATemplate' => [
                 'code' => '<?php
@@ -3294,6 +3510,94 @@ final class FunctionTemplateTest extends TestCase
                         return $a;
                     }',
                 'error_message' => 'InvalidReturnStatement',
+            ],
+            'literalOutsideTheBoundOfATemplateIdenticalToIt' => [
+                'code' => '<?php
+                    /**
+                     * @template T of "a"|"b"
+                     * @param T $a
+                     */
+                    function run(string $a): void {
+                        if ($a === "c") {}
+                    }',
+                'error_message' => 'DocblockTypeContradiction',
+            ],
+            'literalTemplateIdenticalToItsBound' => [
+                'code' => '<?php
+                    /**
+                     * @template T of "a"
+                     * @param T $a
+                     */
+                    function run(string $a): void {
+                        if ($a === "a") {}
+                    }',
+                'error_message' => 'RedundantConditionGivenDocblockType',
+            ],
+            'otherTemplateIdenticalToALiteralIsNotTheReturnedTemplate' => [
+                'code' => '<?php
+                    /**
+                     * @template T of string
+                     * @template U of string
+                     * @param T|U $a
+                     * @return T
+                     */
+                    function run($a) {
+                        if ($a === "a") {
+                            return $a;
+                        }
+
+                        throw new Exception();
+                    }',
+                'error_message' => 'InvalidReturnStatement - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:36',
+            ],
+            'otherIntTemplateIdenticalToALiteralIsNotTheReturnedTemplate' => [
+                'code' => '<?php
+                    /**
+                     * @template T of int
+                     * @template U of int
+                     * @param T|U $a
+                     * @return T
+                     */
+                    function run($a) {
+                        if ($a === 5) {
+                            return $a;
+                        }
+
+                        throw new Exception();
+                    }',
+                'error_message' => 'InvalidReturnStatement - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:36',
+            ],
+            'stringNextToATemplateIdenticalToALiteralIsNotTheTemplate' => [
+                'code' => '<?php
+                    /**
+                     * @template T of string
+                     * @param T|string $a
+                     * @return T
+                     */
+                    function run($a) {
+                        if ($a === "a") {
+                            return $a;
+                        }
+
+                        throw new Exception();
+                    }',
+                'error_message' => 'InvalidReturnStatement - src' . DIRECTORY_SEPARATOR . 'somefile.php:9:36',
+            ],
+            'intNextToAnUnboundedTemplateIdenticalToALiteralIsNotTheTemplate' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @param T|int $a
+                     * @return T
+                     */
+                    function run($a) {
+                        if ($a === 5) {
+                            return $a;
+                        }
+
+                        throw new Exception();
+                    }',
+                'error_message' => 'InvalidReturnStatement - src' . DIRECTORY_SEPARATOR . 'somefile.php:9:36',
             ],
             'literalReturnedWhereATemplateVariableIsLooselyEqualToIt' => [
                 'code' => '<?php

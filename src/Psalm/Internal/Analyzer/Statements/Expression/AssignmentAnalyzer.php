@@ -32,13 +32,17 @@ use Psalm\Internal\Analyzer\Statements\Expression\Fetch\AtomicPropertyFetchAnaly
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\InstancePropertyFetchAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\VariableFetchAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
+use Psalm\Internal\Analyzer\Statements\GlobalAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
 use Psalm\Internal\Clause;
 use Psalm\Internal\Codebase\CombinedFlowGraph;
 use Psalm\Internal\Codebase\DataFlowGraph;
+use Psalm\Internal\Codebase\DatabaseTaints;
 use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\Codebase\TaintStore;
+use Psalm\Internal\Codebase\TaintValidations;
+use Psalm\Internal\Codebase\UrlHosts;
 use Psalm\Internal\Codebase\VariableUseGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
@@ -883,13 +887,14 @@ final class AssignmentAnalyzer
             }
 
             if ($context->vars_in_scope[$var_id]->isNever()) {
+                // an issue only recorded is in a pass a loop analyses again: the value stays never in it
                 if (!IssueBuffer::accepts(
                     new NoValue(
                         'All possible types for this assignment were invalidated - This may be dead code',
                         new CodeLocation($statements_analyzer->getSource(), $assign_var),
                     ),
                     $statements_analyzer->getSuppressedIssues(),
-                )) {
+                ) && !IssueBuffer::isRecording()) {
                     // if the error is suppressed, do not treat it as never anymore
                     $new_mutable = $context->vars_in_scope[$var_id]->getBuilder()->addType(new TMixed);
                     $new_mutable->removeType('never');
@@ -1266,6 +1271,10 @@ final class AssignmentAnalyzer
         $taint_flow_graph = $flow_graph instanceof CombinedFlowGraph ? $flow_graph->taint_flow_graph : $flow_graph;
         if ($taint_flow_graph instanceof TaintFlowGraph && $taint_flow_graph->isOutputStream($type)) {
             $taint_flow_graph->addOutputStream($new_parent_node);
+        }
+
+        if ($var_id === '$_SESSION' && $taint_flow_graph instanceof TaintFlowGraph) {
+            $taint_flow_graph->addPath($new_parent_node, GlobalAnalyzer::getSessionNode($taint_flow_graph), '=');
         }
 
         foreach ($parent_nodes as $parent_node) {
@@ -3352,8 +3361,20 @@ final class AssignmentAnalyzer
             // the start of a string assigned, for the keys of the keyed stores it is used as
             $taint_flow_graph = $statements_analyzer->getTaintFlowGraphWithSuppressed();
             if ($assign_value && $taint_flow_graph) {
+                $assigned_type = $statements_analyzer->node_data->getType($assign_value);
                 foreach ($context->vars_in_scope[$var_id]->parent_nodes as $var_node) {
                     TaintStore::recordAssignment($statements_analyzer, $taint_flow_graph, $assign_value, $var_node);
+                    UrlHosts::recordAssignment($statements_analyzer, $taint_flow_graph, $assign_value, $var_node);
+                    if ($assigned_type) {
+                        DatabaseTaints::recordAssignment($taint_flow_graph, $assigned_type, $var_node);
+                        TaintValidations::recordAssignment(
+                            $statements_analyzer,
+                            $taint_flow_graph,
+                            $assign_value,
+                            $assigned_type,
+                            $var_node,
+                        );
+                    }
                 }
             }
         }
