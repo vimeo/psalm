@@ -846,6 +846,18 @@ final class AssertionReconciler extends Reconciler
                 $any_scalar_type_match_found,
             );
 
+            // a key or a value of the bound of T can be one of key-of<T> or value-of<T>
+            if (!$intersection_type
+                && ($new_type_part instanceof TTemplateKeyOf || $new_type_part instanceof TTemplateValueOf)
+                && ($bound = $new_type_part instanceof TTemplateKeyOf
+                    ? TKeyOf::getArrayKeyType($new_type_part->as)
+                    : TValueOf::getValueType($new_type_part->as, $codebase)) !== null
+                && ($overlap = Type::intersectUnionTypes($existing_var_type, $bound, $codebase)) !== null
+                && !$overlap->isNever()
+            ) {
+                $intersection_type = $overlap;
+            }
+
             if ($code_location
                 && !$intersection_type
                 && (!$assertion instanceof IsLooselyEqual || !$any_scalar_type_match_found)
