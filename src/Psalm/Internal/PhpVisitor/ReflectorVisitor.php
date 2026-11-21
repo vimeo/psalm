@@ -43,12 +43,14 @@ use UnexpectedValueException;
 
 use function array_pop;
 use function array_unshift;
+use function count;
 use function defined;
 use function end;
 use function explode;
 use function implode;
 use function in_array;
 use function is_string;
+use function max;
 use function preg_match;
 use function reset;
 use function spl_object_id;
@@ -60,6 +62,25 @@ use function strtolower;
  */
 final class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements FileSource
 {
+    private const BRANCH_NODES = [
+        PhpParser\Node\Stmt\If_::class => true,
+        PhpParser\Node\Stmt\ElseIf_::class => true,
+        PhpParser\Node\Stmt\Case_::class => true,
+        PhpParser\Node\Stmt\Catch_::class => true,
+        PhpParser\Node\Stmt\For_::class => true,
+        PhpParser\Node\Stmt\Foreach_::class => true,
+        PhpParser\Node\Stmt\While_::class => true,
+        PhpParser\Node\Stmt\Do_::class => true,
+        PhpParser\Node\MatchArm::class => true,
+        PhpParser\Node\Expr\Ternary::class => true,
+        PhpParser\Node\Expr\BinaryOp\BooleanAnd::class => true,
+        PhpParser\Node\Expr\BinaryOp\BooleanOr::class => true,
+        PhpParser\Node\Expr\BinaryOp\LogicalAnd::class => true,
+        PhpParser\Node\Expr\BinaryOp\LogicalOr::class => true,
+        PhpParser\Node\Expr\BinaryOp\Coalesce::class => true,
+        PhpParser\Node\Expr\AssignOp\Coalesce::class => true,
+    ];
+
     private Aliases $aliases;
 
     private readonly string $file_path;
@@ -70,6 +91,15 @@ final class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements Fi
      * @var array<FunctionLikeNodeScanner>
      */
     private array $functionlike_node_scanners = [];
+
+    /**
+     * Branching nodes counted so far, by depth in $functionlike_node_scanners (0 is the file's global code)
+     *
+     * @var array<int, int>
+     */
+    private array $branches = [0 => 0];
+
+    private int $max_branches = 0;
 
     /**
      * @var array<ClassLikeNodeScanner>
@@ -113,6 +143,11 @@ final class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements Fi
     #[Override]
     public function enterNode(PhpParser\Node $node): ?int
     {
+        if ($this->scan_deep && isset(self::BRANCH_NODES[$node::class])) {
+            $depth = count($this->functionlike_node_scanners);
+            $this->branches[$depth] = ($this->branches[$depth] ?? 0) + 1;
+        }
+
         foreach ($node->getComments() as $comment) {
             if ($comment instanceof PhpParser\Comment\Doc && !$node instanceof PhpParser\Node\Stmt\ClassLike) {
                 try {
@@ -254,6 +289,7 @@ final class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements Fi
             $functionlike_node_scanner->applyTrivialConstructorCapabilities($node);
 
             $this->functionlike_node_scanners[] = $functionlike_node_scanner;
+            $this->branches[count($this->functionlike_node_scanners)] = 0;
 
             if ($node instanceof PhpParser\Node\Stmt\ClassMethod
                 && $functionlike_node_scanner->storage instanceof MethodStorage
@@ -873,6 +909,10 @@ final class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements Fi
                 );
             }
 
+            $depth = count($this->functionlike_node_scanners);
+            $this->max_branches = max($this->max_branches, $this->branches[$depth] ?? 0);
+            unset($this->branches[$depth]);
+
             $functionlike_node_scanner = array_pop($this->functionlike_node_scanners);
 
             if ($functionlike_node_scanner->storage) {
@@ -963,6 +1003,7 @@ final class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements Fi
     public function afterTraverse(array $nodes)
     {
         $this->file_storage->type_aliases = $this->type_aliases;
+        $this->file_storage->max_function_branches = max($this->max_branches, ...$this->branches);
 
         return null;
     }
