@@ -684,38 +684,9 @@ final class StatementsAnalyzer extends SourceAnalyzer
             if (isset($statements_analyzer->parsed_docblock->tags['psalm-suppress'])) {
                 $suppressed = $statements_analyzer->parsed_docblock->tags['psalm-suppress'];
                 if ($suppressed) {
-                    $docblock_issues = [];
-
-                    foreach ($suppressed as $offset => $suppress_entry) {
-                        foreach (DocComment::parseSuppressList($suppress_entry) as $issue_offset => $issue_type) {
-                            $docblock_issues[$issue_offset + $offset] = $issue_type;
-                        }
-                    }
-
                     // the suppressions of every docblock of the statement are removed after it
-                    $new_issues = ($new_issues ?? []) + $docblock_issues;
-
-                    if ($codebase->track_unused_suppressions
-                        && (
-                            (count($docblock_issues) === 1) // UnusedPsalmSuppress by itself should be marked as unused
-                            || !$codebase->config->suppressesIssueType($docblock_issues, 'UnusedPsalmSuppress')
-                        )
-                    ) {
-                        foreach ($docblock_issues as $offset => $issue_type) {
-                            if ($issue_type === 'InaccessibleMethod') {
-                                continue;
-                            }
-
-                            IssueBuffer::addUnusedSuppression(
-                                $statements_analyzer->getFilePath(),
-                                $offset,
-                                $issue_type,
-                                $codebase->taint_flow_graph !== null,
-                            );
-                        }
-                    }
-
-                    $statements_analyzer->addSuppressedIssues($docblock_issues);
+                    $new_issues = ($new_issues ?? [])
+                        + ExpressionAnalyzer::addSuppressions($statements_analyzer, $suppressed);
                 }
             }
 
