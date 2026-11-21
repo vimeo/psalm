@@ -1179,7 +1179,7 @@ final class ArgumentAnalyzer
             // type variables nested in the expected callable resolve through
             // their accumulated bounds (`callable(`_0 >: Foo):void` checks as
             // `callable(Foo):void`)
-            $param_type = self::resolveTypeVariablesInCallables($param_type, $codebase);
+            $param_type = self::resolveTypeVariablesInCallables($param_type, $input_type, $codebase);
         }
 
         if ($param_type->hasCallableType() && $param_type->isSingle()) {
@@ -2972,8 +2972,11 @@ final class ArgumentAnalyzer
      * else untouched (callable signature validation compares shapes
      * structurally and cannot defer a variable to bound reconciliation).
      */
-    private static function resolveTypeVariablesInCallables(Union $param_type, Codebase $codebase): Union
-    {
+    private static function resolveTypeVariablesInCallables(
+        Union $param_type,
+        Union $input_type,
+        Codebase $codebase,
+    ): Union {
         $changed = false;
         $resolved_atomic_types = [];
 
@@ -2997,7 +3000,17 @@ final class ArgumentAnalyzer
                         // hasMixed() gate), dropping the coercion; leave the
                         // variable in place so the comparison records a bound
                         // (`_0 <: Item`) that reconciles at the end of the
-                        // function-like instead.
+                        // function-like instead. The same holds when values
+                        // flowed into the variable after its construction (e.g.
+                        // `$c->add("x")`): the callable receives them too, and
+                        // the construction-site shape alone would accept a
+                        // callable they don't fit. That is left to bound
+                        // reconciliation only for a callable that takes the
+                        // construction-site values but none of the later ones:
+                        // one that can take some of them is checked against
+                        // all of them by the call's template check, and one
+                        // that doesn't take the construction-site values is
+                        // reported in full here.
                         $param_changed = false;
                         $resolved_param_type = self::resolveTypeVariablesInUnion(
                             $callable_param->type,
@@ -3005,9 +3018,28 @@ final class ArgumentAnalyzer
                             $param_changed,
                         );
 
-                        if ($param_changed
-                            && !$resolved_param_type->isMixed()
-                            && $resolved_param_type !== $callable_param->type
+                        if (!$param_changed
+                            || $resolved_param_type->isMixed()
+                            || $resolved_param_type === $callable_param->type
+                        ) {
+                            continue;
+                        }
+
+                        $all_values_type = self::resolveTypeVariablesInUnion(
+                            $callable_param->type,
+                            $codebase,
+                            $param_changed,
+                            false,
+                        );
+
+                        if ($resolved_param_type->getId() === $all_values_type->getId()
+                            || !self::inputCallableParamTakes(
+                                $input_type,
+                                $param_offset,
+                                $resolved_param_type,
+                                $all_values_type,
+                                $codebase,
+                            )
                         ) {
                             $new_params[$param_offset] = $callable_param->setType($resolved_param_type);
                             $changed = true;
@@ -3034,13 +3066,43 @@ final class ArgumentAnalyzer
     }
 
     /**
+     * Whether a parameter of the callable passed as the argument takes every
+     * construction-site value but none of the values the variable holds now.
+     */
+    private static function inputCallableParamTakes(
+        Union $input_type,
+        int $param_offset,
+        Union $construction_site_type,
+        Union $all_values_type,
+        Codebase $codebase,
+    ): bool {
+        foreach ($input_type->getAtomicTypes() as $input_atomic) {
+            if (($input_atomic instanceof TCallable || $input_atomic instanceof TClosure)
+                && isset($input_atomic->params[$param_offset]->type)
+            ) {
+                $input_param_type = $input_atomic->params[$param_offset]->type;
+
+                return UnionTypeComparator::isContainedBy($codebase, $construction_site_type, $input_param_type)
+                    && !UnionTypeComparator::canBeContainedBy($codebase, $input_param_type, $all_values_type);
+            }
+        }
+
+        return false;
+    }
+
+    /**
      * Resolves type variables in a union through the bounds inferred at their
      * construction site (bounds recorded by later uses already reconcile on
-     * their own).
+     * their own), or with $construction_site_only false through every value
+     * that flowed into them.
      */
-    private static function resolveTypeVariablesInUnion(Union $type, Codebase $codebase, bool &$changed): Union
-    {
-        $resolver = new TypeVariableResolver($codebase);
+    private static function resolveTypeVariablesInUnion(
+        Union $type,
+        Codebase $codebase,
+        bool &$changed,
+        bool $construction_site_only = true,
+    ): Union {
+        $resolver = new TypeVariableResolver($codebase, construction_site_only: $construction_site_only);
         $resolver->traverse($type);
 
         if ($resolver->resolved_a_variable) {
