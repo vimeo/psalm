@@ -86,6 +86,19 @@ jobs:
           GPG_SECRET_KEY: ${{ secrets.GPG_SECRET_KEY }}
           GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
 
+      # Before releasing it: the phar runs on a PHP newer than the one it's built on (see the phar job of ci.yml)
+      - name: Set up PHP 8.6
+        uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # v2
+        with:
+          php-version: '8.6'
+          tools: composer:v2
+          coverage: none
+        env:
+          fail-fast: true
+
+      - name: Test the phar on PHP 8.6
+        run: bin/ci/test-phar.sh build/psalm.phar
+
       - name: Upload release assets
         if: ${{ startsWith(github.ref, 'refs/tags/') }}
         uses: svenstaro/upload-release-action@29e53e917877a24fad85510ded594ab3c9ca12de # v2

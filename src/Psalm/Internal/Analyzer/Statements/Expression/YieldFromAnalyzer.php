@@ -26,6 +26,8 @@ final class YieldFromAnalyzer
         PhpParser\Node\Expr\YieldFrom $stmt,
         Context $context,
     ): bool {
+        YieldAnalyzer::checkGeneratorConstructorOrDestructor($statements_analyzer, $stmt);
+
         $was_inside_call = $context->inside_call;
 
         $context->inside_call = true;

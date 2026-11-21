@@ -10,16 +10,19 @@ use Psalm\CodeLocation\DocblockTypeLocation;
 use Psalm\Codebase;
 use Psalm\Context;
 use Psalm\Exception\DocblockParseException;
+use Psalm\Internal\Analyzer\ClassAnalyzer;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\ClassLikeNameOptions;
 use Psalm\Internal\Analyzer\ClosureAnalyzer;
 use Psalm\Internal\Analyzer\CommentAnalyzer;
 use Psalm\Internal\Analyzer\ConstructorExits;
 use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
+use Psalm\Internal\Analyzer\MethodAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\ClassTemplateParamCollector;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodCallPurityAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
+use Psalm\Internal\Codebase\PhpDeprecations;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\Comparator\TypeComparisonResult;
@@ -28,6 +31,7 @@ use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TypeCombiner;
 use Psalm\Internal\Type\TypeExpander;
+use Psalm\Issue\DeprecatedSyntax;
 use Psalm\Issue\FalsableReturnStatement;
 use Psalm\Issue\HiddenGeneratorReturn;
 use Psalm\Issue\InvalidDocblock;
@@ -156,7 +160,50 @@ final class ReturnAnalyzer
         PhpParser\Node\Stmt\Return_ $stmt,
         Context $context,
     ): void {
+        if ($context->inside_finally) {
+            IssueBuffer::maybeAdd(
+                new DeprecatedSyntax(
+                    PhpDeprecations::getDeprecatedSinceMessage('A return in a finally block', 8_06_00, null)
+                        . ': it discards the exception or the return value of the try block',
+                    new CodeLocation($statements_analyzer, $stmt),
+                ),
+                $statements_analyzer->getSuppressedIssues(),
+            );
+        }
+
+        $method_name = MethodAnalyzer::getConstructorOrDestructorName($statements_analyzer);
+
+        if ($stmt->expr !== null && $method_name !== null) {
+            IssueBuffer::maybeAdd(
+                new DeprecatedSyntax(
+                    PhpDeprecations::getDeprecatedSinceMessage(
+                        'Returning a value from ' . $method_name . '()',
+                        8_06_00,
+                        null,
+                    ),
+                    new CodeLocation($statements_analyzer, $stmt),
+                ),
+                $statements_analyzer->getSuppressedIssues(),
+            );
+        }
+
         self::analyzeReturn($statements_analyzer, $stmt, $context);
+
+        $source = $statements_analyzer->getSource();
+
+        if ($source instanceof MethodAnalyzer
+            && strtolower((string) $source->getMethodName()) === '__debuginfo'
+            && $stmt->expr !== null
+            && $statements_analyzer->node_data->getType($stmt->expr)?->isNull() === true
+        ) {
+            IssueBuffer::maybeAdd(
+                new DeprecatedSyntax(
+                    PhpDeprecations::getDeprecatedSinceMessage('Returning null from __debugInfo()', 8_05_00, '[]'),
+                    new CodeLocation($statements_analyzer, $stmt),
+                ),
+                $statements_analyzer->getSuppressedIssues(),
+            );
+        }
 
         // what a closure wrote to a variable it captures by reference stays written when it returns
         $closure = $statements_analyzer->getSource();
@@ -425,7 +472,11 @@ final class ReturnAnalyzer
                         return;
                     }
                 } else {
-                    $declared_return_type = $storage->return_type;
+                    $declared_return_type = ClassAnalyzer::localizeClosureReturnType(
+                        $codebase,
+                        $storage->return_type,
+                        $context,
+                    );
                 }
 
                 if ($declared_return_type && !$declared_return_type->hasMixed()) {

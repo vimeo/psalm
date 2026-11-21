@@ -231,6 +231,16 @@ final class DataFlowNode implements Stringable
     }
 
     /**
+     * What the program stores in $_SESSION, under its keys, which the requests reading the session back get
+     *
+     * @psalm-pure
+     */
+    public static function getForSession(): self
+    {
+        return self::make('$_SESSION', '$_SESSION', null);
+    }
+
+    /**
      * Builds a node carrying a taint bitmask at a location. Whether it behaves as a
      * source or a sink depends on whether the caller passes it to
      * {@see TaintFlowGraph::addSource()} or {@see TaintFlowGraph::addSink()}.
