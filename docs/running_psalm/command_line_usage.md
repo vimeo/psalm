@@ -46,7 +46,7 @@ Add `--shepherd` to the Psalm command that runs in CI:
 ./vendor/bin/psalm --shepherd
 ```
 
-The coverage history and the badges use the runs on the default branch of your repository. Psalm reports to Shepherd from GitHub Actions, Travis CI, CircleCI, AppVeyor, Jenkins and Scrutinizer, and from other CI services when the checkout has a GitHub remote.
+The coverage history and the badges use the runs on the default branch of your repository. Psalm reports to Shepherd from GitHub Actions and other popular CI services, and from any other CI when the checkout has a GitHub remote.
 
 See [Using Shepherd](shepherd.md) for badges, what is sent, and how to send reports to your own endpoint.
 
