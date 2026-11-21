@@ -94,6 +94,105 @@ final class SwitchTypeTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'caseNarrowingTheObjectOfANarrowedPropertyKeepsItWithDefault' => [
+                'code' => '<?php
+                    class B { public ?string $p = null; }
+                    final class C extends B {}
+                    interface I {}
+
+                    function takesString(string $s): void {}
+
+                    function f(B $b): void {
+                        if ($b->p !== null) {
+                            switch (true) {
+                                case $b instanceof C:
+                                    echo 1;
+                                    break;
+                                default:
+                                    break;
+                            }
+
+                            takesString($b->p);
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'caseNarrowingTheObjectWithAnInterfaceKeepsTheNarrowedProperty' => [
+                'code' => '<?php
+                    class B { public ?string $p = null; }
+                    final class C extends B {}
+                    interface I {}
+
+                    function takesString(string $s): void {}
+
+                    function f(B $b): void {
+                        if ($b->p !== null) {
+                            switch (true) {
+                                case $b instanceof I:
+                                    echo 1;
+                                    break;
+                                default:
+                                    break;
+                            }
+
+                            takesString($b->p);
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'caseNarrowingTheObjectWithoutDefaultKeepsTheNarrowedProperty' => [
+                'code' => '<?php
+                    class B { public ?string $p = null; }
+                    final class C extends B {}
+                    interface I {}
+
+                    function takesString(string $s): void {}
+
+                    function f(B $b): void {
+                        if ($b->p !== null) {
+                            switch (true) {
+                                case $b instanceof C:
+                                    echo 1;
+                                    break;
+                            }
+
+                            takesString($b->p);
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'caseBreakingOutOfANegatedInstanceofKeepsTheNarrowedProperty' => [
+                'code' => '<?php
+                    class B { public ?string $p = null; }
+                    final class C extends B {}
+                    interface I {}
+
+                    function takesString(string $s): void {}
+
+                    function f(B $b, int $x): void {
+                        if ($b->p !== null) {
+                            switch ($x) {
+                                case 1:
+                                    if (!$b instanceof C) {
+                                        break;
+                                    }
+
+                                    break;
+                            }
+
+                            takesString($b->p);
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'caseNotChangingTheKeyOfANarrowedOffsetKeepsTheNarrowing' => [
                 'code' => '<?php
                     /** @param array<string, mixed> $a */
@@ -1966,6 +2065,27 @@ final class SwitchTypeTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'lastCaseFallingOffTheEndAssigningTheKeyOfANarrowedOffsetForgetsTheNarrowing' => [
+                'code' => '<?php
+                    function takesInt(int $i): void {}
+
+                    /** @param array<string, mixed> $a */
+                    function f(array $a, string $k, int $c): void {
+                        if (is_int($a[$k])) {
+                            switch ($c) {
+                                case 1:
+                                    break;
+                                case 2:
+                                    $k = "zz";
+                            }
+
+                            takesInt($a[$k]);
+                        }
+                    }',
+                'error_message' => 'MixedArgument',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
             'caseAssigningTheKeyOfANarrowedOffsetForgetsTheNarrowing' => [
                 'code' => '<?php
                     function takesInt(int $i): void {}

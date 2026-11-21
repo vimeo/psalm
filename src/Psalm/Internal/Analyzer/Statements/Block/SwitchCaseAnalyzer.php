@@ -458,12 +458,31 @@ final class SwitchCaseAnalyzer
             }
 
             $break_type = $case_scope->break_vars[$var_id] ?? null;
+            $changed_at_breaks = $case_scope->break_vars !== null
+                && ($break_type === null || ($break_type->possibly_undefined && !$type->possibly_undefined));
 
-            if (($case_scope->break_vars !== null
-                    && ($break_type === null || ($break_type->possibly_undefined && !$type->possibly_undefined)))
-                || ($reaches_its_end && !isset($case_context->vars_in_scope[$var_id]))
+            // what a way out of the case drops counts only when it changed something the variable depends on: a
+            // variable of which the case only narrowed the object is kept, as after an if
+            if (($changed_at_breaks
+                    && IfElseAnalyzer::isForgottenSince(
+                        $case_scope->parent_remove_vars_at_breaks,
+                        $original_context->parent_remove_vars,
+                        $var_id,
+                        isset($case_context->vars_possibly_in_scope[$var_id]),
+                    ))
+                || ($reaches_its_end
+                    && !isset($case_context->vars_in_scope[$var_id])
+                    && IfElseAnalyzer::isForgottenSince(
+                        $case_context->parent_remove_vars,
+                        $original_context->parent_remove_vars,
+                        $var_id,
+                        isset($case_context->vars_possibly_in_scope[$var_id]),
+                    ))
             ) {
                 $switch_scope->forgotten_vars[$var_id] = true;
+            } elseif ($changed_at_breaks && $break_type !== null) {
+                // it only became possibly undefined because its object was narrowed
+                $case_scope->break_vars[$var_id] = $break_type->setPossiblyUndefined(false, false);
             }
         }
 
