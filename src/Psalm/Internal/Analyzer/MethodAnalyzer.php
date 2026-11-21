@@ -10,7 +10,9 @@ use Psalm\CodeLocation;
 use Psalm\Codebase;
 use Psalm\Context;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
+use Psalm\Internal\Codebase\PhpDeprecations;
 use Psalm\Internal\MethodIdentifier;
+use Psalm\Issue\DeprecatedSyntax;
 use Psalm\Issue\InvalidEnumMethod;
 use Psalm\Issue\InvalidStaticInvocation;
 use Psalm\Issue\MethodSignatureMustOmitReturnType;
@@ -189,12 +191,17 @@ final class MethodAnalyzer extends FunctionLikeAnalyzer
             $defining_class_storage = $codebase->classlike_storage_provider->get($defining_class);
             $method_since_id = $defining_class_storage->since_php_version_id;
 
-            // A native method with no `@since` on it or its class is dated by the versioned
-            // callmaps (e.g. ReflectionClass::isEnum(), added in PHP 8.1 to a pre-existing class).
-            if ($method_since_id === null && !$defining_class_storage->user_defined) {
-                $method_since_id = InternalCallMapHandler::getIntroducingPhpVersionId(
+            // A native method with no `@since` on it is dated by the versioned callmaps when they date it later than
+            // its class (ReflectionClass::isEnum(), added in PHP 8.1 to a pre-existing class, or
+            // ReflectionAttribute::inNamespace(), added in 8.6 to a class of 8.0).
+            if (!$defining_class_storage->user_defined) {
+                $callmap_since_id = InternalCallMapHandler::getIntroducingPhpVersionId(
                     $defining_class . '::' . $method_id->method_name,
                 );
+
+                if ($callmap_since_id !== null && $callmap_since_id > ($method_since_id ?? 0)) {
+                    $method_since_id = $callmap_since_id;
+                }
             }
         }
 
@@ -381,6 +388,100 @@ final class MethodAnalyzer extends FunctionLikeAnalyzer
      * Check that __clone, __construct, and __destruct do not have a return type
      * hint in their signature.
      */
+    /**
+     * `__construct` or `__destruct` if the statements are those of one, not of a closure in it
+     *
+     * @psalm-pure
+     */
+    public static function getConstructorOrDestructorName(StatementsAnalyzer $statements_analyzer): ?string
+    {
+        $source = $statements_analyzer->getSource();
+
+        if (!$source instanceof self) {
+            return null;
+        }
+
+        $method_name = strtolower((string) $source->getMethodName());
+
+        return $method_name === '__construct' || $method_name === '__destruct' ? $method_name : null;
+    }
+
+    /**
+     * Reports the return types of magic methods PHP deprecates, whatever PHP version is analysed
+     *
+     * @param array<array-key, string> $suppressed_issues
+     */
+    public static function checkDeprecatedMagicMethodSignature(
+        MethodStorage $method_storage,
+        CodeLocation $code_location,
+        array $suppressed_issues,
+    ): void {
+        $return_type = $method_storage->signature_return_type;
+
+        if ($method_storage->cased_name === null || $return_type === null) {
+            return;
+        }
+
+        $message = match (strtolower($method_storage->cased_name)) {
+            '__debuginfo' => $return_type->isNullable()
+                ? PhpDeprecations::getDeprecatedSinceMessage('A nullable return type of __debugInfo()', 8_06_00, null)
+                : null,
+            '__sleep' => !$return_type->hasArray() && !$return_type->hasMixed()
+                ? PhpDeprecations::getDeprecatedSinceMessage('A __sleep() not returning an array', 8_01_00, null)
+                : null,
+            default => null,
+        };
+
+        if ($message !== null) {
+            IssueBuffer::maybeAdd(
+                new DeprecatedSyntax(
+                    $message . ', declare array',
+                    $method_storage->signature_return_type_location ?? $code_location,
+                ),
+                $suppressed_issues,
+            );
+        }
+    }
+
+    /**
+     * Reports a __sleep() or __wakeup(), which PHP 8.5 soft-deprecates, unless the class has the replacement: then
+     * serialize() and unserialize() don't call it, and a subclass may still call it as the parent method
+     *
+     * @param array<string> $suppressed_issues
+     */
+    public static function checkSoftDeprecatedMagicMethod(
+        MethodStorage $method_storage,
+        ClassLikeStorage $class_storage,
+        CodeLocation $code_location,
+        array $suppressed_issues,
+    ): void {
+        if ($method_storage->cased_name === null) {
+            return;
+        }
+
+        $replacement = match (strtolower($method_storage->cased_name)) {
+            '__sleep' => '__serialize',
+            '__wakeup' => '__unserialize',
+            default => null,
+        };
+
+        if ($replacement === null || isset($class_storage->declaring_method_ids[$replacement])) {
+            return;
+        }
+
+        IssueBuffer::maybeAdd(
+            new DeprecatedSyntax(
+                PhpDeprecations::getDeprecatedSinceMessage(
+                    'Declaring ' . $method_storage->cased_name . '()',
+                    8_05_00,
+                    $replacement . '()',
+                ),
+                $code_location,
+            ),
+            $suppressed_issues,
+        );
+    }
+
     public static function checkMethodSignatureMustOmitReturnType(
         MethodStorage $method_storage,
         CodeLocation $code_location,

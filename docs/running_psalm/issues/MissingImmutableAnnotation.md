@@ -25,6 +25,6 @@ final class CouldBeImmutable {
 
 ## Why this is useful
 
-The annotation is a contract for the class and its subclasses: a method of the class, or of a subclass, that does more than the contract allows is reported, so the class cannot silently become mutable. Explicit purity is also what [taint analysis](https://psalm.dev/docs/security_analysis/) relies on where it cannot infer it, see [specializing taints in functions](../../security_analysis/avoiding_false_positives.md#specializing-taints-in-functions).
+The annotation is a contract for the class and its subclasses: a method of the class, or of a subclass, that does more than the contract allows is reported, so the class cannot silently become mutable. Explicit purity is also what [taint analysis](https://psalm.dev/docs/security_analysis/) relies on where it cannot infer it, see [specializing taints in functions](../../security_analysis/index.md#specializing-functions).
 
 See [inferring annotations](../../annotating_code/purity_model.md#inferring-annotations) in the purity model.

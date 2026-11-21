@@ -1108,6 +1108,8 @@ final class MagicMethodAnnotationTest extends TestCase
                             return $query;
                         }
                     }',
+                'assertions' => [],
+                'ignored_issues' => ['DeprecatedSyntax'],
             ],
             'magicMethodReturnSelf' => [
                 'code' => '<?php

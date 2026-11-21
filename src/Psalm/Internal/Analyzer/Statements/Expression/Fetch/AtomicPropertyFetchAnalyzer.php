@@ -24,6 +24,7 @@ use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\Statements\UnsetAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\MixinLookup;
+use Psalm\Internal\Codebase\PhpDeprecations;
 use Psalm\Internal\Codebase\VariableUseGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
@@ -106,10 +107,14 @@ final class AtomicPropertyFetchAnalyzer
         }
 
         if ($lhs_type_part instanceof TMixed) {
-            $statements_analyzer->node_data->setType(
-                $stmt,
-                self::getDynamicPropertyType($statements_analyzer, $stmt, $stmt_var_type, $prop_name),
-            );
+            $property_type = self::getDynamicPropertyType($statements_analyzer, $stmt, $stmt_var_type, $prop_name);
+
+            // a property of a value a loop may not have set yet (isset() in its first pass) is such a value
+            if ($lhs_type_part->from_loop_isset) {
+                $property_type = Type::getMixed(true)->setParentNodes($property_type->parent_nodes);
+            }
+
+            $statements_analyzer->node_data->setType($stmt, $property_type);
             return;
         }
 
@@ -728,6 +733,26 @@ final class AtomicPropertyFetchAnalyzer
                 IssueBuffer::maybeAdd(
                     new DeprecatedProperty(
                         $property_id . ' is marked deprecated',
+                        new CodeLocation($statements_analyzer->getSource(), $stmt),
+                        $property_id,
+                    ),
+                    $statements_analyzer->getSuppressedIssues(),
+                );
+
+                return;
+            }
+        }
+
+        if (!$declaring_class_storage->user_defined) {
+            $builtin_message = PhpDeprecations::getPropertyMessage(
+                $property_id,
+                $declaring_class_storage->name . '::$' . $prop_name,
+            );
+
+            if ($builtin_message !== null) {
+                IssueBuffer::maybeAdd(
+                    new DeprecatedProperty(
+                        $builtin_message,
                         new CodeLocation($statements_analyzer->getSource(), $stmt),
                         $property_id,
                     ),

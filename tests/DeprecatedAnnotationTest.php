@@ -8,6 +8,8 @@ use Override;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
+use const DIRECTORY_SEPARATOR;
+
 final class DeprecatedAnnotationTest extends TestCase
 {
     use InvalidCodeAnalysisTestTrait;
@@ -408,6 +410,26 @@ final class DeprecatedAnnotationTest extends TestCase
                 'error_message' => 'DeprecatedConstant',
                 'error_levels' => [],
                 'php_version' => '8.1',
+            ],
+            'deprecatedGlobalConstantByDocblock' => [
+                'code' => '<?php
+                    /** @deprecated */
+                    const OLD = 1;
+                    echo OLD;
+                ',
+                'error_message' => 'DeprecatedConstant - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:26 - Constant OLD is deprecated',
+            ],
+            'deprecatedGlobalConstantByAttribute' => [
+                'code' => '<?php
+                    namespace Foo;
+
+                    #[\\Deprecated(since: "2.0")]
+                    const OLD = 1;
+                    echo \\Foo\\OLD;
+                ',
+                'error_message' => 'Constant Foo\\OLD is deprecated',
+                'error_levels' => [],
+                'php_version' => '8.5',
             ],
             'deprecatedClassConstFetch' => [
                 'code' => '<?php
