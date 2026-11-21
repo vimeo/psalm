@@ -1879,6 +1879,35 @@ final class ClassTemplateExtendsTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'intersectionOfSeveralMembersWithTheMethodLeavesItsCallableUnbound' => [
+                'code' => '<?php
+                    /** @template T */
+                    interface Tag {}
+
+                    /** @template T */
+                    interface Sink {
+                        /** @param T $value */
+                        public function set(mixed $value): void;
+                    }
+
+                    /** @extends Sink<string> */
+                    interface TextSink extends Sink {}
+
+                    interface IntSink {
+                        public function set(int $value): void;
+                    }
+
+                    /** @param callable(int): void $callback */
+                    function takesCallback(callable $callback): void {}
+
+                    /** @param Tag<bool>&TextSink&IntSink $m */
+                    function f(Tag $m): void {
+                        takesCallback([$m, "set"]);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'nonGenericChildBindsTheTemplatesOfItsGenericParentThroughTwoExtends' => [
                 'code' => '<?php
                     /** @template T */

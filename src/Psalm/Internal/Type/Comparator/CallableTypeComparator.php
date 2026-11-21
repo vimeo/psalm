@@ -43,7 +43,6 @@ use function end;
 use function is_numeric;
 use function ltrim;
 use function str_starts_with;
-use function strcasecmp;
 use function strpos;
 use function strtolower;
 use function substr;
@@ -442,17 +441,25 @@ final class CallableTypeComparator
             );
 
             if ($callable_object instanceof TNamedObject) {
-                // of an intersection, the receiver is the member of the class the method id names
-                foreach ([$callable_object, ...$callable_object->getIntersectionTypes()] as $receiver) {
-                    if ($receiver instanceof TNamedObject
-                        && strcasecmp($receiver->value, $method_fqcln) === 0
+                // of an intersection, the receiver is the member that has the method: when several do, their
+                // signatures may differ, and only a generic first member (as before) binds
+                $suppliers = [];
+
+                foreach ([$callable_object, ...$callable_object->getIntersectionTypes()] as $member) {
+                    if ($member instanceof TNamedObject
+                        && self::classHasMethod($codebase, $member->value, $method_id->method_name)
                     ) {
-                        $callable_object = $receiver;
-                        break;
+                        $suppliers[] = $member;
                     }
                 }
 
-                $callable = self::bindReceiverTemplates($codebase, $callable, $callable_object, $declaring_method_id);
+                $receiver = count($suppliers) > 1
+                    ? ($callable_object instanceof TGenericObject ? $callable_object : null)
+                    : $suppliers[0] ?? $callable_object;
+
+                if ($receiver !== null) {
+                    $callable = self::bindReceiverTemplates($codebase, $callable, $receiver, $declaring_method_id);
+                }
             }
 
             // Resolve method-level templates against the expected callable shape, so
