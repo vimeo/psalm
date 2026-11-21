@@ -217,6 +217,21 @@ final class WhileTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'compoundAssignmentInTheConditionIsNarrowedByIt' => [
+                'code' => '<?php
+                    $try = 8;
+                    while (($try += 1) < 10) {
+                        echo $try;
+                    }
+                    $afterLoop = $try;
+
+                    $s = (string) rand(0, 1);
+                    $concatenated = ($s .= "a") === "1a" ? $s : "other";',
+                'assertions' => [
+                    '$afterLoop===' => '10',
+                    '$concatenated===' => '\'1a\'|\'other\'',
+                ],
+            ],
             'whileCounterIncrementedThroughAReferenceIsWidened' => [
                 'code' => <<<'PHP'
                     <?php

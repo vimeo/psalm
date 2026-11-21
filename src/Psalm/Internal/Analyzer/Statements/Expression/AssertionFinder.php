@@ -2405,7 +2405,7 @@ final class AssertionFinder
         if ($var_name) {
             if ($base_conditional instanceof PhpParser\Node\Expr\Assign
                 || $base_conditional instanceof PhpParser\Node\Expr\AssignRef
-                || $base_conditional instanceof PhpParser\Node\Expr\AssignOp\Coalesce
+                || $base_conditional instanceof PhpParser\Node\Expr\AssignOp
             ) {
                 $var_name = '=' . $var_name;
             }
@@ -3131,7 +3131,7 @@ final class AssertionFinder
 
             while ($operand instanceof PhpParser\Node\Expr\Assign
                 || $operand instanceof PhpParser\Node\Expr\AssignRef
-                || $operand instanceof PhpParser\Node\Expr\AssignOp\Coalesce
+                || $operand instanceof PhpParser\Node\Expr\AssignOp
                 || $operand instanceof PhpParser\Node\Expr\PreInc
                 || $operand instanceof PhpParser\Node\Expr\PreDec
             ) {
