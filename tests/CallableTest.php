@@ -155,6 +155,21 @@ final class CallableTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'callableArrayOnAnIntersectionWithATemplate' => [
+                'code' => '<?php
+                    interface Foo {
+                        public function bar(int $i): int;
+                    }
+
+                    /**
+                     * @template T of object
+                     * @param Foo&T $x
+                     * @return list<int>
+                     */
+                    function f($x): array {
+                        return array_map([$x, "bar"], [1]);
+                    }',
+            ],
             'callableOfThisTakesTheTemplatesOfTheObject' => [
                 'code' => '<?php
                     /**

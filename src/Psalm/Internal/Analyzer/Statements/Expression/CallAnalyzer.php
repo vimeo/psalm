@@ -686,10 +686,20 @@ abstract class CallAnalyzer
                         continue;
                     }
 
-                    if ($extra_type instanceof TTemplateParam
-                        || $extra_type instanceof TCallableObject
-                    ) {
-                        throw new UnexpectedValueException('Shouldn’t get a generic param here');
+                    // `callable-object` says nothing about the class either
+                    if ($extra_type instanceof TCallableObject) {
+                        continue;
+                    }
+
+                    // a template stands for the classes of its bound
+                    if ($extra_type instanceof TTemplateParam) {
+                        foreach ($extra_type->as->getAtomicTypes() as $bound_type) {
+                            if ($bound_type instanceof TNamedObject) {
+                                $method_id .= '&' . $bound_type->value . '::' . $method_name;
+                            }
+                        }
+
+                        continue;
                     }
 
                     $method_id .= '&' . $extra_type->value . '::' . $method_name;
