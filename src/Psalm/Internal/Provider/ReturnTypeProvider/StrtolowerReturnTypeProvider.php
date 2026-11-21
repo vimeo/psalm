@@ -60,6 +60,6 @@ final class StrtolowerReturnTypeProvider implements FunctionReturnTypeProviderIn
             );
         }
 
-        return new Union($literals);
+        return new Union($literals, ['from_docblock' => $type->from_docblock]);
     }
 }

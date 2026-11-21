@@ -4344,6 +4344,32 @@ final class FunctionCallTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'strtolowerOfDocblockLiteralsKeepsFromDocblock' => [
+                'code' => '<?php
+                    /** @param \'A\'|\'B\' $k */
+                    function f(string $k): void {
+                        $l = strtolower($k);
+                        if ($l === \'c\') {}
+                    }',
+                'error_message' => 'DocblockTypeContradiction',
+            ],
+            'mbStrtolowerOfDocblockLiteralsKeepsFromDocblock' => [
+                'code' => '<?php
+                    /** @param \'A\'|\'B\' $k */
+                    function f(string $k): void {
+                        $l = mb_strtolower($k);
+                        if ($l === \'c\') {}
+                    }',
+                'error_message' => 'DocblockTypeContradiction',
+            ],
+            'strtolowerOfNativeLiteralsIsStillATypeContradiction' => [
+                'code' => '<?php
+                    function f(): void {
+                        $l = strtolower(rand() ? \'A\' : \'B\');
+                        if ($l === \'c\') {}
+                    }',
+                'error_message' => 'TypeDoesNotContainType',
+            ],
             'callUserFuncWithADifferentCase' => [
                 'code' => '<?php
                     function takesInt(int $i): string {
