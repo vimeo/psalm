@@ -2442,17 +2442,16 @@ final class SimpleAssertionReconciler extends Reconciler
             ) {
                 $callable_types[] = $type;
                 $redundant = false;
-            } elseif ($type instanceof TArray) {
+            } elseif ($type instanceof TArray
+                || ($type instanceof TKeyedArray
+                    && (count($type->properties) === 2 || $type->fallback_params !== null))
+            ) {
                 $callable_array = self::getCallableArray($codebase, $type);
 
                 if ($callable_array !== null) {
                     $callable_types[] = $callable_array;
                 }
 
-                $redundant = false;
-            } elseif ($type instanceof TKeyedArray && count($type->properties) === 2) {
-                $type = TKeyedArray::makeCallable($type->properties);
-                $callable_types[] = $type;
                 $redundant = false;
             } elseif ($type instanceof TTemplateParam) {
                 $bound = self::getTemplateBound($type);
@@ -2525,22 +2524,56 @@ final class SimpleAssertionReconciler extends Reconciler
     /**
      * The callable arrays (a class or an object, and a method name) among those of an array type, if any
      */
-    private static function getCallableArray(Codebase $codebase, TArray $type): ?TKeyedArray
+    private static function getCallableArray(Codebase $codebase, TArray|TKeyedArray $type): ?TKeyedArray
+    {
+        if ($type instanceof TArray) {
+            if (Type::intersectUnionTypes($type->type_params[0], Type::getInt(), $codebase) === null) {
+                return null;
+            }
+
+            return self::getCallableArrayOfValues($codebase, [$type->type_params[1], $type->type_params[1]]);
+        }
+
+        if (count($type->properties) === 2) {
+            return TKeyedArray::makeCallable($type->properties);
+        }
+
+        // a list or an array with a fallback is callable when it holds two elements, the first naming a class or
+        // being an object and the second a method
+        if ($type->fallback_params === null
+            || Type::intersectUnionTypes($type->fallback_params[0], Type::getInt(), $codebase) === null
+        ) {
+            return null;
+        }
+
+        foreach ($type->properties as $offset => $property) {
+            if ($offset !== 0 && $offset !== 1 && !$property->possibly_undefined) {
+                return null;
+            }
+        }
+
+        return self::getCallableArrayOfValues(
+            $codebase,
+            [$type->properties[0] ?? $type->fallback_params[1], $type->properties[1] ?? $type->fallback_params[1]],
+        );
+    }
+
+    /**
+     * @param array{0: Union, 1: Union} $values
+     */
+    private static function getCallableArrayOfValues(Codebase $codebase, array $values): ?TKeyedArray
     {
         $callable_array = Atomic::create('callable-array');
         assert($callable_array instanceof TKeyedArray);
 
-        if (Type::intersectUnionTypes($type->type_params[0], Type::getInt(), $codebase) === null) {
-            return null;
-        }
-
         $properties = [];
 
         foreach ($callable_array->properties as $offset => $property) {
-            $item = Type::intersectUnionTypes($type->type_params[1], $property, $codebase)
+            $value = $offset === 0 ? $values[0] : $values[1];
+            $item = Type::intersectUnionTypes($value, $property, $codebase)
                 // e.g. a literal-string, which may be the name of a class though Psalm has no type for both
                 ?? Type::intersectUnionTypes(
-                    $type->type_params[1],
+                    $value,
                     $offset === 0
                         ? new Union([new TObject(), new TNonEmptyString()])
                         : Type::getNonEmptyString(),
