@@ -333,6 +333,41 @@ final class ConstantTest extends TestCase
                         }
                     }',
             ],
+            'namespaceConstantShadowsAPhpConstantInAClassConstant' => [
+                'code' => '<?php
+                    namespace Lib {
+                        const JSON_THROW_ON_ERROR = 7;
+
+                        final class C {
+                            const X = JSON_THROW_ON_ERROR;
+                        }
+
+                        $a = C::X;
+                    }',
+                'assertions' => [
+                    '$a===' => '7',
+                ],
+            ],
+            'namespaceConstantShadowsAPhpConstantInAParamDefault' => [
+                'code' => '<?php
+                    namespace Lib {
+                        const JSON_THROW_ON_ERROR = 7;
+
+                        /**
+                         * @template T
+                         * @param T $v
+                         * @return T
+                         */
+                        function f($v = JSON_THROW_ON_ERROR) {
+                            return $v;
+                        }
+
+                        /** @return 7 */
+                        function check(): int {
+                            return f();
+                        }
+                    }',
+            ],
             'importedConstantShadowsAPhpConstantInAClassConstant' => [
                 'code' => '<?php
                     namespace One {

@@ -14,6 +14,7 @@ use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\BinaryOp\ArithmeticOpAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ConstFetchAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Provider\FileStorageProvider;
 use Psalm\Internal\Provider\NodeDataProvider;
 use Psalm\Internal\Type\TypeCombiner;
 use Psalm\StatementsSource;
@@ -302,6 +303,15 @@ final class SimpleTypeInferer
 
             // `use const A\SOME;` makes `SOME` the constant of A, not the global one of that name
             if ($stmt->name->isUnqualified() && isset($aliases->constants[$name])) {
+                return null;
+            }
+
+            // in a namespace, `SOME` is the constant of the namespace where there is one, as PHP resolves it, and only
+            // otherwise the global one: it is resolved once every file is scanned, see ConstantTypeResolver
+            if ($stmt->name->isUnqualified()
+                && ($aliases->namespace ?? '') !== ''
+                && self::isNamespaceConstantDeclared($aliases->namespace . '\\' . $name)
+            ) {
                 return null;
             }
 
@@ -843,5 +853,23 @@ final class SimpleTypeInferer
             }
         }
         return true;
+    }
+
+    /**
+     * Whether a scanned file declares the namespaced constant
+     *
+     * @psalm-capabilities read-props|write-this-props|write-refs
+     */
+    private static function isNamespaceConstantDeclared(string $fq_const_name): bool
+    {
+        foreach (FileStorageProvider::getAll() as $file_storage) {
+            if (isset($file_storage->constants[$fq_const_name])
+                || isset($file_storage->unresolved_constants[$fq_const_name])
+            ) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }
