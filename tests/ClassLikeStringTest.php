@@ -834,6 +834,8 @@ final class ClassLikeStringTest extends TestCase
                             /** @psalm-check-type-exact $object = A */;
                         }
                     }',
+                'assertions' => [],
+                'ignored_issues' => ['DeprecatedFunction'],
             ],
             'getParentClassWithoutArgumentInATraitIsTheParentOfTheUsingClass' => [
                 'code' => '<?php
@@ -850,6 +852,8 @@ final class ClassLikeStringTest extends TestCase
                     class C extends B {
                         use T;
                     }',
+                'assertions' => [],
+                'ignored_issues' => ['DeprecatedFunction'],
             ],
             'createClassOfTypeFromString' => [
                 'code' => '<?php
