@@ -538,6 +538,20 @@ final class IntersectionTypeTest extends TestCase
                         $value->__invoke();
                     }',
             ],
+            'objectShapeAndClassOfAnIntersectionGiveThePropertiesOfAShape' => [
+                'code' => '<?php
+                    class Card {
+                        public string $brand = "visa";
+                    }
+
+                    /** @param object{brand: string, last4: string} $shape */
+                    function takesShape(object $shape): void {}
+
+                    /** @param Card&object{last4: string} $card */
+                    function pay(object $card): void {
+                        takesShape($card);
+                    }',
+            ],
             'methodOfAnObjectShapeDeclaredByMethodExistsIsCaseInsensitive' => [
                 'code' => '<?php
                     final class Card {}
@@ -584,6 +598,21 @@ final class IntersectionTypeTest extends TestCase
                 'error_message' => 'UndefinedPropertyAssignment',
                 'error_levels' => [],
                 'php_version' => '8.0',
+            ],
+            'objectShapeAndClassOfAnIntersectionLackAPropertyTypeOfAShape' => [
+                'code' => '<?php
+                    class Card {
+                        public string $brand = "visa";
+                    }
+
+                    /** @param object{brand: string, last4: string} $shape */
+                    function takesShape(object $shape): void {}
+
+                    /** @param Card&object{last4: int} $card */
+                    function pay(object $card): void {
+                        takesShape($card);
+                    }',
+                'error_message' => 'InvalidArgument',
             ],
             'methodMissingInAllIntersectedTypesGoesThroughMagicCall' => [
                 'code' => '<?php
