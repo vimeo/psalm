@@ -1761,6 +1761,18 @@ final class TemplateStandinTypeReplacer
                         && ($input_projections[$candidate_offsets[0]] ?? null) === TypeArgumentProjection::Star
                     ) {
                         $mapped_star_offsets[count($new_input_params)] = true;
+                    } elseif ($star_templates !== []) {
+                        // an argument that wraps the template (`list<T>`) holds a `*` as unknown as it is
+                        $template_collector = new TemplateTypeCollector(true);
+                        $template_collector->traverseArray($extended_input_param_type->getAtomicTypes());
+
+                        foreach ($template_collector->getTemplateTypes() as $template) {
+                            if (isset($star_templates[$template->param_name][$template->defining_class])) {
+                                $mapped_star_offsets[count($new_input_params)] = true;
+
+                                break;
+                            }
+                        }
                     }
 
                     $new_input_params[] = $new_input_param;
