@@ -1,0 +1,209 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Psalm\Tests\ReturnTypeProvider;
+
+use Override;
+use Psalm\Tests\TestCase;
+use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
+use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
+
+final class ReflectionReferenceFromArrayElementTest extends TestCase
+{
+    use InvalidCodeAnalysisTestTrait;
+    use ValidCodeAnalysisTestTrait;
+
+    /**
+     * @psalm-pure
+     */
+    #[Override]
+    public static function providerValidCodeParse(): iterable
+    {
+        yield 'byRefElementIsNotNull' => [
+            'code' => '<?php
+                class ReferenceTracker {
+                    private array $references = [];
+
+                    public function seenThisArray(array &$var): bool {
+                        $ref_id = ReflectionReference::fromArrayElement([&$var], 0)->getId();
+                        $seen_it = isset($this->references[$ref_id]);
+                        $this->references[$ref_id] = true;
+                        return $seen_it;
+                    }
+                }
+            ',
+            'assertions' => [],
+            'ignored_issues' => [],
+            'php_version' => '8.0',
+        ];
+
+        yield 'byRefElementAtImplicitIndex' => [
+            'code' => '<?php
+                $a = 1;
+                $b = 2;
+                $r = ReflectionReference::fromArrayElement([5 => $a, &$b], 6);
+            ',
+            'assertions' => [
+                '$r===' => 'ReflectionReference',
+            ],
+            'ignored_issues' => [],
+            'php_version' => '8.0',
+        ];
+
+        yield 'byRefElementAtStringKey' => [
+            'code' => '<?php
+                $a = 1;
+                $r = ReflectionReference::fromArrayElement(["a" => &$a], "a");
+            ',
+            'assertions' => [
+                '$r===' => 'ReflectionReference',
+            ],
+            'ignored_issues' => [],
+            'php_version' => '8.0',
+        ];
+
+        yield 'byRefElementAtNumericStringKey' => [
+            'code' => '<?php
+                $a = 1;
+                $r = ReflectionReference::fromArrayElement(["1" => &$a], 1);
+                $s = ReflectionReference::fromArrayElement([1 => &$a], "1");
+            ',
+            'assertions' => [
+                '$r===' => 'ReflectionReference',
+                '$s===' => 'ReflectionReference',
+            ],
+            'ignored_issues' => [],
+            'php_version' => '8.0',
+        ];
+
+        yield 'byRefElementWithNamedArgs' => [
+            'code' => '<?php
+                $a = 1;
+                $r = ReflectionReference::fromArrayElement(key: 0, array: [&$a]);
+            ',
+            'assertions' => [
+                '$r===' => 'ReflectionReference',
+            ],
+            'ignored_issues' => [],
+            'php_version' => '8.0',
+        ];
+
+        yield 'laterDuplicateKeyByRef' => [
+            'code' => '<?php
+                $a = 1;
+                $b = 2;
+                $r = ReflectionReference::fromArrayElement([0 => $a, 0 => &$b], 0);
+            ',
+            'assertions' => [
+                '$r===' => 'ReflectionReference',
+            ],
+            'ignored_issues' => ['DuplicateArrayKey'],
+            'php_version' => '8.0',
+        ];
+
+        yield 'byValueElementStaysNullable' => [
+            'code' => '<?php
+                $a = 1;
+                $r = ReflectionReference::fromArrayElement([$a], 0);
+            ',
+            'assertions' => [
+                '$r===' => 'ReflectionReference|null',
+            ],
+            'ignored_issues' => [],
+            'php_version' => '8.0',
+        ];
+
+        yield 'laterDuplicateKeyByValueStaysNullable' => [
+            'code' => '<?php
+                $a = 1;
+                $b = 2;
+                $r = ReflectionReference::fromArrayElement([0 => &$a, 0 => $b], 0);
+            ',
+            'assertions' => [
+                '$r===' => 'ReflectionReference|null',
+            ],
+            'ignored_issues' => ['DuplicateArrayKey'],
+            'php_version' => '8.0',
+        ];
+
+        yield 'missingKeyStaysNullable' => [
+            'code' => '<?php
+                $a = 1;
+                $r = ReflectionReference::fromArrayElement([&$a], 1);
+            ',
+            'assertions' => [
+                '$r===' => 'ReflectionReference|null',
+            ],
+            'ignored_issues' => [],
+            'php_version' => '8.0',
+        ];
+
+        yield 'nonLiteralKeyStaysNullable' => [
+            'code' => '<?php
+                $a = 1;
+                $r = ReflectionReference::fromArrayElement([&$a], rand(0, 1));
+            ',
+            'assertions' => [
+                '$r===' => 'ReflectionReference|null',
+            ],
+            'ignored_issues' => [],
+            'php_version' => '8.0',
+        ];
+
+        yield 'negativeKeyStaysNullable' => [
+            'code' => '<?php
+                $a = 1;
+                $b = 2;
+                $r = ReflectionReference::fromArrayElement([-5 => $a, &$b], 0);
+            ',
+            'assertions' => [
+                '$r===' => 'ReflectionReference|null',
+            ],
+            'ignored_issues' => [],
+            'php_version' => '8.0',
+        ];
+
+        yield 'spreadStaysNullable' => [
+            'code' => '<?php
+                $a = 1;
+                $r = ReflectionReference::fromArrayElement([...[1], &$a], 1);
+            ',
+            'assertions' => [
+                '$r===' => 'ReflectionReference|null',
+            ],
+            'ignored_issues' => [],
+            'php_version' => '8.0',
+        ];
+
+        yield 'arrayVariableStaysNullable' => [
+            'code' => '<?php
+                $a = 1;
+                $arr = [&$a];
+                $r = ReflectionReference::fromArrayElement($arr, 0);
+            ',
+            'assertions' => [
+                '$r===' => 'ReflectionReference|null',
+            ],
+            'ignored_issues' => [],
+            'php_version' => '8.0',
+        ];
+    }
+
+    /**
+     * @psalm-pure
+     */
+    #[Override]
+    public static function providerInvalidCodeParse(): iterable
+    {
+        yield 'byValueElementIsPossiblyNull' => [
+            'code' => '<?php
+                $a = 1;
+                ReflectionReference::fromArrayElement([$a], 0)->getId();
+            ',
+            'error_message' => 'PossiblyNullReference',
+            'error_levels' => [],
+            'php_version' => '8.0',
+        ];
+    }
+}
