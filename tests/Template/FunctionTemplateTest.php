@@ -3458,6 +3458,99 @@ final class FunctionTemplateTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'closureReturningNullStillBindsATemplateOfTheCalledFunction' => [
+                'code' => '<?php
+                    /**
+                     * @template X
+                     * @param callable(): X $f
+                     * @return X
+                     */
+                    function produce(callable $f) {
+                        return $f();
+                    }
+
+                    function maybe(): ?int {
+                        return null;
+                    }
+
+                    $a = produce(fn() => null);
+                    $b = produce(maybe(...));
+                    $c = array_map(fn(int $i) => null, [1, 2]);',
+                'assertions' => [
+                    '$a===' => 'null',
+                    '$b===' => 'int|null',
+                    '$c===' => 'list{null, null}',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'returnedClosureReturningNullAcceptedWhereTheTemplateAllowsNull' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @template TNullable of ?int
+                     */
+                    final class Box {
+                        /** @param T $value */
+                        public function __construct(private $value) {}
+
+                        /** @return Closure(): (T|null) */
+                        public function orNull(): Closure {
+                            return fn() => null;
+                        }
+
+                        /** @return Closure(): TNullable */
+                        public function nullableBound(): Closure {
+                            return fn() => null;
+                        }
+
+                        /** @return Closure(): ?string */
+                        public function nullableString(): Closure {
+                            return fn() => null;
+                        }
+
+                        /** @return Closure(): T */
+                        public function value(): Closure {
+                            return fn() => $this->value;
+                        }
+
+                        /** @return Closure(): Closure(): T */
+                        public function nested(): Closure {
+                            return fn() => fn() => $this->value;
+                        }
+                    }',
+            ],
+            'closureReturningNullAcceptedWhereTheFunctionTemplateAllowsNull' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @template TNullable of ?int
+                     * @param T $x
+                     * @param TNullable $y
+                     */
+                    function f($x, $y): void {
+                        /** @param callable(): (T|null) $f */
+                        $orNull = function (callable $f): void {};
+                        $orNull(fn() => null);
+                        $orNull(fn() => rand(0, 1) ? $x : null);
+
+                        /** @param callable(): TNullable $f */
+                        $nullableBound = function (callable $f): void {};
+                        $nullableBound(fn() => null);
+
+                        /** @param callable(): mixed $f */
+                        $anything = function (callable $f): void {};
+                        $anything(fn() => null);
+
+                        /** @param callable(): void $f */
+                        $noResult = function (callable $f): void {};
+                        $noResult(fn() => null);
+
+                        /** @param Closure(): T $f */
+                        $same = function (Closure $f): void {};
+                        $same(fn() => $x);
+                    }',
+            ],
         ];
     }
 
@@ -3468,6 +3561,104 @@ final class FunctionTemplateTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'returnedClosureReturningNullForClosureReturningAClassTemplate' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class Box {
+                        /** @return Closure(): T */
+                        public function empty(): Closure {
+                            return fn() => null;
+                        }
+                    }',
+                'error_message' => 'InvalidReturnStatement - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:36',
+            ],
+            'returnedClosureReturningNullForCallableReturningAFunctionTemplate' => [
+                'code' => '<?php
+                    /**
+                     * @template K
+                     * @param K $key
+                     * @return callable(): K
+                     */
+                    function lazy($key): callable {
+                        return function () {
+                            return null;
+                        };
+                    }',
+                'error_message' => 'InvalidReturnStatement - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:32',
+            ],
+            'closureReturningNullForCallableReturningAFunctionTemplate' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class Source {
+                        /** @param callable(): T $f */
+                        public function __construct(private $f) {}
+
+                        /** @param callable(): T $f */
+                        public function replace(callable $f): void {
+                            $this->f = $f;
+                        }
+
+                        /** @return T */
+                        public function get(): mixed {
+                            return ($this->f)();
+                        }
+                    }
+
+                    /**
+                     * @template X
+                     * @param Source<X> $s
+                     */
+                    function reset_(Source $s): void {
+                        $s->replace(fn() => null);
+                    }',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:23:37',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'closureReturningNullForCallableReturningAClassTemplate' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class Source {
+                        /** @param callable(): T $f */
+                        public function replace(callable $f): void {}
+
+                        public function clear(): void {
+                            $this->replace(fn() => null);
+                        }
+                    }',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:44',
+            ],
+            'closurePossiblyReturningNullForCallableReturningAFunctionTemplate' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @param T $x
+                     * @param callable(callable(): T): void $use
+                     */
+                    function f($x, callable $use): void {
+                        $use(fn() => rand(0, 1) ? $x : null);
+                    }',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:30',
+            ],
+            'functionReturningNullForCallableReturningAFunctionTemplate' => [
+                'code' => '<?php
+                    /** @return null */
+                    function nothing() {
+                        return null;
+                    }
+
+                    /**
+                     * @template T
+                     * @param callable(callable(): T): void $use
+                     */
+                    function f(callable $use): void {
+                        $use(nothing(...));
+                        $use(\'nothing\');
+                    }',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:12:30',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
             'methodTemplateBoundStillReportsTheClassStringOfANonFinalClassThatWasExcluded' => [
                 'code' => '<?php
                     interface StampInterface {}

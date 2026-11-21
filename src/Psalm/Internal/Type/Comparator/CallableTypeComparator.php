@@ -198,6 +198,12 @@ final class CallableTypeComparator
                 return true;
             }
 
+            if ($input_return->isNullable()
+                && !self::isNullContainedByReturnType($codebase, $container_type_part->return_type)
+            ) {
+                return false;
+            }
+
             if (!$container_type_part->return_type->isVoid()
                 && !UnionTypeComparator::isContainedBy(
                     $codebase,
@@ -213,6 +219,31 @@ final class CallableTypeComparator
         }
 
         return true;
+    }
+
+    /**
+     * A template without a nullable bound stands for some type the caller picks, which need not include null,
+     * although null is contained by it in other positions (a parameter's default value, a null check)
+     */
+    public static function isNullContainedByReturnType(Codebase $codebase, Union $return_type): bool
+    {
+        $other_types = [];
+
+        foreach ($return_type->getAtomicTypes() as $atomic_type) {
+            if (!$atomic_type instanceof TTemplateParam
+                || $atomic_type->as->isNullable()
+                || $atomic_type->extra_types
+            ) {
+                $other_types[] = $atomic_type;
+            }
+        }
+
+        if (count($other_types) === count($return_type->getAtomicTypes())) {
+            return true;
+        }
+
+        return $other_types
+            && UnionTypeComparator::isContainedBy($codebase, Type::getNull(), new Union($other_types));
     }
 
     /**
