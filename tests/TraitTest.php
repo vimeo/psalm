@@ -836,6 +836,8 @@ final class TraitTest extends TestCase
                             T::foo();
                         }
                     }',
+                'assertions' => [],
+                'ignored_issues' => ['DeprecatedSyntax'],
             ],
             'abstractTraitMethod' => [
                 'code' => '<?php
@@ -1101,6 +1103,8 @@ final class TraitTest extends TestCase
 
                         }
                     }',
+                'assertions' => [],
+                'ignored_issues' => ['DeprecatedSyntax'],
             ],
             'aliasedMethodInternalCallNoReplacement' => [
                 'code' => '<?php

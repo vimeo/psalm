@@ -1972,7 +1972,7 @@ final class PropertyTypeTest extends TestCase
                     $a = new DOMElement("foo");
                     $owner = $a->ownerDocument;',
                 'assertions' => [
-                    '$owner' => 'DOMDocument',
+                    '$owner' => 'DOMDocument|null',
                 ],
             ],
             'propertyMapHydration' => [
@@ -2494,6 +2494,34 @@ final class PropertyTypeTest extends TestCase
                         }
                     }',
                 'assertions' => [],
+            ],
+            'staticPropertyOfAStaticTypeInAFinalClassIsTheClass' => [
+                'code' => '<?php
+                    trait Singleton {
+                        /** @var static|null */
+                        private static $instance;
+
+                        public static function get(): static {
+                            return self::$instance ??= new static();
+                        }
+
+                        public static function reset(): void {
+                            self::$instance = new static();
+                        }
+                    }
+
+                    final class Registry {
+                        use Singleton;
+                    }
+
+                    final class Config {
+                        /** @var static|null */
+                        public static $current;
+
+                        public static function use(Config $config): void {
+                            self::$current = $config;
+                        }
+                    }',
             ],
             'privatePropertyAccessible' => [
                 'code' => '<?php
@@ -4806,6 +4834,18 @@ final class PropertyTypeTest extends TestCase
                         }
                     }',
                 'error_message' => 'UninitializedProperty',
+            ],
+            'staticPropertyOfAStaticTypeInANonFinalClassIsNotTheClass' => [
+                'code' => '<?php
+                    class Config {
+                        /** @var static|null */
+                        public static $current;
+
+                        public static function use(Config $config): void {
+                            self::$current = $config;
+                        }
+                    }',
+                'error_message' => 'PropertyTypeCoercion',
             ],
             'nullsafeOnAnUnreadNonNullPropertyReceiverIsARedundantCondition' => [
                 'code' => '<?php

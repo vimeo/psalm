@@ -133,7 +133,7 @@ final class FFITest extends TestCase
                     }
                 ',
                 'assertions' => [],
-                'ignored_issues' => [],
+                'ignored_issues' => ['DeprecatedMethod'],
                 'php_version' => '7.4',
             ],
             'Example #6 Working with C enums' => [

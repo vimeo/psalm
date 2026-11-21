@@ -157,6 +157,9 @@ final class InstancePropertyFetchAnalyzer
         }
 
         if ($stmt_var_type->isNever()) {
+            // a property of a value that can't exist is never fetched (a loop's first pass narrowing null away)
+            $statements_analyzer->node_data->setType($stmt, Type::getNever());
+
             return !IssueBuffer::accepts(
                 new MixedPropertyFetch(
                     'Cannot fetch property on empty var ' . $stmt_var_id,
