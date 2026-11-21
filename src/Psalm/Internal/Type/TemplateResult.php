@@ -7,6 +7,7 @@ namespace Psalm\Internal\Type;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Union;
 
+use function array_map;
 use function array_replace_recursive;
 
 /**
@@ -49,6 +50,11 @@ final class TemplateResult
     public array $upper_bounds_unintersectable_types = [];
 
     /**
+     * Whether markStarBindings() marked a lower bound
+     */
+    public bool $has_star_bindings = false;
+
+    /**
      * `static` of the call when it is known before the arguments are analyzed (a template receiver or a forwarding call
      * has none) and whether it is final: the arguments are checked, and the return type is expanded, with them
      */
@@ -74,7 +80,7 @@ final class TemplateResult
      * Marks the lower bounds of the class templates the receiver bound to a `*`, for what is read from the receiver
      *
      * @param array<string, array<string, true>> $star_templates template name => defining class
-     * @psalm-capabilities read-props|write-props
+     * @psalm-capabilities read-props|write-this-props|write-props
      */
     public function markStarBindings(array $star_templates): void
     {
@@ -82,9 +88,41 @@ final class TemplateResult
             foreach ($defining_classes as $defining_class => $_) {
                 foreach ($this->lower_bounds[$template_name][$defining_class] ?? [] as $lower_bound) {
                     $lower_bound->from_star_projection = true;
+                    $this->has_star_bindings = true;
                 }
             }
         }
+    }
+
+    /**
+     * This result without the star marks, for the parameter types of a callable: the arguments it takes are written
+     * to, not read from the receiver
+     *
+     * @psalm-capabilities read-props
+     */
+    public function withoutStarBindings(): self
+    {
+        if (!$this->has_star_bindings) {
+            return $this;
+        }
+
+        $instance = clone $this;
+        $instance->has_star_bindings = false;
+        /** @var array<string, array<string, non-empty-list<TemplateBound>>> $lower_bounds */
+        $lower_bounds = [];
+
+        foreach ($this->lower_bounds as $template_name => $by_class) {
+            foreach ($by_class as $defining_class => $bounds) {
+                $lower_bounds[$template_name][$defining_class] = array_map(
+                    static fn(TemplateBound $bound): TemplateBound => $bound->withoutStarProjection(),
+                    $bounds,
+                );
+            }
+        }
+
+        $instance->lower_bounds = $lower_bounds;
+
+        return $instance;
     }
 
     /**

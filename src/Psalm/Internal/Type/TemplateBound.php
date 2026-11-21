@@ -124,4 +124,19 @@ final class TemplateBound
      * the receiver, not the bound
      */
     public bool $from_star_projection = false;
+
+    /**
+     * @psalm-capabilities read-props
+     */
+    public function withoutStarProjection(): self
+    {
+        if (!$this->from_star_projection) {
+            return $this;
+        }
+
+        $instance = clone $this;
+        $instance->from_star_projection = false;
+
+        return $instance;
+    }
 }

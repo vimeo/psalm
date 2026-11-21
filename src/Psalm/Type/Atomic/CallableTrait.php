@@ -380,11 +380,14 @@ trait CallableTrait
 
         $params = $this->params;
         if ($params) {
+            // a `*` of the receiver is no argument to write a callable's parameter with
+            $param_template_result = $template_result->withoutStarBindings();
+
             foreach ($params as $k => $param) {
                 if ($param->type) {
                     $new_param = $param->setType(TemplateInferredTypeReplacer::replace(
                         $param->type,
-                        $template_result,
+                        $param_template_result,
                         $codebase,
                     ));
                     $replaced = $replaced || $new_param !== $param;

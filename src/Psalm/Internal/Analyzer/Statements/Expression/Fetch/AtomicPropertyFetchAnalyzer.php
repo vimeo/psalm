@@ -811,6 +811,7 @@ final class AtomicPropertyFetchAnalyzer
                             ? $codebase->classlike_storage_provider->get(
                                 $declaring_property_class,
                             ) : $class_storage,
+                        true,
                     );
 
                     // reading a property through a type variable resolves it
@@ -919,12 +920,17 @@ final class AtomicPropertyFetchAnalyzer
         return true;
     }
 
+    /**
+     * @param bool $star_reads whether the type is read from the object, where a template bound to a `*` of the object
+     *                         is a `*` again as a whole generic argument; false for what is assigned to the property
+     */
     public static function localizePropertyType(
         Codebase $codebase,
         Union $class_property_type,
         TGenericObject $lhs_type_part,
         ClassLikeStorage $property_class_storage,
         ClassLikeStorage $property_declaring_class_storage,
+        bool $star_reads = false,
     ): Union {
         $lhs_type_part = StarProjection::resolve($lhs_type_part, $codebase);
 
@@ -984,11 +990,14 @@ final class AtomicPropertyFetchAnalyzer
             }
 
             $template_result = new TemplateResult([], $template_types);
-            $template_result->markStarBindings(ClassTemplateParamCollector::getStarBoundTemplates(
-                $property_class_storage,
-                $lhs_type_part,
-                $template_types,
-            ));
+
+            if ($star_reads) {
+                $template_result->markStarBindings(ClassTemplateParamCollector::getStarBoundTemplates(
+                    $property_class_storage,
+                    $lhs_type_part,
+                    $template_types,
+                ));
+            }
 
             $class_property_type = TemplateInferredTypeReplacer::replace(
                 $class_property_type,
@@ -1642,6 +1651,7 @@ final class AtomicPropertyFetchAnalyzer
                         ? $codebase->classlike_storage_provider->get(
                             $declaring_property_class,
                         ) : $class_storage,
+                    true,
                 );
 
                 $stmt_type = TypeVariableTracker::resolveTypeVariables($stmt_type, $codebase);
@@ -1740,6 +1750,7 @@ final class AtomicPropertyFetchAnalyzer
                     $lhs_type_part,
                     $class_storage,
                     $declaring_class_storage,
+                    true,
                 );
             } elseif ($lhs_type_part instanceof TGenericObject) {
                 $class_property_type = self::localizePropertyType(
@@ -1748,6 +1759,7 @@ final class AtomicPropertyFetchAnalyzer
                     $lhs_type_part,
                     $class_storage,
                     $declaring_class_storage,
+                    true,
                 );
             }
         }

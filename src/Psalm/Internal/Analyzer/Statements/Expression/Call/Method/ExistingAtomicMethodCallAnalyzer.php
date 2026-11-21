@@ -296,10 +296,15 @@ final class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
             return Type::getMixed();
         }
 
-        // what is read from a `*` receiver, unlike the arguments checked above, is as unknown as the receiver
-        $template_result->markStarBindings(
-            ClassTemplateParamCollector::getStarBoundTemplates($class_storage, $lhs_type_part, $class_template_params),
-        );
+        // what is read from a `*` receiver, unlike the arguments checked above, is as unknown as the receiver; the
+        // closure of a first-class callable is called with arguments, which it takes as the bound
+        if (!$is_first_class_callable) {
+            $template_result->markStarBindings(ClassTemplateParamCollector::getStarBoundTemplates(
+                $class_storage,
+                $lhs_type_part,
+                $class_template_params,
+            ));
+        }
 
         $return_type_candidate = MethodCallReturnTypeFetcher::fetch(
             $statements_analyzer,

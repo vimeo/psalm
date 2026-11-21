@@ -2887,7 +2887,7 @@
     <ImpureMethodCall>
       <code><![CDATA[TemplateInferredTypeReplacer::replace(
                         $param->type,
-                        $template_result,
+                        $param_template_result,
                         $codebase,
                     )]]></code>
       <code><![CDATA[TemplateInferredTypeReplacer::replace(

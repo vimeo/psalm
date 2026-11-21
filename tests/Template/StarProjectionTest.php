@@ -1317,6 +1317,31 @@ final class StarProjectionTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'starProjectionCombinedWithAnArgumentKeepsBoth' => [
+                'code' => '<?php
+                    /** @template T of object */
+                    final class Box {}
+
+                    function takesBare(Box $b): void {}
+
+                    /** @var Box<*> $star */
+                    $star = new Box();
+                    /** @var Box $bare */
+                    $bare = new Box();
+                    /** @var Box<DateTime> $date */
+                    $date = new Box();
+                    $with_bare = rand(0, 1) ? $star : $bare;
+                    $with_date = rand(0, 1) ? $star : $date;
+                    $with_itself = rand(0, 1) ? $star : $star;
+                    takesBare($with_bare);',
+                'assertions' => [
+                    '$with_bare===' => 'Box|Box<*>',
+                    '$with_date===' => 'Box<*>|Box<DateTime>',
+                    '$with_itself===' => 'Box<*>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
         ];
     }
 
@@ -1653,6 +1678,94 @@ final class StarProjectionTest extends TestCase
                         }
                     }',
                 'error_message' => 'LessSpecificImplementedReturnType',
+            ],
+            'starProjectionPropertyAssignmentKeepsTheBound' => [
+                'code' => '<?php
+                    /** @template T of object */
+                    final class Box {
+                        /** @var Box<T>|null */
+                        public ?Box $prop = null;
+                    }
+
+                    /**
+                     * @param Box<*> $any
+                     * @param Box<DateTime> $date
+                     */
+                    function f(Box $any, Box $date): void {
+                        $any->prop = $date;
+                    }',
+                'error_message' => 'InvalidPropertyAssignmentValue - src' . DIRECTORY_SEPARATOR . 'somefile.php:13:38 - $any->prop with declared type \'Box<object>|null\' cannot be assigned type',
+            ],
+            'starProjectionListPropertyAppendKeepsTheBound' => [
+                'code' => '<?php
+                    /** @template T of object */
+                    final class Box {
+                        /** @var list<Box<T>> */
+                        public array $boxes = [];
+                    }
+
+                    /**
+                     * @param Box<*> $any
+                     * @param Box<DateTime> $date
+                     */
+                    function f(Box $any, Box $date): void {
+                        $any->boxes[] = $date;
+                    }',
+                'error_message' => 'InvalidPropertyAssignmentValue - src' . DIRECTORY_SEPARATOR . 'somefile.php:13:25 - $any->boxes with declared type \'list<Box<object>>\' cannot be assigned type',
+            ],
+            'starProjectionFirstClassCallableKeepsTheBound' => [
+                'code' => '<?php
+                    /** @template T of object */
+                    final class Box {
+                        /** @param Box<T> $other */
+                        public function merge(Box $other): void {}
+                    }
+
+                    /**
+                     * @param Box<*> $any
+                     * @param Box<DateTime> $date
+                     */
+                    function f(Box $any, Box $date): void {
+                        $merge = $any->merge(...);
+                        $merge($date);
+                    }',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:14:32 - Argument 1 expects Box<object>, but Box<DateTime> provided',
+            ],
+            'starProjectionClosureParamKeepsTheBound' => [
+                'code' => '<?php
+                    /** @template T of object */
+                    final class Box {
+                        /** @return Closure(Box<T>): void */
+                        public function sinkBox(): Closure {
+                            throw new Exception();
+                        }
+                    }
+
+                    /**
+                     * @param Box<*> $any
+                     * @param Box<DateTime> $date
+                     */
+                    function f(Box $any, Box $date): void {
+                        $any->sinkBox()($date);
+                    }',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:15:41 - Argument 1 expects Box<object>, but Box<DateTime> provided',
+            ],
+            'starProjectionCombinedWithABareClassIsNotTheBound' => [
+                'code' => '<?php
+                    /** @template T of object */
+                    final class Box {}
+
+                    /** @param Box<DateTime> $date */
+                    function takesDate(Box $date): void {}
+
+                    /**
+                     * @param Box<*> $any
+                     * @param Box $bare
+                     */
+                    function f(Box $any, Box $bare, bool $flag): void {
+                        takesDate($flag ? $any : $bare);
+                    }',
+                'error_message' => 'ArgumentTypeCoercion - src' . DIRECTORY_SEPARATOR . 'somefile.php:13:35 - Argument 1 of takesDate expects Box<DateTime>, but parent type Box<*>|Box<object> provided',
             ],
         ];
     }
