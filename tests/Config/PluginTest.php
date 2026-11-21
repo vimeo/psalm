@@ -1136,6 +1136,28 @@ final class PluginTest extends DeferredAnalyzerTestCase
             }');
     }
 
+    public function testPluginRebuildingEqualArgumentsKeepsTheStar(): void
+    {
+        $this->analyzeWithTemplateParameterPlugin('
+            abstract class Model {}
+
+            /**
+             * @template TRelated of Model
+             * @template TParent of Model
+             */
+            final class Relation {
+                public function rebuilt(): static {
+                    return $this;
+                }
+            }
+
+            /** @param Relation<Model, *> $relation */
+            function run(Relation $relation): void {
+                $rebuilt = $relation->rebuilt();
+                /** @psalm-check-type-exact $rebuilt = Relation<Model, *> */
+            }');
+    }
+
     private function analyzeWithTemplateParameterPlugin(string $code): void
     {
         require_once __DIR__ . '/Plugin/TemplateParameterPlugin.php';

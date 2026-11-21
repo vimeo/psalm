@@ -39,7 +39,10 @@ final class TemplateParameterProvider implements MethodReturnTypeProviderInterfa
     #[Override]
     public static function getMethodReturnType(MethodReturnTypeProviderEvent $event): ?Union
     {
-        if ($event->getMethodNameLowercase() === 'related' || $event->getMethodNameLowercase() === 'withpivot') {
+        if ($event->getMethodNameLowercase() === 'related'
+            || $event->getMethodNameLowercase() === 'withpivot'
+            || $event->getMethodNameLowercase() === 'rebuilt'
+        ) {
             $stmt = $event->getStmt();
             $receiver = $stmt instanceof MethodCall
                 ? $event->getSource()->getNodeTypeProvider()->getType($stmt->var)
@@ -52,6 +55,17 @@ final class TemplateParameterProvider implements MethodReturnTypeProviderInterfa
 
             if ($event->getMethodNameLowercase() === 'related') {
                 return $receiver_atomic->type_params[0];
+            }
+
+            if ($event->getMethodNameLowercase() === 'rebuilt') {
+                // equal arguments in new unions: the `*` stays one
+                $rebuilt = [];
+
+                foreach ($receiver_atomic->type_params as $param) {
+                    $rebuilt[] = new Union(array_values($param->getAtomicTypes()));
+                }
+
+                return new Union([$receiver_atomic->setTypeParams($rebuilt)]);
             }
 
             // the second type parameter is rebuilt, as a plugin refining a pivot class does
