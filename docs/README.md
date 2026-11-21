@@ -63,11 +63,9 @@ There are two main inspirations for Psalm:
         - [Issue Types](running_psalm/issues.md)
     - [Checking non-PHP files](running_psalm/checking_non_php_files.md)
 - Security analysis:
-    - [Security Analysis in Psalm](security_analysis/index.md)
+    - [Tutorial](security_analysis/index.md)
     - [Custom Taint Sources](security_analysis/custom_taint_sources.md)
     - [Custom Taint Sinks](security_analysis/custom_taint_sinks.md)
-    - [Avoiding false-positives](security_analysis/avoiding_false_positives.md)
-    - [Avoiding false-negatives](security_analysis/avoiding_false_negatives.md)
     - [Security analysis annotations](security_analysis/annotations.md)
     - [Taint Flow](security_analysis/taint_flow.md)
 - Annotating code:

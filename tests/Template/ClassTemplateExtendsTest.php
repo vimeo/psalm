@@ -5,9 +5,13 @@ declare(strict_types=1);
 namespace Psalm\Tests\Template;
 
 use Override;
+use Psalm\Context;
+use Psalm\IssueBuffer;
 use Psalm\Tests\TestCase;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
+
+use function array_column;
 
 use const DIRECTORY_SEPARATOR;
 
@@ -16,6 +20,90 @@ final class ClassTemplateExtendsTest extends TestCase
     use InvalidCodeAnalysisTestTrait;
     use ValidCodeAnalysisTestTrait;
 
+    public function testParentNamedInAnotherCaseKeepsTheTemplateArgumentsOfItsTag(): void
+    {
+        $this->testConfig->throw_exception = false;
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                /** @template T */
+                class Foo {}
+
+                /** @extends Foo<int> */
+                final class Bar extends foo {}
+
+                /** @template T */
+                interface I {}
+
+                /** @extends I<int> */
+                interface J extends i {}
+
+                /** @implements I<int> */
+                final class C implements i {}
+
+                /** @template T */
+                trait Tr {}
+
+                final class D {
+                    /** @use Tr<int> */
+                    use tr;
+                }',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+
+        self::assertSame(
+            ['InvalidClass', 'InvalidClass', 'InvalidClass', 'UndefinedTrait'],
+            array_column(IssueBuffer::getIssuesDataForFile($file_path), 'type'),
+        );
+    }
+
+    public function testUnionInTemplateTagKeepsTheTemplateArgumentsOfItsMembers(): void
+    {
+        $this->testConfig->throw_exception = false;
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                /** @template T */
+                interface I {}
+
+                /** @template T */
+                interface J {}
+
+                /** @extends I<int>|J<int> */
+                interface K extends I, J {}
+
+                /** @implements I<int>|J<int> */
+                final class C implements I, J {}
+
+                /** @template T */
+                trait Tr {}
+
+                /** @template T */
+                trait Tr2 {}
+
+                final class D {
+                    /** @use Tr<int>|Tr2<int> */
+                    use Tr, Tr2;
+                }',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+
+        self::assertSame(
+            [
+                '@template-extends cannot be a union type',
+                '@template-implements cannot be a union type',
+                '@template-use cannot be a union type',
+            ],
+            array_column(IssueBuffer::getIssuesDataForFile($file_path), 'message'),
+        );
+    }
+
     /**
      * @psalm-pure
      */
@@ -23,6 +111,50 @@ final class ClassTemplateExtendsTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'templateTagNamesParentInAnotherCase' => [
+                'code' => '<?php
+                    /** @template T */
+                    class Foo {
+                        /** @var T|null */
+                        public $t = null;
+                    }
+
+                    /** @extends foo<int> */
+                    final class Bar extends Foo {}
+
+                    /** @template T */
+                    interface I {
+                        /** @return T */
+                        public function get();
+                    }
+
+                    /** @implements i<int> */
+                    final class C implements I {
+                        public function get() {
+                            return 1;
+                        }
+                    }
+
+                    /** @template T */
+                    trait Tr {
+                        /** @var T|null */
+                        public $u = null;
+                    }
+
+                    final class D {
+                        /** @use tr<int> */
+                        use Tr;
+                    }
+
+                    $a = (new Bar)->t;
+                    $b = (new C)->get();
+                    $c = (new D)->u;',
+                'assertions' => [
+                    '$a===' => 'int|null',
+                    '$b===' => 'int',
+                    '$c===' => 'int|null',
+                ],
+            ],
             'templatedMethodOfAMiddleParentImplementsAnInterfaceOfTheChild' => [
                 'code' => '<?php
                     /** @template T of object */
@@ -1500,6 +1632,319 @@ final class ClassTemplateExtendsTest extends TestCase
                         }
                     }',
             ],
+            'propertyOfAParentGivenATypeNamingAnImportedAliasIsExpanded' => [
+                'code' => '<?php
+                    /** @template T */
+                    abstract class A {
+                        /** @var T */
+                        public $value;
+
+                        /** @param T $value */
+                        public function __construct($value) {
+                            $this->value = $value;
+                        }
+                    }
+
+                    /** @psalm-type Foo=string */
+                    class B {}
+
+                    /**
+                     * @psalm-import-type Foo from B
+                     * @extends A<list<Foo>>
+                     */
+                    class C extends A {}
+
+                    $instance = new C(["hello"]);
+                    $output = $instance->value;',
+                'assertions' => [
+                    '$output===' => 'list<string>',
+                ],
+            ],
+            'propertyOfAParentGivenATypeMentioningTheTemplatesOfTheChildIsLocalized' => [
+                'code' => '<?php
+                    /** @template T */
+                    abstract class Base {
+                        /** @var T */
+                        public mixed $value;
+                    }
+
+                    /**
+                     * @template U
+                     * @extends Base<list<U>>
+                     */
+                    abstract class Mid extends Base {}
+
+                    /**
+                     * @template K
+                     * @template V
+                     * @extends Base<array<K, V>>
+                     */
+                    abstract class Two extends Base {}
+
+                    /**
+                     * @template W
+                     * @extends Two<string, W>
+                     */
+                    abstract class Grand extends Two {}
+
+                    /**
+                     * @param Mid<DateTime> $mid
+                     * @param Two<int, string> $two
+                     * @param Grand<bool> $grand
+                     */
+                    function read(Mid $mid, Two $two, Grand $grand): void {
+                        $m = $mid->value;
+                        /** @psalm-check-type-exact $m = list<DateTime> */;
+
+                        $t = $two->value;
+                        /** @psalm-check-type-exact $t = array<int, string> */;
+
+                        $g = $grand->value;
+                        /** @psalm-check-type-exact $g = array<string, bool> */;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'composedParentArgumentBindsInheritedProperty' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class Box {}
+
+                    /** @template T */
+                    abstract class Base {
+                        /** @param T $value */
+                        public function __construct(public mixed $value) {}
+                    }
+
+                    /**
+                     * @template TModel of object
+                     * @extends Base<Box<TModel>>
+                     */
+                    final class Composed extends Base {}
+
+                    /**
+                     * @template TModel of object
+                     * @param Composed<TModel> $composed
+                     * @return Box<TModel>
+                     */
+                    function generic(Composed $composed): Box {
+                        return $composed->value;
+                    }
+
+                    /** @return Composed<stdClass> */
+                    function make(): Composed {
+                        throw new RuntimeException();
+                    }
+
+                    $value = make()->value;',
+                'assertions' => [
+                    '$value===' => 'Box<stdClass>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'composedParentArgumentBindsInheritedPropertyOfAList' => [
+                'code' => '<?php
+                    /** @template T */
+                    abstract class Base {
+                        /** @var T */
+                        public mixed $value;
+                    }
+
+                    /**
+                     * @template U
+                     * @extends Base<list<U>>
+                     */
+                    abstract class Mid extends Base {}
+
+                    /** @return Mid<DateTime> */
+                    function make(): Mid {
+                        throw new RuntimeException();
+                    }
+
+                    $value = make()->value;',
+                'assertions' => [
+                    '$value===' => 'list<DateTime>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'composedParentArgumentBindsInheritedInvokable' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class Box {}
+
+                    /** @template T */
+                    abstract class Base {
+                        /** @param T $value */
+                        public function __invoke(mixed $value): void {}
+
+                        /** @param T $value */
+                        public function set(mixed $value): void {}
+                    }
+
+                    /**
+                     * @template TModel of object
+                     * @extends Base<Box<TModel>>
+                     */
+                    final class Composed extends Base {}
+
+                    /** @param callable(Box<stdClass>): void $callback */
+                    function takesCallback(callable $callback): void {}
+
+                    /** @param Composed<stdClass> $composed */
+                    function f(Composed $composed): void {
+                        takesCallback($composed);
+                        takesCallback($composed(...));
+                        takesCallback(Closure::fromCallable($composed));
+                        takesCallback([$composed, "set"]);
+                        takesCallback($composed->set(...));
+                        takesCallback(Closure::fromCallable([$composed, "__invoke"]));
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'composedParentArgumentNamingAnImportedAliasBindsInheritedInvokable' => [
+                'code' => '<?php
+                    /** @template T */
+                    abstract class Base {
+                        /** @param T $value */
+                        public function __invoke(mixed $value): void {}
+                    }
+
+                    /** @psalm-type Name=string */
+                    final class Names {}
+
+                    /**
+                     * @psalm-import-type Name from Names
+                     * @template TKey of array-key
+                     * @extends Base<array<TKey, Name>>
+                     */
+                    final class Composed extends Base {}
+
+                    /** @param callable(array<int, string>): void $callback */
+                    function takesCallback(callable $callback): void {}
+
+                    /** @param Composed<int> $composed */
+                    function f(Composed $composed): void {
+                        takesCallback($composed);
+                        takesCallback($composed(...));
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'inheritedPropertyGivenATemplatePassedThroughClassesInBetween' => [
+                'code' => '<?php
+                    class Model {}
+                    final class Post extends Model {}
+
+                    /**
+                     * @template TRelated of Model
+                     * @template TResult
+                     */
+                    abstract class Relation {
+                        /** @param TRelated $related */
+                        public function __construct(public Model $related) {}
+                    }
+
+                    /**
+                     * @template TRelated of Model
+                     * @template TResult
+                     * @extends Relation<TRelated, TResult>
+                     */
+                    abstract class HasOneOrMany extends Relation {}
+
+                    /**
+                     * @template TRelated of Model
+                     * @extends HasOneOrMany<TRelated, list<TRelated>>
+                     */
+                    abstract class HasMany extends HasOneOrMany {}
+
+                    /**
+                     * @template TModel of Model
+                     * @extends HasMany<TModel>
+                     */
+                    final class MorphMany extends HasMany {}
+
+                    /**
+                     * @param HasMany<Post> $has_many
+                     * @param MorphMany<Post> $morph_many
+                     */
+                    function f(HasMany $has_many, MorphMany $morph_many): void {
+                        $a = $has_many->related;
+                        /** @psalm-check-type-exact $a = Post */;
+
+                        $b = $morph_many->related;
+                        /** @psalm-check-type-exact $b = Post */;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'composedParentArgumentBindsInheritedMembersThroughTwoExtends' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class Box {}
+
+                    /** @template T */
+                    abstract class Base {
+                        /** @param T $value */
+                        public function __construct(public mixed $value) {}
+
+                        /** @param T $value */
+                        public function __invoke(mixed $value): void {}
+
+                        /** @return T */
+                        public function get(): mixed {
+                            throw new RuntimeException();
+                        }
+
+                        /** @return T */
+                        public static function make(): mixed {
+                            throw new RuntimeException();
+                        }
+                    }
+
+                    /**
+                     * @template TItem of object
+                     * @extends Base<list<Box<TItem>>>
+                     */
+                    abstract class Middle extends Base {}
+
+                    /**
+                     * @template TModel of object
+                     * @extends Middle<TModel>
+                     */
+                    final class Leaf extends Middle {}
+
+                    /** @param callable(list<Box<stdClass>>): void $callback */
+                    function takesCallback(callable $callback): void {}
+
+                    /** @param Leaf<stdClass> $leaf */
+                    function f(Leaf $leaf): void {
+                        takesCallback($leaf);
+                    }
+
+                    /** @return Leaf<stdClass> */
+                    function make(): Leaf {
+                        throw new RuntimeException();
+                    }
+
+                    $leaf = make();
+                    $value = $leaf->value;
+                    $get = $leaf->get();
+                    $static = $leaf::make();',
+                'assertions' => [
+                    '$value===' => 'list<Box<stdClass>>',
+                    '$get===' => 'list<Box<stdClass>>',
+                    '$static===' => 'list<Box<stdClass>>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'useGenericParentMethod' => [
                 'code' => '<?php
                     /**
@@ -2170,6 +2615,8 @@ final class ClassTemplateExtendsTest extends TestCase
                     }
 
                     ord((new Child())->example("str"));',
+                'assertions' => [],
+                'ignored_issues' => ['DeprecatedFunction'],
             ],
             'keyOfClassTemplateExtended' => [
                 'code' => '<?php
@@ -5765,6 +6212,73 @@ final class ClassTemplateExtendsTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'extendsTagWithoutClass' => [
+                'code' => '<?php
+                    /** @template T */
+                    class A {}
+
+                    /** @extends */
+                    final class B extends A {}',
+                'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:21 - Extended class cannot be empty in docblock for B',
+            ],
+            'implementsTagWithoutClass' => [
+                'code' => '<?php
+                    /** @template T */
+                    interface I {}
+
+                    /** @implements */
+                    final class C implements I {}',
+                'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:21 - Implemented class cannot be empty in docblock for C',
+            ],
+            'useTagWithoutClass' => [
+                'code' => '<?php
+                    /** @template T */
+                    trait T1 {}
+
+                    final class C {
+                        /** @use */
+                        use T1;
+                    }',
+                'error_message' => 'Used class cannot be empty in docblock for C',
+            ],
+            'extendsTagNamingAnotherClass' => [
+                'code' => '<?php
+                    /** @template T */
+                    class A {}
+
+                    /** @template T */
+                    final class Other {}
+
+                    /** @extends Other<int> */
+                    final class B extends A {}',
+                'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR . 'somefile.php:9:21 - @template-extends must include the name of an extended class, got Other',
+            ],
+            'implementsTagNamingAnotherInterface' => [
+                'code' => '<?php
+                    /** @template T */
+                    interface I {}
+
+                    /** @template T */
+                    interface J {}
+
+                    /** @implements J<int> */
+                    final class C implements I {}',
+                'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR . 'somefile.php:9:21 - @template-implements must include the name of an implemented class, got J',
+            ],
+            'useTagNamingAnotherTrait' => [
+                'code' => '<?php
+                    /** @template T */
+                    trait T1 {}
+
+                    /** @template T */
+                    trait T2 {}
+
+                    final class C {
+                        /** @use T2<int> */
+                        use T1;
+                    }',
+                'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:25 - @template-use must include the name of an used class, got T2',
+            ],
             'templatedMethodOfAMiddleParentDoesNotImplementTheInterfaceOfTheChildWithAnotherType' => [
                 'code' => '<?php
                     /** @template T of object */
@@ -6746,6 +7260,7 @@ final class ClassTemplateExtendsTest extends TestCase
                         }
                     }',
                 'error_message' => 'ArgumentTypeCoercion',
+                'error_levels' => ['DeprecatedSyntax'],
             ],
             'invalidExtendsAnnotation' => [
                 'code' => '<?php
@@ -7421,6 +7936,32 @@ final class ClassTemplateExtendsTest extends TestCase
                     }',
                 'error_message' => 'ImplementedReturnTypeMismatch - src' . DIRECTORY_SEPARATOR . 'somefile.php:15:37'
                     . " - The inherited return type 'class-string<Coll<bool>>' for Base::getType",
+            ],
+            'composedParentArgumentOfAPropertyIsInvariant' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class Box {}
+
+                    /** @template T */
+                    abstract class Base {
+                        /** @param T $value */
+                        public function __construct(public mixed $value) {}
+                    }
+
+                    /**
+                     * @template TModel of object
+                     * @extends Base<Box<TModel>>
+                     */
+                    final class Composed extends Base {}
+
+                    /** @param Box<object> $box */
+                    function takesBox(Box $box): void {}
+
+                    /** @param Composed<stdClass> $composed */
+                    function f(Composed $composed): void {
+                        takesBox($composed->value);
+                    }',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:22:34 - Argument 1 of takesBox expects Box<object>, but Box<stdClass> provided',
             ],
         ];
     }

@@ -8,6 +8,7 @@ use Override;
 use Psalm\Config;
 use Psalm\Context;
 use Psalm\Exception\CodeException;
+use Psalm\IssueBuffer;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
@@ -52,6 +53,223 @@ final class ReferenceConstraintTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'paramOutOfAByRefParamWhoseTemplateItsOwnArgumentBindsIsNotHandledAgain' => [
+                'code' => '<?php
+                    function run(string $command): string {
+                        exec($command, $output, $exitCode);
+
+                        return implode(" ", $output) . $exitCode;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'paramOutOfAByRefParamBeforeTheArgumentThatBindsItsTemplate' => [
+                'code' => '<?php
+                    /**
+                     * @template TFlags as int
+                     * @param TFlags $flags
+                     * @param-out (TFlags is 256 ? "M256" : "M0") $matches
+                     */
+                    function before(mixed &$matches = [], int $flags = 0): void {}
+
+                    before($m, 256);',
+                'assertions' => [
+                    '$m===' => "'M256'",
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'paramOutOfAByRefParamAfterTheArgumentThatBindsItsTemplate' => [
+                'code' => '<?php
+                    /**
+                     * @template TFlags as int
+                     * @param TFlags $flags
+                     * @param-out (TFlags is 256 ? "M256" : "M0") $matches
+                     */
+                    function after(int $flags, mixed &$matches = []): void {}
+
+                    after(0, $m);',
+                'assertions' => [
+                    '$m===' => "'M0'",
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'paramOutOfAByRefParamBeforeAnArgumentGivenByName' => [
+                'code' => '<?php
+                    /**
+                     * @template TFlags as int
+                     * @param TFlags $flags
+                     * @param-out (TFlags is 256 ? "M256" : "M0") $matches
+                     */
+                    function before(mixed &$matches = [], int $flags = 0): void {}
+
+                    before(matches: $m, flags: 256);',
+                'assertions' => [
+                    '$m===' => "'M256'",
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'paramOutOfAByRefParamBeforeAnUnpackedArgument' => [
+                'code' => '<?php
+                    /**
+                     * @template TFlags as int
+                     * @param TFlags $flags
+                     * @param-out (TFlags is 256 ? "M256" : "M0") $matches
+                     */
+                    function before(mixed &$matches = [], int $flags = 0): void {}
+
+                    before($m, ...[256]);',
+                'assertions' => [
+                    '$m===' => "'M256'",
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'paramOutOfAByRefParamBeforeANestedMaskArgument' => [
+                'code' => '<?php
+                    /**
+                     * @template TFlags as int-mask<256, 512>
+                     * @param TFlags $flags
+                     * @param-out (TFlags is 256 ? "M256" : (TFlags is 768 ? "M768" : "M0")) $matches
+                     */
+                    function pmatch(mixed &$matches = [], int $flags = 0): void {}
+
+                    pmatch($m, 256);
+                    pmatch($n, 768);',
+                'assertions' => [
+                    '$m===' => "'M256'",
+                    '$n===' => "'M768'",
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'paramOutOfTwoByRefParamsBeforeTheArgumentsThatBindThem' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @template U
+                     * @param T $a
+                     * @param U $b
+                     * @param-out T $x
+                     * @param-out U $y
+                     */
+                    function two(mixed &$x, mixed &$y, mixed $a, mixed $b): void {}
+
+                    two($x, $y, 1, "s");',
+                'assertions' => [
+                    '$x===' => '1',
+                    '$y===' => "'s'",
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'paramOutOfAByRefParamBetweenTheArgumentsThatBindItsTemplates' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @template U
+                     * @param T $a
+                     * @param U $b
+                     * @param-out T|U $r
+                     */
+                    function mid(mixed $a, mixed &$r, mixed $b): void {}
+
+                    mid(1, $r, "s");',
+                'assertions' => [
+                    '$r===' => "'s'|1",
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'paramOutOfAByRefParamWithTheTemplateOfALaterArgumentInATypeArgument' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @param T $a
+                     * @param-out list<T> $r
+                     */
+                    function wrap(mixed &$r, mixed $a): void {}
+
+                    wrap($r, 5);',
+                'assertions' => [
+                    '$r===' => 'list<5>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'paramOutOfAByRefParamWithAValueOfTheTemplateOfALaterArgument' => [
+                'code' => '<?php
+                    /**
+                     * @template T of array
+                     * @param T $a
+                     * @param-out value-of<T> $r
+                     */
+                    function vo(mixed &$r, array $a): void {}
+
+                    vo($r, ["x" => 1, "y" => 2]);',
+                'assertions' => [
+                    '$r===' => '1|2',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'paramOutOfAByRefParamBeforeAClosureThatBindsItsTemplate' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @param callable(): T $f
+                     * @param-out T $r
+                     */
+                    function viaClosure(mixed &$r, callable $f): void {}
+
+                    viaClosure($r, fn() => 42);',
+                'assertions' => [
+                    '$r===' => '42',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'paramOutOfAByRefPropertyBeforeTheArgumentThatBindsItsTemplate' => [
+                'code' => '<?php
+                    /**
+                     * @template TFlags as int
+                     * @param TFlags $flags
+                     * @param-out (TFlags is 256 ? "M256" : "M0") $matches
+                     */
+                    function before(mixed &$matches = [], int $flags = 0): void {}
+
+                    final class Holder {
+                        public mixed $p = null;
+
+                        public function go(): void {
+                            before($this->p, 256);
+                            /** @psalm-check-type-exact $this->p = \'M256\' */;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'paramOutOfAByRefArrayElementBeforeTheArgumentThatBindsItsTemplate' => [
+                'code' => '<?php
+                    /**
+                     * @template TFlags as int
+                     * @param TFlags $flags
+                     * @param-out (TFlags is 256 ? "M256" : "M0") $matches
+                     */
+                    function before(mixed &$matches = [], int $flags = 0): void {}
+
+                    $arr = [];
+                    before($arr["k"], 256);',
+                'assertions' => [
+                    '$arr===' => "array{k: 'M256'}",
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'paramOutOfAClassTemplateReplacesAMixedVariable' => [
                 'code' => '<?php
                     /** @template T of int */
@@ -678,6 +896,26 @@ final class ReferenceConstraintTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'paramOutOfAByRefPropertyBeforeTheArgumentThatBindsItsTemplateIsCheckedAgainstItsDeclaredType' => [
+                'code' => '<?php
+                    /**
+                     * @template TFlags as int
+                     * @param TFlags $flags
+                     * @param-out (TFlags is 256 ? "M256" : "M0") $matches
+                     */
+                    function before2(mixed &$matches = [], int $flags = 0): void {}
+
+                    final class D {
+                        public int $i = 0;
+
+                        public function go(): void {
+                            before2($this->i, 256);
+                        }
+                    }',
+                'error_message' => "cannot be assigned type ''M256",
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
             'paramOutOnMethodWithBodyThatDoesNotMatchIt' => [
                 'code' => '<?php
                     class B {
@@ -981,5 +1219,39 @@ final class ReferenceConstraintTest extends TestCase
                 'error_message' => 'ReferenceConstraintViolation',
             ],
         ];
+    }
+
+    public function testAByRefParamWhoseOutTypeReadsALaterParamIsCheckedOnce(): void
+    {
+        $this->project_analyzer->getConfig()->throw_exception = false;
+        $this->project_analyzer->setPhpVersion('8.0', 'tests');
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                /**
+                 * @template TFlags as int
+                 * @param TFlags $flags
+                 * @param-out (TFlags is 256 ? "M256" : "M0") $matches
+                 */
+                function before2(mixed &$matches = [], int $flags = 0): void {}
+
+                final class D {
+                    public int $i = 0;
+
+                    public function go(): void {
+                        before2($this->i, 256);
+                    }
+                }',
+        );
+        $this->analyzeFile($file_path, new Context());
+
+        $types = [];
+        foreach (IssueBuffer::getIssuesDataForFile($file_path) as $issue) {
+            $types[] = $issue->type;
+        }
+
+        $this->assertSame(['InvalidPropertyAssignmentValue'], $types);
     }
 }

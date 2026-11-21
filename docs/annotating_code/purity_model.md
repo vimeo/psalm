@@ -1208,7 +1208,7 @@ vendor/bin/psalm --alter --issues=MissingPureAnnotation,MissingImmutableAnnotati
 ```
 
 The suggestions and
-[taint analysis](../security_analysis/avoiding_false_positives.md#specializing-taints-in-functions)
+[taint analysis](../security_analysis/index.md#specializing-functions)
 (on by default) both need the inferred purity of unannotated code, so it is computed when either is
 on. Capability checks never use it: a call is checked against what the callee declares, with or
 without the suggestions.

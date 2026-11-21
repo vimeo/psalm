@@ -103,6 +103,13 @@ final class FunctionDocblockComment
     public array $flows = [];
 
     /**
+     * The `@psalm-database-*` annotations: the kind (`query`, ...) and what follows it
+     *
+     * @var list<array{string, string}>
+     */
+    public array $database_calls = [];
+
+    /**
      * @var array<string>
      */
     public array $added_taints = [];
