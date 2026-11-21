@@ -1836,6 +1836,54 @@ final class ClassTemplateExtendsTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'inheritedPropertyGivenATemplatePassedThroughClassesInBetween' => [
+                'code' => '<?php
+                    class Model {}
+                    final class Post extends Model {}
+
+                    /**
+                     * @template TRelated of Model
+                     * @template TResult
+                     */
+                    abstract class Relation {
+                        /** @param TRelated $related */
+                        public function __construct(public Model $related) {}
+                    }
+
+                    /**
+                     * @template TRelated of Model
+                     * @template TResult
+                     * @extends Relation<TRelated, TResult>
+                     */
+                    abstract class HasOneOrMany extends Relation {}
+
+                    /**
+                     * @template TRelated of Model
+                     * @extends HasOneOrMany<TRelated, list<TRelated>>
+                     */
+                    abstract class HasMany extends HasOneOrMany {}
+
+                    /**
+                     * @template TModel of Model
+                     * @extends HasMany<TModel>
+                     */
+                    final class MorphMany extends HasMany {}
+
+                    /**
+                     * @param HasMany<Post> $has_many
+                     * @param MorphMany<Post> $morph_many
+                     */
+                    function f(HasMany $has_many, MorphMany $morph_many): void {
+                        $a = $has_many->related;
+                        /** @psalm-check-type-exact $a = Post */;
+
+                        $b = $morph_many->related;
+                        /** @psalm-check-type-exact $b = Post */;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'composedParentArgumentBindsInheritedMembersThroughTwoExtends' => [
                 'code' => '<?php
                     /** @template T */
