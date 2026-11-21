@@ -875,9 +875,19 @@ final class ArgumentAnalyzer
                 continue;
             }
 
+            // the template a conditional return type reads a parameter through stands for the argument itself:
+            // an argument that does not fit the parameter is still what the condition is about
+            $is_param_itself = str_starts_with($template_type->param_name, 'TGeneratedFromParam')
+                && $declared_param_type->isSingle()
+                && ($declared_atomic = $declared_param_type->getSingleAtomic()) instanceof TTemplateParam
+                && $declared_atomic->param_name === $template_type->param_name
+                && !$arg_type->hasMixed();
+
             $fallback_bound = new TemplateBound(
-                $template_result->upper_bounds[$template_type->param_name][$template_type->defining_class]->type
-                    ?? $template_type->as,
+                $is_param_itself
+                    ? $arg_type
+                    : $template_result->upper_bounds[$template_type->param_name][$template_type->defining_class]->type
+                        ?? $template_type->as,
             );
             $fallback_bound->from_constraint_fallback = true;
             $fallback_bound->from_template_free_argument
