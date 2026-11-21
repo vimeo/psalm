@@ -875,6 +875,21 @@ final class AtomicTypeComparator
             }
         }
 
+        // an object `is_callable()` found callable, of a class or interface not declaring __invoke() itself
+        if ($container_type_part instanceof TCallable
+            && $input_type_part instanceof TNamedObject
+            && isset($input_type_part->extra_types['callable-object'])
+        ) {
+            return self::isContainedBy(
+                $codebase,
+                $input_type_part->extra_types['callable-object'],
+                $container_type_part,
+                $allow_interface_equality,
+                $allow_float_int_equality,
+                $atomic_comparison_result,
+            );
+        }
+
         if ($container_type_part instanceof TCallable &&
             (
                 $input_type_part instanceof TLiteralString

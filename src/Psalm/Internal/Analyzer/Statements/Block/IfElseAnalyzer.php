@@ -27,6 +27,7 @@ use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\IssueBuffer;
 use Psalm\Storage\Assertion\ArrayKeyExists;
 use Psalm\Type;
+use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Reconciler;
 use Psalm\Type\Union;
 
@@ -44,6 +45,7 @@ use function preg_quote;
 use function str_contains;
 use function str_starts_with;
 use function strpbrk;
+use function strtolower;
 use function substr;
 
 /**
@@ -422,7 +424,9 @@ final class IfElseAnalyzer
                             $codebase,
                         );
 
-                        if (!$combined_type->equals($context->vars_in_scope[$var_id], true, false)) {
+                        if (!$combined_type->equals($context->vars_in_scope[$var_id], true, false)
+                            && !self::isThisOfTheSameClass($var_id, $context->vars_in_scope[$var_id], $combined_type)
+                        ) {
                             $context->removeDescendents($var_id, $combined_type, $type, $statements_analyzer);
                         }
 
@@ -438,7 +442,10 @@ final class IfElseAnalyzer
                             && !UnionTypeComparator::isContainedBy($codebase, $type, $updated_type)
                         ) {
                             $updated_type = Type::combineUnionTypes($updated_type, $type, $codebase);
-                            $context->removeDescendents($var_id, $updated_type, $type, $statements_analyzer);
+
+                            if (!self::isThisOfTheSameClass($var_id, $context->vars_in_scope[$var_id], $updated_type)) {
+                                $context->removeDescendents($var_id, $updated_type, $type, $statements_analyzer);
+                            }
                         }
 
                         $context->vars_in_scope[$var_id] = $updated_type;
@@ -723,5 +730,32 @@ final class IfElseAnalyzer
         $branch_actions = array_slice($if_scope->final_actions, 1);
 
         return $branch_actions && !in_array(ScopeAnalyzer::ACTION_NONE, $branch_actions, true);
+    }
+
+    /**
+     * Whether `$this`, which is never assigned, is still of the same class: a branch only intersected it with an
+     * interface or `callable-object`, which doesn't change the type of its properties
+     *
+     * @psalm-pure
+     */
+    private static function isThisOfTheSameClass(string $var_id, Union $before, Union $after): bool
+    {
+        if ($var_id !== '$this') {
+            return false;
+        }
+
+        $class = null;
+
+        foreach ([...$before->getAtomicTypes(), ...$after->getAtomicTypes()] as $atomic_type) {
+            if (!$atomic_type instanceof TNamedObject
+                || ($class !== null && strtolower($atomic_type->value) !== $class)
+            ) {
+                return false;
+            }
+
+            $class = strtolower($atomic_type->value);
+        }
+
+        return true;
     }
 }

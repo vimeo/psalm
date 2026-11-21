@@ -203,6 +203,47 @@ final class CallableTest extends TestCase
                         }
                     }',
             ],
+            'iterableFoundCallableIsACallable' => [
+                'code' => '<?php
+                    function setCallback(callable $c): void {}
+
+                    /** @param callable|iterable<string>|null $c */
+                    function f(callable|iterable|null $c): void {
+                        if (is_callable($c)) {
+                            setCallback($c);
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'narrowingThisInAConstructorKeepsWhatItsPropertiesAreInitialisedWith' => [
+                'code' => '<?php
+                    interface Marker {}
+
+                    final class Definition {
+                        public function add(): void {}
+                    }
+
+                    class Command {
+                        private Definition $definition;
+                        private ?int $code = null;
+
+                        public function __construct() {
+                            $this->definition = new Definition();
+
+                            if (is_callable($this) && rand(0, 1)) {
+                                $this->code = 1;
+                            }
+
+                            if ($this instanceof Marker && rand(0, 1)) {
+                                $this->code = 2;
+                            }
+
+                            $this->definition->add();
+                        }
+                    }',
+            ],
             'callableCanBeIdenticalToAnInterfaceOrANonFinalClass' => [
                 'code' => '<?php
                     interface Handler {}
