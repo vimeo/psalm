@@ -306,6 +306,26 @@ final class TypeComparatorTest extends TestCase
             'callable-string',
             'lowercase-string',
         ];
+        yield 'traitStringIntoClassStringOfClass' => [
+            'class-string<Exception>',
+            'trait-string',
+        ];
+        yield 'traitStringIntoInterfaceString' => [
+            'interface-string',
+            'trait-string',
+        ];
+        yield 'traitStringIntoEnumString' => [
+            'enum-string',
+            'trait-string',
+        ];
+        yield 'traitStringIntoNumericString' => [
+            'numeric-string',
+            'trait-string',
+        ];
+        yield 'traitStringIntoCallableString' => [
+            'callable-string',
+            'trait-string',
+        ];
     }
 
     /**
@@ -357,6 +377,18 @@ final class TypeComparatorTest extends TestCase
                 'callable',
                 "callable-list{class-string, 'from'}",
             ],
+            'nonEmptyStringAcceptsTraitString' => [
+                'non-empty-string',
+                'trait-string',
+            ],
+            'nonFalsyStringAcceptsTraitString' => [
+                'non-falsy-string',
+                'trait-string',
+            ],
+            'classStringAcceptsTraitString' => [
+                'class-string',
+                'trait-string',
+            ],
         ];
     }
 
@@ -381,6 +413,10 @@ final class TypeComparatorTest extends TestCase
         yield 'nonEmptyMixedDoesNotAcceptMixed' => [
             'non-empty-mixed',
             'mixed',
+        ];
+        yield 'literalStringDoesNotAcceptTraitString' => [
+            "'foo'",
+            'trait-string',
         ];
     }
 }
