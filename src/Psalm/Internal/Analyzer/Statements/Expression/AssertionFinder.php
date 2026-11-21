@@ -74,6 +74,7 @@ use Psalm\Storage\Assertion\IsLessThan;
 use Psalm\Storage\Assertion\IsLessThanOrEqualTo;
 use Psalm\Storage\Assertion\IsLooselyEqual;
 use Psalm\Storage\Assertion\IsNotIdentical;
+use Psalm\Storage\Assertion\IsNotIsset;
 use Psalm\Storage\Assertion\IsNotType;
 use Psalm\Storage\Assertion\IsType;
 use Psalm\Storage\Assertion\MatchesPattern;
@@ -2414,6 +2415,18 @@ final class AssertionFinder
                 $strict ? new IsType(new TNull()) : new IsLooselyEqual(new TNull()),
                 $negated,
             )]];
+        } elseif ($strict
+            && $base_conditional instanceof PhpParser\Node\Expr\BinaryOp\Coalesce
+            && $base_conditional->right instanceof PhpParser\Node\Expr\ConstFetch
+            && strtolower($base_conditional->right->name->getFirst()) === 'null'
+            && ($coalesced_var_name = ExpressionIdentifier::getExtendedVarId(
+                $base_conditional->left,
+                $this_class_name,
+                $source,
+            )) !== null
+        ) {
+            // `($a ?? null) === null` holds exactly where `isset($a)` doesn't
+            $if_types[$coalesced_var_name] = [[$negated ? new IsIsset() : new IsNotIsset()]];
         } elseif ($negated && $base_conditional instanceof PhpParser\Node\Expr\NullsafePropertyFetch) {
             // a null `$a?->b` does not tell whether `$a` is null
             $if_types = self::getNullsafeAssertions(
