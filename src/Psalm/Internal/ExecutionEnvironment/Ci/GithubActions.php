@@ -28,7 +28,7 @@ use const JSON_THROW_ON_ERROR;
  * The event that started the workflow tells the head commit, and for a pull request the number and the
  * repository it comes from, which is told apart from the one the workflow runs in, as for the other CI
  * services: a report is only linked to the pull request of its own repository. The checkout of a pull
- * request is a merge commit that is not part of it, so its head commit is sent too.
+ * request is not a commit of it, so its head commit is sent too.
  *
  * @internal
  */
@@ -73,14 +73,12 @@ final class GithubActions implements CiProvider
 
                 if ($pull_request !== null) {
                     $git = self::getPullRequestGit($event_data) ?? $git;
-                }
-            }
 
-            // The ref of a pull request is its merge commit, its branch is the one it comes from. A pull request
-            // from a deleted fork has no repository, so Shepherd would take a branch with the name of the default
-            // one for a commit of it.
-            if ($pull_request?->head !== null) {
-                $branch = $env->get(self::HEAD_REF) ?? $branch;
+                    // GITHUB_REF is the merge commit ("pull_request") or the base branch ("pull_request_target"),
+                    // so the branch the pull request comes from is sent instead. Shepherd compares the branch with the
+                    // default one when no CI_PR_REPO_* is sent, so a pull request from a deleted fork sends none.
+                    $branch = $pull_request->head === null ? null : ($env->get(self::HEAD_REF) ?? $branch);
+                }
             }
         }
 

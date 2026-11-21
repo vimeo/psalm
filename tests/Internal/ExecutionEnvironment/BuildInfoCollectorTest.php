@@ -600,10 +600,24 @@ final class BuildInfoCollectorTest extends TestCase
             null,
             [
                 'CI_NAME' => 'github-actions',
-                'CI_BRANCH' => 'refs/pull/42/merge',
                 'GITHUB_ACTIONS' => 'true',
                 'CI_JOB_ID' => '9876543210',
                 'GITHUB_REF' => 'refs/pull/42/merge',
+                'CI_REPO_OWNER' => 'psalm',
+                'CI_REPO_NAME' => 'example',
+                'CI_PR_NUMBER' => '42',
+                'git' => $pull_request_git,
+            ],
+        ];
+
+        yield 'GitHub Actions pull_request_target from a deleted fork' => [
+            self::githubActions('pull_request_target', 'pull_request_from_deleted_fork', 'refs/heads/master', 'feature'),
+            null,
+            [
+                'CI_NAME' => 'github-actions',
+                'GITHUB_ACTIONS' => 'true',
+                'CI_JOB_ID' => '9876543210',
+                'GITHUB_REF' => 'refs/heads/master',
                 'CI_REPO_OWNER' => 'psalm',
                 'CI_REPO_NAME' => 'example',
                 'CI_PR_NUMBER' => '42',
@@ -710,11 +724,22 @@ final class BuildInfoCollectorTest extends TestCase
         self::assertSame('refs/pull/42/merge', $info['CI_BRANCH']);
     }
 
-    public function testGithubActionsPullRequestFromADeletedForkKeepsTheRefAsTheBranch(): void
+    /**
+     * @return iterable<string, array{string, string}>
+     * @psalm-pure
+     */
+    public static function providePullRequestEventRef(): iterable
     {
-        $env = self::githubActions('pull_request', 'pull_request_from_deleted_fork', 'refs/pull/42/merge', 'master');
+        yield 'pull_request' => ['pull_request', 'refs/pull/42/merge'];
+        yield 'pull_request_target' => ['pull_request_target', 'refs/heads/master'];
+    }
 
-        self::assertSame('refs/pull/42/merge', (new BuildInfoCollector($env))->collect()['CI_BRANCH']);
+    #[DataProvider('providePullRequestEventRef')]
+    public function testGithubActionsPullRequestFromADeletedForkSendsNoBranch(string $event_name, string $ref): void
+    {
+        $env = self::githubActions($event_name, 'pull_request_from_deleted_fork', $ref, 'master');
+
+        self::assertArrayNotHasKey('CI_BRANCH', (new BuildInfoCollector($env))->collect());
     }
 
     public function testGithubActionsPullRequestWithAnEmptyHeadRefKeepsTheRefAsTheBranch(): void
