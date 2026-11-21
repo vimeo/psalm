@@ -2,7 +2,7 @@
 
 Emitted when a class annotated with `@psalm-cli-only-instances` could still be instantiated outside the command line —
 for example, because it isn't `final`, implements `Serializable`, is missing `__construct()` or
-`__unserialize()`/`__wakeup()`, or doesn't guard them with a CLI SAPI check.
+`__unserialize()`, or doesn't guard them with a CLI SAPI check.
 
 ```php
 <?php
@@ -16,7 +16,7 @@ final class ConsoleRequest
     {
     }
 
-    public function __wakeup(): void
+    public function __unserialize(array $data): void
     {
         if (PHP_SAPI !== 'cli') {
             throw new LogicException('Run it from the command line');
@@ -34,8 +34,8 @@ command-line code: their output is exempted from `TaintedHtml` and `TaintedTextW
 ## How to fix
 
 Make the class `final`, and put a CLI guard as the first statement of both `__construct()` and `__unserialize()` (or
-`__wakeup()`), before anything touches `$this`. The guard can be a `PHP_SAPI` / `php_sapi_name()` check that throws or
-exits, or a call to a helper asserting `'cli' PHP_SAPI`. Alternatively, `__wakeup()` or `__unserialize()` can always
+the `__wakeup()` it replaces), before anything touches `$this`. The guard can be a `PHP_SAPI` / `php_sapi_name()` check that throws or
+exits, or a call to a helper asserting `'cli' PHP_SAPI`. Alternatively, `__unserialize()` can always
 throw to forbid unserialization altogether:
 
 ```php
@@ -61,7 +61,7 @@ final class ConsoleRequest
         requireCli();
     }
 
-    public function __wakeup(): void
+    public function __unserialize(array $data): void
     {
         throw new LogicException('A request cannot be unserialized');
     }
@@ -74,8 +74,8 @@ To satisfy `@psalm-cli-only-instances`, the class must:
 
 - be `final`, so no subclass can add an unguarded constructor or `__unserialize()`;
 - not implement `Serializable` (its `unserialize()` runs on an object created without calling the constructor);
-- declare `__construct()`, plus `__unserialize()` (if the class or a parent defines one) or `__wakeup()` otherwise —
-  these may come from a trait used by the class;
+- declare `__construct()`, plus `__unserialize()`, or the `__wakeup()` the class or a parent defines without an
+  `__unserialize()` — these may come from a trait used by the class;
 - avoid property hooks on promoted constructor properties, since hooks execute before the constructor body;
 - start each of those methods with a valid CLI guard.
 

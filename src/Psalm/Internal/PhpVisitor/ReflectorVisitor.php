@@ -12,6 +12,7 @@ use PhpParser\Node\Name;
 use Psalm\Aliases;
 use Psalm\CodeLocation;
 use Psalm\Codebase;
+use Psalm\DocComment;
 use Psalm\Exception\CodeException;
 use Psalm\Exception\DocblockParseException;
 use Psalm\Exception\TypeParseTreeException;
@@ -346,6 +347,20 @@ final class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements Fi
                 }
             }
 
+            $deprecated = $doc_comment !== null
+                && isset(DocComment::parsePreservingLength($doc_comment)->tags['deprecated']);
+            foreach ($node->attrGroups as $attr_group) {
+                foreach ($attr_group->attrs as $attr) {
+                    $attr_name = $attr->name instanceof PhpParser\Node\Name\FullyQualified
+                        ? $attr->name->toString()
+                        : Type::getFQCLNFromString($attr->name->toString(), $this->aliases);
+                    $deprecated = $deprecated
+                        || $attr_name === 'Deprecated'
+                        || $attr_name === 'Psalm\\Deprecated'
+                        || $attr_name === 'JetBrains\\PhpStorm\\Deprecated';
+                }
+            }
+
             foreach ($node->consts as $const) {
                 $const_type = $var_type ?? SimpleTypeInferer::infer(
                     $this->codebase,
@@ -370,6 +385,10 @@ final class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements Fi
                 ) {
                     $this->codebase->addGlobalConstantType($fq_const_name, $const_type);
 
+                    if ($deprecated) {
+                        $this->codebase->addDeprecatedGlobalConstant($fq_const_name);
+                    }
+
                     if ($unresolved !== null) {
                         $this->codebase->addUnresolvedGlobalConstant($fq_const_name, $unresolved);
                     }
@@ -377,6 +396,10 @@ final class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements Fi
 
                 $this->file_storage->constants[$fq_const_name] = $const_type;
                 $this->file_storage->declaring_constants[$fq_const_name] = $this->file_path;
+
+                if ($deprecated) {
+                    $this->file_storage->deprecated_constants[$fq_const_name] = true;
+                }
 
                 if ($unresolved !== null) {
                     $this->file_storage->unresolved_constants[$fq_const_name] = $unresolved;
