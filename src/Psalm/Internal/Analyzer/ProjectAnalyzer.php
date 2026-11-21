@@ -420,7 +420,7 @@ final class ProjectAnalyzer
         return isset($list[$file_path]);
     }
 
-    private function generatePHPVersionMessage(): string
+    private function generateAnalysisSetupMessage(): string
     {
         $codebase = $this->codebase;
 
@@ -478,7 +478,7 @@ final class ProjectAnalyzer
         if (!$base_dir) {
             throw new InvalidArgumentException('Cannot work with empty base_dir');
         }
-        $this->progress->write($this->generatePHPVersionMessage());
+        $this->progress->write($this->generateAnalysisSetupMessage());
         $this->progress->startPhase(Phase::SCAN, $this->scanThreads);
 
         $project_files = $this->initProjectFiles();
@@ -907,7 +907,7 @@ final class ProjectAnalyzer
 
     public function checkDir(string $dir_name): void
     {
-        $this->progress->write($this->generatePHPVersionMessage());
+        $this->progress->write($this->generateAnalysisSetupMessage());
         $this->progress->startPhase(Phase::SCAN, $this->scanThreads);
 
         if (!$this->project_files_initialized) {
@@ -1015,7 +1015,7 @@ final class ProjectAnalyzer
 
     public function checkFile(string $file_path): void
     {
-        $this->progress->write($this->generatePHPVersionMessage());
+        $this->progress->write($this->generateAnalysisSetupMessage());
         $this->progress->startPhase(Phase::SCAN, $this->scanThreads);
 
         $this->progress->debug('Checking ' . $file_path . PHP_EOL);
@@ -1058,7 +1058,7 @@ final class ProjectAnalyzer
      */
     public function checkPaths(array $paths_to_check): void
     {
-        $this->progress->write($this->generatePHPVersionMessage());
+        $this->progress->write($this->generateAnalysisSetupMessage());
         $this->progress->startPhase(Phase::SCAN, $this->scanThreads);
 
         if (!$this->project_files_initialized) {
