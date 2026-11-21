@@ -230,8 +230,13 @@ final class ReflectionReferenceFromArrayElementTest extends TestCase
 
         yield 'byRefObjectPropertyOrOffsetStaysNullable' => [
             'code' => '<?php
+                class Base {
+                    public int $p = 1;
+                }
+
+                // a subclass with __get() that unsets $p makes the property fetch return a value, not a reference
                 /** @param ArrayAccess<string, int> $a */
-                function f(stdClass $o, ArrayAccess $a): void {
+                function f(Base $o, ArrayAccess $a): void {
                     $r = ReflectionReference::fromArrayElement([&$o->p], 0);
                     $s = ReflectionReference::fromArrayElement([&$a["k"]], 0);
                     /** @psalm-check-type-exact $r = ReflectionReference|null */
