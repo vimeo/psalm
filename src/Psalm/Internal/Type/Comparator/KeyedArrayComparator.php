@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Psalm\Internal\Type\Comparator;
 
 use Psalm\Codebase;
+use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Type;
@@ -16,13 +17,62 @@ use Psalm\Type\Atomic\TObjectWithProperties;
 use Psalm\Type\Union;
 
 use function array_keys;
+use function count;
+use function in_array;
 use function is_string;
+use function strtolower;
 
 /**
  * @internal
  */
 final class KeyedArrayComparator
 {
+    /**
+     * `["Class", "method"]` or `[$object_of_a_final_class, "method"]`, with a method given as a literal, where there
+     * is no such method: the array is not callable
+     */
+    private static function isLiteralCallableArrayOfNoMethod(Codebase $codebase, TKeyedArray $input_type_part): bool
+    {
+        if (count($input_type_part->properties) !== 2
+            || $input_type_part->fallback_params !== null
+            || !isset($input_type_part->properties[0], $input_type_part->properties[1])
+            || !$input_type_part->properties[1]->isSingleStringLiteral()
+        ) {
+            return false;
+        }
+
+        $class_type = $input_type_part->properties[0];
+
+        if ($class_type->isSingleStringLiteral()) {
+            $class_name = $class_type->getSingleStringLiteral()->value;
+
+            // `self`, `parent` and `static` are not resolved here
+            if (in_array(strtolower($class_name), ['self', 'parent', 'static'], true)) {
+                return false;
+            }
+        } elseif ($class_type->isSingle()
+            && ($object_type = $class_type->getSingleAtomic()) instanceof TNamedObject
+            && !$object_type->extra_types
+            // the object can be of a subclass that declares the method
+            && $codebase->classExists($object_type->value)
+            && $codebase->classlike_storage_provider->get($object_type->value)->final
+        ) {
+            $class_name = $object_type->value;
+        } else {
+            return false;
+        }
+
+        if ($codebase->classOrInterfaceExists($class_name)
+            && ($codebase->methodExists(new MethodIdentifier($class_name, '__call'))
+                || $codebase->methodExists(new MethodIdentifier($class_name, '__callstatic'))
+            )
+        ) {
+            return false;
+        }
+
+        return CallableTypeComparator::getCallableFromAtomic($codebase, $input_type_part) === null;
+    }
+
     /**
      * @param TKeyedArray|TObjectWithProperties $input_type_part
      * @param TKeyedArray|TObjectWithProperties $container_type_part
@@ -34,6 +84,15 @@ final class KeyedArrayComparator
         bool $allow_interface_equality,
         ?TypeComparisonResult $atomic_comparison_result,
     ): bool {
+        if ($container_type_part instanceof TKeyedArray
+            && $container_type_part->is_callable
+            && $input_type_part instanceof TKeyedArray
+            && !$input_type_part->is_callable
+            && self::isLiteralCallableArrayOfNoMethod($codebase, $input_type_part)
+        ) {
+            return false;
+        }
+
         $container_sealed = $container_type_part instanceof TKeyedArray
             && $container_type_part->fallback_params === null;
 

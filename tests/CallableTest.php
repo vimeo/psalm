@@ -155,6 +155,71 @@ final class CallableTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'literalArraysOfAnExistingMethodAreCallableArrays' => [
+                'code' => '<?php
+                    final class Foo {
+                        public static function bar(): void {}
+                        public function inst(): void {}
+                    }
+
+                    final class Magic {
+                        public function __call(string $name, array $args): void {}
+                        public static function __callStatic(string $name, array $args): void {}
+                    }
+
+                    /** @return callable-array{string, string} */
+                    function existingStatic(): array {
+                        return ["Foo", "bar"];
+                    }
+
+                    /** @return callable-array{Foo, string} */
+                    function existingInstance(): array {
+                        return [new Foo(), "inst"];
+                    }
+
+                    /** @return callable-array{string, string} */
+                    function magic(): array {
+                        return ["Magic", "anything"];
+                    }
+
+                    /** @return callable-array{object, string} */
+                    function magicObject(): array {
+                        return [new Magic(), "anything"];
+                    }
+
+                    class Base {
+                        public function __call(string $name, array $args): void {}
+                    }
+
+                    final class Kid extends Base {}
+
+                    /** @return callable-array{object, string} */
+                    function inheritedMagicObject(): array {
+                        return [new Kid(), "anything"];
+                    }
+
+                    /** @param callable-array{object, string} $c */
+                    function takesPair(array $c): void {}
+
+                    takesPair([new Magic(), "anything"]);
+
+                    class Open {}
+
+                    // a subclass of a class that is not final can declare the method
+                    /** @return callable-array{object, string} */
+                    function subclassMayDeclareIt(Open $o): array {
+                        return [$o, "notOnOpen"];
+                    }
+
+                    // a pair that is not a literal is not proven wrong, so it is accepted
+                    /**
+                     * @param array{string, string} $pair
+                     * @return callable-array{string, string}
+                     */
+                    function dynamic(array $pair): array {
+                        return $pair;
+                    }',
+            ],
             'callableOfThisTakesTheTemplatesOfTheObject' => [
                 'code' => '<?php
                     /**
@@ -3879,6 +3944,38 @@ final class CallableTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'literalArrayOfAnUnknownClassIsNotACallableArray' => [
+                'code' => '<?php
+                    /** @return callable-array{string, string} */
+                    function ret(): array {
+                        return ["a", "hello"];
+                    }',
+                'error_message' => 'InvalidReturnStatement',
+            ],
+            'literalArrayOfAMissingMethodIsNotACallableArray' => [
+                'code' => '<?php
+                    final class Foo {
+                        public static function bar(): void {}
+                    }
+
+                    /** @return callable-array{string, string} */
+                    function ret(): array {
+                        return ["Foo", "nope"];
+                    }',
+                'error_message' => 'InvalidReturnStatement',
+            ],
+            'literalArrayOfAnObjectOfAFinalClassWithoutTheMethodIsNotACallableArray' => [
+                'code' => '<?php
+                    final class Foo {
+                        public function bar(): void {}
+                    }
+
+                    /** @return callable-array{object, string} */
+                    function ret(): array {
+                        return [new Foo(), "nope"];
+                    }',
+                'error_message' => 'InvalidReturnStatement',
+            ],
             'callableOfStaticChecksTheTemplatesOfTheObject' => [
                 'code' => '<?php
                     /** @template T */
