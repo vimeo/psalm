@@ -72,15 +72,9 @@ function fmtInt(int $n): string
     return number_format($n, 0, '', "\u{A0}");
 }
 
-/** CommonMark strips one space from each end of a code span that starts and ends with a space; NBSP keeps it. */
 function inlineCode(string $text): string
 {
-    $text = str_replace('`', "'", $text);
-    if (strlen($text) > 1 && $text[0] === ' ' && str_ends_with($text, ' ') && trim($text) !== '') {
-        $text = "\u{A0}" . substr($text, 1);
-    }
-
-    return '`' . $text . '`';
+    return '`' . str_replace('`', "'", $text) . '`';
 }
 
 /** Single-line text safe in a table cell or <summary>. */
@@ -451,9 +445,11 @@ function detailsBody(array $p): string
 
         if ($i['changed'] > 0) {
             $shown = array_sum(array_column($i['changed_examples'], 'count'));
-            $parts[] = "**Changed in place** ({$i['changed']})\n\n"
-                . implode("\n", array_map(changeItem(...), $i['changed_examples']))
-                . ($i['changed'] > $shown ? "\n- … and " . ($i['changed'] - $shown) . ' more' : '');
+            $hunks = implode("\n\n", array_map(changeHunk(...), $i['changed_examples']));
+            $parts[] = "**Changed in place** ({$i['changed']})"
+                . (str_contains($hunks, '{self}') ? '; `{self}` is the class named after the file' : '')
+                . "\n\n```diff\n{$hunks}\n```"
+                . ($i['changed'] > $shown ? "\n\n… and " . ($i['changed'] - $shown) . ' more' : '');
         }
 
         foreach (['added', 'removed'] as $kind) {
@@ -508,67 +504,71 @@ function detailsBody(array $p): string
 }
 
 /**
- * One list item for a group of identical in-place changes: the location (or locations), the issue type (`old → new`
- * when it changed) and the message with the change marked.
+ * One hunk for a group of identical in-place changes: `@@ location type @@` (several locations as context lines),
+ * then the old messages as `-` lines and the new ones as `+` lines, their shared text trimmed alike.
  *
  * @param array{
  *     old: list<array{type: string, message: string}>, new: list<array{type: string, message: string}>,
  *     locations: list<string>, count: int
  * } $g
  */
-function changeItem(array $g): string
+function changeHunk(array $g): string
 {
-    $types = static fn(array $side): string => implode(', ', array_unique(array_column($side, 'type')));
-    [$oldTypes, $newTypes] = [$types($g['old']), $types($g['new'])];
-    $title = $oldTypes === $newTypes ? $oldTypes : "{$oldTypes} → {$newTypes}";
     $issues = [...$g['old'], ...$g['new']];
-    $issues = array_map(
-        static fn(array $issue, string $message): array => ['message' => $message] + $issue,
-        $issues,
-        shortClassNames(array_column($issues, 'message')),
-    );
-    $old = array_slice($issues, 0, count($g['old']));
-    $body = renderChunks(changeDiff($old, array_slice($issues, count($old))));
+    $messages = shortClassNames(array_column($issues, 'message'));
+    $oldCount = count($g['old']);
+    $segments = changeSegments(array_slice($messages, 0, $oldCount), array_slice($messages, $oldCount));
+    $types = array_values(array_unique(array_column($issues, 'type')));
+    $type = count($types) === 1 ? " {$types[0]}" : '';
     if ($g['count'] === 1) {
-        return '- ' . inlineCode($g['locations'][0]) . " {$title}: {$body}";
+        $lines = ["@@ {$g['locations'][0]}{$type} @@"];
+    } else {
+        $more = $g['count'] - count($g['locations']);
+        $lines = [
+            "@@ {$g['count']} places{$type} @@",
+            ...array_map(static fn(string $location): string => "  {$location}", $g['locations']),
+            ...($more > 0 ? ["  … and {$more} more"] : []),
+        ];
     }
 
-    $more = $g['count'] - count($g['locations']);
-    $self = str_contains($body, '{self}') ? ' (`{self}`: the class named after the file)' : '';
+    $width = max(array_map(strlen(...), $types));
+    foreach ($issues as $k => $issue) {
+        $lines[] = ($k < $oldCount ? '- ' : '+ ') . ($type === '' ? str_pad("{$issue['type']}:", $width + 2) : '')
+            . changeLine($segments, $k);
+    }
 
-    return "- {$title}, {$g['count']} places{$self}: {$body}\n  "
-        . implode(', ', array_map(inlineCode(...), $g['locations']))
-        . ($more > 0 ? ", and {$more} more" : '');
+    return implode("\n", $lines);
 }
 
 /**
- * Changes as ~~`old`~~**`new`**, unchanged text around them cut to whole words, CONTEXT_CHARS or a bit more.
+ * Message $k of the segments: shared text cut to whole words around the changes, CONTEXT_CHARS or a bit more on
+ * each side, so that the `-` and `+` lines are trimmed alike.
  *
- * @param list<array{string, string}> $chunks
+ * @param list<list<string>> $segments
  */
-function renderChunks(array $chunks): string
+function changeLine(array $segments, int $k): string
 {
-    $out = '';
-    $last = count($chunks) - 1;
-    foreach ($chunks as $k => [$old, $new]) {
-        if ($old !== $new) {
-            $out .= ($old === '' ? '' : '~~' . inlineCode(mb_strimwidth($old, 0, CHANGE_CHARS, '…')) . '~~')
-                . ($new === '' ? '' : '**' . inlineCode(mb_strimwidth($new, 0, CHANGE_CHARS, '…')) . '**');
+    $line = '';
+    $last = count($segments) - 1;
+    foreach ($segments as $s => $segment) {
+        $text = $segment[$k];
+        if (!isShared($segment)) {
+            $line .= mb_strimwidth($text, 0, CHANGE_CHARS, '…');
             continue;
         }
 
-        $start = contextTokens($old, false);
-        $end = contextTokens($old, true);
-        $out .= inlineCode(match (true) {
-            $last === 0 => mb_strimwidth($old, 0, EXAMPLE_CHARS, '…'),
-            $k === 0 => $end === $old ? $old : "…{$end}",
-            $k === $last => $start === $old ? $old : "{$start}…",
-            mb_strlen($start) + mb_strlen($end) < mb_strlen($old) => "{$start}…{$end}",
-            default => $old,
-        });
+        $start = contextTokens($text, false);
+        $end = contextTokens($text, true);
+        $line .= match (true) {
+            $last === 0 => mb_strimwidth($text, 0, EXAMPLE_CHARS, '…'),
+            $s === 0 => $end === $text ? $text : "…{$end}",
+            $s === $last => $start === $text ? $text : "{$start}…",
+            mb_strlen($start) + mb_strlen($end) < mb_strlen($text) => "{$start}…{$end}",
+            default => $text,
+        };
     }
 
-    return $out;
+    return $line;
 }
 
 /** Whole tokens from the start (or the end) of $text, at least CONTEXT_CHARS long. */
