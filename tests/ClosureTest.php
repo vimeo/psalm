@@ -3270,13 +3270,17 @@ final class ClosureTest extends TestCase
                         }
                     }
 
-                    function f(Dynamic $d): void {
-                        $missing = $d->missing(...);
-                        $hidden = $d->hidden(...);
-                        /** @psalm-check-type-exact $missing = \Closure */
-                        /** @psalm-check-type-exact $hidden = \Closure */
-                    }',
-                'assertions' => [],
+                    $d = new Dynamic();
+                    $missing = $d->missing(...);
+                    $hidden = $d->hidden(...);
+                    $direct = $d->missing(1);
+                    $viaCallable = $missing(1);
+                    $viaHidden = $hidden();',
+                'assertions' => [
+                    '$direct' => 'int',
+                    '$viaCallable' => 'int',
+                    '$viaHidden' => 'int',
+                ],
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
