@@ -905,6 +905,8 @@ final class ReturnTypeTest extends TestCase
                             return $a1;
                         }
                     }',
+                'assertions' => [],
+                'ignored_issues' => ['DeprecatedSyntax'],
             ],
             'returnTypeAfterIfElseIfWithThrow' => [
                 'code' => '<?php
@@ -926,6 +928,8 @@ final class ReturnTypeTest extends TestCase
                             return $a1;
                         }
                     }',
+                'assertions' => [],
+                'ignored_issues' => ['DeprecatedSyntax'],
             ],
             'tryCatchReturnType' => [
                 'code' => '<?php
@@ -3750,6 +3754,7 @@ final class ReturnTypeTest extends TestCase
                     }
                     PHP,
                 'error_message' => 'InvalidReturnStatement',
+                'error_levels' => ['DeprecatedSyntax'],
             ],
             'finalMethodThatAlwaysThrowsAfterAnotherStatementIsNever' => [
                 'code' => '<?php

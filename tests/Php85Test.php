@@ -303,6 +303,26 @@ final class Php85Test extends TestCase
                 'ignored_issues' => ['InvalidPassByReference'],
                 'php_version' => '8.5',
             ],
+            'writeToAPropertyOfAConstantObjectFromPhp86' => [
+                'code' => '<?php
+                    const CONFIG = new stdClass();
+
+                    CONFIG->debug = true;
+                    CONFIG->count++;',
+                'assertions' => [],
+                'ignored_issues' => ['MixedOperand'],
+                'php_version' => '8.6',
+            ],
+            'writeToAPropertyOfAVariableObjectBeforePhp86' => [
+                'code' => '<?php
+                    $config = new stdClass();
+                    $config->debug = true;
+                    echo CONFIG_NAME;
+                    const CONFIG_NAME = "a";',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.5',
+            ],
         ];
     }
 
@@ -450,6 +470,55 @@ final class Php85Test extends TestCase
                     $a |> $f;',
                 'error_message' => 'is passed by reference, but the pipe operator passes its left-hand side by value',
                 'error_levels' => [],
+                'php_version' => '8.5',
+            ],
+            'writeToAPropertyOfAConstantObjectBeforePhp86' => [
+                'code' => '<?php
+                    const CONFIG = new stdClass();
+
+                    CONFIG->debug = true;',
+                'error_message' => 'ParseError - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:21 - Cannot use temporary expression in write context before PHP 8.6',
+                'error_levels' => [],
+                'php_version' => '8.5',
+            ],
+            'compoundWriteToAPropertyOfAConstantObjectBeforePhp86' => [
+                'code' => '<?php
+                    const CONFIG = new stdClass();
+
+                    CONFIG->count++;',
+                'error_message' => 'ParseError - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:21 - Cannot use temporary expression in write context before PHP 8.6',
+                'error_levels' => ['MixedOperand'],
+                'php_version' => '8.5',
+            ],
+            'writeToAnArrayAccessPropertyOfAConstantObjectBeforePhp86' => [
+                'code' => '<?php
+                    final class Bag implements ArrayAccess {
+                        public ArrayObject $items;
+
+                        public function __construct() {
+                            $this->items = new ArrayObject();
+                        }
+
+                        public function offsetExists(mixed $offset): bool { return false; }
+                        public function offsetGet(mixed $offset): mixed { return null; }
+                        public function offsetSet(mixed $offset, mixed $value): void {}
+                        public function offsetUnset(mixed $offset): void {}
+                    }
+
+                    const CONFIG = new Bag();
+
+                    CONFIG->items[] = 1;',
+                'error_message' => 'ParseError - src' . DIRECTORY_SEPARATOR . 'somefile.php:17:21 - Cannot use temporary expression in write context before PHP 8.6',
+                'error_levels' => [],
+                'php_version' => '8.5',
+            ],
+            'writeToANestedPropertyOfAConstantObjectBeforePhp86' => [
+                'code' => '<?php
+                    const CONFIG = new stdClass();
+
+                    CONFIG->items[] = 1;',
+                'error_message' => 'ParseError - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:21 - Cannot use temporary expression in write context before PHP 8.6',
+                'error_levels' => ['MixedArrayAssignment'],
                 'php_version' => '8.5',
             ],
         ];

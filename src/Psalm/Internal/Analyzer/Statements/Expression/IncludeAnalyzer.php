@@ -234,6 +234,10 @@ final class IncludeAnalyzer
 
                 $this_type = $context->vars_in_scope['$this'] ?? null;
 
+                // strict_types applies per file: the included file has the one it declares, not the includer's
+                $includer_strict_types = $context->strict_types;
+                $context->strict_types = false;
+
                 try {
                     $include_file_analyzer->analyze(
                         $context,
@@ -264,6 +268,8 @@ final class IncludeAnalyzer
                         $context->check_functions = false;
                     }
                 }
+
+                $context->strict_types = $includer_strict_types;
 
                 $included_return_type = $include_file_analyzer->getReturnType();
 
