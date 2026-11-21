@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Announces a release of Psalm on Mastodon, X, Telegram and Discord.
+ * Announces a release of Psalm on Mastodon, X, Telegram, Discord and the newsletter.
  *
  * Usage: php bin/ci/announce-release.php [--dry-run] [--force] [--only=<platform>,...] <tag>
  *
@@ -16,7 +16,10 @@
  *    must be an administrator allowed to post messages);
  *  - Discord: DISCORD_BOT_TOKEN (of a bot application) and DISCORD_CHANNEL (<server id>/<channel id>, as in the
  *    channel's URL), an announcement channel where the bot may send messages and mention everyone; the post pings
- *    everyone and is published to the servers following the channel.
+ *    everyone and is published to the servers following the channel;
+ *  - Newsletter: PSALM_POST_TOKEN too: https://psalm-post.daniil.it emails the release notes of new minor and major
+ *    versions (of the latest release only) to the subscribers of https://psalm.dev/newsletter, each once, and skips
+ *    other releases.
  *
  * X and Mastodon only get the latest major's minor and major releases, and its patch releases with user-facing
  * changes (a Features, Fixes or other section besides Internal changes and Docs), but no pre-releases; Telegram and
@@ -183,6 +186,18 @@ $platforms = [
             )['result'];
 
             return "https://t.me/{$message['chat']['username']}/{$message['message_id']}";
+        },
+    ],
+    'Newsletter' => [
+        ['PSALM_POST_TOKEN'],
+        static function (string $token) use ($request, $tag, $force): string {
+            $result = $request(
+                'https://psalm-post.daniil.it/newsletter',
+                ["Authorization: Bearer $token"],
+                ['tag' => $tag, 'force' => $force],
+            );
+
+            return $result['url'] ?? 'skipped: ' . $result['skipped'];
         },
     ],
     'Discord' => [

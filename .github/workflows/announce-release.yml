@@ -1,6 +1,6 @@
 name: Announce release
 
-# Posts releases to Mastodon, X, Telegram and Discord; see bin/ci/announce-release.php for the secrets it needs.
+# Posts releases to Mastodon, X, Telegram, Discord and the newsletter; see bin/ci/announce-release.php for the secrets it needs.
 on:
   release:
     types:
