@@ -1806,6 +1806,36 @@ final class ClassTemplateExtendsTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'composedParentArgumentNamingAnImportedAliasBindsInheritedInvokable' => [
+                'code' => '<?php
+                    /** @template T */
+                    abstract class Base {
+                        /** @param T $value */
+                        public function __invoke(mixed $value): void {}
+                    }
+
+                    /** @psalm-type Name=string */
+                    final class Names {}
+
+                    /**
+                     * @psalm-import-type Name from Names
+                     * @template TKey of array-key
+                     * @extends Base<array<TKey, Name>>
+                     */
+                    final class Composed extends Base {}
+
+                    /** @param callable(array<int, string>): void $callback */
+                    function takesCallback(callable $callback): void {}
+
+                    /** @param Composed<int> $composed */
+                    function f(Composed $composed): void {
+                        takesCallback($composed);
+                        takesCallback($composed(...));
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'composedParentArgumentBindsInheritedMembersThroughTwoExtends' => [
                 'code' => '<?php
                     /** @template T */
