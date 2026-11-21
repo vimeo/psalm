@@ -163,6 +163,38 @@ final class ArrayFunctionCallTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'writeUnderTheLastKeyTwiceAndOfAPropertyKeepsAList' => [
+                'code' => '<?php
+                    /**
+                     * @param non-empty-list<int> $l
+                     * @return list<int>
+                     */
+                    function twice(array $l): array {
+                        $k = array_key_last($l);
+                        $l[$k] = 1;
+                        $l[$k] = 2;
+
+                        return $l;
+                    }
+
+                    final class Bag {
+                        /** @var list<int> */
+                        public array $items = [];
+
+                        public function m(): void {
+                            $k = array_key_last($this->items);
+
+                            if ($k === null) {
+                                return;
+                            }
+
+                            $this->items[$k] = 1;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MoreSpecificReturnType'],
+                'php_version' => '8.2',
+            ],
             'arrayColumnAndGetObjectVarsResolveClassConstantsOfThePropertyType' => [
                 'code' => '<?php
                     class Level {
@@ -5035,6 +5067,102 @@ final class ArrayFunctionCallTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'keyOfAListTakenBeforeTheListShrinksIsNoKeyAnyMore' => [
+                'code' => '<?php
+                    /**
+                     * @param non-empty-list<int> $l
+                     * @return list<int>
+                     */
+                    function popTwice(array $l): array {
+                        $k = array_key_last($l);
+                        array_pop($l);
+                        array_pop($l);
+                        $l[$k] = 1;
+
+                        return $l;
+                    }',
+                'error_message' => 'LessSpecificReturnStatement',
+                'error_levels' => [],
+                'php_version' => '8.2',
+            ],
+            'keyOfAListTakenBeforeTheListIsReassignedIsNoKeyAnyMore' => [
+                'code' => '<?php
+                    /**
+                     * @param list<int> $a
+                     * @param non-empty-list<int> $b
+                     * @return list<int>
+                     */
+                    function reassign(array $a, array $b): array {
+                        $k = array_key_last($b);
+                        $b = $a;
+                        $b[$k] = 1;
+
+                        return $b;
+                    }',
+                'error_message' => 'LessSpecificReturnStatement',
+                'error_levels' => [],
+                'php_version' => '8.2',
+            ],
+            'keyOfAListTakenBeforeTheListIsSlicedIsNoKeyAnyMore' => [
+                'code' => '<?php
+                    /**
+                     * @param non-empty-list<int> $l
+                     * @return list<int>
+                     */
+                    function sliced(array $l): array {
+                        $k = array_key_last($l);
+                        $l = array_slice($l, 1);
+                        $l[$k] = 1;
+
+                        return $l;
+                    }',
+                'error_message' => 'LessSpecificReturnStatement',
+                'error_levels' => [],
+                'php_version' => '8.2',
+            ],
+            'keyOfAListPropertyTakenBeforeAMethodCallIsNoKeyAnyMore' => [
+                'code' => '<?php
+                    final class Bag {
+                        /** @var list<int> */
+                        public array $items = [];
+
+                        public function reset(): void {
+                            $this->items = [];
+                        }
+
+                        public function m(): void {
+                            $k = array_key_last($this->items);
+
+                            if ($k === null) {
+                                return;
+                            }
+
+                            $this->reset();
+                            $this->items[$k] = 1;
+                        }
+                    }',
+                'error_message' => 'PropertyTypeCoercion',
+                'error_levels' => [],
+                'php_version' => '8.2',
+            ],
+            'foreachKeyOfAListIsNoKeyAnyMoreOnceTheListIsReassigned' => [
+                'code' => '<?php
+                    /**
+                     * @param list<int> $l
+                     * @return list<int>
+                     */
+                    function f(array $l): array {
+                        foreach ($l as $k => $_) {
+                            $l = [];
+                            $l[$k] = 1;
+                        }
+
+                        return $l;
+                    }',
+                'error_message' => 'LessSpecificReturnStatement',
+                'error_levels' => [],
+                'php_version' => '8.2',
+            ],
             'arrayMapOnAUnionOfAnArrayAndATemplateBoundedByAListIsNotAList' => [
                 'code' => '<?php
                     /**

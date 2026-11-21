@@ -553,6 +553,13 @@ final class Context
      */
     public array $parent_remove_vars = [];
 
+    /**
+     * The lists a key type of a variable in scope is bound to (see TIntRange::$dependent_list_key)
+     *
+     * @var array<string, true>
+     */
+    public array $list_key_bound_lists = [];
+
     private static int $clause_removal_count = 0;
 
     /**
@@ -1468,18 +1475,59 @@ final class Context
         return $bound_var_ids;
     }
 
+    /**
+     * @param bool $keeps_list_keys the variable is written to under one of its offsets: the keys of a list that were
+     *                              taken from it stay valid
+     */
     public function removeVarFromConflictingClauses(
         string $remove_var_id,
         ?Union $new_type = null,
         ?StatementsAnalyzer $statements_analyzer = null,
+        bool $keeps_list_keys = false,
     ): void {
         $this->clauses = self::filterClauses($remove_var_id, $this->clauses, $new_type, $statements_analyzer);
         $this->parent_remove_vars[$remove_var_id] = ++self::$clause_removal_count;
 
+        if (!$keeps_list_keys) {
+            $this->releaseKeysBoundToList($remove_var_id);
+        }
 
         foreach ($this->getVarsBoundTo($remove_var_id) as $bound_var_id) {
             $this->clauses = self::filterClauses($bound_var_id, $this->clauses, $new_type, $statements_analyzer);
             $this->parent_remove_vars[$bound_var_id] = ++self::$clause_removal_count;
+
+            if (!$keeps_list_keys) {
+                $this->releaseKeysBoundToList($bound_var_id);
+            }
+        }
+    }
+
+    /**
+     * A key of a list (the one of `array_key_last()`, of a foreach) is a key the list has only as long as the list
+     * is the one it was taken from: the types of the variables bound to $list_var_id are free of the binding
+     */
+    private function releaseKeysBoundToList(string $list_var_id): void
+    {
+        if (!isset($this->list_key_bound_lists[$list_var_id])) {
+            return;
+        }
+
+        unset($this->list_key_bound_lists[$list_var_id]);
+
+        foreach ($this->vars_in_scope as $var_id => $type) {
+            foreach ($type->getAtomicTypes() as $atomic_key => $atomic_type) {
+                if ($atomic_type instanceof TIntRange && $atomic_type->dependent_list_key === $list_var_id) {
+                    $builder = $type->getBuilder();
+                    $builder->removeType($atomic_key);
+                    $builder->addType(new TIntRange(
+                        $atomic_type->min_bound,
+                        $atomic_type->max_bound,
+                        $atomic_type->from_docblock,
+                    ));
+
+                    $type = $this->vars_in_scope[$var_id] = $builder->freeze();
+                }
+            }
         }
     }
 

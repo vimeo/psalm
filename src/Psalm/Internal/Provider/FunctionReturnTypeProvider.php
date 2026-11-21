@@ -96,11 +96,11 @@ final class FunctionReturnTypeProvider
         $this->registerClass(ArrayFindReturnTypeProvider::class);
         $this->registerClass(ArrayFirstLastReturnTypeProvider::class);
         $this->registerClass(ArrayIntersectKeyReturnTypeProvider::class);
+        $this->registerClass(ArrayKeyFirstLastReturnTypeProvider::class);
         $this->registerClass(ArrayMapReturnTypeProvider::class);
         $this->registerClass(ArrayMergeReturnTypeProvider::class);
         $this->registerClass(ArrayPadReturnTypeProvider::class);
         $this->registerClass(ArrayPointerAdjustmentReturnTypeProvider::class);
-        $this->registerClass(ArrayKeyFirstLastReturnTypeProvider::class);
         $this->registerClass(ArrayPopReturnTypeProvider::class);
         $this->registerClass(ArrayRandReturnTypeProvider::class);
         $this->registerClass(ArrayReduceReturnTypeProvider::class);

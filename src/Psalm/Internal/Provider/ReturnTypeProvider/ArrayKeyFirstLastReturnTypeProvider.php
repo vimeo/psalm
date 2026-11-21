@@ -62,6 +62,7 @@ final class ArrayKeyFirstLastReturnTypeProvider implements FunctionReturnTypePro
         }
 
         $key_type = $list->getGenericArrayType($list_var_id)->type_params[0];
+        $event->getContext()->list_key_bound_lists[$list_var_id] = true;
 
         return $list->isNonEmpty()
             ? $key_type

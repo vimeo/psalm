@@ -746,6 +746,7 @@ final class AssignmentAnalyzer
                     $root_var_id,
                     $context->vars_in_scope[$root_var_id],
                     $statements_analyzer,
+                    true,
                 );
             }
         }
