@@ -7,12 +7,17 @@ namespace Psalm\Internal\ExecutionEnvironment;
 use Psalm\SourceControl\Git\CommitInfo;
 use Psalm\SourceControl\Git\GitInfo;
 
+use function array_unshift;
 use function assert;
 use function explode;
 use function file_get_contents;
+use function in_array;
+use function is_string;
 use function json_decode;
+use function preg_match;
 use function str_contains;
 use function str_replace;
+use function strtolower;
 use function strtotime;
 
 use const JSON_THROW_ON_ERROR;
@@ -47,8 +52,10 @@ final class BuildInfoCollector
 
     /**
      * Collect environment variables.
+     *
+     * The git info of the checkout names the repository of a CI service Psalm does not know.
      */
-    public function collect(): array
+    public function collect(?GitInfo $git_info = null): array
     {
         $this->readEnv = [];
 
@@ -58,7 +65,8 @@ final class BuildInfoCollector
             ->fillAppVeyor()
             ->fillJenkins()
             ->fillScrutinizer()
-            ->fillGithubActions();
+            ->fillGithubActions()
+            ->fillGenericCi($git_info);
 
         return $this->readEnv;
     }
@@ -317,11 +325,182 @@ final class BuildInfoCollector
                     $this->readEnv['git'] = $gitinfo->toArray();
                 }
 
-                if ($this->env['GITHUB_EVENT_PATH'] === 'pull_request') {
-                    $this->readEnv['CI_PR_NUMBER'] = $event_data['number'];
+                if (in_array($this->env['GITHUB_EVENT_NAME'] ?? null, ['pull_request', 'pull_request_target'], true)) {
+                    $this->fillGithubPullRequest($event_data);
                 }
             }
         }
         return $this;
+    }
+
+    /**
+     * Fill the pull request of a GitHub Actions "pull_request" or "pull_request_target" event.
+     *
+     * The repository the pull request comes from is told apart from the one the workflow runs in, as
+     * for the other CI services: a report is only linked to the pull request of its own repository.
+     * The checkout is a merge commit that is not part of the pull request, so its head commit is sent too.
+     *
+     * @psalm-external-mutation-free
+     */
+    private function fillGithubPullRequest(array $event_data): void
+    {
+        /**
+         * @var array{
+         *    number?: int,
+         *    pull_request?: array{
+         *        number?: int,
+         *        head?: array{
+         *            ref?: string,
+         *            sha?: string,
+         *            repo?: array{name?: string, owner?: array{login?: string}}|null
+         *        }
+         *    }
+         * } $event_data
+         */
+        $number = $event_data['pull_request']['number'] ?? $event_data['number'] ?? null;
+        if ($number === null) {
+            return;
+        }
+
+        $this->readEnv['CI_PR_NUMBER'] = (string) $number;
+
+        $head = $event_data['pull_request']['head'] ?? [];
+        $head_owner = $head['repo']['owner']['login'] ?? '';
+        $head_name = $head['repo']['name'] ?? '';
+        if ($head_owner !== '' && $head_name !== '') {
+            $this->readEnv['CI_PR_REPO_OWNER'] = $head_owner;
+            $this->readEnv['CI_PR_REPO_NAME'] = $head_name;
+        }
+
+        $head_sha = $head['sha'] ?? '';
+        if ($head_sha !== '') {
+            $this->readEnv['git'] = (new GitInfo($head['ref'] ?? '', (new CommitInfo())->setId($head_sha), []))
+                ->toArray();
+        }
+    }
+
+    /**
+     * Fill a CI service Psalm does not know, when the environment says it is CI (CI or TF_BUILD is set) and
+     * the checkout has a GitHub remote, which tells the repository. A service Psalm knows always comes first.
+     *
+     * The branch is the one of the checkout, or, when its HEAD is detached, the one the common CI services
+     * put in their variables. The pull request number is read the same way, when there is one.
+     *
+     * @return $this
+     * @psalm-external-mutation-free
+     */
+    private function fillGenericCi(?GitInfo $git_info): self
+    {
+        if (isset($this->readEnv['CI_NAME']) || $git_info === null || !$this->isCi()) {
+            return $this;
+        }
+
+        $repository = self::getGithubRepository($git_info);
+        if ($repository === null) {
+            return $this;
+        }
+
+        [$owner, $name] = $repository;
+
+        $this->readEnv['CI_NAME'] = 'generic';
+        $this->readEnv['CI_REPO_OWNER'] = $owner;
+        $this->readEnv['CI_REPO_NAME'] = $name;
+
+        $branch = $git_info->getBranch();
+        if ($branch === '' || $branch[0] === '(') {
+            $branch = $this->getFirstEnv([
+                'CI_COMMIT_BRANCH',
+                'CI_COMMIT_REF_NAME',
+                'BITBUCKET_BRANCH',
+                'BUILDKITE_BRANCH',
+                'BUILD_SOURCEBRANCHNAME',
+                'DRONE_BRANCH',
+            ]);
+        }
+
+        if ($branch !== null && $branch !== '') {
+            $this->readEnv['CI_BRANCH'] = $branch;
+        }
+
+        $pull_request = $this->getFirstEnv([
+            'CI_MERGE_REQUEST_IID',
+            'BITBUCKET_PR_ID',
+            'BUILDKITE_PULL_REQUEST',
+            'SYSTEM_PULLREQUEST_PULLREQUESTNUMBER',
+            'CI_COMMIT_PULL_REQUEST',
+            'DRONE_PULL_REQUEST',
+        ]);
+
+        if ($pull_request !== null && $pull_request !== 'false' && $pull_request !== '0') {
+            $this->readEnv['CI_PR_NUMBER'] = $pull_request;
+            $this->readEnv['CI_PR_REPO_OWNER'] = $owner;
+            $this->readEnv['CI_PR_REPO_NAME'] = $name;
+        }
+
+        return $this;
+    }
+
+    /**
+     * @psalm-mutation-free
+     */
+    private function isCi(): bool
+    {
+        return (isset($this->env['CI'])
+                && is_string($this->env['CI'])
+                && !in_array(strtolower($this->env['CI']), ['', '0', 'false'], true))
+            || (isset($this->env['TF_BUILD']) && is_string($this->env['TF_BUILD']) && $this->env['TF_BUILD'] !== '');
+    }
+
+    /**
+     * @param list<string> $names
+     * @psalm-mutation-free
+     */
+    private function getFirstEnv(array $names): ?string
+    {
+        foreach ($names as $name) {
+            if (isset($this->env[$name]) && is_string($this->env[$name]) && $this->env[$name] !== '') {
+                return $this->env[$name];
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * The owner and the name of the GitHub repository of the "origin" remote, or of the first remote
+     * that is one: github.com is the only host Shepherd knows.
+     *
+     * @return array{string, string}|null
+     * @psalm-mutation-free
+     */
+    private static function getGithubRepository(GitInfo $git_info): ?array
+    {
+        $urls = [];
+        foreach ($git_info->getRemotes() as $remote) {
+            $url = $remote->getUrl();
+
+            if ($url === null) {
+                continue;
+            }
+
+            if ($remote->getName() === 'origin') {
+                array_unshift($urls, $url);
+            } else {
+                $urls[] = $url;
+            }
+        }
+
+        foreach ($urls as $url) {
+            if (preg_match(
+                '#^(?:(?:https?|ssh|git)://(?:[^/]*@)?github\.com(?::\d+)?/|(?:[^@/:]+@)?github\.com:)'
+                . '([\w.-]+)/([\w.-]+?)(?:\.git)?/?$#i',
+                $url,
+                $matches,
+            ) === 1) {
+                return [$matches[1], $matches[2]];
+            }
+        }
+
+        return null;
     }
 }

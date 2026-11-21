@@ -1,4 +1,11 @@
 <?php
 namespace {
     const FILTER_THROW_ON_FAILURE = 268435456;
+
+    final class Closure {
+        /**
+         * @psalm-pure
+         */
+        public static function getCurrent(): Closure {}
+    }
 }
