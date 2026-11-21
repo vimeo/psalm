@@ -21,6 +21,23 @@ final class ConditionalReturnTypeTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'conditionalOnANonEmptyListReturnsTheArrayMapOfTheList' => [
+                'code' => '<?php
+                    /**
+                     * @param list $items
+                     * @return ($items is non-empty-list ? non-empty-list : list)
+                     */
+                    function test(array $items): array
+                    {
+                        return array_map(
+                            static fn (mixed $item): mixed => $item,
+                            $items,
+                        );
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'conditionalOnClosureKeepsTheIfBranchForAnInterfaceNarrowedToClosure' => [
                 'code' => <<<'PHP'
                     <?php

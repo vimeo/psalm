@@ -772,6 +772,22 @@ final class MethodSignatureTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'methodAnnotationNarrowingTheReturnTypeOfANativeMethodNeedsNoSignature' => [
+                'code' => '<?php
+                    /**
+                     * @method int getCode()
+                     */
+                    class A extends RuntimeException
+                    {
+                        public function __construct(string $message = \'\', int $code = 0, ?Throwable $previous = null, array $context = [])
+                        {
+                            parent::__construct($message, $code, $previous);
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'staticTypeArgumentMatchesInheritedReturnType' => [
                 'code' => '<?php
                     /** @template T */

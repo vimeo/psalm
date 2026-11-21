@@ -80,6 +80,29 @@ final class TryCatchTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'finallySeesAVariableSetBeforeAReturnInTheTry' => [
+                'code' => '<?php
+                    function foo(int $a): bool
+                    {
+                        $isError = false;
+
+                        try {
+                            if ($a > 0) {
+                                $isError = true;
+
+                                return false;
+                            }
+
+                            return true;
+                        } finally {
+                            if ($isError) {
+                                echo \'error\';
+                            } else {
+                                echo \'good\';
+                            }
+                        }
+                    }',
+            ],
             'propertyFetchedInTryKeepsItsTypeAfterIt' => [
                 'code' => <<<'PHP'
                     <?php
