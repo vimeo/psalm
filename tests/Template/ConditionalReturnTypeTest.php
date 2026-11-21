@@ -1938,7 +1938,7 @@ final class ConditionalReturnTypeTest extends TestCase
                     $node = new Node();
                     $result = $node->cmp($node);',
                 'assertions' => [
-                    '$result===' => 'int|string',
+                    '$result===' => 'string',
                 ],
                 'ignored_issues' => ['ArgumentTypeCoercion'],
             ],
