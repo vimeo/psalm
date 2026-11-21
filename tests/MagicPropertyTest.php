@@ -1248,6 +1248,468 @@ final class MagicPropertyTest extends TestCase
                     '$d' => 'B|null',
                 ],
             ],
+            'magicPropertyIsForgottenAfterCallWritingBackingProperty' => [
+                'code' => '<?php
+                    final class C {}
+
+                    /** @property ?C $p */
+                    final class M {
+                        public ?C $declared = null;
+
+                        /** @var array<string, ?C> */
+                        private array $data = [];
+
+                        public function __get(string $name): ?C {
+                            return $this->data[$name] ?? null;
+                        }
+
+                        public function __set(string $name, ?C $value): void {
+                            $this->data[$name] = $value;
+                        }
+
+                        public function size(): int {
+                            return count($this->data);
+                        }
+
+                        public function reset(): void {
+                            $this->data = [];
+                        }
+                    }
+
+                    /** @property ?C $p */
+                    #[AllowDynamicProperties]
+                    final class WithoutGetter {
+                        public int $n = 0;
+
+                        public function bump(): void {
+                            $this->n++;
+                        }
+                    }
+
+                    function t(M $m, WithoutGetter $w): void {
+                        if (!$m->p instanceof C || !$m->declared instanceof C || !$w->p instanceof C) {
+                            return;
+                        }
+
+                        echo $m->size();
+                        $p = $m->p;
+                        /** @psalm-check-type-exact $p = C */
+
+                        $m->reset();
+                        $w->bump();
+                        $declared = $m->declared;
+                        /** @psalm-check-type-exact $declared = C */
+                        $w_p = $w->p;
+                        /** @psalm-check-type-exact $w_p = C */
+
+                        if ($m->p instanceof C) {
+                            echo "still set";
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.2',
+            ],
+            'magicPropertyOfThisIsForgottenAfterCallWritingBackingProperty' => [
+                'code' => '<?php
+                    final class C {}
+
+                    /** @property ?C $p */
+                    final class M {
+                        /** @var array<string, ?C> */
+                        private array $data = [];
+
+                        public function __get(string $name): ?C {
+                            return $this->data[$name] ?? null;
+                        }
+
+                        public function reset(): void {
+                            $this->data = [];
+                        }
+
+                        public function t(): void {
+                            if (!$this->p instanceof C) {
+                                return;
+                            }
+
+                            $this->reset();
+
+                            if ($this->p instanceof C) {
+                                echo "still set";
+                            }
+                        }
+                    }',
+            ],
+            'readOnlyMagicPropertyIsForgottenAfterCallWritingBackingProperty' => [
+                'code' => '<?php
+                    final class C {}
+
+                    /** @property-read ?C $p */
+                    class M {
+                        /** @var array<string, ?C> */
+                        private array $data = [];
+
+                        public function __get(string $name): ?C {
+                            return $this->data[$name] ?? null;
+                        }
+
+                        public function reset(): void {
+                            $this->data = [];
+                        }
+                    }
+
+                    final class Child extends M {}
+
+                    function t(M $m): void {
+                        if (!$m->p instanceof C) {
+                            return;
+                        }
+
+                        $m->reset();
+
+                        if ($m->p instanceof C) {
+                            echo "still set";
+                        }
+                    }
+
+                    function inherited(Child $m): void {
+                        if (!$m->p instanceof C) {
+                            return;
+                        }
+
+                        $m->reset();
+
+                        if ($m->p instanceof C) {
+                            echo "still set";
+                        }
+                    }',
+            ],
+            'undeclaredMagicPropertyIsForgottenAfterCallWritingBackingProperty' => [
+                'code' => '<?php
+                    final class C {}
+
+                    /** @psalm-no-seal-properties */
+                    final class M {
+                        public ?C $cache = null;
+
+                        /** @var array<string, ?C> */
+                        private array $data = [];
+
+                        public function __get(string $name): ?C {
+                            if (!array_key_exists($name, $this->data)) {
+                                $this->data[$name] = rand(0, 1) ? new C() : null;
+                            }
+
+                            return $this->data[$name];
+                        }
+
+                        public function __set(string $name, ?C $value): void {
+                            $this->data[$name] = $value;
+                        }
+
+                        public function reset(): void {
+                            $this->data = [];
+                        }
+                    }
+
+                    function t(M $m): void {
+                        if (!$m->p instanceof C || !$m->{"cache-key"} instanceof C) {
+                            return;
+                        }
+
+                        $q = $m->q;
+                        $m->r = $q;
+                        $p = $m->p;
+                        /** @psalm-check-type-exact $p = C */
+
+                        $m->reset();
+
+                        if ($m->p instanceof C) {
+                            echo "still set";
+                        }
+
+                        if ($m->{"cache-key"} instanceof C) {
+                            echo "still set";
+                        }
+                    }',
+            ],
+            'magicPropertyIsForgottenAfterCallWritingItemOfBackingProperty' => [
+                'code' => '<?php
+                    final class C {}
+
+                    /** @property ?C $p */
+                    final class M {
+                        /** @var array<string, ?C> */
+                        private array $data = [];
+
+                        public function __get(string $name): ?C {
+                            return $this->data[$name] ?? null;
+                        }
+
+                        public function clearP(): void {
+                            $this->data["p"] = null;
+                        }
+                    }
+
+                    function t(M $m): void {
+                        if (!$m->p instanceof C) {
+                            return;
+                        }
+
+                        $m->clearP();
+
+                        if ($m->p instanceof C) {
+                            echo "still set";
+                        }
+                    }',
+            ],
+            'magicPropertyIsForgottenAfterCallOfReceiverOfSeveralTypes' => [
+                'code' => '<?php
+                    final class C {}
+
+                    /** @property int|C|null $p */
+                    final class Annotated {
+                        /** @var array<string, int|C|null> */
+                        private array $data = [];
+
+                        /** @return int|C|null */
+                        public function __get(string $name) {
+                            return $this->data[$name] ?? null;
+                        }
+
+                        public function reset(): void {
+                            $this->data = [];
+                        }
+                    }
+
+                    /** @psalm-no-seal-properties */
+                    final class Unannotated {
+                        /** @var array<string, int|C|null> */
+                        private array $data = [];
+
+                        /** @return int|C|null */
+                        public function __get(string $name) {
+                            return $this->data[$name] ?? null;
+                        }
+
+                        public function reset(): void {
+                            $this->data = [];
+                        }
+                    }
+
+                    final class Declared {
+                        public ?C $p = null;
+
+                        public function reset(): void {
+                            $this->p = null;
+                        }
+                    }
+
+                    final class Other {
+                        /** @var C|string|null */
+                        public $p = null;
+
+                        public int $q = 0;
+
+                        public function reset(): void {
+                            $this->q = 1;
+                        }
+                    }
+
+                    /** @param Annotated|Declared $x */
+                    function annotatedFirst($x): ?int {
+                        if (!$x->p instanceof C) {
+                            return null;
+                        }
+
+                        $x->reset();
+
+                        return is_int($x->p) ? $x->p : null;
+                    }
+
+                    /** @param Declared|Annotated $x */
+                    function annotatedLast($x): ?int {
+                        if (!$x->p instanceof C) {
+                            return null;
+                        }
+
+                        $x->reset();
+
+                        return is_int($x->p) ? $x->p : null;
+                    }
+
+                    /** @param Unannotated|Declared $x */
+                    function unannotatedFirst($x): ?int {
+                        if (!$x->p instanceof C) {
+                            return null;
+                        }
+
+                        $x->reset();
+
+                        return is_int($x->p) ? $x->p : null;
+                    }
+
+                    /** @param Declared|Unannotated $x */
+                    function unannotatedLast($x): ?int {
+                        if (!$x->p instanceof C) {
+                            return null;
+                        }
+
+                        $x->reset();
+
+                        return is_int($x->p) ? $x->p : null;
+                    }
+
+                    /**
+                     * @param Annotated|Other $x
+                     * @return int|C|null
+                     */
+                    function keepsWhatTheOtherTypeHeld($x) {
+                        if (!$x->p instanceof C) {
+                            return null;
+                        }
+
+                        $x->reset();
+
+                        return $x->p;
+                    }
+
+                    /** @param Annotated|Other $x */
+                    function inSwitchCase($x, int $i): void {
+                        if (!$x->p instanceof C) {
+                            return;
+                        }
+
+                        switch ($i) {
+                            case 1:
+                                $x->reset();
+                                break;
+
+                            default:
+                                break;
+                        }
+
+                        if ($x->p instanceof C) {
+                            echo "still set";
+                        }
+                    }',
+            ],
+            'magicPropertyIsForgottenAfterCallInTheSameCondition' => [
+                'code' => '<?php
+                    final class C {}
+
+                    /** @property ?C $p */
+                    final class M {
+                        /** @var array<string, ?C> */
+                        private array $data = [];
+
+                        public function __get(string $name): ?C {
+                            return $this->data[$name] ?? null;
+                        }
+
+                        public function reset(): bool {
+                            $this->data = [];
+
+                            return true;
+                        }
+                    }
+
+                    function t(M $m): void {
+                        if ($m->p instanceof C && $m->reset() && $m->p instanceof C) {
+                            echo "still set";
+                        }
+                    }',
+            ],
+            'magicPropertyIsForgottenAfterCallInSwitchCaseOrEarlierIteration' => [
+                'code' => '<?php
+                    final class C {}
+
+                    /** @property ?C $p */
+                    final class M {
+                        /** @var array<string, ?C> */
+                        private array $data = [];
+
+                        public function __get(string $name): ?C {
+                            return $this->data[$name] ?? null;
+                        }
+
+                        public function reset(): void {
+                            $this->data = [];
+                        }
+                    }
+
+                    function inSwitchCase(M $m, int $i): void {
+                        if (!$m->p instanceof C) {
+                            return;
+                        }
+
+                        switch ($i) {
+                            case 1:
+                                $m->reset();
+                                break;
+
+                            default:
+                                break;
+                        }
+
+                        if ($m->p instanceof C) {
+                            echo "still set";
+                        }
+                    }
+
+                    function inEarlierIteration(M $m): void {
+                        if (!$m->p instanceof C) {
+                            return;
+                        }
+
+                        foreach ([1, 2] as $_) {
+                            if ($m->p instanceof C) {
+                                echo "still set";
+                            }
+
+                            $m->reset();
+                        }
+                    }',
+            ],
+            'magicPropertyOfGenericClassIsForgottenAfterCallWritingBackingProperty' => [
+                'code' => '<?php
+                    final class C {}
+
+                    /**
+                     * @template T
+                     * @property T $p
+                     */
+                    final class M {
+                        /** @var T */
+                        private $value;
+
+                        /** @param T $value */
+                        public function __construct($value) {
+                            $this->value = $value;
+                        }
+
+                        /** @return T */
+                        public function __get(string $name) {
+                            return $this->value;
+                        }
+
+                        /** @param T $value */
+                        public function replace($value): void {
+                            $this->value = $value;
+                        }
+                    }
+
+                    /** @param M<?C> $m */
+                    function t(M $m): void {
+                        if (!$m->p instanceof C) {
+                            return;
+                        }
+
+                        $m->replace(null);
+                        $p = $m->p;
+                        /** @psalm-check-type-exact $p = ?C */
+                    }',
+            ],
         ];
     }
 

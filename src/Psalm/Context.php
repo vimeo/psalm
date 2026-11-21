@@ -2000,6 +2000,17 @@ final class Context
     }
 
     /**
+     * Forgets what is known of a property (`$a->p`), and of what it holds, after a call may have written it
+     *
+     * @internal
+     */
+    public function forgetWrittenProperty(string $property_id): void
+    {
+        $this->forgetPropertyDescendents($property_id);
+        $this->forgetWrittenVar($property_id);
+    }
+
+    /**
      * Forgets a property (or an item of it) a call may have written. One bound to variables by reference stays bound
      * to them, and now holds whatever it is declared to hold
      */
