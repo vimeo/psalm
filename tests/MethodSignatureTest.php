@@ -2163,6 +2163,15 @@ final class MethodSignatureTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'finalMethodOfAReflectedNativeClassCannotBeOverridden' => [
+                'code' => '<?php
+                    final class P extends Phar {
+                        public static function apiVersion(): string {
+                            return "1.1.1";
+                        }
+                    }',
+                'error_message' => 'MethodSignatureMismatch',
+            ],
             'staticTypeArgumentStillChecksDocumentedReturnType' => [
                 'code' => '<?php
                     /** @template T */
