@@ -17034,6 +17034,19 @@ final class TaintTest extends TestCase
                 'error_message' => 'TaintedShell',
                 'php_version' => '8.1',
             ],
+            'taintReturnedByAFirstClassCallableOfAStaticMethod' => [
+                'code' => '<?php // --taint-analysis
+                    final class K {
+                        public static function id(string $s): string {
+                            return $s;
+                        }
+                    }
+
+                    $f = K::id(...);
+                    echo $f((string) $_GET["a"]);',
+                'error_message' => 'TaintedHtml',
+                'php_version' => '8.1',
+            ],
             'taintPassedToTheSinkOfACalledInstanceMethodClosure' => [
                 'code' => '<?php
                     final class Shell {
