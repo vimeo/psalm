@@ -648,6 +648,22 @@ final class AtomicPropertyFetchAnalyzer
             $class_property_type = TypeVariableTracker::resolveTypeVariables($class_property_type, $codebase);
         }
 
+        // a shape the object also has narrows what the property holds (`V&object{x: string}`), before the flags and
+        // the taints of the fetch are set on it
+        if (!$in_assignment) {
+            foreach ($intersection_types as $intersection_type) {
+                if ($intersection_type instanceof TObjectWithProperties
+                    && isset($intersection_type->properties[$prop_name])
+                ) {
+                    $class_property_type = (Type::intersectUnionTypes(
+                        $class_property_type,
+                        $intersection_type->properties[$prop_name],
+                        $codebase,
+                    ) ?? $class_property_type)->setParentNodes($class_property_type->parent_nodes);
+                }
+            }
+        }
+
         if (!self::isFreeToAccess($statements_analyzer, $stmt, $class_storage)) {
             if (UnsetAnalyzer::writesFetchedProperty($context, $stmt, $class_property_type)) {
                 if (!$unset_charged) {
