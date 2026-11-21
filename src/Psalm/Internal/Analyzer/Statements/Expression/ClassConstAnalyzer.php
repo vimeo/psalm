@@ -19,6 +19,7 @@ use Psalm\Internal\Analyzer\NamespaceAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
+use Psalm\Internal\Codebase\PhpDeprecations;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\TypeExpander;
@@ -56,6 +57,7 @@ use Psalm\Type\Atomic\TTemplateParamClass;
 use Psalm\Type\Union;
 use ReflectionProperty;
 
+use function array_values;
 use function assert;
 use function explode;
 use function in_array;
@@ -643,6 +645,25 @@ final class ClassConstAnalyzer
                 ),
                 $statements_analyzer->getSuppressedIssues(),
             );
+        } elseif (!$const_class_storage->user_defined) {
+            $builtin_message = PhpDeprecations::getClassConstantMessage(
+                [
+                    $const_class_storage->name,
+                    ...array_values($const_class_storage->parent_classes),
+                    ...array_values($const_class_storage->class_implements),
+                ],
+                $const_name,
+            );
+
+            if ($builtin_message !== null) {
+                IssueBuffer::maybeAdd(
+                    new DeprecatedConstant(
+                        $builtin_message,
+                        new CodeLocation($statements_analyzer->getSource(), $stmt),
+                    ),
+                    $statements_analyzer->getSuppressedIssues(),
+                );
+            }
         }
 
         $class_keyword = $stmt->class instanceof PhpParser\Node\Name
@@ -787,18 +808,23 @@ final class ClassConstAnalyzer
             if ($parent_const_storage !== null) {
                 assert($parent_classlike_storage !== null);
 
+                // without a docblock type, the type the parent constant declares natively is what overrides must keep
+                $parent_type = $parent_const_storage->type_location === null && $parent_const_storage->signature_type
+                    ? $parent_const_storage->signature_type
+                    : $parent_const_storage->type;
+
                 // Check covariance
                 if ($const_storage->type !== null
-                    && $parent_const_storage->type !== null
+                    && $parent_type !== null
                     && !UnionTypeComparator::isContainedBy(
                         $codebase,
                         $const_storage->type,
-                        $parent_const_storage->type,
+                        $parent_type,
                     )
                 ) {
                     if (UnionTypeComparator::isContainedBy(
                         $codebase,
-                        $parent_const_storage->type,
+                        $parent_type,
                         $const_storage->type,
                     )) {
                         // Contravariant
@@ -806,7 +832,7 @@ final class ClassConstAnalyzer
                             new LessSpecificClassConstantType(
                                 "The type \"{$const_storage->type->getId()}\" for {$class_storage->name}::"
                                     . "{$const_name} is more general than the type "
-                                    . "\"{$parent_const_storage->type->getId()}\" inherited from "
+                                    . "\"{$parent_type->getId()}\" inherited from "
                                     . "{$parent_classlike_storage->name}::{$const_name}",
                                 $type_location,
                                 "{$class_storage->name}::{$const_name}",
@@ -819,7 +845,7 @@ final class ClassConstAnalyzer
                             new InvalidClassConstantType(
                                 "The type \"{$const_storage->type->getId()}\" for {$class_storage->name}::"
                                     . "{$const_name} does not satisfy the type "
-                                    . "\"{$parent_const_storage->type->getId()}\" inherited from "
+                                    . "\"{$parent_type->getId()}\" inherited from "
                                     . "{$parent_classlike_storage->name}::{$const_name}",
                                 $type_location,
                                 "{$class_storage->name}::{$const_name}",
