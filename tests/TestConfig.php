@@ -73,7 +73,7 @@ final class TestConfig extends Config
         $this->setIncludeCollector(new IncludeCollector());
 
         // the analysed snippets depend on no package, not even the ones Psalm requires
-        $this->project_packages = [];
+        $this->setProjectPackages([]);
 
         $this->collectPredefinedConstants();
         $this->collectPredefinedFunctions();
