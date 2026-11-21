@@ -62,6 +62,10 @@ final class TextDocument
      */
     public function didOpen(TextDocumentItem $textDocument): void
     {
+        if (!$this->server->isFileUri($textDocument->uri)) {
+            return;
+        }
+
         $this->server->logDebug(
             'textDocument/didOpen',
             ['version' => $textDocument->version, 'uri' => $textDocument->uri],
@@ -85,6 +89,10 @@ final class TextDocument
      */
     public function didSave(TextDocumentIdentifier $textDocument, ?string $text = null): void
     {
+        if (!$this->server->isFileUri($textDocument->uri)) {
+            return;
+        }
+
         $this->server->logDebug(
             'textDocument/didSave',
             ['uri' => (array) $textDocument],
@@ -107,6 +115,10 @@ final class TextDocument
      */
     public function didChange(VersionedTextDocumentIdentifier $textDocument, array $contentChanges): void
     {
+        if (!$this->server->isFileUri($textDocument->uri)) {
+            return;
+        }
+
         $this->server->logDebug(
             'textDocument/didChange',
             ['version' => $textDocument->version, 'uri' => $textDocument->uri],
@@ -142,6 +154,10 @@ final class TextDocument
      */
     public function didClose(TextDocumentIdentifier $textDocument): void
     {
+        if (!$this->server->isFileUri($textDocument->uri)) {
+            return;
+        }
+
         $this->server->logDebug(
             'textDocument/didClose',
             ['uri' => $textDocument->uri],
@@ -162,6 +178,10 @@ final class TextDocument
      */
     public function definition(TextDocumentIdentifier $textDocument, Position $position): ?Location
     {
+        if (!$this->server->isFileUri($textDocument->uri)) {
+            return null;
+        }
+
         if (!$this->server->client->clientConfiguration->provideDefinition) {
             return null;
         }
@@ -213,6 +233,10 @@ final class TextDocument
      */
     public function hover(TextDocumentIdentifier $textDocument, Position $position): ?Hover
     {
+        if (!$this->server->isFileUri($textDocument->uri)) {
+            return null;
+        }
+
         if (!$this->server->client->clientConfiguration->provideHover) {
             return null;
         }
@@ -268,6 +292,10 @@ final class TextDocument
      */
     public function completion(TextDocumentIdentifier $textDocument, Position $position): ?CompletionList
     {
+        if (!$this->server->isFileUri($textDocument->uri)) {
+            return null;
+        }
+
         if (!$this->server->client->clientConfiguration->provideCompletion) {
             return null;
         }
@@ -330,6 +358,10 @@ final class TextDocument
      */
     public function signatureHelp(TextDocumentIdentifier $textDocument, Position $position): ?SignatureHelp
     {
+        if (!$this->server->isFileUri($textDocument->uri)) {
+            return null;
+        }
+
         if (!$this->server->client->clientConfiguration->provideSignatureHelp) {
             return null;
         }
@@ -402,6 +434,10 @@ final class TextDocument
      */
     public function codeAction(TextDocumentIdentifier $textDocument, CodeActionContext $context): ?array
     {
+        if (!$this->server->isFileUri($textDocument->uri)) {
+            return null;
+        }
+
         if (!$this->server->client->clientConfiguration->provideCodeActions) {
             return null;
         }

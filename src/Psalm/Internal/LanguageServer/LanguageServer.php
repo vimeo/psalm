@@ -987,6 +987,20 @@ final class LanguageServer extends Dispatcher
     }
 
     /**
+     * Whether the URI names a file (`file://`), rather than e.g. an unsaved `untitled:` document
+     *
+     * @psalm-pure
+     */
+    public function isFileUri(string $uri): bool
+    {
+        $fragments = parse_url($uri);
+
+        return $fragments !== false
+            && ($fragments['scheme'] ?? null) === 'file'
+            && isset($fragments['path']);
+    }
+
+    /**
      * Transforms URI into file path
      */
     public function uriToPath(string $uri): string
