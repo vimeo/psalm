@@ -310,8 +310,12 @@ final class TemplateStandinTypeReplacer
             );
         }
 
+        // a template of the class being analysed here is the caller's own: a call's bindings of the receiver's class
+        // templates were applied to the declared type before
         if ($atomic_type instanceof TTemplateParam
             && isset($template_result->lower_bounds[$atomic_type->param_name][$atomic_type->defining_class])
+            && ($atomic_type->defining_class !== $calling_class
+                || $template_result->isForAnotherObject($calling_class))
         ) {
             $most_specific_type = self::getMostSpecificTypeFromBounds(
                 $template_result->lower_bounds[$atomic_type->param_name][$atomic_type->defining_class],
@@ -798,7 +802,12 @@ final class TemplateStandinTypeReplacer
         bool $was_single,
         bool &$had_template,
     ): array {
-        if ($atomic_type->defining_class === $calling_class) {
+        // the templates of the class being analysed are the types of the object the code runs for, unless the
+        // result is for another object: the receiver of a call (`$other->add()` inside the class of `$other`) or
+        // the object a `new` constructs
+        if ($atomic_type->defining_class === $calling_class
+            && !$template_result->isForAnotherObject($calling_class)
+        ) {
             return [$atomic_type];
         }
 
@@ -869,7 +878,8 @@ final class TemplateStandinTypeReplacer
                     null,
                 );
 
-                if ($depth < 10) {
+                // the receiver's type arguments are in the caller's terms already: their templates are the caller's
+                if ($depth < 10 && !$template_result->of_receiver) {
                     $replacement_type = self::replace(
                         $replacement_type,
                         $template_result,
