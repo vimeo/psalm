@@ -89,7 +89,7 @@ final class CoreStubsTest extends TestCase
                 '$period' => 'DatePeriod<string, DateTime>',
                 '$dt' => 'DateTime|null',
             ],
-            'ignored_issues' => [],
+            'ignored_issues' => ['DeprecatedMethod'],
             'php_version' => '8.0',
         ];
         yield 'DatePeriod implements only Traversable on PHP 7' => [
@@ -98,7 +98,7 @@ final class CoreStubsTest extends TestCase
             $period = new DatePeriod("R4/2012-07-01T00:00:00Z/P7D");
             if ($period instanceof IteratorAggregate) {}',
             'assertions' => [],
-            'ignored_issues' => [],
+            'ignored_issues' => ['DeprecatedMethod'],
             'php_version' => '7.3',
         ];
         yield 'DatePeriod implements IteratorAggregate on PHP 8' => [
@@ -107,7 +107,7 @@ final class CoreStubsTest extends TestCase
             $period = new DatePeriod("R4/2012-07-01T00:00:00Z/P7D");
             if ($period instanceof IteratorAggregate) {}',
             'assertions' => [],
-            'ignored_issues' => ['RedundantCondition'],
+            'ignored_issues' => ['RedundantCondition', 'DeprecatedMethod'],
             'php_version' => '8.0',
         ];
         yield 'DatePeriod with TDate template param does not trigger TooManyTemplateParams' => [
@@ -165,7 +165,7 @@ final class CoreStubsTest extends TestCase
             'assertions' => [
                 '$iterator' => 'Iterator<int, DateTime>',
             ],
-            'ignored_issues' => [],
+            'ignored_issues' => ['DeprecatedMethod'],
             'php_version' => '8.2',
         ];
         yield 'sprintf yields a non-empty-string for non-empty-string value' => [
@@ -494,7 +494,7 @@ final class CoreStubsTest extends TestCase
                 $globBrace = glob('abc', GLOB_BRACE);
                 PHP,
         ];
-        yield "ownerDocument's type is non-nullable DOMDocument and always null on DOMDocument itself" => [
+        yield "ownerDocument's type is nullable DOMDocument and always null on DOMDocument itself" => [
             'code' => '<?php
                 $a = (new DOMDocument())->ownerDocument;
                 $b = (new DOMNode())->ownerDocument;
@@ -503,9 +503,19 @@ final class CoreStubsTest extends TestCase
             ',
             'assertions' => [
                 '$a===' => 'null',
-                '$b===' => 'DOMDocument',
-                '$c===' => 'DOMDocument',
-                '$d===' => 'DOMDocument',
+                '$b===' => 'DOMDocument|null',
+                '$c===' => 'DOMDocument|null',
+                '$d===' => 'DOMDocument|null',
+            ],
+        ];
+        yield 'ownerDocument of a node without a document is checked before it is used' => [
+            'code' => '<?php
+                $node = new DOMElement("foo");
+                assert($node->ownerDocument instanceof DOMDocument);
+                $document = $node->ownerDocument;
+            ',
+            'assertions' => [
+                '$document===' => 'DOMDocument',
             ],
         ];
     }

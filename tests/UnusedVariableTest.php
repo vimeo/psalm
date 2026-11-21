@@ -759,6 +759,8 @@ final class UnusedVariableTest extends TestCase
                     }
 
                     bar();',
+                'assertions' => [],
+                'ignored_issues' => ['DeprecatedSyntax'],
             ],
             'foreachReassigned' => [
                 'code' => '<?php
@@ -1722,6 +1724,8 @@ final class UnusedVariableTest extends TestCase
                         $m = new \ReflectionProperty($mock, "bar");
                         $m->setValue([get_class($mock) => "hello"]);
                     }',
+                'assertions' => [],
+                'ignored_issues' => ['DeprecatedMethod'],
             ],
             'defineBeforeAssignmentInConditional' => [
                 'code' => '<?php
@@ -2674,6 +2678,8 @@ final class UnusedVariableTest extends TestCase
 
                         return $arr;
                     }',
+                'assertions' => [],
+                'ignored_issues' => ['DeprecatedFunction'],
             ],
             'memoryFree' => [
                 'code' => '<?php

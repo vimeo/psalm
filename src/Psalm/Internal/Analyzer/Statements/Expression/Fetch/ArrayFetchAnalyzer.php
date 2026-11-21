@@ -106,6 +106,7 @@ use Psalm\Type\MutableUnion;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
+use function array_all;
 use function array_keys;
 use function array_map;
 use function array_pop;
@@ -910,7 +911,13 @@ final class ArrayFetchAnalyzer
 
         $array_access_type = null;
 
-        if ($offset_type->isNull()) {
+        $only_array_access_objects = array_all(
+            $array_type->getAtomicTypes(),
+            static fn(Atomic $atomic): bool => $atomic instanceof TNamedObject
+                && self::isKnownArrayAccessObject($codebase, $atomic),
+        );
+
+        if ($offset_type->isNull() && !$only_array_access_objects) {
             IssueBuffer::maybeAdd(
                 new NullArrayOffset(
                     'Cannot access value on variable ' .
@@ -936,7 +943,7 @@ final class ArrayFetchAnalyzer
         }
 
         if ($offset_type->isNullable()) {
-            if (!$offset_type->ignore_nullable_issues) {
+            if (!$offset_type->ignore_nullable_issues && !$only_array_access_objects) {
                 IssueBuffer::maybeAdd(
                     new PossiblyNullArrayOffset(
                         'Cannot access value on variable ' . self::describeArrayVar($extended_var_id, $stmt)
@@ -2400,6 +2407,25 @@ final class ArrayFetchAnalyzer
                 || $codebase->classExtendsOrImplements($part->value, 'ArrayAccess')
                 || $codebase->classExtendsOrImplements($part->value, 'SimpleXMLElement')
                 || $codebase->interfaceExtends($part->value, 'ArrayAccess')
+            ) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * offsetGet() and its siblings decide which offsets such an object accepts, and the calls of them check it
+     */
+    private static function isKnownArrayAccessObject(Codebase $codebase, TNamedObject $type): bool
+    {
+        foreach ([$type, ...$type->extra_types] as $part) {
+            if ($part instanceof TNamedObject
+                && $codebase->classOrInterfaceExists($part->value)
+                && (strtolower($part->value) === 'arrayaccess'
+                    || $codebase->classExtendsOrImplements($part->value, 'ArrayAccess')
+                    || $codebase->interfaceExtends($part->value, 'ArrayAccess'))
             ) {
                 return true;
             }

@@ -994,6 +994,14 @@ final class TypeParseTest extends TestCase
         );
     }
 
+    public function testCallableWithIntersectionByReferenceParam(): void
+    {
+        $this->assertSame(
+            'callable[impure](A&B &$_, C &...$_):void',
+            (string)Type::parseString('callable(A&B &$foo, C &...$baz) : void'),
+        );
+    }
+
     public function testCallableWithByReferenceVariadicParam(): void
     {
         $this->assertSame(
