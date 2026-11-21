@@ -287,6 +287,19 @@ final class TypeParseTest extends TestCase
         $this->assertSame('list{int, ...<string>}', Type::parseString('list{int, ...<string>}')->getId());
     }
 
+    public function testUnsealedArrayWithAGenericArrayAfterTheEllipsis(): void
+    {
+        $this->assertSame(
+            'array{a: int, ...<string, string>}',
+            Type::parseString('array{a: int, ...array<string, string>}')->getId(),
+        );
+    }
+
+    public function testUnsealedListWithAListAfterTheEllipsis(): void
+    {
+        $this->assertSame('list{int, ...<string>}', Type::parseString('list{int, ...list<string>}')->getId());
+    }
+
     public function testUnsealedListComplex(): void
     {
         $this->assertSame('list{array{a: 123}, ...<123>}', Type::parseString('list{0: array{a: 123}, ...<123>}')->getId());
