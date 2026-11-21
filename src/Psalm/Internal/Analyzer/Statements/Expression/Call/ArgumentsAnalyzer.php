@@ -39,7 +39,7 @@ use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Internal\Type\TypeExpander;
-use Psalm\Internal\TypeVisitor\StarProjectionVisitor;
+use Psalm\Internal\TypeVisitor\TemplateTypeCollector;
 use Psalm\Internal\TypeVisitor\TypeVariableResolver;
 use Psalm\Issue\InvalidNamedArgument;
 use Psalm\Issue\InvalidPassByReference;
@@ -69,6 +69,7 @@ use UnexpectedValueException;
 
 use function array_all;
 use function array_any;
+use function array_intersect_key;
 use function array_key_first;
 use function array_keys;
 use function array_map;
@@ -87,6 +88,7 @@ use function is_string;
 use function ksort;
 use function max;
 use function min;
+use function preg_match;
 use function reset;
 use function str_contains;
 use function strtolower;
@@ -129,6 +131,10 @@ final class ArgumentsAnalyzer
         $was_inside_negation = $context->inside_negation;
         $context->inside_negation = false;
 
+        // assert() reconciles its own argument, not the arguments of another call inside it
+        $was_inside_assert = $context->inside_assert;
+        $context->inside_assert = $was_inside_assert && $method_id === 'assert';
+
         try {
             $result = self::analyzeArguments(
                 $statements_analyzer,
@@ -140,16 +146,15 @@ final class ArgumentsAnalyzer
             );
         } finally {
             $context->inside_negation = $was_inside_negation;
+            $context->inside_assert = $was_inside_assert;
         }
 
-        // the callee may call a closure it is given, also inside an array or an object, which may write what the
-        // closure captured by reference
+        // the callee may call a closure it is given, which may write what the closure captured by reference
         foreach ($args as $arg) {
             $written_var_ids = ClosureAnalyzer::analyzeVarIdsWrittenByCall(
                 $statements_analyzer,
                 $context,
                 $arg->value,
-                true,
             );
 
             foreach ($written_var_ids as $var_id => $_) {
@@ -180,6 +185,15 @@ final class ArgumentsAnalyzer
         $last_param = $function_params
             ? $function_params[count($function_params) - 1]
             : null;
+
+        foreach ($args as $arg) {
+            // PhpParser attaches the docblock in front of an argument to the argument, the expression is analysed
+            $arg_docblock = $arg->getDocComment();
+
+            if ($arg_docblock !== null) {
+                $arg->value->setAttribute(ExpressionAnalyzer::ARGUMENT_DOCBLOCK_ATTRIBUTE, $arg_docblock);
+            }
+        }
 
         // if this modifies the array type based on further args
         if (in_array($method_id, ['array_push', 'array_unshift'], true)
@@ -700,6 +714,11 @@ final class ArgumentsAnalyzer
                     $lower_bounds,
                     $codebase,
                 );
+
+                // nothing was inferred for the template yet: the closure parameter is not `never`
+                if ($new_bounds[$k][$kk]->isNever() && isset($template_result->template_types[$k][$kk])) {
+                    $new_bounds[$k][$kk] = $template_result->template_types[$k][$kk];
+                }
             }
         }
         // `T` of `@template TArray as array<T>` is only known through what `TArray` was given
@@ -1464,6 +1483,10 @@ final class ArgumentsAnalyzer
             }
         }
 
+        $postponed_by_ref_offsets = $method_id === 'extract' || $template_result === null
+            ? []
+            : self::getByRefOffsetsReadingLaterParams($template_result, $arg_function_params, $function_params);
+
         foreach ($args as $argument_offset => $arg) {
             if (!isset($arg_function_params[$argument_offset])) {
                 continue;
@@ -1473,6 +1496,7 @@ final class ArgumentsAnalyzer
 
             if ($arg_function_params[$argument_offset][$first_param_offset]->by_ref
                 && $method_id !== 'extract'
+                && !isset($postponed_by_ref_offsets[$argument_offset])
             ) {
                 if (self::handlePossiblyMatchingByRefParam(
                     $statements_analyzer,
@@ -1497,8 +1521,14 @@ final class ArgumentsAnalyzer
 
             $arg_value_type = $statements_analyzer->node_data->getType($arg->value);
 
+            // the docblock in front of the argument also covers what the check of the argument reports
+            $argument_suppressed_issues = ExpressionAnalyzer::addDocblockSuppressions(
+                $statements_analyzer,
+                $arg->value,
+            );
+
             foreach ($arg_function_params[$argument_offset] as $param_offset => $function_param) {
-                if (ArgumentAnalyzer::checkArgumentMatches(
+                $argument_matches = ArgumentAnalyzer::checkArgumentMatches(
                     $statements_analyzer,
                     $cased_method_id,
                     $method_id instanceof MethodIdentifier ? $method_id : null,
@@ -1518,9 +1548,38 @@ final class ArgumentsAnalyzer
                     $specialize_taint,
                     $in_call_map,
                     $static_is_called_class,
-                ) === false) {
+                );
+
+                if ($argument_matches === false) {
+                    $statements_analyzer->removeSuppressedIssues($argument_suppressed_issues);
+
                     return false;
                 }
+            }
+
+            $statements_analyzer->removeSuppressedIssues($argument_suppressed_issues);
+        }
+
+        // the out type of these by-ref params reads templates that later params bind: handled once they are bound
+        foreach ($postponed_by_ref_offsets as $argument_offset => $_) {
+            if (self::handlePossiblyMatchingByRefParam(
+                $statements_analyzer,
+                $codebase,
+                (string) $method_id,
+                $cased_method_id,
+                $last_param,
+                $function_params,
+                array_key_first($arg_function_params[$argument_offset]),
+                $args[$argument_offset],
+                $context,
+                $template_result,
+                $method_id instanceof MethodIdentifier ? $method_id : null,
+                $in_call_map ? null : $function_storage,
+                $code_location,
+                $specialize_taint,
+                $args,
+            ) === false) {
+                return null;
             }
         }
 
@@ -1555,6 +1614,7 @@ final class ArgumentsAnalyzer
 
                 foreach ($arg_function_params[$argument_offset] as $param_offset => $function_param) {
                     $sinks = self::getArgumentSinks(
+                        $statements_analyzer,
                         $cased_method_id,
                         $param_offset,
                         $args,
@@ -1702,6 +1762,85 @@ final class ArgumentsAnalyzer
         }
 
         return null;
+    }
+
+    /**
+     * The offsets of the by-ref arguments whose out type reads templates that only a later parameter binds, and
+     * whose own parameter type doesn't (the `TOutput` of exec() is bound by the by-ref argument itself)
+     *
+     * @param array<int, non-empty-array<int, FunctionLikeParameter>> $arg_function_params
+     * @param array<int, FunctionLikeParameter> $function_params
+     * @return array<int, true>
+     * @psalm-capabilities read-props
+     */
+    private static function getByRefOffsetsReadingLaterParams(
+        TemplateResult $template_result,
+        array $arg_function_params,
+        array $function_params,
+    ): array {
+        if ($template_result->template_types === []) {
+            return [];
+        }
+
+        $offsets = [];
+
+        foreach ($arg_function_params as $argument_offset => $params) {
+            $param = $params[array_key_first($params)];
+            $out_type = $param->by_ref ? $param->out_type : null;
+
+            if ($out_type === null) {
+                continue;
+            }
+
+            $out_template_names = self::getTemplateNames($out_type);
+
+            if ($out_template_names === []
+                || array_intersect_key($out_template_names, self::getTemplateNames($param->type)) !== []
+            ) {
+                continue;
+            }
+
+            $later_template_names = [];
+            $is_later = false;
+
+            foreach ($function_params as $function_param) {
+                if ($function_param->name === $param->name) {
+                    $is_later = true;
+                } elseif ($is_later) {
+                    $later_template_names += self::getTemplateNames($function_param->type);
+                }
+            }
+
+            if (array_intersect_key($out_template_names, $later_template_names) !== []) {
+                $offsets[$argument_offset] = true;
+            }
+        }
+
+        return $offsets;
+    }
+
+    /**
+     * The names of the templates $type uses anywhere, also through `key-of<T>`, `value-of<T>` and `T[K]`
+     *
+     * @return array<string, true>
+     * @psalm-pure
+     */
+    private static function getTemplateNames(?Union $type): array
+    {
+        if ($type === null) {
+            return [];
+        }
+
+        $collector = new TemplateTypeCollector(true);
+        $collector->traverseArray($type->getAtomicTypes());
+
+        $names = [];
+
+        foreach ($collector->getTemplateTypes() as $template_type) {
+            $names[$template_type->param_name] = true;
+        }
+
+        return $names;
     }
 
     /**
@@ -1874,13 +2013,8 @@ final class ArgumentsAnalyzer
                     );
 
                     if ($template_result->lower_bounds) {
-                        // the caller reads what the function-like leaves in the parameter, like a return type
                         $original_by_ref_out_type = TemplateInferredTypeReplacer::replace(
-                            StarProjectionVisitor::project(
-                                $original_by_ref_out_type,
-                                $template_result,
-                                $codebase,
-                            ),
+                            $original_by_ref_out_type,
                             $template_result,
                             $codebase,
                         );
@@ -2748,6 +2882,26 @@ final class ArgumentsAnalyzer
                         $default_type = new Union([$default_type_atomic]);
                     }
 
+                    // a default that is one of the own atomic types of the parameter (`null` for `T|null`) says
+                    // nothing about a template that an argument bound already, and that has no default of its own
+                    // to fall back to
+                    if ($default_type->isSingle()
+                        && !$param->type->isSingle()
+                        && isset($param->type->getAtomicTypes()[$default_type->getSingleAtomic()->getKey()])
+                        && array_all(
+                            $param->type->getTemplateTypes(),
+                            static fn(TTemplateParam $template_type): bool
+                                => !isset($function_storage?->template_defaults[$template_type->param_name])
+                                && isset(
+                                    $template_result->lower_bounds[$template_type->param_name][
+                                        $template_type->defining_class
+                                    ],
+                                ),
+                        )
+                    ) {
+                        continue;
+                    }
+
                     TemplateStandinTypeReplacer::fillTemplateResult(
                         $param->type,
                         $template_result,
@@ -2887,19 +3041,27 @@ final class ArgumentsAnalyzer
     /**
      * The sinks of the argument passed as the parameter at $param_offset of a call of $function_id. The value given
      * to curl_setopt() is the sink of its option (see CURL_OPTION_SINKS). An option the analysis can't tell may be
-     * any of them.
+     * any of them. A `Location` header given to header() is a redirect (see getLocationHeaderSinks()).
      *
      * @param array<int, PhpParser\Node\Arg> $args
      * @param array<int, FunctionLikeParameter> $function_params
      * @psalm-capabilities read-props
      */
     private static function getArgumentSinks(
+        StatementsAnalyzer $statements_analyzer,
         string $function_id,
         int $param_offset,
         array $args,
         array $function_params,
         int $sinks,
     ): int {
+        if ($param_offset === 0
+            && strtolower($function_id) === 'header'
+            && ($header_arg = self::getArgForParam($args, $function_params, 'header'))
+        ) {
+            return self::getLocationHeaderSinks($statements_analyzer, $header_arg->value) ?? $sinks;
+        }
+
         if ($param_offset !== 2
             || strtolower($function_id) !== 'curl_setopt'
             || !($option_arg = self::getArgForParam($args, $function_params, 'option'))
@@ -2914,6 +3076,39 @@ final class ArgumentsAnalyzer
         }
 
         return self::CURL_OPTION_SINKS[strtoupper($option->name->toString())] ?? 0;
+    }
+
+    /**
+     * The sinks of a header given to header() that the analysis can tell is a `Location` header: its value is the URL
+     * the client is sent to (`redirect` taint), where URL syntax can change the path, query or fragment
+     * (`url_component` and `url_path` taints), apart from those a start fixing the server removes (see
+     * ConcatAnalyzer::getTaintsRemovedAfterUrlOrigin()). The name of the header is fixed, and header() rejects a
+     * line break, so it can't add another header. Null if it can be any header.
+     *
+     * @psalm-capabilities read-props
+     */
+    private static function getLocationHeaderSinks(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr $header,
+    ): ?int {
+        $prefixes = ConcatAnalyzer::getLiteralPrefixes($statements_analyzer, $header);
+
+        if ($prefixes === []) {
+            return null;
+        }
+
+        $urls = [];
+
+        foreach ($prefixes as $prefix) {
+            if (preg_match('/^\s*location\s*:\s*(.*)$/is', $prefix, $matches) !== 1) {
+                return null;
+            }
+
+            $urls[] = $matches[1] ?? '';
+        }
+
+        return (TaintKind::INPUT_REDIRECT | TaintKind::INPUT_URL_COMPONENT | TaintKind::INPUT_URL_PATH)
+            & ~ConcatAnalyzer::getTaintsRemovedAfterUrlOrigins($urls);
     }
 
     /**

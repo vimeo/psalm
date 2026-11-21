@@ -687,6 +687,9 @@ final class AtomicStaticCallAnalyzer
                 );
 
                 if ($is_dynamic_this_method) {
+                    // the forwarded instance call analyses the arguments
+                    $args_analyzed = true;
+
                     return self::forwardCallToInstanceMethod(
                         $statements_analyzer,
                         $stmt,
@@ -1066,6 +1069,7 @@ final class AtomicStaticCallAnalyzer
             $context->mergeFunctionExceptions(
                 $pseudo_method_storage,
                 new CodeLocation($statements_analyzer, $stmt),
+                $statements_analyzer->getCodebase(),
             );
         }
 
@@ -1115,6 +1119,13 @@ final class AtomicStaticCallAnalyzer
         ) === false) {
             return false;
         }
+
+        $template_result->markStarBindings(ClassTemplateParamCollector::getStarBoundTemplates(
+            $codebase,
+            $static_class_storage,
+            $lhs_type_part,
+            $found_generic_params,
+        ));
 
         // what `__callStatic` does (if it implements the pseudo-method), and what the purity
         // templates of the pseudo-method (`@method static int run(Closure[_](): int $f)`) are bound to
@@ -1326,6 +1337,12 @@ final class AtomicStaticCallAnalyzer
         );
 
         $template_result = new TemplateResult([], $found_generic_params ?? []);
+        $template_result->markStarBindings(ClassTemplateParamCollector::getStarBoundTemplates(
+            $codebase,
+            $class_storage,
+            $lhs_type_part,
+            $found_generic_params,
+        ));
 
         if ($inferred_template_result) {
             $template_result->lower_bounds += $inferred_template_result->lower_bounds;

@@ -18,7 +18,6 @@ use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Internal\Type\TypeExpander;
-use Psalm\Internal\TypeVisitor\StarProjectionVisitor;
 use Psalm\Storage\Capabilities;
 use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Storage\FunctionLikeStorage;
@@ -293,11 +292,32 @@ final class CallableTypeComparator
             }
 
             try {
-                $method_id = $codebase->methods->getDeclaringMethodId($method_id);
+                $declaring_method_id = $codebase->methods->getDeclaringMethodId($method_id);
 
-                if (!$method_id) {
-                    return false;
+                if (!$declaring_method_id) {
+                    // a method declared by `@method` is called through __call() or __callStatic()
+                    $class_storage = $codebase->classlike_storage_provider->get($method_id->fq_class_name);
+                    $pseudo_method = $class_storage->pseudo_methods[$method_id->method_name]
+                        ?? $class_storage->pseudo_static_methods[$method_id->method_name]
+                        ?? null;
+
+                    if ($pseudo_method === null) {
+                        return false;
+                    }
+
+                    return self::isContainedBy(
+                        $codebase,
+                        new TCallable(
+                            $pseudo_method->params,
+                            $pseudo_method->return_type,
+                            self::getCallableCapabilities($pseudo_method, []),
+                        ),
+                        $container_type_part,
+                        $atomic_comparison_result,
+                    );
                 }
+
+                $method_id = $declaring_method_id;
 
                 if (!$codebase->methods->hasStorage($method_id)) {
                     return false;
@@ -329,43 +349,6 @@ final class CallableTypeComparator
         }
 
         return true;
-    }
-
-    /**
-     * The callable of a method of a generic object (`[$box, 'set']`, an invokable `Box<int>`) with the class
-     * templates bound by the object: calling it writes to the method's parameters, so `*` ones accept nothing
-     */
-    private static function bindReceiverTemplates(
-        Codebase $codebase,
-        TCallable $callable,
-        TGenericObject $receiver,
-        MethodIdentifier $declaring_method_id,
-    ): TCallable {
-        if (!$codebase->classOrInterfaceExists($receiver->value)) {
-            return $callable;
-        }
-
-        $receiver_template_types = ClassTemplateParamCollector::collect(
-            $codebase,
-            $codebase->methods->getClassLikeStorageForMethod($declaring_method_id),
-            $codebase->classlike_storage_provider->get($receiver->value),
-            $declaring_method_id->method_name,
-            $receiver,
-        );
-
-        if ($receiver_template_types === null) {
-            return $callable;
-        }
-
-        $template_result = new TemplateResult([], $receiver_template_types);
-
-        $bound_callable = TemplateInferredTypeReplacer::replace(
-            StarProjectionVisitor::project(new Union([$callable]), $template_result, $codebase),
-            $template_result,
-            $codebase,
-        )->getSingleAtomic();
-
-        return $bound_callable instanceof TCallable ? $bound_callable : $callable;
     }
 
     private static function getCallableFromMethodId(
@@ -414,8 +397,39 @@ final class CallableTypeComparator
                 $codebase,
             );
 
-            if ($callable_object instanceof TGenericObject) {
-                $callable = self::bindReceiverTemplates($codebase, $callable, $callable_object, $declaring_method_id);
+            // the templates of the class are what the generic object has for them
+            if ($callable_object instanceof TGenericObject
+                && $codebase->classOrInterfaceExists($callable_object->value)
+            ) {
+                $callable_class_storage = $codebase->classlike_storage_provider->get($callable_object->value);
+                $class_template_params = ClassTemplateParamCollector::collect(
+                    $codebase,
+                    $codebase->methods->getClassLikeStorageForMethod($method_id),
+                    $callable_class_storage,
+                    $method_id->method_name,
+                    $callable_object,
+                );
+
+                if ($class_template_params !== null) {
+                    // what the method returns from a `Box<*>` is as unknown as the receiver
+                    $class_template_result = new TemplateResult([], $class_template_params);
+                    $class_template_result->markStarBindings(ClassTemplateParamCollector::getStarBoundTemplates(
+                        $codebase,
+                        $callable_class_storage,
+                        $callable_object,
+                        $class_template_params,
+                    ));
+
+                    $replaced = TemplateInferredTypeReplacer::replace(
+                        new Union([$callable]),
+                        $class_template_result,
+                        $codebase,
+                    )->getSingleAtomic();
+
+                    if ($replaced instanceof TCallable) {
+                        $callable = $replaced;
+                    }
+                }
             }
 
             // Resolve method-level templates against the expected callable shape, so
@@ -818,15 +832,6 @@ final class CallableTypeComparator
                         ),
                         callable_id: strtolower((string) $declaring_method_id),
                     );
-
-                    if ($input_type_part instanceof Atomic\TGenericObject) {
-                        $callable = self::bindReceiverTemplates(
-                            $codebase,
-                            $callable,
-                            $input_type_part,
-                            $declaring_method_id,
-                        );
-                    }
 
                     if ($template_result) {
                         $callable = TemplateInferredTypeReplacer::replace(

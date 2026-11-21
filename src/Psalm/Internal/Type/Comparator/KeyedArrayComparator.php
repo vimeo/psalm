@@ -7,7 +7,6 @@ namespace Psalm\Internal\Type\Comparator;
 use Psalm\Codebase;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
-use Psalm\Internal\TypeVisitor\StarProjectionVisitor;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TGenericObject;
@@ -146,6 +145,8 @@ final class KeyedArrayComparator
                             || $property_type_comparison->to_string_cast === true;
                     }
                 }
+
+                $atomic_comparison_result?->addTypeVariableBounds($property_type_comparison);
             }
         }
         if ($container_sealed && $input_properties) {
@@ -233,6 +234,8 @@ final class KeyedArrayComparator
                     }
                     $all_types_contain = false;
                 }
+
+                $atomic_comparison_result?->addTypeVariableBounds($property_type_comparison);
             }
         }
 
@@ -277,6 +280,8 @@ final class KeyedArrayComparator
                     }
                     $all_types_contain = false;
                 }
+
+                $atomic_comparison_result?->addTypeVariableBounds($param_comparison);
             }
         }
 
@@ -346,6 +351,9 @@ final class KeyedArrayComparator
         return $all_types_contain;
     }
 
+    /**
+     * @psalm-capabilities read-props|write-this-props|write-props|write-refs
+     */
     public static function coerceToObjectWithProperties(
         Codebase $codebase,
         TNamedObject $input_type_part,
@@ -403,21 +411,14 @@ final class KeyedArrayComparator
             }
         }
 
-        $template_result = new TemplateResult(
-            $storage->template_types ?? [],
-            $inferred_lower_bounds,
-        );
-
-        // the properties are read from the object, like a property fetch reads them
         $replaced_object = TemplateInferredTypeReplacer::replace(
-            StarProjectionVisitor::project(
-                new Union([
-                    new TObjectWithProperties($properties),
-                ]),
-                $template_result,
-                $codebase,
+            new Union([
+                new TObjectWithProperties($properties),
+            ]),
+            new TemplateResult(
+                $storage->template_types ?? [],
+                $inferred_lower_bounds,
             ),
-            $template_result,
             $codebase,
         );
 

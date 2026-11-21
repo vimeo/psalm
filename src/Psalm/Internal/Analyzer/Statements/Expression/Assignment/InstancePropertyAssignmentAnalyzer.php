@@ -247,21 +247,9 @@ final class InstancePropertyAssignmentAnalyzer
                 && ($union_comparison_results->type_variable_lower_bounds
                     || $union_comparison_results->type_variable_upper_bounds)
             ) {
-                // transfer any type-variable bounds recorded while checking
-                // the assignment; a value that only reaches an upper bound
-                // through mixed is reported as MixedPropertyTypeCoercion at
-                // reconciliation
-                foreach ($union_comparison_results->type_variable_upper_bounds as [$_, $upper_bound]) {
-                    $upper_bound->property_requirement_id = $assigned_property->id;
-                }
-
-                foreach ($union_comparison_results->type_variable_lower_bounds as [$_, $lower_bound]) {
-                    $lower_bound->property_value_id = $assigned_property->id;
-                }
-
-                $statements_analyzer->type_variable_tracker->addBounds(
-                    $union_comparison_results->type_variable_lower_bounds,
-                    $union_comparison_results->type_variable_upper_bounds,
+                $statements_analyzer->type_variable_tracker->addPropertyAssignmentBounds(
+                    $union_comparison_results,
+                    $assigned_property->id,
                     new CodeLocation(
                         $statements_analyzer->getSource(),
                         $assignment_value ?? $stmt,
@@ -1854,7 +1842,7 @@ final class InstancePropertyAssignmentAnalyzer
                     $localizing_type_part,
                     $class_storage,
                     $declaring_class_storage,
-                    true,
+                    false,
                 );
             }
 
@@ -1917,6 +1905,7 @@ final class InstancePropertyAssignmentAnalyzer
                     $lhs_type_part,
                     $codebase->classlike_storage_provider->get($fq_class_name),
                     $declaring_class_storage,
+                    false,
                 );
             }
         }

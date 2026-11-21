@@ -774,6 +774,33 @@ final class Populator
         }
     }
 
+    /**
+     * Whether two methods document the same return type and parameter types, so that either of them may document
+     * a method implementing both
+     *
+     * @psalm-mutation-free
+     */
+    private static function documentSameSignature(MethodStorage $first, ?MethodStorage $second): bool
+    {
+        if ($second === null) {
+            return false;
+        }
+
+        if ($first->return_type?->getId() !== $second->return_type?->getId()
+            || count($first->params) !== count($second->params)
+        ) {
+            return false;
+        }
+
+        foreach ($first->params as $i => $param) {
+            if ($param->type?->getId() !== $second->params[$i]->type?->getId()) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
     private function populateOverriddenMethods(
         ClassLikeStorage $storage,
         ClassLikeStorageProvider $storage_provider,
@@ -822,6 +849,7 @@ final class Populator
                                 && (!$method_storage->throws || $method_storage->inheritdoc)
                             ) {
                                 $method_storage->throws += $interface_method_storage->throws;
+                                $method_storage->throw_intersections += $interface_method_storage->throw_intersections;
                             }
                         }
                     }
@@ -918,6 +946,12 @@ final class Populator
                                     $declaring_class,
                                     $documenting_class_storage->parent_interfaces,
                                 ) && $documenting_class_storage->is_interface
+                                    && !self::documentSameSignature(
+                                        $declaring_method_storage,
+                                        $documenting_class_storage->methods[
+                                            $storage->documenting_method_ids[$method_name]->method_name
+                                        ] ?? null,
+                                    )
                                 ) {
                                     unset($storage->documenting_method_ids[$method_name]);
                                     $inherited_return_type = null;
@@ -943,6 +977,7 @@ final class Populator
                         && (!$method_storage->throws || $method_storage->inheritdoc)
                     ) {
                         $method_storage->throws += $declaring_method_storage->throws;
+                        $method_storage->throw_intersections += $declaring_method_storage->throw_intersections;
                     }
 
                     // a method without its own tag keeps the tag of the method it overrides, while a method that
@@ -1344,11 +1379,13 @@ final class Populator
         if ($parent_storage->template_types) {
             $storage->template_extended_params[$parent_storage->name] = [];
 
-            if (isset($storage->template_extended_offsets[$parent_storage->name])) {
+            $parent_name_lc = strtolower($parent_storage->name);
+
+            if (isset($storage->template_extended_offsets[$parent_name_lc])) {
                 // the generic types written in the arguments get the defaults they leave out, as in any other use
                 $written_params = [];
 
-                foreach ($storage->template_extended_offsets[$parent_storage->name] as $written_param) {
+                foreach ($storage->template_extended_offsets[$parent_name_lc] as $written_param) {
                     $written_params[] = TemplateDefaults::fillNested(
                         $written_param,
                         $this->classlike_storage_provider,
@@ -1358,12 +1395,12 @@ final class Populator
 
                 // `@extends Foo<A>` leaving out trailing templates with a default, `@extends Foo[pure]` for a
                 // class with type templates
-                $storage->template_extended_offsets[$parent_storage->name] = PurityArguments::align(
+                $storage->template_extended_offsets[$parent_name_lc] = PurityArguments::align(
                     TemplateDefaults::fillTypeArguments($written_params, $parent_storage, null, true),
                     $parent_storage,
                 );
 
-                foreach ($storage->template_extended_offsets[$parent_storage->name] as $i => $type) {
+                foreach ($storage->template_extended_offsets[$parent_name_lc] as $i => $type) {
                     $parent_template_type_names = array_keys($parent_storage->template_types);
 
                     $mapped_name = $parent_template_type_names[$i] ?? null;

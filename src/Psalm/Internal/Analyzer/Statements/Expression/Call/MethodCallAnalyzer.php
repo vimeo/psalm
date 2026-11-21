@@ -16,6 +16,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\Statements\Expression\NullsafeChainState;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TypeExpander;
 use Psalm\Internal\TypeVisitor\TypeVariableResolver;
@@ -53,12 +54,17 @@ use function strtolower;
  */
 final class MethodCallAnalyzer extends CallAnalyzer
 {
+    /**
+     * @param bool $receiver_analyzed the receiver was analysed already (offsetGet() for `$a[0]`): it is not
+     *      evaluated again
+     */
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\MethodCall $stmt,
         Context $context,
         bool $real_method_call = true,
         ?TemplateResult $template_result = null,
+        bool $receiver_analyzed = false,
     ): bool {
         $was_inside_call = $context->inside_call;
 
@@ -68,12 +74,24 @@ final class MethodCallAnalyzer extends CallAnalyzer
 
         $existing_stmt_var_type = null;
 
-        if (!$real_method_call) {
+        if (!$real_method_call || $receiver_analyzed) {
             $existing_stmt_var_type = $statements_analyzer->node_data->getType($stmt->var);
         }
 
         if ($existing_stmt_var_type) {
             $statements_analyzer->node_data->setType($stmt->var, $existing_stmt_var_type);
+
+            // the call uses its receiver, which may have been analysed only as the target of an assignment
+            // (offsetSet() for `$a[] = $v`)
+            if ($receiver_analyzed && $statements_analyzer->data_flow_graph) {
+                foreach ($existing_stmt_var_type->parent_nodes as $parent_node) {
+                    $statements_analyzer->data_flow_graph->addPath(
+                        $parent_node,
+                        DataFlowNode::getForVariableUse(),
+                        'use-inside-call',
+                    );
+                }
+            }
         } elseif (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->var, $context) === false) {
             $context->inside_call = $was_inside_call;
 

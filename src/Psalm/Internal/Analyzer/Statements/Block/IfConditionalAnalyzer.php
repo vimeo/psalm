@@ -460,10 +460,15 @@ final class IfConditionalAnalyzer
             $if_scope->negated_clauses = [];
         }
 
+        $negated_referenced_var_ids = [];
+
         $if_scope->negated_types = Algebra::getTruthsFromFormula(
             Algebra::simplifyCNF(
                 [...$context->clauses, ...$if_scope->negated_clauses],
             ),
+            $cond_object_id,
+            $negated_referenced_var_ids,
+            $if_scope->active_negated_types,
         );
     }
 

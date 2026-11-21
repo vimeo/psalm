@@ -30,7 +30,6 @@ use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Internal\Type\TypeExpander;
-use Psalm\Internal\TypeVisitor\StarProjectionVisitor;
 use Psalm\Issue\IfThisIsMismatch;
 use Psalm\Issue\ImpureMethodCall;
 use Psalm\Issue\InvalidPropertyAssignmentValue;
@@ -297,6 +296,15 @@ final class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
             return Type::getMixed();
         }
 
+        // what is read from a `*` receiver, unlike the arguments checked above, is as unknown as the receiver (the
+        // parameter types of a first-class callable's closure are not: see TemplateResult::withoutStarBindings())
+        $template_result->markStarBindings(ClassTemplateParamCollector::getStarBoundTemplates(
+            $codebase,
+            $class_storage,
+            $lhs_type_part,
+            $class_template_params,
+        ));
+
         $return_type_candidate = MethodCallReturnTypeFetcher::fetch(
             $statements_analyzer,
             $codebase,
@@ -480,12 +488,7 @@ final class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
             }
 
             $assertionsResolver = new AssertionsFromInheritanceResolver($codebase);
-            // the types a method asserts are read from the receiver, like its return type
-            $assertions = StarProjectionVisitor::projectAssertions(
-                $assertionsResolver->resolve($method_storage, $class_storage),
-                $template_result,
-                $codebase,
-            );
+            $assertions = $assertionsResolver->resolve($method_storage, $class_storage);
 
             // `self` in the assertions of a method of a trait is the class using the trait, where it appears
             $trait_self_class = $codebase->methods->getAppearingMethodId($method_id)?->fq_class_name
@@ -540,11 +543,7 @@ final class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
                     ),
                     self::resolveStaticPropertyAssertionClasses(
                         self::getAssertionsOnArgs(
-                            StarProjectionVisitor::projectAssertions(
-                                $if_true_assertions,
-                                $template_result,
-                                $codebase,
-                            ),
+                            $if_true_assertions,
                             $method_storage,
                             $args,
                             $statements_analyzer->node_data,
@@ -586,11 +585,7 @@ final class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
                     ),
                     self::resolveStaticPropertyAssertionClasses(
                         self::getAssertionsOnArgs(
-                            StarProjectionVisitor::projectAssertions(
-                                $if_false_assertions,
-                                $template_result,
-                                $codebase,
-                            ),
+                            $if_false_assertions,
                             $method_storage,
                             $args,
                             $statements_analyzer->node_data,

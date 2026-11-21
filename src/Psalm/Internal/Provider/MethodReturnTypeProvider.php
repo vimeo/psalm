@@ -13,7 +13,6 @@ use Psalm\Internal\Provider\ReturnTypeProvider\DateTimeModifyReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\DomNodeAppendChild;
 use Psalm\Internal\Provider\ReturnTypeProvider\ImagickPixelColorReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\PdoStatementReturnTypeProvider;
-use Psalm\Internal\TypeVisitor\StarProjectionVisitor;
 use Psalm\Plugin\EventHandler\Event\MethodReturnTypeProviderEvent;
 use Psalm\Plugin\EventHandler\MethodReturnTypeProviderInterface;
 use Psalm\StatementsSource;
@@ -106,8 +105,7 @@ final class MethodReturnTypeProvider
             $result = $class_handler($event);
 
             if ($result) {
-                // a provider may build its result from the receiver's type, `*` arguments included
-                return StarProjectionVisitor::project($result, null, $statements_source->getCodebase());
+                return $result;
             }
         }
 

@@ -10,13 +10,13 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use Psalm\Codebase;
 use Psalm\Exception\TypeParseTreeException;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
+use Psalm\Internal\Type\TypeArgumentProjection;
 use Psalm\Type;
 use Psalm\Type\Atomic\TClassConstant;
 use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TLiteralFloat;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
-use Psalm\Type\Atomic\TStarProjection;
 use Psalm\Type\Atomic\TTemplateKeyOf;
 use Psalm\Type\Union;
 use ReflectionFunction;
@@ -2070,50 +2070,58 @@ final class TypeParseTest extends TestCase
         self::assertSame('Relation<Model, TModel, *>', $type->getId(false));
     }
 
-    public function testStarProjectionCombinedWithAnyTypeIsAStar(): void
+    public function testStarProjectionIsKeptWhenCombinedWithAnArgument(): void
     {
-        $star = Type::parseString('Box<*>')->getSingleAtomic();
-        self::assertInstanceOf(TGenericObject::class, $star);
-        $star = $star->type_params[0];
+        $star = Type::parseString('Traversable<*, *>');
+        $concrete = Type::parseString('Traversable<int, string>');
 
         foreach ([
-            Type::combineUnionTypes($star, Type::getInt()),
-            Type::combineUnionTypes(Type::getInt(), $star),
-            Type::combineUnionTypes($star, Type::getMixed()),
-            Type::combineUnionTypes(Type::getMixed(), $star),
+            Type::combineUnionTypes($star, $concrete),
+            Type::combineUnionTypes($concrete, $star),
+            Type::combineUnionTypes($star, $star),
         ] as $combined) {
-            self::assertInstanceOf(TStarProjection::class, $combined->getSingleAtomic());
+            self::assertSame('Traversable<*, *>', $combined->getId());
         }
     }
 
-    public function testStarProjectionsKnownDifferentlyAreNotEqualAndCombineToBoth(): void
+    public function testStarProjectionHoldsATypeInTypeParams(): void
     {
-        $objects = new Union([new TStarProjection(false, Type::getList(Type::getObject()))]);
-        $ints = new Union([new TStarProjection(false, Type::getInt())]);
+        $pair = Type::parseString('Pair<int, *>')->getSingleAtomic();
+        self::assertInstanceOf(TGenericObject::class, $pair);
 
-        self::assertSame('*', $objects->getId());
-        self::assertTrue($objects->equals(new Union([new TStarProjection(false, Type::getList(Type::getObject()))])));
-        /** @var Union $unserialized */
-        $unserialized = unserialize(serialize($objects));
-        self::assertTrue($objects->equals($unserialized));
-        self::assertFalse($objects->equals($ints));
-        self::assertFalse($objects->equals(new Union([new TStarProjection()])));
+        self::assertSame(['int', 'mixed'], array_map(static fn(Union $param): string => $param->getId(), $pair->type_params));
+    }
 
-        foreach ([
-            Type::combineUnionTypes($objects, $ints),
-            Type::combineUnionTypes($ints, $objects),
-            Type::combineUnionTypes($objects, Type::getInt()),
-            Type::combineUnionTypes(Type::getInt(), $objects),
-        ] as $combined) {
-            $star = $combined->getSingleAtomic();
-            self::assertInstanceOf(TStarProjection::class, $star);
-            self::assertSame('int|list<object>', $star->as?->getId());
+    public function testStarProjectionOutweighsALeftOutArgumentWhenCombined(): void
+    {
+        $star = Type::parseString('Traversable<*, mixed>');
+        $left_out = new Union([
+            (new TGenericObject('Traversable', [Type::getMixed(), Type::getMixed()]))->setProjections([
+                0 => TypeArgumentProjection::Omitted,
+                1 => TypeArgumentProjection::Omitted,
+            ]),
+        ]);
+
+        foreach ([Type::combineUnionTypes($star, $left_out), Type::combineUnionTypes($left_out, $star)] as $combined) {
+            self::assertSame('Traversable<*, mixed>', $combined->getId());
+            $atomic = $combined->getSingleAtomic();
+            self::assertInstanceOf(TGenericObject::class, $atomic);
+            // the `*` stays, and the left out argument next to an explicit one is no longer left out
+            self::assertSame([0 => TypeArgumentProjection::Star], $atomic->getProjections());
         }
 
-        // a `*` not known to be more than its template's bound keeps nothing narrower
-        $unknown = Type::combineUnionTypes($objects, new Union([new TStarProjection()]))->getSingleAtomic();
-        self::assertInstanceOf(TStarProjection::class, $unknown);
-        self::assertNull($unknown->as);
+        $both_left_out = Type::combineUnionTypes($left_out, $left_out);
+        $atomic = $both_left_out->getSingleAtomic();
+        self::assertInstanceOf(TGenericObject::class, $atomic);
+        self::assertSame(
+            [0 => TypeArgumentProjection::Omitted, 1 => TypeArgumentProjection::Omitted],
+            $atomic->getProjections(),
+        );
+
+        $explicit = Type::parseString('Traversable<mixed, mixed>');
+        $atomic = Type::combineUnionTypes($left_out, $explicit)->getSingleAtomic();
+        self::assertInstanceOf(TGenericObject::class, $atomic);
+        self::assertSame([], $atomic->getProjections());
     }
 
     /**
@@ -2135,12 +2143,44 @@ final class TypeParseTest extends TestCase
         yield 'int-mask-of' => ['int-mask-of<*>'];
         yield 'class-string-map' => ['class-string-map<*, int>'];
         yield 'class-string-map value' => ['class-string-map<T, *>'];
+        yield 'int range max' => ['int<5, *>'];
+        yield 'int-mask' => ['int-mask<*>'];
+        yield 'callable parameter' => ['callable(*): void'];
+        yield 'closure return' => ['Closure(): *'];
+        yield 'parenthesised argument' => ['Pair<int, (*)>'];
+        yield 'intersection argument' => ['Pair<int, *&Countable>'];
     }
 
     #[DataProvider('invalidStarProjectionProvider')]
     public function testInvalidStarProjection(string $string): void
     {
         $this->expectException(TypeParseTreeException::class);
+        Type::parseString($string);
+    }
+
+    /**
+     * @return iterable<string, array{string, string}>
+     * @psalm-pure
+     */
+    public static function starOutsideAClassProvider(): iterable
+    {
+        yield 'int min' => ['int<*, 5>', 'int'];
+        yield 'int max' => ['int<5, *>', 'int'];
+        yield 'int-mask' => ['int-mask<*>', 'int-mask'];
+        yield 'int-mask-of' => ['int-mask-of<*>', 'int-mask-of'];
+        yield 'key-of' => ['key-of<*>', 'key-of'];
+        yield 'value-of' => ['value-of<*>', 'value-of'];
+        yield 'properties-of' => ['properties-of<*>', 'properties-of'];
+        yield 'public-properties-of' => ['public-properties-of<*>', 'public-properties-of'];
+    }
+
+    #[DataProvider('starOutsideAClassProvider')]
+    public function testStarOutsideAClassIsReportedByName(string $string, string $generic): void
+    {
+        $this->expectException(TypeParseTreeException::class);
+        $this->expectExceptionMessage(
+            'The * type argument is only for the type arguments of a class, not of ' . $generic,
+        );
         Type::parseString($string);
     }
 }

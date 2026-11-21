@@ -53,6 +53,7 @@ use ReflectionProperty;
 
 use function array_all;
 use function array_any;
+use function array_fill;
 use function array_filter;
 use function array_keys;
 use function array_map;
@@ -164,7 +165,6 @@ final class TypeExpander
         $fleshed_out_type->from_global_state = $return_type->from_global_state;
         $fleshed_out_type->explicit_never = $return_type->explicit_never;
         $fleshed_out_type->had_template = $return_type->had_template;
-        $fleshed_out_type->from_template_default = $return_type->from_template_default;
         $fleshed_out_type->parent_nodes = $return_type->parent_nodes;
         $fleshed_out_type->int_mask_bits = $int_mask_bits !== null && IntMask::fits($fleshed_out_type, $int_mask_bits)
             ? $int_mask_bits
@@ -672,13 +672,15 @@ final class TypeExpander
                 $type_params[0] = ArrayAnalyzer::castArrayKeyType($type_params[0]);
             }
 
-            // `Foo<A>` leaving out trailing templates with a default, `Foo[pure]` for a class with type templates
+            // `Foo<A>` leaving out trailing templates with a default, `Foo[pure]` for a class with type templates,
+            // `Foo<*>` knowing the template's bound
             if ($return_type instanceof TGenericObject
                 && $codebase->classlike_storage_provider->has($return_type->value)
             ) {
                 $class_storage = $codebase->classlike_storage_provider->get($return_type->value);
 
                 $type_params = StarProjection::boundStars(
+                    $return_type,
                     PurityArguments::align(
                         TemplateDefaults::fillAndExpandTypeArguments(
                             $type_params,
@@ -694,7 +696,9 @@ final class TypeExpander
             }
 
             /** @psalm-suppress InvalidArgument Psalm bug */
-            $return_type = $return_type->setTypeParams($type_params);
+            $return_type = $return_type instanceof TGenericObject
+                ? $return_type->setHeldTypes($type_params)
+                : $return_type->setTypeParams($type_params);
 
             // the purity of an iterable may name a type alias (`iterable[Storage]`)
             if ($return_type instanceof TIterable) {
@@ -909,7 +913,7 @@ final class TypeExpander
                     static fn($type_map): bool => !reset($type_map)->hasMixed(),
                 )
             ) {
-                $return_type = new TGenericObject(
+                $return_type = (new TGenericObject(
                     $return_type->value,
                     array_values(
                         array_map(
@@ -917,7 +921,11 @@ final class TypeExpander
                             $container_class_storage->template_types,
                         ),
                     ),
-                );
+                ))->setProjections(array_fill(
+                    0,
+                    PurityArguments::countTypeTemplates($container_class_storage),
+                    TypeArgumentProjection::Omitted,
+                ));
 
                 // we don't want to expand generic types recursively
                 $expand_generic = false;
@@ -1403,25 +1411,33 @@ final class TypeExpander
                 ) {
                     continue;
                 }
-                if ($property->is_static || !$property->type) {
+                if ($property->is_static) {
                     continue;
                 }
+                // an untyped property exists and holds anything
+                $property_type = $property->type ?? Type::getMixed();
                 $type = $return_type->classlike_type instanceof TGenericObject
                     ? AtomicPropertyFetchAnalyzer::localizePropertyType(
                         $codebase,
-                        $property->type,
+                        $property_type,
                         $return_type->classlike_type,
                         $storage,
                         $storage,
+                        true,
                     )
-                    : $property->type
+                    : $property_type
                 ;
                 $properties[$key] = $type;
             }
         }
 
         if ($properties === []) {
-            return [$return_type];
+            // an empty `properties` is no shape: a sealed class without properties has none, another may have some
+            return [
+                $all_sealed
+                    ? Type::getEmptyArrayAtomic()
+                    : new TArray([Type::getString(), Type::getMixed()]),
+            ];
         }
         return [TKeyedArray::make(
             $properties,

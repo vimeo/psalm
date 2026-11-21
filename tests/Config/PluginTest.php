@@ -1075,99 +1075,88 @@ final class PluginTest extends DeferredAnalyzerTestCase
                 foreach ($box->all() as $item) {
                     takesObject($item);
                 }
-
-                $parameter = $box->parameterId();
-                /** @psalm-check-type-exact $parameter = "object" */
             }');
     }
 
-    public function testMethodProviderTakingTheReceiversStarArgumentAcceptsNothing(): void
+    public function testPluginReadingTheTypeParamsOfAStarReceiverSeesTheBounds(): void
     {
-        $this->expectException(CodeException::class);
-        $this->expectExceptionMessage('somefile.php:44:42 - Argument 1 expects never, but stdClass provided');
-
         $this->analyzeWithTemplateParameterPlugin('
-            /** @param Box<*> $box */
-            function run(Box $box): void {
-                $box->receiverConsumer()(new \stdClass());
-            }');
-    }
-
-    public function testMethodProviderTakingABoxOfTheReceiversStarArgumentAcceptsNoBox(): void
-    {
-        $this->expectException(CodeException::class);
-        $this->expectExceptionMessage('somefile.php:47:37 - Argument 1 expects Ns\Box<never>, but Ns\Box<stdClass> provided');
-
-        $this->analyzeWithTemplateParameterPlugin('
-            /**
-             * @param Box<*> $box
-             * @param Box<\stdClass> $other
-             */
-            function run(Box $box, Box $other): void {
-                $box->boxConsumer()($other);
-            }');
-    }
-
-    public function testMethodProviderReturningABoxOfTheReceiversStarArgumentKeepsItUnknown(): void
-    {
-        $this->expectException(CodeException::class);
-        $this->expectExceptionMessage('somefile.php:46:32 - Argument 1 of Ns\Box::set expects never, but stdClass provided');
-
-        $this->analyzeWithTemplateParameterPlugin('
-            /** @param Box<*> $box */
-            function run(Box $box): void {
-                foreach ($box->boxes() as $item) {
-                    takesObject($item->get());
-                    $item->set(new \stdClass());
+            abstract class Model {
+                public function save(): bool {
+                    return true;
                 }
-            }');
-    }
-
-    public function testMethodProviderReturningAnIntersectionReadsTheReceiversStarArgument(): void
-    {
-        $this->analyzeWithTemplateParameterPlugin(self::MARKED_SOURCE . '
-            /** @param Source<*> $source */
-            function run(Source $source): void {
-                foreach ($source->markedItems()->get() as $item) {
-                    takesObject($item);
-                }
-            }');
-    }
-
-    public function testMethodProviderReturningAnIntersectionWithAClosureOfTheReceiversStarArgumentAcceptsNoBox(): void
-    {
-        $this->expectException(CodeException::class);
-        $this->expectExceptionMessage('somefile.php:65:50 - Argument 1 expects Ns\Box<never>, but Ns\Box<stdClass> provided');
-
-        $this->analyzeWithTemplateParameterPlugin(self::MARKED_SOURCE . '
-            /**
-             * @param Source<*> $source
-             * @param Box<\stdClass> $box
-             */
-            function run(Source $source, Box $box): void {
-                $source->markedConsumer()->get()($box);
-            }');
-    }
-
-    private const MARKED_SOURCE = '
-            /** @template T */
-            interface Marker {}
-
-            /** @template T */
-            interface Holder {
-                /** @return T */
-                public function get(): mixed;
             }
 
-            /** @template T of object */
-            abstract class Source {
-                /** @return Marker<int>&Holder<list<T>> */
-                abstract public function markedItems(): object;
-
-                /** @return Marker<int>&Holder<\Closure(Box<T>): void> */
-                abstract public function markedConsumer(): object;
+            /**
+             * @template TRelated of Model
+             * @template TParent of Model
+             */
+            final class Relation {
+                public function related(): object {
+                    throw new \Exception();
+                }
             }
-';
+
+            /** @param Relation<*, *> $any */
+            function run(Relation $any): void {
+                $related = $any->related();
+                /** @psalm-check-type-exact $related = Model */
+                $related->save();
+            }');
+    }
+
+    public function testPluginRebuildingAStarArgumentMeansThatType(): void
+    {
+        $this->analyzeWithTemplateParameterPlugin('
+            abstract class Model {}
+
+            final class Pivot extends Model {}
+
+            /**
+             * @template TRelated of Model
+             * @template TParent of Model
+             */
+            final class Relation {
+                public function withPivot(): static {
+                    return $this;
+                }
+
+                /** @return TParent */
+                public function parent(): Model {
+                    throw new \Exception();
+                }
+            }
+
+            /** @param Relation<Model, *> $relation */
+            function run(Relation $relation): void {
+                $refined = $relation->withPivot();
+                /** @psalm-check-type-exact $refined = Relation<Model, Pivot> */
+                $parent = $refined->parent();
+                /** @psalm-check-type-exact $parent = Pivot */
+            }');
+    }
+
+    public function testPluginRebuildingEqualArgumentsKeepsTheStar(): void
+    {
+        $this->analyzeWithTemplateParameterPlugin('
+            abstract class Model {}
+
+            /**
+             * @template TRelated of Model
+             * @template TParent of Model
+             */
+            final class Relation {
+                public function rebuilt(): static {
+                    return $this;
+                }
+            }
+
+            /** @param Relation<Model, *> $relation */
+            function run(Relation $relation): void {
+                $rebuilt = $relation->rebuilt();
+                /** @psalm-check-type-exact $rebuilt = Relation<Model, *> */
+            }');
+    }
 
     private function analyzeWithTemplateParameterPlugin(string $code): void
     {
@@ -1208,29 +1197,6 @@ final class PluginTest extends DeferredAnalyzerTestCase
 
                     /** @return list<T> */
                     public function all(): array {
-                        throw new \Exception();
-                    }
-
-                    /** @return non-empty-string */
-                    public function parameterId(): string {
-                        throw new \Exception();
-                    }
-
-                    /** @return \Closure(T): void */
-                    public function receiverConsumer(): \Closure {
-                        throw new \Exception();
-                    }
-
-                    /** @param T $value */
-                    public function set(object $value): void {}
-
-                    /** @return list<Box<T>> */
-                    public function boxes(): array {
-                        throw new \Exception();
-                    }
-
-                    /** @return \Closure(Box<T>): void */
-                    public function boxConsumer(): \Closure {
                         throw new \Exception();
                     }
                 }

@@ -1029,6 +1029,7 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                     $this_object_type,
                     $storage,
                     $property_class_storage,
+                    false,
                 );
             }
 
@@ -2857,7 +2858,7 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                 $storage,
                 $parent_class_storage,
                 $code_location,
-                $storage->template_type_extends_count[$parent_fq_class_name] ?? 0,
+                $storage->template_type_extends_count[strtolower($parent_fq_class_name)] ?? 0,
             );
         } catch (InvalidArgumentException) {
             // do nothing

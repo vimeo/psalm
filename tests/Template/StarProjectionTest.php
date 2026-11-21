@@ -5,32 +5,13 @@ declare(strict_types=1);
 namespace Psalm\Tests\Template;
 
 use Override;
-use PHPUnit\Framework\Attributes\DataProvider;
 use Psalm\Context;
-use Psalm\Exception\CodeException;
-use Psalm\Internal\Type\StarProjection;
+use Psalm\IssueBuffer;
 use Psalm\Tests\TestCase;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
-use Psalm\Type\Atomic;
-use Psalm\Type\Atomic\TConditional;
-use Psalm\Type\Atomic\TTemplateIndexedAccess;
-use Psalm\Type\Atomic\TTemplateKeyOf;
-use Psalm\Type\Atomic\TTemplateParam;
-use Psalm\Type\Atomic\TTemplateParamClass;
-use Psalm\Type\Atomic\TTemplatePropertiesOf;
-use Psalm\Type\Atomic\TTemplateValueOf;
 
 use function array_column;
-use function array_unique;
-use function array_values;
-use function basename;
-use function dirname;
-use function glob;
-use function property_exists;
-use function sort;
-use function sprintf;
-use function str_ends_with;
 
 use const DIRECTORY_SEPARATOR;
 
@@ -38,6 +19,77 @@ final class StarProjectionTest extends TestCase
 {
     use InvalidCodeAnalysisTestTrait;
     use ValidCodeAnalysisTestTrait;
+
+    public function testStarProjectionReportsAClosureOfTheWrongTypeOnce(): void
+    {
+        $this->project_analyzer->getConfig()->throw_exception = false;
+
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                /** @template T of Countable */
+                final class Box {
+                    /** @param Closure(T): void $f */
+                    public function each(Closure $f): void {}
+                }
+
+                /** @param Box<*> $box */
+                function f(Box $box): void {
+                    $box->each(function (int $x): void {
+                        echo $x;
+                    });
+                }',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+
+        self::assertSame(
+            ['InvalidArgument'],
+            array_column(IssueBuffer::getIssuesDataForFile($file_path), 'type'),
+        );
+    }
+
+    public function testStarProjectionAddsNoLowerBoundToAnInvariantTemplate(): void
+    {
+        $this->project_analyzer->getConfig()->throw_exception = false;
+
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                /** @template T of object */
+                final class Box {}
+
+                /**
+                 * @template T of object
+                 * @param Box<T> $first
+                 * @param Box<T> $second
+                 * @return T
+                 */
+                function both(Box $first, Box $second): object {
+                    throw new Exception();
+                }
+
+                /**
+                 * @param Box<*> $any
+                 * @param Box<DateTime> $date
+                 */
+                function f(Box $any, Box $date): void {
+                    $result = both($any, $date);
+                    /** @psalm-check-type-exact $result = DateTime */
+                }',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+
+        self::assertSame(
+            ['ArgumentTypeCoercion'],
+            array_column(IssueBuffer::getIssuesDataForFile($file_path), 'type'),
+        );
+    }
 
     /**
      * @psalm-pure
@@ -167,6 +219,40 @@ final class StarProjectionTest extends TestCase
 
                         return parentOf($relation);
                     }',
+            ],
+            'starProjectionFitsAClassWithoutArgumentsInAUnion' => [
+                'code' => '<?php
+                    /**
+                     * @template A
+                     * @template B of object
+                     */
+                    final class Pair {}
+
+                    function nullable(?Pair $p): void {}
+
+                    function nativeUnion(Pair|int $p): void {}
+
+                    /** @param list<Pair|null> $l */
+                    function nestedNullable(array $l): void {}
+
+                    function optional(Pair $p = null): void {}
+
+                    function nullableGenerator(?Generator $g): void {}
+
+                    /**
+                     * @param Pair<int, *> $s
+                     * @param Generator<*, *, *, *> $gen
+                     */
+                    function f(Pair $s, Generator $gen): void {
+                        nullable($s);
+                        nativeUnion($s);
+                        nestedNullable([$s]);
+                        optional($s);
+                        nullableGenerator($gen);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'starProjectionLetsTheOtherArgumentsBindTemplates' => [
                 'code' => '<?php
@@ -718,6 +804,29 @@ final class StarProjectionTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'starProjectionComposedBoundFollowsTheOtherArguments' => [
+                'code' => '<?php
+                    /**
+                     * @template A
+                     * @template B of list<A>
+                     */
+                    final class P {
+                        /** @return B */
+                        public function b(): array {
+                            throw new Exception();
+                        }
+                    }
+
+                    /** @return P<int, *> */
+                    function p(): P {
+                        throw new Exception();
+                    }
+
+                    $b = p()->b();',
+                'assertions' => [
+                    '$b===' => 'list<int>',
+                ],
+            ],
             'starProjectionParamDoesNotRetypeAnEmptyValue' => [
                 'code' => '<?php
                     /** @template T */
@@ -779,576 +888,14 @@ final class StarProjectionTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
-            'starProjectionReadsByPosition' => [
-                'code' => '<?php
-                    /**
-                     * @template TFirst
-                     * @template TSecond of object
-                     */
-                    final class Pair {
-                        /** @var Closure(TSecond): void */
-                        public Closure $callback;
-
-                        /** @param Closure(TSecond): void $callback */
-                        public function __construct(Closure $callback) {
-                            $this->callback = $callback;
-                        }
-
-                        /** @return Closure(TSecond): void */
-                        public function consumer(): Closure {
-                            throw new Exception();
-                        }
-
-                        /** @return Closure(Closure(TSecond): void): void */
-                        public function consumerOfConsumer(): Closure {
-                            throw new Exception();
-                        }
-
-                        /** @return Pair<TFirst, TSecond> */
-                        public function self(): Pair {
-                            return $this;
-                        }
-                    }
-
-                    /** @return Pair<int, *> */
-                    function pair(): Pair {
-                        throw new Exception();
-                    }
-
-                    $pair = pair();
-                    $callback_property = $pair->callback;
-                    $consumer = $pair->consumer();
-                    $consumer_of_consumer = $pair->consumerOfConsumer();
-                    $self = $pair->self();',
-                'assertions' => [
-                    '$callback_property===' => 'Closure[impure](never):void',
-                    '$consumer===' => 'Closure[impure](never):void',
-                    '$consumer_of_consumer===' => 'Closure[impure](Closure[impure](object):void):void',
-                    '$self===' => 'Pair<int, *>',
-                ],
-                'ignored_issues' => [],
-                'php_version' => '8.0',
-            ],
-            'starProjectionInsideAnInvariantArgumentKeepsTheArgumentUnknown' => [
-                'code' => '<?php
-                    /** @template T */
-                    final class Box {
-                        /** @return T */
-                        public function get(): mixed {
-                            throw new Exception();
-                        }
-                    }
-
-                    /**
-                     * @template TFirst
-                     * @template TSecond of object
-                     */
-                    final class Pair {
-                        /** @return Box<list<TSecond>> */
-                        public function listBox(): Box {
-                            throw new Exception();
-                        }
-
-                        /** @return Box<Closure(TSecond): void> */
-                        public function consumerBox(): Box {
-                            throw new Exception();
-                        }
-                    }
-
-                    /** @return Pair<int, *> */
-                    function pair(): Pair {
-                        throw new Exception();
-                    }
-
-                    $list_box = pair()->listBox();
-                    $list = $list_box->get();
-                    $consumer = pair()->consumerBox()->get();',
-                'assertions' => [
-                    '$list_box===' => 'Box<*>',
-                    '$list===' => 'list<object>',
-                    '$consumer===' => 'Closure[impure](never):void',
-                ],
-                'ignored_issues' => [],
-                'php_version' => '8.0',
-            ],
-            'starProjectionInsideANestedInvariantArgumentKeepsTheArgumentUnknown' => [
-                'code' => '<?php
-                    /** @template T */
-                    final class Box {
-                        /** @return T */
-                        public function get(): mixed {
-                            throw new Exception();
-                        }
-                    }
-
-                    /** @template V */
-                    class Base {
-                        /** @param V $value */
-                        public function __construct(public mixed $value) {}
-
-                        /** @return V */
-                        public function inherited(): mixed {
-                            throw new Exception();
-                        }
-                    }
-
-                    /**
-                     * @template T of object
-                     * @extends Base<Box<Box<Closure(T): void>>>
-                     */
-                    final class Source extends Base {
-                        /**
-                         * @param Box<Box<T>> $nested
-                         * @param Box<Box<Closure(T): void>> $value
-                         */
-                        public function __construct(public Box $nested, Box $value) {
-                            parent::__construct($value);
-                        }
-
-                        /** @return Box<Box<T>> */
-                        public function boxes(): Box {
-                            throw new Exception();
-                        }
-
-                        /** @return Box<Box<Closure(T): void>> */
-                        public function callbacks(): Box {
-                            throw new Exception();
-                        }
-                    }
-
-                    /**
-                     * @template T of object
-                     * @extends Base<Box<Box<T>>>
-                     */
-                    final class Boxes extends Base {}
-
-                    /** @return Source<*> */
-                    function source(): Source {
-                        throw new Exception();
-                    }
-
-                    /** @return Boxes<*> */
-                    function boxes(): Boxes {
-                        throw new Exception();
-                    }
-
-                    $boxes = source()->boxes();
-                    $box = $boxes->get();
-                    $value = $box->get();
-                    $callbacks = source()->callbacks();
-                    $callback = $callbacks->get()->get();
-                    $inherited = source()->inherited();
-                    $inherited_callback = $inherited->get()->get();
-                    $inherited_boxes = boxes()->inherited();
-                    $inherited_value = $inherited_boxes->get()->get();
-                    $property = source()->nested;
-                    $property_value = $property->get()->get();
-                    $inherited_property = boxes()->value;
-                    $inherited_property_value = $inherited_property->get()->get();',
-                'assertions' => [
-                    '$boxes===' => 'Box<*>',
-                    '$box===' => 'Box<*>',
-                    '$value===' => 'object',
-                    '$callbacks===' => 'Box<*>',
-                    '$callback===' => 'Closure[impure](never):void',
-                    '$inherited===' => 'Box<*>',
-                    '$inherited_callback===' => 'Closure[impure](never):void',
-                    '$inherited_boxes===' => 'Box<*>',
-                    '$inherited_value===' => 'object',
-                    '$property===' => 'Box<*>',
-                    '$property_value===' => 'object',
-                    '$inherited_property===' => 'Box<*>',
-                    '$inherited_property_value===' => 'object',
-                ],
-                'ignored_issues' => [],
-                'php_version' => '8.0',
-            ],
-            'starProjectionInsideANestedInvariantArgumentOfACallbackIsRead' => [
+            'starProjectionReadsAComposedParentArgument' => [
+                // known gap: `@extends Base<list<TModel>>` is read as a `Base<list<Model>>`, which the write-restriction
+                // PR restricts
                 'code' => '<?php
                     abstract class Model {}
 
                     /** @template T */
-                    final class Box {
-                        /** @return T */
-                        public function get(): mixed {
-                            throw new Exception();
-                        }
-                    }
-
-                    /** @template T of Model */
-                    abstract class Source {
-                        /** @param Closure(Box<Box<T>>): void $callback */
-                        abstract public function visit(Closure $callback): void;
-
-                        /** @param Closure(Box<list<T>>): void $callback */
-                        abstract public function visitList(Closure $callback): void;
-                    }
-
-                    function takesModel(Model $value): void {}
-
-                    /** @param Source<*> $source */
-                    function f(Source $source): void {
-                        $source->visit(function ($outer): void {
-                            /** @psalm-check-type-exact $outer = Box<*> */
-                            $inner = $outer->get();
-                            /** @psalm-check-type-exact $inner = Box<*> */
-                            takesModel($inner->get());
-                        });
-                        $source->visitList(function ($outer): void {
-                            foreach ($outer->get() as $value) {
-                                takesModel($value);
-                            }
-                        });
-                    }',
-                'assertions' => [],
-                'ignored_issues' => [],
-                'php_version' => '8.0',
-            ],
-            'starProjectionNextToConcreteArgumentsReadsTheCallbackOfAGenericMethod' => [
-                'code' => '<?php
-                    abstract class Model {}
-
-                    /** @template T */
-                    final class Box {
-                        /** @return T */
-                        public function get(): mixed {
-                            throw new Exception();
-                        }
-                    }
-
-                    /**
-                     * @template TUnknown of Model
-                     * @template TKnown
-                     */
-                    abstract class Source {
-                        /**
-                         * @template TResult
-                         * @param TResult $seed
-                         * @param Closure(Box<array{unknown: TUnknown, known: TKnown, seed: TResult}>): TResult $callback
-                         * @return TResult
-                         */
-                        abstract public function map(mixed $seed, Closure $callback): mixed;
-                    }
-
-                    /** @return Source<*, int> */
-                    function source(): Source {
-                        throw new Exception();
-                    }
-
-                    $source = source();
-                    $first = $source->map("ok", function ($box) {
-                        $data = $box->get();
-                        /** @psalm-check-type-exact $data = array{known: int, seed: "ok", unknown: Model} */
-                        return $data["seed"];
-                    });
-                    $second = $source->map(123, function ($box) {
-                        $data = $box->get();
-                        /** @psalm-check-type-exact $data = array{known: int, seed: 123, unknown: Model} */
-                        return $data["seed"];
-                    });',
-                'assertions' => [
-                    '$first===' => '\'ok\'',
-                    '$second===' => '123',
-                ],
-                'ignored_issues' => [],
-                'php_version' => '8.0',
-            ],
-            'starProjectionInheritedCallableArgumentIsReadByPosition' => [
-                'code' => '<?php
-                    /**
-                     * @template T
-                     * @extends IteratorAggregate<int, Closure(T): void>
-                     */
-                    interface Consumers extends IteratorAggregate {}
-
-                    /** @return Consumers<*> */
-                    function consumers(): Consumers {
-                        throw new Exception();
-                    }
-
-                    $last_consumer = null;
-                    foreach (consumers() as $consumer) {
-                        $last_consumer = $consumer;
-                    }',
-                'assertions' => [
-                    '$last_consumer===' => 'Closure[impure](never):void|null',
-                ],
-                'ignored_issues' => [],
-                'php_version' => '8.0',
-            ],
-            'starProjectionInheritedNullableArgumentKeepsNull' => [
-                'code' => '<?php
-                    /** @template-covariant T */
-                    class Reader {}
-
-                    /**
-                     * @template TChild of object
-                     * @extends Reader<TChild|null>
-                     */
-                    final class NullableReader extends Reader {}
-
-                    /**
-                     * @template T
-                     * @param Reader<T> $reader
-                     * @return T
-                     */
-                    function read(Reader $reader) {
-                        throw new Exception();
-                    }
-
-                    /** @return NullableReader<*> */
-                    function reader(): NullableReader {
-                        throw new Exception();
-                    }
-
-                    $read = read(reader());',
-                'assertions' => [
-                    '$read===' => 'null|object',
-                ],
-                'ignored_issues' => [],
-                'php_version' => '8.0',
-            ],
-            'starProjectionArrayCallableBindsTheReceiver' => [
-                'code' => '<?php
-                    /** @template T of object */
-                    final class Box {
-                        /** @param T $value */
-                        public function set(object $value): void {}
-                    }
-
-                    /** @return Box<*> */
-                    function anyBox(): Box {
-                        throw new Exception();
-                    }
-
-                    $any_set = Closure::fromCallable([anyBox(), "set"]);',
-                'assertions' => [
-                    '$any_set===' => 'Closure[impure](never):void',
-                ],
-                'ignored_issues' => [],
-                'php_version' => '8.0',
-            ],
-            'starProjectionUnknownMixedReadInAUnionIsMixed' => [
-                'code' => '<?php
-                    /** @template TValue */
-                    final class Collection {
-                        /**
-                         * @template TDefault
-                         * @param TDefault $default
-                         * @return TValue|TDefault
-                         */
-                        public function first($default = null) {
-                            throw new Exception();
-                        }
-                    }
-
-                    /** @return Collection<*> */
-                    function collection(): Collection {
-                        throw new Exception();
-                    }
-
-                    $first = collection()->first();',
-                'assertions' => [
-                    '$first===' => 'mixed',
-                ],
-                'ignored_issues' => ['MixedAssignment'],
-                'php_version' => '8.0',
-            ],
-            'starProjectionHandsOutCallablesThatAcceptNothing' => [
-                'code' => '<?php
-                    /**
-                     * @template T of object
-                     * @template TArr of array<string, int>
-                     */
-                    final class Source {
-                        /**
-                         * @param mixed $value
-                         * @param-out Closure(T): void $value
-                         */
-                        public function consumer(&$value): void {
-                            throw new Exception();
-                        }
-
-                        /** @psalm-assert Closure(T): void $value */
-                        public function assertConsumer(mixed $value): void {}
-
-                        /** @psalm-assert-if-true Closure(T): void $value */
-                        public function isConsumer(mixed $value): bool {
-                            throw new Exception();
-                        }
-
-                        /** @return Closure(key-of<TArr>): void */
-                        public function keyConsumer(): Closure {
-                            throw new Exception();
-                        }
-                    }
-
-                    /** @return Source<*, *> */
-                    function source(): Source {
-                        throw new Exception();
-                    }
-
-                    source()->consumer($out_consumer);
-                    $asserted_consumer = json_decode("");
-                    source()->assertConsumer($asserted_consumer);
-                    $checked_consumer = json_decode("");
-                    if (!source()->isConsumer($checked_consumer)) {
-                        throw new Exception();
-                    }
-                    $key_consumer = source()->keyConsumer();',
-                'assertions' => [
-                    '$out_consumer===' => 'Closure[impure](never):void',
-                    '$asserted_consumer===' => 'Closure[impure](never):void',
-                    '$checked_consumer===' => 'Closure[impure](never):void',
-                    '$key_consumer===' => 'Closure[impure](never):void',
-                ],
-                'ignored_issues' => ['MixedAssignment'],
-                'php_version' => '8.0',
-            ],
-            'starProjectionUnknownMixedHandedToACallbackIsMixed' => [
-                'code' => '<?php
-                    /** @template TValue */
-                    final class Collection {
-                        /** @param callable(TValue|null): void $callback */
-                        public function each(callable $callback): void {}
-                    }
-
-                    /** @return Collection<*> */
-                    function collection(): Collection {
-                        throw new Exception();
-                    }
-
-                    collection()->each(function ($value): void {
-                        echo strlen($value);
-                    });',
-                'assertions' => [],
-                'ignored_issues' => ['MixedArgument'],
-            ],
-            'starProjectionUnionReadsEveryKnownBound' => [
-                'code' => '<?php
-                    /** @template V */
-                    final class Box {
-                        /** @return V */
-                        public function get(): mixed {
-                            throw new Exception();
-                        }
-                    }
-
-                    /** @template T of object */
-                    interface Holder {
-                        /** @return Box<list<T>> */
-                        public function box(): Box;
-                    }
-
-                    /** @return Holder<*> */
-                    function holder(): Holder {
-                        throw new Exception();
-                    }
-
-                    /** @return Box<*> */
-                    function anyBox(): Box {
-                        throw new Exception();
-                    }
-
-                    /** @return Box<int> */
-                    function intBox(): Box {
-                        throw new Exception();
-                    }
-
-                    $objects = holder()->box()->get();
-                    $narrow_first = (rand(0, 1) ? holder()->box() : anyBox())->get();
-                    $wide_first = (rand(0, 1) ? anyBox() : holder()->box())->get();
-                    $star_first = (rand(0, 1) ? holder()->box() : intBox())->get();
-                    $concrete_first = (rand(0, 1) ? intBox() : holder()->box())->get();',
-                'assertions' => [
-                    '$objects===' => 'list<object>',
-                    '$narrow_first===' => 'mixed',
-                    '$wide_first===' => 'mixed',
-                    '$star_first===' => 'int|list<object>',
-                    '$concrete_first===' => 'int|list<object>',
-                ],
-                'ignored_issues' => ['MixedAssignment'],
-                'php_version' => '8.0',
-            ],
-            'starProjectionInheritedCallableListIsReadByPosition' => [
-                'code' => '<?php
-                    /** @template V */
-                    class Base {
-                        /** @return V */
-                        public function get(): mixed {
-                            throw new Exception();
-                        }
-                    }
-
-                    /**
-                     * @template T of object
-                     * @extends Base<list<Closure(T): void>>
-                     */
-                    final class Callbacks extends Base {}
-
-                    /** @return Callbacks<*> */
-                    function callbacks(): Callbacks {
-                        throw new Exception();
-                    }
-
-                    $callbacks = callbacks()->get();',
-                'assertions' => [
-                    '$callbacks===' => 'list<Closure[impure](never):void>',
-                ],
-                'ignored_issues' => [],
-                'php_version' => '8.0',
-            ],
-            'starProjectionInheritedObjectShapeIsReadByPosition' => [
-                'code' => '<?php
-                    /** @template V */
-                    class Base {
-                        /** @return V */
-                        public function get(): mixed {
-                            throw new Exception();
-                        }
-                    }
-
-                    /**
-                     * @template T of object
-                     * @extends Base<object{callback: Closure(T): void}>
-                     */
-                    final class Callbacks extends Base {}
-
-                    /** @return Callbacks<*> */
-                    function callbacks(): Callbacks {
-                        throw new Exception();
-                    }
-
-                    $callbacks = callbacks()->get();',
-                'assertions' => [
-                    '$callbacks===' => 'object{callback:Closure[impure](never):void}',
-                ],
-                'ignored_issues' => [],
-                'php_version' => '8.0',
-            ],
-            'starProjectionInheritedComposedPropertyIsReadLikeAMethod' => [
-                'code' => '<?php
-                    abstract class Model {}
-
-                    /** @template T */
-                    final class Box {}
-
-                    /** @template T */
-                    abstract class Base {
-                        /** @param T $value */
-                        public function __construct(public mixed $value) {}
-
-                        /** @return T */
-                        public function get(): mixed {
-                            return $this->value;
-                        }
-                    }
-
-                    /**
-                     * @template TModel of Model
-                     * @extends Base<Box<TModel>>
-                     */
-                    final class Composed extends Base {}
+                    abstract class Base {}
 
                     /**
                      * @template TModel of Model
@@ -1356,59 +903,25 @@ final class StarProjectionTest extends TestCase
                      */
                     final class Listed extends Base {}
 
-                    /** @return Composed<*> */
-                    function composed(): Composed {
-                        throw new Exception();
-                    }
-
-                    /** @return Listed<*> */
-                    function listed(): Listed {
-                        throw new Exception();
-                    }
-
-                    $box_property = composed()->value;
-                    $box_method = composed()->get();
-                    $list_property = listed()->value;',
-                'assertions' => [
-                    '$box_property===' => 'Box<*>',
-                    '$box_method===' => 'Box<*>',
-                    '$list_property===' => 'list<Model>',
-                ],
-                'ignored_issues' => [],
-                'php_version' => '8.0',
-            ],
-            'starProjectionComposedCovariantAncestorFitsAnUnknownArgument' => [
-                'code' => '<?php
-                    /** @template-covariant T */
-                    interface Reader {
-                        /** @return T */
-                        public function read(): mixed;
-                    }
-
-                    /** @template T */
-                    final class Box {}
-
                     /**
-                     * @template T of object
-                     * @implements Reader<Box<T>>
+                     * @template T
+                     * @param Base<T> $base
+                     * @return T
                      */
-                    final class BoxReader implements Reader {
-                        /** @return Box<T> */
-                        public function read(): Box {
-                            throw new Exception();
-                        }
+                    function getOf(Base $base): mixed {
+                        throw new Exception();
                     }
 
-                    /** @param Reader<Box<*>> $reader */
-                    function takesAnyBoxReader(Reader $reader): void {}
+                    /** @param Base<list<Model>> $base */
+                    function takesModels(Base $base): void {}
 
-                    /** @param Reader<object> $reader */
-                    function takesObjectReader(Reader $reader): void {}
+                    /** @param Listed<*> $listed */
+                    function f(Listed $listed): void {
+                        takesModels($listed);
 
-                    /** @param BoxReader<*> $reader */
-                    function f(BoxReader $reader): void {
-                        takesAnyBoxReader($reader);
-                        takesObjectReader($reader);
+                        foreach (getOf($listed) as $item) {
+                            /** @psalm-check-type-exact $item = Model */
+                        }
                     }',
                 'assertions' => [],
                 'ignored_issues' => [],
@@ -1468,259 +981,1008 @@ final class StarProjectionTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
-            'starProjectionNestedIntersectionWithACallbackKeepsItsReadableStructure' => [
+            'starProjectionNarrowedToAChildKnowsTheChildsBound' => [
                 'code' => '<?php
                     /** @template T of object */
-                    abstract class Box {
+                    class Box {
                         /** @return T */
-                        abstract public function get(): object;
-                    }
-
-                    /** @template T of object */
-                    abstract class Source {
-                        /** @return Box<Countable&Box<Closure(T): void>> */
-                        abstract public function boxes(): Box;
-                    }
-
-                    /** @param Source<*> $source */
-                    function read(Source $source): int {
-                        return count($source->boxes()->get());
-                    }',
-                'assertions' => [],
-                'ignored_issues' => [],
-                'php_version' => '8.0',
-            ],
-            'starProjectionCallbackGivenABoxOfACallableReadsTheCallable' => [
-                'code' => '<?php
-                    /** @template T of object */
-                    abstract class Box {
-                        /** @return T */
-                        abstract public function get(): object;
-                    }
-
-                    /** @template T of object */
-                    abstract class Source {
-                        /** @param Closure(Box<Closure(T): void>): void $callback */
-                        abstract public function each(Closure $callback): void;
-                    }
-
-                    function takesClosure(Closure $callback): void {}
-
-                    /** @param Source<*> $source */
-                    function read(Source $source): void {
-                        $source->each(function (Box $box): void {
-                            takesClosure($box->get());
-                        });
-                    }',
-                'assertions' => [],
-                'ignored_issues' => [],
-                'php_version' => '8.0',
-            ],
-            'starProjectionInheritedClassStringReadsTheNarrowerBound' => [
-                'code' => '<?php
-                    abstract class Model {}
-                    final class User extends Model {}
-
-                    /** @template T of Model */
-                    abstract class Base {
-                        /** @return class-string<T> */
-                        abstract public function className(): string;
-
-                        /** @param Closure(class-string<T>): void $callback */
-                        abstract public function eachClass(Closure $callback): void;
-                    }
-
-                    /**
-                     * @template T of User
-                     * @extends Base<T>
-                     */
-                    abstract class Child extends Base {}
-
-                    /** @param class-string<User> $class */
-                    function takesUserClass(string $class): void {}
-
-                    /** @param Child<*> $child */
-                    function f(Child $child): void {
-                        takesUserClass($child->className());
-                        $child->eachClass(function ($class): void {
-                            takesUserClass($class);
-                        });
-                    }',
-                'assertions' => [],
-                'ignored_issues' => [],
-                'php_version' => '8.0',
-            ],
-            'starProjectionKeyOfInACallbackOfAGenericMethodIsRead' => [
-                'code' => '<?php
-                    /** @template TArr of array<string, int> */
-                    final class Holder {
-                        /**
-                         * @template R
-                         * @param Closure(key-of<TArr>): R $cb
-                         * @return list<R>
-                         */
-                        public function mapKeys(Closure $cb): array {
-                            return [];
+                        public function get(): object {
+                            throw new Exception();
                         }
                     }
 
-                    /** @return Holder<*> */
-                    function holder(): Holder {
-                        return new Holder();
-                    }
-
-                    $keys = holder()->mapKeys(fn($k) => $k);',
-                'assertions' => [
-                    '$keys===' => 'list<string>',
-                ],
-                'ignored_issues' => [],
-                'php_version' => '8.0',
-            ],
-            'starProjectionCallbackReadsKeyOfAndValueOfTheBound' => [
-                'code' => '<?php
-                    /** @template TArr of array<string, int> */
-                    final class Holder {
-                        /** @param Closure(key-of<TArr>, value-of<TArr>): void $cb */
-                        public function each(Closure $cb): void {}
-                    }
-
-                    function takesString(string $s): void {}
-
-                    function takesInt(int $i): void {}
-
-                    /** @param array<string, int> $a */
-                    function takesArray(array $a): void {}
-
-                    /** @param Holder<*> $h */
-                    function f(Holder $h): void {
-                        $h->each(function (string $k, int $v): void {
-                            echo $k . "x", $v + 1;
-                            takesArray([$k => $v]);
-                        });
-                        $h->each(function ($k, $v): void {
-                            takesString($k);
-                            takesInt($v + 1);
-                        });
-                    }',
-                'assertions' => [],
-                'ignored_issues' => [],
-                'php_version' => '8.0',
-            ],
-            'starProjectionCallbackReadsPropertiesOfAndAnIndexedAccessOfTheBound' => [
-                'code' => '<?php
-                    final class Model {
-                        public int $id = 0;
-                    }
-
-                    /** @template TModel of Model */
-                    final class MHolder {
-                        /** @param Closure(properties-of<TModel>): void $cb */
-                        public function withProps(Closure $cb): void {}
-                    }
-
                     /**
-                     * @template TArr of array{a: DateTime, b: stdClass}
-                     * @template TKey of key-of<TArr>
+                     * @template T of DateTime
+                     * @extends Box<T>
                      */
-                    final class Lookup {
-                        /** @param Closure(TArr[TKey]): void $cb */
-                        public function with(Closure $cb): void {}
-                    }
+                    final class DateBox extends Box {}
 
-                    /**
-                     * @param MHolder<*> $m
-                     * @param Lookup<*, "a"> $l
-                     * @param Lookup<array{a: DateTime, b: stdClass}, *> $l2
-                     */
-                    function f(MHolder $m, Lookup $l, Lookup $l2): void {
-                        $m->withProps(function (array $_p): void {});
-                        $l->with(function (object $_v): void {});
-                        $l2->with(function (object $_v): void {});
-                    }',
-                'assertions' => [],
-                'ignored_issues' => [],
-                'php_version' => '8.0',
-            ],
-            'starProjectionShapeSlotAcceptingNothingMakesTheShapeAcceptNothing' => [
-                'code' => self::SHAPE_BOX . '
                     /** @return Box<*> */
-                    function box(): Box {
+                    function source(): Box {
                         throw new Exception();
                     }
 
-                    $shape = box()->shape;
-                    $consumer = box()->consumer();
-                    box()->setOptional([]);
-                    box()->setPossiblyEmptyList([]);',
+                    $box = source();
+                    $value = $box instanceof DateBox ? $box->get() : null;',
                 'assertions' => [
-                    '$shape===' => 'array{value: object}',
-                    '$consumer===' => 'Closure[impure](never):void',
+                    '$value===' => 'DateTime|null',
                 ],
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
-            'starProjectionObjectShapeIsReadLikeAProperty' => [
+            'starProjectionNarrowedToAChildLeavesItsPurityTemplateToItsBound' => [
+                'code' => '<?php
+                    /** @template T */
+                    class ParentBox {}
+
+                    /**
+                     * @template T
+                     * @psalm-purity-template P
+                     * @extends ParentBox<T>
+                     */
+                    final class ChildBox extends ParentBox {}
+
+                    /** @return ParentBox<*> */
+                    function source(): ParentBox {
+                        throw new Exception();
+                    }
+
+                    $box = source();
+                    $child = $box instanceof ChildBox ? $box : null;',
+                'assertions' => [
+                    '$child===' => 'ChildBox[impure]<*>|null',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'starProjectionAssertedIfTrueHoldsTheBound' => [
+                'code' => '<?php
+                    /** @template-covariant T of Countable */
+                    interface Reader {}
+
+                    /** @param Reader<Countable> $r */
+                    function takes(Reader $r): void {}
+
+                    /** @psalm-assert-if-true Reader<*> $x */
+                    function isReader(mixed $x): bool {
+                        return true;
+                    }
+
+                    function f(mixed $a): void {
+                        if (isReader($a)) {
+                            /** @psalm-check-type-exact $a = Reader<*> */
+                            takes($a);
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'starProjectionAssertedIfFalseHoldsTheBound' => [
+                'code' => '<?php
+                    /** @template-covariant T of Countable */
+                    interface Reader {}
+
+                    /** @param Reader<Countable> $r */
+                    function takes(Reader $r): void {}
+
+                    /** @psalm-assert-if-false Reader<*> $x */
+                    function isNotReader(mixed $x): bool {
+                        return true;
+                    }
+
+                    function f(mixed $a): void {
+                        if (!isNotReader($a)) {
+                            /** @psalm-check-type-exact $a = Reader<*> */
+                            takes($a);
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'starProjectionAssertedHoldsTheBound' => [
+                'code' => '<?php
+                    /** @template-covariant T of Countable */
+                    interface Reader {}
+
+                    /** @param Reader<Countable> $r */
+                    function takes(Reader $r): void {}
+
+                    /** @psalm-assert Reader<*> $x */
+                    function assertReader(mixed $x): void {}
+
+                    function f(mixed $a): void {
+                        assertReader($a);
+                        /** @psalm-check-type-exact $a = Reader<*> */
+                        takes($a);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'starProjectionAssertedOnAPropertyHoldsTheBound' => [
+                'code' => '<?php
+                    /** @template-covariant T of Countable */
+                    interface Reader {}
+
+                    /** @param Reader<Countable> $r */
+                    function takes(Reader $r): void {}
+
+                    final class Holder {
+                        public mixed $prop = null;
+
+                        /** @psalm-assert-if-true Reader<*> $this->prop */
+                        public function hasReader(): bool {
+                            return true;
+                        }
+
+                        /** @psalm-assert Reader<*> $this->prop */
+                        public function assertReader(): void {}
+
+                        public function ifTrue(): void {
+                            if ($this->hasReader()) {
+                                takes($this->prop);
+                            }
+                        }
+
+                        public function asserted(): void {
+                            $this->assertReader();
+                            takes($this->prop);
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'starProjectionBindsACovariantTemplateAsTheBound' => [
+                'code' => '<?php
+                    /** @template-covariant T of Countable */
+                    interface Reader {}
+
+                    /**
+                     * @template T of Countable
+                     * @param Reader<T> $reader
+                     * @return T
+                     */
+                    function readOf(Reader $reader): Countable {
+                        throw new Exception();
+                    }
+
+                    /** @param Reader<*> $any */
+                    function f(Reader $any): void {
+                        $read = readOf($any);
+                        /** @psalm-check-type-exact $read = Countable */
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'starProjectionReadKeepsTheStarOfAWholeGenericArgument' => [
                 'code' => '<?php
                     /** @template T of object */
-                    final class Holder {
-                        /** @param Closure(T): void $callback */
-                        public function __construct(public Closure $callback) {}
+                    class Box {
+                        /** @return Box<T> */
+                        public function same(): Box {
+                            return $this;
+                        }
+
+                        /** @return self<T> */
+                        public function selfOf(): self {
+                            return $this;
+                        }
+
+                        /** @return static<T> */
+                        public function staticOf(): static {
+                            return $this;
+                        }
+
+                        /** @return Other<T> */
+                        public function other(): Other {
+                            throw new Exception();
+                        }
+
+                        /** @return list<Box<T>> */
+                        public function boxes(): array {
+                            return [];
+                        }
+
+                        /** @return T */
+                        public function get(): object {
+                            throw new Exception();
+                        }
+
+                        /** @return list<T> */
+                        public function all(): array {
+                            return [];
+                        }
+
+                        /** @var Box<T>|null */
+                        public ?Box $property = null;
                     }
 
-                    /**
-                     * @template X
-                     * @param object{callback: X} $object
-                     * @return X
-                     */
-                    function callbackOf(object $object): mixed {
-                        return $object->callback;
-                    }
+                    /** @template U of object */
+                    final class Other {}
 
-                    /** @return Holder<*> */
-                    function holder(): Holder {
-                        throw new Exception();
-                    }
-
-                    $callback = callbackOf(holder());',
+                    /** @var Box<*> $b */
+                    $b = new Box();
+                    $same = $b->same();
+                    $self = $b->selfOf();
+                    $static = $b->staticOf();
+                    $other = $b->other();
+                    $boxes = $b->boxes();
+                    $get = $b->get();
+                    $all = $b->all();
+                    $property = $b->property;',
                 'assertions' => [
-                    '$callback===' => 'Closure[impure](never):void',
+                    '$same===' => 'Box<*>',
+                    '$self===' => 'Box<*>',
+                    '$static===' => 'Box<*>&static',
+                    '$other===' => 'Other<*>',
+                    '$boxes===' => 'list<Box<*>>',
+                    '$get===' => 'object',
+                    '$all===' => 'list<object>',
+                    '$property===' => 'Box<*>|null',
                 ],
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
-            'starProjectionCallbackReadsTheExpandedBound' => [
+            'starProjectionWritesAreNotRestrictedYet' => [
+                // known gap: the write-restriction PR makes `set()` expect `never` and `sink()` a `Closure(never): void`
                 'code' => '<?php
-                    final class Consts {
-                        public const MAP = ["a" => 1, "b" => 2];
-                        public const STATE_ON = "on";
-                        public const STATE_OFF = "off";
+                    /** @template T of object */
+                    final class Box {
+                        /** @param T $value */
+                        public function set(object $value): void {}
+
+                        /** @return Closure(T): void */
+                        public function sink(): Closure {
+                            throw new Exception();
+                        }
+
+                        /** @return Closure(T): void */
+                        public function setter(): Closure {
+                            throw new Exception();
+                        }
                     }
 
-                    /** @template TState of Consts::STATE_* */
-                    final class States {
-                        /** @param Closure(TState): void $callback */
-                        public function each(Closure $callback): void {}
+                    /** @var Box<*> $b */
+                    $b = new Box();
+                    $b->set(new stdClass());
+                    $sink = $b->sink();
+                    ($b->setter())(new DateTime());',
+                'assertions' => [
+                    '$sink===' => 'Closure[impure](object):void',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'starProjectionFitsAParamWithoutArguments' => [
+                // `Box<stdClass>` does not (see starProjectionBareParamRejectsAConcreteArgument): the bare class
+                // taking any argument is a separate later change (see `Omitted`)
+                'code' => '<?php
+                    /** @template T of object */
+                    final class Box {}
+
+                    function takesBare(Box $b): void {}
+
+                    /** @param Box<*> $b */
+                    function f(Box $b): void {
+                        takesBare($b);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'starProjectionNestedInAnArgument' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class Box {
+                        /** @return T */
+                        public function get() {
+                            throw new Exception();
+                        }
                     }
 
-                    /** @template TValue of value-of<Consts::MAP> */
-                    final class Values {
-                        /** @param Closure(TValue): void $callback */
-                        public function each(Closure $callback): void {}
+                    /** @param Box<Box<*>> $b */
+                    function takesNested(Box $b): void {}
+
+                    /** @param Box<Box<*>> $b */
+                    function f(Box $b): void {
+                        takesNested($b);
+                        $inner = $b->get();
+                        /** @psalm-check-type-exact $inner = Box<*> */
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'starProjectionInParamOutSelfOutAndThisOut' => [
+                'code' => '<?php
+                    /** @template T of object */
+                    final class Cell {
+                        /** @psalm-this-out Cell<*> */
+                        public function wipeThis(): void {}
+
+                        /** @psalm-self-out Cell<*> */
+                        public function wipeSelf(): void {}
+                    }
+
+                    /** @param-out Cell<*> $out */
+                    function fill(mixed &$out): void {
+                        $out = new Cell();
+                    }
+
+                    fill($filled);
+                    /** @var Cell<DateTime> $this_out */
+                    $this_out = new Cell();
+                    $this_out->wipeThis();
+                    /** @var Cell<DateTime> $self_out */
+                    $self_out = new Cell();
+                    $self_out->wipeSelf();',
+                'assertions' => [
+                    '$filled===' => 'Cell<*>',
+                    '$this_out===' => 'Cell<*>',
+                    '$self_out===' => 'Cell<*>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'starProjectionCombinedWithAnArgumentKeepsBoth' => [
+                // `Box<*>|Box<DateTime>` stays two members: the arguments print differently, so the types differ
+                'code' => '<?php
+                    /** @template T of object */
+                    final class Box {}
+
+                    function takesBare(Box $b): void {}
+
+                    /** @var Box<*> $star */
+                    $star = new Box();
+                    /** @var Box $bare */
+                    $bare = new Box();
+                    /** @var Box<DateTime> $date */
+                    $date = new Box();
+                    $with_bare = rand(0, 1) ? $star : $bare;
+                    $with_date = rand(0, 1) ? $star : $date;
+                    $with_itself = rand(0, 1) ? $star : $star;
+                    takesBare($with_bare);',
+                'assertions' => [
+                    '$with_bare===' => 'Box|Box<*>',
+                    '$with_date===' => 'Box<*>|Box<DateTime>',
+                    '$with_itself===' => 'Box<*>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'starProjectionReadsOfAnObjectsMembersKeepTheStar' => [
+                'code' => '<?php
+                    /**
+                     * @template T of object
+                     * @method Box<T> magic()
+                     */
+                    class Box {
+                        /** @var Box<T> */
+                        public $prop;
+
+                        public function __construct() {
+                            $this->prop = $this;
+                        }
+
+                        public function __call(string $name, array $args): mixed {
+                            return null;
+                        }
+                    }
+
+                    /** @return properties-of<Box<*>> */
+                    function props() {
+                        throw new Exception();
+                    }
+
+                    /** @var Box<*> $b */
+                    $b = new Box();
+                    $vars = get_object_vars($b);
+                    $object_var = $vars["prop"];
+                    $properties = props();
+                    $properties_of = $properties["prop"];
+                    $magic = $b->magic();
+                    $nested = $b->prop->prop;',
+                'assertions' => [
+                    '$object_var===' => 'Box<*>',
+                    '$properties_of===' => 'Box<*>',
+                    '$magic===' => 'Box<*>',
+                    '$nested===' => 'Box<*>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'starProjectionInAClosureParamOfAReadTypeIsTheBound' => [
+                // known gap: a callable parameter is a write, which the write-restriction PR restricts to `never`
+                'code' => '<?php
+                    /** @template T of object */
+                    final class Box {
+                        /** @return Closure(Closure(): Box<T>): void */
+                        public function deep(): Closure {
+                            throw new Exception();
+                        }
+                    }
+
+                    /** @var Box<*> $b */
+                    $b = new Box();
+                    $deep = $b->deep();',
+                'assertions' => [
+                    '$deep===' => 'Closure[impure](Closure[impure]():Box<object>):void',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'starProjectionParamOutIsNotAStarYet' => [
+                // known gap: the out type is read with the arguments, before the receiver's `*` is marked, so it is
+                // not a `Box<*>` yet (the write-restriction PR flips it)
+                'code' => '<?php
+                    /** @template T of object */
+                    final class Box {
+                        /** @param-out Box<T> $out */
+                        public function fill(mixed &$out): void {
+                            $out = $this;
+                        }
+                    }
+
+                    /** @var Box<*> $b */
+                    $b = new Box();
+                    $b->fill($out);',
+                'assertions' => [
+                    '$out===' => 'Box<object>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'starProjectionNestedReadIsWrittenToAsTheBoundYet' => [
+                // known gap: `set()` on the `Box<*>` of `nested()` expects `never` once the write-restriction PR lands
+                'code' => '<?php
+                    /** @template T of object */
+                    final class Box {
+                        /** @return Box<Box<T>> */
+                        public function nested(): Box {
+                            throw new Exception();
+                        }
+
+                        /** @param T $value */
+                        public function set(object $value): void {}
+                    }
+
+                    /** @var Box<*> $b */
+                    $b = new Box();
+                    /** @var Box<stdClass> $box_of_std_class */
+                    $box_of_std_class = new Box();
+                    $b->nested()->set($box_of_std_class);',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'starProjectionReadHoldsTheBoundOfTheClassItIsReadInto' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class Free {
+                        /** @return T */
+                        public function get() {
+                            throw new Exception();
+                        }
+                    }
+
+                    /** @template T of object */
+                    final class Box {
+                        /** @var Free<T> */
+                        public $prop;
+
+                        public function __construct() {
+                            $this->prop = new Free();
+                        }
+
+                        /** @return Free<T> */
+                        public function free(): Free {
+                            return $this->prop;
+                        }
+                    }
+
+                    /** @var Box<*> $b */
+                    $b = new Box();
+                    $from_method = $b->free()->get();
+                    $from_property = $b->prop->get();
+                    $either = rand(0, 1) ? $b->free() : $b->prop;
+                    $from_either = $either->get();',
+                'assertions' => [
+                    '$from_method===' => 'mixed',
+                    '$from_property===' => 'mixed',
+                    '$from_either===' => 'mixed',
+                ],
+                'ignored_issues' => ['MixedAssignment', 'MixedPropertyTypeCoercion'],
+                'php_version' => '8.0',
+            ],
+            'starProjectionOfAConditionalAssertionIsIteratedWithItsBound' => [
+                'code' => '<?php
+                    /**
+                     * @template TKey of array-key
+                     * @template TValue of object
+                     * @implements IteratorAggregate<TKey, TValue>
+                     */
+                    final class Collection implements IteratorAggregate {
+                        public function getIterator(): Iterator {
+                            throw new Exception();
+                        }
+                    }
+
+                    /** @psalm-assert-if-true Collection<*, *> $x */
+                    function isCollection(mixed $x): bool {
+                        return true;
+                    }
+
+                    /** @psalm-assert-if-false Collection<*, *> $x */
+                    function isNotCollection(mixed $x): bool {
+                        return true;
+                    }
+
+                    function f(mixed $a, mixed $b): void {
+                        if (isCollection($a)) {
+                            [$first] = [...$a];
+                            /** @psalm-check-type-exact $first = object */
+                        }
+
+                        if (!isNotCollection($b)) {
+                            [$second] = [...$b];
+                            /** @psalm-check-type-exact $second = object */
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'starProjectionReadThroughATemplatedMixinKeepsTheStar' => [
+                'code' => '<?php
+                    abstract class Model {}
+
+                    /** @template T of object */
+                    final class Box {}
+
+                    /** @template TModel of Model */
+                    final class Builder {
+                        /** @return TModel */
+                        public function first(): Model {
+                            throw new Exception();
+                        }
+
+                        /** @return Builder<TModel> */
+                        public function self(): Builder {
+                            return $this;
+                        }
+
+                        /** @return Box<TModel> */
+                        public function boxed(): Box {
+                            throw new Exception();
+                        }
                     }
 
                     /**
-                     * @param States<*> $states
-                     * @param Values<*> $values
+                     * @template TModel of Model
+                     * @mixin Builder<TModel>
                      */
-                    function f(States $states, Values $values): void {
-                        $states->each(function ($state): void {
-                            /** @psalm-check-type-exact $state = "off"|"on" */
-                        });
-                        $states->each(function (string $_state): void {});
-                        $values->each(function ($value): void {
-                            /** @psalm-check-type-exact $value = 1|2 */
-                        });
-                        $values->each(function (int $_value): void {});
+                    final class Relation {}
+
+                    /** @var Relation<*> $relation */
+                    $relation = new Relation();
+                    $first = $relation->first();
+                    $self = $relation->self();
+                    $boxed = $relation->boxed();',
+                'assertions' => [
+                    '$first===' => 'Model',
+                    '$self===' => 'Builder<*>',
+                    '$boxed===' => 'Box<*>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'starProjectionReadThroughOffsetGetKeepsTheStar' => [
+                'code' => '<?php
+                    /** @template T of object */
+                    final class Box {}
+
+                    /**
+                     * @template T of object
+                     * @implements ArrayAccess<int, Box<T>>
+                     */
+                    final class Offsets implements ArrayAccess {
+                        public function offsetExists(mixed $offset): bool {
+                            return true;
+                        }
+
+                        /** @return Box<T> */
+                        public function offsetGet(mixed $offset): mixed {
+                            throw new Exception();
+                        }
+
+                        public function offsetSet(mixed $offset, mixed $value): void {}
+
+                        public function offsetUnset(mixed $offset): void {}
+                    }
+
+                    /** @var Offsets<*> $offsets */
+                    $offsets = new Offsets();
+                    $box = $offsets[0];',
+                'assertions' => [
+                    '$box===' => 'Box<*>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'starProjectionIterationOfAWrappedArgumentIsAStar' => [
+                'code' => '<?php
+                    /** @template T of object */
+                    final class Box {}
+
+                    /**
+                     * @template T of object
+                     * @implements IteratorAggregate<int, Box<T>>
+                     */
+                    final class Boxes implements IteratorAggregate {
+                        public function getIterator(): Iterator {
+                            throw new Exception();
+                        }
+                    }
+
+                    /** @var Boxes<*> $boxes */
+                    $boxes = new Boxes();
+                    $item = null;
+
+                    foreach ($boxes as $item) {
+                    }',
+                'assertions' => [
+                    '$item===' => 'Box<*>|null',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'starProjectionInheritedThroughAWrappedImplementsKeepsTheStar' => [
+                'code' => '<?php
+                    /** @template T of object */
+                    interface Getter {
+                        /** @return T */
+                        public function get(): object;
+                    }
+
+                    /**
+                     * @template T of object
+                     * @implements Getter<Box<T>>
+                     */
+                    final class Box implements Getter {
+                        public function get(): object {
+                            return $this;
+                        }
+                    }
+
+                    /**
+                     * @param Box<*> $any
+                     * @param Box<stdClass> $concrete
+                     */
+                    function f(Box $any, Box $concrete): void {
+                        $inherited = $any->get();
+                        /** @psalm-check-type-exact $inherited = Box<*> */
+                        $known = $concrete->get();
+                        /** @psalm-check-type-exact $known = Box<stdClass> */
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'starProjectionSpreadOfAWrappedArgumentIsAStar' => [
+                'code' => '<?php
+                    /** @template T of object */
+                    final class Box {}
+
+                    /**
+                     * @template T of object
+                     * @implements IteratorAggregate<int, Box<T>>
+                     */
+                    final class Boxes implements IteratorAggregate {
+                        public function getIterator(): Iterator {
+                            throw new Exception();
+                        }
+                    }
+
+                    /** @param Boxes<*> $boxes */
+                    function f(Boxes $boxes): void {
+                        $all = [...$boxes];
+                        /** @psalm-check-type-exact $all = list<Box<*>> */
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'starProjectionOfAnInterfaceMethodTagKeepsTheStar' => [
+                'code' => '<?php
+                    /** @template T of object */
+                    final class Box {}
+
+                    /**
+                     * @template T of object
+                     * @method Box<T> boxed()
+                     */
+                    interface Shelf {}
+
+                    /** @param Shelf<*> $shelf */
+                    function f(Shelf $shelf): void {
+                        $boxed = $shelf->boxed();
+                        /** @psalm-check-type-exact $boxed = Box<*> */
+                        $factory = $shelf->boxed(...);
+                        /** @psalm-check-type-exact $factory = Closure():Box<*> */
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'starProjectionOfAStaticCallThroughTheInstanceKeepsTheStar' => [
+                'code' => '<?php
+                    /** @template T of object */
+                    final class Box {
+                        /** @return Box<T> */
+                        public static function make(): Box {
+                            throw new Exception();
+                        }
+                    }
+
+                    /**
+                     * @template T of object
+                     * @method static Box<T> magic()
+                     */
+                    class Shelf {
+                        public static function __callStatic(string $name, array $args): mixed {
+                            return null;
+                        }
+                    }
+
+                    /**
+                     * @param Box<*> $any
+                     * @param Shelf<*> $shelf
+                     */
+                    function f(Box $any, Shelf $shelf): void {
+                        $made = $any::make();
+                        /** @psalm-check-type-exact $made = Box<*> */
+                        $factory = $any::make(...);
+                        /** @psalm-check-type-exact $factory = Closure():Box<*> */
+                        $magic = $shelf::magic();
+                        /** @psalm-check-type-exact $magic = Box<*> */
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'starProjectionOfABoundNamingItsOwnClassIsExpandedOnce' => [
+                'code' => '<?php
+                    /** @template T of Node<*> */
+                    class Node {
+                        /** @return T */
+                        public function child() {
+                            throw new Exception();
+                        }
+                    }
+
+                    /** @param Node<*> $node */
+                    function f(Node $node): void {
+                        $child = $node->child();
+                        /** @psalm-check-type-exact $child = Node<*> */
+                        $grandchild = $child->child();
+                        /** @psalm-check-type-exact $grandchild = Node<*> */
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'starProjectionAssertedIntersectionKeepsTheStar' => [
+                'code' => '<?php
+                    /** @template T of object */
+                    class Box {}
+
+                    /** @psalm-assert Box&Countable $x */
+                    function assertCountableBox(mixed $x): void {}
+
+                    /** @param Box<*> $box */
+                    function f(Box $box): void {
+                        assertCountableBox($box);
+                        /** @psalm-check-type-exact $box = Box<*>&Countable */
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'starProjectionNarrowedToAGrandchildKeepsTheStarAndAppliesTheChildsBound' => [
+                'code' => '<?php
+                    /** @template T of object */
+                    class Box {}
+
+                    /**
+                     * @template U of object
+                     * @extends Box<U>
+                     */
+                    class Middle extends Box {}
+
+                    /**
+                     * @template V of DateTimeInterface
+                     * @extends Middle<V>
+                     */
+                    final class Child extends Middle {
+                        /** @return V */
+                        public function get() {
+                            throw new Exception();
+                        }
+                    }
+
+                    /** @param Box<*> $box */
+                    function f(Box $box): void {
+                        if ($box instanceof Child) {
+                            /** @psalm-check-type-exact $box = Child<*> */
+                            $date = $box->get();
+                            /** @psalm-check-type-exact $date = DateTimeInterface */
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'starProjectionNestedInAnAssertedListHoldsTheBound' => [
+                'code' => '<?php
+                    /** @template-covariant T of Countable */
+                    final class Reader {}
+
+                    /** @param list<Reader<Countable>> $list */
+                    function takes(array $list): void {}
+
+                    /** @psalm-assert-if-true list<Reader<*>> $x */
+                    function isReaderList(mixed $x): bool {
+                        return true;
+                    }
+
+                    function f(mixed $a): void {
+                        if (isReaderList($a)) {
+                            takes($a);
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'starProjectionInANamespaceResolvesTheClassName' => [
+                'code' => '<?php
+                    namespace App\Models {
+                        /**
+                         * @template TFirst
+                         * @template TSecond of object
+                         */
+                        final class Pair {
+                            /** @return TSecond */
+                            public function second(): object {
+                                throw new \Exception();
+                            }
+                        }
+                    }
+
+                    namespace App {
+                        use App\Models\Pair;
+                        use App\Models\Pair as Couple;
+
+                        /**
+                         * @param \App\Models\Pair<int, *> $qualified
+                         * @param Pair<int, *> $imported
+                         * @param Couple<int, *> $aliased
+                         */
+                        function f(Models\Pair $qualified, Pair $imported, Couple $aliased): void {
+                            /** @psalm-check-type-exact $qualified = \App\Models\Pair<int, *> */
+                            /** @psalm-check-type-exact $imported = \App\Models\Pair<int, *> */
+                            /** @psalm-check-type-exact $aliased = \App\Models\Pair<int, *> */
+                            $second = $imported->second();
+                            /** @psalm-check-type-exact $second = object */
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'starProjectionInAnAssertedClassStringHoldsTheBound' => [
+                'code' => '<?php
+                    /** @template-covariant T of Countable */
+                    interface Reader {}
+
+                    /** @param Reader<Countable> $reader */
+                    function takes(Reader $reader): void {}
+
+                    /** @psalm-assert-if-true class-string<Reader<*>> $x */
+                    function isReaderClass(mixed $x): bool {
+                        return true;
+                    }
+
+                    function f(mixed $a): void {
+                        if (isReaderClass($a)) {
+                            takes(new $a);
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'starProjectionInAnAssertedClassStringWhenFalseHoldsTheBound' => [
+                'code' => '<?php
+                    /** @template-covariant T of Countable */
+                    interface Reader {}
+
+                    /** @param Reader<Countable> $reader */
+                    function takes(Reader $reader): void {}
+
+                    /** @psalm-assert-if-false class-string<Reader<*>> $x */
+                    function isNotReaderClass(mixed $x): bool {
+                        return false;
+                    }
+
+                    function f(mixed $a): void {
+                        if (isNotReaderClass($a)) {
+                            return;
+                        }
+
+                        takes(new $a);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'starProjectionInAnAssertedClosureParameterHoldsTheBound' => [
+                'code' => '<?php
+                    /** @template-covariant T of Countable */
+                    interface Reader {}
+
+                    /**
+                     * @template T
+                     * @param Closure(Reader<T>): void $closure
+                     * @return T
+                     */
+                    function readClosure(Closure $closure): mixed {
+                        throw new Exception();
+                    }
+
+                    /** @psalm-assert-if-true Closure(Reader<*>): void $x */
+                    function isReaderClosure(mixed $x): bool {
+                        return true;
+                    }
+
+                    function f(mixed $a): void {
+                        if (isReaderClosure($a)) {
+                            $read = readClosure($a);
+                            /** @psalm-check-type-exact $read = Countable */
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['InvalidTemplateParam'],
+                'php_version' => '8.0',
+            ],
+            'starProjectionCallableOfASetterIsNotRestrictedYet' => [
+                // known gap: `Closure::fromCallable([$any, 'set'])` takes the argument of the setter as a `Box<*>`, which
+                // accepts any `Box`, until the write-restriction PR makes it `never`
+                'code' => '<?php
+                    /** @template T of object */
+                    interface Setter {
+                        /** @param T $value */
+                        public function set(object $value): void;
+                    }
+
+                    /**
+                     * @template T of object
+                     * @implements Setter<Box<T>>
+                     */
+                    final class Box implements Setter {
+                        public function set(object $value): void {}
+                    }
+
+                    /**
+                     * @param Box<*> $any
+                     * @param Box<DateTime> $date
+                     */
+                    function f(Box $any, Box $date): void {
+                        Closure::fromCallable([$any, "set"])($date);
                     }',
                 'assertions' => [],
                 'ignored_issues' => [],
@@ -1768,7 +2030,7 @@ final class StarProjectionTest extends TestCase
                     function f(Pair $p): void {
                         takesConcrete($p);
                     }',
-                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:13:39 - Argument 1 of takesConcrete expects Pair<int, stdClass>, but Pair<int, *> provided',
+                'error_message' => 'ArgumentTypeCoercion - src' . DIRECTORY_SEPARATOR . 'somefile.php:13:39 - Argument 1 of takesConcrete expects Pair<int, stdClass>, but parent type Pair<int, *> provided',
             ],
             'starProjectionIsNotTheBoundArgument' => [
                 'code' => '<?php
@@ -1785,7 +2047,7 @@ final class StarProjectionTest extends TestCase
                     function f(Pair $p): void {
                         takesBound($p);
                     }',
-                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:13:36 - Argument 1 of takesBound expects Pair<int, object>, but Pair<int, *> provided',
+                'error_message' => 'ArgumentTypeCoercion - src' . DIRECTORY_SEPARATOR . 'somefile.php:13:36 - Argument 1 of takesBound expects Pair<int, object>, but parent type Pair<int, *> provided',
             ],
             'starProjectionIsNotTheMixedArgument' => [
                 'code' => '<?php
@@ -1799,7 +2061,38 @@ final class StarProjectionTest extends TestCase
                     function f(Box $b): void {
                         takesMixed($b);
                     }',
-                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:36 - Argument 1 of takesMixed expects Box<mixed>, but Box<*> provided',
+                'error_message' => 'ArgumentTypeCoercion - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:36 - Argument 1 of takesMixed expects Box<mixed>, but parent type Box<*> provided',
+            ],
+            'starProjectionKeepsTheBoundOfAMethodTemplate' => [
+                'code' => '<?php
+                    /** @template T of Countable */
+                    final class Box {
+                        /**
+                         * @template U of T
+                         * @param U $value
+                         */
+                        public function sub(object $value): void {}
+                    }
+
+                    /** @param Box<*> $box */
+                    function f(Box $box): void {
+                        $box->sub(new stdClass());
+                    }',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:13:35 - Argument 1 of Box::sub expects Countable, but stdClass provided',
+            ],
+            'starProjectionOfAnUnboundedTemplateIsNotAMixedValue' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class Box {}
+
+                    /** @param Box<int> $b */
+                    function takesInt(Box $b): void {}
+
+                    /** @param Box<*> $b */
+                    function f(Box $b): void {
+                        takesInt($b);
+                    }',
+                'error_message' => 'ArgumentTypeCoercion - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:34 - Argument 1 of takesInt expects Box<int>, but parent type Box<*> provided',
             ],
             'starProjectionFitsOnlyACovariantArgumentHoldingTheBound' => [
                 'code' => '<?php
@@ -1819,7 +2112,7 @@ final class StarProjectionTest extends TestCase
                     function f(ObjectReader $r): void {
                         takesStdClassReader($r);
                     }',
-                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:16:45 - Argument 1 of takesStdClassReader expects Reader<stdClass>, but ObjectReader<*> provided',
+                'error_message' => 'ArgumentTypeCoercion - src' . DIRECTORY_SEPARATOR . 'somefile.php:16:45 - Argument 1 of takesStdClassReader expects Reader<stdClass>, but parent type ObjectReader<*> provided',
             ],
             'starProjectionDoesNotBindATemplateArgument' => [
                 'code' => '<?php
@@ -1836,7 +2129,27 @@ final class StarProjectionTest extends TestCase
                     function f(Box $b): void {
                         takesTemplated($b);
                     }',
-                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:13:40 - Argument 1 of takesTemplated expects Box<mixed>, but Box<*> provided',
+                'error_message' => 'ArgumentTypeCoercion - src' . DIRECTORY_SEPARATOR . 'somefile.php:13:40 - Argument 1 of takesTemplated expects Box<mixed>, but parent type Box<*> provided',
+            ],
+            'starProjectionDoesNotFitATemplateBoundByAnotherArgument' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class Box {}
+
+                    /**
+                     * @template T
+                     * @param T $value
+                     * @param Box<T> $box
+                     */
+                    function pair(mixed $value, Box $box): void {}
+
+                    /** @param Box<*> $box */
+                    function f(Box $box): void {
+                        pair(1, $box);
+                    }',
+                'error_message' => 'ArgumentTypeCoercion - src' . DIRECTORY_SEPARATOR . 'somefile.php:14:33 - Argument 2 of pair expects Box<mixed>, but parent type Box<*> provided',
+                'error_levels' => [],
+                'php_version' => '8.0',
             ],
             'starProjectionDoesNotBindATemplateArgumentNextToStars' => [
                 'code' => '<?php
@@ -1857,7 +2170,35 @@ final class StarProjectionTest extends TestCase
                     function f(Relation $r): void {
                         takesTemplated($r);
                     }',
-                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:17:40 - Argument 1 of takesTemplated expects Relation<mixed, *, *>, but Relation<*, *, *> provided',
+                'error_message' => 'ArgumentTypeCoercion - src' . DIRECTORY_SEPARATOR . 'somefile.php:17:40 - Argument 1 of takesTemplated expects Relation<mixed, *, *>, but parent type Relation<*, *, *> provided',
+            ],
+            'omittedArgumentStaysMixedThroughAFunctionTemplate' => [
+                'code' => '<?php
+                    /**
+                     * @template TKey of array-key
+                     * @template TValue
+                     */
+                    final class Page {}
+
+                    /** @return Page */
+                    function page(): Page {
+                        return new Page();
+                    }
+
+                    /**
+                     * @template T
+                     * @param T $value
+                     * @return T
+                     */
+                    function same($value) {
+                        return $value;
+                    }
+
+                    /** @return Page<int, stdClass> */
+                    function f(): Page {
+                        return same(page());
+                    }',
+                'error_message' => 'MixedReturnTypeCoercion',
             ],
             'starProjectionInExtends' => [
                 'code' => '<?php
@@ -1866,7 +2207,7 @@ final class StarProjectionTest extends TestCase
 
                     /** @extends Box<*> */
                     final class StarBox extends Box {}',
-                'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:21 - The * type argument of Box<*> is not allowed in @extends',
+                'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:21 - The * type argument of Box<*> is not allowed in @template-extends',
             ],
             'starProjectionInImplements' => [
                 'code' => '<?php
@@ -1875,7 +2216,7 @@ final class StarProjectionTest extends TestCase
 
                     /** @implements Box<*> */
                     final class StarBox implements Box {}',
-                'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:21 - The * type argument of Box<*> is not allowed in @implements',
+                'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:21 - The * type argument of Box<*> is not allowed in @template-implements',
             ],
             'starProjectionInUse' => [
                 'code' => '<?php
@@ -1886,7 +2227,7 @@ final class StarProjectionTest extends TestCase
                         /** @use Box<*> */
                         use Box;
                     }',
-                'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:25 - The * type argument of Box<*> is not allowed in @use',
+                'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:25 - The * type argument of Box<*> is not allowed in @template-use',
             ],
             'starProjectionIsNoClassStringMapValue' => [
                 'code' => '<?php
@@ -1894,1087 +2235,480 @@ final class StarProjectionTest extends TestCase
                     function f(array $map): void {}',
                 'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR . 'somefile.php:2:32 - class-string-map cannot take a * value',
             ],
-            'starProjectionParamAcceptsNothing' => [
-                'code' => '<?php
-                    /**
-                     * @template TFirst
-                     * @template TSecond of object
-                     */
-                    final class Pair {
-                        /** @param TSecond $second */
-                        public function setSecond(object $second): void {}
-                    }
-
-                    /** @param Pair<int, *> $p */
-                    function f(Pair $p): void {
-                        $p->setSecond(new stdClass());
-                    }',
-                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:13:39 - Argument 1 of Pair::setSecond expects never, but stdClass provided',
-            ],
-            'starProjectionInvariantArgumentParamAcceptsNoConcreteArgument' => [
-                'code' => '<?php
-                    /** @template T */
-                    final class Box {}
-
-                    /**
-                     * @template TFirst
-                     * @template TSecond of object
-                     */
-                    final class Pair {
-                        /** @param Box<TSecond> $box */
-                        public function setBox(Box $box): void {}
-                    }
-
-                    /**
-                     * @param Pair<int, *> $p
-                     * @param Box<stdClass> $box
-                     */
-                    function f(Pair $p, Box $box): void {
-                        $p->setBox($box);
-                    }',
-                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:19:36 - Argument 1 of Pair::setBox expects Box<never>, but Box<stdClass> provided',
-            ],
-            'starProjectionInvariantArgumentParamAcceptsNoStarArgument' => [
-                'code' => '<?php
-                    /** @template T */
-                    final class Box {}
-
-                    /**
-                     * @template TFirst
-                     * @template TSecond of object
-                     */
-                    final class Pair {
-                        /** @param Box<TSecond> $box */
-                        public function setBox(Box $box): void {}
-                    }
-
-                    /**
-                     * @param Pair<int, *> $p
-                     * @param Box<*> $box
-                     */
-                    function f(Pair $p, Box $box): void {
-                        $p->setBox($box);
-                    }',
-                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:19:36 - Argument 1 of Pair::setBox expects Box<never>, but Box<*> provided',
-            ],
-            'starProjectionInvariantArgumentPropertyAcceptsNoArgument' => [
-                'code' => '<?php
-                    /** @template T */
-                    final class Box {}
-
-                    /**
-                     * @template TFirst
-                     * @template TSecond of object
-                     */
-                    final class Pair {
-                        /** @var Box<TSecond>|null */
-                        public $box;
-                    }
-
-                    /**
-                     * @param Pair<int, *> $p
-                     * @param Box<stdClass> $box
-                     */
-                    function f(Pair $p, Box $box): void {
-                        $p->box = $box;
-                    }',
-                'error_message' => 'InvalidPropertyAssignmentValue - src' . DIRECTORY_SEPARATOR . 'somefile.php:19:35 - $p->box with declared type \'Box<never>|null\' cannot be assigned type \'Box<stdClass',
-            ],
-            'starProjectionPropertyAcceptsNothing' => [
-                'code' => '<?php
-                    /**
-                     * @template TFirst
-                     * @template TSecond of object
-                     */
-                    final class Pair {
-                        /** @var TSecond|null */
-                        public $second;
-                    }
-
-                    /** @param Pair<int, *> $p */
-                    function f(Pair $p): void {
-                        $p->second = new stdClass();
-                    }',
-                'error_message' => 'InvalidPropertyAssignmentValue - src' . DIRECTORY_SEPARATOR . 'somefile.php:13:38 - $p->second with declared type \'null\' cannot be assigned type \'stdClass',
-            ],
-            'starProjectionReadCallableAcceptsNothing' => [
-                'code' => '<?php
-                    /**
-                     * @template TFirst
-                     * @template TSecond of object
-                     */
-                    final class Pair {
-                        /** @return Closure(TSecond): void */
-                        public function consumer(): Closure {
-                            throw new Exception();
-                        }
-                    }
-
-                    /** @param Pair<int, *> $p */
-                    function f(Pair $p): void {
-                        $consumer = $p->consumer();
-                        $consumer(new stdClass());
-                    }',
-                'error_message' => 'expects never, but stdClass provided',
-            ],
-            'starProjectionParamOutCallableAcceptsNothing' => [
+            'starProjectionReadOfAWholeGenericArgumentIsStillAStar' => [
                 'code' => '<?php
                     /** @template T of object */
-                    final class Source {
-                        /**
-                         * @param mixed $value
-                         * @param-out Closure(T): void $value
-                         */
-                        public function consumer(&$value): void {
-                            throw new Exception();
-                        }
-                    }
-
-                    /** @param Source<*> $source */
-                    function f(Source $source): void {
-                        $source->consumer($consumer);
-                        $consumer(new stdClass());
-                    }',
-                'error_message' => 'expects never, but stdClass provided',
-            ],
-            'starProjectionFirstClassCallableAcceptsNothing' => [
-                'code' => '<?php
-                    /** @template T */
                     final class Box {
-                        /** @param T $value */
-                        public function set($value): void {}
-                    }
-
-                    /** @param Box<*> $box */
-                    function f(Box $box): void {
-                        $set = $box->set(...);
-                        $set(new stdClass());
-                    }',
-                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:11:30 - Argument 1 expects never, but stdClass provided',
-                'error_levels' => [],
-                'php_version' => '8.1',
-            ],
-            'starProjectionInvokableClosureAcceptsNothing' => [
-                'code' => '<?php
-                    /** @template T of object */
-                    final class Consumer {
-                        /** @param T $value */
-                        public function __invoke(object $value): void {}
-                    }
-
-                    /** @param Consumer<*> $consumer */
-                    function f(Consumer $consumer): void {
-                        $closure = Closure::fromCallable($consumer);
-                        $closure(new stdClass());
-                    }',
-                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:11:34 - Argument 1 expects never, but stdClass provided',
-            ],
-            'starProjectionClassStringParamAcceptsNothing' => [
-                'code' => '<?php
-                    /** @template T of object */
-                    final class Factory {
-                        /** @param class-string<T> $class */
-                        public function setClass(string $class): void {}
-                    }
-
-                    /** @param Factory<*> $factory */
-                    function f(Factory $factory): void {
-                        $factory->setClass(stdClass::class);
-                    }',
-                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:44 - Argument 1 of Factory::setClass expects never, but stdClass::class provided',
-            ],
-            'starProjectionClassStringPropertyAcceptsNothing' => [
-                'code' => '<?php
-                    /** @template T of object */
-                    final class Factory {
-                        /** @var class-string<T>|null */
-                        public $class;
-                    }
-
-                    /** @param Factory<*> $factory */
-                    function f(Factory $factory): void {
-                        $factory->class = stdClass::class;
-                    }',
-                'error_message' => 'InvalidPropertyAssignmentValue - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:43 - $factory->class with declared type \'null\' cannot be assigned type \'stdClass::class',
-            ],
-            'starProjectionInsideAnInvariantArgumentAcceptsNothing' => [
-                'code' => '<?php
-                    /** @template T */
-                    final class Box {
-                        /** @param T $value */
-                        public function set($value): void {}
-                    }
-
-                    /**
-                     * @template TFirst
-                     * @template TSecond of object
-                     */
-                    final class Pair {
-                        /** @return Box<list<TSecond>> */
-                        public function listBox(): Box {
-                            throw new Exception();
-                        }
-                    }
-
-                    /** @param Pair<int, *> $p */
-                    function f(Pair $p): void {
-                        $p->listBox()->set([new stdClass()]);
-                    }',
-                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:21:44 - Argument 1 of Box::set expects never, but list{stdClass} provided',
-            ],
-            'starProjectionInsideANestedInvariantArgumentAcceptsNothing' => [
-                'code' => '<?php
-                    /** @template T */
-                    final class Box {
-                        /** @param T $value */
-                        public function __construct(public mixed $value) {}
-
-                        /** @param T $value */
-                        public function set(mixed $value): void {}
-                    }
-
-                    /** @template T of object */
-                    final class Source {
-                        /** @return Box<Box<T>> */
-                        public function boxes(): Box {
-                            throw new Exception();
-                        }
-                    }
-
-                    /** @param Source<*> $s */
-                    function f(Source $s): void {
-                        $s->boxes()->set(new Box(new stdClass()));
-                    }',
-                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:21:42 - Argument 1 of Box::set expects never',
-                'php_version' => '8.0',
-            ],
-            'starProjectionInsideANestedInvariantPropertyAcceptsNothing' => [
-                'code' => '<?php
-                    /** @template T */
-                    final class Box {
-                        /** @param T $value */
-                        public function __construct(public mixed $value) {}
-
-                        /** @param T $value */
-                        public function set(mixed $value): void {}
-                    }
-
-                    /** @template T of object */
-                    final class Source {
-                        /** @param Box<Box<T>> $nested */
-                        public function __construct(public Box $nested) {}
-                    }
-
-                    /** @param Source<*> $s */
-                    function f(Source $s): void {
-                        $s->nested->set(new Box(new stdClass()));
-                    }',
-                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:19:41 - Argument 1 of Box::set expects never',
-                'php_version' => '8.0',
-            ],
-            'starProjectionInsideANestedInvariantArgumentOfACallbackAcceptsNothing' => [
-                'code' => '<?php
-                    abstract class Model {}
-
-                    /** @template T */
-                    final class Box {
-                        /** @param T $value */
-                        public function __construct(public mixed $value) {}
-
-                        /** @param T $value */
-                        public function set(mixed $value): void {}
-                    }
-
-                    /** @template T of Model */
-                    abstract class Source {
-                        /** @param Closure(Box<Box<T>>): void $callback */
-                        abstract public function visit(Closure $callback): void;
-                    }
-
-                    /** @param Source<*> $source */
-                    function f(Source $source): void {
-                        $source->visit(function ($outer): void {
-                            $outer->set(new Box(new stdClass()));
-                        });
-                    }',
-                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:22:41 - Argument 1 of Box::set expects never',
-                'php_version' => '8.0',
-            ],
-            'starProjectionNextToConcreteArgumentsCallbackOfAGenericMethodAcceptsNothing' => [
-                'code' => '<?php
-                    abstract class Model {}
-
-                    /** @template T */
-                    final class Box {
-                        /** @param T $value */
-                        public function set(mixed $value): void {}
-                    }
-
-                    /**
-                     * @template TUnknown of Model
-                     * @template TKnown
-                     */
-                    abstract class Source {
-                        /**
-                         * @template TResult
-                         * @param TResult $seed
-                         * @param Closure(Box<array{unknown: TUnknown, known: TKnown, seed: TResult}>): TResult $callback
-                         * @return TResult
-                         */
-                        abstract public function map(mixed $seed, Closure $callback): mixed;
-                    }
-
-                    /** @param Source<*, int> $source */
-                    function f(Source $source): void {
-                        $source->map(1, function ($box): int {
-                            $box->set(["unknown" => new stdClass(), "known" => 1, "seed" => 1]);
-                            return 1;
-                        });
-                    }',
-                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:27:39 - Argument 1 of Box::set expects never',
-                'php_version' => '8.0',
-            ],
-            'starProjectionInheritedIntersectionAcceptsNothing' => [
-                'code' => '<?php
-                    /** @template T */
-                    interface Holder {
-                        /** @param T $value */
-                        public function put(mixed $value): void;
-                    }
-
-                    /** @template T */
-                    interface Box {}
-
-                    /** @template V */
-                    class Base {
-                        /** @return V */
-                        public function get(): mixed {
-                            throw new Exception();
-                        }
-                    }
-
-                    /**
-                     * @template T of object
-                     * @extends Base<Box<T>&Holder<T>>
-                     */
-                    final class Inter extends Base {}
-
-                    /** @param Inter<*> $in */
-                    function f(Inter $in): void {
-                        $in->get()->put(new stdClass());
-                    }',
-                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:27:41 - Argument 1 of Holder::put expects never',
-                'php_version' => '8.0',
-            ],
-            'starProjectionInheritedNestedInvariantArgumentAcceptsNothing' => [
-                'code' => '<?php
-                    /** @template T */
-                    final class Box {
-                        /** @param T $value */
-                        public function __construct(public mixed $value) {}
-
-                        /** @param T $value */
-                        public function set(mixed $value): void {}
-                    }
-
-                    /** @template V */
-                    class Base {
-                        /** @return V */
-                        public function get(): mixed {
-                            throw new Exception();
-                        }
-                    }
-
-                    /**
-                     * @template T of object
-                     * @extends Base<Box<Box<Closure(T): void>>>
-                     */
-                    final class Callbacks extends Base {}
-
-                    /** @param Callbacks<*> $c */
-                    function f(Callbacks $c): void {
-                        $c->get()->set(new Box(static function (stdClass $_value): void {}));
-                    }',
-                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:27:40 - Argument 1 of Box::set expects never',
-                'php_version' => '8.0',
-            ],
-            'starProjectionComposedParentArgumentIsNotConcrete' => [
-                'code' => '<?php
-                    abstract class Model {}
-
-                    /** @template T */
-                    abstract class Base {}
-
-                    /**
-                     * @template TModel of Model
-                     * @extends Base<list<TModel>>
-                     */
-                    final class Listed extends Base {}
-
-                    /** @param Base<list<Model>> $base */
-                    function takesModels(Base $base): void {}
-
-                    /** @param Listed<*> $listed */
-                    function f(Listed $listed): void {
-                        takesModels($listed);
-                    }',
-                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:18:37 - Argument 1 of takesModels expects Base<list<Model>>, but Listed<*> provided',
-            ],
-            'starProjectionInheritedComposedArgumentAcceptsNothing' => [
-                'code' => '<?php
-                    /** @template T */
-                    class Box {
-                        /** @param T $value */
-                        public function set($value): void {}
-                    }
-
-                    /**
-                     * @template TChild of object
-                     * @extends Box<list<TChild>>
-                     */
-                    final class ListBox extends Box {}
-
-                    /** @param ListBox<*> $box */
-                    function f(ListBox $box): void {
-                        $box->set([new stdClass()]);
-                    }',
-                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:16:35 - Argument 1 of ListBox::set expects never, but list{stdClass} provided',
-            ],
-            'starProjectionNarrowedToAChildAcceptsNothing' => [
-                'code' => '<?php
-                    /**
-                     * @template TFirst
-                     * @template TSecond of object
-                     */
-                    class Pair {}
-
-                    /**
-                     * @template TChild of object
-                     * @extends Pair<int, TChild>
-                     */
-                    final class Child extends Pair {}
-
-                    /** @param Child<object> $child */
-                    function takesChildOfObject(Child $child): void {}
-
-                    /** @param Pair<int, *> $p */
-                    function f(Pair $p): void {
-                        if ($p instanceof Child) {
-                            takesChildOfObject($p);
-                        }
-                    }',
-                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:20:48 - Argument 1 of takesChildOfObject expects Child<object>, but Child<*> provided',
-            ],
-            'starProjectionOwnClassReceiverAcceptsNothing' => [
-                'code' => '<?php
-                    /** @template T of object */
-                    final class Node {
-                        /** @var Node<*>|null */
-                        public ?Node $next = null;
-
-                        /** @param T $value */
-                        public function __construct(public object $value) {}
-
-                        /** @param T $value */
-                        public function set(object $value): void {
-                            $this->value = $value;
-                        }
-
-                        public function link(): void {
-                            $this->set($this->value);
-                            $this->next?->set($this->value);
-                        }
-                    }',
-                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:17:47 - Argument 1 of Node::set expects never, but T:Node as object provided',
-                'error_levels' => [],
-                'php_version' => '8.0',
-            ],
-            'starProjectionOwnClassReceiverClassStringAcceptsNothing' => [
-                'code' => '<?php
-                    /** @template T of object */
-                    final class Node {
-                        /** @var Node<*>|null */
-                        public ?Node $next = null;
-
-                        /** @param T $value */
-                        public function __construct(public object $value) {}
-
-                        /** @param class-string<T> $class */
-                        public function setClass(string $class): void {}
-
-                        public function link(): void {
-                            $this->setClass($this->value::class);
-                            $this->next?->setClass($this->value::class);
-                        }
-                    }',
-                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:15:52 - Argument 1 of Node::setClass expects never, but class-string<T:Node as object> provided',
-                'error_levels' => [],
-                'php_version' => '8.0',
-            ],
-            'starProjectionInheritedComposedPropertyAcceptsNothing' => [
-                'code' => '<?php
-                    abstract class Model {}
-
-                    final class User extends Model {}
-
-                    /** @template T */
-                    final class Box {
-                        /** @param T $value */
-                        public function set(mixed $value): void {}
-                    }
-
-                    /** @template T */
-                    abstract class Base {
-                        /** @param T $value */
-                        public function __construct(public mixed $value) {}
-                    }
-
-                    /**
-                     * @template TModel of Model
-                     * @extends Base<Box<TModel>>
-                     */
-                    final class Composed extends Base {}
-
-                    /** @param Composed<*> $composed */
-                    function f(Composed $composed): void {
-                        $composed->value->set(new User());
-                    }',
-                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:26:47 - Argument 1 of Box::set expects never, but User provided',
-                'error_levels' => [],
-                'php_version' => '8.0',
-            ],
-            'starProjectionComposedCovariantAncestorKeepsTheArgumentUnknown' => [
-                'code' => '<?php
-                    /** @template-covariant T */
-                    interface Reader {
-                        /** @return T */
-                        public function read(): mixed;
-                    }
-
-                    /** @template T */
-                    final class Box {}
-
-                    /**
-                     * @template T of object
-                     * @implements Reader<Box<T>>
-                     */
-                    final class BoxReader implements Reader {
                         /** @return Box<T> */
-                        public function read(): Box {
+                        public function same(): Box {
+                            return $this;
+                        }
+                    }
+
+                    /** @param Box<object> $b */
+                    function takesBoxOfObject(Box $b): void {}
+
+                    /** @param Box<*> $b */
+                    function f(Box $b): void {
+                        takesBoxOfObject($b->same());
+                    }',
+                'error_message' => 'ArgumentTypeCoercion - src' . DIRECTORY_SEPARATOR . 'somefile.php:15:42 - Argument 1 of takesBoxOfObject expects Box<object>, but parent type Box<*> provided',
+            ],
+            'starProjectionParamOfAReceiverKeepsTheBound' => [
+                'code' => '<?php
+                    /** @template T of object */
+                    final class Box {
+                        /** @param Box<T> $other */
+                        public function merge(Box $other): void {}
+                    }
+
+                    /**
+                     * @param Box<*> $any
+                     * @param Box<DateTime> $date
+                     */
+                    function f(Box $any, Box $date): void {
+                        $any->merge($date);
+                    }',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:13:37 - Argument 1 of Box::merge expects Box<object>, but Box<DateTime> provided',
+            ],
+            'starProjectionBareParamRejectsAConcreteArgument' => [
+                // a `*` and a bare `Box` both leave the argument unknown, a `Box<stdClass>` is not a bare `Box`: the
+                // bare class taking any argument is a separate later change (see `Omitted`)
+                'code' => '<?php
+                    /** @template T of object */
+                    final class Box {}
+
+                    function takesBare(Box $b): void {}
+
+                    /** @param Box<stdClass> $b */
+                    function f(Box $b): void {
+                        takesBare($b);
+                    }',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:9:35 - Argument 1 of takesBare expects Box<object>, but Box<stdClass> provided',
+            ],
+            'starProjectionNestedIsNotAnyNestedArgument' => [
+                'code' => '<?php
+                    /** @template T of object */
+                    final class Box {}
+
+                    /** @param Box<Box<*>> $b */
+                    function takesNested(Box $b): void {}
+
+                    /** @param Box<Box<DateTime>> $b */
+                    function f(Box $b): void {
+                        takesNested($b);
+                    }',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:37 - Argument 1 of takesNested expects Box<Box<*>>, but Box<Box<DateTime>> provided',
+            ],
+            'starProjectionOverridingReturnIsLessSpecific' => [
+                'code' => '<?php
+                    abstract class Model {}
+
+                    /** @template TModel of Model */
+                    final class Builder {}
+
+                    /** @template TRelatedModel of Model */
+                    abstract class Relation {
+                        /** @return Builder<TRelatedModel> */
+                        abstract public function builder(): Builder;
+                    }
+
+                    /**
+                     * @template TRelatedModel of Model
+                     * @extends Relation<TRelatedModel>
+                     */
+                    final class HasMany extends Relation {
+                        /** @return Builder<*> */
+                        public function builder(): Builder {
+                            throw new Exception();
+                        }
+                    }',
+                'error_message' => 'LessSpecificImplementedReturnType',
+            ],
+            'starProjectionPropertyAssignmentKeepsTheBound' => [
+                'code' => '<?php
+                    /** @template T of object */
+                    final class Box {
+                        /** @var Box<T>|null */
+                        public ?Box $prop = null;
+                    }
+
+                    /**
+                     * @param Box<*> $any
+                     * @param Box<DateTime> $date
+                     */
+                    function f(Box $any, Box $date): void {
+                        $any->prop = $date;
+                    }',
+                'error_message' => 'InvalidPropertyAssignmentValue - src' . DIRECTORY_SEPARATOR . 'somefile.php:13:38 - $any->prop with declared type \'Box<object>|null\' cannot be assigned type',
+            ],
+            'starProjectionListPropertyAppendKeepsTheBound' => [
+                'code' => '<?php
+                    /** @template T of object */
+                    final class Box {
+                        /** @var list<Box<T>> */
+                        public array $boxes = [];
+                    }
+
+                    /**
+                     * @param Box<*> $any
+                     * @param Box<DateTime> $date
+                     */
+                    function f(Box $any, Box $date): void {
+                        $any->boxes[] = $date;
+                    }',
+                'error_message' => 'InvalidPropertyAssignmentValue - src' . DIRECTORY_SEPARATOR . 'somefile.php:13:25 - $any->boxes with declared type \'list<Box<object>>\' cannot be assigned type',
+            ],
+            'starProjectionFirstClassCallableKeepsTheBound' => [
+                'code' => '<?php
+                    /** @template T of object */
+                    final class Box {
+                        /** @param Box<T> $other */
+                        public function merge(Box $other): void {}
+                    }
+
+                    /**
+                     * @param Box<*> $any
+                     * @param Box<DateTime> $date
+                     */
+                    function f(Box $any, Box $date): void {
+                        $merge = $any->merge(...);
+                        $merge($date);
+                    }',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:14:32 - Argument 1 expects Box<object>, but Box<DateTime> provided',
+            ],
+            'starProjectionClosureParamKeepsTheBound' => [
+                'code' => '<?php
+                    /** @template T of object */
+                    final class Box {
+                        /** @return Closure(Box<T>): void */
+                        public function sinkBox(): Closure {
                             throw new Exception();
                         }
                     }
 
-                    /** @param Reader<Box<object>> $reader */
-                    function takesObjectBoxReader(Reader $reader): void {}
-
-                    /** @param BoxReader<*> $reader */
-                    function f(BoxReader $reader): void {
-                        takesObjectBoxReader($reader);
+                    /**
+                     * @param Box<*> $any
+                     * @param Box<DateTime> $date
+                     */
+                    function f(Box $any, Box $date): void {
+                        $any->sinkBox()($date);
                     }',
-                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:27:46 - Argument 1 of takesObjectBoxReader expects Reader<Box<object>>, but BoxReader<*> provided',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:15:41 - Argument 1 expects Box<object>, but Box<DateTime> provided',
+            ],
+            'starProjectionCombinedWithABareClassIsNotTheBound' => [
+                // `Box<*>|Box<object>` stays two members: the arguments print differently, so the types differ
+                'code' => '<?php
+                    /** @template T of object */
+                    final class Box {}
+
+                    /** @param Box<DateTime> $date */
+                    function takesDate(Box $date): void {}
+
+                    /**
+                     * @param Box<*> $any
+                     * @param Box $bare
+                     */
+                    function f(Box $any, Box $bare, bool $flag): void {
+                        takesDate($flag ? $any : $bare);
+                    }',
+                'error_message' => 'ArgumentTypeCoercion - src' . DIRECTORY_SEPARATOR . 'somefile.php:13:35 - Argument 1 of takesDate expects Box<DateTime>, but parent type Box<*>|Box<object> provided',
+            ],
+            'starProjectionFirstClassCallableReturnIsStillAStar' => [
+                'code' => '<?php
+                    /** @template T of object */
+                    final class Box {
+                        /** @return Box<T> */
+                        public function same(): Box {
+                            return $this;
+                        }
+                    }
+
+                    /** @param Box<object> $b */
+                    function takesBoxOfObject(Box $b): void {}
+
+                    /** @param Box<*> $any */
+                    function f(Box $any): void {
+                        $same = $any->same(...);
+                        takesBoxOfObject($same());
+                    }',
+                'error_message' => 'ArgumentTypeCoercion - src' . DIRECTORY_SEPARATOR . 'somefile.php:16:42 - Argument 1 of takesBoxOfObject expects Box<object>, but parent type Box<*> provided',
+            ],
+            'starProjectionReadThroughTwoLevelsOfInheritanceIsStillAStar' => [
+                'code' => '<?php
+                    /** @template T of object */
+                    class Box {}
+
+                    /** @template T of object */
+                    class ParentBox {
+                        /** @return Box<T> */
+                        public function value(): Box {
+                            throw new Exception();
+                        }
+                    }
+
+                    /**
+                     * @template U of object
+                     * @extends ParentBox<U>
+                     */
+                    class Middle extends ParentBox {}
+
+                    /**
+                     * @template V of object
+                     * @extends Middle<V>
+                     */
+                    final class Child extends Middle {}
+
+                    /** @param Box<object> $b */
+                    function takes(Box $b): void {}
+
+                    /** @param Child<*> $c */
+                    function f(Child $c): void {
+                        takes($c->value());
+                    }',
+                'error_message' => 'ArgumentTypeCoercion - src' . DIRECTORY_SEPARATOR . 'somefile.php:30:31 - Argument 1 of takes expects Box<object>, but parent type Box<*> provided',
+            ],
+            'starProjectionPropertyThroughTwoLevelsOfInheritanceIsStillAStar' => [
+                'code' => '<?php
+                    /** @template T of object */
+                    class Box {}
+
+                    /** @template T of object */
+                    class ParentBox {
+                        /** @var Box<T>|null */
+                        public ?Box $prop = null;
+                    }
+
+                    /**
+                     * @template U of object
+                     * @extends ParentBox<U>
+                     */
+                    class Middle extends ParentBox {}
+
+                    /**
+                     * @template V of object
+                     * @extends Middle<V>
+                     */
+                    final class Child extends Middle {}
+
+                    /** @param Box<object> $b */
+                    function takes(Box $b): void {}
+
+                    /** @param Child<*> $c */
+                    function f(Child $c): void {
+                        if ($c->prop !== null) {
+                            takes($c->prop);
+                        }
+                    }',
+                'error_message' => 'ArgumentTypeCoercion - src' . DIRECTORY_SEPARATOR . 'somefile.php:29:35 - Argument 1 of takes expects Box<object>, but parent type Box<*> provided',
+            ],
+            'starProjectionAssertedIfTrueOfAnInvariantClassIsStillAStar' => [
+                'code' => '<?php
+                    /** @template T of Countable */
+                    final class Inv {}
+
+                    /** @param Inv<Countable> $i */
+                    function takes(Inv $i): void {}
+
+                    /** @psalm-assert-if-true Inv<*> $x */
+                    function isInv(mixed $x): bool {
+                        return true;
+                    }
+
+                    function f(mixed $a): void {
+                        if (isInv($a)) {
+                            takes($a);
+                        }
+                    }',
+                'error_message' => 'ArgumentTypeCoercion - src' . DIRECTORY_SEPARATOR . 'somefile.php:15:35 - Argument 1 of takes expects Inv<Countable>, but parent type Inv<*> provided',
                 'error_levels' => [],
                 'php_version' => '8.0',
             ],
-            'starProjectionComposedIterableAncestorKeepsTheArgumentUnknown' => [
+            'starProjectionAssertedIfFalseOfAnInvariantClassIsStillAStar' => [
                 'code' => '<?php
-                    /** @template T */
+                    /** @template T of Countable */
+                    final class Inv {}
+
+                    /** @param Inv<Countable> $i */
+                    function takes(Inv $i): void {}
+
+                    /** @psalm-assert-if-false Inv<*> $x */
+                    function isNotInv(mixed $x): bool {
+                        return true;
+                    }
+
+                    function f(mixed $a): void {
+                        if (!isNotInv($a)) {
+                            takes($a);
+                        }
+                    }',
+                'error_message' => 'ArgumentTypeCoercion - src' . DIRECTORY_SEPARATOR . 'somefile.php:15:35 - Argument 1 of takes expects Inv<Countable>, but parent type Inv<*> provided',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'starProjectionOfAnExplicitAndABareClassIsNotTheBareClass' => [
+                // `Box<object>|Box` leaves the argument out of only one of its members: it is not a bare `Box`
+                'code' => '<?php
+                    /** @template T of object */
+                    final class Box {}
+
+                    /** @param Box<object>|Box $b */
+                    function explicitThenBare(Box $b): void {}
+
+                    /** @param Box<object> $b */
+                    function explicitOnly(Box $b): void {}
+
+                    /** @param Box<*> $star */
+                    function f(Box $star): void {
+                        explicitThenBare($star);
+                    }',
+                'error_message' => 'ArgumentTypeCoercion - src' . DIRECTORY_SEPARATOR . 'somefile.php:13:42 - Argument 1 of explicitThenBare expects Box<object>, but parent type Box<*> provided',
+            ],
+            'starProjectionNestedReadIsAStarAtTheOutermostArgument' => [
+                'code' => '<?php
+                    /** @template T of object */
+                    final class Box {
+                        /** @return Box<Box<T>> */
+                        public function nested(): Box {
+                            throw new Exception();
+                        }
+                    }
+
+                    /** @param Box<Box<DateTime>> $b */
+                    function takesNestedDates(Box $b): void {}
+
+                    /** @param Box<*> $any */
+                    function f(Box $any): void {
+                        takesNestedDates($any->nested());
+                    }',
+                'error_message' => 'ArgumentTypeCoercion - src' . DIRECTORY_SEPARATOR . 'somefile.php:15:42 - Argument 1 of takesNestedDates expects Box<Box<DateTime>>, but parent type Box<*> provided',
+            ],
+            'starProjectionNestedInAnAssertedListIsStillAStar' => [
+                'code' => '<?php
+                    /** @template T of Countable */
+                    final class Inv {}
+
+                    /** @param list<Inv<Countable>> $list */
+                    function takes(array $list): void {}
+
+                    /** @psalm-assert-if-true list<Inv<*>> $x */
+                    function isInvList(mixed $x): bool {
+                        return true;
+                    }
+
+                    function f(mixed $a): void {
+                        if (isInvList($a)) {
+                            takes($a);
+                        }
+                    }',
+                'error_message' => 'ArgumentTypeCoercion - src' . DIRECTORY_SEPARATOR . 'somefile.php:15:35 - Argument 1 of takes expects list<Inv<Countable>>, but parent type list<Inv<*>> provided',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'starProjectionCallableOfAMethodReturningTheTemplateIsNotTheBound' => [
+                'code' => '<?php
+                    /** @template T of object */
+                    final class Box {
+                        /** @return Box<T> */
+                        public function same(): Box {
+                            return $this;
+                        }
+                    }
+
+                    /** @param callable(): Box<*> $factory */
+                    function takesStarFactory(callable $factory): void {}
+
+                    /** @param callable(): Box<object> $factory */
+                    function takesFactory(callable $factory): void {}
+
+                    /** @param Box<*> $any */
+                    function f(Box $any): void {
+                        takesStarFactory([$any, "same"]);
+                        takesStarFactory($any->same(...));
+                        takesFactory([$any, "same"]);
+                    }',
+                'error_message' => 'ArgumentTypeCoercion - src' . DIRECTORY_SEPARATOR . 'somefile.php:20:38 - Argument 1 of takesFactory expects callable[impure]():Box<object>, but parent type callable[impure]():Box<*> provided',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'starProjectionOffsetSetOfAWrappedArgumentStillTakesTheBound' => [
+                'code' => '<?php
+                    /** @template T of object */
                     final class Box {}
 
                     /**
                      * @template T of object
-                     * @implements IteratorAggregate<int, Box<T>>
+                     * @extends ArrayAccess<int, Box<T>>
                      */
-                    final class Boxes implements IteratorAggregate {
-                        /** @return Iterator<int, Box<T>> */
-                        public function getIterator(): Iterator {
-                            throw new Exception();
-                        }
-                    }
+                    interface Shelf extends ArrayAccess {}
 
-                    /** @param iterable<int, Box<object>> $boxes */
-                    function takesObjectBoxes(iterable $boxes): void {}
-
-                    /** @param Boxes<*> $boxes */
-                    function f(Boxes $boxes): void {
-                        takesObjectBoxes($boxes);
+                    /**
+                     * @param Shelf<*> $shelf
+                     * @param Box<DateTime> $date
+                     */
+                    function f(Shelf $shelf, Box $date): void {
+                        $shelf[0] = $date;
                     }',
-                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:21:42 - Argument 1 of takesObjectBoxes expects iterable<int, Box<object>>, but Boxes<*> provided',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:16:37 - Argument 2 of Shelf::offsetSet expects Box<object>, but Box<DateTime> provided',
                 'error_levels' => [],
                 'php_version' => '8.0',
             ],
-            'starProjectionConditionalReturnAcceptsNothing' => [
+            'starProjectionFirstClassSetterOfAWrappedArgumentStillTakesTheBound' => [
                 'code' => '<?php
                     /** @template T of object */
-                    final class Box {
+                    interface Setter {
                         /** @param T $value */
+                        public function set(object $value): void;
+                    }
+
+                    /**
+                     * @template T of object
+                     * @implements Setter<Box<T>>
+                     */
+                    final class Box implements Setter {
                         public function set(object $value): void {}
                     }
 
-                    /** @template T of object */
-                    final class Source {
-                        /**
-                         * @template TArg
-                         * @param TArg $arg
-                         * @return (TArg is int ? Box<T> : Closure(T): void)
-                         */
-                        public function get(mixed $arg): mixed {
-                            throw new Exception();
-                        }
-                    }
-
-                    /** @param Source<*> $source */
-                    function f(Source $source): void {
-                        $source->get(1)->set(new stdClass());
-                    }',
-                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:22:46 - Argument 1 of Box::set expects never, but stdClass provided',
-                'error_levels' => [],
-                'php_version' => '8.0',
-            ],
-            'starProjectionSelfOutKeepsTheReceiverUnknown' => [
-                'code' => '<?php
-                    /** @template T of object */
-                    final class Source {
-                        /** @psalm-self-out Source<T> */
-                        public function reset(): void {}
-
-                        /** @param T $value */
-                        public function set(object $value): void {}
-                    }
-
-                    /** @param Source<*> $source */
-                    function f(Source $source): void {
-                        $source->reset();
-                        $source->set(new stdClass());
-                    }',
-                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:14:38 - Argument 1 of Source::set expects never, but stdClass provided',
-            ],
-            'starProjectionCallbackNarrowerThanTheBoundIsCoerced' => [
-                'code' => '<?php
-                    /** @template T */
-                    interface Mapped {
-                        /** @param callable(T): void $mapper */
-                        public function mapIn(callable $mapper): void;
-                    }
-
-                    /** @param Mapped<*> $mapped */
-                    function f(Mapped $mapped): void {
-                        $mapped->mapIn(fn(int $value) => null);
-                    }',
-                'error_message' => 'MixedArgumentTypeCoercion - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:34 - Type mixed should be a subtype of int',
-            ],
-            'starProjectionPhpstanBoxPackAcceptsNothing' => [
-                'code' => '<?php
-                    class A {}
-
-                    /** @template T */
-                    interface Box {
-                        /** @param T $item */
-                        public function pack(mixed $item): void;
-                    }
-
-                    /** @param Box<*> $box */
-                    function testStar(Box $box, A $a): void {
-                        $box->pack($a);
-                    }',
-                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:12:36 - Argument 1 of Box::pack expects never, but A provided',
-            ],
-            'starProjectionPhpstanMappedOutAcceptsNothing' => [
-                'code' => '<?php
-                    class A {}
-                    class B extends A {}
-                    class C extends B {}
-
-                    /** @template T */
-                    interface Mapped {
-                        /** @param callable(): T $mapper */
-                        public function mapOut(callable $mapper): void;
-                    }
-
-                    /** @param Mapped<*> $mapped */
-                    function testStarMapped(Mapped $mapped): void {
-                        $mapped->mapOut(fn() => new A);
-                        $mapped->mapOut(fn() => new B);
-                        $mapped->mapOut(fn() => new C);
-                    }',
-                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:14:41 - Argument 1 of Mapped::mapOut expects callable[impure]():never, but Closure[pure]():A provided',
-            ],
-            'starProjectionOtherInstanceKeyOfAcceptsNothing' => [
-                'code' => '<?php
                     /**
-                     * @template TArr of array<string, int>
-                     * @template TKey of key-of<TArr>
-                     * @template TModel of object
+                     * @param Box<*> $any
+                     * @param Box<DateTime> $date
                      */
-                    abstract class Node {
-                        /** @param key-of<TArr> $key */
-                        abstract public function setKey(mixed $key): void;
-
-                        /**
-                         * @param Node<*, *, *> $next
-                         * @param key-of<TArr> $key
-                         */
-                        public function transfer(Node $next, mixed $key): void {
-                            $next->setKey($key);
-                        }
+                    function f(Box $any, Box $date): void {
+                        $any->set(...)($date);
                     }',
-                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:16:43 - Argument 1 of Node::setKey expects never',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:21:40 - Argument 1 expects Box<object>, but Box<DateTime> provided',
                 'error_levels' => [],
                 'php_version' => '8.0',
             ],
-            'starProjectionOtherInstanceValueOfAcceptsNothing' => [
-                'code' => '<?php
-                    /**
-                     * @template TArr of array<string, int>
-                     * @template TKey of key-of<TArr>
-                     * @template TModel of object
-                     */
-                    abstract class Node {
-                        /** @param value-of<TArr> $value */
-                        abstract public function setValue(mixed $value): void;
-
-                        /**
-                         * @param Node<*, *, *> $next
-                         * @param value-of<TArr> $value
-                         */
-                        public function transfer(Node $next, mixed $value): void {
-                            $next->setValue($value);
-                        }
-                    }',
-                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:16:45 - Argument 1 of Node::setValue expects never',
-                'error_levels' => [],
-                'php_version' => '8.0',
-            ],
-            'starProjectionOtherInstanceIndexedAccessAcceptsNothing' => [
-                'code' => '<?php
-                    /**
-                     * @template TArr of array<string, int>
-                     * @template TKey of key-of<TArr>
-                     * @template TModel of object
-                     */
-                    abstract class Node {
-                        /** @param TArr[TKey] $value */
-                        abstract public function setIndexed(mixed $value): void;
-
-                        /**
-                         * @param Node<*, *, *> $next
-                         * @param TArr[TKey] $value
-                         */
-                        public function transfer(Node $next, mixed $value): void {
-                            $next->setIndexed($value);
-                        }
-                    }',
-                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:16:47 - Argument 1 of Node::setIndexed expects never',
-                'error_levels' => [],
-                'php_version' => '8.0',
-            ],
-            'starProjectionOtherInstancePropertiesOfAcceptsNothing' => [
-                'code' => '<?php
-                    /**
-                     * @template TArr of array<string, int>
-                     * @template TKey of key-of<TArr>
-                     * @template TModel of object
-                     */
-                    abstract class Node {
-                        /** @param properties-of<TModel> $properties */
-                        abstract public function setProperties(mixed $properties): void;
-
-                        /**
-                         * @param Node<*, *, *> $next
-                         * @param properties-of<TModel> $properties
-                         */
-                        public function transfer(Node $next, mixed $properties): void {
-                            $next->setProperties($properties);
-                        }
-                    }',
-                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:16:50 - Argument 1 of Node::setProperties expects never',
-                'error_levels' => [],
-                'php_version' => '8.0',
-            ],
-            'starProjectionNarrowedByInstanceofAcceptsNothing' => [
+            'starProjectionCallableParameterOfAWrappedArgumentStillTakesTheBound' => [
                 'code' => '<?php
                     /** @template T of object */
-                    final class Box {
-                        /** @param T $value */
-                        public function set(object $value): void {}
+                    interface Sink {
+                        /** @return Closure(T): void */
+                        public function sink(): Closure;
                     }
 
-                    /** @param Box<*>|stdClass $any */
-                    function f(object $any): void {
-                        if ($any instanceof Box) {
-                            $any->set(new stdClass());
+                    /**
+                     * @template T of object
+                     * @implements Sink<Box<T>>
+                     */
+                    final class Box implements Sink {
+                        public function sink(): Closure {
+                            return static function (object $value): void {};
                         }
-                    }',
-                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:11:39 - Argument 1 of Box::set expects never, but stdClass provided',
-            ],
-            'starProjectionShapeParamAcceptsNothing' => [
-                'code' => self::SHAPE_BOX . '
-                    /** @param Box<*> $box */
-                    function f(Box $box): void {
-                        $box->setShape([]);
-                    }',
-                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:31:40 - Argument 1 of Box::setShape expects never, but array<never, never> provided',
-                'error_levels' => [],
-                'php_version' => '8.0',
-            ],
-            'starProjectionSealedListParamAcceptsNothing' => [
-                'code' => self::SHAPE_BOX . '
-                    /** @param Box<*> $box */
-                    function f(Box $box): void {
-                        $box->setList([]);
-                    }',
-                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:31:39 - Argument 1 of Box::setList expects never, but array<never, never> provided',
-                'error_levels' => [],
-                'php_version' => '8.0',
-            ],
-            'starProjectionNonEmptyListParamAcceptsNothing' => [
-                'code' => self::SHAPE_BOX . '
-                    /** @param Box<*> $box */
-                    function f(Box $box): void {
-                        $box->setNonEmptyList([]);
-                    }',
-                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:31:47 - Argument 1 of Box::setNonEmptyList expects never, but array<never, never> provided',
-                'error_levels' => [],
-                'php_version' => '8.0',
-            ],
-            'starProjectionShapePropertyAcceptsNothing' => [
-                'code' => self::SHAPE_BOX . '
-                    /** @param Box<*> $box */
-                    function f(Box $box): void {
-                        $box->shape = [];
-                    }',
-                'error_message' => 'InvalidPropertyAssignmentValue - src' . DIRECTORY_SEPARATOR . 'somefile.php:31:39 - $box->shape with declared type \'never\' cannot be assigned type \'array',
-                'error_levels' => [],
-                'php_version' => '8.0',
-            ],
-            'starProjectionNonEmptyListReturnedByACallbackAcceptsNothing' => [
-                'code' => self::SHAPE_BOX . '
-                    /** @param Box<*> $box */
-                    function f(Box $box): void {
-                        $box->setFactory(fn(): array => []);
-                    }',
-                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:31:42 - Argument 1 of Box::setFactory expects Closure[impure]():never, but Closure[pure]():array<never, never> provided',
-                'error_levels' => [],
-                'php_version' => '8.0',
-            ],
-            'starProjectionShapeHandedToACallableAcceptsNothing' => [
-                'code' => self::SHAPE_BOX . '
-                    /** @param Box<*> $box */
-                    function f(Box $box): void {
-                        $box->consumer()([]);
-                    }',
-                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:31:42 - Argument 1 expects never, but array<never, never> provided',
-                'error_levels' => [],
-                'php_version' => '8.0',
-            ],
-            'starProjectionObjectShapeOfAClassStringMapOfCallablesAcceptsNothing' => [
-                'code' => '<?php
-                    abstract class Model {}
-
-                    /** @template T of object */
-                    final class Holder {
-                        /** @var class-string-map<K of Model, Closure(T): K> */
-                        public array $map = [];
                     }
 
-                    /** @param object{map: class-string-map<K of Model, Closure(stdClass): K>} $object */
-                    function call(object $object): void {}
-
-                    /** @param Holder<*> $holder */
-                    function f(Holder $holder): void {
-                        call($holder);
+                    /**
+                     * @param Box<*> $any
+                     * @param Box<DateTime> $date
+                     */
+                    function f(Box $any, Box $date): void {
+                        $any->sink()($date);
                     }',
-                'error_message' => 'ArgumentTypeCoercion - src' . DIRECTORY_SEPARATOR . 'somefile.php:15:30 - Argument 1 of call expects object{map:class-string-map<K as Model, Closure[impure](stdClass):K:class-string-map as Model>}, but parent type Holder<*> provided',
-                'error_levels' => [],
-                'php_version' => '8.0',
-            ],
-            'starProjectionObjectShapeOfACallableAcceptsNothing' => [
-                'code' => '<?php
-                    /** @template T of object */
-                    final class Holder {
-                        /** @param Closure(T): void $callback */
-                        public function __construct(public Closure $callback) {}
-                    }
-
-                    /** @param object{callback: Closure(stdClass): void} $object */
-                    function call(object $object): void {
-                        ($object->callback)(new stdClass());
-                    }
-
-                    /** @param Holder<*> $holder */
-                    function f(Holder $holder): void {
-                        call($holder);
-                    }',
-                'error_message' => 'ArgumentTypeCoercion - src' . DIRECTORY_SEPARATOR . 'somefile.php:15:30 - Argument 1 of call expects object{callback:Closure[impure](stdClass):void}, but parent type Holder<*> provided',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:23:38 - Argument 1 expects Box<object>, but Box<DateTime> provided',
                 'error_levels' => [],
                 'php_version' => '8.0',
             ],
         ];
-    }
-
-    private const SHAPE_BOX = '<?php
-                    /** @template T of object */
-                    abstract class Box {
-                        /** @var array{value: T} */
-                        public array $shape;
-
-                        /** @param array{value: T} $shape */
-                        abstract public function setShape(array $shape): void;
-
-                        /** @param array{value?: T} $shape */
-                        abstract public function setOptional(array $shape): void;
-
-                        /** @param list{T} $list */
-                        abstract public function setList(array $list): void;
-
-                        /** @param non-empty-list<T> $list */
-                        abstract public function setNonEmptyList(array $list): void;
-
-                        /** @param list<T> $list */
-                        abstract public function setPossiblyEmptyList(array $list): void;
-
-                        /** @param Closure(): non-empty-list<T> $factory */
-                        abstract public function setFactory(Closure $factory): void;
-
-                        /** @return Closure(array{value: T}): void */
-                        abstract public function consumer(): Closure;
-                    }
-';
-
-    private const TEMPLATE_ATOMIC_CODE = '<?php
-        final class Model {
-            public int $id = 0;
-        }
-
-        /** @template T */
-        final class Box {}
-
-        /**
-         * @template T of object
-         * @template TArr of array{a: DateTime, b: Model}
-         * @template TKey of key-of<TArr>
-         * @template TModel of Model
-         */
-        abstract class Holder {
-            /** @return %1$s */
-            abstract public function read(): mixed;
-
-            /** @param %1$s $value */
-            abstract public function write(mixed $value): void;
-
-            /** @return Box<%1$s> */
-            abstract public function box(): Box;
-
-            /**
-             * @template R
-             * @param Closure(%1$s): R $callback
-             * @return R
-             */
-            abstract public function map(Closure $callback): mixed;
-        }
-
-        /** @return Holder<*, *, *, *> */
-        function holder(): Holder {
-            throw new Exception();
-        }
-
-        %2$s';
-
-    /**
-     * Each template atomic of a `*` receiver's member where a value is handed out (`read`: the return type,
-     * `callback`: what a callback is given), where one is passed in (`write`: a parameter) and as an invariant
-     * argument (`nested`: a `Box` of it returned). Every template atomic reads the unknown type alike: through what
-     * is known of it where it is handed out, as nothing where it is passed in, and `*` when nested. An expectation
-     * ending in ` provided` is the issue reported.
-     *
-     * @return array<string, array{class-string<Atomic>, string, string}>
-     * @psalm-pure
-     */
-    public static function providerTemplateAtomicByPosition(): array
-    {
-        $rows = [
-            [TTemplateParam::class, 'T', 'new stdClass()', 'object', 'stdClass'],
-            [TTemplateParamClass::class, 'class-string<T>', 'stdClass::class', 'class-string', 'stdClass::class'],
-            [TTemplateKeyOf::class, 'key-of<TArr>', '"a"', "'a'|'b'", "'a'"],
-            [TTemplateValueOf::class, 'value-of<TArr>', 'new DateTime()', 'DateTime|Model', 'DateTime'],
-            [TTemplatePropertiesOf::class, 'properties-of<TModel>', '["id" => 1]', 'array{id: int}', 'array{id: 1}'],
-            [TTemplateIndexedAccess::class, 'TArr[TKey]', 'new DateTime()', 'DateTime|Model', 'DateTime'],
-            [TConditional::class, '(T is DateTime ? int : string)', '1', 'int|string', '1'],
-        ];
-
-        $cases = [];
-
-        foreach ($rows as [$atomic_class, $type, $written, $read, $written_type]) {
-            $positions = [
-                'read' => ['$result = holder()->read();', $read],
-                'callback' => ['$result = holder()->map(fn($value) => $value);', $read],
-                'write' => [
-                    'holder()->write(' . $written . ');',
-                    'Argument 1 of Holder::write expects never, but ' . $written_type . ' provided',
-                ],
-                'nested' => ['$result = holder()->box();', 'Box<*>'],
-            ];
-
-            foreach ($positions as $position => [$code, $expected]) {
-                $cases[$type . ' ' . $position] = [
-                    $atomic_class,
-                    sprintf(self::TEMPLATE_ATOMIC_CODE, $type, $code),
-                    $expected,
-                ];
-            }
-        }
-
-        return $cases;
-    }
-
-    /**
-     * @param class-string<Atomic> $_atomic_class
-     */
-    #[DataProvider('providerTemplateAtomicByPosition')]
-    public function testTemplateAtomicByPosition(string $_atomic_class, string $code, string $expected): void
-    {
-        $this->project_analyzer->setPhpVersion('8.0', 'tests');
-
-        $file_path = self::$src_dir_path . 'somefile.php';
-        $this->addFile($file_path, $code);
-
-        if (str_ends_with($expected, ' provided')) {
-            $this->expectException(CodeException::class);
-            $this->expectExceptionMessage($expected);
-        }
-
-        $context = new Context();
-        $this->analyzeFile($file_path, $context);
-
-        $this->assertSame($expected, $context->vars_in_scope['$result']->getId(true));
-    }
-
-    /**
-     * A template atomic (an atomic type with a defining class) missing from StarProjection::TEMPLATE_ATOMICS has no
-     * rule for `*`; one missing from the table above has none checked
-     */
-    public function testEveryTemplateAtomicIsEnumerated(): void
-    {
-        $files = glob(dirname(__DIR__, 2) . '/src/Psalm/Type/Atomic/*.php');
-        $this->assertNotFalse($files);
-        $template_atomics = [];
-
-        foreach ($files as $file) {
-            $class = 'Psalm\\Type\\Atomic\\' . basename($file, '.php');
-
-            if (property_exists($class, 'defining_class')) {
-                $template_atomics[] = $class;
-            }
-        }
-
-        $tabled = array_values(array_unique(array_column(self::providerTemplateAtomicByPosition(), 0)));
-        $enumerated = StarProjection::TEMPLATE_ATOMICS;
-
-        sort($template_atomics);
-        sort($tabled);
-        sort($enumerated);
-
-        $this->assertSame($template_atomics, $enumerated);
-        $this->assertSame($template_atomics, $tabled);
     }
 }

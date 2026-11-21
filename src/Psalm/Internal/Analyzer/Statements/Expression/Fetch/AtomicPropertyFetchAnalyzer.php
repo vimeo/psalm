@@ -29,12 +29,10 @@ use Psalm\Internal\Codebase\VariableUseGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Internal\MethodIdentifier;
-use Psalm\Internal\Type\StarProjection;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TypeExpander;
 use Psalm\Internal\Type\TypeVariableTracker;
-use Psalm\Internal\TypeVisitor\StarProjectionVisitor;
 use Psalm\Issue\DeprecatedProperty;
 use Psalm\Issue\ImpurePropertyAssignment;
 use Psalm\Issue\ImpurePropertyFetch;
@@ -109,10 +107,14 @@ final class AtomicPropertyFetchAnalyzer
         }
 
         if ($lhs_type_part instanceof TMixed) {
-            $statements_analyzer->node_data->setType(
-                $stmt,
-                self::getDynamicPropertyType($statements_analyzer, $stmt, $stmt_var_type, $prop_name),
-            );
+            $property_type = self::getDynamicPropertyType($statements_analyzer, $stmt, $stmt_var_type, $prop_name);
+
+            // a property of a value a loop may not have set yet (isset() in its first pass) is such a value
+            if ($lhs_type_part->from_loop_isset) {
+                $property_type = Type::getMixed(true)->setParentNodes($property_type->parent_nodes);
+            }
+
+            $statements_analyzer->node_data->setType($stmt, $property_type);
             return;
         }
 
@@ -808,6 +810,7 @@ final class AtomicPropertyFetchAnalyzer
                             ? $codebase->classlike_storage_provider->get(
                                 $declaring_property_class,
                             ) : $class_storage,
+                        true,
                     );
 
                     // reading a property through a type variable resolves it
@@ -917,8 +920,8 @@ final class AtomicPropertyFetchAnalyzer
     }
 
     /**
-     * @param bool $for_write whether the property is being assigned, which projects templates bound to `*`
-     *                        the other way (see {@see StarProjectionVisitor})
+     * @param bool $star_reads whether the type is read from the object, where a template bound to a `*` of the object
+     *                         is a `*` again as a whole generic argument; false for what is assigned to the property
      */
     public static function localizePropertyType(
         Codebase $codebase,
@@ -926,10 +929,8 @@ final class AtomicPropertyFetchAnalyzer
         TGenericObject $lhs_type_part,
         ClassLikeStorage $property_class_storage,
         ClassLikeStorage $property_declaring_class_storage,
-        bool $for_write = false,
+        bool $star_reads,
     ): Union {
-        $lhs_type_part = StarProjection::boundArguments($lhs_type_part, $codebase);
-
         $template_types = CallAnalyzer::getTemplateTypesForCall(
             $codebase,
             $property_declaring_class_storage,
@@ -956,30 +957,9 @@ final class AtomicPropertyFetchAnalyzer
                 }
             }
 
-            $composed_template_params = null;
-
             foreach ($template_types as $type_name => $_) {
                 if (isset($extended_types[$property_declaring_class_storage->name][$type_name])) {
                     $mapped_type = $extended_types[$property_declaring_class_storage->name][$type_name];
-
-                    // a composed argument (`@extends Base<Box<TModel>>`) is bound like for a method call, which
-                    // applies the object's arguments to it and projects a `*` (`Composed<*>` binds `Box<*>`)
-                    if (!$mapped_type->hasTemplate() && $mapped_type->getTemplateTypes() !== []) {
-                        $composed_template_params ??= ClassTemplateParamCollector::collect(
-                            $codebase,
-                            $property_declaring_class_storage,
-                            $property_class_storage,
-                            null,
-                            $lhs_type_part,
-                        );
-
-                        if (isset($composed_template_params[$type_name][$property_declaring_class_storage->name])) {
-                            $template_types[$type_name][$property_declaring_class_storage->name]
-                                = $composed_template_params[$type_name][$property_declaring_class_storage->name];
-                        }
-
-                        continue;
-                    }
 
                     foreach ($mapped_type->getAtomicTypes() as $mapped_type_atomic) {
                         if (!$mapped_type_atomic instanceof TTemplateParam) {
@@ -1008,11 +988,31 @@ final class AtomicPropertyFetchAnalyzer
 
             $template_result = new TemplateResult([], $template_types);
 
+            if ($star_reads) {
+                $template_result->markStarBindings(ClassTemplateParamCollector::getStarBoundTemplates(
+                    $codebase,
+                    $property_class_storage,
+                    $lhs_type_part,
+                    $template_types,
+                ));
+            }
+
             $class_property_type = TemplateInferredTypeReplacer::replace(
-                StarProjectionVisitor::project($class_property_type, $template_result, $codebase, $for_write),
+                $class_property_type,
                 $template_result,
                 $codebase,
             );
+
+            // a new `*` holds the bound of its own class' template
+            if ($template_result->star_bindings !== []) {
+                $class_property_type = TypeExpander::expandUnion(
+                    $codebase,
+                    $class_property_type,
+                    $property_declaring_class_storage->name,
+                    $property_declaring_class_storage->name,
+                    $property_declaring_class_storage->parent_class,
+                );
+            }
         }
 
         return $class_property_type;
@@ -1660,6 +1660,7 @@ final class AtomicPropertyFetchAnalyzer
                         ? $codebase->classlike_storage_provider->get(
                             $declaring_property_class,
                         ) : $class_storage,
+                    true,
                 );
 
                 $stmt_type = TypeVariableTracker::resolveTypeVariables($stmt_type, $codebase);
@@ -1758,6 +1759,7 @@ final class AtomicPropertyFetchAnalyzer
                     $lhs_type_part,
                     $class_storage,
                     $declaring_class_storage,
+                    true,
                 );
             } elseif ($lhs_type_part instanceof TGenericObject) {
                 $class_property_type = self::localizePropertyType(
@@ -1766,6 +1768,7 @@ final class AtomicPropertyFetchAnalyzer
                     $lhs_type_part,
                     $class_storage,
                     $declaring_class_storage,
+                    true,
                 );
             }
         }

@@ -19,6 +19,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\CombinedFlowGraph;
 use Psalm\Internal\Codebase\ConditionalTaintSinks;
+use Psalm\Internal\Codebase\DatabaseTaints;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Internal\Codebase\ReceiverPropertyTaints;
 use Psalm\Internal\Codebase\TaintFlowGraph;
@@ -26,13 +27,11 @@ use Psalm\Internal\Codebase\TaintStore;
 use Psalm\Internal\Codebase\VariableUseGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\MethodIdentifier;
-use Psalm\Internal\Type\StarProjection;
 use Psalm\Internal\Type\TemplateBound;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TypeExpander;
 use Psalm\Internal\Type\TypeVariableTracker;
-use Psalm\Internal\TypeVisitor\StarProjectionVisitor;
 use Psalm\IssueBuffer;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Storage\MethodStorage;
@@ -109,11 +108,6 @@ final class MethodCallReturnTypeFetcher
             return Type::getClosure();
         }
 
-        // a provider sees a `*` argument as its template's bound, like the members of the class
-        $lhs_type_params = $lhs_type_part instanceof TGenericObject
-            ? StarProjection::readArguments($lhs_type_part, $codebase)->type_params
-            : null;
-
         if ($codebase->methods->return_type_provider->has($premixin_method_id->fq_class_name)) {
             $return_type_candidate = $codebase->methods->return_type_provider->getReturnType(
                 $statements_analyzer,
@@ -122,7 +116,7 @@ final class MethodCallReturnTypeFetcher
                 $stmt,
                 $context,
                 new CodeLocation($statements_analyzer->getSource(), $stmt->name),
-                $lhs_type_params,
+                $lhs_type_part instanceof TGenericObject ? $lhs_type_part->type_params : null,
             );
 
             if ($return_type_candidate) {
@@ -164,7 +158,7 @@ final class MethodCallReturnTypeFetcher
                     $stmt,
                     $context,
                     new CodeLocation($statements_analyzer->getSource(), $stmt->name),
-                    $lhs_type_params,
+                    $lhs_type_part instanceof TGenericObject ? $lhs_type_part->type_params : null,
                     $fq_class_name,
                     $method_name,
                 );
@@ -387,6 +381,21 @@ final class MethodCallReturnTypeFetcher
             $result_added_taints,
             $result_removed_taints,
         );
+
+        // a builtin method that only the call map describes, such as one the stub of its extension leaves out when
+        // the extension isn't loaded, has no storage for taintMethodCallResult() to read from
+        if ($declaring_method_id === null && $taint_flow_graph) {
+            $return_type_candidate = DatabaseTaints::taintCall(
+                $statements_analyzer,
+                $taint_flow_graph,
+                DatabaseTaints::getSpecs((string) $method_id, null),
+                null,
+                $args,
+                new CodeLocation($statements_analyzer, $stmt->name),
+                $return_type_candidate,
+                $statements_analyzer->node_data->getType($stmt->var),
+            );
+        }
 
         // what is sent to a generator becomes the value of its yield expressions (what it gives back, see
         // YieldAnalyzer::taintGenerator(), flows as dictionaries/InternalTaintObjectFlowMap.php says)
@@ -862,6 +871,17 @@ final class MethodCallReturnTypeFetcher
             $specialize_call ? $node_location : null,
         );
 
+        $return_type_candidate = DatabaseTaints::taintCall(
+            $statements_analyzer,
+            $taint_flow_graph,
+            DatabaseTaints::getSpecs((string) $declaring_method_id, $method_storage),
+            $method_storage,
+            $args,
+            $node_location,
+            $return_type_candidate,
+            $statements_analyzer->node_data->getType($var_expr),
+        );
+
         ConditionalTaintSinks::taintCall(
             $statements_analyzer,
             $taint_flow_graph,
@@ -1128,6 +1148,7 @@ final class MethodCallReturnTypeFetcher
             || $stmt?->getAttribute(self::CALL_ARGUMENT_ATTRIBUTE) === true;
         $bounds_result = new TemplateResult([], []);
         $bounds_result->lower_bounds = $template_result->lower_bounds;
+        $bounds_result->star_bindings = $template_result->star_bindings;
 
         // in the order they are declared in, as a bound may be another template of the method (`@template B of A`)
         foreach ($method_template_types as $template_name => $bounds) {
@@ -1151,13 +1172,8 @@ final class MethodCallReturnTypeFetcher
         $closure_type = new Union([$closure]);
 
         if ($bounds_result->lower_bounds) {
-            // the closure's parameters are written to like the method's: `*` templates accept nothing there
             $closure_type = TemplateInferredTypeReplacer::replace(
-                StarProjectionVisitor::project(
-                    TypeExpander::expandUnion($codebase, $closure_type, null, null, null),
-                    $bounds_result,
-                    $codebase,
-                ),
+                TypeExpander::expandUnion($codebase, $closure_type, null, null, null),
                 $bounds_result,
                 $codebase,
             );
@@ -1255,7 +1271,7 @@ final class MethodCallReturnTypeFetcher
             );
 
             $return_type_candidate = TemplateInferredTypeReplacer::replace(
-                StarProjectionVisitor::project($return_type_candidate, $template_result, $codebase),
+                $return_type_candidate,
                 $template_result,
                 $codebase,
             );
