@@ -215,13 +215,7 @@ final class ElseAnalyzer
         if ($else && !in_array(ScopeAnalyzer::ACTION_NONE, $final_actions, true)
             && $if_scope->phantom_classes_of_blocks
         ) {
-            $phantom_classes = $if_scope->phantom_classes_of_blocks[0];
-
-            foreach ($if_scope->phantom_classes_of_blocks as $block_phantom_classes) {
-                $phantom_classes = array_intersect_key($phantom_classes, $block_phantom_classes);
-            }
-
-            $outer_context->phantom_classes = $phantom_classes;
+            $outer_context->phantom_classes = array_intersect_key(...$if_scope->phantom_classes_of_blocks);
         }
 
         // if it doesn't end in a return

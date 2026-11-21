@@ -2012,6 +2012,47 @@ final class ClassTest extends TestCase
                     }',
                 'error_message' => 'UndefinedClass - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:29',
             ],
+            'classExistsDoesNotCoverThePlainElse' => [
+                'code' => '<?php
+                    function foo(): void {
+                        if (class_exists(Missing\Thing::class)) {
+                            echo 1;
+                        } else {
+                            Missing\Thing::run();
+                        }
+                    }',
+                'error_message' => 'UndefinedClass - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:29',
+            ],
+            'classExistsOfAnElseIfDoesNotCoverTheBlocksAfterIt' => [
+                'code' => '<?php
+                    function twoElseIfs(bool $f, bool $g): void {
+                        if ($f) {
+                            return;
+                        } elseif (class_exists(Missing\A::class)) {
+                            echo 1;
+                        } elseif ($g) {
+                            echo 2;
+                        } else {
+                            return;
+                        }
+
+                        Missing\A::run();
+                    }',
+                'error_message' => 'UndefinedClass - src' . DIRECTORY_SEPARATOR . 'somefile.php:13:25',
+            ],
+            'classExistsOfAnElseIfDoesNotCoverItsElse' => [
+                'code' => '<?php
+                    function elseIfThenElse(bool $f): void {
+                        if ($f) {
+                            echo 1;
+                        } elseif (class_exists(Missing\G::class)) {
+                            echo 2;
+                        } else {
+                            Missing\G::run();
+                        }
+                    }',
+                'error_message' => 'UndefinedClass - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:29',
+            ],
             'classExistsDoesNotCoverTheCodeAfterTheIfInAMethod' => [
                 'code' => '<?php
                     final class C {
