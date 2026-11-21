@@ -96,6 +96,19 @@ final class TypeAlgebraTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'falsyStoredConditionThatReadsTheVariableItselfDoesNotNarrow' => [
+                'code' => '<?php
+                    final class Node {}
+
+                    function selfRef(?Node $x, bool $ok): void {
+                        $ok = $x !== null && $ok;
+                        if (!$ok) {
+                            if ($x !== null) {
+                                echo "reachable";
+                            }
+                        }
+                    }',
+            ],
             'falsyStoredConditionNarrowsToItsNegation' => [
                 'code' => '<?php
                     final class Node {}

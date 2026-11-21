@@ -3209,7 +3209,7 @@ final class AssignmentAnalyzer
                     $cond_object_id = spl_object_id($assign_value);
 
                     try {
-                        $right_clauses = FormulaGenerator::getFormula(
+                        $cond_clauses = FormulaGenerator::getFormula(
                             $cond_object_id,
                             $cond_object_id,
                             $assign_value,
@@ -3220,7 +3220,7 @@ final class AssignmentAnalyzer
 
                         $right_clauses = Context::filterClauses(
                             $var_id,
-                            $right_clauses,
+                            $cond_clauses,
                         );
 
                         $assignment_clauses = Algebra::combineOredClauses(
@@ -3229,27 +3229,41 @@ final class AssignmentAnalyzer
                             $cond_object_id,
                         );
                     } catch (ComplicatedExpressionException) {
-                        $right_clauses = [];
+                        $cond_clauses = [];
                         $assignment_clauses = [];
                     }
 
                     // the variable is the result of the condition: where it is falsy, the condition is false
-                    if ($right_clauses !== []) {
+                    if ($cond_clauses !== []) {
                         try {
-                            $truthy = new Truthy();
-
-                            $assignment_clauses = [
-                                ...$assignment_clauses,
-                                ...Algebra::combineOredClauses(
-                                    [new Clause(
-                                        [$var_id => [(string) $truthy => $truthy]],
-                                        $var_object_id,
-                                        $var_object_id,
-                                    )],
-                                    Algebra::negateFormula($right_clauses),
+                            $negated_clauses = Context::filterClauses(
+                                $var_id,
+                                FormulaGenerator::getNegatedFormula(
+                                    $cond_clauses,
+                                    $assign_value,
                                     $cond_object_id,
+                                    $context->self,
+                                    $statements_analyzer,
+                                    $codebase,
                                 ),
-                            ];
+                            );
+
+                            if ($negated_clauses !== []) {
+                                $truthy = new Truthy();
+
+                                $assignment_clauses = [
+                                    ...$assignment_clauses,
+                                    ...Algebra::combineOredClauses(
+                                        [new Clause(
+                                            [$var_id => [(string) $truthy => $truthy]],
+                                            $var_object_id,
+                                            $var_object_id,
+                                        )],
+                                        $negated_clauses,
+                                        $cond_object_id,
+                                    ),
+                                ];
+                            }
                         } catch (ComplicatedExpressionException) {
                             // too complicated to negate: only its truthy side is known
                         }
