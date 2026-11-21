@@ -305,6 +305,13 @@ class Reconciler
 
             $before_adjustment = $result_type;
 
+            // a magic property that is not set is still read through __get() (one that can return null is taken to)
+            $not_set_reads_through_magic_getter = $has_inverted_isset
+                && $result_type
+                && $result_type->ignore_isset
+                && !$result_type->isNullable()
+                && self::isReadThroughMagicGetter($codebase, $key, $existing_types);
+
             $failed_reconciliation = self::RECONCILIATION_OK;
 
             foreach (self::orderExclusionOfEmptyStringFirst($new_type_parts) as $offset => $new_type_part_parts) {
@@ -367,18 +374,22 @@ class Reconciler
                         IssueBuffer::startRecording();
                     }
 
-                    $result_type_candidate = AssertionReconciler::reconcile(
-                        $new_type_part_part,
-                        $result_type,
-                        $key,
-                        $statements_analyzer,
-                        $inside_loop,
-                        $template_type_map,
-                        $report_location,
-                        $suppressed_issues,
-                        $failed_reconciliation,
-                        $negated,
-                    );
+                    $result_type_candidate = $not_set_reads_through_magic_getter
+                        && $result_type
+                        && $new_type_part_part instanceof IsNotIsset
+                        ? $result_type
+                        : AssertionReconciler::reconcile(
+                            $new_type_part_part,
+                            $result_type,
+                            $key,
+                            $statements_analyzer,
+                            $inside_loop,
+                            $template_type_map,
+                            $report_location,
+                            $suppressed_issues,
+                            $failed_reconciliation,
+                            $negated,
+                        );
 
                     if ($record_alternatives) {
                         $alternative_issues = IssueBuffer::clearRecordingLevel();
@@ -568,7 +579,9 @@ class Reconciler
             $type_changed = !$before_adjustment
                 || !$result_type->equals($before_adjustment)
                 || $result_type->different
-                || $before_adjustment->different;
+                || $before_adjustment->different
+                // isset() decided what the type could not (a magic property), like it removes null from a nullable one
+                || $result_type->ignore_isset !== $before_adjustment->ignore_isset;
 
             $key_parts = self::breakUpPathIntoParts($key);
             if ($type_changed || $failed_reconciliation) {
@@ -1636,6 +1649,36 @@ class Reconciler
             $codebase,
         );
     }
+    /**
+     * Whether `$a->b` is read through `__get()` of each class `$a` can be
+     *
+     * @param array<string, Union> $existing_types
+     */
+    private static function isReadThroughMagicGetter(Codebase $codebase, string $key, array $existing_types): bool
+    {
+        $key_parts = self::breakUpPathIntoParts($key);
+        $property_name = array_pop($key_parts);
+
+        if (array_pop($key_parts) !== '->'
+            || !($object_type = $existing_types[implode('', $key_parts)] ?? null)
+        ) {
+            return false;
+        }
+
+        foreach ($object_type->getAtomicTypes() as $atomic_type) {
+            if (!$atomic_type instanceof TNamedObject
+                || !$codebase->classlike_storage_provider->has($atomic_type->value)
+                || $codebase->propertyExists($atomic_type->value . '::$' . $property_name, true)
+                || !isset($codebase->classlike_storage_provider->get($atomic_type->value)
+                    ->declaring_method_ids['__get'])
+            ) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
     private static function getPropertyType(
         Codebase $codebase,
         string $fq_class_name,
