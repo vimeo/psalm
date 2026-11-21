@@ -21,6 +21,36 @@ final class ConditionalReturnTypeTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'conditionalReturnOnAnArgumentWithoutTypeTakesBothBranches' => [
+                'code' => '<?php
+                    /** @return ($value is object ? true : false) */
+                    function isObjectValue(mixed $value): bool {
+                        return is_object($value);
+                    }
+
+                    /**
+                     * @template T
+                     * @param T $v
+                     * @return list<T>
+                     */
+                    function wrap($v): array {
+                        return [$v];
+                    }
+
+                    function getCountable(): Countable {
+                        throw new Exception();
+                    }
+
+                    $c = getCountable();
+                    $inline = isObjectValue($c->missing());
+                    $wrapped = wrap($c->missing());',
+                'assertions' => [
+                    '$inline===' => 'bool',
+                    '$wrapped===' => 'list<mixed>',
+                ],
+                'ignored_issues' => ['MixedArgument', 'UndefinedInterfaceMethod'],
+                'php_version' => '8.0',
+            ],
             'conditionalOnClosureKeepsTheIfBranchForAnInterfaceNarrowedToClosure' => [
                 'code' => <<<'PHP'
                     <?php

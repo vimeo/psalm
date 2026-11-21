@@ -249,6 +249,24 @@ final class ArgumentAnalyzer
                         $statements_analyzer->getSuppressedIssues(),
                     );
                 }
+
+                // what the param's templates stand for is not known either: they are bound to `mixed`, not left
+                // unbound (which would make them `never`)
+                if ($template_result && $function_param->type && $function_param->type->hasTemplate()) {
+                    TemplateStandinTypeReplacer::fillTemplateResult(
+                        $function_param->type,
+                        $template_result,
+                        $codebase,
+                        $statements_analyzer,
+                        Type::getMixed(),
+                        $argument_offset,
+                        !$statements_analyzer->isStatic()
+                            && (!$method_id || $method_id->method_name !== '__construct')
+                            ? $context->self
+                            : null,
+                        $context->calling_method_id ?? $context->calling_function_id,
+                    );
+                }
             }
 
             return null;
