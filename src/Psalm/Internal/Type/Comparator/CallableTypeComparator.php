@@ -43,6 +43,7 @@ use function end;
 use function is_numeric;
 use function ltrim;
 use function str_starts_with;
+use function strcasecmp;
 use function strpos;
 use function strtolower;
 use function substr;
@@ -368,8 +369,8 @@ final class CallableTypeComparator
 
         $receiver_storage = $codebase->classlike_storage_provider->get($receiver->value);
 
-        // a bare `Box`, `$this` or `static` of a generic class has no arguments to bind
-        if (!$receiver instanceof TGenericObject && $receiver_storage->template_types !== null) {
+        // a bare `Box` of a generic class has no arguments to bind, its templates stay the callable's own
+        if (!$receiver instanceof TGenericObject && ($receiver_storage->template_types ?? []) !== []) {
             return $callable;
         }
 
@@ -441,6 +442,16 @@ final class CallableTypeComparator
             );
 
             if ($callable_object instanceof TNamedObject) {
+                // of an intersection, the receiver is the member of the class the method id names
+                foreach ([$callable_object, ...$callable_object->getIntersectionTypes()] as $receiver) {
+                    if ($receiver instanceof TNamedObject
+                        && strcasecmp($receiver->value, $method_fqcln) === 0
+                    ) {
+                        $callable_object = $receiver;
+                        break;
+                    }
+                }
+
                 $callable = self::bindReceiverTemplates($codebase, $callable, $callable_object, $declaring_method_id);
             }
 

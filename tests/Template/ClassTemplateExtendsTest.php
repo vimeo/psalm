@@ -1853,23 +1853,27 @@ final class ClassTemplateExtendsTest extends TestCase
                     }',
                 'assertions' => [],
                 'ignored_issues' => [],
-                'php_version' => '8.0',
+                'php_version' => '8.1',
             ],
-            'genericClassKeepsItsOwnTemplatesOnItsCallables' => [
+            'nonGenericChildBindsTheTemplatesOfTheIntersectionMemberThatHasTheMethod' => [
                 'code' => '<?php
+                    interface Marker {}
+
                     /** @template T */
-                    abstract class Base {
+                    interface Sink {
                         /** @param T $value */
-                        public function set(mixed $value): void {}
+                        public function set(mixed $value): void;
+                    }
 
-                        /** @param callable(T): void $callback */
-                        public function register(callable $callback): void {}
+                    /** @extends Sink<string> */
+                    interface TextSink extends Sink {}
 
-                        /** @param T $value */
-                        public function run(mixed $value): void {
-                            $this->register([$this, "set"]);
-                            $this->register($this->set(...));
-                        }
+                    /** @param callable(string): void $callback */
+                    function takesCallback(callable $callback): void {}
+
+                    /** @param Marker&TextSink $m */
+                    function f(Marker $m): void {
+                        takesCallback([$m, "set"]);
                     }',
                 'assertions' => [],
                 'ignored_issues' => [],
@@ -1901,7 +1905,7 @@ final class ClassTemplateExtendsTest extends TestCase
                     }',
                 'assertions' => [],
                 'ignored_issues' => [],
-                'php_version' => '8.0',
+                'php_version' => '8.1',
             ],
             'composedParentArgumentNamingAnImportedAliasBindsInheritedInvokable' => [
                 'code' => '<?php
@@ -8078,6 +8082,44 @@ final class ClassTemplateExtendsTest extends TestCase
                         takesCallback([$child, "set"]);
                     }',
                 'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:15:39 - Argument 1 of takesCallback expects callable[impure](int):void, but callable[impure](string):void provided',
+            ],
+            'bareGenericClassKeepsItsOwnTemplatesOnItsCallables' => [
+                'code' => '<?php
+                    /** @template T */
+                    abstract class Base {
+                        /** @param T $value */
+                        public function set(mixed $value): void {}
+
+                        public function f(self $base): void {
+                            takesCallback([$base, "set"]);
+                        }
+                    }
+
+                    /** @param callable(int): void $callback */
+                    function takesCallback(callable $callback): void {}',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:43 - Argument 1 of takesCallback expects callable[impure](int):void, but callable[impure](T:Base as mixed):void provided',
+            ],
+            'nonGenericChildBindsTheIntersectionMemberThatHasTheMethodToItsArguments' => [
+                'code' => '<?php
+                    interface Marker {}
+
+                    /** @template T */
+                    interface Sink {
+                        /** @param T $value */
+                        public function set(mixed $value): void;
+                    }
+
+                    /** @extends Sink<string> */
+                    interface TextSink extends Sink {}
+
+                    /** @param callable(int): void $callback */
+                    function takesCallback(callable $callback): void {}
+
+                    /** @param Marker&TextSink $m */
+                    function f(Marker $m): void {
+                        takesCallback([$m, "set"]);
+                    }',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:18:39 - Argument 1 of takesCallback expects callable[impure](int):void, but callable[impure](string):void provided',
             ],
         ];
     }
