@@ -250,6 +250,23 @@ final class AssertionFinder
             return $if_types ? [$if_types] : [];
         }
 
+        // `$a--` and `$a++` are the value `$a` had before, truthy where it wasn't 0: where `$a` isn't -1 or 1 now
+        if (($conditional instanceof PhpParser\Node\Expr\PostDec
+                || $conditional instanceof PhpParser\Node\Expr\PostInc)
+            && $source instanceof StatementsAnalyzer
+            && ($old_type = $source->node_data->getType($conditional))
+            && $old_type->isInt()
+            && ($incremented_var_name = ExpressionIdentifier::getExtendedVarId(
+                $conditional->var,
+                $this_class_name,
+                $source,
+            )) !== null
+        ) {
+            return [[$incremented_var_name => [[new IsNotIdentical(
+                new TLiteralInt($conditional instanceof PhpParser\Node\Expr\PostInc ? 1 : -1),
+            )]]]];
+        }
+
         $var_name = ExpressionIdentifier::getExtendedVarId(
             $conditional,
             $this_class_name,
