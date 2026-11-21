@@ -1387,6 +1387,26 @@ final class TryCatchTest extends TestCase
                     }',
                 'error_message' => 'RedundantCondition',
             ],
+            'variablePossiblyUndefinedAfterACatchStaysSoWhenTheFinallyAssignsItOnSomePaths' => [
+                'code' => '<?php
+                    function g(): int {
+                        return 1;
+                    }
+
+                    function f(): void {
+                        try {
+                            $x = g();
+                        } catch (RuntimeException $e) {
+                        } finally {
+                            if (rand(0, 1)) {
+                                $x = 1;
+                            }
+                        }
+
+                        echo $x;
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable',
+            ],
             'variableAssignedInAConditionOfAFinallyBlockOnlyIsPossiblyUndefinedAfterTheTry' => [
                 'code' => '<?php
                     function g(): void {}

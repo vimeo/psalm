@@ -597,15 +597,23 @@ final class TryAnalyzer
                     if (isset($context->vars_in_scope[$var_id])
                         && isset($finally_context->vars_in_scope[$var_id])
                     ) {
-                        $possibly_undefined = $context->vars_in_scope[$var_id]->possibly_undefined
-                            && $context->vars_in_scope[$var_id]->possibly_undefined_from_try;
+                        $type_after_try = $context->vars_in_scope[$var_id];
 
                         // the finally block started from every state the try and the catches can end in
                         $context->vars_in_scope[$var_id] = $finally_context->vars_in_scope[$var_id];
 
-                        if ($possibly_undefined) {
-                            $context->vars_in_scope[$var_id] = $context->vars_in_scope[$var_id]
-                                ->setPossiblyUndefined(false, false);
+                        if (isset($finally_context->assigned_var_ids[$var_id])) {
+                            // assigned on every path of the finally block: set whatever the try left
+                            if ($type_after_try->possibly_undefined && $type_after_try->possibly_undefined_from_try) {
+                                $context->vars_in_scope[$var_id] = $context->vars_in_scope[$var_id]
+                                    ->setPossiblyUndefined(false, false);
+                            }
+                        } elseif ($type_after_try->possibly_undefined) {
+                            // a path of the finally block that does not assign it leaves it as the try left it
+                            $context->vars_in_scope[$var_id] = $context->vars_in_scope[$var_id]->setPossiblyUndefined(
+                                true,
+                                $type_after_try->possibly_undefined_from_try,
+                            );
                         }
                     } elseif (isset($finally_context->vars_in_scope[$var_id])) {
                         $context->vars_in_scope[$var_id] = $finally_context->vars_in_scope[$var_id];
