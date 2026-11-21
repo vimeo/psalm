@@ -331,6 +331,25 @@ final class ConstantTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'constantOfAnObjectWithAnUnknownClassIsNotTheConstantOfTheOthers' => [
+                'code' => '<?php
+                    final class A {
+                        const NAME = 10;
+                    }
+
+                    /** @return Missing */
+                    function missing() {
+                        throw new Exception();
+                    }
+
+                    $object = rand(0, 1) ? new A() : missing();
+                    $name = $object::NAME;',
+                'assertions' => [
+                    '$name===' => 'mixed',
+                ],
+                'ignored_issues' => ['UndefinedDocblockClass', 'MixedAssignment', 'InvalidReturnType', 'InvalidReturnStatement'],
+                'php_version' => '8.0',
+            ],
             'overrideNarrowingTheNativeTypeOfTheParentConstant' => [
                 'code' => '<?php
                     class A {
