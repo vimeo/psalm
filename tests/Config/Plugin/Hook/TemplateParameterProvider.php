@@ -14,6 +14,7 @@ use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Union;
 
 use function array_slice;
+use function array_values;
 
 /**
  * Types Box::get() as the receiver's type parameter, as given to the plugin, and Box::all() as a list of it;
