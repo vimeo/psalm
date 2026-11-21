@@ -749,8 +749,6 @@ final class BinaryOpAnalyzer
 
     /**
      * `false === is_int($x)` holds exactly when `!is_int($x)` does, so the call is analysed as a negated one
-     *
-     * @psalm-pure
      */
     private static function isCallComparedToFalse(
         PhpParser\Node\Expr\BinaryOp $stmt,
