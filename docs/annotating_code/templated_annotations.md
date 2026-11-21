@@ -593,7 +593,7 @@ final class Dependent {
 }
 
 /** @extends Box<*> */
-final class StarBox extends Box {} // InvalidDocblock
+final class StarBox extends Box {} // InvalidDocblock, and MissingTemplateParam as the `@extends` is dropped
 
 /** @param Box<*> $any */
 function takesAnyBox(Box $any): void {}
