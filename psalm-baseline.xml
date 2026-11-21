@@ -2142,7 +2142,6 @@
   <file src="src/Psalm/Internal/Scanner/DocblockParser.php">
     <RiskyTruthyFalsyComparison>
       <code><![CDATA[$first_line_padding]]></code>
-      <code><![CDATA[empty($special[$type])]]></code>
     </RiskyTruthyFalsyComparison>
   </file>
   <file src="src/Psalm/Internal/Scanner/ParsedDocblock.php">

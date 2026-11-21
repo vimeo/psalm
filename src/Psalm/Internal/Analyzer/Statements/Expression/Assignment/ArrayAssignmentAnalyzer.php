@@ -1893,12 +1893,12 @@ final class ArrayAssignmentAnalyzer
                             && ($existing_offsets[spl_object_id($previous_child_stmt)] ?? false),
                     )
                 ) {
-                    $array_assignment_type = Type::getList($current_type);
+                    $array_assignment_type = Type::getNonEmptyList($current_type);
                 } else {
                     $key_type = $statements_analyzer->node_data->getType($current_dim);
 
                     $array_assignment_type = new Union([
-                        new TArray([
+                        new TNonEmptyArray([
                             $key_type && !$key_type->hasMixed()
                                 ? $key_type
                                 : Type::getArrayKey(),
