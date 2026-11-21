@@ -199,6 +199,17 @@ final class ReturnTypeTest extends TestCase
                         return \'\\\\\\\\\';
                     }',
             ],
+            'thisOfAFinalClassIsAnInterfaceItImplementsIntersectedWithStatic' => [
+                'code' => '<?php
+                    interface I {}
+
+                    final class A implements I {
+                        /** @return I&static */
+                        public function get(): I {
+                            return $this;
+                        }
+                    }',
+            ],
             'docblockStringLiteralWithAUnicodeEscapeWithLeadingZeros' => [
                 'code' => '<?php
                     /** @return "\u{0000000000e9}" */
@@ -2836,6 +2847,18 @@ final class ReturnTypeTest extends TestCase
                         end:
                     }',
                 'error_message' => 'Not all code paths of f end in a return statement',
+            ],
+            'thisOfAFinalClassIsNotAnInterfaceItDoesNotImplementIntersectedWithStatic' => [
+                'code' => '<?php
+                    interface I {}
+
+                    final class A {
+                        /** @return I&static */
+                        public function get(): object {
+                            return $this;
+                        }
+                    }',
+                'error_message' => 'LessSpecificReturnStatement',
             ],
             'doWhileLeftByGoto' => [
                 'code' => '<?php
