@@ -461,53 +461,16 @@ final class ArgumentAnalyzer
         // what the argument says about each template is read from the declared type, before class templates are bound
         $declared_param_type = $param_type;
 
-        // a template bound to a `*` of the receiver is `never` in what is passed to it
-        if ($template_result && $template_result->star_bindings !== []) {
-            $param_type = TemplateInferredTypeReplacer::replace(
-                $param_type,
-                $template_result->getStarInputs(),
-                $codebase,
-            );
-        }
-
-        if ($class_generic_params) {
-            // here we're replacing the param types and arg types with the bound
-            // class template params.
-            //
-            // For example, if we're operating on a class Foo with params TKey and TValue,
-            // and we're calling a method "add(TKey $key, TValue $value)" on an instance
-            // of that class where we know that TKey is int and TValue is string, then we
-            // want to substitute the expected parameters so it's as if we were actually
-            // calling "add(int $key, string $value)"
-            $readonly_template_result = new TemplateResult($class_generic_params, []);
-
-            // This flag ensures that the template results will never be written to
-            // It also supersedes the `$add_lower_bounds` flag so that closure params
-            // don’t get overwritten
-            $readonly_template_result->readonly = true;
-
-            $param_type = TemplateStandinTypeReplacer::replace(
-                $param_type,
-                $readonly_template_result,
-                $codebase,
-                $statements_analyzer,
-                $arg_value_type,
-                $argument_offset,
-                $context->self,
-                $context->calling_function_id ?: $context->calling_method_id,
-            );
-
-            $arg_value_type = TemplateStandinTypeReplacer::replace(
-                $arg_value_type,
-                $readonly_template_result,
-                $codebase,
-                $statements_analyzer,
-                $arg_value_type,
-                $argument_offset,
-                $context->self,
-                $context->calling_function_id ?: $context->calling_method_id,
-            );
-        }
+        [$param_type, $arg_value_type] = self::bindClassTemplates(
+            $statements_analyzer,
+            $codebase,
+            $context,
+            $param_type,
+            $arg_value_type,
+            $argument_offset,
+            $class_generic_params,
+            $template_result,
+        );
 
         if ($template_result && $template_result->template_types) {
             $arg_type_param = $arg_value_type;
@@ -3103,5 +3066,74 @@ final class ArgumentAnalyzer
             ),
             $statements_analyzer->getSuppressedIssues(),
         );
+    }
+
+    /**
+     * The type of the parameter, and of the argument, with the templates of the class the method is called on
+     * replaced by what the object binds them to, and those bound to a `*` by `never`: the argument is written to it
+     *
+     * @param array<string, array<string, Union>>|null $class_generic_params
+     * @return array{Union, Union}
+     */
+    private static function bindClassTemplates(
+        StatementsAnalyzer $statements_analyzer,
+        Codebase $codebase,
+        Context $context,
+        Union $param_type,
+        Union $arg_value_type,
+        int $argument_offset,
+        ?array $class_generic_params,
+        ?TemplateResult $template_result,
+    ): array {
+        if ($template_result && $template_result->star_bindings !== []) {
+            $param_type = TemplateInferredTypeReplacer::replace(
+                $param_type,
+                $template_result->getStarInputs(),
+                $codebase,
+            );
+        }
+
+        if ($class_generic_params === null || $class_generic_params === []) {
+            return [$param_type, $arg_value_type];
+        }
+
+        // here we're replacing the param types and arg types with the bound
+        // class template params.
+        //
+        // For example, if we're operating on a class Foo with params TKey and TValue,
+        // and we're calling a method "add(TKey $key, TValue $value)" on an instance
+        // of that class where we know that TKey is int and TValue is string, then we
+        // want to substitute the expected parameters so it's as if we were actually
+        // calling "add(int $key, string $value)"
+        $readonly_template_result = new TemplateResult($class_generic_params, []);
+
+        // This flag ensures that the template results will never be written to
+        // It also supersedes the `$add_lower_bounds` flag so that closure params
+        // don’t get overwritten
+        $readonly_template_result->readonly = true;
+
+        $bound_param_type = TemplateStandinTypeReplacer::replace(
+            $param_type,
+            $readonly_template_result,
+            $codebase,
+            $statements_analyzer,
+            $arg_value_type,
+            $argument_offset,
+            $context->self,
+            $context->calling_function_id ?: $context->calling_method_id,
+        );
+
+        $bound_arg_value_type = TemplateStandinTypeReplacer::replace(
+            $arg_value_type,
+            $readonly_template_result,
+            $codebase,
+            $statements_analyzer,
+            $arg_value_type,
+            $argument_offset,
+            $context->self,
+            $context->calling_function_id ?: $context->calling_method_id,
+        );
+
+        return [$bound_param_type, $bound_arg_value_type];
     }
 }

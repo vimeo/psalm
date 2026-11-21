@@ -752,7 +752,6 @@
       <code><![CDATA[$cased_method_id]]></code>
       <code><![CDATA[$cased_method_id]]></code>
       <code><![CDATA[$cased_method_id]]></code>
-      <code><![CDATA[$class_generic_params]]></code>
       <code><![CDATA[$context->calling_function_id]]></code>
       <code><![CDATA[$context->calling_function_id]]></code>
       <code><![CDATA[$context->calling_method_id]]></code>
