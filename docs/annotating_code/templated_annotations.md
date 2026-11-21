@@ -575,6 +575,31 @@ function f(Pair $concrete, Pair $other, Pair $any): void {
 
 A `*` argument itself fits only another `*`, an argument left out (`Pair $pair`), or a covariant argument that holds the whole bound. With `@template B of list<A>`, reading `B` of a `P<int, *>` gives `list<int>`. `class-string<*>` is any class-string, and the array-like builtins (`array<*>`, `non-empty-array<*>`, `list<*>`, `non-empty-list<*>`, `iterable<*>`) read `*` as `mixed`. A `*` argument is not allowed in `@extends`, `@implements` or `@use` (`InvalidDocblock`).
 
+Reading a template gives its bound (`T`, `list<T>`), but a return or property type that holds the template as a whole generic argument stays a `*`: with `@return Box<T>`, a `Box<*>` receiver gives a `Box<*>`, not a `Box<object>`. Covariant arguments (`Iterator<TKey, TValue>`) read the bound.
+
+```php
+<?php
+/** @template T of object */
+final class Box {
+    /** @return Box<T> */
+    public function same(): Box { return $this; }
+
+    /** @return T */
+    public function get(): object { throw new Exception(); }
+}
+
+/** @param Box<object> $box */
+function takesBoxOfObject(Box $box): void {}
+
+/** @param Box<*> $any */
+function f(Box $any): void {
+    $any->get(); // object
+    takesBoxOfObject($any->same()); // ArgumentTypeCoercion
+}
+```
+
+Writes through a `*` are not restricted yet: `$any->set(new stdClass())` for a `set(T $value)` method is accepted, although it should expect `never`.
+
 ## Builtin templated classes and interfaces
 
 Psalm has support for a number of builtin classes and interfaces that you can extend/implement in your own code.
