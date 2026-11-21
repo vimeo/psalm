@@ -71,6 +71,23 @@ final class TemplateResult
     }
 
     /**
+     * Marks the lower bounds of the class templates the receiver bound to a `*`, for what is read from the receiver
+     *
+     * @param array<string, array<string, true>> $star_templates template name => defining class
+     * @psalm-external-mutation-free
+     */
+    public function markStarBindings(array $star_templates): void
+    {
+        foreach ($star_templates as $template_name => $defining_classes) {
+            foreach ($defining_classes as $defining_class => $_) {
+                foreach ($this->lower_bounds[$template_name][$defining_class] ?? [] as $lower_bound) {
+                    $lower_bound->from_star_projection = true;
+                }
+            }
+        }
+    }
+
+    /**
      * @psalm-capabilities read-props
      */
     public function merge(TemplateResult $result): TemplateResult

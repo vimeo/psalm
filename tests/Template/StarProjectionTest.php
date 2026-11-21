@@ -476,8 +476,8 @@ final class StarProjectionTest extends TestCase
                     '$seconds===' => 'list<object>',
                     '$seconds_property===' => 'list<object>',
                     '$producer===' => 'Closure[impure]():object',
-                    '$box===' => 'Box<object>',
-                    '$counted_box===' => 'Countable&Box<object>',
+                    '$box===' => 'Box<*>',
+                    '$counted_box===' => 'Countable&Box<*>',
                     '$model===' => 'Model',
                     '$models===' => 'list<Model>',
                     '$last_key===' => 'array-key|null',
@@ -1153,6 +1153,170 @@ final class StarProjectionTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'starProjectionReadKeepsTheStarOfAWholeGenericArgument' => [
+                'code' => '<?php
+                    /** @template T of object */
+                    class Box {
+                        /** @return Box<T> */
+                        public function same(): Box {
+                            return $this;
+                        }
+
+                        /** @return self<T> */
+                        public function selfOf(): self {
+                            return $this;
+                        }
+
+                        /** @return static<T> */
+                        public function staticOf(): static {
+                            return $this;
+                        }
+
+                        /** @return Other<T> */
+                        public function other(): Other {
+                            throw new Exception();
+                        }
+
+                        /** @return list<Box<T>> */
+                        public function boxes(): array {
+                            return [];
+                        }
+
+                        /** @return T */
+                        public function get(): object {
+                            throw new Exception();
+                        }
+
+                        /** @return list<T> */
+                        public function all(): array {
+                            return [];
+                        }
+
+                        /** @var Box<T>|null */
+                        public ?Box $property = null;
+                    }
+
+                    /** @template U of object */
+                    final class Other {}
+
+                    /** @var Box<*> $b */
+                    $b = new Box();
+                    $same = $b->same();
+                    $self = $b->selfOf();
+                    $static = $b->staticOf();
+                    $other = $b->other();
+                    $boxes = $b->boxes();
+                    $get = $b->get();
+                    $all = $b->all();
+                    $property = $b->property;',
+                'assertions' => [
+                    '$same===' => 'Box<*>',
+                    '$self===' => 'Box<*>',
+                    '$static===' => 'Box<*>&static',
+                    '$other===' => 'Other<*>',
+                    '$boxes===' => 'list<Box<*>>',
+                    '$get===' => 'object',
+                    '$all===' => 'list<object>',
+                    '$property===' => 'Box<*>|null',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'starProjectionWritesAreNotRestrictedYet' => [
+                // the write-restriction PR makes `set()` expect `never` and `sink()` a `Closure(never): void`
+                'code' => '<?php
+                    /** @template T of object */
+                    final class Box {
+                        /** @param T $value */
+                        public function set(object $value): void {}
+
+                        /** @return Closure(T): void */
+                        public function sink(): Closure {
+                            throw new Exception();
+                        }
+                    }
+
+                    /** @var Box<*> $b */
+                    $b = new Box();
+                    $b->set(new stdClass());
+                    $sink = $b->sink();',
+                'assertions' => [
+                    '$sink===' => 'Closure[impure](object):void',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'starProjectionFitsAParamWithoutArguments' => [
+                // `Box<stdClass>` does not (see starProjectionBareParamRejectsAConcreteArgument): the
+                // write-restriction PR makes a bare parameter take any argument
+                'code' => '<?php
+                    /** @template T of object */
+                    final class Box {}
+
+                    function takesBare(Box $b): void {}
+
+                    /** @param Box<*> $b */
+                    function f(Box $b): void {
+                        takesBare($b);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'starProjectionNestedInAnArgument' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class Box {
+                        /** @return T */
+                        public function get() {
+                            throw new Exception();
+                        }
+                    }
+
+                    /** @param Box<Box<*>> $b */
+                    function takesNested(Box $b): void {}
+
+                    /** @param Box<Box<*>> $b */
+                    function f(Box $b): void {
+                        takesNested($b);
+                        $inner = $b->get();
+                        /** @psalm-check-type-exact $inner = Box<*> */
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'starProjectionInParamOutSelfOutAndThisOut' => [
+                'code' => '<?php
+                    /** @template T of object */
+                    final class Cell {
+                        /** @psalm-this-out Cell<*> */
+                        public function wipeThis(): void {}
+
+                        /** @psalm-self-out Cell<*> */
+                        public function wipeSelf(): void {}
+                    }
+
+                    /** @param-out Cell<*> $out */
+                    function fill(mixed &$out): void {
+                        $out = new Cell();
+                    }
+
+                    fill($filled);
+                    /** @var Cell<DateTime> $this_out */
+                    $this_out = new Cell();
+                    $this_out->wipeThis();
+                    /** @var Cell<DateTime> $self_out */
+                    $self_out = new Cell();
+                    $self_out->wipeSelf();',
+                'assertions' => [
+                    '$filled===' => 'Cell<*>',
+                    '$this_out===' => 'Cell<*>',
+                    '$self_out===' => 'Cell<*>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
         ];
     }
 
@@ -1399,6 +1563,96 @@ final class StarProjectionTest extends TestCase
                     /** @param class-string-map<T, *> $map */
                     function f(array $map): void {}',
                 'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR . 'somefile.php:2:32 - class-string-map cannot take a * value',
+            ],
+            'starProjectionReadOfAWholeGenericArgumentIsStillAStar' => [
+                'code' => '<?php
+                    /** @template T of object */
+                    final class Box {
+                        /** @return Box<T> */
+                        public function same(): Box {
+                            return $this;
+                        }
+                    }
+
+                    /** @param Box<object> $b */
+                    function takesBoxOfObject(Box $b): void {}
+
+                    /** @param Box<*> $b */
+                    function f(Box $b): void {
+                        takesBoxOfObject($b->same());
+                    }',
+                'error_message' => 'ArgumentTypeCoercion - src' . DIRECTORY_SEPARATOR . 'somefile.php:15:42 - Argument 1 of takesBoxOfObject expects Box<object>, but parent type Box<*> provided',
+            ],
+            'starProjectionParamOfAReceiverKeepsTheBound' => [
+                'code' => '<?php
+                    /** @template T of object */
+                    final class Box {
+                        /** @param Box<T> $other */
+                        public function merge(Box $other): void {}
+                    }
+
+                    /**
+                     * @param Box<*> $any
+                     * @param Box<DateTime> $date
+                     */
+                    function f(Box $any, Box $date): void {
+                        $any->merge($date);
+                    }',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:13:37 - Argument 1 of Box::merge expects Box<object>, but Box<DateTime> provided',
+            ],
+            'starProjectionBareParamRejectsAConcreteArgument' => [
+                // a `*` and a bare `Box` both leave the argument unknown, a `Box<stdClass>` is not a bare `Box`:
+                // the write-restriction PR makes the bare parameter take any argument
+                'code' => '<?php
+                    /** @template T of object */
+                    final class Box {}
+
+                    function takesBare(Box $b): void {}
+
+                    /** @param Box<stdClass> $b */
+                    function f(Box $b): void {
+                        takesBare($b);
+                    }',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:9:35 - Argument 1 of takesBare expects Box<object>, but Box<stdClass> provided',
+            ],
+            'starProjectionNestedIsNotAnyNestedArgument' => [
+                'code' => '<?php
+                    /** @template T of object */
+                    final class Box {}
+
+                    /** @param Box<Box<*>> $b */
+                    function takesNested(Box $b): void {}
+
+                    /** @param Box<Box<DateTime>> $b */
+                    function f(Box $b): void {
+                        takesNested($b);
+                    }',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:37 - Argument 1 of takesNested expects Box<Box<*>>, but Box<Box<DateTime>> provided',
+            ],
+            'starProjectionOverridingReturnIsLessSpecific' => [
+                'code' => '<?php
+                    abstract class Model {}
+
+                    /** @template TModel of Model */
+                    final class Builder {}
+
+                    /** @template TRelatedModel of Model */
+                    abstract class Relation {
+                        /** @return Builder<TRelatedModel> */
+                        abstract public function builder(): Builder;
+                    }
+
+                    /**
+                     * @template TRelatedModel of Model
+                     * @extends Relation<TRelatedModel>
+                     */
+                    final class HasMany extends Relation {
+                        /** @return Builder<*> */
+                        public function builder(): Builder {
+                            throw new Exception();
+                        }
+                    }',
+                'error_message' => 'LessSpecificImplementedReturnType',
             ],
         ];
     }

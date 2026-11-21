@@ -11,6 +11,7 @@ use Psalm\Internal\Type\PurityArguments;
 use Psalm\Internal\Type\StarProjection;
 use Psalm\Internal\Type\TemplateDefaults;
 use Psalm\Internal\Type\TemplateResult;
+use Psalm\Internal\Type\TypeArgumentProjection;
 use Psalm\Internal\Type\TypeExpander;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Type;
@@ -266,6 +267,52 @@ final class ClassTemplateParamCollector
         }
 
         return $class_template_params;
+    }
+
+    /**
+     * The templates, by name and defining class, that the receiver binds to one of its `*` arguments: its own
+     * template of that argument, and those of the classes it extends that stand for exactly that template
+     *
+     * @param array<string, non-empty-array<string, Union>>|null $class_template_params what collect() gave
+     * @return array<string, array<string, true>>
+     * @psalm-mutation-free
+     */
+    public static function getStarBoundTemplates(
+        ClassLikeStorage $static_class_storage,
+        ?Atomic $lhs_type_part,
+        ?array $class_template_params,
+    ): array {
+        if (!$lhs_type_part instanceof TGenericObject
+            || !$lhs_type_part->hasStarProjection()
+            || $class_template_params === null
+        ) {
+            return [];
+        }
+
+        $own_template_names = array_keys($static_class_storage->template_types ?? []);
+        $star_templates = [];
+
+        foreach ($class_template_params as $template_name => $defining_classes) {
+            foreach ($defining_classes as $defining_class => $_) {
+                if ($defining_class === $static_class_storage->name) {
+                    $offset = array_search($template_name, $own_template_names, true);
+                } else {
+                    $extended_type = $static_class_storage->template_extended_params[$defining_class][$template_name]
+                        ?? null;
+                    $extended_atomic = $extended_type?->isSingle() ? $extended_type->getSingleAtomic() : null;
+                    $offset = $extended_atomic instanceof TTemplateParam
+                        && $extended_atomic->defining_class === $static_class_storage->name
+                        ? array_search($extended_atomic->param_name, $own_template_names, true)
+                        : false;
+                }
+
+                if ($offset !== false && $lhs_type_part->getProjection($offset) === TypeArgumentProjection::Star) {
+                    $star_templates[$template_name][$defining_class] = true;
+                }
+            }
+        }
+
+        return $star_templates;
     }
 
     /**

@@ -16,6 +16,7 @@ use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\InheritedMethodTaints;
 use Psalm\Internal\Analyzer\NamespaceAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Assignment\InstancePropertyAssignmentAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Call\ClassTemplateParamCollector;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodCallPurityAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\MethodCallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
@@ -982,9 +983,16 @@ final class AtomicPropertyFetchAnalyzer
                 }
             }
 
+            $template_result = new TemplateResult([], $template_types);
+            $template_result->markStarBindings(ClassTemplateParamCollector::getStarBoundTemplates(
+                $property_class_storage,
+                $lhs_type_part,
+                $template_types,
+            ));
+
             $class_property_type = TemplateInferredTypeReplacer::replace(
                 $class_property_type,
-                new TemplateResult([], $template_types),
+                $template_result,
                 $codebase,
             );
         }

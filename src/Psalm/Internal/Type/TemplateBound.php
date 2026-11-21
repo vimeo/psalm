@@ -117,4 +117,11 @@ final class TemplateBound
      * bound is the union of the arm bounds and is never an equality bound.
      */
     public bool $from_union_alternatives = false;
+
+    /**
+     * True for a lower bound that is the type of a `*` argument of the receiver (a class template of a `Box<*>`): a
+     * type read from the receiver that holds the template as a whole generic argument (`Box<T>`) is as unknown as
+     * the receiver, not the bound
+     */
+    public bool $from_star_projection = false;
 }

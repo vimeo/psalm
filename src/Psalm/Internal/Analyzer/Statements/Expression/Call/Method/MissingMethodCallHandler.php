@@ -222,6 +222,12 @@ final class MissingMethodCallHandler
                 $found_generic_params ?? [],
             );
 
+            $template_result->markStarBindings(ClassTemplateParamCollector::getStarBoundTemplates(
+                $pseudo_method_class_storage,
+                $mixin_type ?? $lhs_type_part,
+                $found_generic_params,
+            ));
+
             if ($pseudo_method_storage->return_type) {
                 $return_type_candidate = MethodCallReturnTypeFetcher::replaceTemplateTypes(
                     $pseudo_method_storage->return_type,

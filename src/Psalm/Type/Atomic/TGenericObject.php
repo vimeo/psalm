@@ -8,11 +8,14 @@ use Override;
 use Psalm\Codebase;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Type\PurityArguments;
+use Psalm\Internal\Type\StarProjection;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TypeArgumentProjection;
 use Psalm\Type\Atomic;
 use Psalm\Type\Union;
 
+use function array_diff_key;
+use function array_keys;
 use function count;
 use function implode;
 use function in_array;
@@ -290,12 +293,58 @@ final class TGenericObject extends TNamedObject
         if (!$type_params && !$intersection) {
             return $this;
         }
-        return (new static(
+
+        $projections = $this->projections + $this->getStarBoundProjections($template_result, $codebase);
+
+        $replaced = (new static(
             $this->value,
             $type_params ?? $this->type_params,
             true,
             $this->is_static,
             $intersection ?? $this->extra_types,
-        ))->setIsStatic($this->is_static, $this->is_static_resolved)->setProjections($this->projections);
+        ))->setIsStatic($this->is_static, $this->is_static_resolved)->setProjections($projections);
+
+        // the bound a new `*` holds is that of the template of this class
+        $new_star_offsets = array_keys(array_diff_key($projections, $this->projections));
+
+        return $codebase !== null && $new_star_offsets !== []
+            ? StarProjection::resolve($replaced, $codebase, $new_star_offsets)
+            : $replaced;
+    }
+
+    /**
+     * The invariant arguments that are a template the receiver bound to a `*` (`Box<T>` read from a `Box<*>`): what
+     * is read from the receiver is as unknown as the receiver. A covariant argument reads the bound.
+     *
+     * @return array<int, TypeArgumentProjection>
+     * @psalm-mutation-free
+     */
+    private function getStarBoundProjections(TemplateResult $template_result, ?Codebase $codebase): array
+    {
+        if ($codebase === null) {
+            return [];
+        }
+
+        // `static<T>` names no class until it is expanded
+        $covariants = $codebase->classlike_storage_provider->has($this->value)
+            ? $codebase->classlike_storage_provider->get($this->value)->template_covariants
+            : [];
+        $projections = [];
+
+        foreach ($this->type_params as $offset => $type_param) {
+            $atomic = $type_param->isSingle() ? $type_param->getSingleAtomic() : null;
+
+            if (!$atomic instanceof TTemplateParam || ($covariants[$offset] ?? false)) {
+                continue;
+            }
+
+            $bounds = $template_result->lower_bounds[$atomic->param_name][$atomic->defining_class] ?? [];
+
+            if (count($bounds) === 1 && $bounds[0]->from_star_projection) {
+                $projections[$offset] = TypeArgumentProjection::Star;
+            }
+        }
+
+        return $projections;
     }
 }
