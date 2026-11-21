@@ -1745,6 +1745,19 @@ final class TaintTest extends TestCase
     public static function providerValidCodeParse(): array
     {
         return [
+            'extractSealedArrayOfInput' => [
+                'code' => '<?php
+                    extract(["name" => $_GET["name"]]);',
+            ],
+            'extractSealedShapeParamTaintsOnlyTheVariableOfItsKey' => [
+                'code' => '<?php
+                    /** @param array{name: string, greeting: string} $data */
+                    function show(array $data): void {
+                        extract($data);
+                        echo $greeting;
+                    }
+                    show(["name" => (string) $_GET["name"], "greeting" => "hello"]);',
+            ],
             'deprecatedPromotedPropertyIsNotUsedByItsOwnDeclaration' => [
                 'code' => '<?php
                     final class A {
@@ -19593,6 +19606,31 @@ final class TaintTest extends TestCase
                 'code' => '<?php
                     extract($_POST);',
                 'error_message' => 'TaintedExtract',
+            ],
+            'extractArrayWithAnInputKey' => [
+                'code' => '<?php
+                    extract([$_GET["name"] => "value"]);',
+                'error_message' => 'TaintedExtract',
+            ],
+            'extractUnsealedShape' => [
+                'code' => '<?php
+                    extract(["name" => "value"] + $_GET);',
+                'error_message' => 'TaintedExtract',
+            ],
+            'extractSealedArrayWithAFlagNotTracked' => [
+                'code' => '<?php
+                    extract(["name" => (string) $_GET["name"]], EXTR_PREFIX_ALL, "p");',
+                'error_message' => 'TaintedExtract',
+            ],
+            'extractSealedShapeParamTaintsTheVariableOfItsKey' => [
+                'code' => '<?php
+                    /** @param array{name: string} $data */
+                    function show(array $data): void {
+                        extract($data);
+                        echo $name;
+                    }
+                    show(["name" => (string) $_GET["name"]]);',
+                'error_message' => 'TaintedHtml',
             ],
             'TaintForIntTypeCastUsingAnnotatedSink' => [
                 'code' => '<?php // --taint-analysis
