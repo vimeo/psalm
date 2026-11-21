@@ -545,7 +545,10 @@ function changeGroups(array $changes): array
         $key = serialize([
             array_column($old, 'type'),
             array_column($new, 'type'),
-            array_values(array_filter(changeDiff($old, $new), static fn(array $c): bool => $c[0] !== $c[1])),
+            array_values(array_filter(
+                changeSegments(array_column($old, 'message'), array_column($new, 'message')),
+                static fn(array $segment): bool => !isShared($segment),
+            )),
         ]);
         $groups[$key] ??= ['old' => $old, 'new' => $new, 'locations' => [], 'count' => 0, 'first' => $sides];
         $groups[$key]['count']++;
