@@ -43,6 +43,27 @@ final class Php84Test extends TestCase
                 'ignored_issues' => ['MixedArgument'],
                 'php_version' => '8.4',
             ],
+            'writeInTheConstructorGoesThroughTheSetHook' => [
+                'code' => '<?php
+                    final class Foo {
+                        public string $bar {
+                            set(string|int|null $value) {
+                                $this->bar = (string) $value;
+                            }
+                        }
+
+                        public function __construct() {
+                            $this->bar = null;
+                        }
+                    }
+
+                    $foo = new Foo();
+                    $foo->bar = 5;
+                    $foo->bar = "five";',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.4',
+            ],
             'readAfterAWriteThroughTheSetHookHasTheTypeOfTheProperty' => [
                 'code' => '<?php
                     final class Tags {
