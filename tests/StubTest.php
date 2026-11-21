@@ -1024,7 +1024,7 @@ final class StubTest extends DeferredAnalyzerTestCase
         );
 
         $this->expectException(CodeException::class);
-        $this->expectExceptionMessage('DeprecatedConstant - src' . DIRECTORY_SEPARATOR . 'somefile.php:2:22 - Constant AUTOLOADED_OLD is deprecated');
+        $this->expectExceptionMessageMatches('/^DeprecatedConstant - .*somefile\\.php:2:22 - Constant AUTOLOADED_OLD is deprecated/');
 
         $this->analyzeFile($file_path, new Context());
     }

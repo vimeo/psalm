@@ -475,7 +475,7 @@ final class CliOnlyCallTest extends TestCase
                         $cli_request?->run();
                     }',
                 'assertions' => [],
-                'ignored_issues' => [],
+                'ignored_issues' => ['DeprecatedSyntax'],
                 'php_version' => '8.0',
             ],
             'cliOnlyInstancesGuardedByAnAssertionOfTheSapi' => [

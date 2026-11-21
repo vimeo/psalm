@@ -3682,25 +3682,19 @@ final class BinaryOperationTest extends TestCase
 
     public function testBcMathNumberOperations(): void
     {
+        $this->project_analyzer->setPhpVersion('8.4', 'tests');
+
         $this->addFile(
             'somefile.php',
             '<?php
-                namespace BcMath {
-                    final class Number {
-                        public function __construct(string $number) {}
-                    }
-                }
-
-                namespace {
-                    $a = new \BcMath\Number("2");
-                    $b = new \BcMath\Number("4");
-                    $c = $a + $b;
-                    $d = $a - 1;
-                    $e = 2 * $b;
-                    $f = $a / "3";
-                    $g = $a % $b;
-                    $h = $a ** 2;
-                }',
+                $a = new \BcMath\Number("2");
+                $b = new \BcMath\Number("4");
+                $c = $a + $b;
+                $d = $a - 1;
+                $e = 2 * $b;
+                $f = $a / "3";
+                $g = $a % $b;
+                $h = $a ** 2;',
         );
 
         $context = new Context();
