@@ -753,6 +753,53 @@ final class BuildInfoCollectorTest extends TestCase
     }
 
     /**
+     * @return iterable<string, array{array<string, string>}>
+     * @psalm-pure
+     */
+    public static function provideEnvWithAMalformedRepositorySlug(): iterable
+    {
+        yield 'Travis CI' => [[
+            'TRAVIS' => 'true',
+            'TRAVIS_JOB_ID' => '123',
+            'TRAVIS_REPO_SLUG' => 'psalm',
+            'TRAVIS_PULL_REQUEST' => '42',
+            'TRAVIS_PULL_REQUEST_SLUG' => 'contributor',
+            'TRAVIS_BRANCH' => 'master',
+        ]];
+
+        yield 'AppVeyor' => [[
+            'APPVEYOR' => 'True',
+            'APPVEYOR_BUILD_NUMBER' => '5',
+            'APPVEYOR_JOB_NUMBER' => '1',
+            'APPVEYOR_REPO_NAME' => 'psalm',
+            'APPVEYOR_REPO_BRANCH' => 'master',
+            'APPVEYOR_PULL_REQUEST_NUMBER' => '42',
+            'APPVEYOR_PULL_REQUEST_HEAD_REPO_NAME' => 'contributor',
+        ]];
+
+        yield 'GitHub Actions' => [[
+            'GITHUB_ACTIONS' => 'true',
+            'GITHUB_REF' => 'refs/heads/master',
+            'GITHUB_REPOSITORY' => 'psalm',
+        ]];
+    }
+
+    /**
+     * @param array<string, string> $env
+     */
+    #[DataProvider('provideEnvWithAMalformedRepositorySlug')]
+    public function testARepositorySlugThatIsNotOwnerAndNameSendsNoRepository(array $env): void
+    {
+        $info = (new BuildInfoCollector($env))->collect();
+
+        self::assertArrayHasKey('CI_NAME', $info);
+        self::assertArrayNotHasKey('CI_REPO_OWNER', $info);
+        self::assertArrayNotHasKey('CI_REPO_NAME', $info);
+        self::assertArrayNotHasKey('CI_PR_REPO_OWNER', $info);
+        self::assertArrayNotHasKey('CI_PR_REPO_NAME', $info);
+    }
+
+    /**
      * @param array<string, string> $remotes name => URL
      */
     private static function git(string $branch, array $remotes): GitInfo
