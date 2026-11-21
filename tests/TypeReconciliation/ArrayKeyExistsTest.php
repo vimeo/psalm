@@ -1090,7 +1090,7 @@ final class ArrayKeyExistsTest extends TestCase
                             takesInt($key);
                         }
                     }',
-                'error_message' => 'expects int, but \'971\'|\'972\' provided',
+                'error_message' => 'expects int, but T:fn-oftemplate as \'971\'|\'972\' provided',
             ],
             'negatedIssetKeepsAnOptionalKeyThatMayBeNull' => [
                 'code' => '<?php
