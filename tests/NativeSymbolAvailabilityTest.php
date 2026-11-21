@@ -214,6 +214,59 @@ final class NativeSymbolAvailabilityTest extends TestCase
             'php_version' => '7.4',
         ];
 
+        yield 'constantAvailableFromItsVersion' => [
+            'code' => '<?php
+                $type = IMAGETYPE_AVIF;
+            ',
+            'assertions' => [
+                '$type===' => '19',
+            ],
+            'ignored_issues' => [],
+            'php_version' => '8.1',
+        ];
+
+        // on a runtime older than PHP 8.5, which doesn't define it
+        yield 'constantNewerThanTheRuntime' => [
+            'code' => '<?php
+                echo PHP_BUILD_DATE;
+            ',
+            'assertions' => [],
+            'ignored_issues' => ['MixedArgument'],
+            'php_version' => '8.5',
+        ];
+
+        yield 'constantGuardedBelowItsVersion' => [
+            'code' => '<?php
+                function image_type(): int {
+                    return PHP_VERSION_ID >= 80100 ? IMAGETYPE_AVIF : IMAGETYPE_UNKNOWN;
+                }
+
+                function flags(): int {
+                    if (defined("FILTER_FLAG_GLOBAL_RANGE")) {
+                        return FILTER_FLAG_NO_RES_RANGE | FILTER_FLAG_GLOBAL_RANGE;
+                    }
+
+                    return FILTER_FLAG_NO_RES_RANGE;
+                }
+            ',
+            'assertions' => [],
+            'ignored_issues' => [],
+            'php_version' => '8.0',
+        ];
+
+        yield 'constantPolyfilledBelowItsVersion' => [
+            'code' => '<?php
+                if (!defined("IMAGETYPE_SVG")) {
+                    define("IMAGETYPE_SVG", 21);
+                }
+
+                $type = IMAGETYPE_SVG;
+            ',
+            'assertions' => [],
+            'ignored_issues' => [],
+            'php_version' => '8.1',
+        ];
+
         yield 'callMapSymbolsGuarded' => [
             'code' => '<?php
                 function a(float $f): float {
@@ -838,6 +891,18 @@ final class NativeSymbolAvailabilityTest extends TestCase
                 . ' the analysed PHP version',
             'error_levels' => [],
             'php_version' => '7.4',
+        ];
+
+        yield 'constantBelowItsVersion' => [
+            'code' => '<?php
+                $date = PHP_BUILD_DATE;
+            ',
+            'error_message' => 'UndefinedConstant - src' . DIRECTORY_SEPARATOR . 'somefile.php:2:25 - Constant'
+                . ' PHP_BUILD_DATE is not defined for the analysed PHP version 8.1 (it was introduced in PHP 8.5);'
+                . ' define a polyfill (symfony/polyfill-php85 ships some of the symbols of that version), or raise'
+                . ' the analysed PHP version',
+            'error_levels' => [],
+            'php_version' => '8.1',
         ];
 
         yield 'docblockClassBelowItsVersion' => [
