@@ -3407,6 +3407,71 @@ final class FunctionTemplateTest extends TestCase
                 ],
                 'ignored_issues' => ['ArgumentTypeCoercion', 'PossiblyInvalidArgument', 'InvalidScalarArgument'],
             ],
+            'templateBoundByArgumentWithNoPartOfTheBoundKeepsTheBoundPartsItContains' => [
+                'code' => '<?php
+                    /**
+                     * @template T of non-empty-string|array
+                     * @param T $value
+                     * @return T
+                     */
+                    function nonEmptyStringOrArray($value) {
+                        return $value;
+                    }
+
+                    /** @return scalar */
+                    function scalarValue() {
+                        return "";
+                    }
+
+                    function stringValue(): string {
+                        return "";
+                    }
+
+                    function intValue(): int {
+                        return 0;
+                    }
+
+                    $from_scalar = substr_replace(scalarValue(), "x", 0, 1);
+                    $from_string = nonEmptyStringOrArray(stringValue());
+                    $from_int = nonEmptyStringOrArray(intValue());',
+                'assertions' => [
+                    '$from_scalar===' => 'string',
+                    '$from_string===' => 'non-empty-string',
+                    '$from_int===' => 'array<array-key, mixed>|non-empty-string',
+                ],
+                'ignored_issues' => ['ArgumentTypeCoercion', 'InvalidScalarArgument'],
+            ],
+            'templateUpperBoundByCallableParamWithNoPartOfTheBoundKeepsTheBoundPartsItContains' => [
+                'code' => '<?php
+                    /**
+                     * @template T of non-empty-string|array
+                     * @param callable(T): void $callback
+                     * @return T
+                     */
+                    function fromCallback(callable $callback) {
+                        throw new Exception();
+                    }
+
+                    $value = fromCallback(function (string $s): void {});',
+                'assertions' => [
+                    '$value===' => 'non-empty-string',
+                ],
+            ],
+            'callableParamWithoutTheTypeArgumentsOfAGenericBoundDoesNotBindIt' => [
+                'code' => '<?php
+                    function f(string $dir_path): void {
+                        $iterator = new RecursiveDirectoryIterator($dir_path);
+                        $iterator = new RecursiveCallbackFilterIterator(
+                            $iterator,
+                            static function (mixed $current, mixed $_, RecursiveIterator $iterator): bool {
+                                return true;
+                            },
+                        );
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['UnusedVariable'],
+                'php_version' => '8.0',
+            ],
             'templateUpperBoundByCallableParamOnlyCoercedToTheBoundKeepsTheBoundPartsItContains' => [
                 'code' => '<?php
                     /**

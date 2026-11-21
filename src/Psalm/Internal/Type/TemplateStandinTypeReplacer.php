@@ -991,10 +991,12 @@ final class TemplateStandinTypeReplacer
 
             $atomic_type = $atomic_type->replaceAs($as);
 
-            if ($input_type
-                && !$template_result->readonly
-                && (
-                    $atomic_type->as->isMixed()
+            $generic_param = null;
+
+            if ($input_type && !$template_result->readonly) {
+                $generic_param = $input_type->getBuilder();
+
+                if ($atomic_type->as->isMixed()
                     || UnionTypeComparator::canBeContainedBy(
                         $codebase,
                         $input_type,
@@ -1003,13 +1005,22 @@ final class TemplateStandinTypeReplacer
                         false,
                         $matching_input_keys,
                     )
-                )
-            ) {
-                $generic_param = $input_type->getBuilder();
+                ) {
+                    if ($matching_input_keys) {
+                        self::keepMatchingInputTypes($codebase, $generic_param, $matching_input_keys, $atomic_type->as);
+                    }
+                } else {
+                    // no part is of the bound: the input stands for the parts of the bound it contains, if any (a
+                    // string for a non-empty-string)
+                    self::keepMatchingInputTypes($codebase, $generic_param, [], $atomic_type->as);
 
-                if ($matching_input_keys) {
-                    self::keepMatchingInputTypes($codebase, $generic_param, $matching_input_keys, $atomic_type->as);
+                    if ($generic_param->isUnionEmpty() || self::hasTemplateAtAnyDepth($generic_param)) {
+                        $generic_param = null;
+                    }
                 }
+            }
+
+            if ($generic_param !== null) {
                 if ($add_lower_bound) {
                     return array_values($generic_param->getAtomicTypes());
                 }
@@ -1123,6 +1134,8 @@ final class TemplateStandinTypeReplacer
                 }
             }
 
+            $generic_param = $input_type->getBuilder();
+
             if (UnionTypeComparator::canBeContainedBy(
                 $codebase,
                 $input_type,
@@ -1130,13 +1143,17 @@ final class TemplateStandinTypeReplacer
                 false,
                 false,
                 $matching_input_keys,
-            )
-            ) {
-                $generic_param = $input_type->getBuilder();
-
+            )) {
                 if ($matching_input_keys) {
                     self::keepMatchingInputTypes($codebase, $generic_param, $matching_input_keys, $gate_replacement_type);
                 }
+            } else {
+                // as for a lower bound, the parts of the bound the input contains, if any
+                self::keepMatchingInputTypes($codebase, $generic_param, [], $gate_replacement_type);
+            }
+
+            // the parts of a bound that is generic in other templates are not known yet
+            if (!$generic_param->isUnionEmpty() && !self::hasTemplateAtAnyDepth($generic_param)) {
                 $generic_param = $generic_param->freeze();
 
                 $upper_bound = $template_result->upper_bounds
@@ -1502,6 +1519,17 @@ final class TemplateStandinTypeReplacer
         }
 
         return true;
+    }
+
+    /**
+     * @psalm-pure
+     */
+    private static function hasTemplateAtAnyDepth(MutableUnion $type): bool
+    {
+        $template_collector = new TemplateTypeCollector();
+        $template_collector->traverseArray($type->getAtomicTypes());
+
+        return $template_collector->getTemplateTypes() !== [];
     }
 
     /**
