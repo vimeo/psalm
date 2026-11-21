@@ -277,7 +277,6 @@ final class Clause implements Stringable
             if (count($var_id_clauses) > 1) {
                 $clause_strings[] = '('.implode(') || (', $var_id_clauses).')';
             } else {
-                assert(!empty($var_id_clauses));
                 $clause_strings[] = reset($var_id_clauses);
             }
         }
@@ -396,7 +395,10 @@ final class Clause implements Stringable
             $impossibility = [];
 
             foreach ($possibility as $type) {
+                // `$a !== $b` being false makes the two identical, so `$a` has the type of `$b`: this is so for a
+                // comparison with an operand, not for `$a === $b` being false, nor for an assertion of a docblock
                 if (!$type->hasEquality()
+                    || ($type instanceof IsNotIdentical && $type->comparand !== null)
                     || (($inner_type = $type->getAtomicType())
                         && ($inner_type instanceof TLiteralInt
                             || $inner_type instanceof TLiteralFloat

@@ -433,7 +433,10 @@ final class CliOutput
             $problems[] = 'it doesn\'t declare a constructor';
         }
 
-        $unserialize_method = isset($storage->declaring_method_ids['__unserialize']) ? '__unserialize' : '__wakeup';
+        $unserialize_method = isset($storage->declaring_method_ids['__wakeup'])
+            && !isset($storage->declaring_method_ids['__unserialize'])
+            ? '__wakeup'
+            : '__unserialize';
         if (!self::declaresMethod($storage, $unserialize_method)) {
             $problems[] = 'it doesn\'t declare ' . $unserialize_method . '(), which unserialize() calls instead of'
                 . ' the constructor';

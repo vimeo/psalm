@@ -51,6 +51,7 @@ use function file_put_contents;
 use function function_exists;
 use function get_class;
 use function getcwd;
+use function getenv;
 use function glob;
 use function implode;
 use function in_array;
@@ -59,6 +60,7 @@ use function is_dir;
 use function json_encode;
 use function mkdir;
 use function preg_match;
+use function putenv;
 use function realpath;
 use function restore_error_handler;
 use function restore_exception_handler;
@@ -129,6 +131,126 @@ final class ConfigTest extends DeferredAnalyzerTestCase
         $p->initProjectFiles();
 
         return $p;
+    }
+
+    /**
+     * @param array<string, ?string> $env null unsets the variable; "{root}" is a scratch directory
+     *     containing a writable "home", a writable "home_with_cache/.cache" and "home_with_file/.cache" (a file)
+     */
+    #[DataProvider('providerDefaultCacheDirectory')]
+    public function testDefaultCacheDirectory(array $env, string $expected): void
+    {
+        $root = sys_get_temp_dir() . '/psalm_cache_dir_test_' . uniqid();
+        mkdir($root . '/home', 0777, true);
+        mkdir($root . '/home_with_cache/.cache', 0777, true);
+        mkdir($root . '/home_with_file', 0777, true);
+        file_put_contents($root . '/home_with_file/.cache', '');
+
+        $env += [
+            'XDG_CACHE_HOME' => null,
+            'HOME' => null,
+            'HOMEDRIVE' => null,
+            'HOMEPATH' => null,
+        ];
+
+        $original_env = [];
+        foreach ($env as $name => $_) {
+            $original_env[$name] = getenv($name);
+        }
+
+        try {
+            foreach ($env as $name => $value) {
+                putenv($value === null ? $name : $name . '=' . str_replace('{root}', $root, $value));
+            }
+
+            $config = Config::loadFromXML(
+                (string) getcwd(),
+                '<?xml version="1.0"?>
+                <psalm>
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+                </psalm>',
+            );
+
+            $this->assertSame(
+                str_replace(['{root}', '{tmp}'], [$root, sys_get_temp_dir()], $expected),
+                $config->getGlobalCacheDirectory(),
+            );
+        } finally {
+            foreach ($original_env as $name => $value) {
+                putenv($value === false ? $name : $name . '=' . $value);
+            }
+
+            rmdir($root . '/home_with_cache/.cache');
+            rmdir($root . '/home_with_cache');
+            unlink($root . '/home_with_file/.cache');
+            rmdir($root . '/home_with_file');
+            rmdir($root . '/home');
+            rmdir($root);
+        }
+    }
+
+    /**
+     * @psalm-pure
+     * @return iterable<string, array{env: array<string, ?string>, expected: string}>
+     */
+    public static function providerDefaultCacheDirectory(): iterable
+    {
+        yield 'XDG_CACHE_HOME wins' => [
+            'env' => ['XDG_CACHE_HOME' => '/custom/xdg', 'HOME' => '{root}/home'],
+            'expected' => '/custom/xdg/psalm',
+        ];
+
+        yield 'HOME without a .cache directory' => [
+            'env' => ['HOME' => '{root}/home'],
+            'expected' => '{root}/home/.cache/psalm',
+        ];
+
+        yield 'HOME with a writable .cache directory' => [
+            'env' => ['HOME' => '{root}/home_with_cache'],
+            'expected' => '{root}/home_with_cache/.cache/psalm',
+        ];
+
+        yield 'empty XDG_CACHE_HOME falls through to HOME' => [
+            'env' => ['XDG_CACHE_HOME' => '', 'HOME' => '{root}/home'],
+            'expected' => '{root}/home/.cache/psalm',
+        ];
+
+        yield 'HOMEDRIVE and HOMEPATH when HOME is unset' => [
+            'env' => ['HOMEDRIVE' => '{root}', 'HOMEPATH' => '/home'],
+            'expected' => '{root}/home/.cache/psalm',
+        ];
+
+        yield 'HOME unset' => [
+            'env' => [],
+            'expected' => '{tmp}/psalm',
+        ];
+
+        yield 'HOME empty' => [
+            'env' => ['HOME' => ''],
+            'expected' => '{tmp}/psalm',
+        ];
+
+        yield 'HOME is the filesystem root' => [
+            'env' => ['HOME' => '/'],
+            'expected' => '{tmp}/psalm',
+        ];
+
+        yield 'HOME/.cache is a regular file' => [
+            'env' => ['HOME' => '{root}/home_with_file'],
+            'expected' => '{tmp}/psalm',
+        ];
+
+        yield 'HOME does not exist' => [
+            'env' => ['HOME' => '{root}/missing'],
+            'expected' => '{tmp}/psalm',
+        ];
+
+        yield 'HOMEDRIVE without HOMEPATH' => [
+            'env' => ['HOMEDRIVE' => '{root}'],
+            'expected' => '{tmp}/psalm',
+        ];
     }
 
     public function testBarebonesConfig(): void
@@ -2193,6 +2315,7 @@ final class ConfigTest extends DeferredAnalyzerTestCase
     {
         return [
             'the name of a built-in taint' => ['<taint name="html" />', 'has the name of a built-in taint'],
+            'no taint' => ['<taint name="none" />', 'can\'t be named "none"'],
             'not a word' => ['<taint name="~html" />', 'Invalid custom taint name'],
             'declared twice' => ['<taint name="a" /><taint name="a" />', 'is declared twice'],
             'added to a built-in kind' => [
@@ -2758,6 +2881,123 @@ final class ConfigTest extends DeferredAnalyzerTestCase
             $expected_plugin_classes,
             array_map(static fn(array $plugin): string => $plugin['class'], $config->getPluginClasses()),
         );
+    }
+
+    /**
+     * Psalm's process defines Amp\async(), which Psalm's own dependency amphp/amp declares
+     *
+     * @return array<string, array{array<string, string>, bool}>
+     * @psalm-pure
+     */
+    public static function providerPackageFunctions(): array
+    {
+        $amp = '{"name": "amphp/amp", "install-path": "../amphp/amp"}';
+
+        return [
+            'noComposerProject' => [[], false],
+            'notRequired' => [
+                ['composer.json' => '{"require": {}}', 'vendor/composer/installed.json' => '{"packages": []}'],
+                false,
+            ],
+            'required' => [
+                [
+                    'composer.json' => '{"require": {"amphp/amp": "^3"}}',
+                    'vendor/composer/installed.json' => '{"packages": [' . $amp . ']}',
+                ],
+                true,
+            ],
+            'requiredForDevelopment' => [
+                [
+                    'composer.json' => '{"require-dev": {"amphp/amp": "^3"}}',
+                    'vendor/composer/installed.json' => '{"packages": [' . $amp . ']}',
+                ],
+                true,
+            ],
+            'requiredThroughAnotherPackage' => [
+                [
+                    'composer.json' => '{"require": {"acme/lib": "^1"}}',
+                    'vendor/composer/installed.json' => '{"packages": [{"name": "acme/lib", '
+                        . '"require": {"amphp/amp": "^3"}}, ' . $amp . ']}',
+                ],
+                true,
+            ],
+            'requiredThroughAReplacedName' => [
+                [
+                    'composer.json' => '{"require": {"acme/amp": "^1"}}',
+                    'vendor/composer/installed.json' => '{"packages": [{"name": "acme/amp-fork", '
+                        . '"replace": {"acme/amp": "*"}, "require": {"amphp/amp": "^3"}}, ' . $amp . ']}',
+                ],
+                true,
+            ],
+            'requiredWithACustomVendorDirectory' => [
+                [
+                    'composer.json' => '{"config": {"vendor-dir": "lib"}, "require": {"amphp/amp": "^3"}}',
+                    'lib/composer/installed.json' => '{"packages": [' . $amp . ']}',
+                ],
+                true,
+            ],
+            'requiredOnlyThroughPsalm' => [
+                [
+                    'composer.json' => '{"require-dev": {"vimeo/psalm": "^7"}}',
+                    'vendor/composer/installed.json' => '{"packages": [{"name": "vimeo/psalm", '
+                        . '"require": {"amphp/amp": "^3"}}, ' . $amp . ']}',
+                ],
+                false,
+            ],
+            'requiredThroughAPsalmPlugin' => [
+                [
+                    'composer.json' => '{"require-dev": {"acme/psalm-plugin": "^1"}}',
+                    'vendor/composer/installed.json' => '{"packages": [{"name": "acme/psalm-plugin", '
+                        . '"require": {"vimeo/psalm": "^7"}}, {"name": "vimeo/psalm", '
+                        . '"require": {"amphp/amp": "^3"}}, ' . $amp . ']}',
+                ],
+                false,
+            ],
+            'malformedInstalledJson' => [
+                ['composer.json' => '{"require": {"amphp/amp": "^3"}}', 'vendor/composer/installed.json' => '{'],
+                false,
+            ],
+        ];
+    }
+
+    /**
+     * @param array<string, string> $files
+     */
+    #[DataProvider('providerPackageFunctions')]
+    public function testOnlyThePackagesTheProjectRequiresDefineFunctions(array $files, bool $defined): void
+    {
+        $root = sys_get_temp_dir() . DIRECTORY_SEPARATOR . uniqid('psalm-package-functions-');
+        mkdir($root);
+        $dirs = [$root];
+        $paths = [];
+        foreach ($files as $path => $contents) {
+            $path = $root . DIRECTORY_SEPARATOR . $path;
+            for ($dir = dirname($path); !is_dir($dir); $dir = dirname($dir)) {
+                $dirs[] = $dir;
+            }
+            if (!is_dir(dirname($path))) {
+                mkdir(dirname($path), 0777, true);
+            }
+            file_put_contents($path, $contents);
+            $paths[] = $path;
+        }
+
+        try {
+            $config = Config::loadFromXML($root, '<?xml version="1.0"?><psalm></psalm>');
+            $config->collectPredefinedFunctions();
+        } finally {
+            foreach ($paths as $path) {
+                unlink($path);
+            }
+            rsort($dirs);
+            foreach ($dirs as $dir) {
+                rmdir($dir);
+            }
+        }
+
+        $this->assertSame($defined, isset($config->getPredefinedFunctions()['amp\async']));
+        // a function of the PHP runtime is always defined
+        $this->assertArrayHasKey('strlen', $config->getPredefinedFunctions());
     }
 
     public function testDisablesArrayCache(): void

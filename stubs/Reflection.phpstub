@@ -484,6 +484,12 @@ class ReflectionProperty implements Reflector
     public function isPublic(): bool {}
 
     /** @psalm-capabilities read-props */
+    public function isReadable(?string $scope, ?object $object = null): bool {}
+
+    /** @psalm-capabilities read-props */
+    public function isWritable(?string $scope, ?object $object = null): bool {}
+
+    /** @psalm-capabilities read-props */
     public function isPrivate(): bool {}
 
     /** @psalm-capabilities read-props */
@@ -650,6 +656,12 @@ class ReflectionParameter implements Reflector {
     public function isDefaultValueConstant(): bool {}
 
     public function getDefaultValueConstantName(): ?string {}
+
+    /**
+     * @return non-empty-string|false
+     * @psalm-capabilities read-props
+     */
+    public function getDocComment() {}
 }
 
 /** @psalm-immutable */
