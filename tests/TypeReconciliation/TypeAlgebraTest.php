@@ -5889,7 +5889,7 @@ final class TypeAlgebraTest extends TestCase
                         }
                     }
                     PHP,
-                'error_message' => 'PossiblyNullReference',
+                'error_message' => 'NullReference - src' . DIRECTORY_SEPARATOR . 'somefile.php:13:18',
                 'error_levels' => [],
                 'php_version' => '8.1',
             ],
