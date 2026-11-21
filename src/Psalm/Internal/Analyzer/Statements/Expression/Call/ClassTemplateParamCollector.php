@@ -44,23 +44,12 @@ final class ClassTemplateParamCollector
         ?Atomic $lhs_type_part = null,
         bool $self_call = false,
     ): ?array {
-        // a trait method without a docblock takes the one of the parent method in the class using it, so its types
-        // are written with the templates of that class (which the receiver may extend)
-        if ($class_storage->is_trait && $class_storage !== $static_class_storage && $method_name !== null) {
-            $appearing_method_id = $codebase->methods->getAppearingMethodId(
-                new MethodIdentifier($static_class_storage->name, $method_name),
-            );
-
-            if ($appearing_method_id !== null) {
-                $appearing_class_storage = $codebase->classlike_storage_provider->get(
-                    $appearing_method_id->fq_class_name,
-                );
-
-                if (isset($appearing_class_storage->documenting_method_ids[$method_name])) {
-                    $class_storage = $appearing_class_storage;
-                }
-            }
-        }
+        $class_storage = self::getDocumentingClassStorage(
+            $codebase,
+            $class_storage,
+            $static_class_storage,
+            $method_name,
+        );
 
         $non_trait_class_storage = $class_storage->is_trait
             ? $static_class_storage
@@ -68,47 +57,14 @@ final class ClassTemplateParamCollector
 
         $template_types = $class_storage->template_types;
 
-        $candidate_class_storages = [$class_storage];
-
-        if ($static_class_storage->template_extended_params
-            && $method_name
-            && !empty($non_trait_class_storage->overridden_method_ids[$method_name])
-        ) {
-            foreach ($non_trait_class_storage->overridden_method_ids[$method_name] as $overridden_method_id) {
-                $overridden_storage = $codebase->methods->getStorage($overridden_method_id);
-
-                if (!$overridden_storage->return_type) {
-                    continue;
-                }
-
-                if ($overridden_storage->return_type->isNull()) {
-                    continue;
-                }
-
-                $fq_overridden_class = $overridden_method_id->fq_class_name;
-
-                $overridden_class_storage = $codebase->classlike_storage_provider->get($fq_overridden_class);
-
-                $overridden_template_types = $overridden_class_storage->template_types;
-
-                if (!$template_types) {
-                    $template_types = $overridden_template_types;
-                } elseif ($overridden_template_types) {
-                    foreach ($overridden_template_types as $template_name => $template_map) {
-                        if (isset($template_types[$template_name])) {
-                            $template_types[$template_name] = array_merge(
-                                $template_types[$template_name],
-                                $template_map,
-                            );
-                        } else {
-                            $template_types[$template_name] = $template_map;
-                        }
-                    }
-                }
-
-                $candidate_class_storages[] = $overridden_class_storage;
-            }
-        }
+        [$template_types, $candidate_class_storages] = self::getOverriddenTemplates(
+            $codebase,
+            $class_storage,
+            $static_class_storage,
+            $non_trait_class_storage,
+            $method_name,
+            $template_types,
+        );
 
         if (!$template_types) {
             return null;
@@ -122,27 +78,7 @@ final class ClassTemplateParamCollector
             $lhs_type_part = StarProjection::resolve($lhs_type_part, $codebase);
 
             if ($class_storage === $static_class_storage && $class_storage->template_types) {
-                $lhs_type_params = TemplateDefaults::fillTypeArguments(
-                    $lhs_type_part->type_params,
-                    $class_storage,
-                    $codebase,
-                    $lhs_type_part->from_docblock,
-                );
-                $i = 0;
-
-                foreach ($class_storage->template_types as $type_name => $_) {
-                    if (isset($lhs_type_params[$i])) {
-                        $class_template_params[$type_name][$class_storage->name] = $lhs_type_params[$i];
-                    } elseif (isset($class_storage->purity_templates[$type_name])
-                        && isset($class_storage->template_defaults[$type_name])
-                    ) {
-                        // a purity template left out (`Box<int>`) has its default
-                        $class_template_params[$type_name][$class_storage->name]
-                            = $class_storage->template_defaults[$type_name];
-                    }
-
-                    $i++;
-                }
+                $class_template_params = self::getOwnTemplateParams($codebase, $class_storage, $lhs_type_part);
             }
 
             $template_result = null;
@@ -270,10 +206,128 @@ final class ClassTemplateParamCollector
     }
 
     /**
+     * The class templates, bound to the type arguments of the receiver
+     *
+     * @return array<string, array<string, Union>>
+     * @psalm-capabilities read-props|write-this-props|write-props
+     */
+    private static function getOwnTemplateParams(
+        Codebase $codebase,
+        ClassLikeStorage $class_storage,
+        TGenericObject $lhs_type_part,
+    ): array {
+        $lhs_type_params = TemplateDefaults::fillTypeArguments(
+            $lhs_type_part->type_params,
+            $class_storage,
+            $codebase,
+            $lhs_type_part->from_docblock,
+        );
+        $own_template_params = [];
+        $i = 0;
+
+        foreach ($class_storage->template_types ?? [] as $type_name => $_) {
+            if (isset($lhs_type_params[$i])) {
+                $own_template_params[$type_name][$class_storage->name] = $lhs_type_params[$i];
+            } elseif (isset($class_storage->purity_templates[$type_name])
+                && isset($class_storage->template_defaults[$type_name])
+            ) {
+                // a purity template left out (`Box<int>`) has its default
+                $own_template_params[$type_name][$class_storage->name] = $class_storage->template_defaults[$type_name];
+            }
+
+            $i++;
+        }
+
+        return $own_template_params;
+    }
+
+    /**
+     * The templates of the class and of the classes declaring the methods it overrides, and those classes
+     *
+     * @param array<string, non-empty-array<string, Union>>|null $template_types the templates of the class
+     * @return array{array<string, non-empty-array<string, Union>>|null, non-empty-list<ClassLikeStorage>}
+     * @psalm-capabilities read-props
+     */
+    private static function getOverriddenTemplates(
+        Codebase $codebase,
+        ClassLikeStorage $class_storage,
+        ClassLikeStorage $static_class_storage,
+        ClassLikeStorage $non_trait_class_storage,
+        ?string $method_name,
+        ?array $template_types,
+    ): array {
+        $candidate_class_storages = [$class_storage];
+
+        if ($static_class_storage->template_extended_params
+            && $method_name
+            && !empty($non_trait_class_storage->overridden_method_ids[$method_name])
+        ) {
+            foreach ($non_trait_class_storage->overridden_method_ids[$method_name] as $overridden_method_id) {
+                $overridden_storage = $codebase->methods->getStorage($overridden_method_id);
+
+                if (!$overridden_storage->return_type || $overridden_storage->return_type->isNull()) {
+                    continue;
+                }
+
+                $overridden_class_storage = $codebase->classlike_storage_provider->get(
+                    $overridden_method_id->fq_class_name,
+                );
+                $overridden_template_types = $overridden_class_storage->template_types;
+
+                if (!$template_types) {
+                    $template_types = $overridden_template_types;
+                } elseif ($overridden_template_types) {
+                    foreach ($overridden_template_types as $template_name => $template_map) {
+                        $template_types[$template_name] = isset($template_types[$template_name])
+                            ? array_merge($template_types[$template_name], $template_map)
+                            : $template_map;
+                    }
+                }
+
+                $candidate_class_storages[] = $overridden_class_storage;
+            }
+        }
+
+        return [$template_types, $candidate_class_storages];
+    }
+
+    /**
+     * A trait method without a docblock takes the one of the parent method in the class using it, so its types
+     * are written with the templates of that class (which the receiver may extend)
+     *
+     * @param lowercase-string|null $method_name
+     * @psalm-capabilities read-props
+     */
+    private static function getDocumentingClassStorage(
+        Codebase $codebase,
+        ClassLikeStorage $class_storage,
+        ClassLikeStorage $static_class_storage,
+        ?string $method_name,
+    ): ClassLikeStorage {
+        if (!$class_storage->is_trait || $class_storage === $static_class_storage || $method_name === null) {
+            return $class_storage;
+        }
+
+        $appearing_method_id = $codebase->methods->getAppearingMethodId(
+            new MethodIdentifier($static_class_storage->name, $method_name),
+        );
+
+        if ($appearing_method_id === null) {
+            return $class_storage;
+        }
+
+        $appearing_class_storage = $codebase->classlike_storage_provider->get($appearing_method_id->fq_class_name);
+
+        return isset($appearing_class_storage->documenting_method_ids[$method_name])
+            ? $appearing_class_storage
+            : $class_storage;
+    }
+
+    /**
      * The templates, by name and defining class, that the receiver binds to one of its `*` arguments: its own
      * template of that argument, and those of the classes it extends that stand for exactly that template
      *
-     * @param array<string, non-empty-array<string, Union>>|null $class_template_params what collect() gave
+     * @param array<string, array<string, Union>>|null $class_template_params what collect() gave
      * @return array<string, array<string, true>>
      * @psalm-mutation-free
      */

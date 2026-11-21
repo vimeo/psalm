@@ -8,14 +8,11 @@ use Override;
 use Psalm\Codebase;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Type\PurityArguments;
-use Psalm\Internal\Type\StarProjection;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TypeArgumentProjection;
 use Psalm\Type\Atomic;
 use Psalm\Type\Union;
 
-use function array_diff_key;
-use function array_keys;
 use function count;
 use function implode;
 use function in_array;
@@ -294,22 +291,15 @@ final class TGenericObject extends TNamedObject
             return $this;
         }
 
-        $projections = $this->projections + $this->getStarBoundProjections($template_result, $codebase);
-
-        $replaced = (new static(
+        return (new static(
             $this->value,
             $type_params ?? $this->type_params,
             true,
             $this->is_static,
             $intersection ?? $this->extra_types,
-        ))->setIsStatic($this->is_static, $this->is_static_resolved)->setProjections($projections);
-
-        // the bound a new `*` holds is that of the template of this class
-        $new_star_offsets = array_keys(array_diff_key($projections, $this->projections));
-
-        return $codebase !== null && $new_star_offsets !== []
-            ? StarProjection::resolve($replaced, $codebase, $new_star_offsets)
-            : $replaced;
+        ))
+            ->setIsStatic($this->is_static, $this->is_static_resolved)
+            ->setProjections($this->projections + $this->getStarBoundProjections($template_result, $codebase));
     }
 
     /**

@@ -2960,6 +2960,7 @@
                 $input_type,
                 $this,
                 $container_type_params_covariant,
+                $input_star_offsets,
             )]]></code>
       <code><![CDATA[TemplateStandinTypeReplacer::replace(
                 $type_param,

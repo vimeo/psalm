@@ -31,7 +31,7 @@ final class TemplateParameterProvider implements MethodReturnTypeProviderInterfa
     }
 
     /**
-     * @psalm-capabilities read-props
+     * @psalm-impure
      */
     #[Override]
     public static function getMethodReturnType(MethodReturnTypeProviderEvent $event): ?Union

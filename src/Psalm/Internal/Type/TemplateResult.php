@@ -74,7 +74,7 @@ final class TemplateResult
      * Marks the lower bounds of the class templates the receiver bound to a `*`, for what is read from the receiver
      *
      * @param array<string, array<string, true>> $star_templates template name => defining class
-     * @psalm-external-mutation-free
+     * @psalm-capabilities read-props|write-props
      */
     public function markStarBindings(array $star_templates): void
     {
