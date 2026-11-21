@@ -1110,14 +1110,14 @@ final class TemplateStandinTypeReplacer
 
             // a class template already standing for a type variable (minted at
             // the construction site, e.g. `new Table($items)`) cannot answer
-            // this structural question itself: it is resolved to its
-            // construction-site inference for the gate, while the upper bound
-            // recorded below still reconciles against the variable's bounds
+            // this structural question itself: it is resolved to every value
+            // that flowed into it for the gate, while the upper bound recorded
+            // below still reconciles against the variable's bounds
             $gate_replacement_type = $replacement_type;
 
             foreach ($replacement_type->getAtomicTypes() as $replacement_atomic_type) {
                 if ($replacement_atomic_type instanceof TTypeVariable) {
-                    $gate_resolver = new TypeVariableResolver($codebase);
+                    $gate_resolver = new TypeVariableResolver($codebase, construction_site_only: false);
                     $gate_resolver->traverse($gate_replacement_type);
                     break;
                 }
