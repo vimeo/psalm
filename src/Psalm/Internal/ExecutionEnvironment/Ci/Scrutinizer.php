@@ -1,0 +1,67 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Psalm\Internal\ExecutionEnvironment\Ci;
+
+use Override;
+use Psalm\Internal\ExecutionEnvironment\BuildInfo;
+use Psalm\Internal\ExecutionEnvironment\Env;
+use Psalm\Internal\ExecutionEnvironment\PullRequest;
+use Psalm\Internal\ExecutionEnvironment\Repository;
+use Psalm\SourceControl\Git\GitInfo;
+
+use function strpos;
+use function substr;
+
+/**
+ * Scrutinizer: "SCRUTINIZER" must be set.
+ *
+ * @psalm-immutable
+ * @internal
+ */
+final class Scrutinizer implements CiProvider
+{
+    private const FLAG = 'SCRUTINIZER';
+    private const JOB_ID = 'SCRUTINIZER_INSPECTION_UUID';
+    private const BRANCH = 'SCRUTINIZER_BRANCH';
+    private const PULL_REQUEST = 'SCRUTINIZER_PR_NUMBER';
+    private const PROJECT = 'SCRUTINIZER_PROJECT';
+
+    #[Override]
+    public function detects(Env $env, ?GitInfo $git_info): bool
+    {
+        return $env->isTruthy(self::FLAG);
+    }
+
+    #[Override]
+    public function collect(Env $env, ?GitInfo $git_info): BuildInfo
+    {
+        $repository = self::repository($env->get(self::PROJECT));
+        $pull_request = PullRequest::fromNumber($env->get(self::PULL_REQUEST), $repository);
+
+        return new BuildInfo(
+            ciName: 'Scrutinizer',
+            branch: $env->get(self::BRANCH),
+            repository: $pull_request === null ? $repository : null,
+            pullRequest: $pull_request,
+            jobId: $env->get(self::JOB_ID),
+        );
+    }
+
+    /**
+     * The repository of a project, which is named like "g/owner/name".
+     *
+     * @psalm-pure
+     */
+    private static function repository(?string $project): ?Repository
+    {
+        if ($project === null) {
+            return null;
+        }
+
+        $slash = strpos($project, '/');
+
+        return $slash === false ? null : Repository::fromSlug(substr($project, $slash + 1));
+    }
+}
