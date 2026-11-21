@@ -23,12 +23,17 @@ use function array_values;
 use function assert;
 use function dirname;
 use function explode;
+use function file_put_contents;
 use function getcwd;
 use function implode;
+use function rename;
 use function reset;
 use function strlen;
 use function strpos;
 use function substr;
+use function sys_get_temp_dir;
+use function tempnam;
+use function unlink;
 
 use const DIRECTORY_SEPARATOR;
 
@@ -46,7 +51,7 @@ final class StubTest extends DeferredAnalyzerTestCase
         new TestConfig();
     }
 
-    private function getProjectAnalyzerWithConfig(Config $config): ProjectAnalyzer
+    private function getProjectAnalyzerWithConfig(Config $config, string $php_version = '7.4'): ProjectAnalyzer
     {
         $project_analyzer = new ProjectAnalyzer(
             $config,
@@ -57,7 +62,7 @@ final class StubTest extends DeferredAnalyzerTestCase
         );
         $project_analyzer->initExtraFiles();
         $project_analyzer->initProjectFiles();
-        $project_analyzer->setPhpVersion('7.4', 'tests');
+        $project_analyzer->setPhpVersion($php_version, 'tests');
 
         $config->setIncludeCollector(new IncludeCollector());
         $config->visitComposerAutoloadFiles($project_analyzer, null);
@@ -314,6 +319,61 @@ final class StubTest extends DeferredAnalyzerTestCase
         $this->analyzeFile($file_path, new Context());
     }
 
+    public function testNativeFunctionStubbedInAPhpFileIsUndefinedBelowItsVersion(): void
+    {
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessage('UndefinedFunction');
+
+        $this->analyzeWithNativeFunctionStub(
+            '<?php
+                echo fdiv(1.0, 2.0);',
+        );
+    }
+
+    /**
+     * Analyses the code with a `.php` stub of a native function, written at run time since PHP cannot lint
+     * a file that redeclares it.
+     */
+    private function analyzeWithNativeFunctionStub(string $code): void
+    {
+        $temp_path = (string) tempnam(sys_get_temp_dir(), 'psalm_native_function_stub');
+        $stub_path = $temp_path . '.php';
+        rename($temp_path, $stub_path);
+        file_put_contents(
+            $stub_path,
+            '<?php
+                function fdiv(float $num1, float $num2): float {}',
+        );
+
+        try {
+            $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+                TestConfig::loadFromXML(
+                    dirname(__DIR__),
+                    '<?xml version="1.0"?>
+                    <psalm
+                        errorLevel="1"
+                    >
+                        <projectFiles>
+                            <directory name="src" />
+                        </projectFiles>
+
+                        <stubs>
+                            <file name="' . $stub_path . '" />
+                        </stubs>
+                    </psalm>',
+                ),
+            );
+
+            $file_path = (string) getcwd() . '/src/somefile.php';
+
+            $this->addFile($file_path, $code);
+
+            $this->analyzeFile($file_path, new Context());
+        } finally {
+            unlink($stub_path);
+        }
+    }
+
     public function testStubFileClass(): void
     {
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
@@ -532,6 +592,10 @@ final class StubTest extends DeferredAnalyzerTestCase
                     <stubs>
                         <file name="tests/fixtures/stubs/phpstorm.meta.php" />
                     </stubs>
+
+                    <issueHandlers>
+                        <WrongCaseFunction errorLevel="suppress" />
+                    </issueHandlers>
                 </psalm>',
             ),
         );
@@ -892,6 +956,75 @@ final class StubTest extends DeferredAnalyzerTestCase
                 $a = random_bytes(16);
                 $b = new_random_bytes(16);',
         );
+
+        $this->analyzeFile($file_path, new Context());
+    }
+
+    /**
+     * PHP skips a polyfill of a function it has, so the native signature stays, also where the analysed version
+     * has the function
+     */
+    #[RunInSeparateProcess]
+    public function testPolyfillOfANativeFunctionKeepsTheNativeSignature(): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__),
+                '<?xml version="1.0"?>
+                <psalm
+                    errorLevel="1"
+                    autoloader="tests/fixtures/stubs/native_function_polyfill.phpstub"
+                >
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+                </psalm>',
+            ),
+            '8.6',
+        );
+
+        $file_path = (string) getcwd() . '/src/somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                $a = stream_last_errors();',
+        );
+
+        $context = new Context();
+        $this->analyzeFile($file_path, $context);
+
+        $this->assertSame('list<StreamError>', $context->vars_in_scope['$a']->getId());
+    }
+
+    #[RunInSeparateProcess]
+    public function testDeprecatedConstantOfAnAutoloadedFile(): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__),
+                '<?xml version="1.0"?>
+                <psalm
+                    errorLevel="1"
+                    autoloader="tests/fixtures/stubs/deprecated_constant.phpstub"
+                >
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+                </psalm>',
+            ),
+        );
+
+        $file_path = (string) getcwd() . '/src/somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                echo AUTOLOADED_OLD;',
+        );
+
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessageMatches('/^DeprecatedConstant - .*somefile\\.php:2:22 - Constant AUTOLOADED_OLD is deprecated/');
 
         $this->analyzeFile($file_path, new Context());
     }
@@ -2482,5 +2615,67 @@ final class StubTest extends DeferredAnalyzerTestCase
         $stub_defined = $codebase->classlike_storage_provider->get('StubDependency\StubbedElsewhere');
         $this->assertFalse($stub_defined->user_defined);
         $this->assertTrue($stub_defined->stubbed);
+    }
+
+    /**
+     * @return iterable<string, array{string}>
+     * @psalm-pure
+     */
+    public static function providerStubbedBuiltinFunctionWithReturnTypeProvider(): iterable
+    {
+        yield 'sprintf' => ['sprintf("%s", $s)'];
+        yield 'mb_strtolower' => ['mb_strtolower($s)'];
+    }
+
+    #[DataProvider('providerStubbedBuiltinFunctionWithReturnTypeProvider')]
+    public function testStubThrowsOfFunctionWithReturnTypeProvider(string $call): void
+    {
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessage('MissingThrowsDocblock');
+
+        $this->analyzeWithThrowingBuiltinFunctionStubs(
+            '<?php
+                function f(string $s): string {
+                    return ' . $call . ';
+                }',
+        );
+    }
+
+    public function testStubThrowsOfFunctionWithReturnTypeProviderIgnoredForFirstClassCallable(): void
+    {
+        $this->analyzeWithThrowingBuiltinFunctionStubs(
+            '<?php
+                function f(): Closure {
+                    return mb_strtolower(...);
+                }',
+        );
+    }
+
+    private function analyzeWithThrowingBuiltinFunctionStubs(string $code): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__),
+                '<?xml version="1.0"?>
+                <psalm
+                    errorLevel="1"
+                    checkForThrowsDocblock="true"
+                >
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+
+                    <stubs>
+                        <file name="tests/fixtures/stubs/throwing_builtin_functions.phpstub" />
+                    </stubs>
+                </psalm>',
+            ),
+        );
+
+        $file_path = (string) getcwd() . '/src/somefile.php';
+
+        $this->addFile($file_path, $code);
+
+        $this->analyzeFile($file_path, new Context());
     }
 }

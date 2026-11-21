@@ -202,6 +202,11 @@ final class ClassLikeStorage implements HasAttributesInterface
 
     public bool $final = false;
 
+    /**
+     * An anonymous class cannot be extended
+     */
+    public bool $anonymous = false;
+
     public bool $final_from_docblock = false;
 
     public bool $trait_used = false;
@@ -478,7 +483,7 @@ final class ClassLikeStorage implements HasAttributesInterface
      * This is only used in the populator, which poulates the $template_extended_params property below.
      *
      * @internal
-     * @var array<string, non-empty-array<int, Union>>|null
+     * @var array<lowercase-string, non-empty-array<int, Union>>|null
      */
     public ?array $template_extended_offsets = null;
 
@@ -499,13 +504,13 @@ final class ClassLikeStorage implements HasAttributesInterface
     public ?array $template_extended_params = null;
 
     /**
-     * @var array<string, int>|null
+     * @var array<lowercase-string, int>|null
      */
     public ?array $template_type_extends_count = null;
 
 
     /**
-     * @var array<string, int>|null
+     * @var array<lowercase-string, int>|null
      */
     public ?array $template_type_implements_count = null;
 
@@ -514,7 +519,7 @@ final class ClassLikeStorage implements HasAttributesInterface
     public ?string $declaring_yield_fqcn = null;
 
     /**
-     * @var array<string, int>|null
+     * @var array<lowercase-string, int>|null
      */
     public ?array $template_type_uses_count = null;
 
@@ -546,6 +551,9 @@ final class ClassLikeStorage implements HasAttributesInterface
     public array $type_aliases = [];
 
     public bool $preserve_constructor_signature = false;
+
+    /** How the arguments of the methods can be passed, unless a method has its own tag */
+    public ?NamedArguments $named_arguments = null;
 
     public bool $enforce_template_inheritance = false;
 

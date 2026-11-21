@@ -427,6 +427,27 @@ namespace Y {
 }
 ```
 
+The code a project doesn't ship is internal without the annotation: classes that only `composer.json`'s
+`autoload-dev` loads, files that `.gitattributes` leaves out of the package with `export-ignore`, and, with
+[psalm/plugin-phpunit](https://github.com/psalm/psalm-plugin-phpunit), the test suites of `phpunit.xml` and the test
+cases. It is internal to the root namespaces of all that code, so test code may use the test code of another namespace.
+Code in the global namespace can't be internal.
+
+```php
+<?php
+namespace Lib\Tests { // autoload-dev: "Lib\\Tests\\": "tests/"
+    final class Helper {}
+}
+
+namespace Lib {
+    new Tests\Helper(); // this is fine
+}
+
+namespace Other {
+    new \Lib\Tests\Helper(); // InternalClass
+}
+```
+
 ### `@psalm-readonly` and `@readonly`
 
 Used to annotate a property that can only be written to in its defining class's constructor.
@@ -748,6 +769,51 @@ Incidentally, it will change the inferred type for the following code:
 ```
 The type of `$a` is `array<array-key, int>` without `@no-named-arguments` but becomes `list<int>` with it, because it excludes the case where the offset would be a string with the name of the parameter
 
+This annotation can also be used in the docblock of a class, an interface, a trait or an enum. It then applies to all the methods of that class, unless a method has `@arguments-by-name`, `@optional-arguments-by-name` or `@stable-parameter-names`.
+
+### `@optional-arguments-by-name`
+
+Callers must pass the arguments of optional parameters (the ones that have a default value) by name. Psalm emits a `PositionalArgumentNotAllowed` issue when such an argument is passed by position.
+
+The names of optional parameters are stable, but not their order. An optional parameter can be added, moved or removed without breaking callers. For required parameters, the order is stable and the names are not.
+
+```php
+<?php
+final class Configuration
+{
+    /**
+     * @optional-arguments-by-name
+     */
+    public function __construct(
+        string $dialect,
+        array $groups = [],
+        bool $allowExtraAttributes = true,
+    ) {
+    }
+}
+
+new Configuration('openapi-3.1', groups: ['read']); // OK
+new Configuration('openapi-3.1', ['read']); // PositionalArgumentNotAllowed
+```
+
+This annotation, `@arguments-by-name` and `@stable-parameter-names` can also be used in the docblock of a class, an interface, a trait or an enum. They then apply to the public and protected methods of that class. In a trait, they apply to private methods too, because the classes that use the trait can call them. A tag on a method replaces the tag on the class. A method that overrides or implements a tagged method keeps the tag of the parent method, unless the overriding method declares another tag. These annotations can't be combined with each other, nor with `@no-named-arguments`. They also apply to `@internal` code when `allowInternalNamedArgumentCalls` is `false`.
+
+Variadic parameters are not affected. But a variadic parameter gets arguments passed by position only when the parameters before it are passed by position too. When one of these parameters must be passed by name, the type of `...$args` is `array<string, T>` instead of `array<array-key, T>`.
+
+When arguments are unpacked from an array, integer keys are passed by position and string keys are passed by name.
+
+### `@arguments-by-name`
+
+Callers must pass all arguments by name, except the ones of variadic parameters. Psalm emits a `PositionalArgumentNotAllowed` issue for each argument passed by position.
+
+Parameter names are stable, but not their order. See `@optional-arguments-by-name` for where this annotation can be used.
+
+### `@stable-parameter-names`
+
+Callers can pass arguments by name or by position. Both the names and the order of the parameters are stable. Psalm doesn't report anything at call sites.
+
+A method that overrides a method with this annotation and renames a parameter is reported as `ParamNameMismatch`, even when `allowNamedArgumentCalls` is `false`. See `@optional-arguments-by-name` for where this annotation can be used.
+
 ### `@psalm-ignore-variable-property` and `@psalm-ignore-variable-method`
 
 Instructs Psalm to ignore variable property fetch / variable method call when looking for dead code.
@@ -852,6 +918,11 @@ A class that implements an interface (or extends a class) defined outside the
 project is treated as public surface automatically, since it can be instantiated
 and invoked through that external type: its overriding methods are considered
 used without an explicit `@api`.
+
+A library can make unused-code detection treat all of its code that isn't
+`@internal` as `@api` with
+[`markAllNonInternalCodeAsApi`](../running_psalm/configuration.md#markallnoninternalcodeasapi),
+at the cost of unused-code detection for internal code that lacks `@internal`.
 
 Do not reach for `@psalm-suppress UnusedClass` (or another `Unused*`
 suppression) in place of `@api`: as noted above, a suppression only silences the

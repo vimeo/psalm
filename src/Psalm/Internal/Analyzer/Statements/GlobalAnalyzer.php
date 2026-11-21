@@ -16,12 +16,14 @@ use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\ReferenceConstraint;
+use Psalm\Internal\Type\TypeExpander;
 use Psalm\Issue\ImpureGlobalVariable;
 use Psalm\Issue\InvalidGlobal;
 use Psalm\IssueBuffer;
 use Psalm\Storage\Capabilities;
 use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Type;
+use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 use WeakMap;
@@ -40,10 +42,27 @@ final class GlobalAnalyzer
     private const VARIABLE_ID_PATTERN = '/^\$[a-zA-Z_\x80-\xff][a-zA-Z0-9_\x80-\xff]*$/D';
 
     /**
+     * Of the file being analyzed ($globals_written_by_file): a function called by name resolves to the declaration
+     * that file sees
+     *
      * @see getGlobalsWrittenBy()
      * @var ?WeakMap<FunctionLikeStorage, array<string, bool>>
      */
     private static ?WeakMap $globals_written_by = null;
+
+    /**
+     * The root and checked file paths of $globals_written_by
+     */
+    private static ?string $globals_written_by_file = null;
+
+    /**
+     * @psalm-capabilities write-globals
+     */
+    public static function clearCache(): void
+    {
+        self::$globals_written_by = null;
+        self::$globals_written_by_file = null;
+    }
 
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
@@ -91,6 +110,11 @@ final class GlobalAnalyzer
 
             FunctionLikeAnalyzer::unbindByRefParam($codebase, $context, $var_id);
 
+            // the variable is bound to the global instead: what it was bound to by reference keeps its value
+            if (isset($context->references_in_scope[$var_id]) || ($context->referenced_counts[$var_id] ?? 0) > 0) {
+                $context->removePossibleReference($var_id);
+            }
+
             $doc_comment = $stmt->getDocComment();
             $comment_type = null;
 
@@ -104,6 +128,17 @@ final class GlobalAnalyzer
                 );
             }
 
+            // `self` and `static` of a `@global` tag are the class the function is in
+            $global_type = isset($function_storage->global_types[$var_id])
+                ? TypeExpander::expandUnion(
+                    $codebase,
+                    $function_storage->global_types[$var_id],
+                    $context->self,
+                    $context->self,
+                    $statements_analyzer->getParentFQCLN(),
+                )
+                : null;
+
             if ($comment_type) {
                 $context->vars_in_scope[$var_id] = $comment_type;
                 $context->vars_possibly_in_scope[$var_id] = true;
@@ -112,14 +147,27 @@ final class GlobalAnalyzer
                 if ($var->name === 'argv' || $var->name === 'argc') {
                     $context->vars_in_scope[$var_id] =
                         VariableFetchAnalyzer::getGlobalType($var_id, $codebase->analysis_php_version_id);
-                } elseif (isset($function_storage->global_types[$var_id])) {
-                    $context->vars_in_scope[$var_id] = $function_storage->global_types[$var_id];
+                } elseif ($global_type !== null) {
+                    $context->vars_in_scope[$var_id] = $global_type;
                     $context->vars_possibly_in_scope[$var_id] = true;
                 } else {
-                    $context->vars_in_scope[$var_id] =
-                        $global_context && $global_context->hasVariable($var_id)
-                            ? $global_context->vars_in_scope[$var_id]
-                            : VariableFetchAnalyzer::getGlobalType($var_id, $codebase->analysis_php_version_id);
+                    $global_type = $global_context && $global_context->hasVariable($var_id)
+                        ? $global_context->vars_in_scope[$var_id]
+                        : VariableFetchAnalyzer::getGlobalType($var_id, $codebase->analysis_php_version_id);
+
+                    // `global` creates the global as null when it is not set, but a superglobal is read as set
+                    if ($global_type->possibly_undefined || $global_type->possibly_undefined_from_try) {
+                        $global_type = $global_type->setPossiblyUndefined(false, false);
+
+                        if (!$global_type->isNullable()
+                            && !$global_type->hasMixed()
+                            && !VariableFetchAnalyzer::isReadAsSetSuperGlobal($var_id)
+                        ) {
+                            $global_type = $global_type->getBuilder()->addType(new TNull())->freeze();
+                        }
+                    }
+
+                    $context->vars_in_scope[$var_id] = $global_type;
 
                     $context->vars_possibly_in_scope[$var_id] = true;
 
@@ -156,15 +204,11 @@ final class GlobalAnalyzer
             }
 
             $context->bound_globals[$var_id] = $comment_type
-                ?? $function_storage->global_types[$var_id]
+                ?? $global_type
                 ?? VariableFetchAnalyzer::getGlobalType($var_id, $codebase->analysis_php_version_id);
             $context->references_to_external_scope[$var_id] = true;
+            $context->forgetReferencesPossiblyBound($var_id);
 
-            if (isset($context->references_in_scope[$var_id])) {
-                // Global shadows existing reference
-                $context->decrementReferenceCount($var_id);
-                unset($context->references_in_scope[$var_id]);
-            }
             $statements_analyzer->registerVariable(
                 $var_id,
                 new CodeLocation($statements_analyzer, $var),
@@ -270,6 +314,7 @@ final class GlobalAnalyzer
                 )
                 : $declared_type;
 
+            $context->removeVarFromConflictingClauses($var_id, $type, $statements_analyzer);
             $context->vars_in_scope[$var_id] = self::taintGlobalRead($statements_analyzer, $context, $var_id, $type);
             $context->vars_possibly_in_scope[$var_id] = true;
         }
@@ -289,9 +334,12 @@ final class GlobalAnalyzer
             return $storage->global_variables;
         }
 
-        if (self::$globals_written_by === null) {
+        $file_key = $statements_analyzer->getRootFilePath() . "\0" . $statements_analyzer->getFilePath();
+
+        if (self::$globals_written_by === null || self::$globals_written_by_file !== $file_key) {
             /** @var WeakMap<FunctionLikeStorage, array<string, bool>> */
             self::$globals_written_by = new WeakMap();
+            self::$globals_written_by_file = $file_key;
         }
 
         $memoized = self::$globals_written_by[$storage] ?? null;
@@ -396,6 +444,17 @@ final class GlobalAnalyzer
         );
 
         return $global_node;
+    }
+
+    /**
+     * The node of what the program stores in the session (see DataFlowNode::getForSession())
+     */
+    public static function getSessionNode(TaintFlowGraph $graph): DataFlowNode
+    {
+        $session_node = DataFlowNode::getForSession();
+        $graph->addNode($session_node);
+
+        return $session_node;
     }
 
     /**

@@ -17,6 +17,7 @@ use Psalm\Exception\TypeParseTreeException;
 use Psalm\Internal\Analyzer\CommentAnalyzer;
 use Psalm\Internal\Analyzer\NamespaceAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\NewAnalyzer;
+use Psalm\Internal\Codebase\DatabaseTaints;
 use Psalm\Internal\Codebase\ReceiverPropertyTaints;
 use Psalm\Internal\Codebase\TaintFlowAnnotation;
 use Psalm\Internal\Codebase\TaintStore;
@@ -50,6 +51,7 @@ use Psalm\Storage\FileStorage;
 use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Storage\MethodStorage;
+use Psalm\Storage\NamedArguments;
 use Psalm\Storage\Possibilities;
 use Psalm\Type;
 use Psalm\Type\Atomic\TArray;
@@ -62,6 +64,7 @@ use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
 
 use function array_any;
+use function array_diff;
 use function array_fill_keys;
 use function array_filter;
 use function array_merge;
@@ -87,6 +90,68 @@ use function trim;
  */
 final class FunctionLikeDocblockScanner
 {
+    private static function scanThrows(
+        Codebase $codebase,
+        FileScanner $file_scanner,
+        FileStorage $file_storage,
+        Aliases $aliases,
+        FunctionLikeStorage $storage,
+        FunctionDocblockComment $docblock_info,
+    ): void {
+        foreach ($docblock_info->throws as [$throw, $offset, $line]) {
+            $throw_location = new DocblockTypeLocation(
+                $file_scanner,
+                $offset,
+                $offset + strlen($throw),
+                $line,
+            );
+
+            // Template parameters are not tracked for thrown exceptions,
+            // so `@throws Foo<Bar>` is treated like `@throws Foo`
+            $throw_classes = CommentAnalyzer::sanitizeDocblockType($throw);
+            $throw_classes = preg_replace('/<(?:[^<>]++|(?R))*+>/', '', $throw_classes) ?? $throw_classes;
+            // the parentheses of `(A&B)|C` only group: `&` binds tighter than `|`
+            $throw_classes = str_replace(['(', ')'], '', $throw_classes);
+
+            foreach (explode('|', $throw_classes) as $throw_union_part) {
+                // an exception of an intersection type (`A&B`) is thrown as each of its types
+                $throw_group = [];
+
+                foreach (explode('&', $throw_union_part) as $throw_class) {
+                    $throw_class = trim($throw_class);
+
+                    if ($throw_class === '') {
+                        continue;
+                    }
+
+                    if ($throw_class !== 'self' && $throw_class !== 'static' && $throw_class !== 'parent') {
+                        $exception_fqcln = Type::getFQCLNFromString(
+                            $throw_class,
+                            $aliases,
+                        );
+                    } else {
+                        $exception_fqcln = $throw_class;
+                    }
+
+                    $throw_group[] = $exception_fqcln;
+
+                    $codebase->scanner->queueClassLikeForScanning($exception_fqcln);
+                    $file_storage->referenced_classlikes[strtolower($exception_fqcln)] = $exception_fqcln;
+                    $storage->throws[$exception_fqcln] = true;
+                    $storage->throw_locations[$exception_fqcln] = $throw_location;
+                }
+
+                if (count($throw_group) > 1) {
+                    foreach ($throw_group as $exception_fqcln) {
+                        $storage->throw_intersections[$exception_fqcln][] = array_values(
+                            array_diff($throw_group, [$exception_fqcln]),
+                        );
+                    }
+                }
+            }
+        }
+    }
+
     /**
      * @param array<string, non-empty-array<string, Union>> $existing_function_template_types
      * @param array<string, TypeAlias> $type_aliases
@@ -164,12 +229,17 @@ final class FunctionLikeDocblockScanner
             $storage->internal = [NamespaceAnalyzer::getNameSpaceRoot($aliases->namespace)];
         }
 
+        // a tag on the method replaces the one on its class
+        if ($docblock_info->named_arguments !== null) {
+            $storage->named_arguments = $docblock_info->named_arguments;
+        }
+
+        // the tags that make parameter names part of the API apply to internal code too
         if (($storage->internal || ($classlike_storage && $classlike_storage->internal))
             && !$config->allow_internal_named_arg_calls
+            && $storage->named_arguments === null
         ) {
-            $storage->allow_named_arg_calls = false;
-        } elseif ($docblock_info->no_named_args) {
-            $storage->allow_named_arg_calls = false;
+            $storage->named_arguments = NamedArguments::NOT_ALLOWED;
         }
 
         if ($docblock_info->variadic) {
@@ -224,41 +294,7 @@ final class FunctionLikeDocblockScanner
         $storage->suppressed_issues = $docblock_info->suppressed_issues;
         $storage->docblock_suppressed_issues = $docblock_info->suppressed_issues;
 
-        foreach ($docblock_info->throws as [$throw, $offset, $line]) {
-            $throw_location = new DocblockTypeLocation(
-                $file_scanner,
-                $offset,
-                $offset + strlen($throw),
-                $line,
-            );
-
-            // Template parameters are not tracked for thrown exceptions,
-            // so `@throws Foo<Bar>` is treated like `@throws Foo`
-            $throw_classes = CommentAnalyzer::sanitizeDocblockType($throw);
-            $throw_classes = preg_replace('/<(?:[^<>]++|(?R))*+>/', '', $throw_classes) ?? $throw_classes;
-
-            foreach (explode('|', $throw_classes) as $throw_class) {
-                $throw_class = trim($throw_class);
-
-                if ($throw_class === '') {
-                    continue;
-                }
-
-                if ($throw_class !== 'self' && $throw_class !== 'static' && $throw_class !== 'parent') {
-                    $exception_fqcln = Type::getFQCLNFromString(
-                        $throw_class,
-                        $aliases,
-                    );
-                } else {
-                    $exception_fqcln = $throw_class;
-                }
-
-                $codebase->scanner->queueClassLikeForScanning($exception_fqcln);
-                $file_storage->referenced_classlikes[strtolower($exception_fqcln)] = $exception_fqcln;
-                $storage->throws[$exception_fqcln] = true;
-                $storage->throw_locations[$exception_fqcln] = $throw_location;
-            }
-        }
+        self::scanThrows($codebase, $file_scanner, $file_storage, $aliases, $storage, $docblock_info);
 
         if (!$config->use_docblock_types) {
             return;
@@ -421,6 +457,8 @@ final class FunctionLikeDocblockScanner
                     continue;
                 }
 
+                $param_storage->declares_sinks = true;
+
                 if ($values_only) {
                     $param_storage->value_sinks |= $taint_sink_param['taint'];
                 } else {
@@ -471,6 +509,11 @@ final class FunctionLikeDocblockScanner
         ];
 
         self::handleTaintFlow($docblock_info, $storage, $aliases, $classlike_storage);
+
+        $invalid_annotations = [
+            ...$invalid_annotations,
+            ...DatabaseTaints::addAnnotations($storage, $docblock_info->database_calls),
+        ];
 
         foreach ($docblock_info->assert_untainted_params as $untainted_assert_param) {
             $param_name = substr($untainted_assert_param['name'], 1);
@@ -757,13 +800,14 @@ final class FunctionLikeDocblockScanner
 
                                 $param_type_mapping[$token_body] = $template_name;
 
+                                // a check of the param against its docblock type is still one against the docblock
                                 $param_storage->type = new Union([
                                     new TTemplateParam(
                                         $template_name,
                                         $template_as_type,
                                         $template_function_id,
                                     ),
-                                ]);
+                                ], ['from_docblock' => $template_as_type->from_docblock]);
                             }
                         }
 
@@ -848,17 +892,17 @@ final class FunctionLikeDocblockScanner
         $is_loose_equality = false;
         $is_strict_equality = false;
 
-        if ($assertion_type[0] === '!') {
+        if (str_starts_with($assertion_type, '!')) {
             $is_negation = true;
             $assertion_type = substr($assertion_type, 1);
         }
 
-        if ($assertion_type[0] === '~') {
+        if (str_starts_with($assertion_type, '~')) {
             $is_loose_equality = true;
             $assertion_type = substr($assertion_type, 1);
         }
 
-        if ($assertion_type[0] === '=') {
+        if (str_starts_with($assertion_type, '=')) {
             $is_strict_equality = true;
             $assertion_type = substr($assertion_type, 1);
         }
@@ -1319,8 +1363,10 @@ final class FunctionLikeDocblockScanner
                     && !$storage->return_type->hasConditional()
                 ) {
                     //don't add null to final type if signature type don't match the docblock type
-                    // however, we can't check for object types at this point (#6931), so we'll assume it's ok
-                    if ($storage->return_type->hasObjectType() ||
+                    // however, we can't check for object types or type aliases (whose class may not be scanned yet)
+                    // at this point (#6931), so we'll assume it's ok
+                    if ($storage->return_type->hasObjectType()
+                        || $storage->return_type->hasTypeAlias() ||
                         UnionTypeComparator::isContainedBy(
                             $codebase,
                             $storage->return_type,
@@ -1444,6 +1490,20 @@ final class FunctionLikeDocblockScanner
                         }
                     }
                 }
+            } elseif ($flow->kind === TaintFlowAnnotation::CALLABLE_ARGUMENTS) {
+                foreach ($storage->params as $callable_offset => $callable_param_storage) {
+                    if ($callable_param_storage->name !== $flow->callable_param) {
+                        continue;
+                    }
+
+                    foreach ($flow->sources as $source_param) {
+                        foreach ($storage->params as $i => $param_storage) {
+                            if ($param_storage->name === $source_param) {
+                                $storage->callable_param_argument_sources[$callable_offset][$i] = $flow->path_type;
+                            }
+                        }
+                    }
+                }
             } elseif ($flow->proxy_function !== null) {
                 $call_params = [];
                 foreach ($flow->sources as $source_param) {
@@ -1543,6 +1603,7 @@ final class FunctionLikeDocblockScanner
             );
 
             if ($conditional !== null) {
+                $storage->params[$sink_offset]->declares_sinks = true;
                 $storage->conditional_taint_sinks[] = ['param' => $sink_offset, 'type' => $conditional];
             }
         }
@@ -1706,6 +1767,14 @@ final class FunctionLikeDocblockScanner
                         );
                         continue 2;
                     }
+
+                    if (self::isOffsetOfParameter($param, $assertion['param_name'])) {
+                        $storage->assertions[] = new Possibilities(
+                            $i . ':' . $assertion['param_name'],
+                            $assertion_type_parts,
+                        );
+                        continue 2;
+                    }
                 }
 
                 $storage->assertions[] = new Possibilities(
@@ -1763,7 +1832,15 @@ final class FunctionLikeDocblockScanner
 
                     if (str_starts_with($assertion['param_name'], $param->name.'->')) {
                         $storage->if_true_assertions[] = new Possibilities(
-                            str_replace($param->name, (string) $i, $assertion['param_name']),
+                            substr_replace($assertion['param_name'], (string) $i, 0, strlen($param->name)),
+                            $assertion_type_parts,
+                        );
+                        continue 2;
+                    }
+
+                    if (self::isOffsetOfParameter($param, $assertion['param_name'])) {
+                        $storage->if_true_assertions[] = new Possibilities(
+                            $i . ':' . $assertion['param_name'],
                             $assertion_type_parts,
                         );
                         continue 2;
@@ -1825,7 +1902,15 @@ final class FunctionLikeDocblockScanner
 
                     if (str_starts_with($assertion['param_name'], $param->name.'->')) {
                         $storage->if_false_assertions[] = new Possibilities(
-                            str_replace($param->name, (string) $i, $assertion['param_name']),
+                            substr_replace($assertion['param_name'], (string) $i, 0, strlen($param->name)),
+                            $assertion_type_parts,
+                        );
+                        continue 2;
+                    }
+
+                    if (self::isOffsetOfParameter($param, $assertion['param_name'])) {
+                        $storage->if_false_assertions[] = new Possibilities(
+                            $i . ':' . $assertion['param_name'],
                             $assertion_type_parts,
                         );
                         continue 2;
@@ -1838,6 +1923,19 @@ final class FunctionLikeDocblockScanner
                 );
             }
         }
+    }
+
+    /**
+     * An assertion on a literal offset of a parameter. A variadic parameter's offsets are the collected arguments, and
+     * an offset given by a variable is handled by {@see getArrayOffsetTarget()}.
+     *
+     * @psalm-mutation-free
+     */
+    private static function isOffsetOfParameter(FunctionLikeParameter $param, string $target): bool
+    {
+        return !$param->is_variadic
+            && str_starts_with($target, $param->name . '[')
+            && !str_contains($target, '[$');
     }
 
     /**

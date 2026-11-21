@@ -14,11 +14,15 @@ use Psalm\Internal\Analyzer\Statements\Expression\Assignment\ArrayAssignmentAnal
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
+use Psalm\Internal\Codebase\PhpDeprecations;
 use Psalm\Internal\Provider\NodeDataProvider;
 use Psalm\Internal\Type\LiteralCast;
 use Psalm\Internal\Type\TemplateBound;
 use Psalm\Internal\Type\TypeCombiner;
+use Psalm\Internal\Type\TypeExpander;
+use Psalm\Issue\DeprecatedSyntax;
 use Psalm\Issue\FalseOperand;
+use Psalm\Issue\ImplicitFloatToIntCast;
 use Psalm\Issue\InvalidOperand;
 use Psalm\Issue\MixedOperand;
 use Psalm\Issue\NullOperand;
@@ -51,17 +55,24 @@ use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTypeVariable;
 use Psalm\Type\Union;
 
+use function abs;
 use function array_diff_key;
 use function array_values;
 use function count;
+use function floor;
+use function is_array;
 use function is_int;
 use function is_numeric;
+use function is_string;
 use function max;
 use function min;
 use function preg_match;
 use function strrpos;
 use function strtolower;
 use function substr;
+
+use const PHP_INT_MAX;
+use const PHP_INT_MIN;
 
 /**
  * @internal
@@ -88,6 +99,11 @@ final class ArithmeticOpAnalyzer
         $left_type = $nodes->getType($left);
         $right_type = $nodes->getType($right);
         $config = Config::getInstance();
+
+        if ($codebase) {
+            $left_type = $left_type ? TypeExpander::expandTemplateKeyOfAndValueOf($codebase, $left_type) : null;
+            $right_type = $right_type ? TypeExpander::expandTemplateKeyOfAndValueOf($codebase, $right_type) : null;
+        }
 
         if ($left_type && $left_type->isNever()) {
             $left_type = $right_type;
@@ -202,6 +218,13 @@ final class ArithmeticOpAnalyzer
                 }
             }
 
+            $int_operation = self::getNameOfAnOperationOnInts($parent);
+
+            if ($statements_source && $int_operation !== null) {
+                self::reportFloatOperand($statements_source, $left, $left_type, 'Left', $int_operation);
+                self::reportFloatOperand($statements_source, $right, $right_type, 'Right', $int_operation);
+            }
+
             $bitwise_result_type = self::getBitwiseResultOfNonNegativeLiterals($parent, $left_type, $right_type);
             if ($bitwise_result_type !== null) {
                 $result_type = $bitwise_result_type;
@@ -213,11 +236,19 @@ final class ArithmeticOpAnalyzer
             $invalid_right_messages = [];
             $has_valid_left_operand = false;
             $has_valid_right_operand = false;
-            $has_string_increment = false;
+            $string_increment_message = null;
 
             $right_type_parts = self::expandNumericTemplates($right_type);
+            $left_type_parts = self::expandNumericTemplates($left_type);
 
-            foreach (self::expandNumericTemplates($left_type) as $left_type_part) {
+            if ($context !== null
+                && $context->inside_loop
+                && ($parent instanceof VirtualPlus || $parent instanceof VirtualMinus)
+            ) {
+                $left_type_parts = self::getLiteralIntsAsRange($left_type_parts);
+            }
+
+            foreach ($left_type_parts as $left_type_part) {
                 foreach ($right_type_parts as $right_type_part) {
                     $candidate_result_type = self::analyzeOperands(
                         $statements_source,
@@ -233,7 +264,7 @@ final class ArithmeticOpAnalyzer
                         $invalid_right_messages,
                         $has_valid_left_operand,
                         $has_valid_right_operand,
-                        $has_string_increment,
+                        $string_increment_message,
                         $result_type,
                     );
 
@@ -288,10 +319,10 @@ final class ArithmeticOpAnalyzer
                 }
             }
 
-            if ($has_string_increment && $statements_source) {
+            if ($string_increment_message !== null && $statements_source) {
                 IssueBuffer::maybeAdd(
                     new StringIncrement(
-                        'Incrementing a non-numeric string is deprecated since PHP 8.5, use str_increment() instead',
+                        $string_increment_message,
                         new CodeLocation($statements_source, $left),
                     ),
                     $statements_source->getSuppressedIssues(),
@@ -321,6 +352,39 @@ final class ArithmeticOpAnalyzer
         }
 
         return $parts;
+    }
+
+    /**
+     * In a loop, `++`, `--`, `+=` and `-=` make a single literal an unbounded range, as the next iterations go further.
+     * Several literals are the values the passes over the loop combined: they are shifted as the range they span,
+     * which the loop analysis widens if the iterations keep shifting it.
+     *
+     * @param list<Atomic> $parts
+     * @return list<Atomic>
+     * @psalm-pure
+     */
+    private static function getLiteralIntsAsRange(array $parts): array
+    {
+        $other_parts = [];
+        $min = null;
+        $max = null;
+
+        foreach ($parts as $part) {
+            if ($part instanceof TLiteralInt && $part->value !== PHP_INT_MIN && $part->value !== PHP_INT_MAX) {
+                $min = $min === null ? $part->value : min($min, $part->value);
+                $max = $max === null ? $part->value : max($max, $part->value);
+            } else {
+                $other_parts[] = $part;
+            }
+        }
+
+        if ($min === null || $max === null || $min === $max) {
+            return $parts;
+        }
+
+        $other_parts[] = new TIntRange($min, $max);
+
+        return $other_parts;
     }
 
     /**
@@ -368,7 +432,7 @@ final class ArithmeticOpAnalyzer
         array &$invalid_right_messages,
         bool &$has_valid_left_operand,
         bool &$has_valid_right_operand,
-        bool &$has_string_increment,
+        ?string &$string_increment_message,
         ?Union &$result_type = null,
     ): ?Union {
         if (($left_type_part instanceof TLiteralInt || $left_type_part instanceof TLiteralFloat)
@@ -457,23 +521,51 @@ final class ArithmeticOpAnalyzer
             return null;
         }
 
+        $is_increment = $parent instanceof PhpParser\Node\Expr\PostInc || $parent instanceof PhpParser\Node\Expr\PreInc;
         if ($left_type_part instanceof TString
             && $right_type_part instanceof TInt
-            && (
-                $parent instanceof PhpParser\Node\Expr\PostInc ||
-                $parent instanceof PhpParser\Node\Expr\PreInc
+            && ($is_increment
+                || $parent instanceof PhpParser\Node\Expr\PostDec
+                || $parent instanceof PhpParser\Node\Expr\PreDec
             )
         ) {
-            if ($left_type_part instanceof TNumericString ||
-                ($left_type_part instanceof TLiteralString && is_numeric($left_type_part->value))
-            ) {
+            $literal_value = $left_type_part instanceof TLiteralString ? $left_type_part->value : null;
+            if ($left_type_part instanceof TNumericString || ($literal_value !== null && is_numeric($literal_value))) {
                 $new_result_type = new Union(
                     [new TFloat(), new TInt()],
                     ['from_calculation' => true],
                 );
-            } else {
+            } elseif ($is_increment) {
                 $new_result_type = Type::getNonEmptyString();
-                $has_string_increment = true;
+                $string_increment_message ??= match (true) {
+                    $literal_value === '' => PhpDeprecations::getDeprecatedSinceMessage(
+                        'Incrementing an empty string',
+                        8_03_00,
+                        null,
+                    ),
+                    $literal_value !== null && !preg_match('/^[a-zA-Z0-9]+$/', $literal_value)
+                        => PhpDeprecations::getDeprecatedSinceMessage(
+                            'Incrementing a non-alphanumeric string',
+                            8_03_00,
+                            null,
+                        ),
+                    default => PhpDeprecations::getDeprecatedSinceMessage(
+                        'Incrementing a non-numeric string',
+                        8_05_00,
+                        'str_increment()',
+                    ),
+                };
+            } else {
+                // '' becomes -1, and the other non-numeric strings stay the same
+                $new_result_type = match (true) {
+                    $literal_value === '' => Type::getInt(false, -1),
+                    $literal_value !== null => new Union([$left_type_part]),
+                    default => new Union([$left_type_part, new TInt(), new TFloat()], ['from_calculation' => true]),
+                };
+                $string_increment_message ??= $literal_value === ''
+                    ? PhpDeprecations::getDeprecatedSinceMessage('Decrementing an empty string', 8_03_00, null)
+                    : PhpDeprecations::getDeprecatedSinceMessage('Decrementing a non-numeric string', 8_03_00, null)
+                        . ', as it has no effect';
             }
 
             $result_type = Type::combineUnionTypes($new_result_type, $result_type);
@@ -503,7 +595,6 @@ final class ArithmeticOpAnalyzer
         if ($left_type_part instanceof TMixed || $right_type_part instanceof TMixed) {
             if ($statements_source && $codebase && $context) {
                 if (!$context->collect_initializations
-                    && !$context->collect_mutations
                     && $statements_source->getFilePath() === $statements_source->getRootFilePath()
                     && (!(($source = $statements_source->getSource())
                             instanceof FunctionLikeAnalyzer)
@@ -587,7 +678,6 @@ final class ArithmeticOpAnalyzer
 
         if ($statements_source && $codebase && $context) {
             if (!$context->collect_initializations
-                && !$context->collect_mutations
                 && $statements_source->getFilePath() === $statements_source->getRootFilePath()
                 && (!(($parent_source = $statements_source->getSource())
                         instanceof FunctionLikeAnalyzer)
@@ -619,9 +709,7 @@ final class ArithmeticOpAnalyzer
                     || $left_type_part instanceof TKeyedArray
                 ) {
                     $has_valid_left_operand = true;
-                } elseif ($right_type_part instanceof TArray
-                    || $right_type_part instanceof TKeyedArray
-                ) {
+                } else {
                     $has_valid_right_operand = true;
                 }
 
@@ -717,11 +805,6 @@ final class ArithmeticOpAnalyzer
                 return null;
             }
         }
-        /**
-         * @var Atomic $left_type_part
-         * @var Atomic $right_type_part
-         * // Todo remove this hint reset after fixing #10267
-         */
 
         if (($left_type_part instanceof TNamedObject && strtolower($left_type_part->value) === 'gmp')
             || ($right_type_part instanceof TNamedObject && strtolower($right_type_part->value) === 'gmp')
@@ -852,6 +935,17 @@ final class ArithmeticOpAnalyzer
                 return null;
             }
 
+            // a loop is analysed a fixed number of times, which is not enough for a value that every pass shifts
+            // further left: its range is not bounded by the one the passes have seen
+            if ($parent instanceof PhpParser\Node\Expr\BinaryOp\ShiftLeft
+                && $context !== null
+                && $context->inside_loop
+                && ($left_type_part instanceof TIntRange || $right_type_part instanceof TIntRange)
+            ) {
+                $result_type = Type::combineUnionTypes(Type::getInt(), $result_type);
+                return null;
+            }
+
             if ($left_type_part instanceof TIntRange && $right_type_part instanceof TIntRange) {
                 self::analyzeOperandsBetweenIntRange($parent, $result_type, $left_type_part, $right_type_part);
                 return null;
@@ -872,6 +966,11 @@ final class ArithmeticOpAnalyzer
             if ($left_type_part instanceof TInt && $right_type_part instanceof TInt) {
                 if ($parent instanceof PhpParser\Node\Expr\BinaryOp\Div) {
                     $result_type = new Union([new TInt(), new TFloat()]);
+                } elseif ($parent instanceof PhpParser\Node\Expr\BinaryOp\Pow
+                    && $right_type_part instanceof TLiteralInt
+                    && $right_type_part->value < 0
+                ) {
+                    $result_type = Type::combineUnionTypes(Type::getFloat(), $result_type);
                 } else {
                     $left_is_positive = ($left_type_part instanceof TLiteralInt && $left_type_part->value > 0)
                         || ($left_type_part instanceof TIntRange && $left_type_part->isPositive());
@@ -907,7 +1006,9 @@ final class ArithmeticOpAnalyzer
 
                     if ($parent instanceof PhpParser\Node\Expr\BinaryOp\Mod) {
                         if ($right_type_part instanceof TLiteralInt) {
-                            $literal_value_max = $right_type_part->value - 1;
+                            $literal_value_max = $right_type_part->value === PHP_INT_MIN
+                                ? PHP_INT_MAX
+                                : abs($right_type_part->value) - 1;
                             if ($always_positive) {
                                 $result_type = Type::getIntRange(0, $literal_value_max);
                             } else {
@@ -1133,18 +1234,107 @@ final class ArithmeticOpAnalyzer
     }
 
     /**
-     * What a loop can change: any variable, and an item or property of one the loop assigns or passes to a call
+     * Whether converting the number to an int loses nothing: it has no fraction and is in the range of an int
+     *
+     * @psalm-pure
      */
-    private static function isChangeableByLoop(PhpParser\Node\Expr $expr, ?Context $context): bool
+    public static function isExactInt(float $number): bool
+    {
+        return floor($number) === $number && $number >= (float) PHP_INT_MIN && $number < -(float) PHP_INT_MIN;
+    }
+
+    /**
+     * The name of an operation that converts its operands to ints, null for any other
+     *
+     * @psalm-pure
+     */
+    private static function getNameOfAnOperationOnInts(PhpParser\Node $operation): ?string
+    {
+        if ($operation instanceof PhpParser\Node\Expr\BinaryOp\Mod) {
+            return 'a modulo operation';
+        }
+
+        return $operation instanceof PhpParser\Node\Expr\BinaryOp\BitwiseOr
+            || $operation instanceof PhpParser\Node\Expr\BinaryOp\BitwiseAnd
+            || $operation instanceof PhpParser\Node\Expr\BinaryOp\BitwiseXor
+            || $operation instanceof PhpParser\Node\Expr\BinaryOp\ShiftLeft
+            || $operation instanceof PhpParser\Node\Expr\BinaryOp\ShiftRight
+                ? 'a bitwise operation'
+                : null;
+    }
+
+    /**
+     * A bitwise or modulo operation converts its operands to ints, dropping the fraction of a float: reported when the
+     * value is known to lose something, not when a float of unknown value might
+     */
+    private static function reportFloatOperand(
+        StatementsSource $statements_source,
+        PhpParser\Node\Expr $operand,
+        Union $operand_type,
+        string $side,
+        string $operation,
+    ): void {
+        foreach ($operand_type->getAtomicTypes() as $atomic_type) {
+            if ($atomic_type instanceof TLiteralFloat && !self::isExactInt($atomic_type->value)) {
+                IssueBuffer::maybeAdd(
+                    new ImplicitFloatToIntCast(
+                        $side . ' operand of ' . $operation . ' is converted to an int, got ' . $operand_type->getId(),
+                        new CodeLocation($statements_source, $operand),
+                    ),
+                    $statements_source->getSuppressedIssues(),
+                );
+
+                return;
+            }
+        }
+    }
+
+    /**
+     * What a loop can change: an operand that is a variable, an item or property of a variable the loop assigns or
+     * passes to a call, and what is computed from those or from a variable the loop assigns (`$a ?? 0`,
+     * `max($a, 0)`). What only selects between values (the condition of `$a ? 1 : 2`) doesn't count.
+     */
+    private static function isChangeableByLoop(PhpParser\Node $expr, ?Context $context, bool $is_operand = true): bool
     {
         if ($expr instanceof PhpParser\Node\Expr\Variable) {
-            return true;
+            return $is_operand
+                || !is_string($expr->name)
+                || $context?->loop_scope === null
+                || isset($context->loop_scope->assigned_root_var_ids['$' . $expr->name]);
         }
 
         if (!$expr instanceof PhpParser\Node\Expr\ArrayDimFetch
             && !$expr instanceof PhpParser\Node\Expr\PropertyFetch
             && !$expr instanceof PhpParser\Node\Expr\StaticPropertyFetch
         ) {
+            $selector = null;
+
+            if ($expr instanceof PhpParser\Node\Expr\Match_
+                || ($expr instanceof PhpParser\Node\Expr\Ternary && $expr->if !== null)
+            ) {
+                $selector = 'cond';
+            } elseif ($expr instanceof PhpParser\Node\MatchArm) {
+                $selector = 'conds';
+            }
+
+            foreach ($expr->getSubNodeNames() as $sub_node_name) {
+                if ($sub_node_name === $selector) {
+                    continue;
+                }
+
+                /** @var mixed $sub_nodes */
+                $sub_nodes = $expr->$sub_node_name;
+
+                /** @var mixed $sub_node */
+                foreach (is_array($sub_nodes) ? $sub_nodes : [$sub_nodes] as $sub_node) {
+                    if ($sub_node instanceof PhpParser\Node
+                        && self::isChangeableByLoop($sub_node, $context, false)
+                    ) {
+                        return true;
+                    }
+                }
+            }
+
             return false;
         }
 
@@ -1239,6 +1429,58 @@ final class ArithmeticOpAnalyzer
     }
 
     /**
+     * The range `&`, `|`, `^` or `<<` of two non-negative ranges can give, or null when it can't be bounded
+     * (an operand may be negative, or the result may overflow).
+     *
+     * @psalm-pure
+     */
+    private static function getBitwiseResultOfNonNegativeRanges(
+        PhpParser\Node $parent,
+        TIntRange $left_type_part,
+        TIntRange $right_type_part,
+    ): ?Union {
+        if (!$left_type_part->isPositiveOrZero() || !$right_type_part->isPositiveOrZero()) {
+            return null;
+        }
+
+        $left_max = $left_type_part->max_bound;
+        $right_max = $right_type_part->max_bound;
+
+        if ($parent instanceof PhpParser\Node\Expr\BinaryOp\ShiftLeft) {
+            // shifting by 63 or more gives 0 or overflows into the sign bit
+            if ($left_max === null || $right_max === null || $right_max > 62 || $left_max > PHP_INT_MAX >> $right_max) {
+                return null;
+            }
+
+            return Type::getIntRange(
+                $left_type_part->min_bound << $right_type_part->min_bound,
+                $left_max << $right_max,
+            );
+        }
+
+        if ($parent instanceof PhpParser\Node\Expr\BinaryOp\BitwiseAnd) {
+            // the result has only bits of the operand with fewer of them
+            $max = $left_max === null ? $right_max : ($right_max === null ? $left_max : min($left_max, $right_max));
+
+            return Type::getIntRange(0, $max);
+        }
+
+        if ($left_max === null || $right_max === null) {
+            return null;
+        }
+
+        // the result has at most as many bits as the wider operand
+        $max = max($left_max, $right_max);
+        $bits = 0;
+        while ($max > 0) {
+            $max >>= 1;
+            $bits++;
+        }
+
+        return Type::getIntRange(0, $bits === 63 ? PHP_INT_MAX : (1 << $bits) - 1);
+    }
+
+    /**
      * @psalm-capabilities read-props|write-this-props|write-refs
      */
     private static function analyzeOperandsBetweenIntRange(
@@ -1263,19 +1505,18 @@ final class ArithmeticOpAnalyzer
 
         if ($parent instanceof PhpParser\Node\Expr\BinaryOp\BitwiseAnd ||
             $parent instanceof PhpParser\Node\Expr\BinaryOp\BitwiseOr ||
-            $parent instanceof PhpParser\Node\Expr\BinaryOp\BitwiseXor
+            $parent instanceof PhpParser\Node\Expr\BinaryOp\BitwiseXor ||
+            $parent instanceof PhpParser\Node\Expr\BinaryOp\ShiftLeft
         ) {
-            //really complex to calculate
             $result_type = Type::combineUnionTypes(
-                Type::getInt(),
+                self::getBitwiseResultOfNonNegativeRanges($parent, $left_type_part, $right_type_part)
+                    ?? Type::getInt(),
                 $result_type,
             );
             return;
         }
 
-        if ($parent instanceof PhpParser\Node\Expr\BinaryOp\ShiftLeft ||
-            $parent instanceof PhpParser\Node\Expr\BinaryOp\ShiftRight
-        ) {
+        if ($parent instanceof PhpParser\Node\Expr\BinaryOp\ShiftRight) {
             //really complex to calculate
             $result_type = Type::combineUnionTypes(
                 new Union([new TInt()]),
@@ -1630,28 +1871,16 @@ final class ArithmeticOpAnalyzer
             if ($right_type_part->max_bound === 0) {
                 $new_result_type = Type::getNever();
             } else {
+                // the result takes the sign of the dividend and is less than the divisor in absolute value
+                $max = $right_type_part->min_bound === PHP_INT_MIN
+                    ? PHP_INT_MAX
+                    : abs($right_type_part->min_bound) - 1;
+
                 if ($left_type_part->isPositiveOrZero()) {
-                    if ($right_type_part->isPositive()) {
-                        $max = $right_type_part->min_bound - 1;
-                        $new_result_type = Type::getIntRange(0, $max);
-                    } else {
-                        $max = $right_type_part->min_bound + 1;
-                        $new_result_type = Type::getIntRange($max, 0);
-                    }
+                    $new_result_type = Type::getIntRange(0, $max);
                 } elseif ($left_type_part->isNegativeOrZero()) {
-                    if ($right_type_part->isPositive()) {
-                        $max = $right_type_part->min_bound - 1;
-                        $new_result_type = Type::getIntRange(-$max, 0);
-                    } else {
-                        $max = $right_type_part->min_bound + 1;
-                        $new_result_type = Type::getIntRange(-$max, 0);
-                    }
+                    $new_result_type = Type::getIntRange(-$max, 0);
                 } else {
-                    if ($right_type_part->isPositive()) {
-                        $max = $right_type_part->min_bound - 1;
-                    } else {
-                        $max = -$right_type_part->min_bound - 1;
-                    }
                     $new_result_type = Type::getIntRange(-$max, $max);
                 }
             }
@@ -1671,10 +1900,15 @@ final class ArithmeticOpAnalyzer
                 $new_result_type = Type::getInt(true);
             }
         } elseif ($right_type_part->isNegative()) {
+            // the result is less than the divisor in absolute value, which is at most the lower bound negated
+            $max = $right_type_part->min_bound === null || $right_type_part->min_bound === PHP_INT_MIN
+                ? null
+                : -$right_type_part->min_bound - 1;
+
             if ($left_type_part->isPositiveOrZero()) {
-                $new_result_type = Type::getIntRange(null, 0);
+                $new_result_type = Type::getIntRange(0, $max);
             } elseif ($left_type_part->isNegativeOrZero()) {
-                $new_result_type = Type::getIntRange(null, 0);
+                $new_result_type = Type::getIntRange($max === null ? null : -$max, 0);
             } else {
                 $new_result_type = Type::getInt(true);
             }
@@ -1686,5 +1920,32 @@ final class ArithmeticOpAnalyzer
             $new_result_type,
             $result_type,
         );
+    }
+
+    /**
+     * Reports raising 0 to a negative power, with `**` or pow(), which PHP deprecates whatever PHP version is analysed
+     */
+    public static function checkZeroToNegativePower(
+        StatementsAnalyzer $statements_analyzer,
+        Union $base,
+        Union $exponent,
+        PhpParser\Node $node,
+    ): void {
+        $base_value = $base->isSingleIntLiteral()
+            ? $base->getSingleIntLiteral()->value
+            : ($base->isSingleFloatLiteral() ? $base->getSingleFloatLiteral()->value : null);
+        $exponent_value = $exponent->isSingleIntLiteral()
+            ? $exponent->getSingleIntLiteral()->value
+            : ($exponent->isSingleFloatLiteral() ? $exponent->getSingleFloatLiteral()->value : null);
+
+        if ($base_value !== null && $exponent_value !== null && (float) $base_value === 0.0 && $exponent_value < 0) {
+            IssueBuffer::maybeAdd(
+                new DeprecatedSyntax(
+                    PhpDeprecations::getDeprecatedSinceMessage('Raising 0 to a negative power', 8_04_00, 'fpow()'),
+                    new CodeLocation($statements_analyzer, $node),
+                ),
+                $statements_analyzer->getSuppressedIssues(),
+            );
+        }
     }
 }

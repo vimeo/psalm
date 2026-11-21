@@ -111,6 +111,37 @@ final class ClassConstantMoveTest extends DeferredAnalyzerTestCase
                     'Ns\A::FOO' => 'Ns\B::FOO_BAR',
                 ],
             ],
+            'moveClassConstantFetchedOnAnInstance' => [
+                'input' => '<?php
+                    namespace Ns;
+
+                    class A {
+                        const FOO = 15;
+                    }
+
+                    class B {
+                        public static function bar(A $a) : void {
+                            echo $a::FOO;
+                        }
+                    }',
+                'output' => '<?php
+                    namespace Ns;
+
+                    class A {
+
+                    }
+
+                    class B {
+                        public static function bar(A $a) : void {
+                            echo B::FOO_BAR;
+                        }
+
+                        const FOO_BAR = 15;
+                    }',
+                'migrations' => [
+                    'Ns\A::FOO' => 'Ns\B::FOO_BAR',
+                ],
+            ],
             'renameSimpleClassConstant' => [
                 'input' => '<?php
                     namespace Ns;

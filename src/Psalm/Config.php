@@ -8,6 +8,7 @@ use Amp\Serialization\NativeSerializer;
 use Amp\Serialization\Serializer;
 use Closure;
 use Composer\Autoload\ClassLoader;
+use Composer\InstalledVersions;
 use Composer\Semver\Constraint\Constraint;
 use Composer\Semver\VersionParser;
 use DOMAttr;
@@ -65,17 +66,18 @@ use Psalm\Type\TaintKind;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
 use ReflectionClass;
+use ReflectionFunction;
 use RuntimeException;
 use SimpleXMLElement;
 use SplFileInfo;
 use Symfony\Component\Filesystem\Path;
 use Throwable;
 use UnexpectedValueException;
-use XdgBaseDir\Xdg;
 use stdClass;
 
 use function array_any;
 use function array_column;
+use function array_filter;
 use function array_key_exists;
 use function array_keys;
 use function array_merge;
@@ -102,7 +104,9 @@ use function get_debug_type;
 use function get_defined_constants;
 use function get_defined_functions;
 use function getcwd;
+use function getenv;
 use function glob;
+use function hash;
 use function implode;
 use function in_array;
 use function interface_exists;
@@ -112,6 +116,7 @@ use function is_dir;
 use function is_file;
 use function is_resource;
 use function is_string;
+use function is_writable;
 use function json_decode;
 use function libxml_clear_errors;
 use function libxml_get_errors;
@@ -128,7 +133,6 @@ use function reset;
 use function rmdir;
 use function rtrim;
 use function scandir;
-use function sha1;
 use function simplexml_import_dom;
 use function sort;
 use function str_contains;
@@ -201,6 +205,10 @@ final class Config
         'symfony/framework-bundle' => 'Psalm\SymfonyPsalmPlugin\Plugin',
         'laravel/framework' => 'Psalm\LaravelPlugin\Plugin',
         'orchestra/testbench' => 'Psalm\LaravelPlugin\Plugin',
+        'doctrine/orm' => 'Weirdan\DoctrinePsalmPlugin\Plugin',
+        'doctrine/dbal' => 'Weirdan\DoctrinePsalmPlugin\Plugin',
+        'doctrine/collections' => 'Weirdan\DoctrinePsalmPlugin\Plugin',
+        'doctrine/persistence' => 'Weirdan\DoctrinePsalmPlugin\Plugin',
     ];
 
     /**
@@ -468,6 +476,8 @@ final class Config
 
     public bool $find_unused_code = true;
 
+    public bool $mark_all_non_internal_code_as_api = false;
+
     public bool $find_unused_variables = false;
 
     public bool $find_unused_psalm_suppress = false;
@@ -524,6 +534,12 @@ final class Config
     public float $long_scan_warning = 10.0;
 
     /**
+     * The type coverage in percent below which a full run fails, with at most two decimals: from the minTypeCoverage
+     * attribute, the --min-type-coverage option, or set through the API
+     */
+    public ?float $min_type_coverage = null;
+
+    /**
      * @var string[]
      */
     public array $plugin_paths = [];
@@ -542,6 +558,16 @@ final class Config
 
     /** @var array<callable-string, bool> */
     private array $predefined_functions = [];
+
+    /**
+     * The packages the project depends on, read from its composer.json and vendor/composer/installed.json when null
+     *
+     * @var array<lowercase-string, true>|null
+     */
+    private ?array $project_packages = null;
+
+    /** @var list<string>|null */
+    private ?array $unrequired_package_paths = null;
 
     /** @var list<ClassLoader> $autoloaders */
     private array $autoloaders = [];
@@ -636,6 +662,7 @@ final class Config
         "mysqli" => null,
         "openssl" => null,
         "pdo" => null,
+        "protobuf" => null,
         "random" => null,
         "rdkafka" => null,
         "redis" => null,
@@ -813,7 +840,7 @@ final class Config
 
         try {
             $config = self::loadFromXML($base_dir, $file_contents, $current_dir, $file_path);
-            $config->hash = sha1($file_contents . PSALM_VERSION);
+            $config->hash = hash('xxh3', $file_contents . PSALM_VERSION);
         } catch (ConfigException $e) {
             throw new ConfigException(
                 'Problem parsing ' . $file_path . ":\n" . '  ' . $e->getMessage(),
@@ -830,7 +857,7 @@ final class Config
      */
     public function computeHash(): string
     {
-        return sha1($this->hash . ':' . $this->level);
+        return hash('xxh3', $this->hash . ':' . $this->level);
     }
 
     /**
@@ -853,6 +880,37 @@ final class Config
         self::validateXmlConfig($base_dir, $file_contents);
 
         return self::fromXmlAndPaths($base_dir, $file_contents, $current_dir, $file_path);
+    }
+
+    private static function getDefaultCacheDirectory(): string
+    {
+        $xdg_cache_home = CliUtils::chosenByOperator(getenv('XDG_CACHE_HOME'));
+        if ($xdg_cache_home !== false && $xdg_cache_home !== '') {
+            return $xdg_cache_home . '/psalm';
+        }
+
+        $home = CliUtils::chosenByOperator(getenv('HOME'));
+        if ($home === false || $home === '') {
+            $home_drive = CliUtils::chosenByOperator(getenv('HOMEDRIVE'));
+            $home_path = CliUtils::chosenByOperator(getenv('HOMEPATH'));
+            $home = $home_drive !== false && $home_drive !== '' && $home_path !== false && $home_path !== ''
+                ? $home_drive . $home_path
+                : null;
+        }
+
+        // docker run --user sets HOME to "/", which is not a usable home
+        if ($home !== null && $home !== '/') {
+            $user_cache_dir = $home . '/.cache';
+            $is_usable = file_exists($user_cache_dir)
+                ? is_dir($user_cache_dir) && is_writable($user_cache_dir)
+                : is_dir($home) && is_writable($home);
+
+            if ($is_usable) {
+                return $user_cache_dir . '/psalm';
+            }
+        }
+
+        return sys_get_temp_dir() . '/psalm';
     }
 
     /**
@@ -1050,7 +1108,7 @@ final class Config
     ): void {
         $config->config_issues = [];
 
-        // Attributes to be removed in Psalm 6
+        // Attributes to be removed in the next major version
         $deprecated_attributes = [];
 
         /** @var list<string> */
@@ -1151,6 +1209,7 @@ final class Config
             'allowInternalNamedArgumentsCalls' => 'allow_internal_named_arg_calls',
             'allowNamedArgumentCalls' => 'allow_named_arg_calls',
             'findUnusedPsalmSuppress' => 'find_unused_psalm_suppress',
+            'markAllNonInternalCodeAsApi' => 'mark_all_non_internal_code_as_api',
             'findUnusedBaselineEntry' => 'find_unused_baseline_entry',
             'findUnusedIssueHandlerSuppression' => 'find_unused_issue_handler_suppression',
             'reportInfo' => 'report_info',
@@ -1250,16 +1309,14 @@ final class Config
             $config->cache_directory = null;
         } elseif (isset($config_xml['cacheDirectory'])) {
             $config->cache_directory = (string)$config_xml['cacheDirectory'];
-        } elseif ($user_cache_dir = (new Xdg())->getHomeCacheDir()) {
-            $config->cache_directory = $user_cache_dir . '/psalm';
         } else {
-            $config->cache_directory = sys_get_temp_dir() . '/psalm';
+            $config->cache_directory = self::getDefaultCacheDirectory();
         }
 
         $config->global_cache_directory = $config->cache_directory;
 
         if ($config->cache_directory !== null) {
-            $config->cache_directory .= DIRECTORY_SEPARATOR . sha1($base_dir);
+            $config->cache_directory .= DIRECTORY_SEPARATOR . hash('xxh3', $base_dir);
         }
 
         if (isset($config_xml['serializer'])) {
@@ -1356,6 +1413,10 @@ final class Config
         if (isset($config_xml['longScanWarning'])) {
             $attribute_text = (float)$config_xml['longScanWarning'];
             $config->long_scan_warning = $attribute_text;
+        }
+
+        if (isset($config_xml['minTypeCoverage'])) {
+            $config->min_type_coverage = (float) $config_xml['minTypeCoverage'];
         }
 
         if (isset($config_xml['inferPropertyTypesFromConstructor'])) {
@@ -1794,6 +1855,11 @@ final class Config
 
             if (isset(TaintKind::TAINT_NAMES[$name])) {
                 throw new ConfigException('The custom taint "' . $name . '" has the name of a built-in taint');
+            }
+
+            // `@psalm-taint-sink none $param`: a parameter without sinks
+            if ($name === 'none') {
+                throw new ConfigException('A custom taint can\'t be named "none", which means no taint');
             }
 
             if (isset($this->custom_taints[$name])) {
@@ -2391,7 +2457,6 @@ final class Config
             && $e instanceof PluginIssue
             && !isset($this->issue_handlers[$issue_type])
         ) {
-            /** @var int */
             $issue_level = $e::ERROR_LEVEL;
 
             if ($issue_level > 0 && $issue_level < $this->level) {
@@ -2753,54 +2818,16 @@ final class Config
 
         $core_generic_files = [];
 
-        if (PHP_VERSION_ID < 8_00_00 && $codebase->analysis_php_version_id >= 8_00_00) {
-            $stringable_path = dirname(__DIR__, 2) . '/stubs/Php80.phpstub';
+        foreach ([8_04_00 => '8.4', 8_06_00 => '8.6'] as $version_id => $version) {
+            if (PHP_VERSION_ID < $version_id && $codebase->analysis_php_version_id >= $version_id) {
+                $stub_path = dirname(__DIR__, 2) . '/stubs/Php' . str_replace('.', '', $version) . '.phpstub';
 
-            if (!file_exists($stringable_path)) {
-                throw new UnexpectedValueException('Cannot locate PHP 8.0 classes');
+                if (!file_exists($stub_path)) {
+                    throw new UnexpectedValueException('Cannot locate PHP ' . $version . ' classes');
+                }
+
+                $core_generic_files[] = $stub_path;
             }
-
-            $core_generic_files[] = $stringable_path;
-        }
-
-        if (PHP_VERSION_ID < 8_01_00 && $codebase->analysis_php_version_id >= 8_01_00) {
-            $stringable_path = dirname(__DIR__, 2) . '/stubs/Php81.phpstub';
-
-            if (!file_exists($stringable_path)) {
-                throw new UnexpectedValueException('Cannot locate PHP 8.1 classes');
-            }
-
-            $core_generic_files[] = $stringable_path;
-        }
-
-        if (PHP_VERSION_ID < 8_02_00 && $codebase->analysis_php_version_id >= 8_02_00) {
-            $stringable_path = dirname(__DIR__, 2) . '/stubs/Php82.phpstub';
-
-            if (!file_exists($stringable_path)) {
-                throw new UnexpectedValueException('Cannot locate PHP 8.2 classes');
-            }
-
-            $core_generic_files[] = $stringable_path;
-        }
-
-        if (PHP_VERSION_ID < 8_04_00 && $codebase->analysis_php_version_id >= 8_04_00) {
-            $stringable_path = dirname(__DIR__, 2) . '/stubs/Php84.phpstub';
-
-            if (!file_exists($stringable_path)) {
-                throw new UnexpectedValueException('Cannot locate PHP 8.4 classes');
-            }
-
-            $core_generic_files[] = $stringable_path;
-        }
-
-        if (PHP_VERSION_ID < 8_06_00 && $codebase->analysis_php_version_id >= 8_06_00) {
-            $stringable_path = dirname(__DIR__, 2) . '/stubs/Php86.phpstub';
-
-            if (!file_exists($stringable_path)) {
-                throw new UnexpectedValueException('Cannot locate PHP 8.6 classes');
-            }
-
-            $core_generic_files[] = $stringable_path;
         }
 
         // Genuinely-new classes from every version live in PhpVersionedClasses.phpstub (always
@@ -2814,6 +2841,10 @@ final class Config
             }
 
             $core_generic_files[] = $versioned_classes_path;
+        }
+
+        if (PHP_VERSION_ID < 8_05_00 && $codebase->analysis_php_version_id >= 8_01_00) {
+            $core_generic_files[] = dirname(__DIR__, 2) . '/stubs/PhpVersionedEnums.phpstub';
         }
 
         $stub_files = array_merge($core_generic_files, $this->preloaded_stub_files);
@@ -2872,7 +2903,8 @@ final class Config
                 static fn(string $classlike): bool => $codebase->classlike_storage_provider->has($classlike),
             ) || array_any(
                 $functions,
-                static fn(string $function): bool => $codebase->functions->isDeclaredInCode($function),
+                static fn(string $function): bool
+                    => $codebase->functions->isDeclaredInCode($function, $codebase->scanner),
             )) {
                 $library_stubs[] = $library_stub;
                 // the real definitions of the class-likes, which the stub then refines like a class the scan found
@@ -2918,6 +2950,8 @@ final class Config
 
         if ($codebase->analysis_php_version_id >= 8_01_00) {
             $this->internal_stubs[] = $stubsDir . 'Php81.phpstub';
+            // the enums of later versions, which are reported as undefined before their `@since` version
+            $this->internal_stubs[] = $stubsDir . 'PhpVersionedEnums.phpstub';
         }
 
         if ($codebase->analysis_php_version_id >= 8_02_00) {
@@ -3194,11 +3228,191 @@ final class Config
     {
         $defined_functions = get_defined_functions();
         foreach ($defined_functions['user'] as $function_name) {
+            $file_name = (new ReflectionFunction($function_name))->getFileName();
+            if ($file_name !== false && $this->isInUnrequiredPackage($file_name)) {
+                continue;
+            }
+
             $this->predefined_functions[$function_name] = true;
         }
         foreach ($defined_functions['internal'] as $function_name) {
             $this->predefined_functions[$function_name] = true;
         }
+    }
+
+    /**
+     * The install paths of the Composer packages, in Psalm's process or in the project's vendor directory, that the
+     * project doesn't depend on, like the polyfills Psalm itself requires: their functions don't exist when the
+     * project runs.
+     *
+     * @return list<string>
+     */
+    private function getUnrequiredPackagePaths(): array
+    {
+        if ($this->unrequired_package_paths !== null) {
+            return $this->unrequired_package_paths;
+        }
+
+        $install_paths = [];
+        foreach (InstalledVersions::getAllRawData() as $installed) {
+            foreach ($installed['versions'] as $name => $package) {
+                if (isset($package['install_path']) && $name !== $installed['root']['name']) {
+                    $install_paths[] = [$name, $package['install_path']];
+                }
+            }
+        }
+
+        $composer_dir = $this->getProjectVendorDir() . DIRECTORY_SEPARATOR . 'composer';
+        foreach ($this->getProjectInstalledPackages() as $package) {
+            if ($package['install_path'] !== null) {
+                $install_paths[] = [$package['name'], Path::makeAbsolute($package['install_path'], $composer_dir)];
+            }
+        }
+
+        $project_packages = $this->project_packages ??= $this->readProjectPackageNames();
+        $paths = [];
+        foreach ($install_paths as [$name, $path]) {
+            if (!isset($project_packages[strtolower($name)])) {
+                $paths[] = Path::canonicalize($path);
+            }
+        }
+
+        return $this->unrequired_package_paths = $paths;
+    }
+
+    /**
+     * Replaces the packages read from the project's composer.json, for the functions collected from now on
+     *
+     * @internal
+     * @param array<lowercase-string, true> $project_packages
+     * @psalm-capabilities read-props|write-this-props|write-refs
+     */
+    public function setProjectPackages(array $project_packages): void
+    {
+        $this->project_packages = $project_packages;
+        $this->unrequired_package_paths = null;
+    }
+
+    /**
+     * @internal
+     */
+    public function isInUnrequiredPackage(string $file_path): bool
+    {
+        return array_any(
+            $this->getUnrequiredPackagePaths(),
+            static fn(string $path): bool => Path::isBasePath($path, $file_path),
+        );
+    }
+
+    /**
+     * The packages the project's composer.json requires, directly or through other packages but not through Psalm
+     *
+     * @return array<lowercase-string, true>
+     */
+    private function readProjectPackageNames(): array
+    {
+        $composer_json = $this->readProjectComposerJson();
+        if ($composer_json === null) {
+            return [];
+        }
+
+        $requires_by_name = [];
+        foreach ($this->getProjectInstalledPackages() as $package) {
+            foreach ([$package['name'], ...$package['replace']] as $name) {
+                $requires_by_name[strtolower((string) $name)] = [$package['name'], $package['require']];
+            }
+        }
+
+        $queue = [];
+        if (isset($composer_json['require']) && is_array($composer_json['require'])) {
+            $queue = array_keys($composer_json['require']);
+        }
+        if (isset($composer_json['require-dev']) && is_array($composer_json['require-dev'])) {
+            $queue = [...$queue, ...array_keys($composer_json['require-dev'])];
+        }
+
+        $project_packages = [];
+        while (($name = array_pop($queue)) !== null) {
+            $name = strtolower((string) $name);
+            if ($name === 'vimeo/psalm' || $name === 'psalm/phar' || !isset($requires_by_name[$name])) {
+                continue;
+            }
+
+            [$package_name, $requires] = $requires_by_name[$name];
+            $package_name = strtolower($package_name);
+            if (!isset($project_packages[$package_name])) {
+                $project_packages[$package_name] = true;
+                $queue = [...$queue, ...$requires];
+            }
+        }
+
+        return $project_packages;
+    }
+
+    private function readProjectComposerJson(): ?array
+    {
+        $composer_json_path = Composer::getJsonFilePath($this->base_dir);
+        $composer_json = is_file($composer_json_path)
+            ? json_decode((string) file_get_contents($composer_json_path), true)
+            : null;
+        if (!is_array($composer_json)) {
+            return null;
+        }
+
+        return $composer_json;
+    }
+
+    /**
+     * The directory Composer installs the project's packages in: COMPOSER_VENDOR_DIR, or the vendor-dir of its
+     * composer.json, or vendor
+     */
+    private function getProjectVendorDir(): string
+    {
+        $vendor_dir = CliUtils::chosenByOperator(getenv('COMPOSER_VENDOR_DIR'));
+        if (!is_string($vendor_dir) || $vendor_dir === '') {
+            $composer_json = $this->readProjectComposerJson();
+            $vendor_dir = isset($composer_json['config']['vendor-dir'])
+                && is_string($composer_json['config']['vendor-dir'])
+                    ? $composer_json['config']['vendor-dir']
+                    : 'vendor';
+        }
+
+        return Path::makeAbsolute($vendor_dir, $this->base_dir);
+    }
+
+    /**
+     * The packages of the project's installed.json
+     *
+     * @return list<array{name: string, install_path: ?string, require: list<array-key>, replace: list<array-key>}>
+     */
+    private function getProjectInstalledPackages(): array
+    {
+        $installed_path = $this->getProjectVendorDir() . DIRECTORY_SEPARATOR . 'composer'
+            . DIRECTORY_SEPARATOR . 'installed.json';
+        $installed = is_file($installed_path) ? json_decode((string) file_get_contents($installed_path), true) : null;
+        if (!is_array($installed) || !isset($installed['packages']) || !is_array($installed['packages'])) {
+            return [];
+        }
+
+        $packages = [];
+        foreach (array_filter($installed['packages'], is_array(...)) as $package) {
+            if (isset($package['name']) && is_string($package['name'])) {
+                $packages[] = [
+                    'name' => $package['name'],
+                    'install_path' => isset($package['install-path']) && is_string($package['install-path'])
+                        ? $package['install-path']
+                        : null,
+                    'require' => isset($package['require']) && is_array($package['require'])
+                        ? array_keys($package['require'])
+                        : [],
+                    'replace' => isset($package['replace']) && is_array($package['replace'])
+                        ? array_keys($package['replace'])
+                        : [],
+                ];
+            }
+        }
+
+        return $packages;
     }
 
     /**
@@ -3219,9 +3433,8 @@ final class Config
             throw new LogicException("IncludeCollector should be set at this point");
         }
 
-        $vendor_autoload_files_path
-            = $this->base_dir . DIRECTORY_SEPARATOR . 'vendor'
-                . DIRECTORY_SEPARATOR . 'composer' . DIRECTORY_SEPARATOR . 'autoload_files.php';
+        $vendor_autoload_files_path = $this->getProjectVendorDir()
+            . DIRECTORY_SEPARATOR . 'composer' . DIRECTORY_SEPARATOR . 'autoload_files.php';
 
         if (file_exists($vendor_autoload_files_path)) {
             $this->include_collector->runAndCollect(
@@ -3248,7 +3461,10 @@ final class Config
 
         $this->collectPredefinedConstants();
 
-        $autoload_included_files = $this->include_collector->getFilteredIncludedFiles();
+        $autoload_included_files = array_filter(
+            $this->include_collector->getFilteredIncludedFiles(),
+            fn(string $file_path): bool => !$this->isInUnrequiredPackage($file_path),
+        );
 
         if ($autoload_included_files) {
             $codebase->register_autoload_files = true;

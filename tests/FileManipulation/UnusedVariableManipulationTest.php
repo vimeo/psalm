@@ -84,7 +84,7 @@ final class UnusedVariableManipulationTest extends FileManipulationTestCase
                         }
                         echo "Hello world\n";
 
-                        if ($i === 1) {
+                        if ($i > 0) {
                             echo $b;
                         }
                     }',
@@ -96,7 +96,7 @@ final class UnusedVariableManipulationTest extends FileManipulationTestCase
                         }
                         echo "Hello world\n";
 
-                        if ($i === 1) {
+                        if ($i > 0) {
                             echo $b;
                         }
                     }',
@@ -457,7 +457,7 @@ final class UnusedVariableManipulationTest extends FileManipulationTestCase
                 'safe_types' => true,
             ],
 
-            'SKIPPED-removeUnusedVarAssignByRefToSubsequentlyUsedVariable' => [
+            'SKIPPED-removeUnusedVarAssignByRefToSubsequentlyUsedVariable' => [ // #13916
                 'input' => '<?php
                     function foo() : void {
                         $a = 5;

@@ -24,6 +24,7 @@ use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\Statements\UnsetAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\MixinLookup;
+use Psalm\Internal\Codebase\PhpDeprecations;
 use Psalm\Internal\Codebase\VariableUseGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
@@ -106,7 +107,14 @@ final class AtomicPropertyFetchAnalyzer
         }
 
         if ($lhs_type_part instanceof TMixed) {
-            $statements_analyzer->node_data->setType($stmt, Type::getMixed());
+            $property_type = self::getDynamicPropertyType($statements_analyzer, $stmt, $stmt_var_type, $prop_name);
+
+            // a property of a value a loop may not have set yet (isset() in its first pass) is such a value
+            if ($lhs_type_part->from_loop_isset) {
+                $property_type = Type::getMixed(true)->setParentNodes($property_type->parent_nodes);
+            }
+
+            $statements_analyzer->node_data->setType($stmt, $property_type);
             return;
         }
 
@@ -171,7 +179,10 @@ final class AtomicPropertyFetchAnalyzer
         ) {
             $has_valid_fetch_type = true;
 
-            $statements_analyzer->node_data->setType($stmt, Type::getMixed());
+            $statements_analyzer->node_data->setType(
+                $stmt,
+                self::getDynamicPropertyType($statements_analyzer, $stmt, $stmt_var_type, $prop_name),
+            );
 
             return;
         }
@@ -420,7 +431,6 @@ final class AtomicPropertyFetchAnalyzer
 
         if ($codebase->store_node_types
             && !$context->collect_initializations
-            && !$context->collect_mutations
         ) {
             $codebase->analyzer->addNodeReference(
                 $statements_analyzer->getFilePath(),
@@ -597,6 +607,7 @@ final class AtomicPropertyFetchAnalyzer
                     $declaring_class_storage,
                     $context,
                     $stmt_var_id,
+                    $stmt->getAttribute(UnsetAnalyzer::TARGET_ATTRIBUTE) !== true,
                 );
             }
         }
@@ -672,6 +683,35 @@ final class AtomicPropertyFetchAnalyzer
     }
 
     /**
+     * A dynamic property of an object (a database row, a decoded document), or of a value whose type isn't known,
+     * holds what the object holds under that name, as an array does under a key
+     */
+    public static function getDynamicPropertyType(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr\PropertyFetch $stmt,
+        Union $stmt_var_type,
+        string $prop_name,
+    ): Union {
+        $graph = $statements_analyzer->getDataFlowGraphWithSuppressed();
+
+        if ($graph === null) {
+            return Type::getMixed();
+        }
+
+        $property_node = DataFlowNode::getForAssignment(
+            ExpressionIdentifier::getExtendedVarId($stmt, null, $statements_analyzer) ?? '$object->' . $prop_name,
+            new CodeLocation($statements_analyzer->getSource(), $stmt),
+        );
+        $graph->addNode($property_node);
+
+        foreach ($stmt_var_type->parent_nodes as $parent_node) {
+            $graph->addPath($parent_node, $property_node, 'arrayvalue-fetch-\'' . $prop_name . '\'');
+        }
+
+        return Type::getMixed()->setParentNodes([$property_node->id => $property_node]);
+    }
+
+    /**
      * @param PropertyFetch|StaticPropertyFetch $stmt
      */
     public static function checkPropertyDeprecation(
@@ -693,6 +733,26 @@ final class AtomicPropertyFetchAnalyzer
                 IssueBuffer::maybeAdd(
                     new DeprecatedProperty(
                         $property_id . ' is marked deprecated',
+                        new CodeLocation($statements_analyzer->getSource(), $stmt),
+                        $property_id,
+                    ),
+                    $statements_analyzer->getSuppressedIssues(),
+                );
+
+                return;
+            }
+        }
+
+        if (!$declaring_class_storage->user_defined) {
+            $builtin_message = PhpDeprecations::getPropertyMessage(
+                $property_id,
+                $declaring_class_storage->name . '::$' . $prop_name,
+            );
+
+            if ($builtin_message !== null) {
+                IssueBuffer::maybeAdd(
+                    new DeprecatedProperty(
+                        $builtin_message,
                         new CodeLocation($statements_analyzer->getSource(), $stmt),
                         $property_id,
                     ),
@@ -740,7 +800,6 @@ final class AtomicPropertyFetchAnalyzer
                     ? new CodeLocation($statements_analyzer->getSource(), $stmt)
                     : null,
                 !$context->collect_initializations
-                    && !$context->collect_mutations
                     ? $statements_analyzer
                     : null,
                 $statements_analyzer->getFilePath(),

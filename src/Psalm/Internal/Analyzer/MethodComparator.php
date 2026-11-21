@@ -38,6 +38,7 @@ use Psalm\Storage\Capabilities;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Storage\MethodStorage;
+use Psalm\Storage\NamedArguments;
 use Psalm\Type;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNull;
@@ -189,9 +190,11 @@ final class MethodComparator
                 && isset($codebase->classlike_storage_provider->get($implementer_called_class_name)
                     ->documenting_method_ids[strtolower($guide_method_storage->cased_name ?? '')]));
 
+        // an inherited docblock refines a native return type, but cannot replace one it does not overlap
+        // (see Methods::getMethodReturnType())
         if ($guide_method_storage->return_type
             && $implementer_method_storage->return_type
-            && !$inherits_return_type
+            && (!$inherits_return_type || $implementer_method_storage->signature_return_type)
             && ($guide_method_storage->signature_return_type !== $guide_method_storage->return_type
                 || $implementer_method_storage->signature_return_type !== $implementer_method_storage->return_type)
             && $implementer_classlike_storage->user_defined
@@ -206,9 +209,10 @@ final class MethodComparator
                 $implementer_method_storage->return_type,
                 $cased_guide_method_id,
                 $implementer_called_class_name,
-                $implementer_declaring_method_id,
+                $cased_implementer_method_id,
                 $code_location,
                 $suppressed_issues,
+                $inherits_return_type,
             );
         }
 
@@ -799,7 +803,7 @@ final class MethodComparator
             // a variadic parameter takes the arguments that follow it by position, whatever their names
             if ($guide_param->name !== $implementer_param->name
                 && !$implementer_param->is_variadic
-                && $guide_method_storage->allow_named_arg_calls
+                && $guide_method_storage->allowsNamedArguments()
                 && $implementer_classlike_storage->user_defined
                 && $implementer_param->location
                 && $guide_method_storage->cased_name
@@ -815,6 +819,8 @@ final class MethodComparator
                     || ($guide_classlike_storage->location
                         && !$config->isInProjectDirs($guide_classlike_storage->location->file_path)
                     )
+                    || $guide_method_storage->named_arguments === NamedArguments::STABLE
+                    || $guide_method_storage->requiresNamedArgument($guide_param)
                 ) {
                     if ($codebase->alter_code) {
                         $project_analyzer = ProjectAnalyzer::getInstance();
@@ -946,7 +952,7 @@ final class MethodComparator
             || !$documenting_param->has_docblock_type
             || $documenting_param->type->hasTemplate()
             || ($guide_param->type !== null
-                && !UnionTypeComparator::isContainedBy($codebase, $documenting_param->type, $guide_param->type))
+                && !self::isContainedWithoutStringCast($codebase, $documenting_param->type, $guide_param->type))
         ) {
             return $guide_param;
         }
@@ -1041,7 +1047,7 @@ final class MethodComparator
 
         $is_contained_by = $codebase->analysis_php_version_id >= 7_04_00
             && $guide_param_signature_type
-            ? UnionTypeComparator::isContainedBy(
+            ? self::isContainedWithoutStringCast(
                 $codebase,
                 $guide_param_signature_type,
                 $implementer_param_signature_type,
@@ -1172,6 +1178,9 @@ final class MethodComparator
                     $implementer_classlike_storage->name,
                     $implementer_method_storage_param_type,
                     $codebase,
+                    $implementer_called_class_name,
+                    $implementer_called_class_name,
+                    $implementer_called_class_storage->parent_class,
                 );
 
                 self::transformTemplates(
@@ -1179,6 +1188,9 @@ final class MethodComparator
                     $guide_class_name,
                     $guide_method_storage_param_type,
                     $codebase,
+                    $implementer_called_class_name,
+                    $implementer_called_class_name,
+                    $implementer_called_class_storage->parent_class,
                 );
             }
         }
@@ -1196,8 +1208,21 @@ final class MethodComparator
                 $guide_class_name,
                 $guide_method_storage_param_type,
                 $codebase,
+                $implementer_classlike_storage->name,
+                $implementer_called_class_name,
+                $implementer_classlike_storage->parent_class,
             );
         }
+
+        self::mapTemplatesOfTheCalledClass(
+            $codebase,
+            $implementer_classlike_storage,
+            $implementer_method_storage,
+            $implementer_called_class_name,
+            $guide_class_name,
+            $guide_method_storage_param_type,
+            $implementer_method_storage_param_type,
+        );
 
         $union_comparison_results = new TypeComparisonResult();
 
@@ -1208,9 +1233,9 @@ final class MethodComparator
             !$guide_classlike_storage->user_defined,
             !$guide_classlike_storage->user_defined,
             $union_comparison_results,
-        )) {
+        ) || $union_comparison_results->to_string_cast) {
             // is the declared return type more specific than the inferred one?
-            if ($union_comparison_results->type_coerced) {
+            if ($union_comparison_results->type_coerced && !$union_comparison_results->to_string_cast) {
                 if ($guide_classlike_storage->user_defined) {
                     IssueBuffer::maybeAdd(
                         new MoreSpecificImplementedParamType(
@@ -1327,21 +1352,40 @@ final class MethodComparator
             && $implementer_classlike_storage->final
             && !$implementer_classlike_storage->final_from_docblock;
 
+        // what a trait method refers to as self or static is the class it ends up in
+        $implementing_class_name = $implementer_classlike_storage->is_trait
+            ? $implementer_called_class_name
+            : $implementer_classlike_storage->name;
+
+        $class_using_trait = self::getClassUsingTrait(
+            $codebase,
+            $implementer_classlike_storage,
+            $guide_classlike_storage,
+        );
+
+        // `parent` of a non-abstract trait method is the parent of the class using the trait
+        $guide_parent_class = $guide_classlike_storage->parent_class;
+
+        if ($guide_classlike_storage->is_trait) {
+            $guide_parent_class = $implementer_classlike_storage->parent_class;
+
+            if (!$guide_method_storage->abstract && $class_using_trait !== null) {
+                $guide_parent_class = $codebase->classlike_storage_provider->get($class_using_trait)->parent_class;
+            }
+        }
+
         $guide_signature_return_type = TypeExpander::expandUnion(
             $codebase,
             $guide_signature_return_type,
             $guide_classlike_storage->is_trait && $guide_method_storage->abstract
-                ? $implementer_classlike_storage->name
-                : self::getClassUsingTrait($codebase, $implementer_classlike_storage, $guide_classlike_storage)
-                    ?? $guide_classlike_storage->name,
-            ($guide_classlike_storage->is_trait && $guide_method_storage->abstract)
+                ? $implementing_class_name
+                : $class_using_trait ?? $guide_classlike_storage->name,
+            $guide_classlike_storage->is_trait
                 || $guide_classlike_storage->final
                 || $resolve_static_to_final_class
-                ? $implementer_classlike_storage->name
+                ? $implementing_class_name
                 : $guide_classlike_storage->name,
-            $guide_classlike_storage->is_trait && $guide_method_storage->abstract
-                ? $implementer_classlike_storage->parent_class
-                : $guide_classlike_storage->parent_class,
+            $guide_parent_class,
             true,
             true,
             $resolve_static_to_final_class,
@@ -1351,9 +1395,7 @@ final class MethodComparator
             ? TypeExpander::expandUnion(
                 $codebase,
                 $implementer_method_storage->signature_return_type,
-                $implementer_classlike_storage->is_trait
-                    ? $implementer_called_class_name
-                    : $implementer_classlike_storage->name,
+                $implementing_class_name,
                 // an inherited method returns `static` of the class it is called on
                 new TNamedObject($implementer_called_class_name),
                 $implementer_classlike_storage->parent_class,
@@ -1361,7 +1403,7 @@ final class MethodComparator
 
         $is_contained_by = $codebase->analysis_php_version_id >= 7_04_00
             && $implementer_signature_return_type
-            ? UnionTypeComparator::isContainedBy(
+            ? self::isContainedWithoutStringCast(
                 $codebase,
                 $implementer_signature_return_type,
                 $guide_signature_return_type,
@@ -1417,9 +1459,10 @@ final class MethodComparator
         Union $implementer_return_type,
         string $cased_guide_method_id,
         string $implementer_called_class_name,
-        ?MethodIdentifier $implementer_declaring_method_id,
+        string $cased_implementer_method_id,
         CodeLocation $code_location,
         array $suppressed_issues,
+        bool $inherits_return_type,
     ): void {
         $implementer_method_storage_return_type = TypeExpander::expandUnion(
             $codebase,
@@ -1453,11 +1496,19 @@ final class MethodComparator
         $guide_class_name = $guide_classlike_storage->name;
 
         if ($implementer_classlike_storage->template_extended_params) {
+            $self_class = $implementer_classlike_storage->is_trait
+                ? $implementer_called_class_name
+                : $implementer_classlike_storage->name;
+
             self::transformTemplates(
                 $implementer_classlike_storage->template_extended_params,
                 $guide_class_name,
                 $guide_method_storage_return_type,
                 $codebase,
+                $self_class,
+                $implementer_called_class_name,
+                $implementer_classlike_storage->parent_class,
+                $implementer_classlike_storage->final,
             );
 
             if ($implementer_method_storage->defining_fqcln) {
@@ -1466,9 +1517,23 @@ final class MethodComparator
                     $implementer_method_storage->defining_fqcln,
                     $implementer_method_storage_return_type,
                     $codebase,
+                    $self_class,
+                    $implementer_called_class_name,
+                    $implementer_classlike_storage->parent_class,
+                    $implementer_classlike_storage->final,
                 );
             }
         }
+
+        self::mapTemplatesOfTheCalledClass(
+            $codebase,
+            $implementer_classlike_storage,
+            $implementer_method_storage,
+            $implementer_called_class_name,
+            $guide_class_name,
+            $guide_method_storage_return_type,
+            $implementer_method_storage_return_type,
+        );
 
         if ($implementer_classlike_storage->is_trait) {
             $implementer_called_class_storage = $codebase->classlike_storage_provider->get(
@@ -1481,6 +1546,10 @@ final class MethodComparator
                     $implementer_classlike_storage->name,
                     $implementer_method_storage_return_type,
                     $codebase,
+                    $implementer_called_class_name,
+                    $implementer_called_class_name,
+                    $implementer_called_class_storage->parent_class,
+                    $implementer_called_class_storage->final,
                 );
 
                 self::transformTemplates(
@@ -1488,6 +1557,10 @@ final class MethodComparator
                     $guide_class_name,
                     $guide_method_storage_return_type,
                     $codebase,
+                    $implementer_called_class_name,
+                    $implementer_called_class_name,
+                    $implementer_called_class_storage->parent_class,
+                    $implementer_called_class_storage->final,
                 );
             }
         }
@@ -1501,6 +1574,25 @@ final class MethodComparator
             $guide_method_storage_return_type = Type::getNull();
         }
 
+        $guide_in_implementer_result = new TypeComparisonResult();
+
+        if ($inherits_return_type
+            && ((UnionTypeComparator::isContainedBy(
+                $codebase,
+                $guide_method_storage_return_type,
+                $implementer_method_storage_return_type,
+                false,
+                false,
+                $guide_in_implementer_result,
+            ) && !$guide_in_implementer_result->to_string_cast) || Type::intersectUnionTypes(
+                $implementer_method_storage_return_type,
+                $guide_method_storage_return_type,
+                $codebase,
+            ))
+        ) {
+            return;
+        }
+
         $union_comparison_results = new TypeComparisonResult();
 
         if (!UnionTypeComparator::isContainedBy(
@@ -1510,14 +1602,23 @@ final class MethodComparator
             false,
             false,
             $union_comparison_results,
-        )) {
+        ) || $union_comparison_results->to_string_cast) {
+            // the types overlap where the intersection can't be built (callable-array, a constant wildcard);
+            // an object castable to string does not overlap a string
+            if ($inherits_return_type
+                && $union_comparison_results->type_coerced
+                && !$union_comparison_results->to_string_cast
+            ) {
+                return;
+            }
+
             // is the declared return type more specific than the inferred one?
-            if ($union_comparison_results->type_coerced) {
+            if ($union_comparison_results->type_coerced && !$union_comparison_results->to_string_cast) {
                 IssueBuffer::maybeAdd(
                     new LessSpecificImplementedReturnType(
                         'The inherited return type \'' . $guide_method_storage_return_type->getId()
                             . '\' for ' . $cased_guide_method_id . ' is more specific than the implemented '
-                            . 'return type for ' . $implementer_declaring_method_id . ' \''
+                            . 'return type for ' . $cased_implementer_method_id . ' \''
                             . $implementer_method_storage_return_type->getId() . '\'',
                         $implementer_method_storage->return_type_location
                             ?: $code_location,
@@ -1540,7 +1641,7 @@ final class MethodComparator
                     new ImplementedReturnTypeMismatch(
                         'The inherited return type \'' . $guide_method_storage_return_type->getId()
                             . '\' for ' . $cased_guide_method_id . ' is different to the implemented '
-                            . 'return type for ' . $implementer_declaring_method_id . ' \''
+                            . 'return type for ' . $cased_implementer_method_id . ' \''
                             . $implementer_method_storage_return_type->getId() . '\'',
                         $implementer_method_storage->return_type_location
                             ?: $code_location,
@@ -1549,6 +1650,18 @@ final class MethodComparator
                 );
             }
         }
+    }
+
+    /**
+     * An object with `__toString()` is not a string: it only passes as one where PHP casts it, which a return
+     * value or an argument of an overriding method does not get under strict_types
+     */
+    private static function isContainedWithoutStringCast(Codebase $codebase, Union $input, Union $container): bool
+    {
+        $comparison_result = new TypeComparisonResult();
+
+        return UnionTypeComparator::isContainedBy($codebase, $input, $container, false, false, $comparison_result)
+            && !$comparison_result->to_string_cast;
     }
 
     /**
@@ -1580,14 +1693,82 @@ final class MethodComparator
     }
 
     /**
+     * A class that gets the method from a parent and the interface from elsewhere knows the templates of both
+     */
+    private static function mapTemplatesOfTheCalledClass(
+        Codebase $codebase,
+        ClassLikeStorage $implementer_classlike_storage,
+        MethodStorage $implementer_method_storage,
+        string $implementer_called_class_name,
+        string $guide_class_name,
+        Union &$guide_type,
+        Union &$implementer_type,
+    ): void {
+        if ($implementer_classlike_storage->is_trait
+            || $implementer_method_storage->defining_fqcln === null
+            || strtolower($implementer_called_class_name) === strtolower($implementer_classlike_storage->name)
+        ) {
+            return;
+        }
+
+        // the declaring class implements the interface itself: it was checked in its own context
+        if ($codebase->classExtendsOrImplements($implementer_method_storage->defining_fqcln, $guide_class_name)) {
+            return;
+        }
+
+        $called_class_storage = $codebase->classlike_storage_provider->get($implementer_called_class_name);
+        $called_class_params = $called_class_storage->template_extended_params;
+
+        if ($called_class_params === null) {
+            return;
+        }
+
+        self::transformTemplates(
+            $called_class_params,
+            $guide_class_name,
+            $guide_type,
+            $codebase,
+            $implementer_called_class_name,
+            $implementer_called_class_name,
+            $called_class_storage->parent_class,
+            $called_class_storage->final,
+        );
+
+        // the guide's templates may be the ones of the class declaring the method by now
+        self::transformTemplates(
+            $called_class_params,
+            $implementer_method_storage->defining_fqcln,
+            $guide_type,
+            $codebase,
+            $implementer_called_class_name,
+            $implementer_called_class_name,
+            $called_class_storage->parent_class,
+            $called_class_storage->final,
+        );
+        self::transformTemplates(
+            $called_class_params,
+            $implementer_method_storage->defining_fqcln,
+            $implementer_type,
+            $codebase,
+            $implementer_called_class_name,
+            $implementer_called_class_name,
+            $called_class_storage->parent_class,
+            $called_class_storage->final,
+        );
+    }
+
+    /**
      * @param  array<string, array<string, Union>>  $template_extended_params
-     * @psalm-capabilities read-props|write-this-props|write-props|write-refs
      */
     private static function transformTemplates(
         array $template_extended_params,
         string $base_class_name,
         Union &$templated_type,
         Codebase $codebase,
+        string $self_class,
+        string $static_class,
+        ?string $parent_class,
+        bool $final = false,
     ): void {
         if (isset($template_extended_params[$base_class_name])) {
             $map = $template_extended_params[$base_class_name];
@@ -1612,11 +1793,25 @@ final class MethodComparator
                             $new_base_class_name,
                             $mapped_type,
                             $codebase,
+                            $self_class,
+                            $static_class,
+                            $parent_class,
+                            $final,
                         );
                     }
                 }
 
-                $template_types[$key][$base_class_name] = $mapped_type;
+                // a type argument such as `@implements ArrayAccess<int, static>` belongs to the implementer
+                $template_types[$key][$base_class_name] = TypeExpander::expandUnion(
+                    $codebase,
+                    $mapped_type,
+                    $self_class,
+                    $static_class,
+                    $parent_class,
+                    true,
+                    false,
+                    $final,
+                );
             }
 
             $template_result = new TemplateResult([], $template_types);

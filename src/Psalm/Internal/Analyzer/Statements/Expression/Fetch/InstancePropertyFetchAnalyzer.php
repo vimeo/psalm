@@ -18,6 +18,7 @@ use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\Statements\UnsetAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
+use Psalm\Internal\Type\TypeExpander;
 use Psalm\Internal\TypeVisitor\TypeVariableResolver;
 use Psalm\Issue\ImpurePropertyAssignment;
 use Psalm\Issue\ImpurePropertyFetch;
@@ -39,7 +40,6 @@ use Psalm\Type\Union;
 use function array_merge;
 use function array_shift;
 use function array_values;
-use function rtrim;
 use function strtolower;
 
 /**
@@ -143,11 +143,13 @@ final class InstancePropertyFetchAnalyzer
         // MethodCallAnalyzer does for method-call receivers. Only top-level
         // variables resolve: one nested in a generic object stays live.
         $stmt_var_type = TypeVariableResolver::resolveTopLevel($stmt_var_type, $codebase);
+        $stmt_var_type = TypeExpander::expandTemplateKeyOfAndValueOf($codebase, $stmt_var_type);
 
         if ($stmt_var_type->isNull()) {
             return !IssueBuffer::accepts(
                 new NullPropertyFetch(
-                    'Cannot get property on null variable ' . $stmt_var_id,
+                    'Cannot get property on null variable '
+                        . ExpressionIdentifier::getNameForMessage($stmt_var_id, $stmt->var),
                     new CodeLocation($statements_analyzer->getSource(), $stmt),
                 ),
                 $statements_analyzer->getSuppressedIssues(),
@@ -155,6 +157,9 @@ final class InstancePropertyFetchAnalyzer
         }
 
         if ($stmt_var_type->isNever()) {
+            // a property of a value that can't exist is never fetched (a loop's first pass narrowing null away)
+            $statements_analyzer->node_data->setType($stmt, Type::getNever());
+
             return !IssueBuffer::accepts(
                 new MixedPropertyFetch(
                     'Cannot fetch property on empty var ' . $stmt_var_id,
@@ -166,7 +171,6 @@ final class InstancePropertyFetchAnalyzer
 
         if ($stmt_var_type->hasMixed()) {
             if (!$context->collect_initializations
-                && !$context->collect_mutations
                 && $statements_analyzer->getFilePath() === $statements_analyzer->getRootFilePath()
                 && (!(($parent_source = $statements_analyzer->getSource())
                         instanceof FunctionLikeAnalyzer)
@@ -194,7 +198,6 @@ final class InstancePropertyFetchAnalyzer
 
             if ($codebase->store_node_types
                 && !$context->collect_initializations
-                && !$context->collect_mutations
             ) {
                 $codebase->analyzer->addNodeType(
                     $statements_analyzer->getFilePath(),
@@ -205,7 +208,6 @@ final class InstancePropertyFetchAnalyzer
         }
 
         if (!$context->collect_initializations
-            && !$context->collect_mutations
             && $statements_analyzer->getFilePath() === $statements_analyzer->getRootFilePath()
             && (!(($parent_source = $statements_analyzer->getSource())
                     instanceof FunctionLikeAnalyzer)
@@ -218,10 +220,11 @@ final class InstancePropertyFetchAnalyzer
             // we can only be sure that the variable is possibly null if we know the var_id
             if (!$context->inside_isset && $stmt->name instanceof PhpParser\Node\Identifier) {
                 // the null of a `?->` short-circuit is added to the result below, it is not a fetch on null
-                if ($receiver_state !== NullsafeChainState::ShortCircuit) {
+                if (!$receiver_state->isNullOnlyByShortCircuit()) {
                     IssueBuffer::maybeAdd(
                         new PossiblyNullPropertyFetch(
-                            rtrim('Cannot get property on possibly null variable ' . $stmt_var_id)
+                            'Cannot get property on possibly null variable '
+                            . ExpressionIdentifier::getNameForMessage($stmt_var_id, $stmt->var)
                             . ' of type ' . $stmt_var_type,
                             new CodeLocation($statements_analyzer->getSource(), $stmt),
                         ),
@@ -249,7 +252,6 @@ final class InstancePropertyFetchAnalyzer
 
             if ($codebase->store_node_types
                 && !$context->collect_initializations
-                && !$context->collect_mutations
             ) {
                 $codebase->analyzer->addNodeType(
                     $statements_analyzer->getFilePath(),
@@ -306,7 +308,7 @@ final class InstancePropertyFetchAnalyzer
         $short_circuit_null = $receiver_state !== NullsafeChainState::None && $stmt_var_type->isNullable();
 
         if ($short_circuit_null) {
-            $receiver_state->afterLink($stmt_type && $stmt_type->isNullable())->markOn($stmt);
+            $receiver_state->afterLink($stmt_type)->markOn($stmt);
         }
 
         // isset()/empty()/`??` only skip the null of the fetch itself, the `?->` short-circuit stays in the result
@@ -325,7 +327,6 @@ final class InstancePropertyFetchAnalyzer
 
         if ($codebase->store_node_types
             && !$context->collect_initializations
-            && !$context->collect_mutations
             && ($stmt_type = $statements_analyzer->node_data->getType($stmt))
         ) {
             $codebase->analyzer->addNodeType(
@@ -333,6 +334,16 @@ final class InstancePropertyFetchAnalyzer
                 $stmt->name,
                 $stmt_type->getId(),
             );
+        }
+
+        // a typed property of a class that has no constructor starts uninitialized, so isset() on it asks something
+        if ($context->inside_isset
+            && ($stmt_type = $statements_analyzer->node_data->getType($stmt))
+            && !$stmt_type->ignore_isset
+            && self::isLeftUninitialized($codebase, $stmt_var_type, $prop_name)
+        ) {
+            $stmt_type = $stmt_type->setProperties(['ignore_isset' => true, 'initialized' => false]);
+            $statements_analyzer->node_data->setType($stmt, $stmt_type);
         }
 
         if ($invalid_fetch_types) {
@@ -364,6 +375,62 @@ final class InstancePropertyFetchAnalyzer
                     && self::isUndeclaredInterfaceProperty($codebase, $stmt_var_type, $stmt->name->name)))
         ) {
             $context->vars_in_scope[$var_id] = $statements_analyzer->node_data->getType($stmt) ?? Type::getMixed();
+        }
+
+        return true;
+    }
+
+    /**
+     * Whether a typed property may be read before anything set it: it has no default, is not promoted, and no
+     * constructor of the class or its parents assigns it
+     *
+     * @psalm-capabilities read-props|write-this-props|write-props|write-refs
+     */
+    private static function isLeftUninitialized(
+        Codebase $codebase,
+        Union $object_type,
+        ?string $property_name,
+    ): bool {
+        if ($property_name === null || !$object_type->isSingle()) {
+            return false;
+        }
+
+        $object_atomic = $object_type->getSingleAtomic();
+
+        if (!$object_atomic instanceof TNamedObject || !$codebase->classExists($object_atomic->value)) {
+            return false;
+        }
+
+        $storage = $codebase->classlike_storage_provider->get($object_atomic->value);
+
+        if (!isset($storage->declaring_property_ids[$property_name])) {
+            return false;
+        }
+
+        $property = $codebase->classlike_storage_provider->get($storage->declaring_property_ids[$property_name])
+            ->properties[$property_name] ?? null;
+
+        if ($property === null
+            || $property->signature_type === null
+            || $property->has_default
+            || $property->is_promoted
+            || $property->is_static
+        ) {
+            return false;
+        }
+
+        $class_storages = [$storage];
+
+        foreach ($storage->parent_classes as $parent_class) {
+            if ($codebase->classlike_storage_provider->has($parent_class)) {
+                $class_storages[] = $codebase->classlike_storage_provider->get($parent_class);
+            }
+        }
+
+        foreach ($class_storages as $class_storage) {
+            if ($class_storage->methods['__construct']->this_property_mutations[$property_name] ?? false) {
+                return false;
+            }
         }
 
         return true;
@@ -443,7 +510,6 @@ final class InstancePropertyFetchAnalyzer
         $statements_analyzer->node_data->setType($stmt, $stmt_type);
 
         if (!$context->collect_initializations
-            && !$context->collect_mutations
             && $statements_analyzer->getFilePath() === $statements_analyzer->getRootFilePath()
             && (!(($parent_source = $statements_analyzer->getSource())
                     instanceof FunctionLikeAnalyzer)
@@ -454,7 +520,6 @@ final class InstancePropertyFetchAnalyzer
 
         if ($codebase->store_node_types
             && !$context->collect_initializations
-            && !$context->collect_mutations
         ) {
             $codebase->analyzer->addNodeType(
                 $statements_analyzer->getFilePath(),
@@ -562,6 +627,21 @@ final class InstancePropertyFetchAnalyzer
                         $override_property_visibility = $interface_storage->override_property_visibility;
                     }
 
+                    // the dynamic property holds what was assigned to it and what the object holds under its name
+                    if ($codebase->classlikes->isUniversalObjectCrate($lhs_type_part->value, $stmt->name->name)) {
+                        $stmt_type = $stmt_type->addParentNodes(AtomicPropertyFetchAnalyzer::getDynamicPropertyType(
+                            $statements_analyzer,
+                            $stmt,
+                            $stmt_var_type,
+                            $stmt->name->name,
+                        )->parent_nodes);
+
+                        $context->vars_in_scope[$var_id] = $stmt_type;
+                        $statements_analyzer->node_data->setType($stmt, $stmt_type);
+
+                        continue;
+                    }
+
                     $property_id = $lhs_type_part->value . '::$' . $stmt->name->name;
 
 
@@ -606,7 +686,6 @@ final class InstancePropertyFetchAnalyzer
 
                     if ($codebase->store_node_types
                         && !$context->collect_initializations
-                        && !$context->collect_mutations
                     ) {
                         $codebase->analyzer->addNodeReference(
                             $statements_analyzer->getFilePath(),
@@ -643,6 +722,7 @@ final class InstancePropertyFetchAnalyzer
                                 $declaring_class_storage->properties[$stmt->name->name],
                                 $context,
                                 $stmt_var_type->reference_free && $stmt_var_type->allow_mutations,
+                                $stmt->getAttribute(UnsetAnalyzer::TARGET_ATTRIBUTE) !== true,
                             );
                         }
                     }
