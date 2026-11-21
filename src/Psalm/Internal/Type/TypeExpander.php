@@ -959,6 +959,16 @@ final class TypeExpander
                         $is_static,
                         $is_static_resolved,
                     );
+                } elseif ($return_type instanceof TGenericObject
+                    && ($bound = self::getGenericBound($static_class_type)) !== null
+                    && !self::haveSameTypeParams($return_type, $bound)
+                ) {
+                    // a template receiver is its bound with the other type arguments: `C` only stands for itself
+                    $return_type = $return_type->setValueIsStatic(
+                        $bound->value,
+                        $is_static,
+                        $is_static_resolved,
+                    );
                 } else {
                     $return_type = $static_class_type;
                 }
@@ -1029,6 +1039,35 @@ final class TypeExpander
         }
 
         return $return_type;
+    }
+
+    /**
+     * @psalm-pure
+     */
+    private static function getGenericBound(TTemplateParam $template): ?TGenericObject
+    {
+        $bound_types = $template->as->getAtomicTypes();
+        $bound = reset($bound_types);
+
+        return count($bound_types) === 1 && $bound instanceof TGenericObject ? $bound : null;
+    }
+
+    /**
+     * @psalm-pure
+     */
+    private static function haveSameTypeParams(TGenericObject $a, TGenericObject $b): bool
+    {
+        if (count($a->type_params) !== count($b->type_params)) {
+            return false;
+        }
+
+        foreach ($a->type_params as $offset => $type_param) {
+            if ($type_param->getId() !== $b->type_params[$offset]->getId()) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /**

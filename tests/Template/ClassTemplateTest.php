@@ -57,6 +57,48 @@ final class ClassTemplateTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'staticWithTheTypeArgumentsOfATemplateReceiverIsTheTemplate' => [
+                'code' => '<?php
+                    /**
+                     * @template K
+                     * @template V
+                     */
+                    class Base {
+                        /**
+                         * @template NewK
+                         * @template NewV
+                         * @param NewK $k
+                         * @param NewV $v
+                         * @return static<NewK, NewV>
+                         */
+                        public function rebuild($k, $v) {
+                            throw new Exception();
+                        }
+
+                        /** @return static<K, V> */
+                        public function same() {
+                            return $this;
+                        }
+                    }
+
+                    /**
+                     * @template C of Base<int, string>
+                     * @param C $c
+                     * @return C
+                     */
+                    function keepsTheTemplate(Base $c) {
+                        return $c->same();
+                    }
+
+                    /**
+                     * @template C of Base<int, string>
+                     * @param C $c
+                     * @return Base<string, float>
+                     */
+                    function rebuildsTheBound(Base $c): Base {
+                        return $c->rebuild("x", 1.5);
+                    }',
+            ],
             'listParamInheritedFromATemplatedParentAcceptsAList' => [
                 'code' => '<?php
                     /** @template T */
@@ -6190,6 +6232,40 @@ final class ClassTemplateTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'staticWithOtherTypeArgumentsOfATemplateReceiverIsNotTheTemplate' => [
+                'code' => '<?php
+                    /**
+                     * @template K
+                     * @template V
+                     */
+                    class Base {
+                        /**
+                         * @template NewK
+                         * @template NewV
+                         * @param NewK $k
+                         * @param NewV $v
+                         * @return static<NewK, NewV>
+                         */
+                        public function rebuild($k, $v) {
+                            throw new Exception();
+                        }
+
+                        /** @return static<K, V> */
+                        public function same() {
+                            return $this;
+                        }
+                    }
+
+                    /**
+                     * @template C of Base<int, string>
+                     * @param C $c
+                     * @return C
+                     */
+                    function returnsTheTemplate(Base $c) {
+                        return $c->rebuild("x", 1.5);
+                    }',
+                'error_message' => 'InvalidReturnStatement',
+            ],
             'listParamInheritedFromATemplatedParentRejectsAWrongList' => [
                 'code' => '<?php
                     /** @template T */
