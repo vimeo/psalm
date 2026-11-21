@@ -9,6 +9,7 @@ use PhpParser\ConstExprEvaluationException;
 use PhpParser\ConstExprEvaluator;
 use PhpParser\Node\Expr;
 use PhpParser\Node\Expr\ConstFetch;
+use PhpParser\NodeFinder;
 use Psalm\Aliases;
 use Psalm\Codebase;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
@@ -34,6 +35,7 @@ use Psalm\Internal\Scanner\UnresolvedConstant\UnresolvedShiftRight;
 use Psalm\Internal\Scanner\UnresolvedConstant\UnresolvedSubtractionOp;
 use Psalm\Internal\Scanner\UnresolvedConstant\UnresolvedTernary;
 use Psalm\Internal\Scanner\UnresolvedConstantComponent;
+use Psalm\Storage\FileStorage;
 use ReflectionClass;
 use ReflectionFunction;
 
@@ -70,6 +72,28 @@ use const T_WHITESPACE;
  */
 final class ExpressionResolver
 {
+    /**
+     * A constant expression is resolved where it is read: the file declaring it depends on the classes whose
+     * constants it reads
+     */
+    public static function registerConstantExpressionDependencies(
+        Expr $expr,
+        Aliases $aliases,
+        FileStorage $file_storage,
+    ): void {
+        foreach ((new NodeFinder())->findInstanceOf($expr, Expr\ClassConstFetch::class) as $fetch) {
+            if (!$fetch->class instanceof PhpParser\Node\Name
+                || $fetch->class->isSpecialClassName()
+                || ($fetch->name instanceof PhpParser\Node\Identifier && strtolower($fetch->name->name) === 'class')
+            ) {
+                continue;
+            }
+
+            $fq_class_name = ClassLikeAnalyzer::getFQCLNFromNameObject($fetch->class, $aliases);
+            $file_storage->classlikes_used_in_declarations[strtolower($fq_class_name)] = $fq_class_name;
+        }
+    }
+
     public static function getUnresolvedClassConstExpr(
         PhpParser\Node\Expr $stmt,
         Aliases $aliases,
