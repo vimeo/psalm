@@ -788,7 +788,7 @@ final class ClassConstAnalyzer
             ) ?? $class_constant_type;
         }
 
-        if ($late_static_binding && !$class_constant_type->from_docblock) {
+        if ($late_static_binding && !$class_constant_type->from_docblock && $const_storage?->signature_type === null) {
             return true;
         }
 

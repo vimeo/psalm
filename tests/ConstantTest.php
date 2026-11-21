@@ -309,6 +309,30 @@ final class ConstantTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'lateStaticBoundConstantHasItsNativeType' => [
+                'code' => '<?php
+                    abstract class Service {
+                        public const int PAGE_SIZE = 10;
+                        public const UNTYPED = 10;
+                    }
+
+                    final class UserService extends Service {
+                        public const int PAGE_SIZE = 20;
+                    }
+
+                    function pageSize(Service $service): int {
+                        return $service::PAGE_SIZE;
+                    }
+
+                    /** @return int */
+                    function untyped(Service $service) {
+                        /** @psalm-suppress MixedReturnStatement */
+                        return $service::UNTYPED;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MissingClassConstType'],
+                'php_version' => '8.3',
+            ],
             'overrideNarrowingTheNativeTypeOfTheParentConstant' => [
                 'code' => '<?php
                     class A {
