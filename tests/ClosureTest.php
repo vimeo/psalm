@@ -143,6 +143,23 @@ final class ClosureTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.5',
             ],
+            'theCurrentClosureHasItsSignature' => [
+                'code' => '<?php
+                    $factorial = function (int $n): int {
+                        $self = Closure::getCurrent();
+                        return $n <= 1 ? 1 : $n * $self($n - 1);
+                    };
+                    $double = fn (int $n): int => $n > 0 ? Closure::getCurrent()($n - 1) + 2 : 0;
+                    $outer = function (): string {
+                        $inner = function (string $s): string {
+                            return Closure::getCurrent()("x") . $s;
+                        };
+                        return $inner("y");
+                    };',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.5',
+            ],
             'closureFallingOffItsEndReturnsNull' => [
                 'code' => '<?php
                     $f = function(int $x) {
@@ -3273,6 +3290,17 @@ final class ClosureTest extends TestCase
                 'error_message' => 'UndefinedMethod',
                 'error_levels' => [],
                 'php_version' => '8.4',
+            ],
+            'theCurrentClosureChecksItsArguments' => [
+                'code' => '<?php
+                    $countdown = function (int $n): void {
+                        if ($n > 0) {
+                            Closure::getCurrent()("again");
+                        }
+                    };',
+                'error_message' => 'InvalidScalarArgument',
+                'error_levels' => [],
+                'php_version' => '8.5',
             ],
             'resultOfAClosureFallingOffItsEndIsPossiblyNull' => [
                 'code' => '<?php
