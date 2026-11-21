@@ -1806,6 +1806,259 @@ final class ClassTemplateExtendsTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'nonGenericChildBindsTheTemplatesOfItsGenericParentOnItsCallables' => [
+                'code' => '<?php
+                    final class User {}
+
+                    /** @template T */
+                    abstract class Base {
+                        /**
+                         * @param T $value
+                         * @return T
+                         */
+                        public function __invoke(mixed $value): mixed {
+                            return $value;
+                        }
+
+                        /** @param T $value */
+                        public function set(mixed $value): void {}
+
+                        /** @param T $value */
+                        public function validate(mixed $value): bool {
+                            return true;
+                        }
+                    }
+
+                    /** @extends Base<User> */
+                    final class Child extends Base {}
+
+                    /** @param callable(User): void $callback */
+                    function takesCallback(callable $callback): void {}
+
+                    /** @param list<User> $users */
+                    function f(Child $child, array $users): void {
+                        takesCallback($child);
+                        takesCallback($child(...));
+                        takesCallback(Closure::fromCallable($child));
+                        takesCallback([$child, "set"]);
+
+                        $filtered = array_filter($users, [$child, "validate"]);
+                        /** @psalm-check-type-exact $filtered = array<int<0, max>, User> */;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'nonGenericChildBindsTheTemplatesOfTheIntersectionMemberThatHasTheMethod' => [
+                'code' => '<?php
+                    interface Marker {}
+
+                    /** @template T */
+                    interface Sink {
+                        /** @param T $value */
+                        public function set(mixed $value): void;
+                    }
+
+                    /** @extends Sink<string> */
+                    interface TextSink extends Sink {}
+
+                    /** @param callable(string): void $callback */
+                    function takesCallback(callable $callback): void {}
+
+                    /** @param Marker&TextSink $m */
+                    function f(Marker $m): void {
+                        takesCallback([$m, "set"]);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'intersectionOfSeveralMethodSuppliersAcceptsTheSignatureOfAnyMember' => [
+                'code' => '<?php
+                    /** @template T */
+                    interface Tag {}
+
+                    /** @template T */
+                    interface Sink {
+                        /** @param T $value */
+                        public function set(mixed $value): void;
+                    }
+
+                    /** @extends Sink<string> */
+                    interface TextSink extends Sink {}
+
+                    interface IntSink {
+                        public function set(int $value): void;
+                    }
+
+                    /** @param callable(int): void $callback */
+                    function takesCallback(callable $callback): void {}
+
+                    /** @param Tag<bool>&TextSink&IntSink $m */
+                    function f(Tag $m): void {
+                        takesCallback([$m, "set"]);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'extendingAGenericClassWithoutExtendsBindsItsTemplatesToMixedOnItsCallables' => [
+                'code' => '<?php
+                    /** @template T */
+                    abstract class Base {
+                        /** @param T $value */
+                        public function set(mixed $value): void {}
+                    }
+
+                    final class Raw extends Base {}
+
+                    /** @param callable(int): void $callback */
+                    function takesCallback(callable $callback): void {}
+
+                    function f(Raw $raw): void {
+                        takesCallback([$raw, "set"]);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MissingTemplateParam'],
+                'php_version' => '8.0',
+            ],
+            'genericChildBindsTheArgumentsItGivesItsParentOnItsBareCallables' => [
+                'code' => '<?php
+                    /** @template T */
+                    abstract class Base {
+                        /** @param T $value */
+                        public function set(mixed $value): void {}
+
+                        /** @param T $value */
+                        public function __invoke(mixed $value): void {}
+                    }
+
+                    /**
+                     * @template U
+                     * @extends Base<string>
+                     */
+                    final class Own extends Base {}
+
+                    /** @param callable(string): void $callback */
+                    function takesCallback(callable $callback): void {}
+
+                    function f(Own $own): void {
+                        takesCallback([$own, "set"]);
+                        takesCallback($own);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'nonGenericChildBindsTheTemplatesOfItsParentWithSelfAndStaticOnItsInvokableCallables' => [
+                'code' => '<?php
+                    /** @template T */
+                    abstract class Base {
+                        /** @param T $value */
+                        public function __invoke(mixed $value): void {}
+                    }
+
+                    /** @extends Base<static> */
+                    final class Fluent extends Base {}
+
+                    /** @extends Base<value-of<self::MAP>> */
+                    final class Mapped extends Base {
+                        public const MAP = ["a" => 1, "b" => 2];
+                    }
+
+                    /** @param callable(Fluent): void $callback */
+                    function takesFluent(callable $callback): void {}
+
+                    /** @param callable(1|2): void $callback */
+                    function takesValue(callable $callback): void {}
+
+                    function f(Fluent $fluent, Mapped $mapped): void {
+                        takesFluent($fluent);
+                        takesFluent($fluent(...));
+                        takesValue($mapped);
+                        takesValue($mapped(...));
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'templateTypedReceiverBindsTheTemplatesOfItsBoundOnItsCallables' => [
+                'code' => '<?php
+                    /** @template T */
+                    abstract class Base {
+                        /** @param T $value */
+                        public function set(mixed $value): void {}
+                    }
+
+                    /** @extends Base<string> */
+                    final class Child extends Base {}
+
+                    /** @param callable(string): void $callback */
+                    function takesCallback(callable $callback): void {}
+
+                    /**
+                     * @template X of Child
+                     * @param X $x
+                     */
+                    function f(Child $x): void {
+                        takesCallback([$x, "set"]);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'invokableObjectKeepsItsConditionalReturnTypeUnresolvedOnItsCallables' => [
+                'code' => '<?php
+                    final class Flag {
+                        /** @return ($flag is true ? int : string) */
+                        public function __invoke(bool $flag): int|string {
+                            return $flag ? 1 : "s";
+                        }
+                    }
+
+                    $flag = new Flag();
+                    $r = array_map($flag(...), [true]);
+                    $s = array_map(Closure::fromCallable($flag), [true]);
+
+                    /** @return list<int> */
+                    function f(Flag $flag): array {
+                        return array_map($flag(...), [true]);
+                    }',
+                'assertions' => [
+                    '$r===' => 'list{int}',
+                    '$s===' => 'list{int}',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'nonGenericChildBindsTheTemplatesOfItsGenericParentThroughTwoExtends' => [
+                'code' => '<?php
+                    /** @template T */
+                    abstract class A {
+                        /** @param T $value */
+                        public function set(mixed $value): void {}
+                    }
+
+                    /**
+                     * @template U
+                     * @extends A<U>
+                     */
+                    abstract class B extends A {}
+
+                    /** @extends B<string> */
+                    final class C extends B {}
+
+                    /** @param callable(string): void $callback */
+                    function takesCallback(callable $callback): void {}
+
+                    function f(C $c): void {
+                        takesCallback([$c, "set"]);
+                        takesCallback($c->set(...));
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'composedParentArgumentNamingAnImportedAliasBindsInheritedInvokable' => [
                 'code' => '<?php
                     /** @template T */
@@ -7962,6 +8215,105 @@ final class ClassTemplateExtendsTest extends TestCase
                         takesBox($composed->value);
                     }',
                 'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:22:34 - Argument 1 of takesBox expects Box<object>, but Box<stdClass> provided',
+            ],
+            'nonGenericChildBindsItsGenericParentToTheTypeItExtendsOnItsCallables' => [
+                'code' => '<?php
+                    /** @template T */
+                    abstract class Base {
+                        /** @param T $value */
+                        public function set(mixed $value): void {}
+                    }
+
+                    /** @extends Base<string> */
+                    final class Child extends Base {}
+
+                    /** @param callable(int): void $callback */
+                    function takesCallback(callable $callback): void {}
+
+                    function f(Child $child): void {
+                        takesCallback([$child, "set"]);
+                    }',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:15:39 - Argument 1 of takesCallback expects callable[impure](int):void, but callable[impure](string):void provided',
+            ],
+            'bareGenericClassKeepsItsOwnTemplatesOnItsCallables' => [
+                'code' => '<?php
+                    /** @template T */
+                    abstract class Base {
+                        /** @param T $value */
+                        public function set(mixed $value): void {}
+
+                        public function f(self $base): void {
+                            takesCallback([$base, "set"]);
+                        }
+                    }
+
+                    /** @param callable(int): void $callback */
+                    function takesCallback(callable $callback): void {}',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:43 - Argument 1 of takesCallback expects callable[impure](int):void, but callable[impure](T:Base as mixed):void provided',
+            ],
+            'nonGenericChildBindsTheIntersectionMemberThatHasTheMethodToItsArguments' => [
+                'code' => '<?php
+                    interface Marker {}
+
+                    /** @template T */
+                    interface Sink {
+                        /** @param T $value */
+                        public function set(mixed $value): void;
+                    }
+
+                    /** @extends Sink<string> */
+                    interface TextSink extends Sink {}
+
+                    /** @param callable(int): void $callback */
+                    function takesCallback(callable $callback): void {}
+
+                    /** @param Marker&TextSink $m */
+                    function f(Marker $m): void {
+                        takesCallback([$m, "set"]);
+                    }',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:18:39 - Argument 1 of takesCallback expects callable[impure](int):void, but callable[impure](string):void provided',
+            ],
+            'nonGenericChildBindsItsGenericParentToTheTypeItExtendsOnItsInvokableCallable' => [
+                'code' => '<?php
+                    /** @template T */
+                    abstract class Base {
+                        /** @param T $value */
+                        public function __invoke(mixed $value): void {}
+                    }
+
+                    /** @extends Base<string> */
+                    final class Child extends Base {}
+
+                    /** @param callable(int): void $callback */
+                    function takesCallback(callable $callback): void {}
+
+                    function f(Child $child): void {
+                        takesCallback($child);
+                    }',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:15:39 - Argument 1 of takesCallback expects callable[impure](int):void, but callable[impure](string):void provided',
+            ],
+            'intersectionOfAGenericMemberAndTheOneThatHasTheMethodBindsTheLatter' => [
+                'code' => '<?php
+                    /** @template M */
+                    interface Tag {}
+
+                    /** @template T */
+                    interface Sink {
+                        /** @param T $value */
+                        public function set(mixed $value): void;
+                    }
+
+                    /** @extends Sink<string> */
+                    interface TextSink extends Sink {}
+
+                    /** @param callable(int): void $callback */
+                    function takesCallback(callable $callback): void {}
+
+                    /** @param Tag<bool>&TextSink $m */
+                    function f(Tag $m): void {
+                        takesCallback([$m, "set"]);
+                    }',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:19:39 - Argument 1 of takesCallback expects callable[impure](int):void, but callable[impure](string):void provided',
             ],
         ];
     }
