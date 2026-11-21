@@ -1228,7 +1228,7 @@ final class StarProjectionTest extends TestCase
                 'php_version' => '8.0',
             ],
             'starProjectionWritesAreNotRestrictedYet' => [
-                // the write-restriction PR makes `set()` expect `never` and `sink()` a `Closure(never): void`
+                // known gap: the write-restriction PR makes `set()` expect `never` and `sink()` a `Closure(never): void`
                 'code' => '<?php
                     /** @template T of object */
                     final class Box {
@@ -1239,12 +1239,18 @@ final class StarProjectionTest extends TestCase
                         public function sink(): Closure {
                             throw new Exception();
                         }
+
+                        /** @return Closure(T): void */
+                        public function setter(): Closure {
+                            throw new Exception();
+                        }
                     }
 
                     /** @var Box<*> $b */
                     $b = new Box();
                     $b->set(new stdClass());
-                    $sink = $b->sink();',
+                    $sink = $b->sink();
+                    ($b->setter())(new DateTime());',
                 'assertions' => [
                     '$sink===' => 'Closure[impure](object):void',
                 ],
@@ -1432,7 +1438,9 @@ final class StarProjectionTest extends TestCase
             ],
             'starProjectionStaticOfACovariantArgumentIsTheBound' => [
                 'code' => '<?php
-                    /** @template-covariant T of object */
+                    class Foo {}
+
+                    /** @template-covariant T of Foo */
                     class Reader {
                         /** @return Reader<T> */
                         public function same(): Reader {
@@ -1445,13 +1453,18 @@ final class StarProjectionTest extends TestCase
                         }
                     }
 
+                    /** @param Reader<Foo> $reader */
+                    function takeFoo(Reader $reader): void {}
+
                     /** @var Reader<*> $reader */
                     $reader = new Reader();
                     $same = $reader->same();
-                    $static = $reader->staticOf();',
+                    $static = $reader->staticOf();
+                    takeFoo($same);
+                    takeFoo($static);',
                 'assertions' => [
-                    '$same===' => 'Reader<object>',
-                    '$static===' => 'Reader<object>&static',
+                    '$same===' => 'Reader<Foo>',
+                    '$static===' => 'Reader<Foo>&static',
                 ],
                 'ignored_issues' => [],
                 'php_version' => '8.0',
@@ -1636,6 +1649,27 @@ final class StarProjectionTest extends TestCase
                 'assertions' => [
                     '$item===' => 'Box<object>|null',
                 ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'starProjectionOfABoundNamingItsOwnClassIsExpandedOnce' => [
+                'code' => '<?php
+                    /** @template T of Node<*> */
+                    class Node {
+                        /** @return T */
+                        public function child() {
+                            throw new Exception();
+                        }
+                    }
+
+                    /** @param Node<*> $node */
+                    function f(Node $node): void {
+                        $child = $node->child();
+                        /** @psalm-check-type-exact $child = Node<*> */
+                        $grandchild = $child->child();
+                        /** @psalm-check-type-exact $grandchild = Node<*> */
+                    }',
+                'assertions' => [],
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],

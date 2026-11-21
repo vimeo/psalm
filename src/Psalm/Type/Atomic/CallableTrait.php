@@ -380,7 +380,8 @@ trait CallableTrait
 
         $params = $this->params;
         if ($params) {
-            // a `*` of the receiver is no argument to write a callable's parameter with
+            // a callable parameter of a read type holds the bound, as a `*` would accept any argument (the write through
+            // it is not restricted yet)
             $param_template_result = $template_result->withoutStarBindings();
 
             foreach ($params as $k => $param) {

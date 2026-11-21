@@ -89,8 +89,9 @@ final class TemplateResult
     }
 
     /**
-     * This result without the star marks, for the parameter types of a callable: the arguments it takes are written
-     * to, not read from the receiver
+     * This result without the star marks, for the parameter types of a callable: they hold the bound of the template
+     * (not a `*`, which would accept any argument). Calling such a callable with a value of another type is a write
+     * through the `*` that is not restricted yet.
      *
      * @psalm-capabilities read-props
      */
