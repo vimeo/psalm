@@ -1738,8 +1738,8 @@ final class Populator
     }
 
     /**
-     * Whether the constant the class holds under $constant_name is the one of another trait it uses (an earlier one,
-     * or one populated in an earlier run)
+     * Whether the constant the class holds under $constant_name is the one of a trait it uses before $trait_storage
+     * (also when it was taken in an earlier run, which a later trait can't have left there for an earlier one)
      *
      * @psalm-capabilities read-props
      */
@@ -1766,7 +1766,7 @@ final class Populator
             }
 
             if (strtolower($used_trait_storage->name) === $trait_name_lc) {
-                continue;
+                return false;
             }
 
             $used_location = ($used_trait_storage->constants[$constant_name] ?? null)?->location;

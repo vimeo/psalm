@@ -1675,17 +1675,6 @@ final class TraitTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.2',
             ],
-            'constant in trait with alias' => [
-                'code' => <<<'PHP'
-                    <?php
-                    trait TraitA { private const PRIVATE_CONST = 'PRIVATE_CONST'; }
-                    class ClassB { use TraitA { PRIVATE_CONST as public PUBLIC_CONST; } }
-                    $c = ClassB::PUBLIC_CONST;
-                    PHP,
-                'assertions' => ['$c' => 'string'],
-                'ignored_issues' => [],
-                'php_version' => '8.2',
-            ],
             'thisInGenericReturnTypeParam' => [
                 'code' => '<?php
                     /**
@@ -2096,6 +2085,17 @@ final class TraitTest extends TestCase
                 'error_message' => 'DeprecatedConstant',
                 'error_levels' => [],
                 'php_version' => '8.5',
+            ],
+            'traitConstantHasNoAlias' => [
+                'code' => <<<'PHP'
+                    <?php
+                    trait TraitA { private const PRIVATE_CONST = 'PRIVATE_CONST'; }
+                    class ClassB { use TraitA { PRIVATE_CONST as public PUBLIC_CONST; } }
+                    $c = ClassB::PUBLIC_CONST;
+                    PHP,
+                'error_message' => 'UndefinedConstant',
+                'error_levels' => [],
+                'php_version' => '8.2',
             ],
             'traitMethodAliasIsNotAConstant' => [
                 'code' => '<?php
