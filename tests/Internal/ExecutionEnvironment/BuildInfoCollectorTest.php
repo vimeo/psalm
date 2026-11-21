@@ -338,7 +338,6 @@ final class BuildInfoCollectorTest extends TestCase
                 'TRAVIS_TAG' => 'v1.0.0',
                 'CI_REPO_OWNER' => 'psalm',
                 'CI_REPO_NAME' => 'example',
-                'CI_BRANCH' => 'v1.0.0',
             ],
         ];
 
@@ -521,14 +520,13 @@ final class BuildInfoCollectorTest extends TestCase
             null,
             [
                 'CI_NAME' => 'github-actions',
-                'CI_BRANCH' => 'v1.0.0',
                 'GITHUB_ACTIONS' => 'true',
                 'CI_JOB_ID' => '9876543210',
                 'GITHUB_REF' => 'refs/tags/v1.0.0',
                 'CI_REPO_OWNER' => 'psalm',
                 'CI_REPO_NAME' => 'example',
                 'git' => [
-                    'branch' => 'v1.0.0',
+                    'branch' => '',
                     'head' => [
                         'id' => $commit_id,
                         'author_name' => 'Jane Author',

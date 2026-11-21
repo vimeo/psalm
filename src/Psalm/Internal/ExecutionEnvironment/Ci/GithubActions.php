@@ -95,10 +95,13 @@ final class GithubActions implements CiProvider
      */
     private static function getBranch(string $ref): ?string
     {
+        // a tag is not a branch: Shepherd compares the branch with the default one of the repository
+        if (str_starts_with($ref, 'refs/tags/')) {
+            return null;
+        }
+
         if (str_starts_with($ref, 'refs/heads/')) {
             $ref = substr($ref, 11);
-        } elseif (str_starts_with($ref, 'refs/tags/')) {
-            $ref = substr($ref, 10);
         }
 
         return $ref === '' ? null : $ref;

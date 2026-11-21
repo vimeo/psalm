@@ -37,7 +37,8 @@ final class TravisCi implements CiProvider
     {
         return new BuildInfo(
             ciName: 'travis-ci',
-            branch: $env->get(self::BRANCH),
+            // for a tag build, Travis CI sets the branch to the name of the tag
+            branch: $env->get(self::TAG) === null ? $env->get(self::BRANCH) : null,
             repository: $env->repository(self::REPOSITORY),
             pullRequest: PullRequest::fromNumber(
                 $env->get(self::PULL_REQUEST),
