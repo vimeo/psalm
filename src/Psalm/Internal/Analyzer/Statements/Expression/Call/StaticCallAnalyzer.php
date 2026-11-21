@@ -516,6 +516,8 @@ final class StaticCallAnalyzer extends CallAnalyzer
             return;
         }
 
+        $provided_parent_nodes = $return_type_candidate->parent_nodes;
+
         $node_location = new CodeLocation($statements_analyzer->getSource(), $stmt);
 
         $specialization_location = $method_storage && TaintFlowGraph::isCallSpecialized(
@@ -583,6 +585,16 @@ final class StaticCallAnalyzer extends CallAnalyzer
             $removed_taints = $codebase->config->eventDispatcher->dispatchRemoveTaints($event);
         }
 
+        $return_type_candidate = MethodCallReturnTypeFetcher::addProvidedParentNodes(
+            $graph,
+            $return_type_candidate->setParentNodes([$method_source->id => $method_source]),
+            $provided_parent_nodes,
+            $method_id,
+            $node_location,
+            $method_storage->added_taints ?? 0,
+            $method_storage->removed_taints ?? 0,
+        );
+
         if ($conditionally_removed_taints || $added_taints !== 0 || $removed_taints !== 0) {
             // a node of this call's own: what it removes depends on its arguments, and $method_source may be
             // shared with the other calls, the last call deciding for all
@@ -590,17 +602,17 @@ final class StaticCallAnalyzer extends CallAnalyzer
 
             $graph->addNode($assignment_node);
 
-            $graph->addPath(
-                $method_source,
-                $assignment_node,
-                'conditionally-escaped',
-                $added_taints,
-                $conditionally_removed_taints | $removed_taints,
-            );
+            foreach ($return_type_candidate->parent_nodes as $parent_node) {
+                $graph->addPath(
+                    $parent_node,
+                    $assignment_node,
+                    'conditionally-escaped',
+                    $added_taints,
+                    $conditionally_removed_taints | $removed_taints,
+                );
+            }
 
-            $return_type_candidate = $return_type_candidate->addParentNodes([$assignment_node->id => $assignment_node]);
-        } else {
-            $return_type_candidate = $return_type_candidate->setParentNodes([$method_source->id => $method_source]);
+            $return_type_candidate = $return_type_candidate->setParentNodes([$assignment_node->id => $assignment_node]);
         }
 
         $taint_flow_graph = $statements_analyzer->getTaintFlowGraphWithSuppressed();
