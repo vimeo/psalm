@@ -229,6 +229,11 @@ final class StaticPropertyAssignmentAnalyzer
                 $fq_class_name,
                 $fq_class_name,
                 $class_storage->parent_class,
+                true,
+                false,
+                $codebase->classlike_storage_provider->get(
+                    $codebase->classlikes->getUnAliasedName($fq_class_name),
+                )->final,
             );
 
             $union_comparison_results = new TypeComparisonResult();
