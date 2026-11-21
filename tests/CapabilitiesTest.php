@@ -3453,6 +3453,46 @@ final class CapabilitiesTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'parsingTheRequestBodyIsImpure' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function body(): array {
+                        return request_parse_body();
+                    }',
+                'error_message' => 'function call on request_parse_body requires io',
+                'error_levels' => [],
+                'php_version' => '8.4',
+            ],
+            'copyingIntoPostgresIsImpure' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function copyRow(PgSql\\Connection $db, string $row): int {
+                        return pg_put_copy_data($db, $row);
+                    }',
+                'error_message' => 'ImpureFunctionCall',
+                'error_levels' => [],
+                'php_version' => '8.4',
+            ],
+            'runningAMysqliQueryIsImpure' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function run(mysqli $db): mysqli_result|bool {
+                        return mysqli_execute_query($db, "SELECT 1");
+                    }',
+                'error_message' => 'ImpureFunctionCall',
+                'error_levels' => [],
+                'php_version' => '8.2',
+            ],
+            'readingTheErrorHandlerIsImpure' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function handler(): ?callable {
+                        return get_error_handler();
+                    }',
+                'error_message' => 'function call on get_error_handler requires read-globals',
+                'error_levels' => [],
+                'php_version' => '8.5',
+            ],
             'generatingASodiumKeyIsImpure' => [
                 'code' => '<?php
                     /** @psalm-pure */
