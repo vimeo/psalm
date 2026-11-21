@@ -2012,6 +2012,8 @@ final class AssertionFinder
 
     /**
      * The parent of the class `parent` stands for: the class using a trait for the code of the trait too
+     *
+     * @psalm-capabilities read-props
      */
     private static function getParentClassName(?string $this_class_name, FileSource $source): ?string
     {
