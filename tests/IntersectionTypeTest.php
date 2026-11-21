@@ -20,6 +20,20 @@ final class IntersectionTypeTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'objectShapesOfAnIntersectionAreMerged' => [
+                'code' => '<?php
+                    class Card {}
+
+                    /** @param Card&object{last4: string}&object{brand: string} $card */
+                    function describe(object $card): string {
+                        return $card->last4 . $card->brand;
+                    }
+
+                    /** @param object{id: int|string}&object{id: int} $o */
+                    function id(object $o): int {
+                        return $o->id;
+                    }',
+            ],
             'genericWithoutArgumentsInIntersectionGetsItsDefaultsLikeAlone' => [
                 'code' => '<?php
                     interface I {}
@@ -560,6 +574,12 @@ final class IntersectionTypeTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'objectShapesOfAnIntersectionGivingAPropertyIncompatibleTypes' => [
+                'code' => '<?php
+                    /** @param object{id: int}&object{id: string} $o */
+                    function id(object $o): void {}',
+                'error_message' => 'InvalidDocblock',
+            ],
             'missingPropertyOfAnIntersectionWithAnInterface' => [
                 'code' => '<?php
                     interface I {}
