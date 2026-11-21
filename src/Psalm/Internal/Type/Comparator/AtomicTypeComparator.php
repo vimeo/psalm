@@ -1233,6 +1233,12 @@ final class AtomicTypeComparator
             return true;
         }
 
+        if (self::mayBeTheSameCallableObject($codebase, $type1_part, $type2_part)
+            || self::mayBeTheSameCallableObject($codebase, $type2_part, $type1_part)
+        ) {
+            return true;
+        }
+
         // e.g. callable and string can both be a callable-string
         $type1_parts = AtomicParts::split($type1_part, $type2_part, $codebase);
         $type2_parts = $type1_parts === null ? AtomicParts::split($type2_part, $type1_part, $codebase) : null;
@@ -1250,6 +1256,21 @@ final class AtomicTypeComparator
         }
 
         return false;
+    }
+
+    /**
+     * Whether a $callable (`callable`, `callable-object`) may be an $object: a child of its class, or an implementation
+     * of its interface, may declare __invoke()
+     *
+     * @psalm-assert-if-true TNamedObject $object
+     * @psalm-capabilities read-props
+     */
+    public static function mayBeTheSameCallableObject(Codebase $codebase, Atomic $callable, Atomic $object): bool
+    {
+        return ($callable instanceof TCallableObject || $callable::class === TCallable::class)
+            && $object instanceof TNamedObject
+            && $codebase->classlike_storage_provider->has($object->value)
+            && !$codebase->classlike_storage_provider->get($object->value)->final;
     }
 
     /**
