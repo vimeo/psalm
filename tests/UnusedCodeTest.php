@@ -1070,6 +1070,22 @@ final class UnusedCodeTest extends TestCase
     public static function providerValidCodeParse(): array
     {
         return [
+            'propertiesReadAsColumnsByArrayColumnAreUsed' => [
+                'code' => '<?php
+                    final class Row {
+                        public function __construct(public int $id, public string $name) {}
+                    }
+
+                    /**
+                     * @param list<Row> $rows
+                     * @return array<int, string>
+                     */
+                    function names(array $rows): array {
+                        return array_column($rows, "name", "id");
+                    }
+
+                    echo count(names([new Row(1, "a")]));',
+            ],
             'preIncrementAsArrayAssignmentKey' => [
                 'code' => '<?php
                     /** @psalm-api */
@@ -3382,6 +3398,40 @@ final class UnusedCodeTest extends TestCase
     public static function providerInvalidCodeParse(): array
     {
         return [
+            'privatePropertyNamedAsAColumnOutsideItsClassIsUnused' => [
+                'code' => '<?php
+                    final class Row {
+                        public function __construct(public int $id, private string $secret) {}
+                    }
+
+                    /**
+                     * @param list<Row> $rows
+                     * @return array<int, mixed>
+                     */
+                    function secrets(array $rows): array {
+                        return array_column($rows, "secret", "id");
+                    }
+
+                    echo count(secrets([new Row(1, "a")]));',
+                'error_message' => 'UnusedProperty',
+            ],
+            'propertyNotReadAsAColumnByArrayColumnIsUnused' => [
+                'code' => '<?php
+                    final class Row {
+                        public function __construct(public int $id, public string $name, public string $unused) {}
+                    }
+
+                    /**
+                     * @param list<Row> $rows
+                     * @return list<string>
+                     */
+                    function names(array $rows): array {
+                        return array_column($rows, "name");
+                    }
+
+                    echo count(names([new Row(1, "a", "b")]));',
+                'error_message' => 'PossiblyUnusedProperty',
+            ],
             'variableAssignedAfterAVariableVariableIsStillChecked' => [
                 'code' => <<<'PHP'
                     <?php
