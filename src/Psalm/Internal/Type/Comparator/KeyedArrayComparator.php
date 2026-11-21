@@ -15,7 +15,6 @@ use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TObjectWithProperties;
 use Psalm\Type\Union;
 
-use function array_any;
 use function array_keys;
 use function is_string;
 
@@ -326,17 +325,37 @@ final class KeyedArrayComparator
                 continue;
             }
 
-            if (!array_any(
-                $input_property_types[$property_name],
-                static fn(Union $input_property_type): bool => self::isPropertyContainedBy(
+            // the property's value is of every member's type: one contained member is enough,
+            // and a coercion is possible only if every member can hold the container type
+            $is_contained = false;
+            $all_members_coerced = true;
+
+            foreach ($input_property_types[$property_name] as $input_property_type) {
+                $member_comparison = new TypeComparisonResult();
+
+                if (self::isPropertyContainedBy(
                     $codebase,
                     $input_property_type,
                     $container_property_type,
                     $allow_interface_equality,
-                    $atomic_comparison_result,
-                ),
-            )) {
-                $all_types_contain = false;
+                    $member_comparison,
+                )) {
+                    $is_contained = true;
+
+                    break;
+                }
+
+                $all_members_coerced = $all_members_coerced && $member_comparison->type_coerced === true;
+            }
+
+            if ($is_contained) {
+                continue;
+            }
+
+            $all_types_contain = false;
+
+            if ($all_members_coerced && $atomic_comparison_result) {
+                $atomic_comparison_result->type_coerced = true;
             }
         }
 
@@ -345,14 +364,14 @@ final class KeyedArrayComparator
 
     /**
      * Whether a property of $input_property_type is one of $container_property_type, recording in
-     * $atomic_comparison_result a container type the input type contains as a coercion
+     * $comparison_result a container type the input type contains as a coercion
      */
     private static function isPropertyContainedBy(
         Codebase $codebase,
         Union $input_property_type,
         Union $container_property_type,
         bool $allow_interface_equality,
-        ?TypeComparisonResult $atomic_comparison_result,
+        TypeComparisonResult $comparison_result,
     ): bool {
         $property_type_comparison = new TypeComparisonResult();
 
@@ -373,19 +392,18 @@ final class KeyedArrayComparator
 
         $inverse_property_type_comparison = new TypeComparisonResult();
 
-        if ($atomic_comparison_result
-            && (UnionTypeComparator::isContainedBy(
-                $codebase,
-                $container_property_type,
-                $input_property_type,
-                false,
-                false,
-                $inverse_property_type_comparison,
-                $allow_interface_equality,
-            )
-                || $inverse_property_type_comparison->type_coerced_from_scalar)
+        if (UnionTypeComparator::isContainedBy(
+            $codebase,
+            $container_property_type,
+            $input_property_type,
+            false,
+            false,
+            $inverse_property_type_comparison,
+            $allow_interface_equality,
+        )
+            || $inverse_property_type_comparison->type_coerced_from_scalar
         ) {
-            $atomic_comparison_result->type_coerced = true;
+            $comparison_result->type_coerced = true;
         }
 
         return false;
