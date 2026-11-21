@@ -127,7 +127,7 @@ final class AssignmentMapVisitor extends PhpParser\NodeVisitorAbstract
             $left_var_ids = $this->getAssignedRootVarIds($node->var);
 
             // `$a = [$b]`, `$a[$k] = 1`, `[$a, $b] = [$b, $c]`
-            $read_var_ids = self::getReadVarIds([$node->expr, $node->var]);
+            $read_var_ids = $this->getReadVarIds([$node->expr, $node->var]);
 
             if (!$node->var instanceof PhpParser\Node\Expr\List_
                 && !$node->var instanceof PhpParser\Node\Expr\Array_
@@ -179,7 +179,7 @@ final class AssignmentMapVisitor extends PhpParser\NodeVisitorAbstract
             if ($node instanceof PhpParser\Node\Expr\AssignOp) {
                 // `$s .= $t`
                 $this->addFeedingVarIds(array_diff_key(
-                    self::getReadVarIds([$node->expr, $node->var]),
+                    $this->getReadVarIds([$node->expr, $node->var]),
                     $var_id !== null ? [$var_id => true] : [],
                 ));
             }
@@ -218,7 +218,7 @@ final class AssignmentMapVisitor extends PhpParser\NodeVisitorAbstract
 
             // an argument may go into another one passed by reference (`array_push($b, $c)`)
             if (count($args) > 1) {
-                $this->addFeedingVarIds(self::getReadVarIds(array_map(
+                $this->addFeedingVarIds($this->getReadVarIds(array_map(
                     static fn(PhpParser\Node\Arg $arg): PhpParser\Node\Expr => $arg->value,
                     $args,
                 )));
@@ -241,7 +241,7 @@ final class AssignmentMapVisitor extends PhpParser\NodeVisitorAbstract
                 }
             }
         } elseif ($node instanceof PhpParser\Node\Stmt\Foreach_) {
-            $this->addFeedingVarIds(self::getReadVarIds([$node->expr]));
+            $this->addFeedingVarIds($this->getReadVarIds([$node->expr]));
 
             if ($node->byRef) {
                 // written through the value
@@ -325,16 +325,30 @@ final class AssignmentMapVisitor extends PhpParser\NodeVisitorAbstract
     }
 
     /**
+     * The variables and properties the expressions read (`$this->b` in `$this->a = $this->b`)
+     *
      * @param list<PhpParser\Node\Expr> $exprs
      * @return array<string, true>
      */
-    private static function getReadVarIds(array $exprs): array
+    private function getReadVarIds(array $exprs): array
     {
         $var_ids = [];
 
-        foreach ((new PhpParser\NodeFinder)->findInstanceOf($exprs, PhpParser\Node\Expr\Variable::class) as $var) {
-            if (is_string($var->name)) {
-                $var_ids['$' . $var->name] = true;
+        foreach ((new PhpParser\NodeFinder)->find(
+            $exprs,
+            static fn(PhpParser\Node $node): bool => $node instanceof PhpParser\Node\Expr\Variable
+                || $node instanceof PhpParser\Node\Expr\PropertyFetch
+                || $node instanceof PhpParser\Node\Expr\StaticPropertyFetch,
+        ) as $node) {
+            if ($node instanceof PhpParser\Node\Expr\Variable) {
+                if (is_string($node->name)) {
+                    $var_ids['$' . $node->name] = true;
+                }
+            } elseif (($node instanceof PhpParser\Node\Expr\PropertyFetch
+                    || $node instanceof PhpParser\Node\Expr\StaticPropertyFetch)
+                && ($var_id = ExpressionIdentifier::getRootVarId($node, $this->this_class_name)) !== null
+            ) {
+                $var_ids[$var_id] = true;
             }
         }
 
