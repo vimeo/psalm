@@ -155,6 +155,56 @@ final class FunctionTemplateTest extends TestCase
                     '$value===' => 'int',
                 ],
             ],
+            'templateBoundNamingALaterTemplateWithABoundOfItsOwn' => [
+                'code' => '<?php
+                    /** @template-covariant TValue */
+                    interface Box {
+                        /** @return TValue */
+                        public function get();
+                    }
+
+                    function takesInt(int $i): void {}
+
+                    /**
+                     * @template TBox of Box<TValue>
+                     * @template TValue of int
+                     * @param TBox $box
+                     */
+                    function forwardOrder(Box $box): void {
+                        takesInt($box->get());
+                    }
+
+                    /**
+                     * @template TValue of int
+                     * @template TBox of Box<TValue>
+                     * @param TBox $box
+                     */
+                    function declaredOrder(Box $box): void {
+                        takesInt($box->get());
+                    }
+
+                    /**
+                     * @template TA of Box<TB>
+                     * @template TB of Box<TC>
+                     * @template TC of int
+                     * @param TA $a
+                     */
+                    function chain(Box $a): void {
+                        takesInt($a->get()->get());
+                    }
+
+                    /**
+                     * @template TA of Box<TB>
+                     * @template TB of Box<TA>
+                     * @param TA $a
+                     */
+                    function cycle(Box $a): void {
+                        $a->get();
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'closureOfATemplateWithANullDefaultOfTheSameTemplate' => [
                 'code' => '<?php
                     /** @template T */

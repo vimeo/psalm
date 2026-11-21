@@ -96,6 +96,70 @@ final class ClassTemplateTest extends TestCase
                     '$value===' => 'int',
                 ],
             ],
+            'classTemplateBoundNamingALaterTemplateWithABoundOfItsOwn' => [
+                'code' => '<?php
+                    /** @template-covariant TValue */
+                    interface Box {
+                        /** @return TValue */
+                        public function get();
+                    }
+
+                    /**
+                     * @template TBox of Box<TValue>
+                     * @template TValue of int
+                     */
+                    final class FwdHolder {
+                        /** @param TBox $box */
+                        public function __construct(public Box $box) {}
+
+                        public function v(): int {
+                            return $this->box->get();
+                        }
+                    }
+
+                    /**
+                     * @template TValue of int
+                     * @template TBox of Box<TValue>
+                     */
+                    final class DeclaredHolder {
+                        /** @param TBox $box */
+                        public function __construct(public Box $box) {}
+
+                        public function v(): int {
+                            return $this->box->get();
+                        }
+                    }
+
+                    /**
+                     * @template TA of Box<TB>
+                     * @template TB of Box<TC>
+                     * @template TC of int
+                     */
+                    final class ChainHolder {
+                        /** @param TA $a */
+                        public function __construct(public Box $a) {}
+
+                        public function v(): int {
+                            return $this->a->get()->get();
+                        }
+                    }
+
+                    /**
+                     * @template TA of Box<TB>
+                     * @template TB of Box<TA>
+                     */
+                    final class CycleHolder {
+                        /** @param TA $a */
+                        public function __construct(public Box $a) {}
+
+                        public function v(): void {
+                            $this->a->get();
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'listParamInheritedFromATemplatedParentAcceptsAList' => [
                 'code' => '<?php
                     /** @template T */
