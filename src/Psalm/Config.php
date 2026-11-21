@@ -3262,7 +3262,7 @@ final class Config
             }
         }
 
-        $composer_dir = $this->base_dir . DIRECTORY_SEPARATOR . 'vendor' . DIRECTORY_SEPARATOR . 'composer';
+        $composer_dir = $this->getProjectVendorDir() . DIRECTORY_SEPARATOR . 'composer';
         foreach ($this->getProjectInstalledPackages() as $package) {
             if ($package['install_path'] !== null) {
                 $install_paths[] = [$package['name'], Path::makeAbsolute($package['install_path'], $composer_dir)];
@@ -3311,11 +3311,8 @@ final class Config
      */
     private function readProjectPackageNames(): array
     {
-        $composer_json_path = Composer::getJsonFilePath($this->base_dir);
-        $composer_json = is_file($composer_json_path)
-            ? json_decode((string) file_get_contents($composer_json_path), true)
-            : null;
-        if (!is_array($composer_json)) {
+        $composer_json = $this->readProjectComposerJson();
+        if ($composer_json === null) {
             return [];
         }
 
@@ -3352,14 +3349,45 @@ final class Config
         return $project_packages;
     }
 
+    private function readProjectComposerJson(): ?array
+    {
+        $composer_json_path = Composer::getJsonFilePath($this->base_dir);
+        $composer_json = is_file($composer_json_path)
+            ? json_decode((string) file_get_contents($composer_json_path), true)
+            : null;
+        if (!is_array($composer_json)) {
+            return null;
+        }
+
+        return $composer_json;
+    }
+
     /**
-     * The packages of the project's vendor/composer/installed.json
+     * The directory Composer installs the project's packages in: COMPOSER_VENDOR_DIR, or the vendor-dir of its
+     * composer.json, or vendor
+     */
+    private function getProjectVendorDir(): string
+    {
+        $vendor_dir = CliUtils::chosenByOperator(getenv('COMPOSER_VENDOR_DIR'));
+        if (!is_string($vendor_dir) || $vendor_dir === '') {
+            $composer_json = $this->readProjectComposerJson();
+            $vendor_dir = isset($composer_json['config']['vendor-dir'])
+                && is_string($composer_json['config']['vendor-dir'])
+                    ? $composer_json['config']['vendor-dir']
+                    : 'vendor';
+        }
+
+        return Path::makeAbsolute($vendor_dir, $this->base_dir);
+    }
+
+    /**
+     * The packages of the project's installed.json
      *
      * @return list<array{name: string, install_path: ?string, require: list<array-key>, replace: list<array-key>}>
      */
     private function getProjectInstalledPackages(): array
     {
-        $installed_path = $this->base_dir . DIRECTORY_SEPARATOR . 'vendor' . DIRECTORY_SEPARATOR . 'composer'
+        $installed_path = $this->getProjectVendorDir() . DIRECTORY_SEPARATOR . 'composer'
             . DIRECTORY_SEPARATOR . 'installed.json';
         $installed = is_file($installed_path) ? json_decode((string) file_get_contents($installed_path), true) : null;
         if (!is_array($installed) || !isset($installed['packages']) || !is_array($installed['packages'])) {
@@ -3405,9 +3433,8 @@ final class Config
             throw new LogicException("IncludeCollector should be set at this point");
         }
 
-        $vendor_autoload_files_path
-            = $this->base_dir . DIRECTORY_SEPARATOR . 'vendor'
-                . DIRECTORY_SEPARATOR . 'composer' . DIRECTORY_SEPARATOR . 'autoload_files.php';
+        $vendor_autoload_files_path = $this->getProjectVendorDir()
+            . DIRECTORY_SEPARATOR . 'composer' . DIRECTORY_SEPARATOR . 'autoload_files.php';
 
         if (file_exists($vendor_autoload_files_path)) {
             $this->include_collector->runAndCollect(
