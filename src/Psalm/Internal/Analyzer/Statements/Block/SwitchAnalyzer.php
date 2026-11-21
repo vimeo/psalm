@@ -53,7 +53,7 @@ final class SwitchAnalyzer
             $statements_analyzer,
         );
 
-        $is_temporary_switch_var = false;
+        $temporary_switch_var_id = null;
 
         if (!$switch_var_id
             && ($stmt->cond instanceof PhpParser\Node\Expr\FuncCall
@@ -61,8 +61,8 @@ final class SwitchAnalyzer
                 || $stmt->cond instanceof PhpParser\Node\Expr\StaticCall
             )
         ) {
-            $switch_var_id = '$__tmp_switch__' . (int) $stmt->cond->getAttribute('startFilePos');
-            $is_temporary_switch_var = true;
+            $temporary_switch_var_id = '$__tmp_switch__' . (int) $stmt->cond->getAttribute('startFilePos');
+            $switch_var_id = $temporary_switch_var_id;
 
             $condition_type = $statements_analyzer->node_data->getType($stmt->cond) ?? Type::getMixed();
 
@@ -263,8 +263,8 @@ final class SwitchAnalyzer
             ...$switch_scope->new_vars_possibly_in_scope,
         ];
 
-        if ($is_temporary_switch_var) {
-            unset($context->vars_in_scope[$switch_var_id]);
+        if ($temporary_switch_var_id !== null) {
+            unset($context->vars_in_scope[$temporary_switch_var_id]);
         }
 
         //a switch can't return in all options without a default
