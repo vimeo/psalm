@@ -2173,6 +2173,29 @@ final class TypeVariableTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'constructionOfATemplateOnlyATemplateOfAnInheritedMethodNamesLikeIt' => [
+                'code' => '<?php
+                    class Collection {
+                        public function __construct() {}
+
+                        /**
+                         * @template T
+                         * @param T $x
+                         */
+                        public function add($x): void {}
+                    }
+
+                    /** @template T */
+                    final class ChildCollection extends Collection {
+                        public function __construct() {}
+                    }
+
+                    /** @return ChildCollection<int> */
+                    function collection(): ChildCollection {
+                        return new ChildCollection();
+                    }',
+                'error_message' => 'MixedReturnTypeCoercion',
+            ],
             'constructionOfATemplateOnlyAProtectedInheritedMethodTakes' => [
                 'code' => '<?php
                     /** @template T */

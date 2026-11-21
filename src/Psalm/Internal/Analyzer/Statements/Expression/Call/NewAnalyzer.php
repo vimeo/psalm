@@ -2056,7 +2056,7 @@ final class NewAnalyzer extends CallAnalyzer
 
     /**
      * Removes from $unconstrainable the templates of the class $type mentions, directly or through a template of a
-     * parent class, interface or trait the class passes them to
+     * parent class, interface or trait the class passes them to (not a template of a method, whatever its name)
      *
      * @param array<string, true> $unconstrainable
      * @psalm-mutation-free
@@ -2066,19 +2066,15 @@ final class NewAnalyzer extends CallAnalyzer
         Union $type,
         ClassLikeStorage $storage,
     ): void {
+        $class_lc = strtolower($storage->name);
+
         foreach ($type->getTemplateTypes() as $template_type) {
             $extended_type = $storage->template_extended_params[$template_type->defining_class]
                 [$template_type->param_name] ?? null;
 
-            if ($extended_type === null) {
-                unset($unconstrainable[$template_type->param_name]);
-
-                continue;
-            }
-
-            foreach ($extended_type->getTemplateTypes() as $extended_template_type) {
-                if ($extended_template_type->defining_class === $storage->name) {
-                    unset($unconstrainable[$extended_template_type->param_name]);
+            foreach ($extended_type ? $extended_type->getTemplateTypes() : [$template_type] as $class_template_type) {
+                if (strtolower($class_template_type->defining_class) === $class_lc) {
+                    unset($unconstrainable[$class_template_type->param_name]);
                 }
             }
         }
