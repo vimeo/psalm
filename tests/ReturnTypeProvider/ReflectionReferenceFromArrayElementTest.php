@@ -151,17 +151,49 @@ final class ReflectionReferenceFromArrayElementTest extends TestCase
             'php_version' => '8.0',
         ];
 
-        yield 'negativeKeyStaysNullable' => [
+        yield 'byRefElementAtNegativeKey' => [
+            'code' => '<?php
+                $a = 1;
+                $r = ReflectionReference::fromArrayElement([-5 => &$a], -5);
+            ',
+            'assertions' => [
+                '$r===' => 'ReflectionReference',
+            ],
+            'ignored_issues' => [],
+            'php_version' => '8.0',
+        ];
+
+        yield 'implicitIndexAfterNegativeKeyBeforePhp83' => [
             'code' => '<?php
                 $a = 1;
                 $b = 2;
                 $r = ReflectionReference::fromArrayElement([-5 => $a, &$b], 0);
+                $s = ReflectionReference::fromArrayElement([-5 => $a, &$b], -4);
             ',
             'assertions' => [
-                '$r===' => 'ReflectionReference|null',
+                '$r===' => 'ReflectionReference',
+                '$s===' => 'ReflectionReference|null',
             ],
             'ignored_issues' => [],
-            'php_version' => '8.0',
+            'php_version' => '8.2',
+        ];
+
+        yield 'implicitIndexAfterNegativeKeySincePhp83' => [
+            'code' => '<?php
+                $a = 1;
+                $b = 2;
+                $c = 3;
+                $r = ReflectionReference::fromArrayElement([-5 => $a, &$b], -4);
+                $s = ReflectionReference::fromArrayElement([-5 => $a, &$b], 0);
+                $t = ReflectionReference::fromArrayElement([-5 => $a, -3 => $b, &$c], -2);
+            ',
+            'assertions' => [
+                '$r===' => 'ReflectionReference',
+                '$s===' => 'ReflectionReference|null',
+                '$t===' => 'ReflectionReference',
+            ],
+            'ignored_issues' => [],
+            'php_version' => '8.3',
         ];
 
         yield 'spreadStaysNullable' => [

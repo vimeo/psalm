@@ -36,6 +36,9 @@ final class ReflectionReferenceReturnTypeProvider implements MethodReturnTypePro
         return ['ReflectionReference'];
     }
 
+    /**
+     * @psalm-capabilities read-props
+     */
     #[Override]
     public static function getMethodReturnType(MethodReturnTypeProviderEvent $event): ?Union
     {
@@ -58,26 +61,30 @@ final class ReflectionReferenceReturnTypeProvider implements MethodReturnTypePro
             return null;
         }
 
+        // Since PHP 8.3, the implicit index after a leading negative key is that key + 1 instead of 0
+        $negative_keys_count_up = $source->getCodebase()->analysis_php_version_id >= 8_03_00;
+
         // Rebuild the keys PHP assigns to the literal; a later duplicate key overwrites an earlier one
         $is_by_ref = null;
-        $next_index = 0;
+        $next_index = null;
         foreach ($array_arg->value->items as $item) {
             if ($item->unpack) {
                 return null;
             }
 
             if ($item->key === null) {
-                $item_key = $next_index;
+                $item_key = $next_index ?? 0;
             } else {
                 $item_key = self::getLiteralKey($source, $item->key);
-                // the implicit index after a negative key differs before and after PHP 8.3
-                if ($item_key === null || (is_int($item_key) && $item_key < 0)) {
+                if ($item_key === null) {
                     return null;
                 }
             }
 
             if (is_int($item_key)) {
-                $next_index = max($next_index, $item_key + 1);
+                $next_index = $next_index === null && $negative_keys_count_up
+                    ? $item_key + 1
+                    : max($next_index ?? 0, $item_key + 1);
             }
 
             if ($item_key === $key) {
@@ -91,7 +98,7 @@ final class ReflectionReferenceReturnTypeProvider implements MethodReturnTypePro
 
     /**
      * @param list<Arg> $call_args
-     * @psalm-pure
+     * @psalm-capabilities read-props
      */
     private static function getArg(array $call_args, int $position, string $name): ?Arg
     {
@@ -108,6 +115,9 @@ final class ReflectionReferenceReturnTypeProvider implements MethodReturnTypePro
         return null;
     }
 
+    /**
+     * @psalm-capabilities read-props
+     */
     private static function getLiteralKey(StatementsAnalyzer $source, Expr $expr): int|string|null
     {
         $type = $source->node_data->getType($expr);
