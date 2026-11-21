@@ -2532,6 +2532,22 @@ final class SwitchTypeTest extends TestCase
                     }',
                 'error_message' => 'UndefinedMethod',
             ],
+            'switchTemporaryVariableIsNotDefinedAfterTheSwitch' => [
+                'code' => '<?php
+                    function foo(): int {
+                        return 1;
+                    }
+
+                    function bar(): int {
+                        switch (foo()) {
+                            case 1:
+                                break;
+                        }
+
+                        return $__tmp_switch__179;
+                    }',
+                'error_message' => 'UndefinedVariable',
+            ],
         ];
     }
 }
