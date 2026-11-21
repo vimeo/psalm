@@ -184,6 +184,65 @@ final class TraitTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'constantOfTheFirstTraitDeclaringItWins' => [
+                'code' => '<?php
+                    trait HasLimit {
+                        public const int LIMIT = 10;
+                    }
+
+                    trait HasDeprecatedLimit {
+                        #[\\Deprecated]
+                        public const int LIMIT = 10;
+                    }
+
+                    final class Quota {
+                        use HasLimit, HasDeprecatedLimit;
+                    }
+
+                    $limit = Quota::LIMIT;',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.5',
+            ],
+            'traitConstantIsNotChangedByTheAdaptationOfAMethodOfItsName' => [
+                'code' => '<?php
+                    trait Greets {
+                        public const string hello = "hi";
+
+                        public function hello(): string {
+                            return self::hello;
+                        }
+                    }
+
+                    final class Greeter {
+                        use Greets {
+                            hello as greet;
+                        }
+                    }
+
+                    trait Counts {
+                        public const int count = 1;
+
+                        public function count(): int {
+                            return self::count;
+                        }
+                    }
+
+                    final class Counter {
+                        use Counts {
+                            count as protected;
+                        }
+                    }
+
+                    $hello = Greeter::hello;
+                    $count = Counter::count;',
+                'assertions' => [
+                    '$hello===' => "'hi'",
+                    '$count===' => '1',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
             'staticReturnOfTraitMethodOverriddenByMethodOfLaterTrait' => [
                 'code' => '<?php
                     trait A {
@@ -2018,6 +2077,47 @@ final class TraitTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'constantOfTheFirstTraitDeclaringItIsDeprecated' => [
+                'code' => '<?php
+                    trait HasLimit {
+                        public const int LIMIT = 10;
+                    }
+
+                    trait HasDeprecatedLimit {
+                        #[\\Deprecated]
+                        public const int LIMIT = 10;
+                    }
+
+                    final class Quota {
+                        use HasDeprecatedLimit, HasLimit;
+                    }
+
+                    $limit = Quota::LIMIT;',
+                'error_message' => 'DeprecatedConstant',
+                'error_levels' => [],
+                'php_version' => '8.5',
+            ],
+            'traitMethodAliasIsNotAConstant' => [
+                'code' => '<?php
+                    trait Greets {
+                        public const string hello = "hi";
+
+                        public function hello(): string {
+                            return self::hello;
+                        }
+                    }
+
+                    final class Greeter {
+                        use Greets {
+                            hello as greet;
+                        }
+                    }
+
+                    $greet = Greeter::greet;',
+                'error_message' => 'UndefinedConstant - src' . DIRECTORY_SEPARATOR . 'somefile.php:16:30 - Constant Greeter::greet is not defined',
+                'error_levels' => [],
+                'php_version' => '8.3',
+            ],
             'staticReturnOfTraitMethodOverriddenByUnrelatedReturnTypeOfLaterTrait' => [
                 'code' => '<?php
                     class Foo {}
