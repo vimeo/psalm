@@ -1736,6 +1736,42 @@ final class StarProjectionTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'starProjectionInANamespaceResolvesTheClassName' => [
+                'code' => '<?php
+                    namespace App\Models {
+                        /**
+                         * @template TFirst
+                         * @template TSecond of object
+                         */
+                        final class Pair {
+                            /** @return TSecond */
+                            public function second(): object {
+                                throw new \Exception();
+                            }
+                        }
+                    }
+
+                    namespace App {
+                        use App\Models\Pair;
+                        use App\Models\Pair as Couple;
+
+                        /**
+                         * @param \App\Models\Pair<int, *> $qualified
+                         * @param Pair<int, *> $imported
+                         * @param Couple<int, *> $aliased
+                         */
+                        function f(Models\Pair $qualified, Pair $imported, Couple $aliased): void {
+                            /** @psalm-check-type-exact $qualified = \App\Models\Pair<int, *> */
+                            /** @psalm-check-type-exact $imported = \App\Models\Pair<int, *> */
+                            /** @psalm-check-type-exact $aliased = \App\Models\Pair<int, *> */
+                            $second = $imported->second();
+                            /** @psalm-check-type-exact $second = object */
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
         ];
     }
 
