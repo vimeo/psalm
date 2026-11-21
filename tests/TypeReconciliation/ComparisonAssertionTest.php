@@ -78,6 +78,45 @@ final class ComparisonAssertionTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'notIdenticalToAnObjectKeepsAWiderType' => [
+                'code' => '<?php
+                    interface Handler {}
+
+                    class Command {}
+
+                    /** @var iterable<int, string> $items */
+                    $items = [];
+
+                    /** @var Traversable<int, string> $other */
+                    $other = new ArrayIterator([]);
+
+                    /** @var callable $callable */
+                    $callable = "strlen";
+
+                    /** @var Handler $handler */
+                    $handler = new class implements Handler {};
+
+                    /** @var Command $command */
+                    $command = new Command();
+
+                    $kept = null;
+                    $count = 0;
+
+                    if ($items !== $other) {
+                        $kept = $items;
+                    }
+
+                    if ($callable !== $handler) {
+                        $count++;
+                    }
+
+                    if ($callable !== $command) {
+                        $count++;
+                    }',
+                'assertions' => [
+                    '$kept===' => 'iterable<int, string>|null',
+                ],
+            ],
             'identicalToNull' => [
                 'code' => '<?php
                     function f(?int $n): void {
@@ -414,6 +453,15 @@ final class ComparisonAssertionTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'callableNeverIdenticalToAFinalClassWithoutInvoke' => [
+                'code' => '<?php
+                    final class Command {}
+
+                    function compare(callable $callable, Command $command): bool {
+                        return $callable === $command;
+                    }',
+                'error_message' => 'TypeDoesNotContainType',
+            ],
             'nullNeverIdenticalToANonNullableValue' => [
                 'code' => '<?php
                     function f(string $s): void {

@@ -180,7 +180,8 @@ final class NegatedAssertionReconciler extends Reconciler
 
         $codebase = $statements_analyzer->getCodebase();
 
-        if ($assertion_type instanceof TNamedObject
+        if (!$is_equality
+            && $assertion_type instanceof TNamedObject
             && strtolower($assertion_type->value) === 'traversable'
             && isset($existing_var_atomic_types['iterable'])
         ) {
