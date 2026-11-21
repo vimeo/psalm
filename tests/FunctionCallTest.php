@@ -1212,6 +1212,20 @@ final class FunctionCallTest extends TestCase
                   }
                 ',
             ],
+            'pregGrepCanReturnFalse' => [
+                'code' => '<?php
+                    $rc = preg_grep("/^foo/i", ["foobar", "toobar"]);
+
+                    if ($rc === false) {
+                        $r = null;
+                    } else {
+                        $r = $rc;
+                    }',
+                'assertions' => [
+                    '$rc===' => 'array<int<0, 1>, string>|false',
+                    '$r===' => 'array<int<0, 1>, string>|null',
+                ],
+            ],
             'typedArrayWithDefault' => [
                 'code' => '<?php
                     class A {}
