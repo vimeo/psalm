@@ -120,7 +120,7 @@ final class InterfaceAnalyzer extends ClassLikeAnalyzer
                     $class_storage,
                     $extended_interface_storage,
                     $code_location,
-                    $class_storage->template_type_extends_count[$extended_interface_name] ?? 0,
+                    $class_storage->template_type_extends_count[strtolower($extended_interface_name)] ?? 0,
                 );
             }
         }
