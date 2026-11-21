@@ -1448,8 +1448,10 @@ final class AssertionFinder
                 ? TypeExpander::expandAtomic($codebase, $rule_type, null, null, null)
                 : [];
 
-            $rules[] = $rule_type instanceof TClassConstant || count($expanded) === 1
-                ? $rule->setAtomicType($expanded[0])
+            $first_expanded = $expanded[0] ?? null;
+
+            $rules[] = $first_expanded !== null && ($rule_type instanceof TClassConstant || count($expanded) === 1)
+                ? $rule->setAtomicType($first_expanded)
                 : $rule;
         }
 
