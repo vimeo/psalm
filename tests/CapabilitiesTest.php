@@ -37,6 +37,13 @@ final class CapabilitiesTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'aSodiumKeyPairFromASeedIsPure' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function keyPair(string $seed): string {
+                        return sodium_crypto_sign_seed_keypair($seed);
+                    }',
+            ],
             'externalMutationFreeCalleesCostWriteRefsOnlyThroughTheirByReferenceArguments' => [
                 'code' => '<?php
                     final class Box {
@@ -352,6 +359,8 @@ final class CapabilitiesTest extends TestCase
                         $storage[$key] = 2;
                         return $storage[$key] + (int) $storage->contains($key);
                     }',
+                'assertions' => [],
+                'ignored_issues' => ['DeprecatedMethod'],
             ],
             'mutatingAnSplContainerForgetsWhatItsReadersReturned' => [
                 'code' => '<?php
@@ -1020,6 +1029,8 @@ final class CapabilitiesTest extends TestCase
                         $storage[$key] = 1;
                         $storage->attach(new stdClass(), 2);
                     }',
+                'assertions' => [],
+                'ignored_issues' => ['DeprecatedMethod'],
             ],
             'fillingAFreshSplObjectStorageWithoutATypeIsPure' => [
                 'code' => '<?php
@@ -1060,6 +1071,8 @@ final class CapabilitiesTest extends TestCase
                             echo "detached";
                         }
                     }',
+                'assertions' => [],
+                'ignored_issues' => ['DeprecatedMethod'],
             ],
             'traversableWithPurityCombinesWithIterable' => [
                 'code' => '<?php
@@ -3440,6 +3453,109 @@ final class CapabilitiesTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'parsingTheRequestBodyIsImpure' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function body(): array {
+                        return request_parse_body();
+                    }',
+                'error_message' => 'function call on request_parse_body requires io',
+                'error_levels' => [],
+                'php_version' => '8.4',
+            ],
+            'copyingIntoPostgresIsImpure' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function copyRow(PgSql\\Connection $db, string $row): int {
+                        return pg_put_copy_data($db, $row);
+                    }',
+                'error_message' => 'ImpureFunctionCall',
+                'error_levels' => [],
+                'php_version' => '8.4',
+            ],
+            'runningAMysqliQueryIsImpure' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function run(mysqli $db): mysqli_result|bool {
+                        return mysqli_execute_query($db, "SELECT 1");
+                    }',
+                'error_message' => 'ImpureFunctionCall',
+                'error_levels' => [],
+                'php_version' => '8.2',
+            ],
+            'readingTheErrorHandlerIsImpure' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function handler(): ?callable {
+                        return get_error_handler();
+                    }',
+                'error_message' => 'function call on get_error_handler requires read-globals',
+                'error_levels' => [],
+                'php_version' => '8.5',
+            ],
+            'generatingASodiumKeyIsImpure' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function newKey(): string {
+                        return sodium_crypto_secretbox_keygen();
+                    }',
+                'error_message' => 'function call on sodium_crypto_secretbox_keygen requires io',
+                'error_levels' => [],
+            ],
+            'generatingASodiumKeyPairIsImpure' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function newKeyPair(): string {
+                        return sodium_crypto_sign_keypair();
+                    }',
+                'error_message' => 'function call on sodium_crypto_sign_keypair requires io',
+                'error_levels' => [],
+            ],
+            'sealingASodiumBoxIsImpure' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function seal(string $message, string $publicKey): string {
+                        return sodium_crypto_box_seal($message, $publicKey);
+                    }',
+                'error_message' => 'ImpureFunctionCall',
+                'error_levels' => [],
+            ],
+            'hashingAPasswordWithSodiumIsImpure' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function hashPassword(string $password): string {
+                        return sodium_crypto_pwhash_str($password, 2, 67108864);
+                    }',
+                'error_message' => 'ImpureFunctionCall',
+                'error_levels' => [],
+            ],
+            'hashingAPasswordIsImpure' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function hashPassword(string $password): string {
+                        return password_hash($password, PASSWORD_DEFAULT);
+                    }',
+                'error_message' => 'ImpureFunctionCall',
+                'error_levels' => [],
+            ],
+            'opensslRandomBytesAreImpure' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function bytes(): string {
+                        return openssl_random_pseudo_bytes(16);
+                    }',
+                'error_message' => 'ImpureFunctionCall',
+                'error_levels' => [],
+            ],
+            'gmpRandomNumbersAreImpure' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function number(): GMP {
+                        return gmp_random_bits(16);
+                    }',
+                'error_message' => 'ImpureFunctionCall',
+                'error_levels' => [],
+            ],
             'impureInstanceMethodCostsWriteRefsLikeAnImpureFunction' => [
                 'code' => '<?php
                     final class Impure {
@@ -4177,7 +4293,7 @@ final class CapabilitiesTest extends TestCase
                         return $h->getX();
                     }',
                 'error_message' => 'NullableReturnStatement - src' . DIRECTORY_SEPARATOR . 'somefile.php:19:32',
-                'error_levels' => [],
+                'error_levels' => ['DeprecatedMethod'],
                 'php_version' => '8.0',
             ],
             'itemOfAnObjectWithoutOffsetSetPassedByReference' => [
@@ -4269,6 +4385,7 @@ final class CapabilitiesTest extends TestCase
                         return count($object);
                     }',
                 'error_message' => 'ImpureMethodCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:33 - The context is pure but method ArrayObject::offsetSet requires write-props',
+                'error_levels' => ['DeprecatedMethod'],
             ],
             'conditionalCapabilitiesOfAFunctionCalledWithoutTheArgument' => [
                 'code' => '<?php
@@ -4597,6 +4714,7 @@ final class CapabilitiesTest extends TestCase
                         return count($object);
                     }',
                 'error_message' => 'ImpureMethodCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:25 - The context is pure but method ArrayObject::offsetSet requires write-props',
+                'error_levels' => ['DeprecatedMethod'],
             ],
             'arrayIteratorBackedByAnObjectWritesIt' => [
                 'code' => '<?php
@@ -4607,6 +4725,7 @@ final class CapabilitiesTest extends TestCase
                         return count($iterator);
                     }',
                 'error_message' => 'ImpureMethodCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:25 - The context is pure but method ArrayIterator::offsetSet requires write-props',
+                'error_levels' => ['DeprecatedMethod'],
             ],
             'arrayObjectExchangingItsStorageWritesProps' => [
                 'code' => '<?php
@@ -4618,6 +4737,7 @@ final class CapabilitiesTest extends TestCase
                         return count($object);
                     }',
                 'error_message' => 'ImpureMethodCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:25 - The context is pure but method ArrayObject::exchangeArray requires write-props',
+                'error_levels' => ['DeprecatedMethod'],
             ],
             'arrayObjectOfUnknownStorageWritesProps' => [
                 'code' => '<?php

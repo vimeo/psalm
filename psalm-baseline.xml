@@ -93,9 +93,6 @@
     <PossiblyNullReference>
       <code><![CDATA[addAttribute]]></code>
     </PossiblyNullReference>
-    <PropertyTypeCoercion>
-      <code><![CDATA[$this]]></code>
-    </PropertyTypeCoercion>
     <RiskyTruthyFalsyComparison>
       <code><![CDATA[!$config_path]]></code>
       <code><![CDATA[!$file_path]]></code>
@@ -215,13 +212,6 @@
       <code><![CDATA[$stmt->getStmts()]]></code>
       <code><![CDATA[$storage->template_extended_params]]></code>
       <code><![CDATA[$storage->template_types]]></code>
-      <code><![CDATA[ClassTemplateParamCollector::collect(
-                $codebase,
-                $class_storage,
-                $codebase->classlike_storage_provider->get($original_fq_classlike_name),
-                strtolower($stmt->name->name),
-                $this_object_type,
-            )]]></code>
     </RiskyTruthyFalsyComparison>
   </file>
   <file src="src/Psalm/Internal/Analyzer/ClassLikeAnalyzer.php">
@@ -354,8 +344,6 @@
       <code><![CDATA[$guide_param_signature_type]]></code>
       <code><![CDATA[$guide_signature_return_type]]></code>
       <code><![CDATA[$guide_signature_return_type]]></code>
-      <code><![CDATA[$implementer_declaring_method_id]]></code>
-      <code><![CDATA[$implementer_declaring_method_id]]></code>
       <code><![CDATA[$implementer_param_signature_type]]></code>
       <code><![CDATA[$implementer_param_signature_type]]></code>
       <code><![CDATA[$implementer_param_signature_type]]></code>
@@ -521,8 +509,6 @@
     <PossiblyUndefinedIntArrayOffset>
       <code><![CDATA[$count_expr->getArgs()[0]]]></code>
       <code><![CDATA[$count_expr->getArgs()[0]]]></code>
-      <code><![CDATA[$count_expr->getArgs()[0]]]></code>
-      <code><![CDATA[$count_expr->getArgs()[0]]]></code>
       <code><![CDATA[$counted_expr->getArgs()[0]]]></code>
       <code><![CDATA[$expr->getArgs()[0]]]></code>
       <code><![CDATA[$expr->getArgs()[0]]]></code>
@@ -544,10 +530,6 @@
       <code><![CDATA[!strpos($first_var_name, '[')]]></code>
       <code><![CDATA[$array_root]]></code>
       <code><![CDATA[$count_equality_position]]></code>
-      <code><![CDATA[$count_equality_position]]></code>
-      <code><![CDATA[$count_equality_position]]></code>
-      <code><![CDATA[$count_inequality_position]]></code>
-      <code><![CDATA[$count_inequality_position]]></code>
       <code><![CDATA[$false_position]]></code>
       <code><![CDATA[$first_var_name]]></code>
       <code><![CDATA[$first_var_name]]></code>
@@ -566,15 +548,11 @@
       <code><![CDATA[$gettype_position]]></code>
       <code><![CDATA[$if_false_assertions]]></code>
       <code><![CDATA[$if_true_assertions]]></code>
-      <code><![CDATA[$inferior_value_position]]></code>
       <code><![CDATA[$other_var_name]]></code>
-      <code><![CDATA[$superior_value_position]]></code>
       <code><![CDATA[$true_position]]></code>
       <code><![CDATA[$typed_value_position]]></code>
       <code><![CDATA[$var_id]]></code>
       <code><![CDATA[$var_id]]></code>
-      <code><![CDATA[$var_name]]></code>
-      <code><![CDATA[$var_name]]></code>
       <code><![CDATA[$var_name]]></code>
       <code><![CDATA[$var_name]]></code>
       <code><![CDATA[$var_name]]></code>
@@ -1488,11 +1466,6 @@
       <code><![CDATA[DataFlowGraph]]></code>
     </ImmutableDependency>
   </file>
-  <file src="src/Psalm/Internal/Composer.php">
-    <RiskyTruthyFalsyComparison>
-      <code><![CDATA[getenv('COMPOSER')]]></code>
-    </RiskyTruthyFalsyComparison>
-  </file>
   <file src="src/Psalm/Internal/DataFlow/DataFlowNode.php">
     <ImpureMethodCall>
       <code><![CDATA[self::getAssignmentSuffix($var_id)]]></code>
@@ -1745,8 +1718,6 @@
       <code><![CDATA[$docblock_info->description]]></code>
       <code><![CDATA[$docblock_info->inheritors]]></code>
       <code><![CDATA[$docblock_info->yield]]></code>
-      <code><![CDATA[$storage->template_types]]></code>
-      <code><![CDATA[$storage->template_types]]></code>
       <code><![CDATA[$storage->template_types]]></code>
       <code><![CDATA[$storage->template_types]]></code>
       <code><![CDATA[$storage->template_types]]></code>
@@ -2278,10 +2249,6 @@
       <code><![CDATA[$key]]></code>
       <code><![CDATA[$key]]></code>
       <code><![CDATA[$key]]></code>
-      <code><![CDATA[$var_id]]></code>
-      <code><![CDATA[$var_id]]></code>
-      <code><![CDATA[$var_id]]></code>
-      <code><![CDATA[$var_id]]></code>
       <code><![CDATA[strpos($key, '[')]]></code>
     </RiskyTruthyFalsyComparison>
   </file>
@@ -2302,10 +2269,6 @@
       <code><![CDATA[$key]]></code>
       <code><![CDATA[$key]]></code>
       <code><![CDATA[$key]]></code>
-      <code><![CDATA[$var_id]]></code>
-      <code><![CDATA[$var_id]]></code>
-      <code><![CDATA[$var_id]]></code>
-      <code><![CDATA[$var_id]]></code>
     </RiskyTruthyFalsyComparison>
   </file>
   <file src="src/Psalm/Internal/Type/TemplateInferredTypeReplacer.php">

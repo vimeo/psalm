@@ -821,6 +821,8 @@ final class ClassLikeStringTest extends TestCase
                             return get_parent_class();
                         }
                     }',
+                'assertions' => [],
+                'ignored_issues' => ['DeprecatedFunction'],
             ],
             'getParentClassWithoutArgumentIsTheParentClass' => [
                 'code' => '<?php
@@ -1172,6 +1174,8 @@ final class ClassLikeStringTest extends TestCase
 
                     /** @param class-string<Example> $className */
                     function takesExampleClassString(string $className): void {}',
+                'assertions' => [],
+                'ignored_issues' => ['DeprecatedFunction'],
             ],
             'noCrashOnPolyfill' => [
                 'code' => '<?php

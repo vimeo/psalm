@@ -7,7 +7,7 @@
 #   psalm.dirs / ignore / attributes / extensions (generate psalm-perf.xml; attributes override the fixed ones,
 #   errorLevel defaults to 1).
 
-php: "8.5"
+php: "8.6"
 install_timeout: 180
 memory_limit: 12G
 php_ini:

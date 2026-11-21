@@ -5,9 +5,13 @@ declare(strict_types=1);
 namespace Psalm\Tests\Template;
 
 use Override;
+use Psalm\Context;
+use Psalm\IssueBuffer;
 use Psalm\Tests\TestCase;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
+
+use function array_column;
 
 use const DIRECTORY_SEPARATOR;
 
@@ -16,6 +20,90 @@ final class ClassTemplateExtendsTest extends TestCase
     use InvalidCodeAnalysisTestTrait;
     use ValidCodeAnalysisTestTrait;
 
+    public function testParentNamedInAnotherCaseKeepsTheTemplateArgumentsOfItsTag(): void
+    {
+        $this->testConfig->throw_exception = false;
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                /** @template T */
+                class Foo {}
+
+                /** @extends Foo<int> */
+                final class Bar extends foo {}
+
+                /** @template T */
+                interface I {}
+
+                /** @extends I<int> */
+                interface J extends i {}
+
+                /** @implements I<int> */
+                final class C implements i {}
+
+                /** @template T */
+                trait Tr {}
+
+                final class D {
+                    /** @use Tr<int> */
+                    use tr;
+                }',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+
+        self::assertSame(
+            ['InvalidClass', 'InvalidClass', 'InvalidClass', 'UndefinedTrait'],
+            array_column(IssueBuffer::getIssuesDataForFile($file_path), 'type'),
+        );
+    }
+
+    public function testUnionInTemplateTagKeepsTheTemplateArgumentsOfItsMembers(): void
+    {
+        $this->testConfig->throw_exception = false;
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                /** @template T */
+                interface I {}
+
+                /** @template T */
+                interface J {}
+
+                /** @extends I<int>|J<int> */
+                interface K extends I, J {}
+
+                /** @implements I<int>|J<int> */
+                final class C implements I, J {}
+
+                /** @template T */
+                trait Tr {}
+
+                /** @template T */
+                trait Tr2 {}
+
+                final class D {
+                    /** @use Tr<int>|Tr2<int> */
+                    use Tr, Tr2;
+                }',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+
+        self::assertSame(
+            [
+                '@template-extends cannot be a union type',
+                '@template-implements cannot be a union type',
+                '@template-use cannot be a union type',
+            ],
+            array_column(IssueBuffer::getIssuesDataForFile($file_path), 'message'),
+        );
+    }
+
     /**
      * @psalm-pure
      */
@@ -23,6 +111,50 @@ final class ClassTemplateExtendsTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'templateTagNamesParentInAnotherCase' => [
+                'code' => '<?php
+                    /** @template T */
+                    class Foo {
+                        /** @var T|null */
+                        public $t = null;
+                    }
+
+                    /** @extends foo<int> */
+                    final class Bar extends Foo {}
+
+                    /** @template T */
+                    interface I {
+                        /** @return T */
+                        public function get();
+                    }
+
+                    /** @implements i<int> */
+                    final class C implements I {
+                        public function get() {
+                            return 1;
+                        }
+                    }
+
+                    /** @template T */
+                    trait Tr {
+                        /** @var T|null */
+                        public $u = null;
+                    }
+
+                    final class D {
+                        /** @use tr<int> */
+                        use Tr;
+                    }
+
+                    $a = (new Bar)->t;
+                    $b = (new C)->get();
+                    $c = (new D)->u;',
+                'assertions' => [
+                    '$a===' => 'int|null',
+                    '$b===' => 'int',
+                    '$c===' => 'int|null',
+                ],
+            ],
             'templatedMethodOfAMiddleParentImplementsAnInterfaceOfTheChild' => [
                 'code' => '<?php
                     /** @template T of object */
@@ -2170,6 +2302,8 @@ final class ClassTemplateExtendsTest extends TestCase
                     }
 
                     ord((new Child())->example("str"));',
+                'assertions' => [],
+                'ignored_issues' => ['DeprecatedFunction'],
             ],
             'keyOfClassTemplateExtended' => [
                 'code' => '<?php
@@ -5765,6 +5899,73 @@ final class ClassTemplateExtendsTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'extendsTagWithoutClass' => [
+                'code' => '<?php
+                    /** @template T */
+                    class A {}
+
+                    /** @extends */
+                    final class B extends A {}',
+                'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:21 - Extended class cannot be empty in docblock for B',
+            ],
+            'implementsTagWithoutClass' => [
+                'code' => '<?php
+                    /** @template T */
+                    interface I {}
+
+                    /** @implements */
+                    final class C implements I {}',
+                'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:21 - Implemented class cannot be empty in docblock for C',
+            ],
+            'useTagWithoutClass' => [
+                'code' => '<?php
+                    /** @template T */
+                    trait T1 {}
+
+                    final class C {
+                        /** @use */
+                        use T1;
+                    }',
+                'error_message' => 'Used class cannot be empty in docblock for C',
+            ],
+            'extendsTagNamingAnotherClass' => [
+                'code' => '<?php
+                    /** @template T */
+                    class A {}
+
+                    /** @template T */
+                    final class Other {}
+
+                    /** @extends Other<int> */
+                    final class B extends A {}',
+                'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR . 'somefile.php:9:21 - @template-extends must include the name of an extended class, got Other',
+            ],
+            'implementsTagNamingAnotherInterface' => [
+                'code' => '<?php
+                    /** @template T */
+                    interface I {}
+
+                    /** @template T */
+                    interface J {}
+
+                    /** @implements J<int> */
+                    final class C implements I {}',
+                'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR . 'somefile.php:9:21 - @template-implements must include the name of an implemented class, got J',
+            ],
+            'useTagNamingAnotherTrait' => [
+                'code' => '<?php
+                    /** @template T */
+                    trait T1 {}
+
+                    /** @template T */
+                    trait T2 {}
+
+                    final class C {
+                        /** @use T2<int> */
+                        use T1;
+                    }',
+                'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:25 - @template-use must include the name of an used class, got T2',
+            ],
             'templatedMethodOfAMiddleParentDoesNotImplementTheInterfaceOfTheChildWithAnotherType' => [
                 'code' => '<?php
                     /** @template T of object */
@@ -6746,6 +6947,7 @@ final class ClassTemplateExtendsTest extends TestCase
                         }
                     }',
                 'error_message' => 'ArgumentTypeCoercion',
+                'error_levels' => ['DeprecatedSyntax'],
             ],
             'invalidExtendsAnnotation' => [
                 'code' => '<?php

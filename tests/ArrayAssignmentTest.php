@@ -918,9 +918,6 @@ final class ArrayAssignmentTest extends TestCase
                         if (!empty($a[$lang][$path])) {
                             return;
                         }
-                        if (!empty($a[$lang][$path])) {
-                            return;
-                        }
                         $a[$lang] = $m;
                         if (!empty($a[$lang][$path])) {
                             return;
@@ -3471,6 +3468,43 @@ final class ArrayAssignmentTest extends TestCase
                         return $l;
                     }',
             ],
+            'classStringKeyStaysAClassStringWhenMergedWithClassStringKeys' => [
+                'code' => <<<'PHP'
+                    <?php
+                    interface Visitor {}
+
+                    /**
+                     * @param array<class-string, string> $extra
+                     * @return array<class-string, string>
+                     */
+                    function tags(array $extra): array
+                    {
+                        $mapping = [Visitor::class => 'visitor'];
+                        foreach ($extra as $class => $tag) {
+                            $mapping[$class] = $tag;
+                        }
+                        return $mapping;
+                    }
+                PHP,
+            ],
+            'literalStringKeyStaysALiteralWhenMergedWithClassStringKeys' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @param array<class-string, string> $extra
+                     * @return array<class-string|'Visitor', string>
+                     */
+                    function tags(array $extra): array
+                    {
+                        $mapping = ['Visitor' => 'visitor'];
+                        foreach ($extra as $class => $tag) {
+                            $mapping[$class] = $tag;
+                        }
+                        /** @psalm-check-type-exact $mapping = non-empty-array<'Visitor'|class-string, string> */
+                        return $mapping;
+                    }
+                PHP,
+            ],
         ];
     }
 
@@ -3520,15 +3554,12 @@ final class ArrayAssignmentTest extends TestCase
                         if (!empty($a["x"]["p"])) {
                             return;
                         }
-                        if (!empty($a["x"]["p"])) {
-                            return;
-                        }
                         $a["y"] = [];
                         if (!empty($a["x"]["p"])) {
                             return;
                         }
                     }',
-                'error_message' => 'TypeDoesNotContainType - src' . DIRECTORY_SEPARATOR . 'somefile.php:10',
+                'error_message' => 'TypeDoesNotContainType - src' . DIRECTORY_SEPARATOR . 'somefile.php:7',
             ],
             'undefinedOuterOffsetOfNestedAssignmentUnderMixed' => [
                 'code' => '<?php

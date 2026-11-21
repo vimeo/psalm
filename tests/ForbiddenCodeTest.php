@@ -54,6 +54,7 @@ final class ForbiddenCodeTest extends TestCase
                 'code' => '<?php
                     `rm -rf`;',
                 'error_message' => 'ForbiddenCode',
+                'error_levels' => ['DeprecatedSyntax'],
             ],
             'exec' => [
                 'code' => '<?php
