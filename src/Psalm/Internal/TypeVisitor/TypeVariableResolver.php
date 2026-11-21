@@ -16,7 +16,6 @@ use Psalm\Type\Union;
 
 use function array_key_first;
 use function array_values;
-use function assert;
 use function count;
 
 /**
@@ -136,9 +135,6 @@ final class TypeVariableResolver extends MutableTypeVisitor
         if (!$changed) {
             return null;
         }
-
-        // every atomic of the (non-empty) input contributed at least one atomic
-        assert($resolved_types !== []);
 
         return $resolved_types;
     }
