@@ -1,0 +1,26 @@
+{
+  "action": "synchronize",
+  "number": 42,
+  "pull_request": {
+    "number": 42,
+    "head": {
+      "ref": "feature",
+      "sha": "0123456789abcdef0123456789abcdef01234567",
+      "repo": {
+        "name": "example",
+        "owner": {
+          "login": "psalm"
+        }
+      }
+    },
+    "base": {
+      "ref": "master",
+      "repo": {
+        "name": "example",
+        "owner": {
+          "login": "psalm"
+        }
+      }
+    }
+  }
+}
