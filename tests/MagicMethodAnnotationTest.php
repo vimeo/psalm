@@ -450,6 +450,46 @@ final class MagicMethodAnnotationTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'intersectionTypeOfAMethodParam' => [
+                'code' => '<?php
+                    interface I1 {}
+                    interface I2 {}
+                    interface I3 {}
+
+                    /**
+                     * @method int m(I1&I2 $x)
+                     * @method int n(I1 & I2 $x)
+                     * @method int o(I1&I2&I3 $x, int $y)
+                     * @method int p(I1&I2 &$x)
+                     * @method int q(I1&I2 ...$x)
+                     * @method int r(I1&I2 &...$x)
+                     * @method int s(I1 &$x)
+                     * @method int t(I1 &...$x)
+                     */
+                    final class C {
+                        public function __call(string $name, array $args): int {
+                            return 1;
+                        }
+                    }
+
+                    function f(I1&I2 $a, I1&I2&I3 $b, I1 $c): void {
+                        $byRef = $a;
+                        $byRefVariadic = $a;
+                        $plain = $c;
+                        $o = new C();
+                        $o->m($a);
+                        $o->n($a);
+                        $o->o($b, 1);
+                        $o->p($byRef);
+                        $o->q($a, $a);
+                        $o->r($byRefVariadic);
+                        $o->s($plain);
+                        $o->t($plain);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'returnTypeAfterParamsWithTrailingSemicolon' => [
                 'code' => '<?php
                     /**
@@ -1108,6 +1148,8 @@ final class MagicMethodAnnotationTest extends TestCase
                             return $query;
                         }
                     }',
+                'assertions' => [],
+                'ignored_issues' => ['DeprecatedSyntax'],
             ],
             'magicMethodReturnSelf' => [
                 'code' => '<?php
@@ -2418,6 +2460,25 @@ final class MagicMethodAnnotationTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'intersectionTypeOfAMethodParamIsEnforced' => [
+                'code' => '<?php
+                    interface I1 {}
+                    interface I2 {}
+
+                    /**
+                     * @method int m(I1&I2 $x)
+                     */
+                    final class C {
+                        public function __call(string $name, array $args): int {
+                            return 1;
+                        }
+                    }
+
+                    function f(I1 $a): void {
+                        (new C())->m($a);
+                    }',
+                'error_message' => 'InvalidArgument',
+            ],
             'methodParamOfAShapeIsEnforced' => [
                 'code' => <<<'PHP'
                     <?php

@@ -29,7 +29,11 @@ final class Composer
      */
     public static function getJsonFilePath(string $root): string
     {
-        $file_name = getenv('COMPOSER') ?: 'composer.json';
+        $file_name = CliUtils::chosenByOperator(getenv('COMPOSER'));
+        if ($file_name === false || $file_name === '') {
+            $file_name = 'composer.json';
+        }
+
         $file_name = basename(trim($file_name));
 
         return $root . '/' . $file_name;
