@@ -8,11 +8,15 @@ use Psalm\Codebase;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TGenericObject;
+use Psalm\Type\Atomic\TInt;
+use Psalm\Type\Atomic\TIntRange;
 use Psalm\Type\Atomic\TIterable;
 use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Type\Union;
 
 use function array_merge;
 use function count;
+use function strtolower;
 
 /**
  * @internal
@@ -152,11 +156,17 @@ final class GenericTypeComparator
                     ) {
                         $lower_bounds_before = count($param_comparison_result->type_variable_lower_bounds);
 
-                        // Make sure types are basically the same
+                        // Make sure types are basically the same.
+                        // Int ranges are compared as int, the same way literals widen above
+                        // Only for the same class: through inheritance, $i does not index the input's own params
+                        $widened_input_param = strtolower($input_type_part->value)
+                            === strtolower($container_type_part->value)
+                            ? self::widenIntRanges($input_param)
+                            : $input_param;
                         $reverse_contained = UnionTypeComparator::isContainedBy(
                             $codebase,
                             $container_param,
-                            $input_param,
+                            $widened_input_param,
                             $container_param->ignore_nullable_issues,
                             $container_param->ignore_falsable_issues,
                             $param_comparison_result,
@@ -184,6 +194,11 @@ final class GenericTypeComparator
                                     $atomic_comparison_result->type_coerced = false;
                                 }
                             }
+                        } elseif ($widened_input_param !== $input_param
+                            && $atomic_comparison_result_type_params !== null
+                        ) {
+                            // the range was widened, so the argument now holds the container's type
+                            $atomic_comparison_result_type_params[$i] = $container_param;
                         }
                     }
                 }
@@ -228,5 +243,20 @@ final class GenericTypeComparator
         }
 
         return false;
+    }
+
+    private static function widenIntRanges(Union $type): Union
+    {
+        $has_range = false;
+        $atomic_types = [];
+        foreach ($type->getAtomicTypes() as $atomic_type) {
+            if ($atomic_type instanceof TIntRange) {
+                $has_range = true;
+                $atomic_type = new TInt();
+            }
+            $atomic_types[] = $atomic_type;
+        }
+
+        return $has_range ? $type->setTypes($atomic_types) : $type;
     }
 }
