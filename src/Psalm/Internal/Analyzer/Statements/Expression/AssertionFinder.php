@@ -32,6 +32,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ConstFetchAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
+use Psalm\Internal\Codebase\StringContext;
 use Psalm\Internal\Codebase\TaintValidations;
 use Psalm\Internal\Codebase\UrlHosts;
 use Psalm\Internal\MethodIdentifier;
@@ -119,6 +120,7 @@ use Psalm\Type\Atomic\TTemplateParamClass;
 use Psalm\Type\Atomic\TTemplateValueOf;
 use Psalm\Type\Atomic\TTraitString;
 use Psalm\Type\Atomic\TTrue;
+use Psalm\Type\TaintKind;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
@@ -317,18 +319,10 @@ final class AssertionFinder
 
         if ($conditional instanceof PhpParser\Node\Expr\BinaryOp\Greater
             || $conditional instanceof PhpParser\Node\Expr\BinaryOp\GreaterOrEqual
-        ) {
-            return self::getGreaterAssertions(
-                $conditional,
-                $source,
-                $this_class_name,
-            );
-        }
-
-        if ($conditional instanceof PhpParser\Node\Expr\BinaryOp\Smaller
+            || $conditional instanceof PhpParser\Node\Expr\BinaryOp\Smaller
             || $conditional instanceof PhpParser\Node\Expr\BinaryOp\SmallerOrEqual
         ) {
-            return self::getSmallerAssertions(
+            return self::getOrderComparisonAssertions(
                 $conditional,
                 $source,
                 $this_class_name,
@@ -418,6 +412,33 @@ final class AssertionFinder
                     if ($var_name) {
                         $if_types[$var_name] = [[new IsEqualIsset]];
                     }
+                }
+
+                // each offset of the chain is a key of its array
+                $dim_fetch = $isset_var;
+
+                while ($dim_fetch instanceof PhpParser\Node\Expr\ArrayDimFetch) {
+                    if ($dim_fetch->dim
+                        && $source instanceof StatementsAnalyzer
+                        && ($key_var_name = ExpressionIdentifier::getExtendedVarId(
+                            $dim_fetch->dim,
+                            $this_class_name,
+                            $source,
+                        )) !== null
+                        && ($array_type = $source->node_data->getType($dim_fetch->var))
+                        && ($key_type = $source->node_data->getType($dim_fetch->dim))
+                        && ($key_assertion = self::getKeyOfTemplateAssertion(
+                            $dim_fetch->var,
+                            $array_type,
+                            $key_type,
+                            $this_class_name,
+                            $source,
+                        ))
+                    ) {
+                        $if_types[$key_var_name][] = [$key_assertion];
+                    }
+
+                    $dim_fetch = $dim_fetch->var;
                 }
             }
 
@@ -941,6 +962,14 @@ final class AssertionFinder
             && isset($expr->getArgs()[1])
         ) {
             return self::getPatternMatchAssertions($expr, $source, $this_class_name);
+        } elseif ($source instanceof StatementsAnalyzer
+            && $function_id === 'str_starts_with'
+            && isset($expr->getArgs()[1])
+        ) {
+            return [
+                ...self::processCustomAssertion($expr, $this_class_name, $source),
+                ...self::getUrlStartAssertions($expr, $source, $this_class_name),
+            ];
         } else {
             return self::processCustomAssertion($expr, $this_class_name, $source);
         }
@@ -2003,7 +2032,7 @@ final class AssertionFinder
     }
 
     /**
-     * @param PhpParser\Node\Expr\BinaryOp\Greater|PhpParser\Node\Expr\BinaryOp\GreaterOrEqual $conditional
+     * @param Greater|GreaterOrEqual|Smaller|SmallerOrEqual $conditional
      */
     private static function hasReconcilableNonEmptyCountEqualityCheck(
         PhpParser\Node\Expr\BinaryOp $conditional,
@@ -3183,7 +3212,8 @@ final class AssertionFinder
         }
 
         $pattern = $pattern_type->getSingleStringLiteral()->value;
-        $removed_taints = PatternCharacters::getTaintsRemoved($pattern);
+        $removed_taints = PatternCharacters::getTaintsRemoved($pattern)
+            | PatternCharacters::getTaintsRemovedByStart($pattern);
         $subject_var_id = self::getStringFormVarId($subject_arg->value, $this_class_name, $source);
 
         $assertions = [];
@@ -3198,6 +3228,44 @@ final class AssertionFinder
         }
 
         return $assertions === [] ? [] : [$assertions];
+    }
+
+    /**
+     * A URL starting with a literal such as `https://` or `/` has a scheme the rest of it can't choose
+     *
+     * @return list<non-empty-array<string, non-empty-list<non-empty-list<Assertion>>>>
+     */
+    private static function getUrlStartAssertions(
+        PhpParser\Node\Expr\FuncCall $expr,
+        StatementsAnalyzer $source,
+        ?string $this_class_name,
+    ): array {
+        $args = $expr->getArgs();
+        $haystack_arg = $args[0] ?? null;
+        $needle_arg = $args[1] ?? null;
+        $needle_type = $needle_arg ? $source->node_data->getType($needle_arg->value) : null;
+
+        if ($haystack_arg === null
+            || $needle_arg === null
+            || $haystack_arg->name !== null
+            || $needle_arg->name !== null
+            || $needle_type === null
+            || !$needle_type->allStringLiterals()
+        ) {
+            return [];
+        }
+
+        foreach ($needle_type->getLiteralStrings() as $needle) {
+            if (!StringContext::fixesUrlScheme($needle->value)) {
+                return [];
+            }
+        }
+
+        $haystack_var_id = self::getStringFormVarId($haystack_arg->value, $this_class_name, $source);
+
+        return $haystack_var_id === null
+            ? []
+            : [[$haystack_var_id => [[new MatchesPattern(TaintKind::INPUT_URL_SCHEME)]]]];
     }
 
     /**
@@ -3516,6 +3584,47 @@ final class AssertionFinder
     }
 
     /**
+     * That a key of an array of a template type T is found: it is a key-of<T>
+     */
+    private static function getKeyOfTemplateAssertion(
+        PhpParser\Node\Expr $array_expr,
+        Union $array_type,
+        Union $key_type,
+        ?string $this_class_name,
+        StatementsAnalyzer $source,
+    ): ?InArray {
+        $array_atomic = $array_type->isSingle() ? $array_type->getSingleAtomic() : null;
+
+        if (!self::isArrayTemplate($array_atomic)) {
+            return null;
+        }
+
+        $key_of_type = new Union([new TTemplateKeyOf(
+            $array_atomic->param_name,
+            $array_atomic->defining_class,
+            new Union([$array_atomic]),
+        )]);
+
+        // only an int finds no other key than itself: '0' finds the key 0, null the key ''. A string that
+        // keys of T can be is still narrowed, though '0' may have found the int key 0
+        if (Type::intersectUnionTypes($key_of_type, $key_type, $source->getCodebase()) === null
+            || !array_all(
+                $key_type->getAtomicTypes(),
+                static fn(Atomic $key_atomic): bool => $key_atomic instanceof TInt
+                    || Type::intersectUnionTypes(
+                        $key_of_type,
+                        new Union([$key_atomic]),
+                        $source->getCodebase(),
+                    ) !== null,
+            )
+        ) {
+            return null;
+        }
+
+        return new InArray($key_of_type, self::getOperandId($array_expr, $this_class_name, $source));
+    }
+
+    /**
      * @return list<non-empty-array<string, non-empty-list<non-empty-list<Assertion>>>>
      */
     private static function getArrayKeyExistsAssertions(
@@ -3589,34 +3698,16 @@ final class AssertionFinder
                 }
             }
 
-            $array_atomic = $second_var_type->isSingle() ? $second_var_type->getSingleAtomic() : null;
+            $template_key_assertion = self::getKeyOfTemplateAssertion(
+                $expr->getArgs()[1]->value,
+                $second_var_type,
+                $first_var_type,
+                $this_class_name,
+                $source,
+            );
 
-            if (self::isArrayTemplate($array_atomic)) {
-                $key_of_type = new Union([new TTemplateKeyOf(
-                    $array_atomic->param_name,
-                    $array_atomic->defining_class,
-                    new Union([$array_atomic]),
-                )]);
-
-                // only an int finds no other key than itself: '0' finds the key 0, null the key ''. A string that
-                // keys of T can be is still narrowed, though '0' may have found the int key 0
-                if (Type::intersectUnionTypes($key_of_type, $first_var_type, $source->getCodebase()) !== null
-                    && array_all(
-                        $first_var_type->getAtomicTypes(),
-                        static fn(Atomic $key_atomic): bool => $key_atomic instanceof TInt
-                            || Type::intersectUnionTypes(
-                                $key_of_type,
-                                new Union([$key_atomic]),
-                                $source->getCodebase(),
-                            ) !== null,
-                    )
-                ) {
-                    $template_key_var_name = $first_var_name;
-                    $template_key_assertion = new InArray(
-                        $key_of_type,
-                        self::getOperandId($expr->getArgs()[1]->value, $this_class_name, $source),
-                    );
-                }
+            if ($template_key_assertion) {
+                $template_key_var_name = $first_var_name;
             }
         }
 
@@ -3710,11 +3801,11 @@ final class AssertionFinder
     }
 
     /**
-     * @param PhpParser\Node\Expr\BinaryOp\Greater|PhpParser\Node\Expr\BinaryOp\GreaterOrEqual $conditional
+     * @param Greater|GreaterOrEqual|Smaller|SmallerOrEqual $conditional
      * @return list<non-empty-array<string, non-empty-list<non-empty-list<Assertion>>>>
      */
-    private static function getGreaterAssertions(
-        PhpParser\Node\Expr $conditional,
+    private static function getOrderComparisonAssertions(
+        PhpParser\Node\Expr\BinaryOp $conditional,
         FileSource $source,
         ?string $this_class_name,
     ): array {
@@ -3724,21 +3815,19 @@ final class AssertionFinder
         $count_equality_position = self::hasNonEmptyCountEqualityCheck($conditional, $source, $min_count);
         $max_count = null;
         $count_inequality_position = self::hasLessThanCountEqualityCheck($conditional, $source, $max_count);
-        $superior_value_comparison = null;
-        $superior_value_position = self::hasIntLiteralComparison(
+        $literal_value_comparison = null;
+        $literal_value_position = self::hasIntLiteralComparison(
             $source,
             $conditional,
-            $superior_value_comparison,
+            $literal_value_comparison,
         );
 
-        if ($count_equality_position) {
-            if ($count_equality_position === self::ASSIGNMENT_TO_RIGHT) {
-                $counted_expr = $conditional->left;
-            } else {
-                throw new UnexpectedValueException('$count_equality_position value');
-            }
-
+        if ($count_equality_position !== false) {
             /** @var PhpParser\Node\Expr\FuncCall $counted_expr */
+            $counted_expr = $count_equality_position === self::ASSIGNMENT_TO_RIGHT
+                ? $conditional->left
+                : $conditional->right;
+
             $var_name = ExpressionIdentifier::getExtendedVarId(
                 $counted_expr->getArgs()[0]->value,
                 $this_class_name,
@@ -3760,14 +3849,12 @@ final class AssertionFinder
             return $if_types ? [$if_types] : [];
         }
 
-        if ($count_inequality_position) {
-            if ($count_inequality_position === self::ASSIGNMENT_TO_LEFT) {
-                $count_expr = $conditional->right;
-            } else {
-                throw new UnexpectedValueException('$count_inequality_position value');
-            }
-
+        if ($count_inequality_position !== false) {
             /** @var PhpParser\Node\Expr\FuncCall $count_expr */
+            $count_expr = $count_inequality_position === self::ASSIGNMENT_TO_RIGHT
+                ? $conditional->left
+                : $conditional->right;
+
             $var_name = ExpressionIdentifier::getExtendedVarId(
                 $count_expr->getArgs()[0]->value,
                 $this_class_name,
@@ -3785,28 +3872,29 @@ final class AssertionFinder
             return $if_types ? [$if_types] : [];
         }
 
-        if ($superior_value_position && $superior_value_comparison !== null) {
+        if ($literal_value_position !== false && $literal_value_comparison !== null) {
             $var_name = self::getComparedVarId(
-                $superior_value_position === self::ASSIGNMENT_TO_RIGHT ? $conditional->left : $conditional->right,
-                $superior_value_position === self::ASSIGNMENT_TO_RIGHT ? $conditional->right : null,
+                $literal_value_position === self::ASSIGNMENT_TO_RIGHT ? $conditional->left : $conditional->right,
+                $literal_value_position === self::ASSIGNMENT_TO_RIGHT ? $conditional->right : null,
                 $this_class_name,
                 $source,
-                $superior_value_comparison,
+                $literal_value_comparison,
             );
 
             if ($var_name !== null) {
-                if ($superior_value_position === self::ASSIGNMENT_TO_RIGHT) {
-                    if ($conditional instanceof GreaterOrEqual) {
-                        $if_types[$var_name] = [[new IsGreaterThanOrEqualTo($superior_value_comparison)]];
-                    } else {
-                        $if_types[$var_name] = [[new IsGreaterThan($superior_value_comparison)]];
-                    }
+                $or_equal = $conditional instanceof GreaterOrEqual || $conditional instanceof SmallerOrEqual;
+
+                // the variable is on the greater side of the comparison
+                if (($literal_value_position === self::ASSIGNMENT_TO_RIGHT)
+                    === ($conditional instanceof Greater || $conditional instanceof GreaterOrEqual)
+                ) {
+                    $if_types[$var_name] = [[$or_equal
+                        ? new IsGreaterThanOrEqualTo($literal_value_comparison)
+                        : new IsGreaterThan($literal_value_comparison)]];
                 } else {
-                    if ($conditional instanceof GreaterOrEqual) {
-                        $if_types[$var_name] = [[new IsLessThanOrEqualTo($superior_value_comparison)]];
-                    } else {
-                        $if_types[$var_name] = [[new IsLessThan($superior_value_comparison)]];
-                    }
+                    $if_types[$var_name] = [[$or_equal
+                        ? new IsLessThanOrEqualTo($literal_value_comparison)
+                        : new IsLessThan($literal_value_comparison)]];
                 }
             }
 
@@ -3971,110 +4059,6 @@ final class AssertionFinder
         return $first_argument && !$first_argument->unpack && !$first_argument->name
             ? $first_argument->value
             : null;
-    }
-
-    /**
-     * @param PhpParser\Node\Expr\BinaryOp\Smaller|PhpParser\Node\Expr\BinaryOp\SmallerOrEqual $conditional
-     * @return list<non-empty-array<string, non-empty-list<non-empty-list<Assertion>>>>
-     */
-    private static function getSmallerAssertions(
-        PhpParser\Node\Expr $conditional,
-        FileSource $source,
-        ?string $this_class_name,
-    ): array {
-        $if_types = [];
-        $min_count = null;
-        $count_equality_position = self::hasNonEmptyCountEqualityCheck($conditional, $source, $min_count);
-        $max_count = null;
-        $count_inequality_position = self::hasLessThanCountEqualityCheck($conditional, $source, $max_count);
-        $inferior_value_comparison = null;
-        $inferior_value_position = self::hasIntLiteralComparison(
-            $source,
-            $conditional,
-            $inferior_value_comparison,
-        );
-
-        if ($count_equality_position) {
-            if ($count_equality_position === self::ASSIGNMENT_TO_LEFT) {
-                $count_expr = $conditional->right;
-            } else {
-                throw new UnexpectedValueException('$count_equality_position value');
-            }
-
-            /** @var PhpParser\Node\Expr\FuncCall $count_expr */
-            $var_name = ExpressionIdentifier::getExtendedVarId(
-                $count_expr->getArgs()[0]->value,
-                $this_class_name,
-                $source,
-            );
-
-            if ($var_name) {
-                if ($min_count > 0) {
-                    $if_types[$var_name] = [[new HasAtLeastCount($min_count)]];
-                } else {
-                    $if_types[$var_name] = [[new NonEmptyCountable(false)]];
-                }
-            }
-
-            return $if_types ? [$if_types] : [];
-        }
-
-        if ($count_inequality_position) {
-            if ($count_inequality_position === self::ASSIGNMENT_TO_RIGHT) {
-                $count_expr = $conditional->left;
-            } else {
-                throw new UnexpectedValueException('$count_inequality_position value');
-            }
-
-            /** @var PhpParser\Node\Expr\FuncCall $count_expr */
-            $var_name = ExpressionIdentifier::getExtendedVarId(
-                $count_expr->getArgs()[0]->value,
-                $this_class_name,
-                $source,
-            );
-
-            if ($var_name) {
-                if ($max_count > 0) {
-                    $if_types[$var_name] = [[new DoesNotHaveAtLeastCount($max_count + 1)]];
-                } else {
-                    $if_types[$var_name] = [[new NotNonEmptyCountable()]];
-                }
-            }
-
-            return $if_types ? [$if_types] : [];
-        }
-
-        if ($inferior_value_position) {
-            $var_name = $inferior_value_comparison !== null
-                ? self::getComparedVarId(
-                    $inferior_value_position === self::ASSIGNMENT_TO_RIGHT ? $conditional->left : $conditional->right,
-                    $inferior_value_position === self::ASSIGNMENT_TO_RIGHT ? $conditional->right : null,
-                    $this_class_name,
-                    $source,
-                    $inferior_value_comparison,
-                )
-                : null;
-
-            if ($var_name !== null && $inferior_value_comparison !== null) {
-                if ($inferior_value_position === self::ASSIGNMENT_TO_RIGHT) {
-                    if ($conditional instanceof SmallerOrEqual) {
-                        $if_types[$var_name] = [[new IsLessThanOrEqualTo($inferior_value_comparison)]];
-                    } else {
-                        $if_types[$var_name] = [[new IsLessThan($inferior_value_comparison)]];
-                    }
-                } else {
-                    if ($conditional instanceof SmallerOrEqual) {
-                        $if_types[$var_name] = [[new IsGreaterThanOrEqualTo($inferior_value_comparison)]];
-                    } else {
-                        $if_types[$var_name] = [[new IsGreaterThan($inferior_value_comparison)]];
-                    }
-                }
-            }
-
-            return $if_types ? [$if_types] : [];
-        }
-
-        return [];
     }
 
     /**

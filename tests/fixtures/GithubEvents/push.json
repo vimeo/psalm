@@ -1,0 +1,18 @@
+{
+  "ref": "refs/heads/master",
+  "before": "89abcdef0123456789abcdef0123456789abcdef",
+  "after": "0123456789abcdef0123456789abcdef01234567",
+  "head_commit": {
+    "id": "0123456789abcdef0123456789abcdef01234567",
+    "message": "Fix the thing",
+    "timestamp": "2026-05-01T12:30:00+00:00",
+    "author": {
+      "name": "Jane Author",
+      "email": "jane@example.com"
+    },
+    "committer": {
+      "name": "Joe Committer",
+      "email": "joe@example.com"
+    }
+  }
+}

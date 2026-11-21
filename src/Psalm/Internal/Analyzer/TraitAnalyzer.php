@@ -6,6 +6,7 @@ namespace Psalm\Internal\Analyzer;
 
 use Attribute;
 use Override;
+use PhpParser\Node\Stmt\ClassConst;
 use PhpParser\Node\Stmt\Trait_;
 use Psalm\Aliases;
 use Psalm\CodeLocation;
@@ -84,6 +85,16 @@ final class TraitAnalyzer extends ClassLikeAnalyzer
         $storage = $codebase->classlike_storage_provider->get($fq_trait_name);
 
         ClassLikeAnalyzer::registerDocblockSuppressions($storage, $statements_analyzer->getFilePath(), $codebase);
+
+        $suppressed_issues = $storage->suppressed_issues + $statements_analyzer->getSuppressedIssues();
+
+        ClassLikeAnalyzer::checkDeprecatedName($statements_analyzer, 'a trait', $stmt->name, $suppressed_issues);
+
+        foreach ($stmt->stmts as $trait_stmt) {
+            if ($trait_stmt instanceof ClassConst) {
+                ClassLikeAnalyzer::checkDeprecatedConstantNames($statements_analyzer, $trait_stmt, $suppressed_issues);
+            }
+        }
 
         AttributesAnalyzer::analyze(
             $statements_analyzer,
