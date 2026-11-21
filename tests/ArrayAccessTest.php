@@ -22,6 +22,7 @@ use function sort;
 use function str_contains;
 
 use const DIRECTORY_SEPARATOR;
+use const PHP_VERSION_ID;
 
 final class ArrayAccessTest extends TestCase
 {
@@ -1486,6 +1487,44 @@ final class ArrayAccessTest extends TestCase
         );
     }
 
+    public function testOffsetsOfDomNamespaceCollectionsAreReadByPositionOrName(): void
+    {
+        if (PHP_VERSION_ID < 8_04_00) {
+            $this->markTestSkipped('The Dom namespace needs PHP 8.4');
+        }
+
+        $this->project_analyzer->setPhpVersion('8.4', 'tests');
+
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                function domAttributeAt(Dom\\NamedNodeMap $attributes): ?Dom\\Attr {
+                    return $attributes[0];
+                }
+
+                function domAttributeNamed(Dom\\NamedNodeMap $attributes): ?Dom\\Attr {
+                    return $attributes["href"];
+                }
+
+                function childAt(Dom\\NodeList $children): ?Dom\\Node {
+                    return $children[0];
+                }
+
+                function elementAt(Dom\\HTMLCollection $elements): ?Dom\\Element {
+                    return $elements[0];
+                }
+
+                function elementNamed(Dom\\HTMLCollection $elements): ?Dom\\Element {
+                    return $elements["main"];
+                }',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+        $this->assertTrue(true);
+    }
+
     /**
      * @psalm-pure
      */
@@ -1493,6 +1532,16 @@ final class ArrayAccessTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'offsetsOfADomNamedNodeMapAreReadByPositionOrName' => [
+                'code' => '<?php
+                    function attributeAt(DOMNamedNodeMap $attributes): ?DOMNode {
+                        return $attributes[0];
+                    }
+
+                    function attributeNamed(DOMNamedNodeMap $attributes): ?DOMNode {
+                        return $attributes["href"];
+                    }',
+            ],
             'nullOffsetOfAnObjectThatAcceptsItInArrayAccess' => [
                 'code' => '<?php
                     /** @implements ArrayAccess<string|null, int> */
