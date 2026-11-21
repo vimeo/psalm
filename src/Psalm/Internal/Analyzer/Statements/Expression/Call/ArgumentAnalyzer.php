@@ -22,6 +22,7 @@ use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
 use Psalm\Internal\Codebase\CliOutput;
 use Psalm\Internal\Codebase\ConstantTypeResolver;
+use Psalm\Internal\Codebase\PhpDeprecations;
 use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\MethodIdentifier;
@@ -35,7 +36,7 @@ use Psalm\Internal\Type\TypeExpander;
 use Psalm\Internal\TypeVisitor\TypeVariableResolver;
 use Psalm\Issue\ArgumentTypeCoercion;
 use Psalm\Issue\CallableByReferenceMismatch;
-use Psalm\Issue\DeprecatedConstant;
+use Psalm\Issue\DeprecatedSyntax;
 use Psalm\Issue\ImplicitToStringCast;
 use Psalm\Issue\InvalidArgument;
 use Psalm\Issue\InvalidLiteralArgument;
@@ -79,12 +80,16 @@ use Psalm\Type\Atomic\TTypeVariable;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
+use function array_all;
 use function array_filter;
+use function array_keys;
 use function array_shift;
+use function array_values;
 use function count;
 use function explode;
 use function implode;
 use function in_array;
+use function is_int;
 use function is_numeric;
 use function is_string;
 use function max;
@@ -437,11 +442,13 @@ final class ArgumentAnalyzer
             }
         }
 
+        // `static` is the object the method is called on, with its template arguments, as for the params of closures
+        $static_class_type = $template_result?->static_class_type;
         $param_type = TypeExpander::expandUnion(
             $codebase,
             $param_type,
             $classlike_storage->name ?? null,
-            $static_classlike_storage->name ?? null,
+            $static_class_type instanceof TNamedObject ? $static_class_type : ($static_classlike_storage->name ?? null),
             $parent_class,
             true,
             false,
@@ -619,7 +626,7 @@ final class ArgumentAnalyzer
             }
 
             if ($arg_value_type->hasArray()) {
-                $unpacked_atomic_array = $arg_value_type->getArray();
+                $unpacked_atomic_array = self::getPositionalShape($arg_value_type->getArray());
                 $arg_key_allowed = true;
 
                 // a template param is as iterable as its bound
@@ -958,6 +965,27 @@ final class ArgumentAnalyzer
             false,
             true,
         );
+    }
+
+    /**
+     * A sealed shape with integer keys that is not a list passes its values in the order of the shape, whatever the
+     * keys are, as the list of them. A shape with an optional item is left as it is.
+     *
+     * @psalm-pure
+     */
+    private static function getPositionalShape(
+        TKeyedArray|TArray|TClassStringMap $array,
+    ): TKeyedArray|TArray|TClassStringMap {
+        if (!$array instanceof TKeyedArray
+            || $array->is_list
+            || $array->fallback_params
+            || !array_all(array_keys($array->properties), static fn(int|string $key): bool => is_int($key))
+            || !array_all($array->properties, static fn(Union $property): bool => !$property->possibly_undefined)
+        ) {
+            return $array;
+        }
+
+        return TKeyedArray::make(array_values($array->properties), null, null, true);
     }
 
     /**
@@ -1366,22 +1394,8 @@ final class ArgumentAnalyzer
                         continue;
                     }
 
-                    if ($potential_method_id === null && $codebase->analysis_php_version_id >= 8_02_00) {
-                        [$lhs,] = $input_type_part->properties;
-                        if ($lhs->isSingleStringLiteral()
-                            && in_array(
-                                strtolower($lhs->getSingleStringLiteral()->value),
-                                ['self', 'parent', 'static'],
-                                true,
-                            )) {
-                            IssueBuffer::maybeAdd(
-                                new DeprecatedConstant(
-                                    'Use of "' . $lhs->getSingleStringLiteral()->value . '" in callables is deprecated',
-                                    $arg_location,
-                                ),
-                                $statements_analyzer->getSuppressedIssues(),
-                            );
-                        }
+                    if (self::isRelativeCallableArray($input_type_part)) {
+                        self::reportRelativeCallable($statements_analyzer, $arg_location);
                     }
 
                     if ($potential_method_id && $potential_method_id !== 'not-callable') {
@@ -1420,19 +1434,8 @@ final class ArgumentAnalyzer
                         strtolower($parts[1]),
                     );
 
-                    if ($codebase->analysis_php_version_id >= 8_02_00
-                        && in_array(
-                            strtolower($potential_method_id->fq_class_name),
-                            ['self', 'parent', 'static'],
-                            true,
-                        )) {
-                        IssueBuffer::maybeAdd(
-                            new DeprecatedConstant(
-                                'Use of "' . $potential_method_id->fq_class_name . '" in callables is deprecated',
-                                $arg_location,
-                            ),
-                            $statements_analyzer->getSuppressedIssues(),
-                        );
+                    if (in_array(strtolower($potential_method_id->fq_class_name), ['self', 'parent', 'static'], true)) {
+                        self::reportRelativeCallable($statements_analyzer, $arg_location);
                     }
 
                     if (self::verifyCallableInContext(
@@ -3045,5 +3048,45 @@ final class ArgumentAnalyzer
         }
 
         return $type;
+    }
+
+    /**
+     * Whether $array is a callable relative to the calling class, `["parent", "method"]` or
+     * `[$object, "Parent::method"]`
+     *
+     * @psalm-pure
+     */
+    private static function isRelativeCallableArray(TKeyedArray $array): bool
+    {
+        $class = $array->properties[0] ?? null;
+        $method = $array->properties[1] ?? null;
+
+        if ($class === null || $method === null || count($array->properties) !== 2) {
+            return false;
+        }
+
+        return ($class->isSingleStringLiteral()
+                && in_array(strtolower($class->getSingleStringLiteral()->value), ['self', 'parent', 'static'], true))
+            || ($method->isSingleStringLiteral() && str_contains($method->getSingleStringLiteral()->value, '::'));
+    }
+
+    /**
+     * Reports a callable relative to the calling class, which PHP deprecates whatever PHP version is analysed
+     */
+    private static function reportRelativeCallable(
+        StatementsAnalyzer $statements_analyzer,
+        CodeLocation $location,
+    ): void {
+        IssueBuffer::maybeAdd(
+            new DeprecatedSyntax(
+                PhpDeprecations::getDeprecatedSinceMessage(
+                    'A callable relative to the calling class',
+                    8_02_00,
+                    'self::method(...) or [self::class, "method"]',
+                ),
+                $location,
+            ),
+            $statements_analyzer->getSuppressedIssues(),
+        );
     }
 }

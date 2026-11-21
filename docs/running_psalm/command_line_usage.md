@@ -38,11 +38,17 @@ Only full runs are checked: the option can't be combined with file paths, `--set
 
 ## Shepherd
 
-Psalm currently offers some GitHub integration with public projects.
+[Shepherd](https://shepherd.dev) is a free service for public GitHub projects that stores the results of your CI Psalm runs and shows your type coverage over time, with README badges.
 
-Add `--shepherd` to send information about your build to https://shepherd.dev.
+Add `--shepherd` to the Psalm command that runs in CI:
 
-Currently, Shepherd tracks type coverage (the percentage of types Psalm can infer) on `master` branches.
+```bash
+./vendor/bin/psalm --shepherd
+```
+
+The coverage history and the badges use the runs on the default branch of your repository. Psalm reports to Shepherd from Travis CI, CircleCI, AppVeyor, Jenkins, Scrutinizer and GitHub Actions only.
+
+See [Using Shepherd](shepherd.md) for badges, what is sent, and how to run your own server.
 
 ## Running Psalm faster
 

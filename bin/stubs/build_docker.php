@@ -26,15 +26,10 @@ use Composer\Semver\VersionParser;
 const VERSIONS = ['7.0', '7.1', '7.2', '7.3', '7.4', '8.0', '8.1', '8.2', '8.3', '8.4', '8.5', '8.6'];
 
 /** The tag of the PHP base image of versions with no release yet (php:<version>-alpine otherwise). */
-const BASE_IMAGE_TAGS = [
-    '8.6' => '8.6-rc-alpine',
-];
+const BASE_IMAGE_TAGS = [];
 
 /** Alpine packages installed first, for extensions the base image of a version lacks the libraries of. */
-const BASE_IMAGE_PACKAGES = [
-    // the 8.6 release candidate images are built without mbstring
-    '8.6' => ['oniguruma-dev'],
-];
+const BASE_IMAGE_PACKAGES = [];
 
 /** Extensions installed in every image. */
 const EXTENSIONS = [
@@ -60,8 +55,8 @@ const INCLUDES = [
 const EXCLUDES = [
     // php-zmq does not build on PHP 8.5 (it calls zend_exception_get_default(), removed in 8.5).
     '8.5' => ['zmq'],
-    // these don't build on the PHP 8.6 release candidates yet (8.6 removed XtOffsetOf, zval_dtor, INI_STR, ...)
-    '8.6' => ['zmq', 'amqp', 'apcu', 'ds', 'ev', 'grpc', 'igbinary', 'memcached', 'redis', 'swoole', 'zookeeper'],
+    // php-zmq still calls zend_exception_get_default()
+    '8.6' => ['zmq'],
 ];
 
 /** Extension versions pinned for specific versions, by base extension name. */
@@ -618,7 +613,7 @@ function generateDockerfile(string $version, array $extensions, array $pieInstal
             . " && \\\n    php /tmp/pear.phar && rm /tmp/pear.phar";
     }
     // 8.6 dropped XtOffsetOf, an alias of offsetof, which imagick still uses
-    $cflags = isset(BASE_IMAGE_TAGS[$version]) ? "CFLAGS='-DXtOffsetOf=offsetof' " : '';
+    $cflags = version_compare($version, '8.6', '>=') ? "CFLAGS='-DXtOffsetOf=offsetof' " : '';
     $packages = BASE_IMAGE_PACKAGES[$version] ?? [];
     $packageStep = $packages === []
         ? ''
