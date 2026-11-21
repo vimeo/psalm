@@ -24,6 +24,18 @@ final class FunctionCallTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'urlencodeOfANonEmptyStringIsNonEmpty' => [
+                'code' => '<?php
+                    /** @param non-empty-string $input */
+                    function encode(string $input, string $any): void {
+                        /** @psalm-check-type-exact $encoded = non-empty-string */
+                        $encoded = urlencode($input);
+                        /** @psalm-check-type-exact $rawEncoded = non-empty-string */
+                        $rawEncoded = rawurlencode($input);
+                        /** @psalm-check-type-exact $maybeEmpty = string */
+                        $maybeEmpty = urlencode($any);
+                    }',
+            ],
             'pathinfoWithAllElementsReturnsTheArray' => [
                 'code' => '<?php
                     /** @param non-empty-string $path */
