@@ -14,6 +14,8 @@ use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
 use function array_map;
 
+use const DIRECTORY_SEPARATOR;
+
 final class ToStringTest extends TestCase
 {
     use InvalidCodeAnalysisTestTrait;
@@ -68,6 +70,23 @@ final class ToStringTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'intvalAndFloatvalOfValuesThatCastCleanly' => [
+                'code' => '<?php
+                    /** @param list<int> $parts */
+                    function f(string $string, int|float|bool|null $scalar, mixed $mixed, array $parts): void {
+                        $a = intval($string);
+                        $b = intval($string, 16);
+                        $c = intval($scalar);
+                        $d = intval($mixed);
+                        $e = floatval($string);
+                        $f = floatval($scalar);
+                        $g = floatval($mixed);
+                        $h = intval(...$parts);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.2',
+            ],
             'validToString' => [
                 'code' => '<?php
                     class A {
@@ -574,6 +593,79 @@ final class ToStringTest extends TestCase
                 'code' => '<?php
                     echo (float) array(\'hello\');',
                 'error_message' => 'RiskyCast',
+            ],
+            'riskyArrayToIntvalCall' => [
+                'code' => '<?php
+                    function f(array $page): int {
+                        return intval($page);
+                    }',
+                'error_message' => 'RiskyCast - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:39',
+            ],
+            'riskyArrayToIntvalCallWithABase' => [
+                'code' => '<?php
+                    function f(array $page): int {
+                        return intval($page, 16);
+                    }',
+                'error_message' => 'RiskyCast - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:39',
+            ],
+            'riskyArrayToFloatvalCall' => [
+                'code' => '<?php
+                    function f(array $page): float {
+                        return floatval($page);
+                    }',
+                'error_message' => 'RiskyCast - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:41',
+            ],
+            'riskyArrayToDoublevalCall' => [
+                'code' => '<?php
+                    function f(array $page): float {
+                        return doubleval($page);
+                    }',
+                'error_message' => 'RiskyCast - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:42',
+            ],
+            'objectToIntvalCall' => [
+                'code' => '<?php
+                    function f(stdClass $object): int {
+                        return intval($object);
+                    }',
+                'error_message' => 'InvalidCast - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:39',
+            ],
+            'riskyValueOfArrayTemplateToIntvalCall' => [
+                'code' => '<?php
+                    /**
+                     * @template T of array<string, array>
+                     * @param value-of<T> $page
+                     */
+                    function f($page): int {
+                        return intval($page);
+                    }',
+                'error_message' => 'RiskyCast - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:39',
+            ],
+            'riskyValueOfArrayTemplateToFloatvalCall' => [
+                'code' => '<?php
+                    /**
+                     * @template T of array<string, array>
+                     * @param value-of<T> $page
+                     */
+                    function f($page): float {
+                        return floatval($page);
+                    }',
+                'error_message' => 'RiskyCast - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:41',
+            ],
+            'riskyArrayToIntvalCallWithTooManyArguments' => [
+                'code' => '<?php
+                    function f(array $page): int {
+                        return intval($page, 16, 1);
+                    }',
+                'error_message' => 'RiskyCast - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:39',
+                'error_levels' => ['TooManyArguments'],
+            ],
+            'riskyArrayToFloatvalCallWithTooManyArguments' => [
+                'code' => '<?php
+                    function f(array $page): float {
+                        return floatval($page, 1);
+                    }',
+                'error_message' => 'RiskyCast - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:41',
+                'error_levels' => ['TooManyArguments'],
             ],
         ];
     }
