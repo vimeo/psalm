@@ -568,6 +568,39 @@ final class ConditionalReturnTypeTest extends TestCase
                     '$bool2' => 'bool',
                 ],
             ],
+            'conditionalOnAParamInAnInlineVarIsTheConditionalOfTheReturnType' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @param T $value
+                     * @param (callable(): int)|null $f
+                     * @return ($f is null ? T : int)
+                     */
+                    function pick(mixed $value, ?callable $f = null): mixed {
+                        /** @var ($f is null ? T : int) $result */
+                        $result = $f !== null ? $f() : $value;
+
+                        return $result;
+                    }
+
+                    final class Picker {
+                        /**
+                         * @template T
+                         * @param T $value
+                         * @param (callable(): int)|null $f
+                         * @return ($f is null ? T : int)
+                         */
+                        public function pick(mixed $value, ?callable $f = null): mixed {
+                            /** @var ($f is null ? T : int) $result */
+                            $result = $f !== null ? $f() : $value;
+
+                            return $result;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'variableConditionalSyntax' => [
                 'code' => '<?php
                     /**
@@ -2720,6 +2753,17 @@ final class ConditionalReturnTypeTest extends TestCase
                 // only the object bound still intersects with the class
                 'error_message' => 'Argument 1 of sink expects int, but list{array<array-key, T:Pg as string>,'
                     . ' array<array-key, (U:Pg as object)&Mdl|(U:Pg as object)>} provided',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'conditionalOnAParamInAnInlineVarNeedsTheReturnTypeToDependOnIt' => [
+                'code' => '<?php
+                    /** @param (callable(): int)|null $f */
+                    function pick(?callable $f = null): void {
+                        /** @var ($f is null ? string : int) $result */
+                        $result = 1;
+                    }',
+                'error_message' => 'InvalidDocblock',
                 'error_levels' => [],
                 'php_version' => '8.0',
             ],
