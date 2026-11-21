@@ -2106,11 +2106,22 @@ final class TypeParseTest extends TestCase
             self::assertSame('Traversable<*, mixed>', $combined->getId());
             $atomic = $combined->getSingleAtomic();
             self::assertInstanceOf(TGenericObject::class, $atomic);
-            self::assertSame(
-                [0 => TypeArgumentProjection::Star, 1 => TypeArgumentProjection::Omitted],
-                $atomic->getProjections(),
-            );
+            // the `*` stays, and the left out argument next to an explicit one is no longer left out
+            self::assertSame([0 => TypeArgumentProjection::Star], $atomic->getProjections());
         }
+
+        $both_left_out = Type::combineUnionTypes($left_out, $left_out);
+        $atomic = $both_left_out->getSingleAtomic();
+        self::assertInstanceOf(TGenericObject::class, $atomic);
+        self::assertSame(
+            [0 => TypeArgumentProjection::Omitted, 1 => TypeArgumentProjection::Omitted],
+            $atomic->getProjections(),
+        );
+
+        $explicit = Type::parseString('Traversable<mixed, mixed>');
+        $atomic = Type::combineUnionTypes($left_out, $explicit)->getSingleAtomic();
+        self::assertInstanceOf(TGenericObject::class, $atomic);
+        self::assertSame([], $atomic->getProjections());
     }
 
     /**
