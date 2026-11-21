@@ -618,7 +618,7 @@ final class ClassLikeNodeScanner
                         }
 
                         if ($bound->getId() !== $storage->template_types[$template_name][$fq_classlike_name]->getId()) {
-                            $storage->template_types[$template_name][$fq_classlike_name] = $bound;
+                            $storage->template_types[$template_name] = [$fq_classlike_name => $bound];
                             $settled = false;
                         }
                     }

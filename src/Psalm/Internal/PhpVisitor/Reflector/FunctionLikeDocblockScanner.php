@@ -2328,7 +2328,7 @@ final class FunctionLikeDocblockScanner
             );
         $storage->docblock_issues = [...$storage->docblock_issues, ...$default_issues];
 
-        return array_merge($template_types ?: [], $storage->template_types);
+        return array_merge($template_types ?? [], $storage->template_types);
     }
 
     private static function handleUnexpectedTags(
