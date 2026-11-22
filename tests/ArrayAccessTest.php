@@ -1618,6 +1618,41 @@ final class ArrayAccessTest extends TestCase
                 'ignored_issues' => ['MixedAssignment'],
                 'php_version' => '8.0',
             ],
+            'offsetOfAShapeIsRecomputedWhenTheIndexIsNarrowed' => [
+                'code' => '<?php
+                    function takesString(string $s): void {}
+
+                    /** @return array{foo: string, bar: int} */
+                    function getShape(): array {
+                        return ["foo" => "a", "bar" => 1];
+                    }
+
+                    /** @return "foo"|"bar" */
+                    function getKey(): string {
+                        return "foo";
+                    }
+
+                    $a = getShape();
+                    $k = getKey();
+                    $narrowed = "";
+                    echo (string) $a[$k];
+                    if ($k === "foo") {
+                        takesString($a[$k]);
+                        $narrowed = $a[$k];
+                    }
+
+                    $b = getShape();
+                    $l = getKey();
+                    $narrowedAfterIsset = "";
+                    if (isset($b[$l]) && $l === "foo") {
+                        takesString($b[$l]);
+                        $narrowedAfterIsset = $b[$l];
+                    }',
+                'assertions' => [
+                    '$narrowed===' => 'string',
+                    '$narrowedAfterIsset===' => 'string',
+                ],
+            ],
             'issetOnAnIndexIsKeptWhenTheIndexIsNarrowedInALoop' => [
                 'code' => '<?php
                     /** @param string[] $in */

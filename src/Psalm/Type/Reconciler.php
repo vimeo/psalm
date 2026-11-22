@@ -604,7 +604,7 @@ class Reconciler
                         }
 
                         if (!isset($new_types[$new_key])
-                            && self::dependsOnNarrowedVar($new_key, $key)
+                            && self::dependsOnNarrowedVar($new_key, $key, $existing_types)
                             && $is_real
                         ) {
                             // Fix any references to the type before removing it.
@@ -1037,16 +1037,68 @@ class Reconciler
 
     /**
      * Whether what is known about $var_id may be stale after $narrowed_var_id has been narrowed. It is not when
-     * $narrowed_var_id is only used as an index of $var_id: narrowing does not change the value of the index.
+     * $narrowed_var_id is only an index of $var_id into an array whose value type is the same for every key.
      *
+     * @param array<string, Union> $types
      * @psalm-pure
      */
-    public static function dependsOnNarrowedVar(string $var_id, string $narrowed_var_id): bool
+    public static function dependsOnNarrowedVar(string $var_id, string $narrowed_var_id, array $types): bool
     {
-        return (bool) preg_match(
-            '/' . preg_quote($narrowed_var_id, '/') . '[\]\[\-]/',
-            str_replace('[' . $narrowed_var_id . ']', '[]', $var_id),
-        );
+        $index = '[' . $narrowed_var_id . ']';
+
+        if (preg_match('/' . preg_quote($narrowed_var_id, '/') . '[\]\[\-]/', str_replace($index, '[]', $var_id))) {
+            return true;
+        }
+
+        $position = strpos($var_id, $index);
+
+        while ($position !== false) {
+            $array_type = $types[substr($var_id, 0, $position)] ?? null;
+
+            if ($array_type === null || !self::hasSameValueTypeForEveryKey($array_type)) {
+                return true;
+            }
+
+            $position = strpos($var_id, $index, $position + 1);
+        }
+
+        return false;
+    }
+
+    /**
+     * @psalm-pure
+     */
+    private static function hasSameValueTypeForEveryKey(Union $type): bool
+    {
+        foreach ($type->getAtomicTypes() as $atomic_type) {
+            if ($atomic_type instanceof TArray || $atomic_type instanceof TMixed) {
+                continue;
+            }
+
+            if (!$atomic_type instanceof TKeyedArray) {
+                return false;
+            }
+
+            $value_types = $atomic_type->properties;
+
+            if ($atomic_type->fallback_params !== null) {
+                $value_types[] = $atomic_type->fallback_params[1];
+            }
+
+            $value_type_id = null;
+
+            foreach ($value_types as $value_type) {
+                $id = $value_type->setPossiblyUndefined(false)->getId();
+
+                if ($value_type_id !== null && $id !== $value_type_id) {
+                    return false;
+                }
+
+                $value_type_id = $id;
+            }
+        }
+
+        return true;
     }
 
     /**
