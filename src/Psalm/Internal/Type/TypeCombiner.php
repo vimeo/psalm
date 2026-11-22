@@ -185,6 +185,8 @@ final class TypeCombiner
                     && $combination->named_object_types['Traversable']->from_docblock)
             )
             && !$combination->extra_types
+            // a non-empty array is not any iterable: the union keeps it apart from the Traversable
+            && !$combination->array_always_filled
         ) {
             $array_param_types = $combination->array_type_params;
             $traversable_param_types = $combination->builtin_type_params['Traversable']
@@ -258,14 +260,14 @@ final class TypeCombiner
                 $new_types[] = new TIterable($generic_type_params, [], $from_docblock);
             } else {
                 /** @psalm-suppress ArgumentTypeCoercion Caused by the PropertyTypeCoercion above */
-                $generic_object = new TGenericObject(
+                $generic_object = (new TGenericObject(
                     $generic_type,
                     $generic_type_params,
                     false,
                     false,
                     $combination->extra_types,
                     $from_docblock,
-                );
+                ))->setProjections($combination->getProjections($generic_type));
                 $new_types[] = $generic_object;
 
                 if ($combination->named_object_types) {
@@ -275,6 +277,7 @@ final class TypeCombiner
         }
 
         foreach ($combination->object_type_params as $generic_type => $generic_type_params) {
+            $projections = $combination->getProjections($generic_type);
             $generic_type = substr($generic_type, 0, strcspn($generic_type, '<['));
 
             /** @psalm-suppress ArgumentTypeCoercion Caused by the PropertyTypeCoercion above */
@@ -288,7 +291,7 @@ final class TypeCombiner
             ))->setIsStatic(
                 $combination->object_static[$generic_type] ?? false,
                 $combination->object_static_resolved[$generic_type] ?? false,
-            );
+            )->setProjections($projections);
         }
 
         if ($combination->class_string_types) {
@@ -365,28 +368,7 @@ final class TypeCombiner
             $combination->value_types += $combination->named_object_types;
         }
 
-        $has_never = isset($combination->value_types['never']);
-
-        foreach ($combination->value_types as $type) {
-            if ($type instanceof TMixed
-                && $combination->mixed_from_loop_isset
-                && (count($combination->value_types) > (1 + (int) $has_never) || count($new_types) > (int) $has_never)
-            ) {
-                continue;
-            }
-
-            // a type variable minted for an empty construction stands for
-            // `never` until something binds it, and `never` adds nothing to a
-            // union: `T|Foo` for such a variable is just `Foo`
-            if (($type instanceof TNever || ($type instanceof TTypeVariable && $type->isNeverBound()))
-                && (count($combination->value_types) > 1 || count($new_types))
-            ) {
-                $has_never = $has_never || $type instanceof TNever;
-                continue;
-            }
-
-            $new_types[] = $type->setFromDocblock($from_docblock);
-        }
+        [$new_types, $has_never] = self::addValueTypes($combination, $new_types, $from_docblock);
 
         $new_types = self::setIterablePurity($new_types, $combination);
 
@@ -423,6 +405,50 @@ final class TypeCombiner
     private static function addIterablePurity(TypeCombination $combination, Union $purity): void
     {
         $combination->iterable_purity = Type::combineUnionTypes($combination->iterable_purity, $purity);
+    }
+
+    /**
+     * Adds the value types of $combination to $new_types
+     *
+     * @param list<Atomic> $new_types
+     * @return array{list<Atomic>, bool} the types, and whether `never` was left out of them
+     * @psalm-mutation-free
+     */
+    private static function addValueTypes(TypeCombination $combination, array $new_types, bool $from_docblock): array
+    {
+        $has_never = isset($combination->value_types['never']);
+        $never_bound_variables = [];
+
+        foreach ($combination->value_types as $type) {
+            if ($type instanceof TMixed
+                && $combination->mixed_from_loop_isset
+                && (count($combination->value_types) > (1 + (int) $has_never) || count($new_types) > (int) $has_never)
+            ) {
+                continue;
+            }
+
+            // a type variable minted for an empty construction stands for
+            // `never` until something binds it, and `never` adds nothing to a
+            // union: `T|Foo` for such a variable is just `Foo`
+            if (($type instanceof TNever || ($type instanceof TTypeVariable && $type->isNeverBound()))
+                && (count($combination->value_types) > 1 || count($new_types))
+            ) {
+                $has_never = $has_never || $type instanceof TNever;
+                if ($type instanceof TTypeVariable) {
+                    $never_bound_variables[] = $type->setFromDocblock($from_docblock);
+                }
+                continue;
+            }
+
+            $new_types[] = $type->setFromDocblock($from_docblock);
+        }
+
+        // variables that all stand for `never` until bound, and nothing else: the union is any of them
+        if (!$new_types && !$has_never) {
+            $new_types = $never_bound_variables;
+        }
+
+        return [$new_types, $has_never];
     }
 
     /**
@@ -730,6 +756,22 @@ final class TypeCombiner
             }
 
             return null;
+        }
+
+        if ($type instanceof TGenericObject) {
+            $combination->object_member_counts[$type_key] = ($combination->object_member_counts[$type_key] ?? 0) + 1;
+
+            foreach ($type->getProjections() as $i => $projection) {
+                if ($projection === TypeArgumentProjection::Omitted) {
+                    $combination->object_omitted_counts[$type_key][$i]
+                        = ($combination->object_omitted_counts[$type_key][$i] ?? 0) + 1;
+                }
+
+                // the union holds what any of its types holds: a `*` holds more than a left out argument
+                if (($combination->object_projections[$type_key][$i] ?? null) !== TypeArgumentProjection::Star) {
+                    $combination->object_projections[$type_key][$i] = $projection;
+                }
+            }
         }
 
         if (($type instanceof TGenericObject && ($type->value === 'Traversable' || $type->value === 'Generator'))
@@ -1913,6 +1955,7 @@ final class TypeCombiner
             $objectlike_generic_type = null;
 
             $objectlike_keys = [];
+            $class_string_keys = array_filter($combination->objectlike_class_string_keys);
 
             foreach ($combination->objectlike_entries as $property_name => $property_type) {
                 $objectlike_generic_type = Type::combineUnionTypes(
@@ -1927,7 +1970,7 @@ final class TypeCombiner
 
                 if (is_int($property_name)) {
                     $objectlike_keys[$property_name] = new TLiteralInt($property_name, $from_docblock);
-                } elseif ($type instanceof TKeyedArray && isset($type->class_strings[$property_name])) {
+                } elseif (isset($class_string_keys[$property_name])) {
                     $objectlike_keys[$property_name] = new TLiteralClassString($property_name, $from_docblock);
                 } else {
                     $objectlike_keys[$property_name] = Type::getAtomicStringFromLiteral($property_name, $from_docblock);

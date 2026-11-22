@@ -55,6 +55,7 @@ final class MinMaxReturnTypeProviderTest extends TestCase
                 '$min' => 'int<0, max>',
                 '$max' => 'int<0, max>',
             ],
+            'ignored_issues' => ['DeprecatedFunction'],
         ];
     }
 }

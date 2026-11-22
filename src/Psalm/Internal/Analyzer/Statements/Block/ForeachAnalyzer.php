@@ -1309,13 +1309,17 @@ final class ForeachAnalyzer
                         $always_non_empty_array = false;
                     }
 
-                    $iterator_atomic_type = $iterator_atomic_type->getGenericArrayType(
-                        ExpressionIdentifier::getExtendedVarId(
-                            $expr,
-                            $statements_analyzer->getFQCLN(),
-                            $statements_analyzer,
-                        ),
+                    $iterated_var_id = ExpressionIdentifier::getExtendedVarId(
+                        $expr,
+                        $statements_analyzer->getFQCLN(),
+                        $statements_analyzer,
                     );
+
+                    $iterator_atomic_type = $iterator_atomic_type->getGenericArrayType($iterated_var_id);
+
+                    if ($iterated_var_id !== null) {
+                        $context->list_key_bound_lists[$iterated_var_id] = true;
+                    }
                 } elseif (!$iterator_atomic_type instanceof TNonEmptyArray) {
                     $always_non_empty_array = false;
                 }
@@ -1688,13 +1692,20 @@ final class ForeachAnalyzer
                                             && $generic_storage
                                                 ->template_extended_params['Traversable']['TValue']->isMixed())
                                     ) {
+                                        $get_iterator_call = new VirtualMethodCall(
+                                            $foreach_expr,
+                                            new VirtualIdentifier('getIterator', $foreach_expr->getAttributes()),
+                                        );
+
+                                        $statements_analyzer->node_data->setType(
+                                            $get_iterator_call,
+                                            new Union([$array_atomic_type]),
+                                        );
+
                                         self::handleIterable(
                                             $statements_analyzer,
                                             $array_atomic_type,
-                                            new VirtualMethodCall(
-                                                $foreach_expr,
-                                                new VirtualIdentifier('getIterator', $foreach_expr->getAttributes()),
-                                            ),
+                                            $get_iterator_call,
                                             $codebase,
                                             $context,
                                             $key_type,
@@ -2229,10 +2240,12 @@ final class ForeachAnalyzer
         // only the type is wanted here: the loop is charged for the call
         $context->inside_type_only_call = true;
 
+        // the iterated expression was analysed by the loop, which also may have side effects (`$a ??= new B()`)
         MethodCallAnalyzer::analyze(
             $statements_analyzer,
             $fake_method_call,
             $context,
+            receiver_analyzed: true,
         );
 
         $context->inside_call = $was_inside_call;

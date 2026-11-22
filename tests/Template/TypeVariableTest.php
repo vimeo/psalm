@@ -333,6 +333,66 @@ final class TypeVariableTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'magicPropertyOfObjectsBuiltEmptyOnEachBranch' => [
+                'code' => '<?php
+                    /**
+                     * @template K as string
+                     * @template V
+                     */
+                    final class Bag {
+                        /** @var array<K, V> */
+                        private array $properties;
+
+                        /**
+                         * @param array<K, V> $properties
+                         * @psalm-mutation-free
+                         */
+                        public function __construct(array $properties) {
+                            $this->properties = $properties;
+                        }
+
+                        /**
+                         * @param K $name
+                         * @return V
+                         * @psalm-mutation-free
+                         */
+                        public function __get(string $name): mixed {
+                            return $this->properties[$name];
+                        }
+
+                        /**
+                         * @param K $name
+                         * @param V $value
+                         * @psalm-external-mutation-free
+                         */
+                        public function __set(string $name, mixed $value): void {
+                            $this->properties[$name] = $value;
+                        }
+                    }
+
+                    /**
+                     * @param list<string> $keys
+                     * @return array<string, Bag>
+                     */
+                    function count_keys(array $keys, bool $fresh): array {
+                        $bags = [];
+                        foreach ($keys as $key) {
+                            if ($fresh || !isset($bags[$key])) {
+                                $bag = new Bag([]);
+                                $bag->count = 0;
+                                $bags[$key] = $bag;
+                            } else {
+                                $bag = $bags[$key];
+                            }
+                            $bag->count = 1;
+                        }
+                        return $bags;
+                    }',
+                // __set() doesn't bind the variables of an object built empty
+                'assertions' => [],
+                'ignored_issues' => ['UndefinedMagicPropertyAssignment'],
+                'php_version' => '8.0',
+            ],
             'possiblyEmptyArray' => [
                 'code' => '<?php
                     /**
@@ -1368,6 +1428,41 @@ final class TypeVariableTest extends TestCase
                         return $n;
                     }',
             ],
+            'constructionOfACovariantTemplateNothingCanConstrain' => [
+                'code' => '<?php
+                    /** @template-covariant T */
+                    final class Coll {
+                        public function __construct() {}
+
+                        /** @return list<T> */
+                        public function all(): array {
+                            return [];
+                        }
+                    }
+
+                    /** @template-covariant T */
+                    final class ConstructorlessColl {
+                        /** @return list<T> */
+                        public function all(): array {
+                            return [];
+                        }
+                    }
+
+                    /** @return Coll<int> */
+                    function ints(): Coll {
+                        return new Coll();
+                    }
+
+                    /** @return ConstructorlessColl<string> */
+                    function strings(): ConstructorlessColl {
+                        return new ConstructorlessColl();
+                    }
+
+                    $c = new Coll();',
+                'assertions' => [
+                    '$c===' => 'Coll<never>',
+                ],
+            ],
             'constructorlessConstructionOfUnconstrainableTemplate' => [
                 'code' => '<?php
                     /** @template T = int */
@@ -2056,6 +2151,22 @@ final class TypeVariableTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'constructionOfAnInvariantTemplateNothingCanConstrain' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class Coll {
+                        /** @return list<T> */
+                        public function all(): array {
+                            return [];
+                        }
+                    }
+
+                    /** @return Coll<int> */
+                    function ints(): Coll {
+                        return new Coll();
+                    }',
+                'error_message' => 'MixedReturnTypeCoercion',
+            ],
             'mixedConstructionCallableParamRequirement' => [
                 // a value that entered the variable as mixed is then required to
                 // be a Foo by the callable's parameter: reported at the call, as

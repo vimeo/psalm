@@ -189,9 +189,9 @@ function getId(string $name): int {
     return (int) getParam($name);
 }
 
-function show(MongoDB\Collection $collection): void {
-    $collection->find(['name' => getParam('name')]); // no issue: a string can't inject query operators
-    $collection->find(['name' => json_decode(getParam('name'), true)]); // TaintedNosql
+function show(MongoDB\Driver\Manager $mongo): void {
+    $mongo->executeQuery('db.users', new MongoDB\Driver\Query(['name' => getParam('name')])); // no issue: a string can't inject query operators
+    $mongo->executeQuery('db.users', new MongoDB\Driver\Query(['name' => json_decode(getParam('name'), true)])); // TaintedNosql
     echo '<b>' . getId('id') . '</b>'; // no issue: an int can't carry HTML
 
     $direction = getParam('direction');
@@ -211,6 +211,10 @@ when `preg_match()` is used directly as a condition or compared to `1`:
 
 ```php
 <?php
+/** @psalm-taint-source input */
+function getParam(string $name): string {
+    return (string) ($_GET[$name] ?? '');
+}
 
 function search(DOMXPath $xpath): void {
     $sort = getParam('sort');
@@ -243,6 +247,10 @@ trusts the check as long as the variable holding the URL isn't assigned again:
 
 ```php
 <?php
+/** @psalm-taint-source input */
+function getParam(string $name): string {
+    return (string) ($_GET[$name] ?? '');
+}
 
 $url = getParam('next');
 $host = (string) parse_url($url, PHP_URL_HOST);
@@ -270,6 +278,11 @@ values. After the check succeeds, Psalm knows the value is one of those literals
  */
 function isKnownCity(string $city): bool {
     return in_array($city, ['london', 'paris', 'tokyo'], true);
+}
+
+/** @psalm-taint-source input */
+function getParam(string $name): string {
+    return (string) ($_GET[$name] ?? '');
 }
 
 $city = getParam('city');
@@ -561,7 +574,7 @@ Keep three rules in mind:
 
 ### Classes only instantiated from the command line
 
-Mark a `final` class `@psalm-cli-only-instances` when its constructor and `__wakeup()` (or `__unserialize()`) reject
+Mark a `final` class `@psalm-cli-only-instances` when its constructor and `__unserialize()` (or `__wakeup()`) reject
 non-CLI execution. Holding an instance then proves the code is running on the CLI, so no extra SAPI guard is needed at
 call sites.
 
@@ -588,7 +601,7 @@ final class ConsoleRequest
         }
     }
 
-    public function __wakeup(): void
+    public function __unserialize(array $data): void
     {
         if (PHP_SAPI !== 'cli') {
             throw new LogicException('Run it from the command line');

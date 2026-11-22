@@ -5,7 +5,7 @@ Enabled when the `checkForThrowsDocblock` configuration option is enabled.
 Emitted when a function throws (or fails to handle) an exception and does not have a `@throws` annotation.
 
 ```php
-<?php
+<?php // checkForThrowsDocblock="true"
 
 function foo(int $x, int $y) : int {
     if ($y === 0) {
