@@ -29,6 +29,7 @@ use Psalm\Progress\Progress;
 use Revolt\EventLoop;
 use Revolt\EventLoop\Driver\StreamSelectDriver;
 use RuntimeException;
+use Throwable;
 
 use function Amp\Future\await;
 use function Amp\Future\awaitAll;
@@ -147,7 +148,12 @@ final class Pool
         $results = [];
         foreach ($process_task_data_iterator as $file) {
             $execution = $this->pool->submit(new $main_task($file));
-            $results []= $f = $execution->getFuture();
+            // a task that fails says which file it was given: the trace of the worker cuts the path short
+            $results []= $f = $execution->getFuture()->catch(
+                static function (Throwable $e) use ($file): never {
+                    throw new RuntimeException('Psalm crashed processing ' . $file . ': ' . $e->getMessage(), 0, $e);
+                },
+            );
             if ($message_handler !== null) {
                 $results []= $this->pumpMessages($execution, $f, $message_handler);
             }
