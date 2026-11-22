@@ -779,6 +779,37 @@ final class ArithmeticOpAnalyzer
                         $fallback_params,
                     );
                     $result_type_member = new Union([$new_keyed_array]);
+                } elseif ($left_type_part instanceof TArray
+                    && !$left_type_part->isEmptyArray()
+                    && $right_type_part instanceof TKeyedArray
+                ) {
+                    [$left_key_type, $left_value_type] = $left_type_part->type_params;
+
+                    // the result has every key the shape has, under it what the array had if it had it
+                    $properties = [];
+
+                    foreach ($right_type_part->properties as $key => $type) {
+                        $properties[$key] = Type::combineUnionTypes(
+                            $left_value_type,
+                            $type,
+                            $codebase,
+                            false,
+                            true,
+                            500,
+                            $type->possibly_undefined,
+                        );
+                    }
+
+                    $result_type_member = new Union([TKeyedArray::make(
+                        $properties,
+                        null,
+                        $right_type_part->fallback_params === null
+                            ? [$left_key_type, $left_value_type]
+                            : [
+                                Type::combineUnionTypes($left_key_type, $right_type_part->fallback_params[0]),
+                                Type::combineUnionTypes($left_value_type, $right_type_part->fallback_params[1]),
+                            ],
+                    )]);
                 } else {
                     $result_type_member = TypeCombiner::combine(
                         [$left_type_part, $right_type_part],

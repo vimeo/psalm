@@ -746,6 +746,24 @@ final class BinaryOperationTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'unionOfAnArrayAndAShapeHasTheKeysOfTheShape' => [
+                'code' => '<?php
+                    /** @return array<string, int> */
+                    function counts(): array {
+                        return [];
+                    }
+
+                    $withDefault = counts() + ["total" => 0];
+                    $maybeDefault = counts() + (rand(0, 1) ? ["total" => 0] : []);
+                    $options = [];
+                    /** @var array<array-key, mixed> $options */
+                    $options += ["debug" => false];',
+                'assertions' => [
+                    '$withDefault===' => 'array{total: int, ...<string, int>}',
+                    '$maybeDefault===' => 'array{total?: int, ...<string, int>}',
+                    '$options===' => 'array{debug: false|mixed, ...<array-key, mixed>}',
+                ],
+            ],
             'comparisonNarrowsTheBoundOfATemplateInTheTypeOfTheVariable' => [
                 'code' => '<?php
                     /** @param int<1, max> $n */
