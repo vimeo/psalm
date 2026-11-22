@@ -3662,6 +3662,9 @@ final class AssertionFinder
 
         $safe_to_track_literals = true;
 
+        // a generic array may lack any of the keys its type lists, so a key it doesn't have may still be one of them
+        $keys_may_be_missing = false;
+
         if (isset($expr->getArgs()[0])
             && isset($expr->getArgs()[1])
             && $first_var_type
@@ -3680,6 +3683,7 @@ final class AssertionFinder
                         );
                     } else {
                         $key_type = $atomic_type->type_params[0];
+                        $keys_may_be_missing = true;
                     }
 
                     if ($key_type->allStringLiterals() && !$key_type->possibly_undefined) {
@@ -3721,7 +3725,28 @@ final class AssertionFinder
         }
 
         if ($literal_assertions && $first_var_name !== null && $safe_to_track_literals) {
-            $if_types[$first_var_name] = [$literal_assertions];
+            if (!$keys_may_be_missing) {
+                $if_types[$first_var_name] = [$literal_assertions];
+            } elseif ($source instanceof StatementsAnalyzer && ($array_arg = $expr->getArgs()[1] ?? null) !== null) {
+                // like in_array(), finding the key narrows it, but not finding it says nothing of it
+                $key_types = [];
+
+                foreach ($literal_assertions as $literal_assertion) {
+                    if (!$literal_assertion instanceof IsIdentical) {
+                        $key_types = [];
+                        break;
+                    }
+
+                    $key_types[] = $literal_assertion->type;
+                }
+
+                if ($key_types) {
+                    $if_types[$first_var_name] = [[new InArray(
+                        new Union($key_types),
+                        self::getOperandId($array_arg->value, $this_class_name, $source),
+                    )]];
+                }
+            }
         } else {
             $array_root = isset($expr->getArgs()[1]->value)
                 ? ExpressionIdentifier::getExtendedVarId(
