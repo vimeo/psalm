@@ -112,6 +112,41 @@ final class StubsGeneratorTest extends TestCase
         self::assertSame(1, substr_count($stub, '@throws RuntimeException'));
     }
 
+    public function testTheGeneratedStubKeepsTheVarianceAndOrderOfTemplates(): void
+    {
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                /**
+                 * @template T
+                 * @template-covariant U
+                 * @template-contravariant V
+                 * @template W
+                 */
+                interface C {}',
+        );
+        $this->analyzeFile('somefile.php', new Context());
+
+        $codebase = $this->project_analyzer->getCodebase();
+        $stub = StubsGenerator::getAll(
+            $codebase,
+            $codebase->classlike_storage_provider,
+            $codebase->file_storage_provider,
+        );
+
+        self::assertStringContainsString(
+            '
+    /**
+     * @template T as mixed
+     * @template-covariant U as mixed
+     * @template-contravariant V as mixed
+     * @template W as mixed
+     */
+    interface C',
+            $stub,
+        );
+    }
+
     public function testAnIntIsAnIdentifier(): void
     {
         $type = StubsGenerator::getParserTypeFromPsalmType(Type::getInt());
