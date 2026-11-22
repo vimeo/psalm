@@ -35,4 +35,6 @@ return [
     'curl_multi_getcontent' => ['return'],
     // command-line options: whoever runs the script chooses them, as with $argv
     'getopt' => ['return'],
+    // the environment, which whoever starts the process chooses
+    'getenv' => ['return'],
 ];

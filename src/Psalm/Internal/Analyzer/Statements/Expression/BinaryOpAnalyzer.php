@@ -16,6 +16,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\BinaryOp\PipeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\CombinedFlowGraph;
+use Psalm\Internal\Codebase\StringContext;
 use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\Codebase\VariableUseGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
@@ -667,11 +668,25 @@ final class BinaryOpAnalyzer
         );
         $statements_analyzer->node_data->setLiteralPrefixes($stmt, $literal_prefixes);
 
+        // where the right operand is embedded: the escaping of a value only fits some positions
+        $left_context = $statements_analyzer->taint_flow_graph
+            ? StringContext::getForExpression($statements_analyzer, $stmt->left)
+            : StringContext::getUnknown();
+
+        if ($statements_analyzer->taint_flow_graph) {
+            $statements_analyzer->node_data->setStringContext(
+                $stmt,
+                $left_context->afterExpression($statements_analyzer, $stmt->right),
+            );
+        }
+
         // after the start of a URL fixing its server (the left operand's, and the right operand's own literal start
         // when the left operand is a literal), the right operand can't choose it
         $operand_removed_taints = [
             $removed_taints,
-            $removed_taints | ConcatAnalyzer::getTaintsRemovedAfterUrlOrigins($literal_prefixes),
+            $removed_taints
+                | ConcatAnalyzer::getTaintsRemovedAfterUrlOrigins($literal_prefixes)
+                | $left_context->getRemovedTaints(),
         ];
 
         // an object operand is concatenated as what its __toString returns
@@ -696,6 +711,16 @@ final class BinaryOpAnalyzer
                     'concat' . CastAnalyzer::getArrayConversionSuffix($operand_type),
                     $added_taints,
                     $operand_removed_taints[$offset],
+                );
+            }
+
+            if ($offset === 1) {
+                ConcatAnalyzer::addPositionSinks(
+                    $statements_analyzer,
+                    $left_context,
+                    $operand_parent_nodes,
+                    $operand_type->getTaintsToRemove($statements_analyzer->getCodebase()->getInputTaints()),
+                    new CodeLocation($statements_analyzer, $operand),
                 );
             }
         }

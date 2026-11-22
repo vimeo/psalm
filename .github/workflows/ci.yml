@@ -65,6 +65,49 @@ jobs:
       - run: |
           git ls-files | grep \\\.php$ | grep -v ^dictionaries/scripts/* | ./vendor/bin/parallel-lint --stdin
 
+  phar:
+    # The phar as released (bin/ci/build-phar.sh, on the PHP of the release), analyzing with several threads on the
+    # oldest and the newest supported PHP: a phar can break on a PHP newer than the one it's built on (on PHP 8.6, the
+    # scoper prefixed PHP's own Io\Poll classes, which revolt/event-loop's IoPollDriver uses).
+    name: Build and test the phar
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set up PHP
+        uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # v2
+        with:
+          php-version: '8.2'
+          tools: composer:v2
+          coverage: none
+        env:
+          fail-fast: true
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v6
+
+      - name: Run composer install
+        run: composer install -o
+        env:
+          COMPOSER_ROOT_VERSION: dev-master
+
+      - name: Build the phar
+        run: bin/ci/build-phar.sh
+        env:
+          COMPOSER_ROOT_VERSION: dev-master
+
+      - name: Test the phar on PHP 8.2
+        run: bin/ci/test-phar.sh build/psalm.phar
+
+      - name: Set up PHP 8.6
+        uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # v2
+        with:
+          php-version: '8.6'
+          tools: composer:v2
+          coverage: none
+        env:
+          fail-fast: true
+
+      - name: Test the phar on PHP 8.6
+        run: bin/ci/test-phar.sh build/psalm.phar
+
   code-style:
     name: Code Style Analysis
     runs-on: ubuntu-latest
@@ -72,7 +115,7 @@ jobs:
       - name: Set up PHP
         uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # v2
         with:
-          php-version: '8.2'
+          php-version: '8.6'
           tools: composer:v2
           coverage: none
         env:
@@ -213,7 +256,7 @@ jobs:
       - name: Set up PHP
         uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # v2
         with:
-          php-version: '8.3'
+          php-version: '8.6'
           tools: composer:v2
           coverage: none
         env:

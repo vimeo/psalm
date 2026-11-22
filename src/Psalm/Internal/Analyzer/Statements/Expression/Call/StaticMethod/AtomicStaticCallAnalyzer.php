@@ -102,21 +102,24 @@ final class AtomicStaticCallAnalyzer
         if ($lhs_type_part instanceof TNamedObject) {
             $fq_class_name = $lhs_type_part->value;
 
-            if (!ClassLikeAnalyzer::checkFullyQualifiedClassLikeName(
-                $statements_analyzer,
-                $fq_class_name,
-                new CodeLocation($statements_analyzer, $stmt->class),
-                !$context->collect_initializations
-                    ? $context
-                    : null,
-                $statements_analyzer->getSuppressedIssues(),
-                new ClassLikeNameOptions(
-                    $stmt->class instanceof PhpParser\Node\Name
-                        && count($stmt->class->getParts()) === 1
-                        && in_array(strtolower($stmt->class->getFirst()), ['self', 'static'], true),
-                    context: $context,
-                ),
-            )) {
+            // StaticCallAnalyzer reports calling a method directly on a trait
+            if (!$statements_analyzer->getCodebase()->classlikes->traitExists($fq_class_name)
+                && !ClassLikeAnalyzer::checkFullyQualifiedClassLikeName(
+                    $statements_analyzer,
+                    $fq_class_name,
+                    new CodeLocation($statements_analyzer, $stmt->class),
+                    !$context->collect_initializations
+                        ? $context
+                        : null,
+                    $statements_analyzer->getSuppressedIssues(),
+                    new ClassLikeNameOptions(
+                        $stmt->class instanceof PhpParser\Node\Name
+                            && count($stmt->class->getParts()) === 1
+                            && in_array(strtolower($stmt->class->getFirst()), ['self', 'static'], true),
+                        context: $context,
+                    ),
+                )
+            ) {
                 return;
             }
 
@@ -1120,6 +1123,14 @@ final class AtomicStaticCallAnalyzer
             return false;
         }
 
+        ClassTemplateParamCollector::markStarBindings(
+            $template_result,
+            $codebase,
+            $static_class_storage,
+            $lhs_type_part,
+            $found_generic_params,
+        );
+
         // what `__callStatic` does (if it implements the pseudo-method), and what the purity
         // templates of the pseudo-method (`@method static int run(Closure[_](): int $f)`) are bound to
         $capabilities = CallPurityResolver::getCallCapabilities(
@@ -1330,6 +1341,13 @@ final class AtomicStaticCallAnalyzer
         );
 
         $template_result = new TemplateResult([], $found_generic_params ?? []);
+        ClassTemplateParamCollector::markStarBindings(
+            $template_result,
+            $codebase,
+            $class_storage,
+            $lhs_type_part,
+            $found_generic_params,
+        );
 
         if ($inferred_template_result) {
             $template_result->lower_bounds += $inferred_template_result->lower_bounds;

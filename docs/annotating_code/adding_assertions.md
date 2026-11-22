@@ -139,7 +139,7 @@ function f(array $array, int $key): void {
 `PHP_SAPI` (or `php_sapi_name()`) can be the target of an assertion, so a function guarding the SAPI works like the
 check in it. Code after `requireCli()`, or inside `if (isCli())`, runs from the command line: it can call
 [`@psalm-cli-only`](../running_psalm/issues/CliOnlyCall.md) code, and what it prints
-[isn't HTML](../security_analysis/avoiding_false_positives.md#output-of-command-line-code):
+[isn't HTML](../security_analysis/index.md#command-line-code):
 
 ```php
 <?php

@@ -319,7 +319,7 @@ This is enabled by default since Psalm 6, so unused code issues are reported eve
 **For libraries only.** When `true`, unused-code detection treats every class that isn't marked `@internal` or `@psalm-internal` as if it were marked [`@api`](../annotating_code/supported_annotations.md#api-psalm-api), except for its members that are marked internal. Other checks, like `ClassMustBeFinal`, are not affected. Defaults to `false`.
 
 ```php
-<?php
+<?php // findUnusedCode="true" markAllNonInternalCodeAsApi="true"
 namespace Lib;
 
 class Client {                           // ClassMustBeFinal, but no UnusedClass
@@ -969,7 +969,7 @@ Optional. Allows you to specify a list of constants that should emit the [`Forbi
 #### &lt;taintAnalysis&gt;
 Optional. Settings of the [security analysis](../security_analysis/index.md):
 - `<ignoreFiles>`: the files and directories whose taint paths are not reported (see
-  [Avoiding files in taint paths](../security_analysis/avoiding_false_positives.md#avoiding-files-in-taint-paths)).
+  [Ignoring files](../security_analysis/index.md#ignoring-files)).
 - `<taints>`: custom taints, which the annotations can then name without a plugin registering them. Each can be added
   to aliases of built-in taints (`input`, `tainted`, `input_except_sleep`) with `<alias>`: a taint added to `input` is
   user input, which the built-in sources give (see

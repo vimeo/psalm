@@ -64,6 +64,15 @@ final class NonComparisonOpAnalyzer
             || $stmt instanceof PhpParser\Node\Expr\BinaryOp\ShiftLeft
             || $stmt instanceof PhpParser\Node\Expr\BinaryOp\ShiftRight
         ) {
+            if ($stmt instanceof PhpParser\Node\Expr\BinaryOp\Pow) {
+                ArithmeticOpAnalyzer::checkZeroToNegativePower(
+                    $statements_analyzer,
+                    $stmt_left_type,
+                    $stmt_right_type,
+                    $stmt,
+                );
+            }
+
             $int_mask_bits = IntMask::getBitwiseOpBits($stmt, $stmt_left_type, $stmt_right_type);
 
             $result_type = null;
