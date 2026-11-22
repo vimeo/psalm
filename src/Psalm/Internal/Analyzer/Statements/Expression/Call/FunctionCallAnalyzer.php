@@ -305,9 +305,9 @@ final class FunctionCallAnalyzer extends CallAnalyzer
 
         $function_storage = $function_call_info->function_storage;
 
-        // record the call sites of user functions, as Methods::methodExists() does for methods
-        if ($codebase->collect_locations
-            && $function_storage !== null
+        // record the call sites of user functions, as Methods::methodExists() does for methods: for the references
+        // to them, and so that the callers are analyzed again when a function changes
+        if ($function_storage !== null
             && $function_storage->location !== null
             && $function_call_info->function_id !== null
         ) {
@@ -1066,15 +1066,6 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                 );
 
                 $function_call_info->function_params = $function_call_info->function_storage->params;
-
-                // the caller is analyzed again when the function changes
-                if (!$function_call_info->in_call_map) {
-                    $codebase->addReferenceToFunctionLike(
-                        strtolower($function_call_info->function_id),
-                        $code_location,
-                        $context,
-                    );
-                }
 
                 if ($function_call_info->in_call_map && $function_storage->cased_name !== null) {
                     // a function imported with an alias is called by the alias: its name is the imported one
