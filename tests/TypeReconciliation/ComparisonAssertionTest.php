@@ -78,6 +78,81 @@ final class ComparisonAssertionTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'looseComparisonOfNumericStringLiteralsIsByTheirNumbers' => [
+                'code' => '<?php
+                    $one = "1";
+                    $padded = "01";
+                    $ten = "10";
+                    $exponent = "1e1";
+                    $spaced = " 1";
+
+                    $matches = 0;
+
+                    if ($one == $padded) {
+                        $matches++;
+                    }
+
+                    if ($ten == $exponent) {
+                        $matches++;
+                    }
+
+                    if ($one == $spaced) {
+                        $matches++;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.2',
+            ],
+            'looseEqualityKeepsEveryNumericallyEqualLiteral' => [
+                'code' => '<?php
+                    /** @return \'1\'|\'01\' */
+                    function both(): string { return "1"; }
+
+                    /** @return \'1\'|\'2\' */
+                    function oneOrTwo(): string { return "1"; }
+
+                    /** @return \'1\'|int */
+                    function oneOrInt(): string|int { return 1; }
+
+                    /** @return \'01\'|\'1\'|\'2\' */
+                    function three(): string { return "1"; }
+
+                    $a = both();
+                    $sameNumber = $a == "01" ? $a : null;
+
+                    $b = oneOrTwo();
+                    $onlyOne = $b == "01" ? $b : null;
+                    $notOne = $b != "01" ? $b : null;
+
+                    $c = oneOrInt();
+                    $withInt = $c == "01" ? $c : null;
+
+                    $d = three();
+                    $elseBranch = $d != "1" ? null : $d;',
+                'assertions' => [
+                    '$sameNumber===' => "'01'|'1'|null",
+                    '$onlyOne===' => "'1'|null",
+                    '$notOne===' => "'2'|null",
+                    '$withInt===' => "'1'|int|null",
+                    '$elseBranch===' => "'01'|'1'|null",
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.2',
+            ],
+            'looseEqualityOfNumericStringsWithATrailingWhitespaceIsByTheirNumbersAsOfPhp8' => [
+                'code' => '<?php
+                    $one = "1";
+                    $spaced = "1 ";
+
+                    $matches = 0;
+
+                    if ($one == $spaced) {
+                        $matches++;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.2',
+            ],
             'identicalToNull' => [
                 'code' => '<?php
                     function f(?int $n): void {
@@ -414,6 +489,42 @@ final class ComparisonAssertionTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'looseComparisonOfDifferentNonNumericStringLiteralsIsNeverTrue' => [
+                'code' => '<?php
+                    $first = "abc";
+                    $second = "abd";
+
+                    if ($first == $second) {
+                        echo 1;
+                    }',
+                'error_message' => 'TypeDoesNotContainType',
+                'error_levels' => [],
+                'php_version' => '8.2',
+            ],
+            'looseInequalityOfNumericStringLiteralsWithTheSameNumberIsNeverTrue' => [
+                'code' => '<?php
+                    $one = "1";
+                    $padded = "01";
+
+                    if ($one != $padded) {
+                        echo 1;
+                    }',
+                'error_message' => 'TypeDoesNotContainType',
+                'error_levels' => [],
+                'php_version' => '8.2',
+            ],
+            'looseEqualityOfNumericStringsWithATrailingWhitespaceIsNotByTheirNumbersBeforePhp8' => [
+                'code' => '<?php
+                    $one = "1";
+                    $spaced = "1 ";
+
+                    if ($one == $spaced) {
+                        echo 1;
+                    }',
+                'error_message' => 'TypeDoesNotContainType',
+                'error_levels' => [],
+                'php_version' => '7.4',
+            ],
             'nullNeverIdenticalToANonNullableValue' => [
                 'code' => '<?php
                     function f(string $s): void {
