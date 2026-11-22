@@ -44,6 +44,20 @@ final class FunctionCallTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.5',
             ],
+            'aStubWithoutAReturnTypeKeepsTheCallMapOne' => [
+                'code' => '<?php
+                    function postgres(): PgSql\\Connection {
+                        throw new RuntimeException();
+                    }
+                    $mysql = mysqli_real_escape_string(new mysqli(), "a\'b");
+                    $postgres = pg_escape_literal(postgres(), "a\'b");',
+                'assertions' => [
+                    '$mysql===' => 'string',
+                    '$postgres===' => 'false|string',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'functionImportedWithAnAliasIsCalledWithoutAWrongCaseIssue' => [
                 'code' => '<?php
                     namespace App;
@@ -350,6 +364,62 @@ final class FunctionCallTest extends TestCase
                     /** @psalm-check-type-exact $hostname = false */
                     /** @psalm-check-type-exact $regexp = ''|false */
                     PHP,
+            ],
+            'filterVarValidatesABoolAsAString' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function f(bool $b): void {
+                        $true_domain = filter_var(true, FILTER_VALIDATE_DOMAIN);
+                        $false_hostname = filter_var(false, FILTER_VALIDATE_DOMAIN, FILTER_FLAG_HOSTNAME);
+                        $domain = filter_var($b, FILTER_VALIDATE_DOMAIN);
+                        $hostname = filter_var($b, FILTER_VALIDATE_DOMAIN, FILTER_FLAG_HOSTNAME);
+                        $regexp = filter_var($b, FILTER_VALIDATE_REGEXP, ['options' => ['regexp' => '/^1?$/']]);
+
+                        /** @psalm-check-type-exact $true_domain = '1' */
+                        /** @psalm-check-type-exact $false_hostname = false */
+                        /** @psalm-check-type-exact $domain = ''|'1' */
+                        /** @psalm-check-type-exact $hostname = '1'|false */
+                        /** @psalm-check-type-exact $regexp = ''|'1'|false */
+                    }
+                    PHP,
+            ],
+            'filterVarSanitizesAnEmptyLiteralToTheEmptyString' => [
+                'code' => <<<'PHP'
+                    <?php
+                    $special = filter_var('', FILTER_SANITIZE_SPECIAL_CHARS);
+                    $full = filter_var('', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+                    $encoded = filter_var('', FILTER_SANITIZE_ENCODED);
+                    $slashes = filter_var('', FILTER_SANITIZE_ADD_SLASHES);
+                    $email = filter_var('', FILTER_SANITIZE_EMAIL);
+                    $url = filter_var('', FILTER_SANITIZE_URL);
+                    $stripped = filter_var('', FILTER_DEFAULT, FILTER_FLAG_STRIP_LOW);
+
+                    /** @psalm-check-type-exact $special = '' */
+                    /** @psalm-check-type-exact $full = '' */
+                    /** @psalm-check-type-exact $encoded = '' */
+                    /** @psalm-check-type-exact $slashes = '' */
+                    /** @psalm-check-type-exact $email = '' */
+                    /** @psalm-check-type-exact $url = '' */
+                    /** @psalm-check-type-exact $stripped = '' */
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'filterVarSanitizeStringWithEmptyStringNull' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function f(string $s): void {
+                        $empty = filter_var('', FILTER_SANITIZE_STRING, FILTER_FLAG_EMPTY_STRING_NULL);
+                        $string = filter_var($s, FILTER_SANITIZE_STRING, FILTER_FLAG_EMPTY_STRING_NULL);
+
+                        /** @psalm-check-type-exact $empty = null */
+                        /** @psalm-check-type-exact $string = null|string */
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => ['DeprecatedConstant'],
+                'php_version' => '8.0',
             ],
             'classExistsComparedWithTrueGuardsTheRightOperandOfAnd' => [
                 'code' => '<?php

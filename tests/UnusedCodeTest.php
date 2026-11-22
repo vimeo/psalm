@@ -3372,6 +3372,20 @@ final class UnusedCodeTest extends TestCase
                     }
                     echo (new Foo())->name;',
             ],
+            'methodsNamedByCallablesGivenToAClosureParamAreUsed' => [
+                'code' => '<?php
+                    final class Handler
+                    {
+                        public function method(): void {}
+                        public static function named(): void {}
+                    }
+
+                    function takesClosure(Closure $closure): void { $closure(); }
+
+                    takesClosure([new Handler(), "method"]);
+                    takesClosure("Handler::named");',
+                'ignored_issues' => ['InvalidArgument', 'ArgumentTypeCoercion'],
+            ],
         ];
     }
 

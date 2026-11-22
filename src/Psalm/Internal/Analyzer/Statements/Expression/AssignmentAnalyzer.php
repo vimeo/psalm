@@ -67,6 +67,7 @@ use Psalm\Issue\MixedArrayAccess;
 use Psalm\Issue\MixedAssignment;
 use Psalm\Issue\NoValue;
 use Psalm\Issue\NullReference;
+use Psalm\Issue\ParseError;
 use Psalm\Issue\PossiblyInvalidArrayAccess;
 use Psalm\Issue\PossiblyInvalidPropertyAssignmentValue;
 use Psalm\Issue\PossiblyNullArrayAccess;
@@ -211,6 +212,35 @@ final class AssignmentAnalyzer
     }
 
     /**
+     * Writing a property of a constant (`CONFIG->debug = true`, `CONFIG->items[] = 1`) is a compile error before
+     * PHP 8.6, whatever the types are
+     */
+    private static function checkConstantObjectWrite(StatementsAnalyzer $statements_analyzer, Expr $assign_var): void
+    {
+        if ($statements_analyzer->getCodebase()->analysis_php_version_id >= 8_06_00) {
+            return;
+        }
+
+        $root = $assign_var;
+        $has_property = false;
+
+        while ($root instanceof PropertyFetch || $root instanceof ArrayDimFetch) {
+            $has_property = $has_property || $root instanceof PropertyFetch;
+            $root = $root->var;
+        }
+
+        if ($has_property && ($root instanceof Expr\ConstFetch || $root instanceof Expr\ClassConstFetch)) {
+            IssueBuffer::maybeAdd(
+                new ParseError(
+                    'Cannot use temporary expression in write context before PHP 8.6',
+                    new CodeLocation($statements_analyzer->getSource(), $assign_var),
+                ),
+                $statements_analyzer->getSuppressedIssues(),
+            );
+        }
+    }
+
+    /**
      * @param  PhpParser\Node\Expr|null $assign_value  This has to be null to support list destructuring
      */
     public static function analyze(
@@ -223,6 +253,8 @@ final class AssignmentAnalyzer
         array $not_ignored_docblock_var_ids = [],
         ?PhpParser\Node\Expr $assign_expr = null,
     ): ?Union {
+        self::checkConstantObjectWrite($statements_analyzer, $assign_var);
+
         // the keys of an array item are evaluated before the value, so a variable a key assigns is set in the value
         $keys = $assign_value !== null && $assign_var instanceof PhpParser\Node\Expr\ArrayDimFetch
             ? self::getKeysEvaluatedFirst($assign_var)
@@ -1987,6 +2019,7 @@ final class AssignmentAnalyzer
                 $receiver,
                 $class_storage,
                 $declaring_class_storage,
+                true,
             )
             : $property_type;
     }

@@ -55,7 +55,6 @@ use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Storage\Capabilities;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\MethodStorage;
-use Psalm\Storage\Possibilities;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TAnonymousClassInstance;
@@ -79,7 +78,9 @@ use Psalm\Type\TaintKind;
 use Psalm\Type\Union;
 
 use function array_key_first;
+use function array_keys;
 use function array_map;
+use function array_search;
 use function array_values;
 use function count;
 use function in_array;
@@ -761,40 +762,6 @@ final class NewAnalyzer extends CallAnalyzer
                     $method_id,
                     $template_result,
                 );
-
-                if ($method_storage->if_true_assertions) {
-                    $statements_analyzer->node_data->setIfTrueAssertions(
-                        $stmt,
-                        array_map(
-                            static fn(Possibilities $assertion): Possibilities
-                                => $assertion->getUntemplatedCopy($template_result, null, $codebase),
-                            self::getAssertionsOnArgs(
-                                $method_storage->if_true_assertions,
-                                $method_storage,
-                                $stmt->getArgs(),
-                                $statements_analyzer->node_data,
-                                $context->strict_types,
-                            ),
-                        ),
-                    );
-                }
-
-                if ($method_storage->if_false_assertions) {
-                    $statements_analyzer->node_data->setIfFalseAssertions(
-                        $stmt,
-                        array_map(
-                            static fn(Possibilities $assertion): Possibilities
-                                => $assertion->getUntemplatedCopy($template_result, null, $codebase),
-                            self::getAssertionsOnArgs(
-                                $method_storage->if_false_assertions,
-                                $method_storage,
-                                $stmt->getArgs(),
-                                $statements_analyzer->node_data,
-                                $context->strict_types,
-                            ),
-                        ),
-                    );
-                }
             }
 
             $generic_param_types = null;
@@ -2313,6 +2280,16 @@ final class NewAnalyzer extends CallAnalyzer
         );
 
         if (isset($unconstrainable_templates[$template_name])) {
+            $template_offset = array_search($template_name, array_keys($storage->template_types ?? []), true);
+
+            // what nothing can constrain later is, for a covariant template, a subtype of every instantiation
+            if (!isset($storage->purity_templates[$template_name])
+                && $template_offset !== false
+                && ($storage->template_covariants[$template_offset] ?? false)
+            ) {
+                return Type::getNever();
+            }
+
             return $constraint;
         }
 

@@ -1096,7 +1096,28 @@ final class Populator
                     $extended_types[] = $atomic_type;
                 }
             } else {
-                $extended_types[] = $atomic_type;
+                // a template of a class in between nested in a composed argument (`@extends Base<Box<TModel>>`)
+                $nested_arguments = [];
+
+                foreach ((new Union([$atomic_type]))->getTemplateTypes() as $nested_template) {
+                    $nested_argument = $storage
+                        ->template_extended_params[$nested_template->defining_class][$nested_template->param_name]
+                            ?? null;
+
+                    if ($nested_argument) {
+                        $nested_arguments[$nested_template->param_name][$nested_template->defining_class]
+                            = $nested_argument;
+                    }
+                }
+
+                if ($nested_arguments === []) {
+                    $extended_types[] = $atomic_type;
+                } else {
+                    $extended_types[] = $atomic_type->replaceTemplateTypesWithArgTypes(
+                        new TemplateResult([], $nested_arguments),
+                        null,
+                    );
+                }
             }
         }
 

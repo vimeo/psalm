@@ -41,6 +41,7 @@ use Psalm\IssueBuffer;
 use Psalm\Plugin\EventHandler\Event\AfterMethodCallAnalysisEvent;
 use Psalm\Storage\Capabilities;
 use Psalm\Storage\ClassLikeStorage;
+use Psalm\Storage\MethodStorage;
 use Psalm\Storage\Possibilities;
 use Psalm\Type;
 use Psalm\Type\Atomic;
@@ -48,6 +49,7 @@ use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTemplateParamClass;
 use Psalm\Type\Union;
+use UnexpectedValueException;
 
 use function array_map;
 use function count;
@@ -175,10 +177,8 @@ final class ExistingAtomicStaticCallAnalyzer
         // a static call naming a class does not forward the late static binding: `static` is that class
         $static_is_called_class = $stmt->class instanceof PhpParser\Node\Name
             && !in_array(strtolower($stmt->class->getFirst()), ['self', 'static', 'parent'], true)
-            && $codebase->methods->getStorage(
-                $codebase->methods->getDeclaringMethodId($method_id) ?? $method_id,
-                true,
-            )->is_static;
+            && self::getMethodStorage($codebase, $codebase->methods->getDeclaringMethodId($method_id) ?? $method_id)
+                ?->is_static;
 
         // the arguments, the hints of closure params and the conditionals of the return type are read with `static` of
         // the call only when it is that class: forwarding calls and template classes keep `static` as declared, and so
@@ -200,9 +200,18 @@ final class ExistingAtomicStaticCallAnalyzer
             return;
         }
 
+        // what is read from a `*` receiver is as unknown as the receiver (`$any::make()` of a `Box<*>`)
+        ClassTemplateParamCollector::markStarBindings(
+            $template_result,
+            $codebase,
+            $class_storage,
+            $lhs_type_part,
+            $found_generic_params,
+        );
+
         $declaring_method_id = $codebase->methods->getDeclaringMethodId($method_id) ?? $method_id;
-        $static_property_mutations = $codebase->methods->getStorage($declaring_method_id, true)
-            ->static_property_mutations;
+        $static_property_mutations = self::getMethodStorage($codebase, $declaring_method_id)
+            ?->static_property_mutations;
 
         if ($static_property_mutations !== null
             && !$context->collect_initializations
@@ -626,7 +635,7 @@ final class ExistingAtomicStaticCallAnalyzer
 
         $return_type_candidate ??= Type::getMixed();
 
-        $method_storage ??= $declaring_method_id ? $codebase->methods->getStorage($declaring_method_id) : null;
+        $method_storage ??= self::getMethodStorage($codebase, $declaring_method_id);
 
         // the storage of a builtin method holds the flows of its declaration (see InternalCallMapHandler)
         StaticCallAnalyzer::taintReturnType(
@@ -992,5 +1001,23 @@ final class ExistingAtomicStaticCallAnalyzer
                 new TemplateBound(Type::getNever()),
             ],
         ];
+    }
+
+    /**
+     * Null for a native method only the callmap of the analysed version has, newer than the runtime
+     *
+     * @psalm-capabilities read-props
+     */
+    private static function getMethodStorage(Codebase $codebase, ?MethodIdentifier $method_id): ?MethodStorage
+    {
+        if ($method_id === null) {
+            return null;
+        }
+
+        try {
+            return $codebase->methods->getStorage($method_id, true);
+        } catch (UnexpectedValueException) {
+            return null;
+        }
     }
 }
