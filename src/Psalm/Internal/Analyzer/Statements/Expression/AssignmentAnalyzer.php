@@ -95,6 +95,7 @@ use Psalm\Node\Expr\BinaryOp\VirtualShiftRight;
 use Psalm\Node\Expr\VirtualAssign;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Storage\Assertion\Falsy;
+use Psalm\Storage\Assertion\Truthy;
 use Psalm\Storage\Capabilities;
 use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Type;
@@ -695,6 +696,11 @@ final class AssignmentAnalyzer
             ) {
                 $context->forgetReferencesPossiblyBoundUnder($extended_var_id);
             }
+        }
+
+        if ($extended_var_id !== null) {
+            // the keys taken from a list are no keys of what is assigned to it
+            $context->releaseKeysBoundToList($extended_var_id);
         }
 
         if ($extended_var_id && isset($context->vars_in_scope[$extended_var_id])) {
@@ -2019,6 +2025,7 @@ final class AssignmentAnalyzer
                 $receiver,
                 $class_storage,
                 $declaring_class_storage,
+                true,
             )
             : $property_type;
     }
@@ -2165,6 +2172,7 @@ final class AssignmentAnalyzer
             );
 
             if ($property_var_id !== null) {
+                $context->releaseKeysBoundToList($property_var_id);
                 $context->removeVarFromConflictingClauses(
                     $property_var_id,
                     $by_ref_out_type,
@@ -2181,6 +2189,10 @@ final class AssignmentAnalyzer
             $statements_analyzer->getFQCLN(),
             $statements_analyzer,
         );
+
+        if ($var_id !== null) {
+            $context->releaseKeysBoundToList($var_id);
+        }
 
         $codebase = $statements_analyzer->getCodebase();
 
@@ -3240,7 +3252,7 @@ final class AssignmentAnalyzer
                     $cond_object_id = spl_object_id($assign_value);
 
                     try {
-                        $right_clauses = FormulaGenerator::getFormula(
+                        $cond_clauses = FormulaGenerator::getFormula(
                             $cond_object_id,
                             $cond_object_id,
                             $assign_value,
@@ -3251,7 +3263,7 @@ final class AssignmentAnalyzer
 
                         $right_clauses = Context::filterClauses(
                             $var_id,
-                            $right_clauses,
+                            $cond_clauses,
                         );
 
                         $assignment_clauses = Algebra::combineOredClauses(
@@ -3260,7 +3272,44 @@ final class AssignmentAnalyzer
                             $cond_object_id,
                         );
                     } catch (ComplicatedExpressionException) {
+                        $cond_clauses = [];
                         $assignment_clauses = [];
+                    }
+
+                    // the variable is the result of the condition: where it is falsy, the condition is false
+                    if ($cond_clauses !== []) {
+                        try {
+                            $negated_clauses = Context::filterClauses(
+                                $var_id,
+                                FormulaGenerator::getNegatedFormula(
+                                    $cond_clauses,
+                                    $assign_value,
+                                    $cond_object_id,
+                                    $context->self,
+                                    $statements_analyzer,
+                                    $codebase,
+                                ),
+                            );
+
+                            if ($negated_clauses !== []) {
+                                $truthy = new Truthy();
+
+                                $assignment_clauses = [
+                                    ...$assignment_clauses,
+                                    ...Algebra::combineOredClauses(
+                                        [new Clause(
+                                            [$var_id => [(string) $truthy => $truthy]],
+                                            $var_object_id,
+                                            $var_object_id,
+                                        )],
+                                        $negated_clauses,
+                                        $cond_object_id,
+                                    ),
+                                ];
+                            }
+                        } catch (ComplicatedExpressionException) {
+                            // too complicated to negate: only its truthy side is known
+                        }
                     }
 
                     $context->clauses = [...$context->clauses, ...$assignment_clauses];
