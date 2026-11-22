@@ -283,6 +283,15 @@ final class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
             );
         }
 
+        // what is read from a `*` receiver is as unknown as the receiver, and what is written to it is never
+        ClassTemplateParamCollector::markStarBindings(
+            $template_result,
+            $codebase,
+            $class_storage,
+            $lhs_type_part,
+            $class_template_params,
+        );
+
         $is_first_class_callable = $stmt->isFirstClassCallable();
 
         if (!$is_first_class_callable && self::checkMethodArgs(
@@ -327,7 +336,15 @@ final class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
 
         $in_call_map = InternalCallMapHandler::inCallMap((string) ($declaring_method_id ?? $method_id));
 
-        if (!$in_call_map) {
+        if ($in_call_map) {
+            MethodCallProhibitionAnalyzer::checkBuiltinDeprecation(
+                $statements_analyzer,
+                $method_id,
+                new CodeLocation($statements_analyzer, $stmt_name),
+                $statements_analyzer->getSuppressedIssues(),
+                $stmt_name->name,
+            );
+        } else {
             $name_code_location = new CodeLocation($statements_analyzer, $stmt_name);
 
             MethodCallProhibitionAnalyzer::analyze(

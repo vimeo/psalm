@@ -206,7 +206,12 @@ final class TaintFlowResolution
      * The taints reportFlow() reports the most general of for a flow, dropping the others: they depend on each other,
      * so they are never told apart from a call's taints when sinks are replayed (see getSinkCallerTaints())
      */
-    private const URL_TAINTS = TaintKind::INPUT_SSRF | TaintKind::INPUT_URL_COMPONENT | TaintKind::INPUT_URL_PATH;
+    private const OVERLAPPING_TAINTS = TaintKind::INPUT_SSRF
+        | TaintKind::INPUT_REDIRECT
+        | TaintKind::INPUT_URL_COMPONENT
+        | TaintKind::INPUT_URL_PATH
+        | TaintKind::INPUT_SQL
+        | TaintKind::INPUT_SQL_UNQUOTED;
 
     /**
      * The kinds of entries: specialized call entries, and convergences (see enterConvergence())
@@ -774,8 +779,8 @@ final class TaintFlowResolution
     private array $entry_sink_ranks = [];
 
     /**
-     * Entry => sink key => the sinks replayed through every call: those whose walk adds taints, or that URL_TAINTS
-     * apply to (see addEntrySink())
+     * Entry => sink key => the sinks replayed through every call: those whose walk adds taints, or that
+     * OVERLAPPING_TAINTS apply to (see addEntrySink())
      *
      * @var array<int, array<string, true>>
      */
@@ -2728,7 +2733,7 @@ final class TaintFlowResolution
 
             if ($sink_taints !== 0) {
                 foreach ($this->entry_sinks[$entry] as [$sink_id, , $sink_added, $reaches]) {
-                    $sink_added |= $sink_taints | $this->sink_taints[$sink_id] & self::URL_TAINTS;
+                    $sink_added |= $sink_taints | $this->sink_taints[$sink_id] & self::OVERLAPPING_TAINTS;
 
                     foreach ($reaches as [$state, $link, $kept, $added]) {
                         $kept &= $sink_added | $this->state_added[$state];
@@ -2738,7 +2743,7 @@ final class TaintFlowResolution
             } else {
                 foreach ($this->entry_unshared_sinks[$entry] ?? [] as $sink_key => $_) {
                     [$sink_id, , $sink_added, $reaches] = $this->entry_sinks[$entry][$sink_key];
-                    $sink_added |= $this->sink_taints[$sink_id] & self::URL_TAINTS;
+                    $sink_added |= $this->sink_taints[$sink_id] & self::OVERLAPPING_TAINTS;
 
                     foreach ($reaches as [$state, $link, $kept, $added]) {
                         $kept &= $sink_added | $this->state_added[$state];
@@ -3424,8 +3429,9 @@ final class TaintFlowResolution
             return;
         }
 
-        if (str_starts_with($class, ':') && !str_ends_with($class, "'*")) {
-            // (the class of a key whose start only is known passes fetches of other keys too: it gets its own)
+        if (str_starts_with($class, ':') && DataFlowGraph::isKnownExactly(substr($class, 1))) {
+            // (the class of a key not known exactly, as one whose start only is known, passes fetches of other keys
+            // too: it gets its own)
             $class = self::EXACT_KEY_CLASS;
         } elseif ($class === self::DEFERRED_CLASS && $this->entry_kinds[$entry] !== self::ENTRY_CALL) {
             // no fetch in the walk of a convergence asks per key (see passesFetch())
@@ -3647,9 +3653,10 @@ final class TaintFlowResolution
         $this->entry_sinks[$entry][$sink_key] = [$sink_id, $sink[1] | $new_kept, $sink[2] | $new_added, $reaches];
 
         // A taint the walk also adds may have its source in the walk: that sink is replayed through every call. So are
-        // the URL kinds, which reportFlow() drops by each other in a call: they stay in one with its other kinds.
-        $unshared_kept = $new_kept
-            & ($sink[2] | $added | $this->state_added[$state] | $this->sink_taints[$sink_id] & self::URL_TAINTS);
+        // the overlapping kinds, which reportFlow() drops by each other in a call: they stay in one with its others.
+        $unshared_kept = $new_kept & (
+            $sink[2] | $added | $this->state_added[$state] | $this->sink_taints[$sink_id] & self::OVERLAPPING_TAINTS
+        );
         $shared_kept = $new_kept & ~$unshared_kept;
 
         if (!isset($this->entry_sink_origins[$entry])) {
@@ -3685,7 +3692,7 @@ final class TaintFlowResolution
      * (see addEntrySink()). reportFlow() identifies a finding by sink, predecessor, source and taint: of the calls
      * outside any context with the same source for a taint, only the first of them reports it, so only that one is
      * replayed for it. A call inside a context, and a taint whose source isn't certain (see buildTrace()) or that
-     * reportFlow() drops by another (see URL_TAINTS), are replayed as they are.
+     * reportFlow() drops by another (see OVERLAPPING_TAINTS), are replayed as they are.
      *
      * @psalm-external-mutation-free
      */
@@ -3932,10 +3939,15 @@ final class TaintFlowResolution
 
         // a value choosing the server of a URL can also inject any URL syntax in it, such as the `..` segments of
         // its path: each is reported as the most general issue alone
-        if (($taints & TaintKind::INPUT_SSRF) !== 0) {
+        if (($taints & (TaintKind::INPUT_SSRF | TaintKind::INPUT_REDIRECT)) !== 0) {
             $taints &= ~(TaintKind::INPUT_URL_COMPONENT | TaintKind::INPUT_URL_PATH);
         } elseif (($taints & TaintKind::INPUT_URL_COMPONENT) !== 0) {
             $taints &= ~TaintKind::INPUT_URL_PATH;
+        }
+
+        // SQL syntax is reported once, as what can break out of quotes when the flow can do both
+        if (($taints & TaintKind::INPUT_SQL) !== 0) {
+            $taints &= ~TaintKind::INPUT_SQL_UNQUOTED;
         }
 
         $sink = $this->table->decode($sink_id, $this->sinks[$sink_id]);
@@ -3966,7 +3978,8 @@ final class TaintFlowResolution
             }
 
             $this->reported_flows[$sink_id][$predecessor_id][$origin] = $reported | $taint | match ($taint) {
-                TaintKind::INPUT_SSRF => TaintKind::INPUT_URL_COMPONENT | TaintKind::INPUT_URL_PATH,
+                TaintKind::INPUT_SSRF,
+                TaintKind::INPUT_REDIRECT => TaintKind::INPUT_URL_COMPONENT | TaintKind::INPUT_URL_PATH,
                 TaintKind::INPUT_URL_COMPONENT => TaintKind::INPUT_URL_PATH,
                 default => 0,
             };

@@ -207,7 +207,7 @@ final class AndAnalyzer
             ...GuardedClasses::unknownWhenResult($stmt->left, true, $codebase),
         ];
 
-        $partitioned_clauses = AlgebraAnalyzer::removeReconciledClausesOfOneVariable(
+        $partitioned_clauses = AlgebraAnalyzer::removeReconciledClauses(
             [...$left_context->clauses, ...$left_clauses],
             $changed_var_ids,
             $right_context->vars_in_scope,
@@ -308,7 +308,7 @@ final class AndAnalyzer
                 static fn(Clause $c) => $c->hash,
                 [
                     ...$partitioned_clauses[1],
-                    ...AlgebraAnalyzer::removeReconciledClausesOfOneVariable(
+                    ...AlgebraAnalyzer::removeReconciledClauses(
                         $simplified_clauses,
                         $changed_var_ids,
                         $right_context->vars_in_scope,

@@ -42,6 +42,7 @@ use function is_scalar;
 use function is_string;
 use function json_decode;
 use function preg_last_error_msg;
+use function preg_match;
 use function preg_replace;
 use function preg_split;
 use function realpath;
@@ -175,6 +176,22 @@ final class CliUtils
         define('PHP_PARSER_VERSION', VersionUtils::getPhpParserVersion());
 
         return $autoloaders;
+    }
+
+    /**
+     * The message of a -r/--root path that doesn't exist: a relative path is shown as it is resolved from the
+     * current directory, an absolute one as it was given
+     *
+     * @psalm-pure
+     */
+    public static function getRootDirectoryNotFoundMessage(string $current_dir, string $root): string
+    {
+        // runs before the autoloader is required, so symfony's Path isn't available
+        $is_absolute = str_starts_with($root, '/')
+            || str_starts_with($root, DIRECTORY_SEPARATOR)
+            || preg_match('/^[A-Za-z]:[\\\\\/]/', $root) === 1;
+
+        return 'Could not locate root directory ' . ($is_absolute ? $root : $current_dir . DIRECTORY_SEPARATOR . $root);
     }
 
     /**
@@ -396,7 +413,8 @@ final class CliUtils
     }
 
     /**
-     * Marks the command-line arguments or options Psalm was run with as chosen by the person running it.
+     * Marks the command-line arguments or options Psalm was run with, or an environment variable it reads, as chosen by
+     * the person running it.
      *
      * They name the files and directories Psalm reads and writes, the code it scans and reflects on,
      * the config, plugins and autoloaders it loads, the Shepherd and language client addresses it
@@ -405,7 +423,7 @@ final class CliUtils
      * (see getPathsToCheckFromStdin()). The other kinds of taint stay, so that an argument still has
      * to be escaped for a shell, for example.
      *
-     * @template T of array|false
+     * @template T of array|string|false
      * @param T $arguments
      * @return T
      * @psalm-pure
@@ -418,12 +436,15 @@ final class CliUtils
      * @psalm-taint-escape url_component
      * @psalm-taint-escape url_path
      */
-    public static function chosenByOperator(array|false $arguments): array|false
+    public static function chosenByOperator(array|string|false $arguments): array|string|false
     {
         return $arguments;
     }
 
     /**
+     * The value of --move, --into, --rename or --to is kept even when realpath() accepts it,
+     * because a symbol name can also match an existing path, such as a directory named src.
+     *
      * @return list<string>
      */
     public static function getArguments(): array
@@ -433,12 +454,13 @@ final class CliUtils
 
         for ($i = 0, $iMax = count($argv); $i < $iMax; ++$i) {
             $input_path = $argv[$i];
+            $is_refactor_value = $i > 0 && in_array($argv[$i - 1], ['--move', '--into', '--rename', '--to'], true);
 
-            if (realpath($input_path) !== false) {
+            if (!$is_refactor_value && realpath($input_path) !== false) {
                 continue;
             }
 
-            if ($input_path[0] === '-' && strlen($input_path) === 2) {
+            if (strlen($input_path) === 2 && $input_path[0] === '-') {
                 if ($input_path[1] === 'c' || $input_path[1] === 'f' || $input_path[1] === 'r') {
                     ++$i;
                 }

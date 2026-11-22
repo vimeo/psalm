@@ -122,6 +122,34 @@ final class TypeVariableTracker
     }
 
     /**
+     * Transfers the bounds recorded while checking a value assigned to a property against its declared type; a value
+     * that only reaches an upper bound through mixed is reported as MixedPropertyTypeCoercion at reconciliation.
+     *
+     * @param array<string> $suppressed_issues
+     */
+    public function addPropertyAssignmentBounds(
+        TypeComparisonResult $comparison_result,
+        string $property_id,
+        CodeLocation $pos,
+        array $suppressed_issues,
+    ): void {
+        foreach ($comparison_result->type_variable_upper_bounds as [$_, $upper_bound]) {
+            $upper_bound->property_requirement_id = $property_id;
+        }
+
+        foreach ($comparison_result->type_variable_lower_bounds as [$_, $lower_bound]) {
+            $lower_bound->property_value_id = $property_id;
+        }
+
+        $this->addBounds(
+            $comparison_result->type_variable_lower_bounds,
+            $comparison_result->type_variable_upper_bounds,
+            $pos,
+            $suppressed_issues,
+        );
+    }
+
+    /**
      * How many lower and upper bounds each variable has so far.
      *
      * @return array<string, array{int, int}>

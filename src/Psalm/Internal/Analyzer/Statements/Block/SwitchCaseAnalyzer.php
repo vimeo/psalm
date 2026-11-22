@@ -16,11 +16,13 @@ use Psalm\Internal\Analyzer\ScopeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\IntMaskComparisonAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Codebase\PhpDeprecations;
 use Psalm\Internal\PhpVisitor\ConditionCloningVisitor;
 use Psalm\Internal\PhpVisitor\TypeMappingVisitor;
 use Psalm\Internal\Scope\CaseScope;
 use Psalm\Internal\Scope\SwitchScope;
 use Psalm\Issue\ContinueOutsideLoop;
+use Psalm\Issue\DeprecatedSyntax;
 use Psalm\Issue\ParadoxicalCondition;
 use Psalm\IssueBuffer;
 use Psalm\Node\Expr\BinaryOp\VirtualBooleanOr;
@@ -53,6 +55,7 @@ use function preg_match;
 use function spl_object_id;
 use function str_ends_with;
 use function str_starts_with;
+use function strlen;
 use function strtolower;
 use function substr;
 
@@ -77,6 +80,8 @@ final class SwitchCaseAnalyzer
         bool $is_last,
         SwitchScope $switch_scope,
     ): ?bool {
+        self::checkCaseSeparator($statements_analyzer, $case);
+
         // has a return/throw at end
         $has_ending_statements = $case_actions === [ScopeAnalyzer::ACTION_END];
         $has_leaving_statements = $has_ending_statements
@@ -435,6 +440,8 @@ final class SwitchCaseAnalyzer
         // a case left only through its breaks forgets what they changed, not what its unreachable end did
         if ($ends_unless_breaking) {
             $context->removeClausesOfVarsChangedWith($case_scope->parent_remove_vars_at_breaks);
+            // the bindings made before its breaks
+            $context->keepReferencesPossiblyBoundIn($case_context);
         } elseif ($case_exit_type !== 'return_throw') {
             $context->removeClausesOfVarsChangedIn($case_context);
         }
@@ -618,6 +625,7 @@ final class SwitchCaseAnalyzer
             $case_stmts,
             $statements_analyzer->getCodebase(),
         );
+        $context->keepReferencesPossiblyBoundIn($case_context);
 
         if (!$case->cond
             && $switch_var_id
@@ -816,5 +824,28 @@ final class SwitchCaseAnalyzer
             $var,
             $in_array_values,
         );
+    }
+
+    /**
+     * Reports a case ending with a semicolon, which PHP deprecates whatever PHP version is analysed
+     */
+    private static function checkCaseSeparator(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Stmt\Case_ $case,
+    ): void {
+        $contents = $statements_analyzer->getCodebase()->getFileContents($statements_analyzer->getFilePath());
+        $after = $case->cond !== null
+            ? (int) $case->cond->getAttribute('endFilePos') + 1
+            : (int) $case->getAttribute('startFilePos') + strlen('default');
+
+        if (preg_match('~\G(?:\s|/\*.*?\*/|(?://|#)[^\n]*\n)*;~As', $contents, $_, 0, $after) === 1) {
+            IssueBuffer::maybeAdd(
+                new DeprecatedSyntax(
+                    PhpDeprecations::getDeprecatedSinceMessage('Ending a case with a semicolon', 8_05_00, 'a colon'),
+                    new CodeLocation($statements_analyzer, $case),
+                ),
+                $statements_analyzer->getSuppressedIssues(),
+            );
+        }
     }
 }

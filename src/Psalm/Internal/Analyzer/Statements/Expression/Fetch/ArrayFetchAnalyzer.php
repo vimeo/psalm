@@ -106,6 +106,7 @@ use Psalm\Type\MutableUnion;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
+use function array_all;
 use function array_keys;
 use function array_map;
 use function array_pop;
@@ -910,7 +911,13 @@ final class ArrayFetchAnalyzer
 
         $array_access_type = null;
 
-        if ($offset_type->isNull()) {
+        $only_array_access_objects = array_all(
+            $array_type->getAtomicTypes(),
+            static fn(Atomic $atomic): bool => $atomic instanceof TNamedObject
+                && self::isKnownArrayAccessObject($codebase, $atomic),
+        );
+
+        if ($offset_type->isNull() && !$only_array_access_objects) {
             IssueBuffer::maybeAdd(
                 new NullArrayOffset(
                     'Cannot access value on variable ' .
@@ -936,7 +943,7 @@ final class ArrayFetchAnalyzer
         }
 
         if ($offset_type->isNullable()) {
-            if (!$offset_type->ignore_nullable_issues) {
+            if (!$offset_type->ignore_nullable_issues && !$only_array_access_objects) {
                 IssueBuffer::maybeAdd(
                     new PossiblyNullArrayOffset(
                         'Cannot access value on variable ' . self::describeArrayVar($extended_var_id, $stmt)
@@ -1591,7 +1598,7 @@ final class ArrayFetchAnalyzer
 
         return Type::combineUnionTypes(
             $array_access_type,
-            Type::getMixed($type instanceof TNever),
+            Type::getMixed($type instanceof TNever || ($type instanceof TMixed && $type->from_loop_isset)),
         );
     }
 
@@ -1664,9 +1671,10 @@ final class ArrayFetchAnalyzer
 
         if ($type instanceof TKeyedArray
             && $type->is_list
-            && (($in_assignment && $stmt->dim)
-                || $original_type instanceof TTemplateParam
-                || !$offset_type->isInt())
+            && ($original_type instanceof TTemplateParam
+                || (!(($in_assignment || $context->inside_by_ref_offset)
+                        && self::knowsWhichKeysTheListHas($type, $key_values))
+                    && (($in_assignment && $stmt->dim) || !$offset_type->isInt())))
         ) {
             $temp = $type->getGenericArrayType();
             self::handleArrayAccessOnTArray(
@@ -1730,6 +1738,30 @@ final class ArrayFetchAnalyzer
         if ($context->inside_isset) {
             $offset_type->ignore_isset = true;
         }
+    }
+
+    /**
+     * Whether each of the keys is known to be a key of the list, or known not to be one
+     *
+     * @param list<TLiteralInt|TLiteralString> $key_values
+     * @psalm-pure
+     */
+    private static function knowsWhichKeysTheListHas(TKeyedArray $list, array $key_values): bool
+    {
+        foreach ($key_values as $key_value) {
+            $key = ArrayAnalyzer::getLiteralArrayKeyInt($key_value->value);
+
+            if ($key !== false
+                && $key >= 0
+                && (isset($list->properties[$key])
+                    ? $list->properties[$key]->possibly_undefined
+                    : $list->fallback_params !== null)
+            ) {
+                return false;
+            }
+        }
+
+        return $key_values !== [];
     }
 
     /**
@@ -2059,7 +2091,11 @@ final class ArrayFetchAnalyzer
                 $string_to_int = ArrayAnalyzer::getLiteralArrayKeyInt($key_value->value);
                 $key_value = $string_to_int === false ? $key_value : new TLiteralInt($string_to_int);
 
-                if ($type->is_list && (!is_int($key_value->value) || $key_value->value < 0)) {
+                $is_no_key_of_the_list = $type->is_list
+                    && (!is_int($key_value->value) || $key_value->value < 0);
+
+                // a write creates the offset, so does a read by reference (as null)
+                if ($is_no_key_of_the_list && !$in_assignment && !$context->inside_by_ref_offset) {
                     $expected_offset_types[] = $type->getGenericKeyType();
                     $has_valid_offset = false;
                 } elseif ((isset($properties[$key_value->value]) && !(
@@ -2110,7 +2146,7 @@ final class ArrayFetchAnalyzer
                         $array_access_type,
                         $properties[$key_value->value],
                     );
-                } elseif ($type->fallback_params !== null) {
+                } elseif ($type->fallback_params !== null && !$is_no_key_of_the_list) {
                     $offset_possibly_missing = false;
 
                     if ($codebase->config->ensure_array_string_offsets_exist) {
@@ -2408,6 +2444,25 @@ final class ArrayFetchAnalyzer
         return false;
     }
 
+    /**
+     * offsetGet() and its siblings decide which offsets such an object accepts, and the calls of them check it
+     */
+    private static function isKnownArrayAccessObject(Codebase $codebase, TNamedObject $type): bool
+    {
+        foreach ([$type, ...$type->extra_types] as $part) {
+            if ($part instanceof TNamedObject
+                && $codebase->classOrInterfaceExists($part->value)
+                && (strtolower($part->value) === 'arrayaccess'
+                    || $codebase->classExtendsOrImplements($part->value, 'ArrayAccess')
+                    || $codebase->interfaceExtends($part->value, 'ArrayAccess'))
+            ) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     private static function handleArrayAccessOnNamedObject(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\ArrayDimFetch $stmt,
@@ -2453,6 +2508,7 @@ final class ArrayFetchAnalyzer
                 $statements_analyzer,
                 $fake_method_call,
                 $context,
+                receiver_analyzed: true,
             );
 
             if (!isset($suppressed_issues['PossiblyInvalidMethodCall'])) {
@@ -2527,6 +2583,7 @@ final class ArrayFetchAnalyzer
                     $fake_set_method_call,
                     $context,
                     $receiver_type === null,
+                    receiver_analyzed: true,
                 );
 
                 $statements_analyzer->node_data = $old_node_data;
@@ -2556,6 +2613,7 @@ final class ArrayFetchAnalyzer
                         $fake_unset_method_call,
                         $context,
                         $receiver_type === null,
+                        receiver_analyzed: true,
                     );
 
                     $statements_analyzer->node_data = $old_node_data;
@@ -2579,6 +2637,7 @@ final class ArrayFetchAnalyzer
                         $fake_exists_method_call,
                         $context,
                         $receiver_type === null,
+                        receiver_analyzed: true,
                     );
 
                     $statements_analyzer->node_data = $old_node_data;
@@ -2634,6 +2693,7 @@ final class ArrayFetchAnalyzer
                         $fake_get_method_call,
                         $context,
                         $receiver_type === null,
+                        receiver_analyzed: true,
                     );
 
                     $call_array_access_type =
