@@ -111,6 +111,25 @@ final class FunctionTemplateTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'isStringOfATemplateBoundedByNumericNarrowsItToANumericString' => [
+                'code' => '<?php
+                    /**
+                     * @template T of numeric
+                     * @param T $n
+                     * @return T
+                     */
+                    function keepString($n) {
+                        if (is_string($n)) {
+                            /** @var numeric-string */
+                            $s = $n;
+                            echo $s;
+                        }
+                        return $n;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'typeCheckOfATemplateBoundedByScalarTypesCanHold' => [
                 'code' => '<?php
                     /**
@@ -3521,6 +3540,21 @@ final class FunctionTemplateTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'typeCheckOfATemplateWhoseBoundCantHoldTheTypeIsStillAContradiction' => [
+                'code' => '<?php
+                    /**
+                     * @template T of string
+                     * @param T $s
+                     */
+                    function f($s): void {
+                        if (is_int($s)) {
+                            echo $s;
+                        }
+                    }',
+                'error_message' => 'DocblockTypeContradiction',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
             'methodTemplateBoundStillReportsTheClassStringOfANonFinalClassThatWasExcluded' => [
                 'code' => '<?php
                     interface StampInterface {}

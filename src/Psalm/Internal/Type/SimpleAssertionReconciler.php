@@ -1076,7 +1076,7 @@ final class SimpleAssertionReconciler extends Reconciler
             } elseif ($type instanceof TTemplateParam) {
                 $bound = self::getTemplateBound($type);
 
-                if ($bound->hasString() || $bound->hasMixed() || $bound->hasScalar()) {
+                if ($bound->hasString() || $bound->hasMixed() || $bound->hasScalar() || $bound->hasNumeric()) {
                     $type = $type->replaceAs(self::reconcileString(
                         $assertion,
                         $type->as,
