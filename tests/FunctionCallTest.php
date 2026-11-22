@@ -44,6 +44,20 @@ final class FunctionCallTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.5',
             ],
+            'aStubWithoutAReturnTypeKeepsTheCallMapOne' => [
+                'code' => '<?php
+                    function postgres(): PgSql\\Connection {
+                        throw new RuntimeException();
+                    }
+                    $mysql = mysqli_real_escape_string(new mysqli(), "a\'b");
+                    $postgres = pg_escape_literal(postgres(), "a\'b");',
+                'assertions' => [
+                    '$mysql===' => 'string',
+                    '$postgres===' => 'false|string',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'functionImportedWithAnAliasIsCalledWithoutAWrongCaseIssue' => [
                 'code' => '<?php
                     namespace App;

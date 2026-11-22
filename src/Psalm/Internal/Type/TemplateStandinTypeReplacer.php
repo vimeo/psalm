@@ -1588,6 +1588,7 @@ final class TemplateStandinTypeReplacer
      * @param TGenericObject|TNamedObject|TIterable $input_type_part
      * @param TGenericObject|TNamedObject|TIterable $container_type_part
      * @psalm-capabilities read-props|write-this-props|write-props|write-refs
+     * @param-out array<int, true> $input_star_offsets the offsets of the returned params that are a `*`
      * @return list<Union>
      */
     public static function getMappedGenericTypeParams(
@@ -1595,6 +1596,7 @@ final class TemplateStandinTypeReplacer
         Atomic $input_type_part,
         Atomic $container_type_part,
         ?array &$container_type_params_covariant = null,
+        ?array &$input_star_offsets = null,
     ): array {
         if ($input_type_part instanceof TGenericObject || $input_type_part instanceof TIterable) {
             $input_type_params = $input_type_part->type_params;
@@ -1644,6 +1646,15 @@ final class TemplateStandinTypeReplacer
             ? $codebase->classlike_storage_provider->get($input_type_part->value)
             : null;
 
+        $input_projections = $input_type_part instanceof TGenericObject ? $input_type_part->getProjections() : [];
+        $input_star_offsets = [];
+
+        foreach ($input_projections as $offset => $projection) {
+            if ($projection === TypeArgumentProjection::Star) {
+                $input_star_offsets[$offset] = true;
+            }
+        }
+
         $container_type_params_covariant = $codebase->classlike_storage_provider->has($container_type_part->value)
             ? $codebase->classlike_storage_provider->get($container_type_part->value)->template_covariants
             : null;
@@ -1655,6 +1666,7 @@ final class TemplateStandinTypeReplacer
             $i = 0;
 
             $replacement_templates = [];
+            $star_templates = [];
 
             if ($input_template_types
                 && (!$container_type_part instanceof TGenericObject || !$container_type_part->remapped_params)
@@ -1666,9 +1678,17 @@ final class TemplateStandinTypeReplacer
 
                     $replacement_templates[$template_name][$input_type_part->value] = $input_type_params[$i];
 
+                    if (($input_projections[$i] ?? null) === TypeArgumentProjection::Star) {
+                        // `Box<T>` of the `@implements Getter<Box<T>>` of a `Box<*>` is as unknown as the receiver
+                        $star_templates[$template_name][$input_type_part->value] = true;
+                    }
+
                     $i++;
                 }
             }
+
+            $replacement_result = new TemplateResult([], $replacement_templates);
+            $replacement_result->markStarBindings($star_templates);
 
             $template_extends = $input_class_storage->template_extended_params;
 
@@ -1680,9 +1700,11 @@ final class TemplateStandinTypeReplacer
                 $params = $template_extends[$container_type_part_value];
 
                 $new_input_params = [];
+                $mapped_star_offsets = [];
 
                 foreach ($params as $extended_input_param_type) {
                     $new_input_param = null;
+                    $candidate_offsets = [];
 
                     foreach ($extended_input_param_type->getAtomicTypes() as $extended_template) {
                         $extended_templates = $extended_template instanceof TTemplateParam
@@ -1712,6 +1734,7 @@ final class TemplateStandinTypeReplacer
                                     true,
                                 );
 
+                                $candidate_offsets[] = $old_params_offset;
                                 $candidate_param_types[] = ($input_type_params[$old_params_offset] ?? Type::getMixed())
                                     ->setProperties(['from_template_default' => true]);
                             }
@@ -1727,14 +1750,36 @@ final class TemplateStandinTypeReplacer
 
                     $new_input_param = TemplateInferredTypeReplacer::replace(
                         $new_input_param,
-                        new TemplateResult([], $replacement_templates),
+                        $replacement_result,
                         $codebase,
                     );
+
+                    // a `*` argument of the input is one of the container when the container's template stands for
+                    // exactly the template that holds it
+                    if (count($candidate_offsets) === 1
+                        && $extended_input_param_type->isSingle()
+                        && ($input_projections[$candidate_offsets[0]] ?? null) === TypeArgumentProjection::Star
+                    ) {
+                        $mapped_star_offsets[count($new_input_params)] = true;
+                    } elseif ($star_templates !== []) {
+                        // an argument that wraps the template (`list<T>`) holds a `*` as unknown as it is
+                        $template_collector = new TemplateTypeCollector(true);
+                        $template_collector->traverseArray($extended_input_param_type->getAtomicTypes());
+
+                        foreach ($template_collector->getTemplateTypes() as $template) {
+                            if (isset($star_templates[$template->param_name][$template->defining_class])) {
+                                $mapped_star_offsets[count($new_input_params)] = true;
+
+                                break;
+                            }
+                        }
+                    }
 
                     $new_input_params[] = $new_input_param;
                 }
 
                 $input_type_params = $new_input_params;
+                $input_star_offsets = $mapped_star_offsets;
             }
         }
 

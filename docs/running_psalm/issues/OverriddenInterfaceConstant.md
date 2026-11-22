@@ -3,7 +3,7 @@
 Emitted when a constant declared on an interface is overridden by a child (illegal in PHP < 8.1).
 
 ```php
-<?php
+<?php // phpVersion="8.0"
 
 interface Foo
 {

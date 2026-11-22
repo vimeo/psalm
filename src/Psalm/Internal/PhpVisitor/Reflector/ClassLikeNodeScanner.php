@@ -1484,6 +1484,10 @@ final class ClassLikeNodeScanner
                 continue;
             }
 
+            if ($this->reportStarArgument($storage, $node, $atomic_type, $tag)) {
+                continue;
+            }
+
             $type_parameters = [];
 
             foreach ($atomic_type->type_params as $type_param) {
@@ -1495,6 +1499,27 @@ final class ClassLikeNodeScanner
         }
 
         return $counts;
+    }
+
+    /**
+     * Reports a `*` argument, which cannot bind a template of the parent (`@extends Box<*>`), as PHPStan does
+     */
+    private function reportStarArgument(
+        ClassLikeStorage $storage,
+        PhpParser\Node $node,
+        TGenericObject $atomic_type,
+        string $tag,
+    ): bool {
+        if (!$atomic_type->hasStarProjection()) {
+            return false;
+        }
+
+        $storage->docblock_issues[] = new InvalidDocblock(
+            'The * type argument of ' . $atomic_type->getId() . ' is not allowed in ' . $tag,
+            new CodeLocation($this->file_scanner, $node, null, true),
+        );
+
+        return true;
     }
 
     private static function registerEmptyConstructor(ClassLikeStorage $class_storage): void
