@@ -1394,9 +1394,9 @@ final class Psalm
                 classes, interfaces, traits and enums. @psalm-suppress of Tainted* issues is
                 only checked under --taint-analysis.
 
-            --find-references-to=[class|method|property]
-                Searches the codebase for references to the given fully-qualified class or method,
-                where method is in the format class::methodName
+            --find-references-to=[class|method|property|function]
+                Searches the codebase for references to the given fully-qualified class, method,
+                property or function, where method is in the format class::methodName
 
             --no-suggestions
                 Hide suggestions
