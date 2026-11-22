@@ -1560,6 +1560,59 @@ final class TypeVariableTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'constructionOfABoundedCovariantTemplateNothingCanConstrain' => [
+                'code' => '<?php
+                    /** @template-covariant T of Countable */
+                    final class Bounded {
+                        /** @return list<T> */
+                        public function all(): array {
+                            return [];
+                        }
+                    }
+
+                    /** @return Bounded<ArrayObject> */
+                    function arrayObjects(): Bounded {
+                        return new Bounded();
+                    }
+
+                    $b = new Bounded();',
+                'assertions' => [
+                    '$b===' => 'Bounded<never>',
+                ],
+            ],
+            'constructionOfACovariantTemplateNothingCanConstrainIsGivenAsAnArgument' => [
+                'code' => '<?php
+                    /** @template-covariant T */
+                    final class Coll {
+                        /** @return list<T> */
+                        public function all(): array {
+                            return [];
+                        }
+                    }
+
+                    /** @param Coll<int> $coll */
+                    function takesInts(Coll $coll): void {}
+
+                    takesInts(new Coll());',
+            ],
+            'constructionOfACovariantTemplateAlongsideAPurityTemplate' => [
+                'code' => '<?php
+                    /**
+                     * @template-covariant T
+                     * @psalm-purity-template P
+                     */
+                    final class Box {
+                        /** @return list<T> */
+                        public function all(): array {
+                            return [];
+                        }
+                    }
+
+                    $b = new Box();',
+                'assertions' => [
+                    '$b===' => 'Box[impure]<never>',
+                ],
+            ],
             'constructorlessConstructionOfUnconstrainableTemplate' => [
                 'code' => '<?php
                     /** @template T = int */
