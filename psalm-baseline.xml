@@ -862,7 +862,6 @@
     <RiskyTruthyFalsyComparison>
       <code><![CDATA[$class_template_params]]></code>
       <code><![CDATA[$context->calling_method_id]]></code>
-      <code><![CDATA[$lhs_var_id]]></code>
       <code><![CDATA[$method_storage->template_types]]></code>
       <code><![CDATA[$method_storage->template_types]]></code>
     </RiskyTruthyFalsyComparison>
