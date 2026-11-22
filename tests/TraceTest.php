@@ -7,6 +7,8 @@ namespace Psalm\Tests;
 use Override;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 
+use const DIRECTORY_SEPARATOR;
+
 final class TraceTest extends TestCase
 {
     use InvalidCodeAnalysisTestTrait;
@@ -37,6 +39,39 @@ final class TraceTest extends TestCase
                     $a = getmypid();
                     $b = getmypid();',
                 'error_message' => 'Trace',
+            ],
+            'traceStaticPropertyOfSelf' => [
+                'code' => '<?php
+                    final class Config {
+                        public static string $name = "app";
+
+                        public static function show(): void {
+                            /** @psalm-trace self::$name */;
+                        }
+                    }',
+                'error_message' => 'Trace - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:60 - self::$name: string',
+            ],
+            'traceStaticPropertyNarrowedByAnAssignment' => [
+                'code' => '<?php
+                    final class Registry {
+                        /** @var list<int> */
+                        public static array $ids = [];
+
+                        public static function reset(): void {
+                            self::$ids = [1];
+                            /** @psalm-trace Registry::$ids */;
+                        }
+                    }',
+                'error_message' => 'Registry::$ids: list{1',
+            ],
+            'traceUndefinedStaticProperty' => [
+                'code' => '<?php
+                    final class Config {
+                        public static function show(): void {
+                            /** @psalm-trace self::$missing */;
+                        }
+                    }',
+                'error_message' => 'UndefinedTrace',
             ],
             'undefinedTraceVariable' => [
                 'code' => '<?php

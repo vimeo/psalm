@@ -87,6 +87,7 @@ use function count;
 use function explode;
 use function fwrite;
 use function is_string;
+use function preg_match;
 use function preg_replace;
 use function preg_split;
 use function reset;
@@ -437,6 +438,46 @@ final class StatementsAnalyzer extends SourceAnalyzer
                 }
             }
         }
+    }
+
+    /**
+     * The type of a static property a trace names (`self::$items`, `Foo::$items`): what the context knows of it, or
+     * its declared type
+     */
+    private static function getStaticPropertyTraceType(
+        StatementsAnalyzer $statements_analyzer,
+        Context $context,
+        string $traced_variable,
+    ): ?Union {
+        if (preg_match('/^([\\w\\\\]+)::\\$(\\w+)$/D', $traced_variable, $matches) !== 1) {
+            return null;
+        }
+
+        [, $class_name, $property_name] = $matches;
+        $codebase = $statements_analyzer->getCodebase();
+
+        $fq_class_name = match (strtolower($class_name)) {
+            'self', 'static' => $context->self,
+            'parent' => $statements_analyzer->getParentFQCLN(),
+            default => Type::getFQCLNFromString($class_name, $statements_analyzer->getAliases()),
+        };
+
+        if ($fq_class_name === null || !$codebase->classOrInterfaceOrEnumExists($fq_class_name)) {
+            return null;
+        }
+
+        $property_id = $fq_class_name . '::$' . $property_name;
+
+        if (isset($context->vars_in_scope[$property_id])) {
+            return $context->vars_in_scope[$property_id];
+        }
+
+        if (!$codebase->properties->propertyExists($codebase, $property_id, true)) {
+            return null;
+        }
+
+        return $codebase->properties->getPropertyType($property_id, false, $statements_analyzer, $context)
+            ?? Type::getMixed();
     }
 
     /**
@@ -866,10 +907,13 @@ final class StatementsAnalyzer extends SourceAnalyzer
         }
 
         foreach ($traced_variables as $traced_variable) {
-            if (isset($context->vars_in_scope[$traced_variable])) {
+            $traced_type = $context->vars_in_scope[$traced_variable]
+                ?? self::getStaticPropertyTraceType($statements_analyzer, $context, $traced_variable);
+
+            if ($traced_type !== null) {
                 IssueBuffer::maybeAdd(
                     new Trace(
-                        $traced_variable . ': ' . $context->vars_in_scope[$traced_variable]->getId(),
+                        $traced_variable . ': ' . $traced_type->getId(),
                         new CodeLocation($statements_analyzer->source, $stmt),
                     ),
                     $statements_analyzer->getSuppressedIssues(),
