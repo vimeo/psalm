@@ -945,7 +945,7 @@ final class AtomicStaticCallAnalyzer
 
         $caller_identifier = $statements_analyzer->getFullyQualifiedFunctionMethodOrNamespaceName() ?? '';
 
-        if ($fq_class_name !== $context->self
+        if (strtolower($fq_class_name) !== strtolower($context->self ?? '')
             && !NamespaceAnalyzer::isWithinAny($caller_identifier, $class_storage->internal)
         ) {
             IssueBuffer::maybeAdd(

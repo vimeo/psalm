@@ -28,6 +28,27 @@ final class InternalAnnotationTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'traitReachesTheInternalPropertiesOfTheClassUsingIt' => [
+                'code' => '<?php
+                    namespace App\\Greeting {
+                        trait HasGreeting {
+                            public function greet(): string {
+                                $this->count = $this->count + 1;
+                                return $this->name;
+                            }
+                        }
+                    }
+
+                    namespace App\\Internal {
+                        /** @psalm-internal App\\Internal */
+                        final class Greeter {
+                            use \\App\\Greeting\\HasGreeting;
+
+                            public string $name = "x";
+                            public int $count = 0;
+                        }
+                    }',
+            ],
             'traitReachesTheInternalMembersOfTheClassUsingIt' => [
                 'code' => '<?php
                     namespace App {
@@ -918,6 +939,26 @@ final class InternalAnnotationTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'internalMethodOfAParentCalledOnThisFromAnotherNamespaceIsReported' => [
+                'code' => '<?php
+                    namespace Lib {
+                        abstract class Base {
+                            /** @psalm-internal Lib */
+                            public function secret(): int {
+                                return 1;
+                            }
+                        }
+                    }
+
+                    namespace App {
+                        final class Child extends \\Lib\\Base {
+                            public function reveal(): int {
+                                return $this->secret();
+                            }
+                        }
+                    }',
+                'error_message' => 'InternalMethod',
+            ],
             'internalMembersOfAClassReachedFromAnotherNamespaceAreStillReported' => [
                 'code' => '<?php
                     namespace Tests {

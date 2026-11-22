@@ -612,7 +612,7 @@ final class ClassConstAnalyzer
         $caller_identifier = $statements_analyzer->getFullyQualifiedFunctionMethodOrNamespaceName() ?? '';
 
         if (!$context->collect_initializations
-            && $fq_class_name !== $context->self
+            && strtolower($fq_class_name) !== strtolower($context->self ?? '')
             && !NamespaceAnalyzer::isWithinAny($caller_identifier, $const_class_storage->internal)
         ) {
             IssueBuffer::maybeAdd(

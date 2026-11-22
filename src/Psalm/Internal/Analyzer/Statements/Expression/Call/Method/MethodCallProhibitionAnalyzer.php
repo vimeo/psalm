@@ -38,15 +38,15 @@ final class MethodCallProhibitionAnalyzer
 
         CliOutput::checkMethodCall($statements_analyzer, $context, $method_id, $code_location);
 
-        // a class that reaches its own members, from its body or from a trait, can't break their restriction
-        $is_own_method = $context->self !== null
-            && strtolower($method_id->fq_class_name) === strtolower($context->self);
-
         $method_id = $codebase_methods->getDeclaringMethodId($method_id);
 
         if ($method_id === null) {
             return;
         }
+
+        // a class that reaches the members it declares, from its body or from a trait, can't break their restriction
+        $is_own_method = $context->self !== null
+            && strtolower($method_id->fq_class_name) === strtolower($context->self);
 
         $storage = $codebase_methods->getStorage($method_id);
 

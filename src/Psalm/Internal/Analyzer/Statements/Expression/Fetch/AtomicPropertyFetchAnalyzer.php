@@ -581,7 +581,10 @@ final class AtomicPropertyFetchAnalyzer
 
             $caller_identifier = $statements_analyzer->getFullyQualifiedFunctionMethodOrNamespaceName() ?? '';
 
-            if (!NamespaceAnalyzer::isWithinAny($caller_identifier, $property_storage->internal)) {
+            // a class reaching the properties it declares, also from a trait, can't break their restriction
+            if (strtolower($declaring_class_storage->name) !== strtolower($context->self ?? '')
+                && !NamespaceAnalyzer::isWithinAny($caller_identifier, $property_storage->internal)
+            ) {
                 IssueBuffer::maybeAdd(
                     new InternalProperty(
                         $property_id . ' is internal to ' . InternalClass::listToPhrase($property_storage->internal)
