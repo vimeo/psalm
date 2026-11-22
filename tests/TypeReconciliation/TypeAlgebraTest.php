@@ -5123,11 +5123,18 @@ final class TypeAlgebraTest extends TestCase
                     /** @param array<array-key, mixed>|bool $x */
                     function f(array|bool $x): void {
                         if (!isList($x) || isMapInt($x)) {
-                            /** @psalm-check-type-exact $x = array<string, int>|bool */;
+                            /** @psalm-check-type-exact $x = array<array-key, mixed>|bool */;
+                        }
+                    }
+
+                    /** @param array<int, string>|bool $y */
+                    function g(array|bool $y): void {
+                        if (!isList($y) || isMapInt($y)) {
+                            /** @psalm-check-type-exact $y = array<int, string>|bool */;
                         }
                     }',
                 'assertions' => [],
-                'ignored_issues' => [],
+                'ignored_issues' => ['TypeDoesNotContainType'],
                 'php_version' => '8.1',
             ],
         ];
