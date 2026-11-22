@@ -2412,7 +2412,7 @@ final class AssignmentAnalyzer
      *
      * @psalm-capabilities read-props
      */
-    private static function getDestructuredOffsetValue(PhpParser\Node\ArrayItem $item, int $offset): string|int|null
+    public static function getDestructuredOffsetValue(PhpParser\Node\ArrayItem $item, int $offset): string|int|null
     {
         if (!$item->key) {
             return $offset;

@@ -245,6 +245,17 @@ final class AssertionFinder
                 } else {
                     $if_types[$var_name] = [[new Truthy()]];
                 }
+            } elseif (($conditional->var instanceof PhpParser\Node\Expr\List_
+                    || $conditional->var instanceof PhpParser\Node\Expr\Array_)
+                && $source instanceof StatementsAnalyzer
+                && ($value_type = $source->node_data->getType($conditional->expr))
+            ) {
+                $if_types = self::getDestructuringAssertions(
+                    $conditional->var,
+                    $value_type,
+                    $this_class_name,
+                    $source,
+                );
             }
 
             return $if_types ? [$if_types] : [];
@@ -1180,6 +1191,65 @@ final class AssertionFinder
                 );
             }
         }
+    }
+
+    /**
+     * What a destructuring a condition assigns says of the variables when it is truthy. A null or false value, which
+     * gives each variable null, is not truthy, so a variable whose item each array the value may be surely has, and
+     * not as null, is then not null.
+     *
+     * @param PhpParser\Node\Expr\List_|PhpParser\Node\Expr\Array_ $target
+     * @return array<string, non-empty-list<non-empty-list<Assertion>>>
+     */
+    private static function getDestructuringAssertions(
+        PhpParser\Node\Expr $target,
+        Union $value_type,
+        ?string $this_class_name,
+        StatementsAnalyzer $source,
+    ): array {
+        $array_types = [];
+        $may_be_null = false;
+
+        foreach ($value_type->getAtomicTypes() as $atomic_type) {
+            if ($atomic_type instanceof TNull || $atomic_type instanceof TFalse) {
+                $may_be_null = true;
+            } elseif ($atomic_type instanceof TKeyedArray) {
+                $array_types[] = $atomic_type;
+            } else {
+                return [];
+            }
+        }
+
+        if (!$may_be_null || !$array_types) {
+            return [];
+        }
+
+        $if_types = [];
+
+        foreach ($target->items as $offset => $item) {
+            if ($item === null
+                || ($offset_value = AssignmentAnalyzer::getDestructuredOffsetValue($item, $offset)) === null
+                || ($var_id = ExpressionIdentifier::getExtendedVarId($item->value, $this_class_name, $source)) === null
+            ) {
+                continue;
+            }
+
+            foreach ($array_types as $array_type) {
+                $item_type = $array_type->properties[$offset_value] ?? null;
+
+                if ($item_type === null
+                    || $item_type->possibly_undefined
+                    || $item_type->isNullable()
+                    || $item_type->hasMixed()
+                ) {
+                    continue 2;
+                }
+            }
+
+            $if_types[$var_id] = [[new IsNotType(new TNull())]];
+        }
+
+        return $if_types;
     }
 
     /**
