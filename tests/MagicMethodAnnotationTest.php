@@ -450,6 +450,49 @@ final class MagicMethodAnnotationTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'staticInTheParamsOfAStaticMethodTagOrOfAMixinMethodTag' => [
+                'code' => '<?php
+                    /**
+                     * @method static ($other is null ? int : string) make(static|null $other = null)
+                     * @method ($other is null ? int : string) compare(static|null $other = null)
+                     */
+                    class Magic {
+                        public function __call(string $name, array $args): mixed {
+                            throw new RuntimeException();
+                        }
+
+                        public static function __callStatic(string $name, array $args): mixed {
+                            throw new RuntimeException();
+                        }
+                    }
+
+                    /**
+                     * @method ($other is null ? int : string) compare(static|null $other = null)
+                     */
+                    final class FinalMagic {
+                        public function __call(string $name, array $args): mixed {
+                            throw new RuntimeException();
+                        }
+                    }
+
+                    /** @mixin FinalMagic */
+                    final class Holder {
+                        public function __call(string $name, array $args): mixed {
+                            throw new RuntimeException();
+                        }
+                    }
+
+                    function made(Magic $m): string {
+                        return Magic::make($m);
+                    }
+
+                    function viaMixin(Holder $h, FinalMagic $m): string {
+                        return $h->compare($m);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'staticInTheParamsOfAMethodTagIsTheClassItIsCalledOn' => [
                 'code' => '<?php
                     /**

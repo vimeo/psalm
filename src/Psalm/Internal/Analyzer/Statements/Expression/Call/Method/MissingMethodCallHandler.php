@@ -49,7 +49,7 @@ final class MissingMethodCallHandler
      * The pseudo method with `static` in its params and return type, and in the bounds of the templates of its
      * conditional return type, resolved to the object it is called on
      */
-    private static function resolveStaticInParams(
+    public static function resolveStaticInParams(
         Codebase $codebase,
         MethodStorage $pseudo_method_storage,
         ClassLikeStorage $defining_class_storage,
@@ -224,14 +224,19 @@ final class MissingMethodCallHandler
                     && $method_id->fq_class_name === $context->self,
             );
 
-            // `static` in the params is the object the method is called on, as for a declared method
-            if ($mixin_type === null && $lhs_type_part instanceof Atomic\TNamedObject) {
+            // `static` in the params is the object the method is called on, as for a declared method: the mixin
+            // for a method of a mixin
+            $static_type = $mixin_type ?? $lhs_type_part;
+
+            if ($static_type instanceof Atomic\TNamedObject) {
                 $pseudo_method_storage = self::resolveStaticInParams(
                     $codebase,
                     $pseudo_method_storage,
                     $defining_class_storage,
-                    $lhs_type_part,
-                    $class_storage->final,
+                    $static_type,
+                    $mixin_type === null
+                        ? $class_storage->final
+                        : $pseudo_method_class_storage->final,
                 );
             }
 

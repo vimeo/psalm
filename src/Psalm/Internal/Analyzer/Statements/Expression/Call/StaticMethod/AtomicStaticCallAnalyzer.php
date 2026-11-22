@@ -745,6 +745,17 @@ final class AtomicStaticCallAnalyzer
 
                     $args_analyzed = true;
 
+                    // `static` in the params is the class the method is called on: that class itself when named
+                    if ($lhs_type_part instanceof TNamedObject) {
+                        $pseudo_method_storage = MissingMethodCallHandler::resolveStaticInParams(
+                            $codebase,
+                            $pseudo_method_storage,
+                            $defining_class_storage,
+                            $lhs_type_part,
+                            !$lhs_type_part->is_static || $class_storage->final,
+                        );
+                    }
+
                     if (self::checkPseudoMethod(
                         $statements_analyzer,
                         $stmt,
