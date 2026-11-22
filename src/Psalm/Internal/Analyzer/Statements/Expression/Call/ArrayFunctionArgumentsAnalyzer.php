@@ -843,6 +843,7 @@ final class ArrayFunctionArgumentsAnalyzer
         );
 
         if ($var_id) {
+            $context->releaseKeysBoundToList($var_id);
             $context->removeVarFromConflictingClauses($var_id, null, $statements_analyzer);
 
             if (isset($context->vars_in_scope[$var_id])) {

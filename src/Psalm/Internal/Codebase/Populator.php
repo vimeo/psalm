@@ -43,6 +43,7 @@ use Psalm\Type\Atomic\TTypeAlias;
 use Psalm\Type\Union;
 use UnitEnum;
 
+use function array_any;
 use function array_filter;
 use function array_flip;
 use function array_intersect_key;
@@ -775,6 +776,24 @@ final class Populator
     }
 
     /**
+     * @psalm-mutation-free
+     */
+    private static function returnTypeUsesAMethodTemplate(FunctionLikeStorage $method_storage): bool
+    {
+        if ($method_storage->return_type === null
+            || $method_storage->template_types === null
+            || $method_storage->template_types === []
+        ) {
+            return false;
+        }
+
+        return array_any(
+            $method_storage->return_type->getTemplateTypes(),
+            static fn(TTemplateParam $template): bool => isset($method_storage->template_types[$template->param_name]),
+        );
+    }
+
+    /**
      * Whether two methods document the same return type and parameter types, so that either of them may document
      * a method implementing both
      *
@@ -919,11 +938,15 @@ final class Populator
                         ?? $declaring_class_storage->pseudo_methods[$declaring_method_name]
                         ?? $declaring_class_storage->pseudo_static_methods[$declaring_method_name];
 
+                    // a method documenting its params takes the return type of the overridden one only when that
+                    // documents it, with no template of its own: the params of the method don't bind it
                     if (($declaring_method_storage->has_docblock_param_types
                             || $declaring_method_storage->has_docblock_return_type)
-                        && !$method_storage->has_docblock_param_types
                         && !$method_storage->has_docblock_return_type
                         && $inherited_return_type !== null
+                        && (!$method_storage->has_docblock_param_types
+                            || ($declaring_method_storage->has_docblock_return_type
+                                && !self::returnTypeUsesAMethodTemplate($declaring_method_storage)))
                     ) {
                         if (!isset($storage->documenting_method_ids[$method_name])
                             || (string) $storage->documenting_method_ids[$method_name]

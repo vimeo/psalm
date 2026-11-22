@@ -17,6 +17,7 @@ use Psalm\Internal\Provider\ReturnTypeProvider\ArrayFilterReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\ArrayFindReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\ArrayFirstLastReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\ArrayIntersectKeyReturnTypeProvider;
+use Psalm\Internal\Provider\ReturnTypeProvider\ArrayKeyFirstLastReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\ArrayMapReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\ArrayMergeReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\ArrayPadReturnTypeProvider;
@@ -96,6 +97,7 @@ final class FunctionReturnTypeProvider
         $this->registerClass(ArrayFindReturnTypeProvider::class);
         $this->registerClass(ArrayFirstLastReturnTypeProvider::class);
         $this->registerClass(ArrayIntersectKeyReturnTypeProvider::class);
+        $this->registerClass(ArrayKeyFirstLastReturnTypeProvider::class);
         $this->registerClass(ArrayMapReturnTypeProvider::class);
         $this->registerClass(ArrayMergeReturnTypeProvider::class);
         $this->registerClass(ArrayPadReturnTypeProvider::class);
@@ -117,6 +119,7 @@ final class FunctionReturnTypeProvider
         $this->registerClass(ParseUrlReturnTypeProvider::class);
         $this->registerClass(PropertyExistsReturnTypeProvider::class);
         $this->registerClass(StrReplaceReturnTypeProvider::class);
+        $this->registerClass(StrtolowerReturnTypeProvider::class);
         $this->registerClass(StrTrReturnTypeProvider::class);
         $this->registerClass(StrvalReturnTypeProvider::class);
         $this->registerClass(TrimReturnTypeProvider::class);
