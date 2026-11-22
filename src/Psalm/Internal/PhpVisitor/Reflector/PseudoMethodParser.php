@@ -25,7 +25,6 @@ use Psalm\Type\Union;
 
 use function array_shift;
 use function count;
-use function explode;
 use function implode;
 use function preg_match;
 use function preg_replace;
@@ -49,6 +48,7 @@ final class PseudoMethodParser
      * @param array<string, array<string, Union>> $purity_template_map the purity templates of the class
      * @param array<string, mixed> $param_template_map the templates the parameter types may use
      * @param Doc $node_doc_comment the docblock of $node
+     * @param list<string> $comment_lines the lines of $comment
      * @param int $offset the offset of the tag in the docblock
      * @throws DocblockParseException
      */
@@ -58,6 +58,7 @@ final class PseudoMethodParser
         Node $node,
         Doc $node_doc_comment,
         Doc $comment,
+        array $comment_lines,
         string $method_entry,
         int $offset,
         array $purity_template_map,
@@ -300,7 +301,7 @@ final class PseudoMethodParser
             throw new DocblockParseException('Badly-formatted @method string ' . $method_entry);
         }
 
-        $method_offset = self::getMethodOffset($comment, $method_entry);
+        $method_offset = self::getMethodOffset($comment_lines, $method_entry);
 
         $statements[0]->stmts[0]->setAttribute('startLine', $node_doc_comment->getStartLine() + $method_offset);
         $statements[0]->stmts[0]->setAttribute('startFilePos', $node_doc_comment->getStartFilePos());
@@ -362,11 +363,11 @@ final class PseudoMethodParser
     }
 
     /**
+     * @param list<string> $lines
      * @psalm-pure
      */
-    private static function getMethodOffset(Doc $comment, string $method_entry): int
+    private static function getMethodOffset(array $lines, string $method_entry): int
     {
-        $lines = explode("\n", $comment->getText());
         $method_offset = 0;
 
         foreach ($lines as $i => $line) {

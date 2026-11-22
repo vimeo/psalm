@@ -23,6 +23,7 @@ use function array_column;
 use function array_fill_keys;
 use function array_key_first;
 use function count;
+use function explode;
 use function preg_match;
 use function preg_replace;
 use function reset;
@@ -303,6 +304,8 @@ final class ClassLikeDocblockParser
             // the class's other templates, for its parameter types
             $param_template_map = $purity_template_map + array_fill_keys(array_column($info->templates, 0), true);
 
+            $comment_lines = explode("\n", $comment->getText());
+
             foreach ($parsed_docblock->combined_tags['method'] as $offset => $method_entry) {
                 /** @var Doc $node_doc_comment */
                 $node_doc_comment = $node->getDocComment();
@@ -313,6 +316,7 @@ final class ClassLikeDocblockParser
                     $node,
                     $node_doc_comment,
                     $comment,
+                    $comment_lines,
                     $method_entry,
                     $offset,
                     $purity_template_map,

@@ -302,6 +302,11 @@ A magic method can have several `@method` (or `@psalm-method`) lines of the same
 
 ```php
 <?php
+final class LimitedQuery {}
+final class UnlimitedQuery {}
+final class PagedResult { public function getPageCount(): int { return 1; } }
+final class PlainResult { public function getAllRecords(): array { return []; } }
+
 /**
  * @method PagedResult search(LimitedQuery $query)
  * @method PlainResult search(UnlimitedQuery $query)
@@ -309,7 +314,9 @@ A magic method can have several `@method` (or `@psalm-method`) lines of the same
  * @method string count(int $table, int $limit)
  */
 class Searcher {
-    public function __call(string $name, array $args): object {}
+    public function __call(string $name, array $args): mixed {
+        throw new BadMethodCallException($name);
+    }
 }
 
 $searcher = new Searcher();
