@@ -241,20 +241,7 @@ final class TemplateStandinTypeReplacer
             }
 
             if (count($atomic_types) > 1) {
-                $combined = TypeCombiner::combine($atomic_types, $codebase);
-
-                // combining drops a type variable that stands for `never` until bound (`T|null` is `null`), but a
-                // param still binds it with what is passed for it
-                foreach ($atomic_types as $atomic_type) {
-                    if ($atomic_type instanceof TTypeVariable
-                        && $atomic_type->isNeverBound()
-                        && !$combined->hasType($atomic_type->getKey())
-                    ) {
-                        $combined = $combined->getBuilder()->addType($atomic_type)->freeze();
-                    }
-                }
-
-                return $combined->setProperties([
+                return TypeCombiner::combineKeepingNeverBoundVariables($atomic_types, $codebase)->setProperties([
                     'ignore_nullable_issues' => $union_type->ignore_nullable_issues,
                     'ignore_falsable_issues' => $union_type->ignore_falsable_issues,
                     'possibly_undefined' => $union_type->possibly_undefined,

@@ -125,16 +125,9 @@ final class TypeExpander
 
         $fleshed_out_type = null;
 
-        // combining can still simplify the parts, e.g. drop a subclass of another class of the union, but it would
-        // also drop a type variable that stands for `never` until bound, which a param (`T|null`) still binds
-        if (!$changed
-            && count($new_return_type_parts) > 1
-            && !array_any(
-                $new_return_type_parts,
-                static fn(Atomic $part): bool => $part instanceof TTypeVariable && $part->isNeverBound(),
-            )
-        ) {
-            $fleshed_out_type = TypeCombiner::combine($new_return_type_parts, $codebase);
+        // combining can still simplify the parts, e.g. drop a subclass of another class of the union
+        if (!$changed && count($new_return_type_parts) > 1) {
+            $fleshed_out_type = TypeCombiner::combineKeepingNeverBoundVariables($new_return_type_parts, $codebase);
             $changed = $fleshed_out_type->getAtomicTypes() !== $return_type->getAtomicTypes();
         }
 
@@ -155,7 +148,7 @@ final class TypeExpander
             ]);
         }
 
-        $fleshed_out_type ??= TypeCombiner::combine(
+        $fleshed_out_type ??= TypeCombiner::combineKeepingNeverBoundVariables(
             $new_return_type_parts,
             $codebase,
         );
@@ -305,7 +298,7 @@ final class TypeExpander
 
         // its id follows bounds that keep growing, so the types holding it are rebuilt to drop their cached ids
         if ($return_type instanceof TTypeVariable) {
-            return [$return_type];
+            return [new TTypeVariable($return_type->name, $return_type->bounds, $return_type->from_docblock)];
         }
 
         if ($return_type instanceof TNamedObject
