@@ -482,29 +482,7 @@ final class CallableTypeComparator
                 }
             }
 
-            // Resolve method-level templates against the expected callable shape, so
-            // `[Id::class, 'id']` with `@template B` matches `callable(int): int` etc.
-            if ($method_storage->template_types !== null && $container_type_part !== null) {
-                $template_result = new TemplateResult($method_storage->template_types, []);
-
-                TemplateStandinTypeReplacer::fillTemplateResult(
-                    new Union([$callable]),
-                    $template_result,
-                    $codebase,
-                    null,
-                    new Union([$container_type_part]),
-                );
-
-                $replaced = TemplateInferredTypeReplacer::replace(
-                    new Union([$callable]),
-                    $template_result,
-                    $codebase,
-                )->getSingleAtomic();
-
-                if ($replaced instanceof TCallable) {
-                    $callable = $replaced;
-                }
-            }
+            $callable = self::bindMethodTemplates($codebase, $callable, $method_storage, $container_type_part);
 
             // the templates generated for the parameters are resolved, those of the caller are not the method's
             $generated_templates = [];
@@ -544,6 +522,39 @@ final class CallableTypeComparator
         } catch (UnexpectedValueException) {
             return null;
         }
+    }
+
+    /**
+     * Resolves method-level templates against the expected callable shape, so `[Id::class, 'id']` with
+     * `@template B` matches `callable(int): int` etc.
+     */
+    private static function bindMethodTemplates(
+        Codebase $codebase,
+        TCallable $callable,
+        FunctionLikeStorage $method_storage,
+        ?TCallable $container_type_part,
+    ): TCallable {
+        if ($method_storage->template_types === null || $container_type_part === null) {
+            return $callable;
+        }
+
+        $template_result = new TemplateResult($method_storage->template_types, []);
+
+        TemplateStandinTypeReplacer::fillTemplateResult(
+            new Union([$callable]),
+            $template_result,
+            $codebase,
+            null,
+            new Union([$container_type_part]),
+        );
+
+        $replaced = TemplateInferredTypeReplacer::replace(
+            new Union([$callable]),
+            $template_result,
+            $codebase,
+        )->getSingleAtomic();
+
+        return $replaced instanceof TCallable ? $replaced : $callable;
     }
 
     /**
@@ -825,8 +836,8 @@ final class CallableTypeComparator
         ) {
             return new TCallable();
         } elseif ($input_type_part instanceof TNamedObject
-            && ($invokable = self::getInvokeMember($codebase, $input_type_part)) !== null
-            && $codebase->classExists($invokable->value, null, $context)
+            && ($invokable = self::getFittingInvokeMember($codebase, $input_type_part, $container_type_part)) !== null
+            && $codebase->classOrInterfaceOrEnumExists($invokable->value, null, $context)
         ) {
             $invoke_id = new MethodIdentifier(
                 $invokable->value,
@@ -906,8 +917,15 @@ final class CallableTypeComparator
                         )->getSingleAtomic();
                     }
 
-                    // the types the templates were bound to may name `self` or `static`
                     if ($callable instanceof TCallable) {
+                        $callable = self::bindMethodTemplates(
+                            $codebase,
+                            $callable,
+                            $method_storage,
+                            $container_type_part,
+                        );
+
+                        // the types the templates were bound to may name `self` or `static`
                         $closure = self::getClosureOfMethod(
                             $codebase,
                             $callable->params ?? [],
@@ -1016,27 +1034,59 @@ final class CallableTypeComparator
     }
 
     /**
-     * The member of an object type whose `__invoke` it has: the type itself, or else the first class of those it is
+     * The member of an object type whose `__invoke` it has: the type itself, or else the first of those it is
      * intersected with
      */
     public static function getInvokeMember(Codebase $codebase, TNamedObject $object): ?TNamedObject
     {
-        if ($codebase->classOrInterfaceExists($object->value)
-            && $codebase->methodExists(new MethodIdentifier($object->value, '__invoke'))
-        ) {
-            return $object;
-        }
+        return self::getInvokeMembers($codebase, $object)[0] ?? null;
+    }
 
-        foreach ($object->getIntersectionTypes() as $member) {
+    /**
+     * @return list<TNamedObject>
+     */
+    private static function getInvokeMembers(Codebase $codebase, TNamedObject $object): array
+    {
+        $members = [];
+
+        foreach ([$object, ...$object->getIntersectionTypes()] as $member) {
             if ($member instanceof TNamedObject
-                && $codebase->classExists($member->value)
+                && $codebase->classOrInterfaceOrEnumExists($member->value)
                 && $codebase->methodExists(new MethodIdentifier($member->value, '__invoke'))
             ) {
-                return $member;
+                $members[] = $member;
             }
         }
 
-        return null;
+        return $members;
+    }
+
+    /**
+     * The object is an instance of every member with `__invoke`, so it fits the expected callable if the `__invoke`
+     * of any of them does: the first that fits, or else the first
+     */
+    private static function getFittingInvokeMember(
+        Codebase $codebase,
+        TNamedObject $object,
+        ?TCallable $container_type_part,
+    ): ?TNamedObject {
+        $members = self::getInvokeMembers($codebase, $object);
+
+        if ($container_type_part !== null && count($members) > 1) {
+            foreach ($members as $member) {
+                $callable = self::getCallableFromAtomic(
+                    $codebase,
+                    $member->setIntersectionTypes([]),
+                    $container_type_part,
+                );
+
+                if ($callable !== null && self::isContainedBy($codebase, $callable, $container_type_part, null)) {
+                    return $member;
+                }
+            }
+        }
+
+        return $members[0] ?? null;
     }
 
     /**

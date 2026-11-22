@@ -3997,6 +3997,205 @@ final class CallableTest extends TestCase
                 'ignored_issues' => ['UnusedFunctionCall'],
                 'php_version' => '8.1',
             ],
+            'invokableInterfaceLaterInIntersectionIsCallable' => [
+                'code' => '<?php
+                    interface Named {}
+                    interface StringHandler { public function __invoke(string $value): void; }
+
+                    /** @param callable(string): void $callback */
+                    function takesCallback(callable $callback): void {}
+
+                    function f(Named&StringHandler $h): void {
+                        takesCallback($h);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'invokableInterfaceInDocblockIntersectionIsCallable' => [
+                'code' => '<?php
+                    interface Named { public function name(): string; }
+                    interface StringHandler { public function __invoke(string $value): void; }
+
+                    /** @param callable(string): void $callback */
+                    function takesCallback(callable $callback): void {}
+
+                    /** @param Named&StringHandler $h */
+                    function f(Named $h): string {
+                        takesCallback($h);
+
+                        if (is_callable($h)) {
+                            return $h->name();
+                        }
+
+                        return "";
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['RedundantConditionGivenDocblockType'],
+                'php_version' => '7.4',
+            ],
+            'callablesOfAnInvokableInterfaceHaveItsSignature' => [
+                'code' => '<?php
+                    interface Named {}
+                    interface StringHandler { public function __invoke(string $value): int; }
+
+                    /**
+                     * @template T
+                     * @param callable(string): T $callback
+                     * @return T
+                     */
+                    function call(callable $callback): mixed { return $callback("a"); }
+
+                    /** @var StringHandler $h */
+                    $h = null;
+                    /** @var Named&StringHandler $n */
+                    $n = null;
+                    $closure = $h(...);
+                    $later_closure = $n(...);
+                    $from_callable = Closure::fromCallable($n);
+                    $result = $n("a");
+                    $called = call($h);
+                    $mapped = array_map($n, ["a"]);',
+                'assertions' => [
+                    '$closure===' => 'Closure[impure](string):int',
+                    '$later_closure===' => 'Closure[impure](string):int',
+                    '$from_callable===' => 'Closure[impure](string):int',
+                    '$result===' => 'int',
+                    '$called===' => 'int',
+                    '$mapped===' => 'list{int}',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'isCallableKeepsTheObjectOfAnInvokableInterfaceInIntersection' => [
+                'code' => '<?php
+                    interface Named { public function name(): string; }
+                    interface StringHandler { public function __invoke(string $value): int; }
+
+                    function f(Named&StringHandler $h): string {
+                        if (is_callable($h)) {
+                            return $h->name();
+                        }
+
+                        return "";
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['RedundantCondition'],
+                'php_version' => '8.1',
+            ],
+            'invokableInterfacesInIntersectionFitACallableOfEitherInvoke' => [
+                'code' => '<?php
+                    interface ByString { public function __invoke(string $value): int; }
+                    interface ByInt { public function __invoke(int $value): int; }
+
+                    /** @param callable(string): int $callback */
+                    function takesStringCallback(callable $callback): void {}
+
+                    /** @param callable(int): int $callback */
+                    function takesIntCallback(callable $callback): void {}
+
+                    function f(ByString&ByInt $h): void {
+                        takesStringCallback($h);
+                        takesIntCallback($h);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'invokableInterfaceExtendingAnInvokableInterfaceIsCallable' => [
+                'code' => '<?php
+                    interface StringHandler { public function __invoke(string $value): int; }
+                    interface NamedStringHandler extends StringHandler {}
+
+                    /** @var NamedStringHandler $h */
+                    $h = null;
+                    $closure = $h(...);',
+                'assertions' => [
+                    '$closure===' => 'Closure[impure](string):int',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'genericInvokableInterfaceIsCallableWithItsBoundSignature' => [
+                'code' => '<?php
+                    /** @template T */
+                    interface Handler {
+                        /**
+                         * @param T $value
+                         * @return T
+                         */
+                        public function __invoke(mixed $value): mixed;
+                    }
+
+                    /** @param callable(int): int $callback */
+                    function takesIntCallback(callable $callback): void {}
+
+                    /** @param Handler<int> $h */
+                    function f(Handler $h): void {
+                        takesIntCallback($h);
+                    }
+
+                    /** @var Handler<int> $h */
+                    $h = null;
+                    $closure = $h(...);',
+                'assertions' => [
+                    '$closure===' => 'Closure[impure](int):int',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'methodTemplateOfAnInvokableIsBoundByTheExpectedCallable' => [
+                'code' => '<?php
+                    final class Identity {
+                        /**
+                         * @template T
+                         * @param T $value
+                         * @return T
+                         */
+                        public function __invoke(mixed $value): mixed { return $value; }
+                    }
+
+                    interface IdentityInterface {
+                        /**
+                         * @template T
+                         * @param T $value
+                         * @return T
+                         */
+                        public function __invoke(mixed $value): mixed;
+                    }
+
+                    /** @param callable(int): int $callback */
+                    function takesIntCallback(callable $callback): void {}
+
+                    function f(Identity $class, IdentityInterface $interface): void {
+                        takesIntCallback($class);
+                        takesIntCallback($interface);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'enumWithAnInvokeMethodIsCallable' => [
+                'code' => '<?php
+                    enum Suit {
+                        case Hearts;
+                        public function __invoke(string $value): int { return 1; }
+                    }
+
+                    /** @param callable(string): int $callback */
+                    function takesCallback(callable $callback): void {}
+
+                    takesCallback(Suit::Hearts);
+                    $suit = Suit::Hearts;
+                    $closure_of_variable = $suit(...);
+                    $result = $suit("a");',
+                'assertions' => [
+                    '$closure_of_variable===' => 'Closure[impure](string):int',
+                    '$result===' => 'int',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'closureOfAnInvokableObjectIsAClosureParam' => [
                 'code' => '<?php
                     class StringHandler { public function __invoke(string $value): int { return 1; } }
@@ -5781,7 +5980,7 @@ final class CallableTest extends TestCase
                     function f(Suit $suit): void {
                         takesIntCallback($suit);
                     }',
-                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:11:42',
+                'error_message' => 'InvalidScalarArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:11:42 - Argument 1 of takesIntCallback expects callable[impure](int):int, but callable[impure](string):int provided',
                 'error_levels' => [],
                 'php_version' => '8.1',
             ],
@@ -5844,6 +6043,111 @@ final class CallableTest extends TestCase
                 'error_message' => 'InvalidArgument',
                 'error_levels' => [],
                 'php_version' => '8.1',
+            ],
+            'invokableInterfaceOfAWrongParamTypeIsNotCallable' => [
+                'code' => '<?php
+                    interface StringHandler { public function __invoke(string $value): int; }
+
+                    /** @param callable(stdClass): int $callback */
+                    function takesObjectCallback(callable $callback): void {}
+
+                    function f(StringHandler $h): void {
+                        takesObjectCallback($h);
+                    }',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:45 - Argument 1 of takesObjectCallback expects callable[impure](stdClass):int, but callable[impure](string):int provided',
+                'error_levels' => [],
+            ],
+            'invokableInterfaceLaterInIntersectionWithAWrongParamTypeIsNotCallable' => [
+                'code' => '<?php
+                    interface Named {}
+                    interface StringHandler { public function __invoke(string $value): int; }
+
+                    /** @param callable(int): int $callback */
+                    function takesIntCallback(callable $callback): void {}
+
+                    function f(Named&StringHandler $h): void {
+                        takesIntCallback($h);
+                    }',
+                'error_message' => 'InvalidScalarArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:9:42 - Argument 1 of takesIntCallback expects callable[impure](int):int, but callable[impure](string):int provided',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'invokableInterfacesInIntersectionFitNoCallableNeitherInvokeFits' => [
+                'code' => '<?php
+                    interface ByString { public function __invoke(string $value): int; }
+                    interface ByInt { public function __invoke(int $value): int; }
+
+                    /** @param callable(stdClass): int $callback */
+                    function takesObjectCallback(callable $callback): void {}
+
+                    function f(ByString&ByInt $h): void {
+                        takesObjectCallback($h);
+                    }',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:9:45 - Argument 1 of takesObjectCallback expects callable[impure](stdClass):int, but callable[impure](string):int provided',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'invokableInterfacesInIntersectionDoNotCombineTheirInvokes' => [
+                'code' => '<?php
+                    interface ByString { public function __invoke(string $value): int; }
+                    interface ByInt { public function __invoke(int $value): int; }
+
+                    /** @param callable(string|int): int $callback */
+                    function takesCallback(callable $callback): void {}
+
+                    function f(ByString&ByInt $h): void {
+                        takesCallback($h);
+                    }',
+                'error_message' => 'InvalidScalarArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:9:39 - Argument 1 of takesCallback expects callable[impure](int|string):int, but callable[impure](string):int provided',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'genericInvokableInterfaceOfAWrongBoundSignatureIsNotCallable' => [
+                'code' => '<?php
+                    /** @template T */
+                    interface Handler {
+                        /**
+                         * @param T $value
+                         * @return T
+                         */
+                        public function __invoke(mixed $value): mixed;
+                    }
+
+                    /** @param callable(string): string $callback */
+                    function takesStringCallback(callable $callback): void {}
+
+                    /** @param Handler<int> $h */
+                    function f(Handler $h): void {
+                        takesStringCallback($h);
+                    }',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:16:45 - Argument 1 of takesStringCallback expects callable[impure](string):string, but callable[impure](int):int provided',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'directCallOfAnInvokableInterfaceLaterInIntersectionChecksTheArguments' => [
+                'code' => '<?php
+                    interface Named {}
+                    interface StringHandler { public function __invoke(string $value): int; }
+
+                    function f(Named&StringHandler $h): void {
+                        $h(1);
+                    }',
+                'error_message' => 'InvalidScalarArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:28 - Argument 1 of StringHandler::__invoke expects string, but 1 provided',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'invokableInterfaceIsNotAClosureParam' => [
+                'code' => '<?php
+                    interface StringHandler { public function __invoke(string $value): int; }
+
+                    /** @param Closure(string): int $closure */
+                    function takesClosure(Closure $closure): void {}
+
+                    function f(StringHandler $h): void {
+                        takesClosure($h);
+                    }',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:38 - Argument 1 of takesClosure expects Closure[impure](string):int, but StringHandler provided',
+                'error_levels' => [],
             ],
         ];
     }
