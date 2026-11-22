@@ -125,6 +125,29 @@ Every purity annotation is a name for a capability set:
 `@pure`, `@phpstan-pure`, `#[Psalm\Pure]` and `#[JetBrains\PhpStorm\Pure]` mean the same as
 `@psalm-pure`; `#[Psalm\Immutable]` and `#[JetBrains\PhpStorm\Immutable]` the same as
 `@psalm-immutable`; `#[Psalm\ExternalMutationFree]` the same as `@psalm-external-mutation-free`.
+A `@psalm-capabilities` or `@psalm-impure` tag wins over `@pure`, `@phpstan-pure` and
+`#[JetBrains\PhpStorm\Pure]` on the same function or method (and a class's purity tag over
+`#[JetBrains\PhpStorm\Immutable]`), so a library can declare `pure` for other tools and
+`read-props` for Psalm:
+
+```php
+<?php
+interface Message {
+    /**
+     * @pure
+     * @psalm-capabilities read-props
+     */
+    public function body(): string;
+}
+
+final class MyMessage implements Message {
+    public function __construct(private string $body) {}
+
+    public function body(): string {
+        return $this->body; // no issue
+    }
+}
+```
 
 ### Capability aliases
 
@@ -1121,7 +1144,7 @@ This applies to function calls, method calls, static calls and `new`. With
 `rememberPropertyAssignmentsAfterCall="false"`, this code reports one issue:
 
 ```php
-<?php
+<?php // rememberPropertyAssignmentsAfterCall="false"
 final class Order {
     public ?int $total = null;
     public static ?string $currency = null;
@@ -1185,7 +1208,7 @@ vendor/bin/psalm --alter --issues=MissingPureAnnotation,MissingImmutableAnnotati
 ```
 
 The suggestions and
-[taint analysis](../security_analysis/avoiding_false_positives.md#specializing-taints-in-functions)
+[taint analysis](../security_analysis/index.md#specializing-functions)
 (on by default) both need the inferred purity of unannotated code, so it is computed when either is
 on. Capability checks never use it: a call is checked against what the callee declares, with or
 without the suggestions.
@@ -1209,7 +1232,7 @@ and a constructor.
 Given this code:
 
 ```php
-<?php
+<?php // suggestPurityAnnotations="true"
 function slug(string $title): string { // MissingPureAnnotation: slug could be marked @psalm-pure to aid security analysis, run with --alter --issues=MissingPureAnnotation to fix this
     return strtolower(trim($title));
 }
@@ -1246,7 +1269,7 @@ bound is left as `impure`, gets no class-level suggestion. A subclass without an
 suggested a contract on the next run, once its parent has one.
 
 ```php
-<?php
+<?php // suggestPurityAnnotations="true"
 abstract class Shape { // fine: no suggestion, as only impure covers Circle
     /** @psalm-pure */
     public function name(): string {

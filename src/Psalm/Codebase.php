@@ -31,6 +31,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\Assignment\InstancePropertyAss
 use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\NativeClassTaintAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ConstFetchAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\VariableFetchAnalyzer;
+use Psalm\Internal\Analyzer\Statements\GlobalAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\Analyzer;
 use Psalm\Internal\Codebase\ClassLikes;
@@ -45,6 +46,7 @@ use Psalm\Internal\Codebase\Reflection;
 use Psalm\Internal\Codebase\Scanner;
 use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\Codebase\TaintStore;
+use Psalm\Internal\Codebase\TaintValidations;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\LanguageServer\PHPMarkdownContent;
 use Psalm\Internal\LanguageServer\Reference;
@@ -57,6 +59,7 @@ use Psalm\Internal\Provider\Providers;
 use Psalm\Internal\Provider\StatementsProvider;
 use Psalm\Internal\Scanner\UnresolvedConstantComponent;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
+use Psalm\Internal\Type\PatternCharacters;
 use Psalm\Internal\TypeVisitor\TypeScanner;
 use Psalm\Issue\CodeIssue;
 use Psalm\Issue\InvalidDocblock;
@@ -166,6 +169,13 @@ final class Codebase
      * @var array<string, UnresolvedConstantComponent>
      */
     private static array $unresolved_stubbed_constants = [];
+
+    /**
+     * The global constants of stubs and autoloaded files that are deprecated
+     *
+     * @var array<string, true>
+     */
+    private static array $deprecated_stubbed_constants = [];
 
     /**
      * Whether to register autoloaded information
@@ -358,6 +368,7 @@ final class Codebase
 
         self::$stubbed_constants = [];
         self::$unresolved_stubbed_constants = [];
+        self::$deprecated_stubbed_constants = [];
 
         $reflection = new Reflection($providers->classlike_storage_provider, $this);
 
@@ -602,6 +613,11 @@ final class Codebase
 
         if (str_starts_with($taint_type, '~')) {
             return $this->getTaintComplement($taint_type, $location);
+        }
+
+        // `@psalm-taint-sink none $param`: a parameter without sinks
+        if ($taint_type === 'none') {
+            return $this->reportTaintRegistrationError('"none" is not a taint: it means no taint', $location);
         }
 
         // When scanning runs in forked worker processes, register new taints in the parent's single
@@ -884,6 +900,7 @@ final class Codebase
         $this->file_reference_provider->loadReferenceCache(false);
 
         FunctionLikeAnalyzer::clearCache();
+        GlobalAnalyzer::clearCache();
         $project_analyzer->clearStatementsForMutations();
 
         if ($force || !$this->statements_provider->parser_cache_provider) {
@@ -1176,6 +1193,8 @@ final class Codebase
             throw new UnexpectedValueException('Should not be checking references');
         }
 
+        $symbol = ltrim($symbol, '\\');
+
         if (str_contains($symbol, '::$')) {
             return $this->findReferencesToProperty($symbol);
         }
@@ -1185,7 +1204,8 @@ final class Codebase
                 + $this->findReferencesToClassConstant($symbol);
         }
 
-        return $this->findReferencesToClassLike($symbol);
+        // a name without `::` is a class-like's or a function's
+        return $this->findReferencesToClassLike($symbol) + $this->findReferencesToMethod($symbol);
     }
 
     /**
@@ -1279,6 +1299,24 @@ final class Codebase
     public function addGlobalConstantType(string $const_id, Union $type): void
     {
         self::$stubbed_constants[$const_id] = $type;
+    }
+
+    /**
+     * @internal
+     * @psalm-capabilities read-globals|write-globals
+     */
+    public function addDeprecatedGlobalConstant(string $const_id): void
+    {
+        self::$deprecated_stubbed_constants[$const_id] = true;
+    }
+
+    /**
+     * @internal
+     * @psalm-capabilities read-globals
+     */
+    public function isDeprecatedGlobalConstant(string $const_id): bool
+    {
+        return isset(self::$deprecated_stubbed_constants[$const_id]);
     }
 
     /**
@@ -3310,6 +3348,38 @@ final class Codebase
     }
 
     /**
+     * The taints a value can't carry once it matches the pattern (anchored at both ends, the characters it allows), as
+     * `preg_match()` tells: 0 if Psalm can't tell
+     *
+     * @psalm-pure
+     */
+    public function getTaintsRemovedByPattern(string $pattern): int
+    {
+        return PatternCharacters::getTaintsRemoved($pattern);
+    }
+
+    /**
+     * Records that $call validates $value against a pattern removing $removed_taints (see getTaintsRemovedByPattern()):
+     * where a condition on its result tells the validation passed, the variable $value is (or casts to a string) can't
+     * carry those taints, as long as it holds the same value. A result of kind `validator` `fails()` when the
+     * validation failed and `passes()` when it passed; one of kind `violations` is a list of the violations, empty when
+     * it passed (`count($violations) > 0`, ...). Call it once the call is analysed (`afterExpressionAnalysis()`).
+     *
+     * @param 'validator'|'violations' $kind
+     */
+    public function addTaintValidation(
+        StatementsSource $source,
+        PhpParser\Node\Expr\CallLike $call,
+        PhpParser\Node\Expr $value,
+        int $removed_taints,
+        string $kind,
+    ): void {
+        if ($source instanceof StatementsAnalyzer) {
+            TaintValidations::record($source, $call, $value, $removed_taints, $kind);
+        }
+    }
+
+    /**
      * Adds paths of type $path_type from $write_node into the keyed store $store (a class and a property,
      * `Store::$data`, which need not exist) under each of the names, as `@psalm-flow ($value) -> Store::$data[$key]`
      * does from what a call stores: each name is exact (true), or only known to start with what is given (false). See
@@ -3426,11 +3496,13 @@ final class Codebase
      * Whether a native class-like stubbed with a newer `@since` than the analysed PHP version is
      * provided by a polyfill the project's composer autoloader can load (e.g. `Stringable` from
      * symfony/polyfill-php80). Such polyfills are usually never scanned, since the stub already
-     * defines the class, so the autoloader is asked directly.
+     * defines the class, so the autoloader is asked directly. The polyfills Psalm itself requires don't count.
      */
     public function isClassLikePolyfilled(string $fq_classlike_name): bool
     {
-        return $this->config->getComposerFilePathForClassLike($fq_classlike_name) !== false;
+        $file_path = $this->config->getComposerFilePathForClassLike($fq_classlike_name);
+
+        return $file_path !== false && !$this->config->isInUnrequiredPackage($file_path);
     }
 
     /**

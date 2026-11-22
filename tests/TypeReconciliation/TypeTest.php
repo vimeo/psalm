@@ -193,6 +193,8 @@ final class TypeTest extends TestCase
                             $b = $a ? $a->fooFoo() : null;
                         }
                     }',
+                'assertions' => [],
+                'ignored_issues' => ['DeprecatedSyntax'],
             ],
             'nullableMethodWithTernaryIfNullGuard' => [
                 'code' => '<?php
@@ -207,6 +209,8 @@ final class TypeTest extends TestCase
                             $b = $a === null ? null : $a->fooFoo();
                         }
                     }',
+                'assertions' => [],
+                'ignored_issues' => ['DeprecatedSyntax'],
             ],
             'nullableMethodWithTernaryEmptyGuard' => [
                 'code' => '<?php
@@ -221,6 +225,8 @@ final class TypeTest extends TestCase
                             $b = empty($a) ? null : $a->fooFoo();
                         }
                     }',
+                'assertions' => [],
+                'ignored_issues' => ['DeprecatedSyntax'],
             ],
             'nullableMethodWithTernaryIsNullGuard' => [
                 'code' => '<?php
@@ -235,6 +241,8 @@ final class TypeTest extends TestCase
                             $b = is_null($a) ? null : $a->fooFoo();
                         }
                     }',
+                'assertions' => [],
+                'ignored_issues' => ['DeprecatedSyntax'],
             ],
             'nullableMethodWithIfGuard' => [
                 'code' => '<?php
@@ -251,6 +259,8 @@ final class TypeTest extends TestCase
                             }
                         }
                     }',
+                'assertions' => [],
+                'ignored_issues' => ['DeprecatedSyntax'],
             ],
             'nullableMethodWithTernaryGuardWithThis' => [
                 'code' => '<?php
@@ -269,6 +279,8 @@ final class TypeTest extends TestCase
                             $b = $this->a ? $this->a->fooFoo() : null;
                         }
                     }',
+                'assertions' => [],
+                'ignored_issues' => ['DeprecatedSyntax'],
             ],
             'nullableMethodWithTernaryIfNullGuardWithThis' => [
                 'code' => '<?php
@@ -287,6 +299,8 @@ final class TypeTest extends TestCase
                             $b = $this->a === null ? null : $this->a->fooFoo();
                         }
                     }',
+                'assertions' => [],
+                'ignored_issues' => ['DeprecatedSyntax'],
             ],
             'nullableMethodWithIfGuardWithThis' => [
                 'code' => '<?php
@@ -308,6 +322,8 @@ final class TypeTest extends TestCase
                             }
                         }
                     }',
+                'assertions' => [],
+                'ignored_issues' => ['DeprecatedSyntax'],
             ],
             'nullableMethodWithExceptionThrown' => [
                 'code' => '<?php
@@ -326,6 +342,8 @@ final class TypeTest extends TestCase
                             $one->fooFoo();
                         }
                     }',
+                'assertions' => [],
+                'ignored_issues' => ['DeprecatedSyntax'],
             ],
             'nullableMethodWithRedefinitionAndElse' => [
                 'code' => '<?php
@@ -350,6 +368,8 @@ final class TypeTest extends TestCase
                             $one->fooFoo();
                         }
                     }',
+                'assertions' => [],
+                'ignored_issues' => ['DeprecatedSyntax'],
             ],
             'nullableMethodWithBooleanIfGuard' => [
                 'code' => '<?php
@@ -371,6 +391,8 @@ final class TypeTest extends TestCase
                             }
                         }
                     }',
+                'assertions' => [],
+                'ignored_issues' => ['DeprecatedSyntax'],
             ],
             'nullableMethodWithNonNullBooleanIfGuard' => [
                 'code' => '<?php
@@ -392,6 +414,8 @@ final class TypeTest extends TestCase
                             }
                         }
                     }',
+                'assertions' => [],
+                'ignored_issues' => ['DeprecatedSyntax'],
             ],
             'nullableMethodWithNonNullBooleanIfGuardAndBooleanAnd' => [
                 'code' => '<?php
@@ -413,6 +437,8 @@ final class TypeTest extends TestCase
                             }
                         }
                     }',
+                'assertions' => [],
+                'ignored_issues' => ['DeprecatedSyntax'],
             ],
             'nullableMethodInConditionWithIfGuardBefore' => [
                 'code' => '<?php
@@ -441,6 +467,8 @@ final class TypeTest extends TestCase
                             }
                         }
                     }',
+                'assertions' => [],
+                'ignored_issues' => ['DeprecatedSyntax'],
             ],
             'nullableMethodWithBooleanIfGuardBefore' => [
                 'code' => '<?php
@@ -464,6 +492,8 @@ final class TypeTest extends TestCase
                             $one->fooFoo();
                         }
                     }',
+                'assertions' => [],
+                'ignored_issues' => ['DeprecatedSyntax'],
             ],
             'nullableMethodWithGuardedRedefinition' => [
                 'code' => '<?php
@@ -482,6 +512,8 @@ final class TypeTest extends TestCase
                             $one->fooFoo();
                         }
                     }',
+                'assertions' => [],
+                'ignored_issues' => ['DeprecatedSyntax'],
             ],
             'nullableMethodWithGuardedRedefinitionInElse' => [
                 'code' => '<?php
@@ -503,6 +535,8 @@ final class TypeTest extends TestCase
                             $one->fooFoo();
                         }
                     }',
+                'assertions' => [],
+                'ignored_issues' => ['DeprecatedSyntax'],
             ],
             'nullableMethodWithGuardedNestedRedefinition' => [
                 'code' => '<?php
@@ -533,6 +567,8 @@ final class TypeTest extends TestCase
                             $one->fooFoo();
                         }
                     }',
+                'assertions' => [],
+                'ignored_issues' => ['DeprecatedSyntax'],
             ],
             'nullableMethodWithGuardedSwitchRedefinition' => [
                 'code' => '<?php
@@ -561,6 +597,8 @@ final class TypeTest extends TestCase
                             $one->fooFoo();
                         }
                     }',
+                'assertions' => [],
+                'ignored_issues' => ['DeprecatedSyntax'],
             ],
             'nullableMethodWithGuardedSwitchRedefinitionDueToException' => [
                 'code' => '<?php
@@ -590,6 +628,8 @@ final class TypeTest extends TestCase
                             $one->fooFoo();
                         }
                     }',
+                'assertions' => [],
+                'ignored_issues' => ['DeprecatedSyntax'],
             ],
             'nullableMethodWithGuardedSwitchThatAlwaysReturns' => [
                 'code' => '<?php
@@ -616,6 +656,8 @@ final class TypeTest extends TestCase
                             $one->fooFoo();
                         }
                     }',
+                'assertions' => [],
+                'ignored_issues' => ['DeprecatedSyntax'],
             ],
             'nullableMethodWithGuardedNestedRedefinitionWithReturn' => [
                 'code' => '<?php
@@ -642,6 +684,8 @@ final class TypeTest extends TestCase
                             $one->fooFoo();
                         }
                     }',
+                'assertions' => [],
+                'ignored_issues' => ['DeprecatedSyntax'],
             ],
             'nullableMethodWithGuardedNestedRedefinitionWithElseReturn' => [
                 'code' => '<?php
@@ -668,6 +712,8 @@ final class TypeTest extends TestCase
                             $one->fooFoo();
                         }
                     }',
+                'assertions' => [],
+                'ignored_issues' => ['DeprecatedSyntax'],
             ],
             'nullableMethodWithGuardedNestedRedefinitionWithElseifReturn' => [
                 'code' => '<?php
@@ -697,6 +743,8 @@ final class TypeTest extends TestCase
                             $one->fooFoo();
                         }
                     }',
+                'assertions' => [],
+                'ignored_issues' => ['DeprecatedSyntax'],
             ],
             'nullableMethodWithGuardedSwitchBreak' => [
                 'code' => '<?php
@@ -721,6 +769,8 @@ final class TypeTest extends TestCase
                             }
                         }
                     }',
+                'assertions' => [],
+                'ignored_issues' => ['DeprecatedSyntax'],
             ],
             'nullableMethodWithGuardedRedefinitionOnThis' => [
                 'code' => '<?php
@@ -744,6 +794,8 @@ final class TypeTest extends TestCase
                             $this->one->fooFoo();
                         }
                     }',
+                'assertions' => [],
+                'ignored_issues' => ['DeprecatedSyntax'],
             ],
             'arrayUnionTypeAssertion' => [
                 'code' => '<?php
@@ -866,6 +918,8 @@ final class TypeTest extends TestCase
                             $var->fooFoo();
                         }
                     }',
+                'assertions' => [],
+                'ignored_issues' => ['DeprecatedSyntax'],
             ],
             'unionTypeFlowWithElseif' => [
                 'code' => '<?php
@@ -970,6 +1024,8 @@ final class TypeTest extends TestCase
 
                     $b = new B();
                     $b->barBar(null);',
+                'assertions' => [],
+                'ignored_issues' => ['DeprecatedSyntax'],
             ],
             'objectToNullableObjectParam' => [
                 'code' => '<?php
@@ -982,6 +1038,8 @@ final class TypeTest extends TestCase
 
                     $b = new B();
                     $b->barBar(new A);',
+                'assertions' => [],
+                'ignored_issues' => ['DeprecatedSyntax'],
             ],
             'paramCoercion' => [
                 'code' => '<?php
@@ -1071,6 +1129,7 @@ final class TypeTest extends TestCase
                         }
                     }',
                 'assertions' => [],
+                'ignored_issues' => ['DeprecatedSyntax'],
             ],
             'trueFalseTest' => [
                 'code' => '<?php
@@ -1297,6 +1356,7 @@ final class TypeTest extends TestCase
                     '$c===' => 'int',
                     '$d===' => 'int',
                 ],
+                'ignored_issues' => ['DeprecatedFunction'],
             ],
             'narrowWithCountToAllowNonTupleKeyedArray' => [
                 'code' => '<?php
@@ -1422,6 +1482,7 @@ final class TypeTest extends TestCase
                         }
                     }',
                 'error_message' => 'PossiblyNullReference',
+                'error_levels' => ['DeprecatedSyntax'],
             ],
             'nullableMethodCallWithThis' => [
                 'code' => '<?php
@@ -1441,6 +1502,7 @@ final class TypeTest extends TestCase
                         }
                     }',
                 'error_message' => 'PossiblyNullReference',
+                'error_levels' => ['DeprecatedSyntax'],
             ],
             'nullableMethodWithIfGuard' => [
                 'code' => '<?php
@@ -1463,6 +1525,7 @@ final class TypeTest extends TestCase
                         }
                     }',
                 'error_message' => 'PossiblyNullReference',
+                'error_levels' => ['DeprecatedSyntax'],
             ],
             'nullableMethodWithWrongBooleanIfGuard' => [
                 'code' => '<?php
@@ -1485,6 +1548,7 @@ final class TypeTest extends TestCase
                         }
                     }',
                 'error_message' => 'PossiblyNullReference',
+                'error_levels' => ['DeprecatedSyntax'],
             ],
             'nullableMethodWithWrongIfGuardedBefore' => [
                 'code' => '<?php
@@ -1509,6 +1573,7 @@ final class TypeTest extends TestCase
                         }
                     }',
                 'error_message' => 'PossiblyNullReference',
+                'error_levels' => ['DeprecatedSyntax'],
             ],
             'nullableMethodWithWrongBooleanIfGuardBefore' => [
                 'code' => '<?php
@@ -1533,6 +1598,7 @@ final class TypeTest extends TestCase
                         }
                     }',
                 'error_message' => 'PossiblyNullReference',
+                'error_levels' => ['DeprecatedSyntax'],
             ],
             'nullableMethodWithGuardedNestedIncompleteRedefinition' => [
                 'code' => '<?php
@@ -1561,6 +1627,7 @@ final class TypeTest extends TestCase
                         }
                     }',
                 'error_message' => 'PossiblyNullReference',
+                'error_levels' => ['DeprecatedSyntax'],
             ],
             'nullableMethodWithGuardedSwitchRedefinitionNoDefault' => [
                 'code' => '<?php
@@ -1586,6 +1653,7 @@ final class TypeTest extends TestCase
                         }
                     }',
                 'error_message' => 'PossiblyNullReference',
+                'error_levels' => ['DeprecatedSyntax'],
             ],
             'nullableMethodWithGuardedSwitchRedefinitionEmptyDefault' => [
                 'code' => '<?php
@@ -1614,6 +1682,7 @@ final class TypeTest extends TestCase
                         }
                     }',
                 'error_message' => 'PossiblyNullReference',
+                'error_levels' => ['DeprecatedSyntax'],
             ],
             'nullableMethodWithGuardedNestedRedefinitionWithUselessElseReturn' => [
                 'code' => '<?php
@@ -1644,6 +1713,7 @@ final class TypeTest extends TestCase
                         }
                     }',
                 'error_message' => 'PossiblyNullReference',
+                'error_levels' => ['DeprecatedSyntax'],
             ],
             'variableReassignmentInIfWithOutsideCall' => [
                 'code' => '<?php

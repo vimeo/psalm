@@ -6,6 +6,7 @@ namespace Psalm\Internal\Provider\ReturnTypeProvider;
 
 use Override;
 use PhpParser\Node\Expr\MethodCall;
+use Psalm\Internal\Analyzer\ClosureAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Type\Comparator\CallableTypeComparator;
 use Psalm\Internal\Type\TypeCombiner;
@@ -18,7 +19,7 @@ use Psalm\Type\Union;
 
 /**
  * The return types of `Closure::fromCallable()`, `Closure::bind()` and `bindTo()`: the closure
- * they create, or rebind, keeps its signature and purity.
+ * they create, or rebind, keeps its signature and purity. `Closure::getCurrent()` returns the closure it is called in.
  *
  * @internal
  */
@@ -80,6 +81,15 @@ final class ClosureReturnTypeProvider implements MethodReturnTypeProviderInterfa
             }
 
             return Type::getClosure();
+        }
+
+        if ($method_name_lowercase === 'getcurrent') {
+            $closure_analyzer = $source->getSource();
+
+            // outside a closure it throws
+            return $closure_analyzer instanceof ClosureAnalyzer && $closure_analyzer->closure_type !== null
+                ? new Union([$closure_analyzer->closure_type])
+                : null;
         }
 
         if ($method_name_lowercase === 'bind' || $method_name_lowercase === 'bindto') {
