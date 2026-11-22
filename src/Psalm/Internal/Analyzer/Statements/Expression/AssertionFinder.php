@@ -1183,6 +1183,22 @@ final class AssertionFinder
     }
 
     /**
+     * Whether the expression is a call of a function-like with `@psalm-assert-if-true` or `@psalm-assert-if-false`
+     *
+     * @psalm-capabilities read-props
+     */
+    private static function hasConditionalAssertions(PhpParser\Node\Expr $expr, FileSource $source): bool
+    {
+        return ($expr instanceof PhpParser\Node\Expr\FuncCall
+                || $expr instanceof PhpParser\Node\Expr\MethodCall
+                || $expr instanceof PhpParser\Node\Expr\StaticCall)
+            && !$expr->isFirstClassCallable()
+            && $source instanceof StatementsAnalyzer
+            && ($source->node_data->getIfTrueAssertions($expr) !== null
+                || $source->node_data->getIfFalseAssertions($expr) !== null);
+    }
+
+    /**
      * @param  PhpParser\Node\Expr\FuncCall|PhpParser\Node\Expr\MethodCall|PhpParser\Node\Expr\StaticCall $expr
      * @return list<non-empty-array<string, non-empty-list<non-empty-list<Assertion>>>>
      */
@@ -2484,11 +2500,14 @@ final class AssertionFinder
 
         [$base_conditional] = self::getOperands($conditional, $bool_position);
 
-        $var_name = ExpressionIdentifier::getExtendedVarId(
-            $base_conditional,
-            $this_class_name,
-            $source,
-        );
+        // a call Psalm remembers the result of has an id, but its `@psalm-assert-if-*` assertions say more
+        $var_name = self::hasConditionalAssertions($base_conditional, $source)
+            ? null
+            : ExpressionIdentifier::getExtendedVarId(
+                $base_conditional,
+                $this_class_name,
+                $source,
+            );
 
         if ($var_name) {
             if ($strict && !self::isBoolVariable($base_conditional, $source)) {

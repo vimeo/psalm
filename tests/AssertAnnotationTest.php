@@ -294,6 +294,67 @@ final class AssertAnnotationTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'assertIfFalseOfAMemoizedMethodComparedWithABool' => [
+                'code' => '<?php
+                    final class Numbers {
+                        /** @var list<int> */
+                        public array $items = [];
+
+                        /**
+                         * @return list<int>
+                         * @psalm-capabilities read-props
+                         */
+                        public function getAll(): array {
+                            return $this->items;
+                        }
+
+                        /**
+                         * @psalm-assert-if-false non-empty-list<int> $this->getAll()
+                         * @psalm-capabilities read-props
+                         */
+                        public function isEmpty(): bool {
+                            return !$this->items;
+                        }
+
+                        /**
+                         * @psalm-assert-if-false non-empty-list<int> $this->items
+                         * @psalm-capabilities read-props
+                         */
+                        public function hasNoItems(): bool {
+                            return !$this->items;
+                        }
+                    }
+
+                    /**
+                     * @param non-empty-list<int> $numbers
+                     * @psalm-pure
+                     */
+                    function takesNonEmpty(array $numbers): int {
+                        return count($numbers);
+                    }
+
+                    function f(Numbers $n): void {
+                        if (false === $n->isEmpty()) {
+                            echo takesNonEmpty($n->getAll());
+                        }
+
+                        if (false === $n->hasNoItems()) {
+                            echo takesNonEmpty($n->items);
+                        }
+
+                        if ($n->isEmpty() === false) {
+                            echo takesNonEmpty($n->getAll());
+                        }
+
+                        if ($n->isEmpty() !== true) {
+                            echo takesNonEmpty($n->getAll());
+                        }
+
+                        if (true !== $n->hasNoItems()) {
+                            echo takesNonEmpty($n->items);
+                        }
+                    }',
+            ],
             'parentCallKeepsTemplatedAssertIfTrueOfAnUndocumentedOverride' => [
                 'code' => '<?php
                     interface Item { public function name(): string; }
@@ -5074,6 +5135,52 @@ final class AssertAnnotationTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'assertIfFalseOfAMemoizedMethodComparedWithTrue' => [
+                'code' => '<?php
+                    final class Numbers {
+                        /** @var list<int> */
+                        public array $items = [];
+
+                        /**
+                         * @return list<int>
+                         * @psalm-capabilities read-props
+                         */
+                        public function getAll(): array {
+                            return $this->items;
+                        }
+
+                        /**
+                         * @psalm-assert-if-false non-empty-list<int> $this->getAll()
+                         * @psalm-capabilities read-props
+                         */
+                        public function isEmpty(): bool {
+                            return !$this->items;
+                        }
+
+                        /**
+                         * @psalm-assert-if-false non-empty-list<int> $this->items
+                         * @psalm-capabilities read-props
+                         */
+                        public function hasNoItems(): bool {
+                            return !$this->items;
+                        }
+                    }
+
+                    /**
+                     * @param non-empty-list<int> $numbers
+                     * @psalm-pure
+                     */
+                    function takesNonEmpty(array $numbers): int {
+                        return count($numbers);
+                    }
+
+                    function f(Numbers $n): void {
+                        if (true === $n->isEmpty()) {
+                            echo takesNonEmpty($n->getAll());
+                        }
+                    }',
+                'error_message' => 'InvalidArgument',
+            ],
             'assertOfAMethodCalledTwiceInTheArgumentsOfASelfCall' => [
                 'code' => '<?php
                     class Entity {
