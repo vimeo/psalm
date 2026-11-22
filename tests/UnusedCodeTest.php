@@ -3396,6 +3396,23 @@ final class UnusedCodeTest extends TestCase
 
                     (new D())->foo();',
             ],
+            'methodOfAnInterfaceOutsideACircularInheritanceIsUsedThroughTheCycle' => [
+                'code' => '<?php
+                    interface K {
+                        public function k(): int;
+                    }
+                    interface J2 extends I2 {}
+                    interface I2 extends J2, K {}
+
+                    function g(I2 $i): int {
+                        return $i->k();
+                    }
+
+                    /** @var I2 $i */
+                    $i = null;
+                    echo g($i);',
+                'ignored_issues' => ['CircularReference'],
+            ],
         ];
     }
 
