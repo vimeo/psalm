@@ -290,7 +290,7 @@ final class KeyedArrayComparator
 
     public static function isContainedByObjectWithProperties(
         Codebase $codebase,
-        TNamedObject $input_type_part,
+        TNamedObject|TObjectWithProperties $input_type_part,
         TObjectWithProperties $container_type_part,
         bool $allow_interface_equality,
         ?TypeComparisonResult $atomic_comparison_result,

@@ -552,6 +552,20 @@ final class IntersectionTypeTest extends TestCase
                         takesShape($card);
                     }',
             ],
+            'objectShapeWrittenFirstInAnIntersectionWithAClassGivesThePropertiesOfAShape' => [
+                'code' => '<?php
+                    class Card {
+                        public string $brand = "visa";
+                    }
+
+                    /** @param object{brand: string, last4: string} $shape */
+                    function takesShape(object $shape): void {}
+
+                    /** @param object{last4: string}&Card $card */
+                    function pay(object $card): void {
+                        takesShape($card);
+                    }',
+            ],
             'onePropertyTypeOfAnIntersectionFittingTheShapeIsEnough' => [
                 'code' => '<?php
                     class Wide {
