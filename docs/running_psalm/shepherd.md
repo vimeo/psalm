@@ -31,6 +31,7 @@ One JSON `POST` request at the end of the run, with:
 
 * the CI build and the last commit, including the **names and emails** of its author and committer
 * every issue of severity `error`, with its file path and the **source code snippet** around it
+* how many issues your [baseline](dealing_with_code_issues.md#using-a-baseline-file) covers, by issue type (only the types and counts, no code), for example `"baselined": {"InvalidReturnType": 3, "MixedAssignment": 12}`. It is `{}` when the run uses no baseline (none is configured, or `--ignore-baseline` is given) or the baseline covers none of the issues
 * the type coverage counts, your error level, and the versions of Psalm and the PHP parser
 
 Because of the code snippets, don't use `--shepherd` for code that must not leave your servers. Without `--shepherd` (or `PSALM_SHEPHERD`) Psalm sends nothing.

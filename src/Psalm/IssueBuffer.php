@@ -766,6 +766,7 @@ final class IssueBuffer
 
 
         $issues_data = [];
+        $baselined_counts = [];
 
         if (self::$issues_data) {
             if (in_array(
@@ -787,7 +788,8 @@ final class IssueBuffer
                 self::$issues_data[$file_path] = $file_issues;
             }
 
-            // make a copy so what gets saved in cache is unaffected by baseline
+            // a copy for the issues added below, but its IssueData objects are the buffer's, so the baseline
+            // changes their severity there too; the issue cache is already written (Analyzer::analyzeFiles())
             $issues_data = self::$issues_data;
         }
 
@@ -803,11 +805,14 @@ final class IssueBuffer
                         $issue_data->selected_text,
                     )) {
                         $issue_data->severity = IssueData::SEVERITY_INFO;
+                        $baselined_counts[$issue_data->type] = ($baselined_counts[$issue_data->type] ?? 0) + 1;
                     }
 
                     $issues_data[$file_path][$key] = $issue_data;
                 }
             }
+
+            ksort($baselined_counts);
 
             if ($codebase->config->find_unused_baseline_entry) {
                 foreach ($issue_baseline as $file_path => $issues) {
@@ -920,6 +925,7 @@ final class IssueBuffer
                 $issues_data,
                 $build_info,
                 $source_control_info,
+                $baselined_counts,
             );
 
             $codebase->config->eventDispatcher->dispatchAfterAnalysis($event);

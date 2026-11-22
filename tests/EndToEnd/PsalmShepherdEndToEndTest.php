@@ -7,14 +7,19 @@ namespace Psalm\Tests\EndToEnd;
 use Override;
 use Symfony\Component\Process\Process;
 
+use function defined;
+use function extension_loaded;
 use function fclose;
 use function file_exists;
 use function file_get_contents;
 use function file_put_contents;
 use function fread;
+use function function_exists;
 use function fwrite;
+use function implode;
 use function json_decode;
 use function preg_match;
+use function sort;
 use function str_contains;
 use function str_replace;
 use function stream_socket_accept;
@@ -188,6 +193,114 @@ final class PsalmShepherdEndToEndTest extends PsalmEndToEndTestCase
         $this->assertArrayNotHasKey('CI_PR_NUMBER', $report['build']);
     }
 
+    public function testPsalmSendsAnEmptyBaselinedObjectWhenNoIssueIsBaselined(): void
+    {
+        $this->initProject();
+
+        $report = $this->runPsalmAndReadTheRawReport(['--no-cache'], self::githubActions());
+
+        $this->assertStringContainsString('"baselined":{}', $report);
+
+        $this->runPsalm(['--set-baseline'], self::$tmpDir, true);
+        $report = $this->runPsalmAndReadTheRawReport(['--no-cache', '--ignore-baseline'], self::githubActions());
+
+        $this->assertStringContainsString('"baselined":{}', $report);
+        $this->assertSame(
+            ['src/FileWithErrors.php InvalidReturnStatement', 'src/FileWithErrors.php InvalidReturnType'],
+            self::sentIssues($report),
+        );
+
+        // the baseline is in use, but none of its entries matches the new error
+        file_put_contents(self::$tmpDir . '/src/FileWithErrors.php', "<?php\nfunction e()\n{\n    return 1;\n}\n");
+        $report = $this->runPsalmAndReadTheRawReport(['--no-cache'], self::githubActions());
+
+        $this->assertStringContainsString('"baselined":{}', $report);
+        $this->assertSame(
+            [
+                'src/FileWithErrors.php MissingReturnType',
+                'src/FileWithErrors.php UnusedBaselineEntry',
+                'src/FileWithErrors.php UnusedBaselineEntry',
+            ],
+            self::sentIssues($report),
+        );
+    }
+
+    public function testPsalmSendsTheNumberOfBaselinedIssuesByType(): void
+    {
+        $this->initProject();
+        $this->writeFilesWithErrors();
+        $this->runPsalm(['--set-baseline'], self::$tmpDir, true);
+
+        // c() is fixed, which leaves its baseline entry unused, and d() is a new error
+        file_put_contents(self::$tmpDir . '/src/B.php', "<?php\nfunction b(): int\n{\n    return 'b';\n}\n");
+        file_put_contents(self::$tmpDir . '/src/C.php', "<?php\nfunction d(): int\n{\n    return 'd';\n}\n");
+
+        $report = $this->runPsalmAndReadTheRawReport(['--no-cache'], self::githubActions());
+
+        $this->assertStringContainsString('"baselined":{"InvalidReturnStatement":3,"InvalidReturnType":3}', $report);
+        $this->assertSame(
+            ['src/B.php UnusedBaselineEntry', 'src/C.php InvalidReturnStatement', 'src/C.php InvalidReturnType'],
+            self::sentIssues($report),
+        );
+    }
+
+    public function testPsalmCountsOnlyTheInfoIssuesTheBaselineCovers(): void
+    {
+        $this->initProject();
+        file_put_contents(self::$tmpDir . '/src/A.php', "<?php\nfunction a(): int\n{\n    return 'a';\n}\n");
+        $this->runPsalm(['--set-baseline'], self::$tmpDir, true);
+
+        $this->writeFilesWithErrors();
+        $psalmXml = (string) file_get_contents(self::$tmpDir . '/psalm.xml');
+        file_put_contents(self::$tmpDir . '/psalm.xml', str_replace(
+            '</psalm>',
+            '<issueHandlers><InvalidReturnType errorLevel="info" /><MissingReturnType errorLevel="info" />'
+                . '</issueHandlers></psalm>',
+            $psalmXml,
+        ));
+
+        $report = $this->runPsalmAndReadTheRawReport(['--no-cache'], self::githubActions());
+
+        // the InvalidReturnType of a() and foo() are info now, but the baseline still covers them (it has no
+        // unused entry); those of b() and the MissingReturnType of c() are info, and not in the baseline
+        $this->assertStringContainsString('"baselined":{"InvalidReturnStatement":2,"InvalidReturnType":2}', $report);
+        $this->assertSame(['src/B.php InvalidReturnStatement'], self::sentIssues($report));
+    }
+
+    public function testPsalmSendsTheSameBaselinedIssuesWithTheCacheAndWithThreads(): void
+    {
+        $this->initProject();
+        $this->writeFilesWithErrors();
+        $this->runPsalm(['--set-baseline'], self::$tmpDir, true);
+        file_put_contents(self::$tmpDir . '/src/C.php', "<?php\nfunction d(): int\n{\n    return 'd';\n}\n");
+
+        $without_cache = self::decode(
+            $this->runPsalmAndReadTheRawReport(['--no-cache', '--threads=1'], self::githubActions()),
+        );
+        $this->assertSame(
+            ['InvalidReturnStatement' => 3, 'InvalidReturnType' => 3, 'MissingReturnType' => 1],
+            $without_cache['baselined'],
+        );
+
+        // with a cold cache (--set-baseline changed psalm.xml, which the cache is keyed by), then a warm one, then
+        // a warm one with forked workers, as there are more files than threads
+        foreach ([['--threads=1'], ['--threads=1'], ['--threads=2', '--debug']] as $args) {
+            $report = self::decode($this->runPsalmAndReadTheRawReport($args, self::githubActions(), $error_output));
+
+            $this->assertSame($without_cache['baselined'], $report['baselined'], implode(' ', $args));
+            $this->assertSame($without_cache['issues'], $report['issues'], implode(' ', $args));
+        }
+
+        // the conditions under which Psalm::getThreads() allows more than one thread
+        if (!defined('PHP_WINDOWS_VERSION_MAJOR')
+            && extension_loaded('pcntl')
+            && extension_loaded('posix')
+            && function_exists('pcntl_fork')
+        ) {
+            $this->assertStringContainsString('Forking analysis', $error_output);
+        }
+    }
+
     /**
      * @return array<string, string>
      * @psalm-pure
@@ -207,11 +320,7 @@ final class PsalmShepherdEndToEndTest extends PsalmEndToEndTestCase
      */
     private function runPsalmWithShepherd(array $args, array $env): Process
     {
-        $this->runPsalmInit(1);
-        $psalmXml = file_get_contents(self::$tmpDir . '/psalm.xml');
-        $psalmXml = str_replace('<psalm', '<psalm runTaintAnalysis="false"', (string)$psalmXml);
-        file_put_contents(self::$tmpDir . '/psalm.xml', $psalmXml);
-        file_put_contents(self::$tmpDir . '/src/Clean.php', "<?php\nfunction clean(): void {}\n");
+        $this->initProject();
 
         $process = self::newProcess(
             [
@@ -264,24 +373,35 @@ final class PsalmShepherdEndToEndTest extends PsalmEndToEndTestCase
      */
     private function runPsalmAndReadTheReport(array $env): array
     {
+        $this->initProject();
+
+        /** @var array{build: array<string, string>, git: array{head: array{id: string}}} */
+        return self::decode(
+            $this->runPsalmAndReadTheRawReport(['--no-cache', self::$tmpDir . '/src/Clean.php'], $env),
+        );
+    }
+
+    /**
+     * Runs Psalm with --shepherd on a local server that accepts one report
+     *
+     * @param list<string> $args
+     * @param array<string, string> $env
+     * @param-out string $error_output
+     * @return string the report as sent
+     */
+    private function runPsalmAndReadTheRawReport(array $args, array $env, ?string &$error_output = null): string
+    {
         $server = stream_socket_server('tcp://127.0.0.1:0', $error_code, $error_message);
         $this->assertNotFalse($server, $error_message);
         $address = stream_socket_get_name($server, false);
         $this->assertIsString($address);
 
-        $this->runPsalmInit(1);
-        $psalmXml = file_get_contents(self::$tmpDir . '/psalm.xml');
-        $psalmXml = str_replace('<psalm', '<psalm runTaintAnalysis="false"', (string)$psalmXml);
-        file_put_contents(self::$tmpDir . '/psalm.xml', $psalmXml);
-        file_put_contents(self::$tmpDir . '/src/Clean.php', "<?php\nfunction clean(): void {}\n");
-
         $process = self::newProcess(
             [
                 PHP_BINARY,
                 $this->psalm,
-                '--no-cache',
                 '-c=' . self::$tmpDir . '/psalm.xml',
-                self::$tmpDir . '/src/Clean.php',
+                ...$args,
                 '--shepherd=http://' . $address,
             ],
             self::$tmpDir,
@@ -315,12 +435,60 @@ final class PsalmShepherdEndToEndTest extends PsalmEndToEndTestCase
             fwrite($connection, "HTTP/1.1 200 OK\r\nContent-Length: 0\r\nConnection: close\r\n\r\n");
             fclose($connection);
             $process->wait();
+            $error_output = $process->getErrorOutput();
         } finally {
             fclose($server);
         }
 
-        /** @var array{build: array<string, string>, git: array{head: array{id: string}}} */
-        return json_decode($body, true, 512, JSON_THROW_ON_ERROR);
+        return $body;
+    }
+
+    private function initProject(): void
+    {
+        $this->runPsalmInit(1);
+        $psalmXml = file_get_contents(self::$tmpDir . '/psalm.xml');
+        $psalmXml = str_replace('<psalm', '<psalm runTaintAnalysis="false"', (string)$psalmXml);
+        file_put_contents(self::$tmpDir . '/psalm.xml', $psalmXml);
+        file_put_contents(self::$tmpDir . '/src/Clean.php', "<?php\nfunction clean(): void {}\n");
+    }
+
+    /**
+     * Next to the errors of FileWithErrors.php: two of the same types in a() and b(), and a MissingReturnType in c()
+     */
+    private function writeFilesWithErrors(): void
+    {
+        file_put_contents(self::$tmpDir . '/src/A.php', "<?php\nfunction a(): int\n{\n    return 'a';\n}\n");
+        file_put_contents(
+            self::$tmpDir . '/src/B.php',
+            "<?php\nfunction b(): int\n{\n    return 'b';\n}\n\nfunction c()\n{\n    return 1;\n}\n",
+        );
+    }
+
+    /**
+     * @return array<string, mixed>
+     * @psalm-pure
+     */
+    private static function decode(string $report): array
+    {
+        /** @var array<string, mixed> */
+        return json_decode($report, true, 512, JSON_THROW_ON_ERROR);
+    }
+
+    /**
+     * @return list<string> the file and type of each issue sent, sorted
+     * @psalm-pure
+     */
+    private static function sentIssues(string $report): array
+    {
+        /** @var list<array{file_name: string, type: string}> $issues */
+        $issues = self::decode($report)['issues'];
+        $sent = [];
+        foreach ($issues as $issue) {
+            $sent[] = $issue['file_name'] . ' ' . $issue['type'];
+        }
+        sort($sent);
+
+        return $sent;
     }
 
     /**

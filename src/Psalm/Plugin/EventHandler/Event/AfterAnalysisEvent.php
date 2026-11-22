@@ -18,6 +18,7 @@ final class AfterAnalysisEvent
      * Called after analysis is complete
      *
      * @param array<string, list<IssueData>> $issues where string key is a filepath
+     * @param array<string, int<1, max>> $baselined_issue_counts
      * @internal
      * @psalm-mutation-free
      */
@@ -26,6 +27,7 @@ final class AfterAnalysisEvent
         private readonly array $issues,
         private readonly array $build_info,
         private readonly ?SourceControlInfo $source_control_info = null,
+        private readonly array $baselined_issue_counts = [],
     ) {
     }
 
@@ -50,5 +52,16 @@ final class AfterAnalysisEvent
     public function getSourceControlInfo(): ?SourceControlInfo
     {
         return $this->source_control_info;
+    }
+
+    /**
+     * How many issues the baseline covers, by issue type, sorted by type. They are among the issues of
+     * getIssues(), reported as info.
+     *
+     * @return array<string, int<1, max>>
+     */
+    public function getBaselinedIssueCounts(): array
+    {
+        return $this->baselined_issue_counts;
     }
 }

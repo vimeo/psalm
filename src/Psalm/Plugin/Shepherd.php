@@ -93,6 +93,7 @@ final class Shepherd implements AfterAnalysisInterface
      *     build: array,
      *     git: array,
      *     issues: array,
+     *     baselined: object,
      *     coverage: list<int>,
      *     level: int<1, 8>,
      *     versions: array<string, string>
@@ -141,6 +142,8 @@ final class Shepherd implements AfterAnalysisInterface
             'build' => $build_info,
             'git' => $source_control_data,
             'issues' => $normalized_data,
+            // an object even when empty, which PHP would encode as a list
+            'baselined' => (object) $event->getBaselinedIssueCounts(),
             'coverage' => $codebase->analyzer->getTotalTypeCoverage($codebase),
             'level' => Config::getInstance()->level,
             'versions' => [
