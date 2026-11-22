@@ -9,9 +9,11 @@ use PHPUnit\Framework\TestCase;
 use Psalm\Config;
 use Psalm\Internal\Overlay\ReferenceIndex;
 use Symfony\Component\Filesystem\Filesystem;
+use Symfony\Component\Filesystem\Path;
 
 use function array_filter;
 use function array_keys;
+use function array_map;
 use function assert;
 use function file_put_contents;
 use function filemtime;
@@ -69,14 +71,15 @@ final class ReferenceIndexTest extends TestCase
 
             file_put_contents($dir . '/' . $changed_file, "\n", FILE_APPEND);
 
+            // Config joins paths with the directory separator, Composer with a slash
             $this->assertSame(
-                [$dir . '/' . $changed_file],
-                array_keys(array_filter(
+                [Path::join($dir, $changed_file)],
+                array_map(Path::canonicalize(...), array_keys(array_filter(
                     $stamps,
                     static fn(?string $stamp, string $file_path): bool
                         => !ReferenceIndex::isUnchanged($file_path, $stamp),
                     ARRAY_FILTER_USE_BOTH,
-                )),
+                ))),
             );
         } finally {
             $filesystem->remove($dir);
