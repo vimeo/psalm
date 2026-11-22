@@ -96,6 +96,7 @@ use function preg_match;
 use function preg_split;
 use function reset;
 use function sprintf;
+use function str_contains;
 use function str_starts_with;
 use function strlen;
 use function strtok;
@@ -421,6 +422,24 @@ final class ClassLikeNodeScanner
         foreach ($node->getComments() as $comment) {
             if (!$comment instanceof PhpParser\Comment\Doc) {
                 continue;
+            }
+
+            // like `@psalm-type`, an import is read from any docblock before the class, not only from the last one
+            if ($comment !== $doc_comment
+                && (str_contains($comment->getText(), '@psalm-import-type')
+                    || str_contains($comment->getText(), '@phpstan-import-type'))
+            ) {
+                try {
+                    $this->type_aliases += $this->getImportedTypeAliases(
+                        ClassLikeDocblockParser::parse($node, $comment, $this->aliases),
+                        $fq_classlike_name,
+                    );
+                } catch (DocblockParseException $e) {
+                    $storage->docblock_issues[] = new InvalidDocblock(
+                        $e->getMessage() . ' in docblock for ' . $fq_classlike_name,
+                        $name_location ?? $class_location,
+                    );
+                }
             }
 
             try {

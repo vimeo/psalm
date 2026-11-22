@@ -45,6 +45,18 @@ final class TemplateResult
     public bool $readonly = false;
 
     /**
+     * The bindings are the type arguments of the receiver of a call, which replace the templates of the declared
+     * parameter types, even in code of the receiver's class. The argument types stay rigid.
+     */
+    public bool $of_receiver = false;
+
+    /**
+     * The class a `new` expression constructs: its templates stand for the new object's type arguments, even in
+     * code of that class, where they are otherwise the types of the object the code runs for
+     */
+    public ?string $constructed_class = null;
+
+    /**
      * @var list<Union>
      */
     public array $upper_bounds_unintersectable_types = [];
@@ -95,6 +107,17 @@ final class TemplateResult
     }
 
     /**
+     * Whether the bindings are those of another object than the one code of $class runs for: the receiver of a
+     * call or the object a `new` of $class constructs
+     *
+     * @psalm-mutation-free
+     */
+    public function isForAnotherObject(string $class): bool
+    {
+        return $this->of_receiver || $this->constructed_class === $class;
+    }
+
+    /**
      * Marks the class templates the receiver bound to a `*`, for what is read from and written to the receiver
      *
      * @param array<string, array<string, true|Union>> $star_templates template name => defining class => mark
@@ -123,7 +146,7 @@ final class TemplateResult
             foreach ($defining_classes as $defining_class => $star_type) {
                 if ($this->star_input) {
                     $lower_bounds[$template_name][$defining_class] = [new TemplateBound(
-                        $this->star_input_bounds[$template_name][$defining_class] ?? Type::getNever(),
+                        $this->getStarInputBound($template_name, $defining_class),
                     )];
                 } elseif ($star_type instanceof Union) {
                     $lower_bounds[$template_name][$defining_class] = [new TemplateBound($star_type)];
@@ -142,6 +165,16 @@ final class TemplateResult
     public function isStarInput(string $template_name, string $defining_class): bool
     {
         return $this->star_input && isset($this->star_bindings[$template_name][$defining_class]);
+    }
+
+    /**
+     * What a template bound to a `*` is where the types are replaced as inputs
+     *
+     * @psalm-mutation-free
+     */
+    public function getStarInputBound(string $template_name, string $defining_class): Union
+    {
+        return $this->star_input_bounds[$template_name][$defining_class] ?? Type::getNever();
     }
 
     /**
