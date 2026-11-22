@@ -828,10 +828,11 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                         );
                     }
 
-                    // the native type of a property of a builtin class is only known when the running PHP has it
+                    // the native type of a property of a builtin class read by reflection is only known when the
+                    // running PHP has it; a class in a stub declares its properties itself
                     if ((($property_storage->signature_type
                                 && !$guide_property_storage->signature_type
-                                && $guide_class_storage->user_defined)
+                                && ($guide_class_storage->user_defined || $guide_class_storage->stubbed))
                             || (!$property_storage->signature_type && $guide_property_storage->signature_type)
                             || ($property_storage->signature_type
                                 && $guide_property_storage->signature_type

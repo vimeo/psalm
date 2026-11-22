@@ -678,6 +678,15 @@ final class PropertyTypeInvarianceTest extends TestCase
                 'error_levels' => [],
                 'php_version' => '8.6',
             ],
+            'typedRedeclarationOfAnUntypedPropertyOfAStubbedBuiltinClass' => [
+                'code' => '<?php
+                    final class E extends Exception {
+                        protected string $message = "";
+                    }',
+                'error_message' => 'NonInvariantPropertyType',
+                'error_levels' => [],
+                'php_version' => '8.4',
+            ],
             'importedTypeAliasOfAnotherType' => [
                 'code' => '<?php
                     /**
