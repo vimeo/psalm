@@ -421,6 +421,62 @@ bar&#13;
             );
     }
 
+    public function testACharacterXmlForbidsInTheSelectedTextKeepsTheBaselineLoadable(): void
+    {
+        $baselineFile = 'baseline.xml';
+
+        $this->fileProvider = Mockery::spy(FileProvider::class);
+
+        ErrorBaseline::create(
+            $this->fileProvider,
+            $baselineFile,
+            [
+                'src/a.php' => [
+                    new IssueData(
+                        IssueData::SEVERITY_ERROR,
+                        3,
+                        3,
+                        'InvalidScalarArgument',
+                        'Message',
+                        'src/a.php',
+                        'src/a.php',
+                        'takesInt("a' . "\x1b" . '");',
+                        '"a' . "\x1b" . '"',
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                    ),
+                ],
+            ],
+            false,
+        );
+
+        $document = null;
+
+        $this->fileProvider->shouldHaveReceived()
+            ->setContents(
+                $baselineFile,
+                Mockery::on(static function (string $contents) use (&$document): bool {
+                    $document = $contents;
+
+                    return true;
+                }),
+            );
+
+        $this->assertIsString($document);
+
+        $this->fileProvider->allows()->fileExists($baselineFile)->andReturns(true);
+        $this->fileProvider->allows()->getContents($baselineFile)->andReturns($document);
+
+        $this->assertSame(
+            ['src/a.php' => ['InvalidScalarArgument' => ['o' => 1, 's' => ["\"a\u{FFFD}\""]]]],
+            ErrorBaseline::read($this->fileProvider, $baselineFile),
+        );
+    }
+
     public function testUpdateShouldRemoveExistingIssuesWithoutAddingNewOnes(): void
     {
         $baselineFile = 'baseline.xml';
