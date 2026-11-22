@@ -168,6 +168,7 @@ final class UnsetAnalyzer
                     );
                     $context->possibly_assigned_var_ids[$root_var_id] = true;
 
+                    $context->releaseKeysBoundToList($root_var_id);
                     $context->removeVarFromConflictingClauses(
                         $root_var_id,
                         $context->vars_in_scope[$root_var_id],
@@ -330,6 +331,7 @@ final class UnsetAnalyzer
 
             $context->vars_in_scope[$parent_var_id] = $parent_type;
             $context->possibly_assigned_var_ids[$parent_var_id] = true;
+            $context->releaseKeysBoundToList($parent_var_id);
             $context->removeVarFromConflictingClauses($parent_var_id, $parent_type, $statements_analyzer);
 
             $child_expr = $child_expr->var;
