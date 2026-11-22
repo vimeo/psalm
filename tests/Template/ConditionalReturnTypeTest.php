@@ -936,6 +936,30 @@ final class ConditionalReturnTypeTest extends TestCase
                         return $i->deserialize($data, \'array\');
                     }',
             ],
+            'implementationWideningAParamReturnsTheGuidesTypeForTheGuidesValues' => [
+                'code' => '<?php
+                    interface Manager {
+                        /**
+                         * @template T of object
+                         * @param class-string<T> $className
+                         * @return T
+                         */
+                        public function get(string $className): object;
+                    }
+
+                    interface WideManager extends Manager {
+                        /**
+                         * @template T of object
+                         * @param string|class-string<T> $className
+                         * @return ($className is class-string<T> ? T : object)
+                         */
+                        #[Override]
+                        public function get(string $className): object;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
             'implementedMethodWithTheConditionalReturnTypeOfTheInterface' => [
                 'code' => '<?php
                     /** @template T = mixed */
@@ -2766,6 +2790,24 @@ final class ConditionalReturnTypeTest extends TestCase
                         return $key === null ? "a" : $key;
                     }',
                 'error_message' => 'InvalidDocblock',
+            ],
+            'conditionalOfAnImplementationOnPartOfTheGuidesValuesIsComparedByBothBranches' => [
+                'code' => '<?php
+                    interface Narrow {
+                        /** @return int */
+                        public function f(string $s): int|string;
+                    }
+
+                    final class NarrowImpl implements Narrow {
+                        /** @return ($s is "x" ? int : string) */
+                        #[Override]
+                        public function f(string $s): int|string {
+                            return $s === "x" ? 1 : "a";
+                        }
+                    }',
+                'error_message' => 'ImplementedReturnTypeMismatch',
+                'error_levels' => [],
+                'php_version' => '8.3',
             ],
             'implementedMethodWithAConditionalReturnTypeOutsideTheInterfaces' => [
                 'code' => '<?php

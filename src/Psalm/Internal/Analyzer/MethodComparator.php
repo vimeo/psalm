@@ -17,6 +17,7 @@ use Psalm\Internal\Type\Comparator\TypeComparisonResult;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
+use Psalm\Internal\Type\TypeCombiner;
 use Psalm\Internal\Type\TypeExpander;
 use Psalm\Internal\TypeVisitor\FunctionPurityTemplateReplacer;
 use Psalm\Issue\ConstructorSignatureMismatch;
@@ -40,6 +41,7 @@ use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Storage\MethodStorage;
 use Psalm\Storage\NamedArguments;
 use Psalm\Type;
+use Psalm\Type\Atomic\TConditional;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TTemplateParam;
@@ -49,9 +51,12 @@ use function array_any;
 use function array_diff_key;
 use function array_filter;
 use function array_key_last;
+use function array_values;
 use function in_array;
 use function str_starts_with;
+use function strlen;
 use function strtolower;
+use function substr;
 
 /**
  * @internal
@@ -205,6 +210,7 @@ final class MethodComparator
                 $guide_classlike_storage,
                 $implementer_classlike_storage,
                 $implementer_method_storage,
+                $guide_method_storage,
                 $guide_method_storage->return_type,
                 $implementer_method_storage->return_type,
                 $cased_guide_method_id,
@@ -1448,6 +1454,72 @@ final class MethodComparator
     }
 
     /**
+     * A conditional on a param of the implementation is read for the values the guide's param takes: only its if
+     * branch when they all fit the condition, only its else branch when none does (an implementation widening
+     * `class-string<T>` to `string` returns something else for the strings the guide never takes)
+     */
+    private static function readConditionalsForTheGuideParams(
+        Codebase $codebase,
+        Union $return_type,
+        MethodStorage $guide_method_storage,
+    ): Union {
+        $atomic_types = [];
+        $changed = false;
+
+        foreach ($return_type->getAtomicTypes() as $atomic_type) {
+            if ($atomic_type instanceof TConditional
+                && str_starts_with($atomic_type->param_name, 'TGeneratedFromParam')
+                && ($guide_param_type = $guide_method_storage->params[
+                    (int) substr($atomic_type->param_name, strlen('TGeneratedFromParam'))
+                ]->type ?? null) !== null
+            ) {
+                $guide_values = TypeExpander::expandUnion(
+                    $codebase,
+                    $guide_param_type,
+                    null,
+                    null,
+                    null,
+                    true,
+                    false,
+                    false,
+                    false,
+                    true,
+                );
+                $condition = TypeExpander::expandUnion(
+                    $codebase,
+                    $atomic_type->conditional_type,
+                    null,
+                    null,
+                    null,
+                    true,
+                    false,
+                    false,
+                    false,
+                    true,
+                );
+
+                if (UnionTypeComparator::isContainedBy($codebase, $guide_values, $condition)) {
+                    $atomic_types = [...$atomic_types, ...array_values($atomic_type->if_type->getAtomicTypes())];
+                    $changed = true;
+
+                    continue;
+                }
+
+                if (!UnionTypeComparator::canBeContainedBy($codebase, $guide_values, $condition)) {
+                    $atomic_types = [...$atomic_types, ...array_values($atomic_type->else_type->getAtomicTypes())];
+                    $changed = true;
+
+                    continue;
+                }
+            }
+
+            $atomic_types[] = $atomic_type;
+        }
+
+        return $changed ? TypeCombiner::combine($atomic_types, $codebase) : $return_type;
+    }
+
+    /**
      * @param  string[]         $suppressed_issues
      */
     private static function compareMethodDocblockReturnTypes(
@@ -1455,6 +1527,7 @@ final class MethodComparator
         ClassLikeStorage $guide_classlike_storage,
         ClassLikeStorage $implementer_classlike_storage,
         MethodStorage $implementer_method_storage,
+        MethodStorage $guide_method_storage,
         Union $guide_return_type,
         Union $implementer_return_type,
         string $cased_guide_method_id,
@@ -1466,7 +1539,7 @@ final class MethodComparator
     ): void {
         $implementer_method_storage_return_type = TypeExpander::expandUnion(
             $codebase,
-            $implementer_return_type,
+            self::readConditionalsForTheGuideParams($codebase, $implementer_return_type, $guide_method_storage),
             $implementer_classlike_storage->is_trait
                 ? $implementer_called_class_name
                 : $implementer_classlike_storage->name,
