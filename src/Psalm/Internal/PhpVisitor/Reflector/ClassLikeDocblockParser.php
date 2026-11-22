@@ -30,8 +30,6 @@ use Psalm\Storage\CapabilitiesParseException;
 use Psalm\Type\Atomic\TCapabilities;
 use Psalm\Type\Union;
 
-use function array_column;
-use function array_fill_keys;
 use function array_key_first;
 use function array_shift;
 use function count;
@@ -310,16 +308,14 @@ final class ClassLikeDocblockParser
             if ($info->sealed_methods === null) {
                 $info->sealed_methods = true;
             }
-            // the purity templates of the class, for `Closure[P]` in a signature: only their names
-            // matter here, the types are printed back into the docblock of a pseudo-method
+
+            // the purity templates of the class, for `Closure[P]` in a return type: only their names matter
+            // here, the return type is validated and then written as it is into the docblock of a pseudo-method
             $purity_template_map = [];
 
             foreach ($info->purity_templates as $purity_template) {
                 $purity_template_map[$purity_template] = ['' => new Union([new TCapabilities(Capabilities::ALL)])];
             }
-
-            // the class's other templates, for its parameter types
-            $param_template_map = $purity_template_map + array_fill_keys(array_column($info->templates, 0), true);
 
             foreach ($parsed_docblock->combined_tags['method'] as $offset => $method_entry) {
                 $method_entry = (string) preg_replace('/[ \t]+/', ' ', trim($method_entry));
@@ -433,18 +429,7 @@ final class ClassLikeDocblockParser
                 }
 
                 try {
-                    $method_tokens = TypeTokenizer::getFullyQualifiedTokens(
-                        $tokenized_entry,
-                        $aliases,
-                        $purity_template_map,
-                    );
-
-                    if ($param_template_map !== $purity_template_map) {
-                        $method_tokens = self::keepTemplatesInParamTypes(
-                            $method_tokens,
-                            TypeTokenizer::getFullyQualifiedTokens($tokenized_entry, $aliases, $param_template_map),
-                        );
-                    }
+                    $method_tokens = TypeTokenizer::getFullyQualifiedTokens($tokenized_entry, $aliases);
 
                     $parse_tree_creator = new ParseTreeCreator($method_tokens);
 
@@ -463,6 +448,8 @@ final class ClassLikeDocblockParser
                     throw new DocblockParseException($method_entry . ' is not a valid method');
                 }
 
+                $has_trailing_return = $method_tree instanceof MethodWithReturnTypeTree;
+
                 if ($method_tree instanceof MethodWithReturnTypeTree) {
                     if ($leading_static) {
                         $is_static = true;
@@ -471,9 +458,15 @@ final class ClassLikeDocblockParser
                     }
 
                     if (!$has_return) {
+                        $return_tree = $method_tree->children[1] ?? null;
+
+                        if ($return_tree === null) {
+                            throw new DocblockParseException($method_entry . ' is not a valid method');
+                        }
+
                         try {
-                            $return_type = TypeParser::getTypeFromTree(
-                                $method_tree->children[1],
+                            TypeParser::getTypeFromTree(
+                                $return_tree,
                                 $codebase,
                                 null,
                                 $purity_template_map,
@@ -485,9 +478,6 @@ final class ClassLikeDocblockParser
                                 $e,
                             );
                         }
-
-                        $docblock_lines[] = '@return '
-                            . $return_type->toNamespacedString($aliases->namespace, $aliases->uses, null, false);
                     }
 
                     $method_tree = $method_tree->children[0];
@@ -497,9 +487,15 @@ final class ClassLikeDocblockParser
                     throw new DocblockParseException($method_entry . ' is not a valid method');
                 }
 
+                [$param_types, $return_type] = self::getMethodSignatureTypes($tokenized_entry, $method_tree);
+
+                if ($has_trailing_return && !$has_return) {
+                    $docblock_lines[] = '@return ' . $return_type;
+                }
+
                 $args = [];
 
-                foreach ($method_tree->children as $method_tree_child) {
+                foreach ($method_tree->children as $param_index => $method_tree_child) {
                     if (!$method_tree_child instanceof MethodParamTree) {
                         throw new DocblockParseException($method_entry . ' is not a valid method');
                     }
@@ -510,22 +506,8 @@ final class ClassLikeDocblockParser
                         . ($method_tree_child->default != '' ? ' = ' . $method_tree_child->default : '');
 
 
-                    if ($method_tree_child->children) {
-                        try {
-                            $param_type = TypeParser::getTypeFromTree(
-                                $method_tree_child->children[0],
-                                $codebase,
-                                null,
-                                $purity_template_map,
-                            );
-                        } catch (Exception $e) {
-                            throw new DocblockParseException(
-                                'Badly-formatted @method string ' . $method_entry . ' - ' . $e,
-                            );
-                        }
-
-                        $param_type_string = $param_type->toNamespacedString('\\', [], null, false);
-                        $docblock_lines[] = '@param ' . $param_type_string . ' '
+                    if (($param_types[$param_index] ?? '') !== '') {
+                        $docblock_lines[] = '@param ' . $param_types[$param_index] . ' '
                             . ($method_tree_child->variadic ? '...' : '')
                             . $method_tree_child->name;
                     }
@@ -620,40 +602,64 @@ final class ClassLikeDocblockParser
     }
 
     /**
-     * The tokens of a `@method` entry, with the templates of the class left unqualified in its parameter types:
-     * those are printed fully qualified into the docblock of a pseudo-method parsed in the class's template scope,
-     * where only an unqualified name is read back as the template. The defaults (PHP expressions) and the return
-     * type (printed against the namespace and the imports) keep their qualified names, as an unqualified template
-     * there would be read as a same-named import alias.
+     * The types of a `@method` entry as they are written, for the docblock of its pseudo-method: it is
+     * resolved in the scope of the class like any other docblock.
      *
-     * @param list<array{0: string, 1: int, 2?: string}> $tokens
-     * @param list<array{0: string, 1: int, 2?: string}> $template_tokens the same entry, tokenized with the
-     *                                                                   class's templates in scope
-     * @return list<array{0: string, 1: int, 2?: string}>
-     * @psalm-pure
+     * @return array{list<string>, string} the type of each parameter and the return type ('' if there is none)
+     * @psalm-external-mutation-free
      */
-    private static function keepTemplatesInParamTypes(array $tokens, array $template_tokens): array
+    private static function getMethodSignatureTypes(string $entry, MethodTree $method_tree): array
     {
-        $depth = 0;
-        $in_default = false;
+        $tokens = TypeTokenizer::tokenize($entry);
+        $name_offsets = [];
 
-        foreach ($tokens as $i => [$token]) {
-            // in a default, `<` and `>` are operators
-            if ($token === '(' || $token === '{' || $token === '[' || ($token === '<' && !$in_default)) {
-                ++$depth;
-            } elseif ($token === ')' || $token === '}' || $token === ']' || ($token === '>' && !$in_default)) {
-                if (--$depth === 0) {
-                    // the end of the parameter list
-                    break;
-                }
-            } elseif ($depth === 1 && ($token === '=' || $token === ',')) {
-                $in_default = $token === '=';
-            } elseif ($depth > 0 && !$in_default) {
-                $tokens[$i] = $template_tokens[$i];
+        // a `$` token is not necessarily a parameter name: `$this` is also a type
+        foreach ($method_tree->children as $param) {
+            if ($param instanceof MethodParamTree) {
+                $name_offsets[$param->name_offset] = true;
             }
         }
 
-        return $tokens;
+        $param_types = [];
+        $type_start = null;
+        $depth = 0;
+        $after_name = false;
+
+        foreach ($tokens as $i => [$token, $offset]) {
+            if ($depth === 1 && $token === ',') {
+                $after_name = false;
+                $type_start = null;
+            } elseif ($depth === 1 && !$after_name) {
+                if (isset($name_offsets[$offset])) {
+                    // the type ends before the `&` or `...` of the parameter
+                    $param_types[] = $type_start === null
+                        ? ''
+                        : trim((string) preg_replace(
+                            '/[\s&.]+$/',
+                            '',
+                            substr($entry, $type_start, $offset - $type_start),
+                        ));
+                    $after_name = true;
+                } elseif ($type_start === null) {
+                    $type_start = $offset;
+                }
+            }
+
+            // after the name, what follows is the default, where `<` and `>` are operators
+            if ($token === '(' || $token === '{' || $token === '[' || ($token === '<' && !$after_name)) {
+                ++$depth;
+            } elseif ($token === ')' || $token === '}' || $token === ']' || ($token === '>' && !$after_name)) {
+                if (--$depth === 0) {
+                    $return_type = isset($tokens[$i + 2]) && $tokens[$i + 1][0] === ':'
+                        ? substr($entry, $tokens[$i + 2][1])
+                        : '';
+
+                    return [$param_types, $return_type];
+                }
+            }
+        }
+
+        return [$param_types, ''];
     }
 
     /**
