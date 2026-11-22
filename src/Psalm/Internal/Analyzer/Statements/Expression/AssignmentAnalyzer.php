@@ -1066,7 +1066,8 @@ final class AssignmentAnalyzer
             return;
         }
 
-        $file_path = $statements_analyzer->getRootFilePath();
+        // the type aliases of the file the docblock is in, which an inherited method is not analysed as part of
+        $file_path = $statements_analyzer->getFilePath();
 
         $file_storage_provider = $codebase->file_storage_provider;
 
