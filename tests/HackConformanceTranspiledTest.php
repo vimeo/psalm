@@ -252,6 +252,63 @@ final class HackConformanceTranspiledTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.3',
             ],
+            'type_variables/covariant_unconstrained_construction' => [
+                // `new` of a class whose covariant type parameter nothing can constrain
+                // (no method takes it) is a `Coll<nothing>`, a subtype of every
+                // instantiation, so it fits an argument and a return type of any
+                // `Coll<X>`. A bound on the parameter doesn't change that
+                // (`Bounded<nothing>`).
+                'code' => '<?php
+                    interface Named {}
+
+                    /** @template-covariant T */
+                    final class Coll {
+                        /**
+                         * @psalm-impure
+                         * @return list<T>
+                         */
+                        public function all(): array { return []; }
+                    }
+
+                    /** @template-covariant T of Named */
+                    final class Bounded {
+                        /**
+                         * @psalm-impure
+                         * @return list<T>
+                         */
+                        public function all(): array { return []; }
+                    }
+
+                    /**
+                     * @psalm-impure
+                     * @param Coll<int> $c
+                     */
+                    function takesInts(Coll $c): void {}
+
+                    /** @psalm-impure */
+                    function pass(): void {
+                        takesInts(new Coll());
+                    }
+
+                    /**
+                     * @psalm-impure
+                     * @return Coll<int>
+                     */
+                    function ints(): Coll {
+                        return new Coll();
+                    }
+
+                    /**
+                     * @psalm-impure
+                     * @return Bounded<Named>
+                     */
+                    function named(): Bounded {
+                        return new Bounded();
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
             'type_variables/empty_construction_union_return' => [
                 // an empty `new It()` returned where the declared type is a union of two
                 // key instantiations of a covariant class. Hack localizes the declared
@@ -286,6 +343,101 @@ final class HackConformanceTranspiledTest extends TestCase
                     }',
                 'assertions' => [],
                 'ignored_issues' => ['InvalidTemplateParam'],
+                'php_version' => '8.3',
+            ],
+            'SKIPPED-type_variables/foreach_over_nothing' => [
+                // iterating the items of a `Coll<nothing>`, which a bounded template
+                // (`Bounded<nothing>`) gives as well, binds the loop variable to
+                // `nothing`: the body typechecks, whatever it does with the item.
+                // Skipped, Psalm does not agree with HHVM yet:
+                // Psalm iterates the empty array of a `Coll<never>` as `mixed` and reports MixedAssignment
+                // and MixedArgument for the loop body. Hack binds the loop variable to `nothing` and accepts the body,
+                // dead code as it is.
+                'code' => '<?php
+                    interface Named {}
+
+                    /** @template-covariant T */
+                    final class Coll {
+                        /**
+                         * @psalm-impure
+                         * @return list<T>
+                         */
+                        public function all(): array { return []; }
+                    }
+
+                    /** @template-covariant T of Named */
+                    final class Bounded {
+                        /**
+                         * @psalm-impure
+                         * @return list<T>
+                         */
+                        public function all(): array { return []; }
+                    }
+
+                    /** @psalm-impure */
+                    function nameOf(Named $named): string { return \'\'; }
+
+                    /** @psalm-impure */
+                    function names(): string {
+                        $result = \'\';
+                        foreach ((new Bounded())->all() as $item) {
+                            $result .= nameOf($item);
+                        }
+
+                        return $result;
+                    }
+
+                    /** @psalm-impure */
+                    function total(): int {
+                        $sum = 0;
+                        foreach ((new Coll())->all() as $item) {
+                            $sum += $item;
+                        }
+
+                        return $sum;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
+            'SKIPPED-type_variables/invariant_unconstrained_construction' => [
+                // an invariant type parameter nothing can constrain is a type variable
+                // (`Coll<_>`) that the expected type fixes: the construction fits any
+                // `Coll<X>`.
+                // Skipped, Psalm does not agree with HHVM yet:
+                // Psalm infers `Coll<mixed>` for an invariant template nothing can constrain, so it
+                // reports MixedReturnTypeCoercion where Hack fixes the type variable to `int` through the declared
+                // return type.
+                'code' => '<?php
+                    /** @template T */
+                    final class Coll {
+                        /**
+                         * @psalm-impure
+                         * @return list<T>
+                         */
+                        public function all(): array { return []; }
+                    }
+
+                    /**
+                     * @psalm-impure
+                     * @param Coll<int> $c
+                     */
+                    function takesInts(Coll $c): void {}
+
+                    /** @psalm-impure */
+                    function pass(): void {
+                        takesInts(new Coll());
+                    }
+
+                    /**
+                     * @psalm-impure
+                     * @return Coll<int>
+                     */
+                    function ints(): Coll {
+                        return new Coll();
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
                 'php_version' => '8.3',
             ],
             'type_variables/method_call_on_element' => [
