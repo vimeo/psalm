@@ -1156,9 +1156,12 @@ final class ArgumentAnalyzer
         }
 
         foreach ($param_type->getAtomicTypes() as $param_atomic_type) {
-            if ($param_atomic_type instanceof TCallable || $param_atomic_type instanceof TCallableString) {
-                // a string passed as a callable uses what it names, also when it was given the type of its callable
-                // form already
+            if ($param_atomic_type instanceof TCallable
+                || $param_atomic_type instanceof TClosure
+                || $param_atomic_type instanceof TCallableString
+            ) {
+                // a string passed as a callable, even where only a Closure is accepted, uses what it names, also when
+                // it was given the type of its callable form already
                 /** @var Union|null $original_input_type set by HighOrderFunctionArgHandler */
                 $original_input_type = $unpack
                     ? null
