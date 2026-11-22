@@ -890,8 +890,7 @@ final class AtomicTypeComparator
                 || $input_type_part instanceof TKeyedArray
                 || (
                     $input_type_part instanceof TNamedObject &&
-                    $codebase->classOrInterfaceExists($input_type_part->value) &&
-                    $codebase->methodExists($input_type_part->value . '::__invoke')
+                    CallableTypeComparator::getInvokeMember($codebase, $input_type_part) !== null
                 )
             )
         ) {
