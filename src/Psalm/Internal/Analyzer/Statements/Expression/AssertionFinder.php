@@ -91,7 +91,6 @@ use Psalm\Type\Atomic\TArrayKey;
 use Psalm\Type\Atomic\TBool;
 use Psalm\Type\Atomic\TCallable;
 use Psalm\Type\Atomic\TCallableString;
-use Psalm\Type\Atomic\TClassConstant;
 use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TClassStringMap;
 use Psalm\Type\Atomic\TClosedResource;
@@ -412,6 +411,33 @@ final class AssertionFinder
                     if ($var_name) {
                         $if_types[$var_name] = [[new IsEqualIsset]];
                     }
+                }
+
+                // each offset of the chain is a key of its array
+                $dim_fetch = $isset_var;
+
+                while ($dim_fetch instanceof PhpParser\Node\Expr\ArrayDimFetch) {
+                    if ($dim_fetch->dim
+                        && $source instanceof StatementsAnalyzer
+                        && ($key_var_name = ExpressionIdentifier::getExtendedVarId(
+                            $dim_fetch->dim,
+                            $this_class_name,
+                            $source,
+                        )) !== null
+                        && ($array_type = $source->node_data->getType($dim_fetch->var))
+                        && ($key_type = $source->node_data->getType($dim_fetch->dim))
+                        && ($key_assertion = self::getKeyOfTemplateAssertion(
+                            $dim_fetch->var,
+                            $array_type,
+                            $key_type,
+                            $this_class_name,
+                            $source,
+                        ))
+                    ) {
+                        $if_types[$key_var_name][] = [$key_assertion];
+                    }
+
+                    $dim_fetch = $dim_fetch->var;
                 }
             }
 
@@ -963,7 +989,7 @@ final class AssertionFinder
 
     /**
      * A `function_exists()`, `class_exists()`, `interface_exists()`, `enum_exists()` or
-     * `method_exists()` check of a native symbol newer than the analysed PHP version: where it
+     * `method_exists()` or `defined()` check of a native symbol newer than the analysed PHP version: where it
      * holds, PHP_VERSION_ID is at least the version that introduced the symbol, so the symbol
      * can be used there (see Codebase::getGuardedPhpVersionId()).
      */
@@ -1011,6 +1037,15 @@ final class AssertionFinder
                 if (!$class_storage->user_defined && !$codebase->isClassLikePolyfilled($class_storage->name)) {
                     $since_php_version_id = $class_storage->since_php_version_id;
                 }
+            }
+        } elseif ($function_id === 'defined'
+            && isset($args[0])
+            && $args[0]->value instanceof PhpParser\Node\Scalar\String_
+        ) {
+            $guarded_const_name = ltrim($args[0]->value->value, '\\');
+
+            if (!ConstFetchAnalyzer::isDeclaredInCode($codebase, $guarded_const_name)) {
+                $since_php_version_id = ConstFetchAnalyzer::getIntroducingPhpVersionId($codebase, $guarded_const_name);
             }
         } elseif ($function_id === 'method_exists'
             && isset($args[0], $args[1])
@@ -1180,7 +1215,7 @@ final class AssertionFinder
             foreach ($if_true_assertions as $assertion) {
                 $if_types = [];
 
-                $assertion = self::expandClassConstantsOfRules($assertion, $source->getCodebase());
+                $assertion = self::expandTypesOfRules($assertion, $source->getCodebase());
 
                 if (is_int($assertion->var_id) && isset($expr->getArgs()[$assertion->var_id])) {
                     if ($assertion->var_id === 0) {
@@ -1276,7 +1311,7 @@ final class AssertionFinder
             foreach ($if_false_assertions as $assertion) {
                 $if_types = [];
 
-                $assertion = self::expandClassConstantsOfRules($assertion, $source->getCodebase());
+                $assertion = self::expandTypesOfRules($assertion, $source->getCodebase());
 
                 if (is_int($assertion->var_id) && isset($expr->getArgs()[$assertion->var_id])) {
                     if ($assertion->var_id === 0) {
@@ -1428,16 +1463,34 @@ final class AssertionFinder
         return $arg_var_id . substr($assertion_id, strlen($var_id));
     }
 
-    private static function expandClassConstantsOfRules(Possibilities $assertion, Codebase $codebase): Possibilities
+    /**
+     * The types of `@psalm-assert-if-true` and `-if-false` are expanded here, as those of `@psalm-assert` are (see
+     * CallAnalyzer::applyAssertionsToContext()): a class constant, and the arguments of any type (a `*` holds the
+     * bound of its template once expanded). A union they expand to is being of one of its types.
+     */
+    private static function expandTypesOfRules(Possibilities $assertion, Codebase $codebase): Possibilities
     {
         $rules = [];
 
         foreach ($assertion->rule as $rule) {
             $rule_type = $rule->getAtomicType();
 
-            $rules[] = $rule_type instanceof TClassConstant
-                ? $rule->setAtomicType(TypeExpander::expandAtomic($codebase, $rule_type, null, null, null)[0])
-                : $rule;
+            if ($rule_type === null) {
+                $rules[] = $rule;
+                continue;
+            }
+
+            $expanded = TypeExpander::expandAtomic($codebase, $rule_type, null, null, null);
+
+            if (count($expanded) === 1) {
+                $rules[] = $rule->setAtomicType($expanded[0]);
+            } elseif ($rule instanceof IsType) {
+                foreach ($expanded as $expanded_atomic) {
+                    $rules[] = new IsType($expanded_atomic);
+                }
+            } else {
+                $rules[] = $rule;
+            }
         }
 
         return new Possibilities($assertion->var_id, $rules);
@@ -3557,6 +3610,47 @@ final class AssertionFinder
     }
 
     /**
+     * That a key of an array of a template type T is found: it is a key-of<T>
+     */
+    private static function getKeyOfTemplateAssertion(
+        PhpParser\Node\Expr $array_expr,
+        Union $array_type,
+        Union $key_type,
+        ?string $this_class_name,
+        StatementsAnalyzer $source,
+    ): ?InArray {
+        $array_atomic = $array_type->isSingle() ? $array_type->getSingleAtomic() : null;
+
+        if (!self::isArrayTemplate($array_atomic)) {
+            return null;
+        }
+
+        $key_of_type = new Union([new TTemplateKeyOf(
+            $array_atomic->param_name,
+            $array_atomic->defining_class,
+            new Union([$array_atomic]),
+        )]);
+
+        // only an int finds no other key than itself: '0' finds the key 0, null the key ''. A string that
+        // keys of T can be is still narrowed, though '0' may have found the int key 0
+        if (Type::intersectUnionTypes($key_of_type, $key_type, $source->getCodebase()) === null
+            || !array_all(
+                $key_type->getAtomicTypes(),
+                static fn(Atomic $key_atomic): bool => $key_atomic instanceof TInt
+                    || Type::intersectUnionTypes(
+                        $key_of_type,
+                        new Union([$key_atomic]),
+                        $source->getCodebase(),
+                    ) !== null,
+            )
+        ) {
+            return null;
+        }
+
+        return new InArray($key_of_type, self::getOperandId($array_expr, $this_class_name, $source));
+    }
+
+    /**
      * @return list<non-empty-array<string, non-empty-list<non-empty-list<Assertion>>>>
      */
     private static function getArrayKeyExistsAssertions(
@@ -3630,34 +3724,16 @@ final class AssertionFinder
                 }
             }
 
-            $array_atomic = $second_var_type->isSingle() ? $second_var_type->getSingleAtomic() : null;
+            $template_key_assertion = self::getKeyOfTemplateAssertion(
+                $expr->getArgs()[1]->value,
+                $second_var_type,
+                $first_var_type,
+                $this_class_name,
+                $source,
+            );
 
-            if (self::isArrayTemplate($array_atomic)) {
-                $key_of_type = new Union([new TTemplateKeyOf(
-                    $array_atomic->param_name,
-                    $array_atomic->defining_class,
-                    new Union([$array_atomic]),
-                )]);
-
-                // only an int finds no other key than itself: '0' finds the key 0, null the key ''. A string that
-                // keys of T can be is still narrowed, though '0' may have found the int key 0
-                if (Type::intersectUnionTypes($key_of_type, $first_var_type, $source->getCodebase()) !== null
-                    && array_all(
-                        $first_var_type->getAtomicTypes(),
-                        static fn(Atomic $key_atomic): bool => $key_atomic instanceof TInt
-                            || Type::intersectUnionTypes(
-                                $key_of_type,
-                                new Union([$key_atomic]),
-                                $source->getCodebase(),
-                            ) !== null,
-                    )
-                ) {
-                    $template_key_var_name = $first_var_name;
-                    $template_key_assertion = new InArray(
-                        $key_of_type,
-                        self::getOperandId($expr->getArgs()[1]->value, $this_class_name, $source),
-                    );
-                }
+            if ($template_key_assertion) {
+                $template_key_var_name = $first_var_name;
             }
         }
 

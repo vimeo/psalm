@@ -184,6 +184,13 @@ final class AtomicTypeComparator
                 return false;
             }
 
+            // a non-empty mixed holds no falsy value, nor an empty mixed a truthy one
+            if (($container_type_part::class === TNonEmptyMixed::class && $input_type_part->isFalsy())
+                || ($container_type_part::class === TEmptyMixed::class && $input_type_part->isTruthy())
+            ) {
+                return false;
+            }
+
             return true;
         }
 
@@ -883,8 +890,7 @@ final class AtomicTypeComparator
                 || $input_type_part instanceof TKeyedArray
                 || (
                     $input_type_part instanceof TNamedObject &&
-                    $codebase->classOrInterfaceExists($input_type_part->value) &&
-                    $codebase->methodExists($input_type_part->value . '::__invoke')
+                    CallableTypeComparator::getInvokeMember($codebase, $input_type_part) !== null
                 )
             )
         ) {
