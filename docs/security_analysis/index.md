@@ -189,9 +189,9 @@ function getId(string $name): int {
     return (int) getParam($name);
 }
 
-function show(MongoDB\Collection $collection): void {
-    $collection->find(['name' => getParam('name')]); // no issue: a string can't inject query operators
-    $collection->find(['name' => json_decode(getParam('name'), true)]); // TaintedNosql
+function show(MongoDB\Driver\Manager $mongo): void {
+    $mongo->executeQuery('db.users', new MongoDB\Driver\Query(['name' => getParam('name')])); // no issue: a string can't inject query operators
+    $mongo->executeQuery('db.users', new MongoDB\Driver\Query(['name' => json_decode(getParam('name'), true)])); // TaintedNosql
     echo '<b>' . getId('id') . '</b>'; // no issue: an int can't carry HTML
 
     $direction = getParam('direction');
@@ -211,6 +211,10 @@ when `preg_match()` is used directly as a condition or compared to `1`:
 
 ```php
 <?php
+/** @psalm-taint-source input */
+function getParam(string $name): string {
+    return (string) ($_GET[$name] ?? '');
+}
 
 function search(DOMXPath $xpath): void {
     $sort = getParam('sort');
@@ -243,6 +247,10 @@ trusts the check as long as the variable holding the URL isn't assigned again:
 
 ```php
 <?php
+/** @psalm-taint-source input */
+function getParam(string $name): string {
+    return (string) ($_GET[$name] ?? '');
+}
 
 $url = getParam('next');
 $host = (string) parse_url($url, PHP_URL_HOST);
@@ -270,6 +278,11 @@ values. After the check succeeds, Psalm knows the value is one of those literals
  */
 function isKnownCity(string $city): bool {
     return in_array($city, ['london', 'paris', 'tokyo'], true);
+}
+
+/** @psalm-taint-source input */
+function getParam(string $name): string {
+    return (string) ($_GET[$name] ?? '');
 }
 
 $city = getParam('city');
