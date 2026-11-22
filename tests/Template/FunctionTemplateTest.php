@@ -3407,6 +3407,30 @@ final class FunctionTemplateTest extends TestCase
                 ],
                 'ignored_issues' => ['ArgumentTypeCoercion', 'PossiblyInvalidArgument', 'InvalidScalarArgument'],
             ],
+            'templateArgumentWithNoPartOfTheBoundIsNotNarrowedToTheBoundPartsItContains' => [
+                'code' => '<?php
+                    /**
+                     * @template T of (callable(string): mixed)|null
+                     * @param T $f
+                     * @return T
+                     */
+                    function take($f) {
+                        return $f;
+                    }
+
+                    /**
+                     * @template S of (callable(int): mixed)|null
+                     * @param S $f
+                     * @return callable(string): mixed
+                     */
+                    function forward($f): callable {
+                        $taken = take($f);
+                        return $taken ?? static fn(string $s): int => 1;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['InvalidScalarArgument'],
+                'php_version' => '8.0',
+            ],
             'templateBoundByArgumentWithNoPartOfTheBoundKeepsTheBoundPartsItContains' => [
                 'code' => '<?php
                     /**

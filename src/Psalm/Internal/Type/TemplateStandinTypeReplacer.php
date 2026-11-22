@@ -1011,6 +1011,9 @@ final class TemplateStandinTypeReplacer
                     ) {
                         $generic_param = null;
                     }
+                } elseif ($input_type->hasTemplate()) {
+                    // a template stands for values not known yet, none of which may be in the parts it contains
+                    $generic_param = null;
                 } else {
                     // no part is of the bound: the input stands for the parts of the bound it contains, if any (a
                     // string for a non-empty-string)
@@ -1149,8 +1152,9 @@ final class TemplateStandinTypeReplacer
                 if ($matching_input_keys) {
                     self::keepMatchingInputTypes($codebase, $generic_param, $matching_input_keys, $gate_replacement_type);
                 }
-            } else {
-                // as for a lower bound, the parts of the bound the input contains, if any
+            } elseif (!$input_type->hasTemplate()) {
+                // as for a lower bound, the parts of the bound the input contains, if any (a template input, whose
+                // values aren't known yet, stays as it is and records no bound)
                 self::keepMatchingInputTypes($codebase, $generic_param, [], $gate_replacement_type);
             }
 
