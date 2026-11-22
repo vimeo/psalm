@@ -1033,23 +1033,22 @@ final class CallableTypeComparator
             );
     }
 
-    private static function isInvokableClass(Codebase $codebase, TNamedObject $member): bool
-    {
-        return $codebase->classExists($member->value)
-            && $codebase->methodExists(new MethodIdentifier($member->value, '__invoke'));
-    }
-
     /**
-     * The first class an object type consists of that has `__invoke`
+     * The class that supplies `__invoke` to an object type: its first member if that has it, and is a class, or, if
+     * the first member has none, the first later one that is a class with it. An interface as the first member that
+     * has it supplies none: the signatures of the later members may differ from it.
      */
     public static function getInvokeSupplier(Codebase $codebase, TNamedObject $object): ?TNamedObject
     {
-        if (self::isInvokableClass($codebase, $object)) {
-            return $object;
+        if ($codebase->methodExists(new MethodIdentifier($object->value, '__invoke'))) {
+            return $codebase->classExists($object->value) ? $object : null;
         }
 
         foreach ($object->getIntersectionTypes() as $member) {
-            if ($member instanceof TNamedObject && self::isInvokableClass($codebase, $member)) {
+            if ($member instanceof TNamedObject
+                && $codebase->classExists($member->value)
+                && $codebase->methodExists(new MethodIdentifier($member->value, '__invoke'))
+            ) {
                 return $member;
             }
         }

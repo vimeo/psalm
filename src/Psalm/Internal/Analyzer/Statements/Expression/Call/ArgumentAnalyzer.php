@@ -1193,11 +1193,8 @@ final class ArgumentAnalyzer
                     : null;
 
                 // only a closure is a Closure: an invokable object, a function name or an array is not
-                if ($param_type->getSingleAtomic() instanceof TClosure
-                    && !($atomic_type instanceof TNamedObject && $atomic_type->value === 'Closure')
-                ) {
-                    continue;
-                }
+                $replaces = !$param_type->getSingleAtomic() instanceof TClosure
+                    || ($atomic_type instanceof TNamedObject && $atomic_type->value === 'Closure');
 
                 $candidate_callable = CallableTypeComparator::getCallableFromAtomic(
                     $codebase,
@@ -1255,8 +1252,10 @@ final class ArgumentAnalyzer
                         }
                     }
 
-                    $input_type->removeType($key);
-                    $input_type->addType($candidate_callable);
+                    if ($replaces) {
+                        $input_type->removeType($key);
+                        $input_type->addType($candidate_callable);
+                    }
                 }
             }
             $input_type = $input_type->freeze();

@@ -4022,6 +4022,24 @@ final class CallableTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'invokeOfAnInterfaceFirstInIntersectionIsNotReplacedByALaterClass' => [
+                'code' => '<?php
+                    interface Wide { public function __invoke(string|int $value): int; }
+                    class Narrow { public function __invoke(string $value): int { return 1; } }
+
+                    /** @param callable(int): int $callback */
+                    function takesCallback(callable $callback): void {}
+
+                    function f(Wide&Narrow $h): void {
+                        takesCallback($h);
+                        $closure = $h(...);
+                        $closure(1);
+                        array_map($h, [1]);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['UnusedFunctionCall'],
+                'php_version' => '8.1',
+            ],
         ];
     }
 
