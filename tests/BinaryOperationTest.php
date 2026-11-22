@@ -764,6 +764,30 @@ final class BinaryOperationTest extends TestCase
                     '$options===' => 'array{debug: false|mixed, ...<array-key, mixed>}',
                 ],
             ],
+            'unionOfAShapeAndAnArrayKeepsTheKeysOfTheShape' => [
+                'code' => '<?php
+                    /** @return array<string, int> */
+                    function extra(): array {
+                        return [];
+                    }
+
+                    $row = ["id" => "a", "name" => "b"] + extra();
+                    $id = $row["id"];
+                    /** @var array{id?: string} $partial */
+                    $merged = $partial + extra();
+                    /** @var list<int> $ints */
+                    $list = $ints + extra();
+                    $byClass = [Exception::class => 1] + extra();
+                    $fromClass = extra() + [Exception::class => 1];',
+                'assertions' => [
+                    '$row===' => 'array{id: \'a\', name: \'b\', ...<string, int>}',
+                    '$id===' => '\'a\'',
+                    '$merged===' => 'array{id?: int|string, ...<string, int>}',
+                    '$list===' => 'array<int<0, max>|string, int>',
+                    '$byClass===' => 'array{Exception::class: 1, ...<string, int>}',
+                    '$fromClass===' => 'array{Exception::class: int, ...<string, int>}',
+                ],
+            ],
             'comparisonNarrowsTheBoundOfATemplateInTheTypeOfTheVariable' => [
                 'code' => '<?php
                     /** @param int<1, max> $n */

@@ -782,6 +782,7 @@ final class ArithmeticOpAnalyzer
                 } elseif ($left_type_part instanceof TArray
                     && !$left_type_part->isEmptyArray()
                     && $right_type_part instanceof TKeyedArray
+                    && !$right_type_part->isGenericList()
                 ) {
                     [$left_key_type, $left_value_type] = $left_type_part->type_params;
 
@@ -802,12 +803,46 @@ final class ArithmeticOpAnalyzer
 
                     $result_type_member = new Union([TKeyedArray::make(
                         $properties,
-                        null,
+                        $right_type_part->class_strings,
                         $right_type_part->fallback_params === null
                             ? [$left_key_type, $left_value_type]
                             : [
                                 Type::combineUnionTypes($left_key_type, $right_type_part->fallback_params[0]),
                                 Type::combineUnionTypes($left_value_type, $right_type_part->fallback_params[1]),
+                            ],
+                    )]);
+                } elseif ($left_type_part instanceof TKeyedArray
+                    && !$left_type_part->isGenericList()
+                    && $right_type_part instanceof TArray
+                    && !$right_type_part->isEmptyArray()
+                ) {
+                    [$right_key_type, $right_value_type] = $right_type_part->type_params;
+
+                    // the shape's keys win, the array can only fill in those the shape may lack
+                    $properties = [];
+
+                    foreach ($left_type_part->properties as $key => $type) {
+                        $properties[$key] = $type->possibly_undefined
+                            ? Type::combineUnionTypes(
+                                $type,
+                                $right_value_type,
+                                $codebase,
+                                false,
+                                true,
+                                500,
+                                true,
+                            )
+                            : $type;
+                    }
+
+                    $result_type_member = new Union([TKeyedArray::make(
+                        $properties,
+                        $left_type_part->class_strings,
+                        $left_type_part->fallback_params === null
+                            ? [$right_key_type, $right_value_type]
+                            : [
+                                Type::combineUnionTypes($left_type_part->fallback_params[0], $right_key_type),
+                                Type::combineUnionTypes($left_type_part->fallback_params[1], $right_value_type),
                             ],
                     )]);
                 } else {
