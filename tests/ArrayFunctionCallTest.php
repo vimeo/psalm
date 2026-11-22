@@ -4983,6 +4983,29 @@ final class ArrayFunctionCallTest extends TestCase
                     '$merged===' => "array<'age'|'name', 'a'|'b'|1>",
                 ],
             ],
+            'arrayFunctionsOfAnInvokableLaterInIntersection' => [
+                'code' => '<?php
+                    interface Named {}
+                    interface StringHandler { public function __invoke(string $value): int; }
+                    class StringHandlerClass { public function __invoke(string $value): int { return 1; } }
+
+                    /** @var list<string> $xs */
+                    $xs = [];
+                    /** @var Named&StringHandler $interface */
+                    $interface = null;
+                    /** @var Named&StringHandlerClass $class */
+                    $class = null;
+                    array_map($interface, $xs);
+                    array_map($class, $xs);
+                    array_walk($xs, $interface);
+                    array_walk($xs, $class);
+                    $filtered = array_filter($xs, $interface);',
+                'assertions' => [
+                    '$filtered===' => 'array<int<0, max>, string>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
         ];
     }
 
@@ -5838,6 +5861,19 @@ final class ArrayFunctionCallTest extends TestCase
                         return !array_key_exists("a", $a);
                     }',
                 'error_message' => 'InvalidArrayOffset - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:50 - Cannot check offset',
+            ],
+            'arrayFilterWithAnInvokableLaterInIntersectionWithAWrongParamType' => [
+                'code' => '<?php
+                    interface Named {}
+                    interface StringHandler { public function __invoke(string $value): int; }
+
+                    /** @param list<int> $xs */
+                    function f(Named&StringHandler $h, array $xs): void {
+                        array_filter($xs, $h);
+                    }',
+                'error_message' => 'InvalidScalarArgument',
+                'error_levels' => [],
+                'php_version' => '8.1',
             ],
         ];
     }

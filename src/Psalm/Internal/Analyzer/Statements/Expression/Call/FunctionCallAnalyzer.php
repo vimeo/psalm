@@ -1850,13 +1850,7 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                 } elseif ($var_type_part instanceof TNull) {
                     // handled above
                 } elseif (!$var_type_part instanceof TNamedObject
-                    || !$codebase->classlikes->classOrInterfaceExists($var_type_part->value, null, $context)
-                    || !$codebase->methodExists(
-                        new MethodIdentifier(
-                            $var_type_part->value,
-                            '__invoke',
-                        ),
-                    )
+                    || !CallableTypeComparator::isInvokable($codebase, $var_type_part)
                 ) {
                     $invalid_function_call_types[] = (string)$var_type_part;
                 } else {
@@ -1954,6 +1948,14 @@ final class FunctionCallAnalyzer extends CallAnalyzer
         Context $context,
         Atomic $atomic_type,
     ): void {
+        // a first-class callable of a method is looked up in the first member of an intersection only
+        if ($stmt->isFirstClassCallable() && $atomic_type instanceof TNamedObject) {
+            $atomic_type = CallableTypeComparator::getInvokeSupplier(
+                $statements_analyzer->getCodebase(),
+                $atomic_type,
+            ) ?? $atomic_type;
+        }
+
         $old_data_provider = $statements_analyzer->node_data;
 
         $statements_analyzer->node_data = clone $statements_analyzer->node_data;
