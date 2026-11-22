@@ -57,6 +57,7 @@ final class GenericTypeComparator
 
         $container_type_params_covariant = [];
         $input_star_offsets = [];
+        $container_type_params_contravariant = null;
 
         $input_type_params = TemplateStandinTypeReplacer::getMappedGenericTypeParams(
             $codebase,
@@ -64,6 +65,7 @@ final class GenericTypeComparator
             $container_type_part,
             $container_type_params_covariant,
             $input_star_offsets,
+            $container_type_params_contravariant,
         );
 
         $atomic_comparison_result_type_params = null;
@@ -93,13 +95,29 @@ final class GenericTypeComparator
 
             $input_is_star = isset($input_star_offsets[$i]);
 
+            $contravariant = false;
+
+            if (isset($container_type_params_contravariant[$i])) {
+                if (!$input_is_star) {
+                    // a contravariant param holds the params it fits, so the two are compared the other way round
+                    [$input_param, $container_param] = [$container_param, $input_param];
+                    $contravariant = true;
+                } elseif ($container_param->isNever()) {
+                    // a `*` is one unknown type, compared as for an invariant param, but whatever it is fits `never`
+                    continue;
+                }
+            }
+
             // a param standing for `never` (an empty construction's type
             // variable included) is widened to the container's param: the
-            // value is being handed to code that sees it as the wider type
-            if ($input_param->isNever()
-                || ($input_param->isSingle()
-                    && ($input_variable = $input_param->getSingleAtomic()) instanceof TTypeVariable
-                    && $input_variable->isNeverBound())
+            // value is being handed to code that sees it as the wider type.
+            // Swapped, it is the container's, and its variable must record
+            // the bound the comparison below gives it
+            if (!$contravariant
+                && ($input_param->isNever()
+                    || ($input_param->isSingle()
+                        && ($input_variable = $input_param->getSingleAtomic()) instanceof TTypeVariable
+                        && $input_variable->isNeverBound()))
             ) {
                 if ($atomic_comparison_result_type_params !== null) {
                     $atomic_comparison_result_type_params[$i] = $container_param;
@@ -119,6 +137,12 @@ final class GenericTypeComparator
                 $param_comparison_result,
                 $allow_interface_equality,
             )) {
+                if ($contravariant) {
+                    // what is mixed is the param the container asks for, not the value given
+                    $param_comparison_result->type_coerced_from_mixed = false;
+                    $param_comparison_result->type_coerced_from_as_mixed = false;
+                }
+
                 if ($input_type_part->value === 'Generator'
                     && $i === 2
                     && $param_comparison_result->type_coerced_from_mixed
@@ -173,7 +197,8 @@ final class GenericTypeComparator
                 // `*` stands for one unknown type: an invariant argument holds it only when it is `*` too, or left out
                 if (!$input_type_part instanceof TIterable
                     && !$container_type_part instanceof TIterable
-                    && !($container_type_params_covariant[$i] ?? false)
+                    && (isset($container_type_params_contravariant[$i])
+                        || !($container_type_params_covariant[$i] ?? false))
                     && $container_projection !== TypeArgumentProjection::Omitted
                 ) {
                     $all_types_contain = false;
@@ -193,6 +218,7 @@ final class GenericTypeComparator
                     }
                 } else {
                     if (!($container_type_params_covariant[$i] ?? false)
+                        && !$contravariant
                         && !$container_param->had_template
                     ) {
                         $lower_bounds_before = count($param_comparison_result->type_variable_lower_bounds);

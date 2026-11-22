@@ -52,6 +52,7 @@ use Psalm\IssueBuffer;
 use Psalm\StatementsSource;
 use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Storage\MethodStorage;
+use Psalm\Storage\TemplateVariance;
 use Psalm\Type;
 use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TNamedObject;
@@ -1192,9 +1193,8 @@ final class ReturnTypeAnalyzer
             [],
             false,
             $inherited,
-            false,
+            $function_like_analyzer instanceof MethodAnalyzer ? TemplateVariance::Covariant : null,
             $context,
-            $function_like_analyzer instanceof MethodAnalyzer,
         );
 
         return $checker->check($type);

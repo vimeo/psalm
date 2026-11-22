@@ -1589,6 +1589,7 @@ final class TemplateStandinTypeReplacer
      * @param TGenericObject|TNamedObject|TIterable $container_type_part
      * @psalm-capabilities read-props|write-this-props|write-props|write-refs
      * @param-out array<int, true> $input_star_offsets the offsets of the returned params that are a `*`
+     * @param-out array<int, true>|null $container_type_params_contravariant
      * @return list<Union>
      */
     public static function getMappedGenericTypeParams(
@@ -1597,6 +1598,7 @@ final class TemplateStandinTypeReplacer
         Atomic $container_type_part,
         ?array &$container_type_params_covariant = null,
         ?array &$input_star_offsets = null,
+        ?array &$container_type_params_contravariant = null,
     ): array {
         if ($input_type_part instanceof TGenericObject || $input_type_part instanceof TIterable) {
             $input_type_params = $input_type_part->type_params;
@@ -1655,9 +1657,12 @@ final class TemplateStandinTypeReplacer
             }
         }
 
-        $container_type_params_covariant = $codebase->classlike_storage_provider->has($container_type_part->value)
-            ? $codebase->classlike_storage_provider->get($container_type_part->value)->template_covariants
+        $container_class_storage = $codebase->classlike_storage_provider->has($container_type_part->value)
+            ? $codebase->classlike_storage_provider->get($container_type_part->value)
             : null;
+
+        $container_type_params_covariant = $container_class_storage?->template_covariants;
+        $container_type_params_contravariant = $container_class_storage?->template_contravariants;
 
         if ($input_type_part->value !== $container_type_part->value
             && $input_class_storage

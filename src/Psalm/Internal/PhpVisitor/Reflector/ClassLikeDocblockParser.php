@@ -27,6 +27,7 @@ use Psalm\Internal\Type\TypeParser;
 use Psalm\Internal\Type\TypeTokenizer;
 use Psalm\Storage\Capabilities;
 use Psalm\Storage\CapabilitiesParseException;
+use Psalm\Storage\TemplateVariance;
 use Psalm\Type\Atomic\TCapabilities;
 use Psalm\Type\Union;
 
@@ -77,7 +78,7 @@ final class ClassLikeDocblockParser
                         $purity_template['name'],
                         'of',
                         $purity_template['bound'],
-                        true,
+                        TemplateVariance::Covariant,
                         $offset - $comment->getStartFilePos(),
                     ];
                     $info->purity_templates[] = $purity_template['name'];
@@ -96,7 +97,11 @@ final class ClassLikeDocblockParser
         [$info->templates, $info->template_defaults] = TemplateTagParser::parseTags(
             $parsed_docblock,
             $comment,
-            ['template' => false, 'template-covariant' => true],
+            [
+                'template' => TemplateVariance::Invariant,
+                'template-covariant' => TemplateVariance::Covariant,
+                'template-contravariant' => TemplateVariance::Contravariant,
+            ],
             $templates,
         );
 

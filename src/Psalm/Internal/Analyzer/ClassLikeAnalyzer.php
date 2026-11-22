@@ -41,6 +41,7 @@ use Psalm\StatementsSource;
 use Psalm\Storage\Capabilities;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\PropertyStorage;
+use Psalm\Storage\TemplateVariance;
 use Psalm\Type;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TTemplateParam;
@@ -1125,22 +1126,35 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
                         final: $storage->final,
                     );
 
-                    if (isset($parent_storage->template_covariants[$i])
-                        && !$parent_storage->template_covariants[$i]
-                    ) {
+                    if (isset($parent_storage->template_covariants[$i])) {
+                        $parent_variance = $parent_storage->getTemplateVariance($i);
+
                         foreach ($extended_type->getAtomicTypes() as $t) {
-                            if ($t instanceof TTemplateParam
-                                && $storage->template_types
-                                && $storage->template_covariants
-                                && ($local_offset
+                            if (!$t instanceof TTemplateParam
+                                || $storage->template_types === null
+                                || ($local_offset
                                     = array_search($t->param_name, array_keys($storage->template_types), true))
-                                    !== false
-                                && !empty($storage->template_covariants[$local_offset])
+                                    === false
                             ) {
+                                continue;
+                            }
+
+                            $variance = $storage->getTemplateVariance($local_offset);
+
+                            if ($variance !== TemplateVariance::Invariant && $variance !== $parent_variance) {
                                 IssueBuffer::maybeAdd(
                                     new InvalidTemplateParam(
-                                        'Cannot extend an invariant template param ' . $template_name
-                                            . ' into a covariant context',
+                                        'Cannot extend '
+                                            . match ($parent_variance) {
+                                                TemplateVariance::Invariant => 'an invariant',
+                                                TemplateVariance::Covariant => 'a covariant',
+                                                TemplateVariance::Contravariant => 'a contravariant',
+                                            }
+                                            . ' template param ' . $template_name . ' into a '
+                                            . ($variance === TemplateVariance::Covariant
+                                                ? 'covariant'
+                                                : 'contravariant')
+                                            . ' context',
                                         $code_location,
                                     ),
                                     $storage->suppressed_issues + $this->getSuppressedIssues(),
