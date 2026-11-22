@@ -21,6 +21,37 @@ final class ValueOfTemplateTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'valueOfATemplateOfBackedEnumKeysAnArray' => [
+                'code' => '<?php
+                    /**
+                     * @template TEnum of BackedEnum
+                     * @template TValue
+                     * @param class-string<TEnum> $enum
+                     * @param callable(TEnum): TValue $getValue
+                     * @return array<value-of<TEnum>, TValue>
+                     */
+                    function buildCasesArray(string $enum, callable $getValue): array {
+                        $cases = [];
+
+                        foreach ($enum::cases() as $case) {
+                            $cases[$case->value] = $getValue($case);
+                        }
+
+                        return $cases;
+                    }
+
+                    enum Suit: string {
+                        case Hearts = "h";
+                        case Spades = "s";
+                    }
+
+                    $labels = buildCasesArray(Suit::class, fn(Suit $suit): string => $suit->name);',
+                'assertions' => [
+                    '$labels' => 'array<string, string>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'acceptsArrayValuesFn' => [
                 'code' => '<?php
                     /**
@@ -597,6 +628,19 @@ final class ValueOfTemplateTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'valueOfATemplateOfUnitEnumIsNoArrayKey' => [
+                'code' => '<?php
+                    /**
+                     * @template TEnum of UnitEnum
+                     * @return array<value-of<TEnum>, int>
+                     */
+                    function cases(): array {
+                        return [];
+                    }',
+                'error_message' => 'MismatchingDocblockReturnType',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
             'valueOfTemplateIdenticalToImpossibleLiteral' => [
                 'code' => '<?php
                     /**
