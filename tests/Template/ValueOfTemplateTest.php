@@ -21,6 +21,44 @@ final class ValueOfTemplateTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'valueOfTheCaseOfATemplateOfASpecificEnumIsValueOfTheTemplate' => [
+                'code' => '<?php
+                    enum EnumA: string {
+                        case FOO = "foo";
+                        case BAR = "bar";
+                    }
+
+                    /**
+                     * @template T of EnumA
+                     */
+                    final class C {
+                        /**
+                         * @var value-of<T>
+                         */
+                        private $data;
+
+                        /**
+                         * @param T $data
+                         */
+                        public function __construct($data) {
+                            $this->data = $data->value;
+                        }
+
+                        /**
+                         * @return value-of<T>
+                         */
+                        public function get() {
+                            return $this->data;
+                        }
+                    }
+
+                    $foo = (new C(EnumA::FOO))->get();',
+                'assertions' => [
+                    '$foo===' => '\'foo\'',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'valueOfATemplateOfBackedEnumKeysAnArray' => [
                 'code' => '<?php
                     /**
