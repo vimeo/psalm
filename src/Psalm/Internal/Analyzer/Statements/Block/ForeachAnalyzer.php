@@ -1309,13 +1309,17 @@ final class ForeachAnalyzer
                         $always_non_empty_array = false;
                     }
 
-                    $iterator_atomic_type = $iterator_atomic_type->getGenericArrayType(
-                        ExpressionIdentifier::getExtendedVarId(
-                            $expr,
-                            $statements_analyzer->getFQCLN(),
-                            $statements_analyzer,
-                        ),
+                    $iterated_var_id = ExpressionIdentifier::getExtendedVarId(
+                        $expr,
+                        $statements_analyzer->getFQCLN(),
+                        $statements_analyzer,
                     );
+
+                    $iterator_atomic_type = $iterator_atomic_type->getGenericArrayType($iterated_var_id);
+
+                    if ($iterated_var_id !== null) {
+                        $context->list_key_bound_lists[$iterated_var_id] = true;
+                    }
                 } elseif (!$iterator_atomic_type instanceof TNonEmptyArray) {
                     $always_non_empty_array = false;
                 }

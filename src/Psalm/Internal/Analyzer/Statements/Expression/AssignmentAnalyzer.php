@@ -698,6 +698,11 @@ final class AssignmentAnalyzer
             }
         }
 
+        if ($extended_var_id !== null) {
+            // the keys taken from a list are no keys of what is assigned to it
+            $context->releaseKeysBoundToList($extended_var_id);
+        }
+
         if ($extended_var_id && isset($context->vars_in_scope[$extended_var_id])) {
             if ($context->vars_in_scope[$extended_var_id]->by_ref
                 && !isset($context->captured_by_ref[$extended_var_id])
@@ -2167,6 +2172,7 @@ final class AssignmentAnalyzer
             );
 
             if ($property_var_id !== null) {
+                $context->releaseKeysBoundToList($property_var_id);
                 $context->removeVarFromConflictingClauses(
                     $property_var_id,
                     $by_ref_out_type,
@@ -2183,6 +2189,10 @@ final class AssignmentAnalyzer
             $statements_analyzer->getFQCLN(),
             $statements_analyzer,
         );
+
+        if ($var_id !== null) {
+            $context->releaseKeysBoundToList($var_id);
+        }
 
         $codebase = $statements_analyzer->getCodebase();
 
