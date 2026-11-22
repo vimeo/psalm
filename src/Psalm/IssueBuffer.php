@@ -158,6 +158,9 @@ final class IssueBuffer
     /** How many issues accepts() was given, suppressed ones included */
     private static int $accepted_issue_count = 0;
 
+    /** @var array<string, int<1, max>> */
+    private static array $baselined_issue_counts = [];
+
     /**
      * This will add an issue to be emitted if it's not suppressed and return if it has been added
      *
@@ -611,6 +614,18 @@ final class IssueBuffer
     }
 
     /**
+     * How many issues the baseline covered in the last finish(), by issue type, sorted by type
+     *
+     * @internal
+     * @return array<string, int<1, max>>
+     * @psalm-capabilities read-globals
+     */
+    public static function getBaselinedIssueCounts(): array
+    {
+        return self::$baselined_issue_counts;
+    }
+
+    /**
      * @return array<string, int>
      * @psalm-external-mutation-free
      */
@@ -766,7 +781,7 @@ final class IssueBuffer
 
 
         $issues_data = [];
-        $baselined_counts = [];
+        self::$baselined_issue_counts = [];
 
         if (self::$issues_data) {
             if (in_array(
@@ -805,14 +820,15 @@ final class IssueBuffer
                         $issue_data->selected_text,
                     )) {
                         $issue_data->severity = IssueData::SEVERITY_INFO;
-                        $baselined_counts[$issue_data->type] = ($baselined_counts[$issue_data->type] ?? 0) + 1;
+                        self::$baselined_issue_counts[$issue_data->type]
+                            = (self::$baselined_issue_counts[$issue_data->type] ?? 0) + 1;
                     }
 
                     $issues_data[$file_path][$key] = $issue_data;
                 }
             }
 
-            ksort($baselined_counts);
+            ksort(self::$baselined_issue_counts);
 
             if ($codebase->config->find_unused_baseline_entry) {
                 foreach ($issue_baseline as $file_path => $issues) {
@@ -925,7 +941,6 @@ final class IssueBuffer
                 $issues_data,
                 $build_info,
                 $source_control_info,
-                $baselined_counts,
             );
 
             $codebase->config->eventDispatcher->dispatchAfterAnalysis($event);

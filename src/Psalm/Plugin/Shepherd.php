@@ -9,6 +9,7 @@ use Override;
 use Psalm\Config;
 use Psalm\Internal\Analyzer\IssueData;
 use Psalm\Internal\VersionUtils;
+use Psalm\IssueBuffer;
 use Psalm\Plugin\EventHandler\AfterAnalysisInterface;
 use Psalm\Plugin\EventHandler\Event\AfterAnalysisEvent;
 use Psalm\Progress\DebugProgress;
@@ -143,7 +144,7 @@ final class Shepherd implements AfterAnalysisInterface
             'git' => $source_control_data,
             'issues' => $normalized_data,
             // an object even when empty, which PHP would encode as a list
-            'baselined' => (object) $event->getBaselinedIssueCounts(),
+            'baselined' => (object) IssueBuffer::getBaselinedIssueCounts(),
             'coverage' => $codebase->analyzer->getTotalTypeCoverage($codebase),
             'level' => Config::getInstance()->level,
             'versions' => [
