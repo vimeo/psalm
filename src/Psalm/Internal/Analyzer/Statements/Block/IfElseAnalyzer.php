@@ -447,6 +447,8 @@ final class IfElseAnalyzer
             }
         }
 
+        $context->forgetVars(array_keys($if_scope->removed_var_ids));
+
         // an offset or a property is known after the if as the branches reaching its end leave it: not at all once
         // one of them forgot it or the type Context::update() left, and as they all leave it when the redefinition of
         // a variable a branch wrote to dropped it (a variable only narrowed is narrowed again, which forgets it)

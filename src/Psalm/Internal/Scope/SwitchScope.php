@@ -68,6 +68,13 @@ final class SwitchScope
     public ?array $null_array_offsets_read = null;
 
     /**
+     * The properties and memoized calls a way out of the switch removed
+     *
+     * @var array<string, true>
+     */
+    public array $removed_var_ids = [];
+
+    /**
      * @param array<string, true> $null_array_offsets_read
      * @psalm-external-mutation-free
      */

@@ -724,26 +724,30 @@ final class MethodCallPurityAnalyzer
 
             $context->forgetPropertyDescendents($mutation_var_id);
 
-            $this_property_didnt_exist = $lhs_var_id === '$this'
-                && isset($context->vars_in_scope[$mutation_var_id])
-                && !isset($class_storage->declaring_property_ids[$name]);
-
-            if ($this_property_didnt_exist) {
-                unset($context->vars_in_scope[$mutation_var_id]);
-            } elseif (!$writes_property && $existing_type !== null && $existing_type->isObjectType()) {
+            if (!$writes_property && $existing_type !== null && $existing_type->isObjectType()) {
                 // writing items or properties of an object leaves the property holding the same object
                 self::setPropertyTypeAfterCall($context, $result, $mutation_var_id, $existing_type);
-            } else {
-                $new_type = self::getDeclaredPropertyType($codebase, $class_storage, $name, $class_template_params)
-                    ?? Type::getMixed();
 
-                if (!$writes_property && $existing_type !== null) {
-                    $new_type = self::getTypeAfterItemWrites($codebase, $existing_type, $new_type);
-                }
-
-                self::setPropertyTypeAfterCall($context, $result, $mutation_var_id, $new_type);
-                $context->possibly_assigned_var_ids[$mutation_var_id] = true;
+                continue;
             }
+
+            $new_type = self::getDeclaredPropertyType($codebase, $class_storage, $name, $class_template_params);
+
+            if ($new_type === null) {
+                // a fresh fetch re-derives the type of a magic or pseudo property
+                unset($context->vars_in_scope[$mutation_var_id]);
+                // forgotten, not unset: Context::update() tells the two apart
+                $context->vars_possibly_in_scope[$mutation_var_id] = true;
+
+                continue;
+            }
+
+            if (!$writes_property && $existing_type !== null) {
+                $new_type = self::getTypeAfterItemWrites($codebase, $existing_type, $new_type);
+            }
+
+            self::setPropertyTypeAfterCall($context, $result, $mutation_var_id, $new_type);
+            $context->possibly_assigned_var_ids[$mutation_var_id] = true;
         }
     }
 
