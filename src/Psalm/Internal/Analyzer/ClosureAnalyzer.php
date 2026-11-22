@@ -88,6 +88,26 @@ final class ClosureAnalyzer extends FunctionLikeAnalyzer
     private readonly string $closure_id;
 
     /**
+     * Set on the initializer closure passed to `ReflectionClass::newLazyGhost()` or `resetAsLazyGhost()`
+     */
+    public const LAZY_GHOST_INITIALIZER_ATTRIBUTE = 'psalm-lazy-ghost-initializer';
+
+    /**
+     * The parameter of a lazy ghost initializer that holds the object it initializes, whose
+     * constructor the initializer may call
+     */
+    public function getInitializedObjectParam(): ?string
+    {
+        if (!$this->function->getAttribute(self::LAZY_GHOST_INITIALIZER_ATTRIBUTE)) {
+            return null;
+        }
+
+        $param = $this->function->params[0]->var ?? null;
+
+        return $param instanceof PhpParser\Node\Expr\Variable && is_string($param->name) ? $param->name : null;
+    }
+
+    /**
      * @psalm-mutation-free
      */
     #[Override]
@@ -106,6 +126,11 @@ final class ClosureAnalyzer extends FunctionLikeAnalyzer
      * @var array<string, true>
      */
     public array $captured_by_ref_writes = [];
+
+    /**
+     * The type of this closure, which `Closure::getCurrent()` returns in its body
+     */
+    public ?TClosure $closure_type = null;
 
     /**
      * The types of the variables captured by reference where the closure body returns.

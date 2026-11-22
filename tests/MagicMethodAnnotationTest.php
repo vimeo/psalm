@@ -2860,6 +2860,90 @@ final class MagicMethodAnnotationTest extends TestCase
                     class B extends A {}',
                 'error_message' => 'ImplementedParamTypeMismatch - src' . DIRECTORY_SEPARATOR . 'somefile.php:11:33',
             ],
+            'magicMethodRepeatedInTheDocblockIsReportedOnItsFirstLine' => [
+                'code' => '<?php
+                    class C {}
+                    class D {}
+
+                    class A {
+                        public function foo(string $s) : C {
+                            return new C;
+                        }
+                    }
+
+                    /**
+                     * @method C bar()
+                     * @method D foo(string $s)
+                     * @method C baz()
+                     * @method D foo(string $s)
+                     */
+                    class B extends A {}',
+                'error_message' => 'ImplementedReturnTypeMismatch - src' . DIRECTORY_SEPARATOR . 'somefile.php:13:',
+            ],
+            'magicMethodMismatchIsReportedOnItsOwnDocblockOfASecondClass' => [
+                'code' => '<?php
+                    class C {}
+                    class D {}
+
+                    class A {
+                        public function foo(string $s) : C {
+                            return new C;
+                        }
+                    }
+
+                    /**
+                     * @method C foo(string $s)
+                     * @method C bar()
+                     * @method C baz()
+                     * @method C qux()
+                     */
+                    class B extends A {}
+
+                    /**
+                     * @method C one()
+                     * @method D foo(string $s)
+                     */
+                    class E extends A {}',
+                'error_message' => 'ImplementedReturnTypeMismatch - src' . DIRECTORY_SEPARATOR . 'somefile.php:21:',
+            ],
+            'magicMethodTextAlsoInTheDescriptionIsReportedOnTheDescriptionLine' => [
+                'code' => '<?php
+                    class C {}
+                    class D {}
+
+                    class A {
+                        public function foo(string $s) : C {
+                            return new C;
+                        }
+                    }
+
+                    /**
+                     * Calls D foo(string $s) under the hood.
+                     *
+                     * @method C bar()
+                     * @method D foo(string $s)
+                     */
+                    class B extends A {}',
+                'error_message' => 'ImplementedReturnTypeMismatch - src' . DIRECTORY_SEPARATOR . 'somefile.php:12:',
+            ],
+            'magicMethodWithExtraSpacesIsReportedOnTheFirstDocblockLine' => [
+                'code' => '<?php
+                    class C {}
+                    class D {}
+
+                    class A {
+                        public function foo(string $s) : C {
+                            return new C;
+                        }
+                    }
+
+                    /**
+                     * @method C bar()
+                     * @method D   foo(string  $s)
+                     */
+                    class B extends A {}',
+                'error_message' => 'ImplementedReturnTypeMismatch - src' . DIRECTORY_SEPARATOR . 'somefile.php:11:',
+            ],
             'parseBadMethodAnnotation' => [
                 'code' => '<?php
                     /**

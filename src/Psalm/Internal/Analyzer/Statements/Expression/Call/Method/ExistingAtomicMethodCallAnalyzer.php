@@ -283,6 +283,15 @@ final class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
             );
         }
 
+        // what is read from a `*` receiver is as unknown as the receiver, and what is written to it is never
+        ClassTemplateParamCollector::markStarBindings(
+            $template_result,
+            $codebase,
+            $class_storage,
+            $lhs_type_part,
+            $class_template_params,
+        );
+
         $is_first_class_callable = $stmt->isFirstClassCallable();
 
         if (!$is_first_class_callable && self::checkMethodArgs(
