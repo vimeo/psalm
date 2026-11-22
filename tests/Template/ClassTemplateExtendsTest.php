@@ -5668,6 +5668,30 @@ final class ClassTemplateExtendsTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.3',
             ],
+            'untypedOverrideBindsTheTemplateOfAByReferenceParamOfTheParent' => [
+                'code' => '<?php
+                    interface Accessor {
+                        /**
+                         * @template T of object|mixed[]
+                         * @param T $objectOrArray
+                         */
+                        public function setValue(object|array &$objectOrArray, string $path, mixed $value): void;
+                    }
+
+                    final class PropertyAccessor implements Accessor {
+                        #[Override]
+                        public function setValue(object|array &$objectOrArray, string $path, mixed $value): void {}
+                    }
+
+                    /** @param array<string, mixed> $data */
+                    function write(array $data, PropertyAccessor $accessor): void {
+                        $accessor->setValue($data, "x", 1);
+                        /** @psalm-check-type-exact $data = array<string, mixed> */
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
             'untypedOverrideBindsTheMethodTemplateOfTheParentParamDocblock' => [
                 'code' => '<?php
                     /** @template T of object */
