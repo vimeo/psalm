@@ -10,6 +10,7 @@ use PHPUnit\Framework\TestCase;
 use Psalm\Internal\Fork\Pool;
 use Psalm\Progress\VoidProgress;
 use Revolt\EventLoop;
+use RuntimeException;
 
 use function extension_loaded;
 use function gc_collect_cycles;
@@ -56,8 +57,9 @@ final class PoolTest extends TestCase
                 },
             );
             $this->fail('The failing task should have been reported');
-        } catch (TaskFailureException $e) {
-            $this->assertStringContainsString('boom', $e->getMessage());
+        } catch (RuntimeException $e) {
+            $this->assertStringStartsWith('Psalm crashed processing boom: ', $e->getMessage());
+            $this->assertInstanceOf(TaskFailureException::class, $e->getPrevious());
         }
 
         unset($e);

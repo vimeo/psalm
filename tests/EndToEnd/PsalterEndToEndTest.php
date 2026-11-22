@@ -11,12 +11,14 @@ use Symfony\Component\Process\Process;
 use function file_get_contents;
 use function file_put_contents;
 use function implode;
+use function realpath;
 use function str_contains;
 use function str_replace;
 use function strpos;
 use function substr_count;
 use function unlink;
 
+use const DIRECTORY_SEPARATOR;
 use const PHP_BINARY;
 use const PHP_EOL;
 
@@ -516,6 +518,62 @@ final class PsalterEndToEndTest extends PsalmEndToEndTestCase
         yield 'psalm-refactor' => [__DIR__ . '/../../psalm-refactor', ['--move', 'A::b', '--into', 'C', '-z']];
         yield 'psalm-language-server' => [__DIR__ . '/../../psalm-language-server', ['-z']];
         yield 'psalm --language-server' => [__DIR__ . '/../../psalm', ['--language-server', '-z']];
+    }
+
+    /**
+     * @param list<string> $args
+     */
+    #[DataProvider('provideCommandsWithAMissingRootDirectory')]
+    public function testAMissingRootDirectoryIsShownAsGiven(string $script, array $args, string $message): void
+    {
+        $this->runPsalmInit();
+
+        $process = self::newProcess([PHP_BINARY, $script, ...$args], self::$tmpDir, self::agentEnvVarsToUnset());
+        $process->run();
+
+        $this->assertSame(1, $process->getExitCode(), $process->getOutput() . $process->getErrorOutput());
+        $this->assertSame($message . PHP_EOL, $process->getErrorOutput());
+    }
+
+    /**
+     * @return iterable<string, array{string, list<string>, string}>
+     * @psalm-pure
+     */
+    public static function provideCommandsWithAMissingRootDirectory(): iterable
+    {
+        $absolute = DIRECTORY_SEPARATOR . 'does-not-exist';
+
+        foreach ([
+            'psalm' => [__DIR__ . '/../../psalm', []],
+            'psalter' => [__DIR__ . '/../../psalter', ['--issues=all']],
+            'psalm-refactor' => [__DIR__ . '/../../psalm-refactor', ['--move', 'A::b', '--into', 'C']],
+            'psalm-language-server' => [__DIR__ . '/../../psalm-language-server', []],
+        ] as $name => [$script, $args]) {
+            yield $name . ' with an absolute path' => [
+                $script,
+                [...$args, '-r', $absolute],
+                'Could not locate root directory ' . $absolute,
+            ];
+        }
+    }
+
+    public function testAMissingRelativeRootDirectoryIsShownFromTheCurrentDirectory(): void
+    {
+        $this->runPsalmInit();
+
+        $process = self::newProcess(
+            [PHP_BINARY, __DIR__ . '/../../psalm', '-r', 'does-not-exist'],
+            self::$tmpDir,
+            self::agentEnvVarsToUnset(),
+        );
+        $process->run();
+
+        $this->assertSame(1, $process->getExitCode(), $process->getOutput() . $process->getErrorOutput());
+        $this->assertStringEndsWith(
+            'Could not locate root directory ' . (string) realpath(self::$tmpDir) . DIRECTORY_SEPARATOR
+                . 'does-not-exist' . PHP_EOL,
+            $process->getErrorOutput(),
+        );
     }
 
     public function testAValidOptionAfterLanguageServerIsAccepted(): void
