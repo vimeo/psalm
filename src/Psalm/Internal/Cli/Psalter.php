@@ -231,7 +231,7 @@ final class Psalter
             if ($root_path === false) {
                 fwrite(
                     STDERR,
-                    'Could not locate root directory ' . $current_dir . DIRECTORY_SEPARATOR . $options['r'] . PHP_EOL,
+                    CliUtils::getRootDirectoryNotFoundMessage($current_dir, $options['r']) . PHP_EOL,
                 );
                 exit(1);
             }

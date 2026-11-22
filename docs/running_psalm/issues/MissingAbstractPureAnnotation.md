@@ -9,7 +9,7 @@ annotation, which says what every implementation may do, for example:
 * `@psalm-impure` - may do anything (not recommended)
 
 ```php
-<?php
+<?php // suggestPurityAnnotations="true"
 
 interface a {
     public function someMethod(): void;
