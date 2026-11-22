@@ -1075,7 +1075,7 @@ final class AssertAnnotationTest extends TestCase
                     $afterCheck = $a;
                     $ifTrue = has("k", $b) ? $b : null;
                     $ifFalse = missing("k", $c) ? null : $c;
-                    check(strtoupper("k"), $d);
+                    check(uniqid(), $d);
                     $unknownKey = $d;',
                 'assertions' => [
                     '$afterCheck' => 'array{k: mixed, ...<array-key, mixed>}',

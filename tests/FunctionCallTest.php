@@ -90,7 +90,7 @@ final class FunctionCallTest extends TestCase
                     $json = encode([1]);
                     $upper = up("x");',
                 'assertions' => [
-                    '$upper===' => 'non-falsy-string',
+                    '$upper===' => "'X'",
                 ],
             ],
             'functionCalledWithItsDeclaredCasing' => [
