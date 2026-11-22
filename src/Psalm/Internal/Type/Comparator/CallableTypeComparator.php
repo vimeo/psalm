@@ -1009,7 +1009,9 @@ final class CallableTypeComparator
      */
     public static function getInvokeMember(Codebase $codebase, TNamedObject $object): ?TNamedObject
     {
-        if ($codebase->methodExists(new MethodIdentifier($object->value, '__invoke'))) {
+        if ($codebase->classOrInterfaceExists($object->value)
+            && $codebase->methodExists(new MethodIdentifier($object->value, '__invoke'))
+        ) {
             return $object;
         }
 
