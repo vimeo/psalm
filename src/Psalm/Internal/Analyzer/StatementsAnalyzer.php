@@ -472,6 +472,14 @@ final class StatementsAnalyzer extends SourceAnalyzer
             return $context->vars_in_scope[$property_id];
         }
 
+        // what is written through `static::` is known under that name
+        if ($context->self !== null
+            && strtolower($fq_class_name) === strtolower($context->self)
+            && isset($context->vars_in_scope['static::$' . $property_name])
+        ) {
+            return $context->vars_in_scope['static::$' . $property_name];
+        }
+
         if (!$codebase->properties->propertyExists($codebase, $property_id, true)) {
             return null;
         }
