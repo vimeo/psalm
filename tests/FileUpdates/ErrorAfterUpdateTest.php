@@ -319,6 +319,92 @@ final class ErrorAfterUpdateTest extends TestCase
                 ],
                 'error_message' => 'InvalidReturnStatement',
             ],
+            'invalidateMethodCallingAFunctionAfterItsSignatureChange' => [
+                'file_stages' => [
+                    [
+                        (string) getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'functions.php' => '<?php
+                            namespace Foo;
+
+                            function helper() : int {
+                                return 1;
+                            }',
+                        (string) getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'B.php' => '<?php
+                            namespace Foo;
+
+                            require_once __DIR__ . "/functions.php";
+
+                            final class B {
+                                public function foo() : int {
+                                    return helper();
+                                }
+                            }
+
+                            echo (new B)->foo();',
+                    ],
+                    [
+                        (string) getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'functions.php' => '<?php
+                            namespace Foo;
+
+                            function helper() : string {
+                                return "a";
+                            }',
+                        (string) getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'B.php' => '<?php
+                            namespace Foo;
+
+                            require_once __DIR__ . "/functions.php";
+
+                            final class B {
+                                public function foo() : int {
+                                    return helper();
+                                }
+                            }
+
+                            echo (new B)->foo();',
+                    ],
+                ],
+                'error_message' => 'InvalidReturnStatement',
+            ],
+            'invalidateFunctionCallingAFunctionAfterItsSignatureChange' => [
+                'file_stages' => [
+                    [
+                        (string) getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'functions.php' => '<?php
+                            namespace Foo;
+
+                            function helper() : int {
+                                return 1;
+                            }',
+                        (string) getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'caller.php' => '<?php
+                            namespace Foo;
+
+                            require_once __DIR__ . "/functions.php";
+
+                            function caller() : int {
+                                return helper();
+                            }
+
+                            echo caller();',
+                    ],
+                    [
+                        (string) getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'functions.php' => '<?php
+                            namespace Foo;
+
+                            function helper() : string {
+                                return "a";
+                            }',
+                        (string) getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'caller.php' => '<?php
+                            namespace Foo;
+
+                            require_once __DIR__ . "/functions.php";
+
+                            function caller() : int {
+                                return helper();
+                            }
+
+                            echo caller();',
+                    ],
+                ],
+                'error_message' => 'InvalidReturnStatement',
+            ],
             'invalidateAfterSkippedAnalysis' => [
                 'file_stages' => [
                     [

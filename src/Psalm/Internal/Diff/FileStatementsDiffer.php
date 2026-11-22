@@ -9,6 +9,7 @@ use PhpParser;
 use function assert;
 use function end;
 use function max;
+use function strtolower;
 use function substr;
 
 /**
@@ -36,15 +37,22 @@ final class FileStatementsDiffer extends AstDiffer
         string $b_code,
         string $namespace = '',
     ): array {
+        $diff_map = [];
+
         [$trace, $x, $y, $bc] = self::calculateTrace(
             static function (
                 PhpParser\Node\Stmt $a,
                 PhpParser\Node\Stmt $b,
                 string $a_code,
                 string $b_code,
-            ): bool {
+                bool &$body_change = false,
+            ) use (&$diff_map): bool {
                 if ($a::class !== $b::class) {
                     return false;
+                }
+
+                if ($a instanceof PhpParser\Node\Stmt\Function_) {
+                    return ClassStatementsDiffer::isSameMember($a, $b, $a_code, $b_code, $body_change, $diff_map);
                 }
 
                 if (($a instanceof PhpParser\Node\Stmt\Namespace_ && $b instanceof PhpParser\Node\Stmt\Namespace_)
@@ -87,7 +95,6 @@ final class FileStatementsDiffer extends AstDiffer
         $keep = [];
         $keep_signature = [];
         $add_or_delete = [];
-        $diff_map = [];
         $deletion_ranges = [];
 
         foreach ($diff as $diff_elem) {
@@ -134,6 +141,21 @@ final class FileStatementsDiffer extends AstDiffer
                     $add_or_delete = [...$add_or_delete, ...$class_keep[2]];
                     $diff_map = [...$diff_map, ...$class_keep[3]];
                     $deletion_ranges = [...$deletion_ranges, ...$class_keep[4]];
+                } elseif ($diff_elem->old instanceof PhpParser\Node\Stmt\Function_) {
+                    $keep[] = self::getFunctionId($diff_elem->old, $namespace);
+                }
+            } elseif ($diff_elem->type === DiffElem::TYPE_KEEP_SIGNATURE) {
+                if ($diff_elem->old instanceof PhpParser\Node\Stmt\Function_) {
+                    $keep_signature[] = self::getFunctionId($diff_elem->old, $namespace);
+
+                    // the body is analysed again, and what the old one reported is not in the range of the new one
+                    // if the body got shorter
+                    $doc = $diff_elem->old->getDocComment();
+
+                    $deletion_ranges[] = [
+                        $doc ? $doc->getStartFilePos() : (int)$diff_elem->old->getAttribute('startFilePos'),
+                        (int)$diff_elem->old->getAttribute('endFilePos'),
+                    ];
                 }
             } elseif ($diff_elem->type === DiffElem::TYPE_REMOVE) {
                 if ($diff_elem->old instanceof PhpParser\Node\Stmt\Use_
@@ -152,6 +174,10 @@ final class FileStatementsDiffer extends AstDiffer
                 } elseif ($diff_elem->old instanceof PhpParser\Node
                     && !$diff_elem->old instanceof PhpParser\Node\Stmt\Namespace_
                 ) {
+                    if ($diff_elem->old instanceof PhpParser\Node\Stmt\Function_) {
+                        $add_or_delete[] = self::getFunctionId($diff_elem->old, $namespace);
+                    }
+
                     if ($doc = $diff_elem->old->getDocComment()) {
                         $start = $doc->getStartFilePos();
                     } else {
@@ -177,11 +203,22 @@ final class FileStatementsDiffer extends AstDiffer
                             $add_or_delete[] = 'use:' . end($name_parts);
                         }
                     }
+                } elseif ($diff_elem->new instanceof PhpParser\Node\Stmt\Function_) {
+                    $add_or_delete[] = self::getFunctionId($diff_elem->new, $namespace);
                 }
             }
         }
 
         return [$keep, $keep_signature, $add_or_delete, $diff_map, $deletion_ranges];
+    }
+
+    /**
+     * @return lowercase-string
+     * @psalm-capabilities read-props
+     */
+    private static function getFunctionId(PhpParser\Node\Stmt\Function_ $node, string $namespace): string
+    {
+        return strtolower(($namespace !== '' ? $namespace . '\\' : '') . (string) $node->name);
     }
 
     /**
