@@ -1962,7 +1962,7 @@ function db2_escape_string($string_literal) {}
 function cubrid_real_escape_string($string) {}
 
 /**
- * @psalm-pure
+ * @psalm-capabilities io
  *
  * @psalm-taint-escape sql_in_quotes
  * @psalm-flow ($string1, $string2) -> return
@@ -1970,7 +1970,7 @@ function cubrid_real_escape_string($string) {}
 function pg_escape_bytea($string1, $string2 = null) {}
 
 /**
- * @psalm-pure
+ * @psalm-capabilities io
  *
  * @psalm-taint-escape sql
  * @psalm-flow ($string1, $string2) -> return
@@ -1978,7 +1978,7 @@ function pg_escape_bytea($string1, $string2 = null) {}
 function pg_escape_identifier($string1, $string2 = null) {}
 
 /**
- * @psalm-pure
+ * @psalm-capabilities io
  *
  * @psalm-taint-escape sql
  * @psalm-flow ($string1, $string2) -> return
@@ -1986,7 +1986,7 @@ function pg_escape_identifier($string1, $string2 = null) {}
 function pg_escape_literal($string1, $string2 = null) {}
 
 /**
- * @psalm-pure
+ * @psalm-capabilities io
  *
  * @psalm-taint-escape sql_in_quotes
  * @psalm-flow ($string1, $string2) -> return

@@ -49,7 +49,6 @@ use function strpos;
 use function substr;
 use function trim;
 
-use const DIRECTORY_SEPARATOR;
 use const PHP_EOL;
 use const STDERR;
 
@@ -193,7 +192,7 @@ final class Refactor
             if ($root_path === false) {
                 fwrite(
                     STDERR,
-                    'Could not locate root directory ' . $current_dir . DIRECTORY_SEPARATOR . $options['r'] . PHP_EOL,
+                    CliUtils::getRootDirectoryNotFoundMessage($current_dir, $options['r']) . PHP_EOL,
                 );
                 exit(1);
             }

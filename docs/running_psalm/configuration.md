@@ -319,7 +319,7 @@ This is enabled by default since Psalm 6, so unused code issues are reported eve
 **For libraries only.** When `true`, unused-code detection treats every class that isn't marked `@internal` or `@psalm-internal` as if it were marked [`@api`](../annotating_code/supported_annotations.md#api-psalm-api), except for its members that are marked internal. Other checks, like `ClassMustBeFinal`, are not affected. Defaults to `false`.
 
 ```php
-<?php
+<?php // findUnusedCode="true" markAllNonInternalCodeAsApi="true"
 namespace Lib;
 
 class Client {                           // ClassMustBeFinal, but no UnusedClass
