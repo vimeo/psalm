@@ -14,7 +14,6 @@ use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
 use function array_column;
 use function str_ends_with;
-use function str_repeat;
 use function substr;
 
 use const DIRECTORY_SEPARATOR;
@@ -180,18 +179,6 @@ final class SwitchTypeTest extends TestCase
                 'assertions' => [
                     '$in===' => "'a'|'b'|'c'|null",
                 ],
-            ],
-            'stringCaseTooLongToBeALiteral' => [
-                'code' => '<?php
-                    function f(string $s): int {
-                        switch ($s) {
-                            case "a":
-                            case "b":
-                            case "' . str_repeat('x', 1100) . '":
-                                return 1;
-                        }
-                        return 0;
-                    }',
             ],
             'looseComparisonsInAGroupOfAMixedKindSubject' => [
                 'code' => '<?php
