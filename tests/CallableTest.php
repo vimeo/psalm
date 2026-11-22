@@ -4274,7 +4274,7 @@ final class CallableTest extends TestCase
 
                     where('my_url');
                     PHP,
-                'error_message' => 'InvalidScalarArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:9:7',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:9:7',
             ],
             'stringNamingAFunctionOfTheWrongSignatureForACallableOrLiteralsParam' => [
                 'code' => <<<'PHP'
