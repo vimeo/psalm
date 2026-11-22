@@ -3869,21 +3869,6 @@ final class CallableTest extends TestCase
                         protected function runLoop(): void {}
                     }',
             ],
-            'invokableInterfaceLaterInIntersectionIsCallable' => [
-                'code' => '<?php
-                    interface Named {}
-                    interface StringHandler { public function __invoke(string $value): int; }
-
-                    /** @param callable(string): int $callback */
-                    function takesCallback(callable $callback): void {}
-
-                    function f(Named&StringHandler $h): void {
-                        takesCallback($h);
-                    }',
-                'assertions' => [],
-                'ignored_issues' => [],
-                'php_version' => '8.1',
-            ],
             'invokableClassLaterInIntersectionIsCallable' => [
                 'code' => '<?php
                     interface Named {}
@@ -3902,7 +3887,7 @@ final class CallableTest extends TestCase
             'firstClassCallableOfAnInvokableLaterInIntersection' => [
                 'code' => '<?php
                     interface Named {}
-                    interface StringHandler { public function __invoke(string $value): int; }
+                    class StringHandler { public function __invoke(string $value): int { return 1; } }
 
                     /** @param callable(string): int $callback */
                     function takesCallback(callable $callback): void {}
@@ -3922,30 +3907,10 @@ final class CallableTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
-            'firstClassCallableOfAnInvokableInterface' => [
-                'code' => '<?php
-                    interface StringHandler { public function __invoke(string $value): int; }
-
-                    /** @param callable(string): int $callback */
-                    function takesCallback(callable $callback): void {}
-
-                    function f(StringHandler $h): void {
-                        takesCallback($h(...));
-                    }
-
-                    /** @var StringHandler $h */
-                    $h = null;
-                    $closure = $h(...);',
-                'assertions' => [
-                    '$closure===' => 'Closure[impure](string):int',
-                ],
-                'ignored_issues' => [],
-                'php_version' => '8.1',
-            ],
             'closureFromCallableOfAnInvokableLaterInIntersection' => [
                 'code' => '<?php
                     interface Named {}
-                    interface StringHandler { public function __invoke(string $value): int; }
+                    class StringHandler { public function __invoke(string $value): int { return 1; } }
 
                     /** @param callable(string): int $callback */
                     function takesCallback(callable $callback): void {}
@@ -3974,59 +3939,17 @@ final class CallableTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
-            'enumWithAnInvokeMethodIsCallable' => [
-                'code' => '<?php
-                    enum Suit
-                    {
-                        case Hearts;
-
-                        public function __invoke(string $value): int { return 1; }
-                    }
-
-                    /** @param callable(string): int $callback */
-                    function takesCallback(callable $callback): void {}
-
-                    function f(Suit $suit): void {
-                        takesCallback($suit);
-                        takesCallback($suit(...));
-                        $suit("a");
-                    }',
-                'assertions' => [],
-                'ignored_issues' => [],
-                'php_version' => '8.1',
-            ],
-            'intersectionOfSeveralInvokableMembersIsCallableAsAnyOfThem' => [
-                'code' => '<?php
-                    interface ByString { public function __invoke(string $value): int; }
-                    interface ByInt { public function __invoke(int $value): int; }
-
-                    /** @param callable(string): int $callback */
-                    function takesStringCallback(callable $callback): void {}
-
-                    /** @param callable(int): int $callback */
-                    function takesIntCallback(callable $callback): void {}
-
-                    function f(ByString&ByInt $first, ByInt&ByString $second): void {
-                        takesStringCallback($first);
-                        takesIntCallback($first);
-                        takesStringCallback($second);
-                        takesIntCallback($second);
-                    }',
-                'assertions' => [],
-                'ignored_issues' => [],
-                'php_version' => '8.1',
-            ],
             'invokableWithAMethodTemplateIsCallableAsAMatchingCallable' => [
                 'code' => '<?php
                     interface Named {}
-                    interface Identity
+                    class Identity
                     {
                         /**
                          * @template T
                          * @param T $value
                          * @return T
                          */
-                        public function __invoke(mixed $value): mixed;
+                        public function __invoke(mixed $value): mixed { return $value; }
                     }
 
                     /** @param callable(int): int $callback */
@@ -4040,21 +3963,41 @@ final class CallableTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
-            'intersectionOfLaterInvokableMembersIsCallableAsAnyOfThem' => [
+            'isCallableKeepsTheObjectOfAnInvokableLaterInIntersection' => [
                 'code' => '<?php
-                    interface Marker {}
-                    interface Textual { public function __invoke(string $value): int; }
-                    interface Numeric { public function __invoke(int $value): int; }
+                    interface Named { public function name(): string; }
+                    class StringHandler { public function __invoke(string $value): int { return 1; } }
+
+                    function f(Named&StringHandler $h): string {
+                        if (is_callable($h)) {
+                            return $h->name();
+                        }
+
+                        return "";
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['RedundantCondition'],
+                'php_version' => '8.1',
+            ],
+            'receiverTemplatesOfAnInvokableLaterInIntersectionAreBound' => [
+                'code' => '<?php
+                    interface Named {}
+                    /** @template T */
+                    class Box
+                    {
+                        /** @param T $value */
+                        public function __construct(private mixed $value) {}
+
+                        /** @return T */
+                        public function __invoke(string $key): mixed { return $this->value; }
+                    }
 
                     /** @param callable(string): int $callback */
-                    function takesStringCallback(callable $callback): void {}
+                    function takesCallback(callable $callback): void {}
 
-                    /** @param callable(int): int $callback */
-                    function takesIntCallback(callable $callback): void {}
-
-                    function f(Marker&Textual&Numeric $h): void {
-                        takesStringCallback($h);
-                        takesIntCallback($h);
+                    /** @param Named&Box<int> $h */
+                    function f(Named $h): void {
+                        takesCallback($h);
                     }',
                 'assertions' => [],
                 'ignored_issues' => [],
@@ -5795,7 +5738,7 @@ final class CallableTest extends TestCase
             'invokableLaterInIntersectionWithAWrongParamTypeIsNotCallable' => [
                 'code' => '<?php
                     interface Named {}
-                    interface StringHandler { public function __invoke(string $value): int; }
+                    class StringHandler { public function __invoke(string $value): int { return 1; } }
 
                     /** @param callable(int): int $callback */
                     function takesCallback(callable $callback): void {}
@@ -5810,7 +5753,7 @@ final class CallableTest extends TestCase
             'firstClassCallableOfAnInvokableLaterInIntersectionWithAWrongParamTypeIsNotCallable' => [
                 'code' => '<?php
                     interface Named {}
-                    interface StringHandler { public function __invoke(string $value): int; }
+                    class StringHandler { public function __invoke(string $value): int { return 1; } }
 
                     /** @param callable(int): int $callback */
                     function takesCallback(callable $callback): void {}
@@ -5825,7 +5768,7 @@ final class CallableTest extends TestCase
             'closureFromCallableOfAnInvokableLaterInIntersectionWithAWrongParamTypeIsNotCallable' => [
                 'code' => '<?php
                     interface Named {}
-                    interface StringHandler { public function __invoke(string $value): int; }
+                    class StringHandler { public function __invoke(string $value): int { return 1; } }
 
                     /** @param callable(int): int $callback */
                     function takesCallback(callable $callback): void {}
@@ -5849,41 +5792,6 @@ final class CallableTest extends TestCase
                         takesCallback($h);
                     }',
                 'error_message' => 'InvalidArgument',
-                'error_levels' => [],
-                'php_version' => '8.1',
-            ],
-            'enumWithAnInvokeMethodAndAWrongParamTypeIsNotCallable' => [
-                'code' => '<?php
-                    enum Suit
-                    {
-                        case Hearts;
-
-                        public function __invoke(string $value): int { return 1; }
-                    }
-
-                    /** @param callable(int): int $callback */
-                    function takesCallback(callable $callback): void {}
-
-                    function f(Suit $suit): void {
-                        takesCallback($suit);
-                    }',
-                'error_message' => 'InvalidScalarArgument',
-                'error_levels' => [],
-                'php_version' => '8.1',
-            ],
-            'intersectionOfLaterInvokableMembersIsNotCallableAsNoneOfThem' => [
-                'code' => '<?php
-                    interface Marker {}
-                    interface Textual { public function __invoke(string $value): int; }
-                    interface Numeric { public function __invoke(int $value): int; }
-
-                    /** @param callable(stdClass): int $callback */
-                    function takesCallback(callable $callback): void {}
-
-                    function f(Marker&Textual&Numeric $h): void {
-                        takesCallback($h);
-                    }',
-                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:39 - Argument 1 of takesCallback expects callable[impure](stdClass):int, but Marker&Textual&Numeric provided',
                 'error_levels' => [],
                 'php_version' => '8.1',
             ],

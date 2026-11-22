@@ -327,37 +327,6 @@ final class CallableTypeComparator
             }
         }
 
-        // several members have __invoke, and the signatures may differ: the first is not checked, as it was, and
-        // without it one of the others has to be what the expected callable is
-        if ($input_type_part instanceof TNamedObject
-            && self::getInvokeSupplier($codebase, $input_type_part) === null
-        ) {
-            if (self::hasInvoke($codebase, $input_type_part)) {
-                return true;
-            }
-
-            foreach ($input_type_part->getIntersectionTypes() as $member) {
-                if ($member instanceof TNamedObject && self::hasInvoke($codebase, $member)) {
-                    $member_callable = self::getCallableFromAtomic(
-                        $codebase,
-                        $member,
-                        $container_type_part,
-                        null,
-                        null,
-                        true,
-                    );
-
-                    if ($member_callable === null
-                        || self::isContainedBy($codebase, $member_callable, $container_type_part, null)
-                    ) {
-                        return true;
-                    }
-                }
-            }
-
-            return false;
-        }
-
         $input_callable = self::getCallableFromAtomic(
             $codebase,
             $input_type_part,
@@ -546,8 +515,6 @@ final class CallableTypeComparator
                 }
             }
 
-            // Resolve method-level templates against the expected callable shape, so
-            // `[Id::class, 'id']` with `@template B` matches `callable(int): int` etc.
             $callable = self::bindMethodTemplates($codebase, $callable, $method_storage, $container_type_part);
 
             // the templates generated for the parameters are resolved, those of the caller are not the method's
@@ -940,7 +907,7 @@ final class CallableTypeComparator
                         $invokable,
                         $declaring_method_id,
                     );
-                    // a conditional return stays unresolved: the templates generated for the parameters are no bound
+                    // the templates generated for the parameters stay unbound, and a conditional return type with them
                     $callable = self::bindMethodTemplates(
                         $codebase,
                         $callable,
@@ -1066,48 +1033,39 @@ final class CallableTypeComparator
             );
     }
 
-    private static function hasInvoke(Codebase $codebase, TNamedObject $member): bool
+    private static function isInvokableClass(Codebase $codebase, TNamedObject $member): bool
     {
-        return $codebase->methodExists(new MethodIdentifier($member->value, '__invoke'));
+        return $codebase->classExists($member->value)
+            && $codebase->methodExists(new MethodIdentifier($member->value, '__invoke'));
     }
 
     /**
-     * Whether an object type has `__invoke`: its first member does, or one it is intersected with
-     */
-    public static function isInvokable(Codebase $codebase, TNamedObject $object): bool
-    {
-        if (self::hasInvoke($codebase, $object)) {
-            return true;
-        }
-
-        foreach ($object->getIntersectionTypes() as $member) {
-            if ($member instanceof TNamedObject && self::hasInvoke($codebase, $member)) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    /**
-     * The member whose `__invoke` the callable of an object type is: the only one that has it. Where several do,
-     * their signatures may differ: it is the first member if that is a class, as it was, and none otherwise
+     * The first class an object type consists of that has `__invoke`
      */
     public static function getInvokeSupplier(Codebase $codebase, TNamedObject $object): ?TNamedObject
     {
-        $supplier = self::hasInvoke($codebase, $object) ? $object : null;
+        if (self::isInvokableClass($codebase, $object)) {
+            return $object;
+        }
 
         foreach ($object->getIntersectionTypes() as $member) {
-            if ($member instanceof TNamedObject && self::hasInvoke($codebase, $member)) {
-                if ($supplier === null) {
-                    $supplier = $member;
-                } else {
-                    return $supplier === $object && $codebase->classExists($object->value) ? $object : null;
-                }
+            if ($member instanceof TNamedObject && self::isInvokableClass($codebase, $member)) {
+                return $member;
             }
         }
 
-        return $supplier;
+        return null;
+    }
+
+    /**
+     * Whether an object type can be called: a class it consists of has `__invoke`, or its first member, an interface
+     * perhaps, has
+     */
+    public static function isInvokable(Codebase $codebase, TNamedObject $object): bool
+    {
+        return self::getInvokeSupplier($codebase, $object) !== null
+            || ($codebase->classOrInterfaceExists($object->value)
+                && $codebase->methodExists(new MethodIdentifier($object->value, '__invoke')));
     }
 
     /**

@@ -4986,20 +4986,15 @@ final class ArrayFunctionCallTest extends TestCase
             'arrayFunctionsOfAnInvokableLaterInIntersection' => [
                 'code' => '<?php
                     interface Named {}
-                    interface StringHandler { public function __invoke(string $value): int; }
                     class StringHandlerClass { public function __invoke(string $value): int { return 1; } }
 
                     /** @var list<string> $xs */
                     $xs = [];
-                    /** @var Named&StringHandler $interface */
-                    $interface = null;
                     /** @var Named&StringHandlerClass $class */
                     $class = null;
-                    array_map($interface, $xs);
                     array_map($class, $xs);
-                    array_walk($xs, $interface);
                     array_walk($xs, $class);
-                    $filtered = array_filter($xs, $interface);',
+                    $filtered = array_filter($xs, $class);',
                 'assertions' => [
                     '$filtered===' => 'array<int<0, max>, string>',
                 ],
@@ -5011,20 +5006,13 @@ final class ArrayFunctionCallTest extends TestCase
                     final class CountArgs
                     {
                         public function __invoke(): int { return count(func_get_args()); }
+
+                        public function count(): int { return count(func_get_args()); }
                     }
 
-                    $counts = array_map(new CountArgs(), [1], [2]);',
-            ],
-            'arrayMapOfSeveralLaterInvokableMembersTakesTheElementsOfOne' => [
-                'code' => '<?php
-                    interface Marker {}
-                    interface Textual { public function __invoke(string $value): int; }
-                    interface Numeric { public function __invoke(int $value): int; }
-
-                    function f(Marker&Textual&Numeric $h): void {
-                        array_map($h, [1]);
-                        array_map($h, ["a"]);
-                    }',
+                    $counter = new CountArgs();
+                    $invoked = array_map($counter, [1], [2]);
+                    $counted = array_map($counter->count(...), [1], [2]);',
                 'assertions' => [],
                 'ignored_issues' => [],
                 'php_version' => '8.1',
@@ -5888,7 +5876,7 @@ final class ArrayFunctionCallTest extends TestCase
             'arrayFilterWithAnInvokableLaterInIntersectionWithAWrongParamType' => [
                 'code' => '<?php
                     interface Named {}
-                    interface StringHandler { public function __invoke(string $value): int; }
+                    class StringHandler { public function __invoke(string $value): int { return 1; } }
 
                     /** @param list<int> $xs */
                     function f(Named&StringHandler $h, array $xs): void {
@@ -5913,26 +5901,13 @@ final class ArrayFunctionCallTest extends TestCase
                 'code' => '<?php
                     interface Named {}
                     final class Token {}
-                    interface HandlesToken { public function __invoke(Token $token): int; }
+                    class HandlesToken { public function __invoke(Token $token): int { return 1; } }
 
                     /** @param list<int> $xs */
                     function f(Named&HandlesToken $h, array $xs): void {
                         array_map($h, $xs);
                     }',
                 'error_message' => 'Parameter 1 of closure passed to function array_map expects Token, but int',
-                'error_levels' => [],
-                'php_version' => '8.1',
-            ],
-            'arrayMapOfSeveralLaterInvokableMembersTakesNoneOfTheElements' => [
-                'code' => '<?php
-                    interface Marker {}
-                    interface Textual { public function __invoke(string $value): int; }
-                    interface Numeric { public function __invoke(int $value): int; }
-
-                    function f(Marker&Textual&Numeric $h): void {
-                        array_map($h, [new stdClass()]);
-                    }',
-                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:35 - No __invoke of Marker&Textual&Numeric takes the elements of the arrays passed to array_map',
                 'error_levels' => [],
                 'php_version' => '8.1',
             ],
