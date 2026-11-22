@@ -141,6 +141,43 @@ final class ClassTemplateExtendsTest extends TestCase
                     '$a===' => 'Box<Node>',
                 ],
             ],
+            'staticInsideTypesOfAnImplementedTemplateIsTheObjectItIsInferredFrom' => [
+                'code' => '<?php
+                    /** @template T */
+                    interface Wrapper {}
+
+                    /** @implements Wrapper<Closure(): static> */
+                    final class Factory implements Wrapper {}
+
+                    /** @implements Wrapper<object{p: static}> */
+                    final class Shaped implements Wrapper {}
+
+                    /** @implements Wrapper<class-string<static>> */
+                    class Named implements Wrapper {}
+
+                    final class SubNamed extends Named {}
+
+                    /** @template T */
+                    final class Box {}
+
+                    /**
+                     * @template T
+                     * @param Wrapper<T> $value
+                     * @return Box<T>
+                     */
+                    function unwrap(Wrapper $value): Box {
+                        return new Box();
+                    }
+
+                    $closure = unwrap(new Factory());
+                    $shape = unwrap(new Shaped());
+                    $class = unwrap(new SubNamed());',
+                'assertions' => [
+                    '$closure===' => 'Box<Closure[impure]():Factory>',
+                    '$shape===' => 'Box<object{p:Shaped}>',
+                    '$class===' => 'Box<class-string<SubNamed>>',
+                ],
+            ],
             'staticNestedInAnImplementedTemplateIsTheObjectItIsInferredFrom' => [
                 'code' => '<?php
                     /** @template T */

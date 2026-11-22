@@ -15,6 +15,7 @@ use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\TypeVisitor\TemplateTypeCollector;
 use Psalm\Internal\TypeVisitor\TypeVariableResolver;
 use Psalm\Storage\Capabilities;
+use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArray;
@@ -1586,7 +1587,9 @@ final class TemplateStandinTypeReplacer
     }
 
     /**
-     * @psalm-pure
+     * `static` at any depth of a type replaced by the object it stands for
+     *
+     * @psalm-capabilities read-props
      */
     private static function replaceStatic(Union $type, TNamedObject $object): Union
     {
@@ -1595,6 +1598,33 @@ final class TemplateStandinTypeReplacer
         foreach ($type->getAtomicTypes() as $atomic_type) {
             if ($atomic_type instanceof TNamedObject && ($atomic_type->is_static || $atomic_type->value === 'static')) {
                 $atomic_type = $object;
+            } elseif ($atomic_type instanceof TClosure || $atomic_type instanceof TCallable) {
+                $atomic_type = $atomic_type->replace(
+                    $atomic_type->params === null ? null : array_map(
+                        static fn(FunctionLikeParameter $param): FunctionLikeParameter => $param->type
+                            ? $param->setType(self::replaceStatic($param->type, $object))
+                            : $param,
+                        $atomic_type->params,
+                    ),
+                    $atomic_type->return_type ? self::replaceStatic($atomic_type->return_type, $object) : null,
+                );
+            } elseif ($atomic_type instanceof TObjectWithProperties) {
+                $atomic_type = $atomic_type->setProperties(array_map(
+                    static fn(Union $property): Union => self::replaceStatic($property, $object),
+                    $atomic_type->properties,
+                ));
+            } elseif ($atomic_type instanceof TClassString
+                && $atomic_type->as_type
+                && ($atomic_type->as_type->is_static || $atomic_type->as_type->value === 'static')
+            ) {
+                $atomic_type = new TClassString(
+                    $object->value,
+                    $object,
+                    $atomic_type->is_loaded,
+                    $atomic_type->is_interface,
+                    $atomic_type->is_enum,
+                    $atomic_type->from_docblock,
+                );
             } elseif ($atomic_type instanceof TGenericObject) {
                 $atomic_type = $atomic_type->setTypeParams(array_map(
                     static fn(Union $type_param): Union => self::replaceStatic($type_param, $object),
