@@ -227,6 +227,79 @@ final class ArrayAccessTest extends TestCase
         $this->analyzeFile('somefile.php', new Context());
     }
 
+    public function testComplainAboutAStringOffsetThatMayBeAKeyNotCheckedYet(): void
+    {
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessage('PossiblyUndefinedStringArrayOffset');
+
+        Config::getInstance()->ensure_array_string_offsets_exist = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                /**
+                 * @param array<string, string> $input
+                 * @param "foo"|"bar" $key
+                 */
+                function show(array $input, string $key): void {
+                    if (array_key_exists("foo", $input)) {
+                        echo $input["foo"];
+                        echo $input[$key];
+                    }
+                }',
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    public function testComplainAboutAnIntOffsetThatMayBeAKeyNotCheckedYet(): void
+    {
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessage('PossiblyUndefinedIntArrayOffset');
+
+        Config::getInstance()->ensure_array_int_offsets_exist = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                /**
+                 * @param array<int, string> $input
+                 * @param 1|2 $key
+                 */
+                function show(array $input, int $key): void {
+                    if (isset($input[1])) {
+                        echo $input[$key];
+                    }
+                }',
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    public function testNoIssueWhenEachKeyTheOffsetMayBeIsSet(): void
+    {
+        Config::getInstance()->ensure_array_string_offsets_exist = true;
+        Config::getInstance()->ensure_array_int_offsets_exist = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                /**
+                 * @param array<array-key, string> $input
+                 * @param "foo"|"bar" $key
+                 * @param 1|2 $index
+                 */
+                function show(array $input, string $key, int $index): void {
+                    if (isset($input["foo"], $input["bar"], $input[1], $input[2])) {
+                        echo $input[$key];
+                        echo $input[$index];
+                    }
+                }',
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
     public function testEnsureArrayIntOffsetsExist(): void
     {
         $this->expectException(CodeException::class);
