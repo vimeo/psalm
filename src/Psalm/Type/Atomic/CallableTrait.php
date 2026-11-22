@@ -380,11 +380,14 @@ trait CallableTrait
 
         $params = $this->params;
         if ($params) {
+            // what a callable takes is on the other side of what it is read from: a write, `never` for a `*`
+            $param_template_result = $template_result->flipStarPosition();
+
             foreach ($params as $k => $param) {
                 if ($param->type) {
                     $new_param = $param->setType(TemplateInferredTypeReplacer::replace(
                         $param->type,
-                        $template_result,
+                        $param_template_result,
                         $codebase,
                     ));
                     $replaced = $replaced || $new_param !== $param;
