@@ -3869,6 +3869,22 @@ final class CallableTest extends TestCase
                         protected function runLoop(): void {}
                     }',
             ],
+            'closureOfAnInvokableObjectIsAClosureParam' => [
+                'code' => '<?php
+                    class StringHandler { public function __invoke(string $value): int { return 1; } }
+
+                    /** @param Closure(string): int $closure */
+                    function takesClosure(Closure $closure): void {}
+
+                    function f(StringHandler $h): void {
+                        takesClosure($h(...));
+                        takesClosure(Closure::fromCallable($h));
+                        takesClosure(fn(string $value): int => 1);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
         ];
     }
 
@@ -4103,7 +4119,30 @@ final class CallableTest extends TestCase
 
                     where('my_url');
                     PHP,
-                'error_message' => 'InvalidScalarArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:9:7',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:9:7',
+            ],
+            'invokableObjectIsNotAClosureParam' => [
+                'code' => '<?php
+                    class StringHandler { public function __invoke(string $value): int { return 1; } }
+
+                    function takesClosure(Closure $closure): void {}
+
+                    function f(StringHandler $h): void {
+                        takesClosure($h);
+                    }',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:38 - Argument 1 of takesClosure expects Closure[impure], but StringHandler provided',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'arrayCallableIsNotAClosureParam' => [
+                'code' => '<?php
+                    final class Handler { public function handle(): void {} }
+
+                    function takesClosure(Closure $closure): void {}
+
+                    takesClosure([new Handler(), "handle"]);',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:34',
+                'error_levels' => [],
             ],
             'stringNamingAFunctionOfTheWrongSignatureForACallableOrLiteralsParam' => [
                 'code' => <<<'PHP'
