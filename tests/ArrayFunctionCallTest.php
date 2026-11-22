@@ -153,7 +153,7 @@ final class ArrayFunctionCallTest extends TestCase
             IssueBuffer::getIssuesDataForFile($file_path),
         );
 
-        self::assertSame(['InvalidArgument 8:30'], $issues);
+        self::assertSame(['DeprecatedConstant 8:40', 'InvalidArgument 8:30'], $issues);
     }
 
     /**
@@ -163,6 +163,282 @@ final class ArrayFunctionCallTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'arrayColumnAndGetObjectVarsResolveClassConstantsOfThePropertyType' => [
+                'code' => '<?php
+                    class Level {
+                        private const HIGH = 3;
+                        private const MID = 1;
+                        private const LOW = 0;
+
+                        /** @var self::HIGH|self::MID|self::LOW */
+                        public int $value = 1;
+                    }
+
+                    class Base {
+                        public const A = 1;
+
+                        /** @var self::A|2 */
+                        public int $inherited = 1;
+                    }
+
+                    final class Child extends Base {}
+
+                    $level = new Level();
+                    $column = array_column([$level], "value");
+                    $vars = get_object_vars($level);
+                    $inherited = get_object_vars(new Child());',
+                'assertions' => [
+                    '$column===' => 'list{0|1|3}',
+                    '$vars===' => 'array{value: 0|1|3, ...<string, mixed>}',
+                    '$inherited===' => 'array{inherited: 1|2}',
+                ],
+            ],
+            'arrayWalkRecursiveUsesCallbackOutType' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @param array<int, array<int, int>> $values
+                     * @return array<int, array<int, string>>
+                     */
+                    function stringifyValues(array $values): array {
+                        array_walk_recursive(
+                            $values,
+                            /** @param-out string $value */
+                            static function (int &$value): void {
+                                $value = (string) $value;
+                            }
+                        );
+
+                        /** @psalm-check-type-exact $values = array<int, array<int, string>> */
+                        return $values;
+                    }
+                    PHP,
+            ],
+            'arrayWalkPreservesInputForCallbacksByValue' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @param array<string, string> $values
+                     * @param array<int, array<int, int>> $nested
+                     */
+                    function visit(array $values, array $nested): void {
+                        array_walk($values, static fn(string $value): string => trim($value));
+                        array_walk_recursive($nested, static fn(int $value): int => $value + 1);
+                        $shape = ["key" => [1, 2]];
+                        array_walk_recursive($shape, static fn(): string => "ignored");
+
+                        /** @psalm-check-type-exact $values = array<string, string> */
+                        /** @psalm-check-type-exact $nested = array<int, array<int, int>> */
+                        /** @psalm-check-type-exact $shape = array{key: list{1, 2}} */
+                    }
+                    PHP,
+            ],
+            'arrayWalkPreservesKeysListsAndOptionalShapeEntries' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @param list<int> $list
+                     * @param non-empty-array<string, int> $nonEmpty
+                     * @param array{required: int, optional?: int, ...<string, int>} $shape
+                     */
+                    function stringify(array $list, array $nonEmpty, array $shape): void {
+                        $callback = /** @param-out string $value */ static function (int &$value): void {
+                            $value = (string) $value;
+                        };
+                        array_walk($list, $callback);
+                        array_walk($nonEmpty, $callback);
+                        array_walk($shape, $callback);
+
+                        /** @psalm-check-type-exact $list = list<string> */
+                        /** @psalm-check-type-exact $nonEmpty = non-empty-array<string, string> */
+                        /** @psalm-check-type-exact $shape = array{required: string, optional?: string, ...<string, string>} */
+                    }
+                    PHP,
+            ],
+            'arrayWalkRecursivePreservesShapeAndDoesNotWalkNewArrays' => [
+                'code' => <<<'PHP'
+                    <?php
+                    $values = ["nested" => [1, [2]], "empty" => [], "value" => 3];
+                    $empty = [];
+                    $callback = /** @param-out array{value: int} $value */ static function (int &$value): void {
+                        $value = ["value" => $value];
+                    };
+                    array_walk_recursive($values, $callback);
+                    array_walk_recursive($empty, $callback);
+
+                    /** @psalm-check-type-exact $values = array{nested: list{array{value: int}, list{array{value: int}}}, empty: array<never, never>, value: array{value: int}} */
+                    /** @psalm-check-type-exact $empty = array<never, never> */
+                    PHP,
+            ],
+            'arrayWalkUsesNamedArgumentsAndNamedCallbacks' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param-out string $value */
+                    function stringify(int &$value): void {
+                        $value = (string) $value;
+                    }
+                    final class Formatter {
+                        /** @param-out string $value */
+                        public static function stringify(int &$value): void {
+                            $value = (string) $value;
+                        }
+                    }
+                    $values = ["key" => 1];
+                    $nested = [[2]];
+                    array_walk(callback: "stringify", array: $values);
+                    array_walk_recursive(callback: [Formatter::class, "stringify"], array: $nested);
+
+                    /** @psalm-check-type-exact $values = array{key: string} */
+                    /** @psalm-check-type-exact $nested = list{list{string}} */
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'arrayWalkCombinesCallbackAlternatives' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function visit(bool $mutate): void {
+                        $stringify = /** @param-out string $value */ static function (int &$value): void {
+                            $value = (string) $value;
+                        };
+                        $callback = $mutate ? $stringify : static fn(int $value): int => $value;
+                        $values = [1];
+                        array_walk($values, $callback);
+
+                        /** @psalm-check-type-exact $values = list{1|string} */
+                    }
+                    PHP,
+            ],
+            'arrayWalkFallsBackWhenOneCallbackAlternativeIsUnknown' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function visit(bool $known, callable $unknown): void {
+                        $stringify = /** @param-out string $value */ static function (int &$value): void {
+                            $value = (string) $value;
+                        };
+                        $callback = $known ? $stringify : $unknown;
+                        $values = [1];
+                        array_walk($values, $callback);
+
+                        /** @psalm-check-type-exact $values = array<array-key, mixed> */
+                    }
+                    PHP,
+            ],
+            'arrayWalkUsesDeclaredByRefParameterType' => [
+                'code' => <<<'PHP'
+                    <?php
+                    $values = ["key" => 1];
+                    array_walk($values, static function (int &$value): void {
+                        ++$value;
+                    });
+
+                    /** @psalm-check-type-exact $values = array{key: int} */
+                    PHP,
+            ],
+            'arrayWalkUpdatesAnArrayElement' => [
+                'code' => <<<'PHP'
+                    <?php
+                    $values = ["items" => [1, 2], "untouched" => true];
+                    array_walk(
+                        $values["items"],
+                        /** @param-out string $value */
+                        static function (int &$value): void {
+                            $value = (string) $value;
+                        }
+                    );
+
+                    /** @psalm-check-type-exact $values = array{items: list{string, string}, untouched: true} */
+                    PHP,
+            ],
+            'arrayWalkExpandsNamedFunctionOutTypeConstants' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class Flags {
+                        public const SOME_FIRST = 1;
+                        public const SOME_SECOND = 2;
+                    }
+                    /** @param-out Flags::SOME_* $value */
+                    function setFlag(int &$value): void {
+                        $value = Flags::SOME_FIRST;
+                    }
+                    $values = [0];
+                    array_walk($values, "setFlag");
+
+                    /** @psalm-check-type-exact $values = list{1|2} */
+                    PHP,
+                'assertions' => [
+                    '$values===' => 'list{1|2}',
+                ],
+            ],
+            'arrayWalkResolvesInvokableOutTypeSelfAndStatic' => [
+                'code' => <<<'PHP'
+                    <?php
+                    class SelfSetter {
+                        /** @param-out self $value */
+                        public function __invoke(?self &$value): void {
+                            $value = $this;
+                        }
+                    }
+                    final class ChildSelfSetter extends SelfSetter {}
+                    class StaticSetter {
+                        /** @param-out static $value */
+                        public function __invoke(?self &$value): void {
+                            $value = $this;
+                        }
+                    }
+                    final class ChildStaticSetter extends StaticSetter {}
+                    $self = [null];
+                    $static = [[null]];
+                    array_walk($self, new ChildSelfSetter());
+                    array_walk_recursive($static, new ChildStaticSetter());
+
+                    /** @psalm-check-type-exact $self = list{SelfSetter} */
+                    /** @psalm-check-type-exact $static = list{list{ChildStaticSetter}} */
+                    PHP,
+            ],
+            'arrayWalkFallsBackForUnknownCallbacksAndRecursiveValues' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @param callable $callback
+                     * @param array<string, mixed> $mixed
+                     * @param array<string, iterable<int, int>> $iterable
+                     */
+                    function visit(callable $callback, Closure $closure, array $mixed, array $iterable): void {
+                        $values = [1, 2];
+                        array_walk($values, $callback);
+                        $closureValues = [1, 2];
+                        array_walk($closureValues, $closure);
+                        $stringify = /** @param-out string $value */ static function (mixed &$value): void {
+                            $value = "value";
+                        };
+                        array_walk_recursive($mixed, $stringify);
+                        array_walk_recursive($iterable, $stringify);
+
+                        /** @psalm-check-type-exact $values = array<array-key, mixed> */
+                        /** @psalm-check-type-exact $closureValues = array<array-key, mixed> */
+                        /** @psalm-check-type-exact $mixed = array<array-key, mixed> */
+                        /** @psalm-check-type-exact $iterable = array<array-key, mixed> */
+                    }
+                    final class Setter {
+                        public function visit(): void {
+                            $values = [null];
+                            array_walk(
+                                $values,
+                                /** @param-out static $value */
+                                function (?self &$value): void {
+                                    $value = $this;
+                                }
+                            );
+                            /** @psalm-check-type-exact $values = array<array-key, mixed> */
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'arrayMergeAfterAnArrayOfAnyLengthPutsTheNextElementsInTheRest' => [
                 'code' => <<<'PHP'
                     <?php
@@ -1958,6 +2234,8 @@ final class ArrayFunctionCallTest extends TestCase
                     array_filter([1, 2, 3], "A::barBar");
                     array_filter([1, 2, 3], "A::BARBAR");
                     array_filter([1, 2, 3], "A::barbar");',
+                'assertions' => [],
+                'ignored_issues' => ['WrongCaseFunction'],
             ],
             'arrayFilterIgnoreMissingClass' => [
                 'code' => '<?php
@@ -4566,8 +4844,33 @@ final class ArrayFunctionCallTest extends TestCase
                 'assertions' => [
                     '$a===' => 'array<int<0, max>, string>',
                 ],
-                'ignored_issues' => ['MixedArgumentTypeCoercion', 'MixedArgument', 'MixedAssignment'],
+                'ignored_issues' => ['DeprecatedConstant', 'MixedArgumentTypeCoercion', 'MixedArgument', 'MixedAssignment'],
                 'php_version' => '8.0',
+            ],
+            'arrayKeyExistsWithKeysThatTheArrayMayHave' => [
+                'code' => '<?php
+                    /**
+                     * @param list<int> $list
+                     * @param array<int, string> $ints
+                     * @param array<string, int> $strings
+                     * @param array<array-key, int> $keys
+                     * @param list<int>|array<string, int> $either
+                     * @param array{a: int} $shape
+                     */
+                    function f(array $list, array $ints, array $strings, array $keys, array $either, array $shape, array $any, string $s): bool {
+                        return array_key_exists("5", $list)
+                            || array_key_exists("5", $ints)
+                            || array_key_exists("a", $strings)
+                            || array_key_exists("a", $keys)
+                            || array_key_exists("a", $either)
+                            || array_key_exists("b", $shape)
+                            || array_key_exists("a", $any)
+                            || array_key_exists($s, $list)
+                            || array_key_exists(1, $list);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
             ],
             'arrayMergeAccumulatesInALoop' => [
                 'code' => '<?php
@@ -4679,6 +4982,70 @@ final class ArrayFunctionCallTest extends TestCase
                 'assertions' => [
                     '$merged===' => "array<'age'|'name', 'a'|'b'|1>",
                 ],
+            ],
+            'arrayFunctionsOfAnInvokableLaterInIntersection' => [
+                'code' => '<?php
+                    interface Named {}
+                    class StringHandlerClass { public function __invoke(string $value): int { return 1; } }
+
+                    /** @var list<string> $xs */
+                    $xs = [];
+                    /** @var Named&StringHandlerClass $class */
+                    $class = null;
+                    array_map($class, $xs);
+                    array_walk($xs, $class);
+                    $filtered = array_filter($xs, $class);',
+                'assertions' => [
+                    '$filtered===' => 'array<int<0, max>, string>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'arrayMapOfAnInvokableObject' => [
+                'code' => '<?php
+                    final class IsLong {
+                        public function __invoke(string $value): bool { return strlen($value) > 3; }
+                    }
+
+                    final class Notify {
+                        public function __invoke(string $value): void {}
+                    }
+
+                    /** @template T */
+                    final class Box {
+                        /** @param T $value */
+                        public function __construct(private mixed $value) {}
+
+                        /** @return T */
+                        public function __invoke(string $key): mixed { return $this->value; }
+                    }
+
+                    final class Identity {
+                        /**
+                         * @template T
+                         * @param T $value
+                         * @return T
+                         */
+                        public function __invoke(mixed $value): mixed { return $value; }
+                    }
+
+                    /** @var list<string> $xs */
+                    $xs = [];
+                    /** @var Box<int> $box */
+                    $box = new Box(1);
+
+                    $long = array_map(new IsLong(), $xs);
+                    $notified = array_map(new Notify(), $xs);
+                    $boxed = array_map($box, $xs);
+                    $same = array_map(new Identity(), $xs);',
+                'assertions' => [
+                    '$long===' => 'list<bool>',
+                    '$notified===' => 'list<null>',
+                    '$boxed===' => 'list<int>',
+                    '$same===' => 'list<mixed>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
             ],
         ];
     }
@@ -5101,6 +5468,7 @@ final class ArrayFunctionCallTest extends TestCase
                     array_walk($o, "var_dump");
                 ',
                 'error_message' => 'RawObjectIteration',
+                'error_levels' => ['DeprecatedFunction'],
             ],
             'arrayWalkRecursiveOverObject' => [
                 'code' => '<?php
@@ -5108,6 +5476,7 @@ final class ArrayFunctionCallTest extends TestCase
                     array_walk_recursive($o, "var_dump");
                 ',
                 'error_message' => 'RawObjectIteration',
+                'error_levels' => ['DeprecatedFunction'],
             ],
             'implodeWithNonStringableArgs' => [
                 'code' => '<?php
@@ -5460,6 +5829,7 @@ final class ArrayFunctionCallTest extends TestCase
 
                     array_unique($objects, SORT_LOCALE_STRING);',
                 'error_message' => 'InvalidArgument',
+                'error_levels' => ['DeprecatedConstant'],
             ],
             'arrayUniqueOfObjectsWithANamedStringFlag' => [
                 'code' => '<?php
@@ -5476,6 +5846,75 @@ final class ArrayFunctionCallTest extends TestCase
 
                     array_unique($values);',
                 'error_message' => 'PossiblyInvalidArgument',
+            ],
+            'arrayKeyExistsWithStringKeyOnList' => [
+                'code' => '<?php
+                    /** @param list<int> $a */
+                    function f(array $a): bool {
+                        return array_key_exists("a", $a);
+                    }',
+                'error_message' => 'InvalidArrayOffset - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:49 - Cannot check offset',
+            ],
+            'arrayKeyExistsWithStringKeyOnIntKeyedArray' => [
+                'code' => '<?php
+                    /** @param array<int, string> $a */
+                    function f(array $a): bool {
+                        return array_key_exists("x", $a);
+                    }',
+                'error_message' => 'InvalidArrayOffset - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:49 - Cannot check offset',
+            ],
+            'keyExistsWithStringKeyOnList' => [
+                'code' => '<?php
+                    /** @param list<int> $a */
+                    function f(array $a): bool {
+                        return key_exists("a", $a);
+                    }',
+                'error_message' => 'InvalidArrayOffset - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:43 - Cannot check offset',
+            ],
+            'arrayKeyExistsWithStringKeyOnListInAForeach' => [
+                'code' => '<?php
+                    /** @param list<int> $a */
+                    function f(array $a): void {
+                        foreach ([1, 2] as $_) {
+                            if (array_key_exists("a", $a)) {
+                                echo 1;
+                            }
+                        }
+                    }',
+                'error_message' => 'InvalidArrayOffset - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:50 - Cannot check offset',
+            ],
+            'arrayKeyExistsWithStringKeyOnListInAWhile' => [
+                'code' => '<?php
+                    /** @param list<int> $a */
+                    function f(array $a): void {
+                        while (rand(0, 1)) {
+                            if (array_key_exists("a", $a)) {
+                                echo 1;
+                            }
+                        }
+                    }',
+                'error_message' => 'InvalidArrayOffset - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:50 - Cannot check offset',
+            ],
+            'negatedArrayKeyExistsWithStringKeyOnList' => [
+                'code' => '<?php
+                    /** @param list<int> $a */
+                    function f(array $a): bool {
+                        return !array_key_exists("a", $a);
+                    }',
+                'error_message' => 'InvalidArrayOffset - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:50 - Cannot check offset',
+            ],
+            'arrayFilterWithAnInvokableLaterInIntersectionWithAWrongParamType' => [
+                'code' => '<?php
+                    interface Named {}
+                    class StringHandler { public function __invoke(string $value): int { return 1; } }
+
+                    /** @param list<int> $xs */
+                    function f(Named&StringHandler $h, array $xs): void {
+                        array_filter($xs, $h);
+                    }',
+                'error_message' => 'InvalidScalarArgument',
+                'error_levels' => [],
+                'php_version' => '8.1',
             ],
         ];
     }

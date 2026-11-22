@@ -2001,6 +2001,328 @@ final class ReferenceTest extends TestCase
                         }
                     }',
             ],
+            'writeAfterLoopReachesItemsBoundUnderLoopKey' => [ // #14206
+                'code' => '<?php
+                    /** @var list<string> */
+                    $keys = [];
+                    $x = 1;
+                    $out = [];
+                    foreach ($keys as $k) {
+                        $out[$k] = &$x;
+                    }
+                    $x = "z";
+                ',
+                'assertions' => [
+                    '$out===' => 'array<string, \'z\'|1>',
+                ],
+            ],
+            'writeAfterIfReachesItemBoundInIt' => [
+                'code' => '<?php
+                    $x = 1;
+                    $out = ["b" => true];
+                    if (rand(0, 1)) {
+                        $out["a"] = &$x;
+                    }
+                    $x = "z";
+                ',
+                'assertions' => [
+                    '$out===' => 'array{a?: \'z\'|1, b: true}',
+                ],
+            ],
+            'writeAfterSwitchReachesItemBoundInACase' => [
+                'code' => '<?php
+                    /** @var string */
+                    $k = "";
+                    $x = 1;
+                    $out = [];
+                    switch (rand(0, 2)) {
+                        case 1:
+                            $out[$k] = &$x;
+                            break;
+                        default:
+                            echo "d";
+                    }
+                    $x = "z";
+                ',
+                'assertions' => [
+                    '$out===' => 'array<string, \'z\'|1>',
+                ],
+            ],
+            'writeAfterTernaryReachesVariableBoundInABranch' => [
+                'code' => '<?php
+                    $x = 1;
+                    $r = 0;
+                    rand(0, 1) ? ($r = &$x) : null;
+                    $x = "z";
+                ',
+                'assertions' => [
+                    '$r===' => '\'z\'|0|1',
+                ],
+            ],
+            'writeAfterMatchReachesVariableBoundInAnArm' => [
+                'code' => '<?php
+                    $x = 1;
+                    $r = 0;
+                    match (rand(0, 2)) {
+                        1 => $r = &$x,
+                        default => null,
+                    };
+                    $x = "z";
+                ',
+                'assertions' => [
+                    '$r===' => '\'z\'|0|1',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'writeAfterSwitchReachesVariableBoundBeforeTheBreakOfACase' => [
+                'code' => '<?php
+                    $x = 1;
+                    $r = 0;
+                    switch (rand(0, 2)) {
+                        case 1:
+                            if (rand(0, 1)) {
+                                $r = &$x;
+                                break;
+                            }
+                            return;
+                        default:
+                            echo "d";
+                    }
+                    $x = "z";
+                ',
+                'assertions' => [
+                    '$r===' => '\'z\'|0|1',
+                ],
+            ],
+            'writeAfterTernaryReachesVariableBoundInTheOnlyBranchThatCompletes' => [
+                'code' => '<?php
+                    $x = 1;
+                    $r = 0;
+                    $v = rand(0, 1) ? ($r = &$x) : throw new Exception();
+                    $x = "z";
+                ',
+                'assertions' => [
+                    '$r===' => '\'z\'|1',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'writeAfterMatchReachesVariableBoundInTheOnlyArmThatCompletes' => [
+                'code' => '<?php
+                    $x = 1;
+                    $r = 0;
+                    $v = match (rand(0, 2)) {
+                        1 => ($r = &$x),
+                        default => throw new Exception(),
+                    };
+                    $x = "z";
+                ',
+                'assertions' => [
+                    '$r===' => '\'z\'|1',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'writeAfterLoopReachesVariableBoundInIt' => [
+                'code' => '<?php
+                    /** @var list<string> */
+                    $keys = [];
+                    $x = 1;
+                    $r = 0;
+                    foreach ($keys as $_k) {
+                        $r = &$x;
+                    }
+                    $x = "z";
+                ',
+                'assertions' => [
+                    '$r===' => '\'z\'|0|1',
+                ],
+            ],
+            'writeAfterIfElseReachesVariableBoundInBothBranches' => [
+                'code' => '<?php
+                    $x = 1;
+                    $y = 2;
+                    if (rand(0, 1)) {
+                        $r = &$x;
+                    } else {
+                        $r = &$y;
+                    }
+                    $x = "z";
+                ',
+                'assertions' => [
+                    '$r===' => '\'z\'|1|2',
+                ],
+            ],
+            'writeToItemAfterLoopReachesVariableBoundToIt' => [
+                'code' => '<?php
+                    /** @var list<string> */
+                    $keys = [];
+                    $x = 1;
+                    $out = [];
+                    foreach ($keys as $_k) {
+                        $out["a"] = &$x;
+                    }
+                    $out["a"] = "z";
+                ',
+                'assertions' => [
+                    '$x===' => '\'z\'|1',
+                ],
+            ],
+            'writeAfterLoopReachesItemBoundToVariableInIt' => [
+                'code' => '<?php
+                    /** @var list<string> */
+                    $keys = [];
+                    $out = ["a" => 1];
+                    $r = 0;
+                    foreach ($keys as $_k) {
+                        $r = &$out["a"];
+                    }
+                    /** @psalm-suppress ReferenceReusedFromConfusingScope */
+                    $r = "z";
+                ',
+                'assertions' => [
+                    '$out===' => 'array{a: \'z\'|1}',
+                ],
+            ],
+            'writeAfterLoopReachesNestedItemsBoundUnderLoopKey' => [
+                'code' => '<?php
+                    /** @var list<string> */
+                    $keys = [];
+                    $x = 1;
+                    $out = ["n" => ["m" => true]];
+                    foreach ($keys as $k) {
+                        $out["n"][$k] = &$x;
+                    }
+                    $x = "z";
+                ',
+                'assertions' => [
+                    '$out===' => 'array{n: non-empty-array<string, \'z\'|1|true>}',
+                ],
+            ],
+            'writeAfterLoopReachesItemsBoundInNestedIf' => [
+                'code' => '<?php
+                    /** @var list<string> */
+                    $keys = [];
+                    $x = 1;
+                    $out = [];
+                    foreach ($keys as $k) {
+                        if (rand(0, 1)) {
+                            $out[$k] = &$x;
+                        }
+                    }
+                    $x = "z";
+                ',
+                'assertions' => [
+                    '$out===' => 'array<string, \'z\'|1>',
+                ],
+            ],
+            'writeAfterLoopReachesKnownItemsOfArrayHoldingItemsOfUnknownKey' => [
+                'code' => '<?php
+                    /** @var list<string> */
+                    $keys = [];
+                    $x = 1;
+                    $out = [];
+                    $out["b"] = 1;
+                    foreach ($keys as $k) {
+                        $out[$k] = &$x;
+                    }
+                    echo $out["b"];
+                    $x = "z";
+                    $b = $out["b"];
+                ',
+                'assertions' => [
+                    '$b===' => '\'z\'|1',
+                ],
+            ],
+            'writeAfterLoopKeepsItemOfArrayHoldingItemsOfUnknownKeyBoundSince' => [
+                'code' => '<?php
+                    /** @var array<string, int> */
+                    $elements = [];
+                    /** @var string */
+                    $key = "";
+                    /** @var list<string> */
+                    $keys = [];
+                    $x = 1;
+                    foreach ($keys as $k) {
+                        if (rand(0, 1)) {
+                            $elements[$k] = &$x;
+                        }
+                    }
+                    $r = &$elements[$key];
+                    $x = 2;
+                    $r = "s";
+                ',
+                'assertions' => [
+                    '$elements===' => 'array<string, \'s\'|int>',
+                ],
+            ],
+            'writeAfterLoopReachesItemsBoundUnderLoopKeyOfArrayUnitedSince' => [
+                'code' => '<?php
+                    /** @var list<string> */
+                    $keys = [];
+                    $x = 1;
+                    $out = [];
+                    foreach ($keys as $k) {
+                        $out[$k] = &$x;
+                    }
+                    $out += ["q" => 3];
+                    $x = "z";
+                ',
+                'assertions' => [
+                    '$out===' => 'non-empty-array<string, \'z\'|1|3>',
+                ],
+            ],
+            'writeAfterLoopLeavesArrayAssignedSinceUnchanged' => [
+                'code' => '<?php
+                    /** @var list<string> */
+                    $keys = [];
+                    $x = 1;
+                    $out = [];
+                    foreach ($keys as $k) {
+                        $out[$k] = &$x;
+                    }
+                    $out = ["a" => 5];
+                    $x = "z";
+                ',
+                'assertions' => [
+                    '$out===' => 'array{a: 5}',
+                ],
+            ],
+            'writeAfterLoopLeavesArrayUnsetAndAssignedSinceUnchanged' => [
+                'code' => '<?php
+                    /** @var list<string> */
+                    $keys = [];
+                    $x = 1;
+                    $out = [];
+                    foreach ($keys as $k) {
+                        $out[$k] = &$x;
+                    }
+                    unset($out);
+                    $out = ["b" => 5];
+                    $x = "z";
+                ',
+                'assertions' => [
+                    '$out===' => 'array{b: 5}',
+                ],
+            ],
+            'writeAfterLoopToVariableBoundToItemLeavesArrayAssignedSinceUnchanged' => [
+                'code' => '<?php
+                    /** @var list<string> */
+                    $keys = [];
+                    $out = ["a" => 1];
+                    $r = 0;
+                    foreach ($keys as $_k) {
+                        $r = &$out["a"];
+                    }
+                    $out = ["a" => 7];
+                    /** @psalm-suppress ReferenceReusedFromConfusingScope */
+                    $r = "z";
+                ',
+                'assertions' => [
+                    '$out===' => 'array{a: 7}',
+                ],
+            ],
         ];
     }
 
@@ -2250,6 +2572,7 @@ final class ReferenceTest extends TestCase
                         return $h;
                     }',
                 'error_message' => 'NullableReturnStatement',
+                'error_levels' => ['DeprecatedSyntax'],
             ],
             'issueInTheKeyOfAnArrayItemPassedByReference' => [
                 'code' => '<?php
@@ -2553,6 +2876,25 @@ final class ReferenceTest extends TestCase
                     /** @psalm-trace $bar */;
                 ',
                 'error_message' => ' - $bar: string',
+            ],
+            'referenceReuseOfVariableBoundToArrayItemsInPreviousLoop' => [
+                'code' => '<?php
+                    /** @param list<string> $keys */
+                    function f(array $keys): array {
+                        $x = 1;
+                        $z = 2;
+                        $out = [];
+                        foreach ($keys as $k) {
+                            $out[$k] = &$x;
+                        }
+                        foreach ($keys as $_k) {
+                            $x = &$z;
+                        }
+                        $x = "z";
+                        return [$out, $z];
+                    }
+                ',
+                'error_message' => 'ReferenceReusedFromConfusingScope - src' . DIRECTORY_SEPARATOR . 'somefile.php:13:25',
             ],
         ];
     }
