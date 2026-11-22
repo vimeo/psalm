@@ -391,51 +391,6 @@ final class CallableTypeComparator
         return $bound_callable instanceof TCallable ? $bound_callable : $callable;
     }
 
-    /**
-     * Resolve method-level templates against the expected callable shape, so `[Id::class, 'id']` with
-     * `@template B` matches `callable(int): int` etc.
-     *
-     * @param bool $keep_conditional_returns whether the templates generated for the parameters stay unresolved,
-     *     as the conditional return types of the method stay
-     */
-    private static function bindMethodTemplates(
-        Codebase $codebase,
-        TCallable $callable,
-        FunctionLikeStorage $method_storage,
-        ?TCallable $container_type_part,
-        bool $keep_conditional_returns = false,
-    ): TCallable {
-        $template_types = [];
-
-        foreach ($method_storage->template_types ?? [] as $name => $bounds) {
-            if (!$keep_conditional_returns || !str_starts_with($name, 'TGeneratedFromParam')) {
-                $template_types[$name] = $bounds;
-            }
-        }
-
-        if ($template_types === [] || $container_type_part === null) {
-            return $callable;
-        }
-
-        $template_result = new TemplateResult($template_types, []);
-
-        TemplateStandinTypeReplacer::fillTemplateResult(
-            new Union([$callable]),
-            $template_result,
-            $codebase,
-            null,
-            new Union([$container_type_part]),
-        );
-
-        $replaced = TemplateInferredTypeReplacer::replace(
-            new Union([$callable]),
-            $template_result,
-            $codebase,
-        )->getSingleAtomic();
-
-        return $replaced instanceof TCallable ? $replaced : $callable;
-    }
-
     private static function getCallableFromMethodId(
         Codebase $codebase,
         MethodIdentifier $method_id,
@@ -515,7 +470,29 @@ final class CallableTypeComparator
                 }
             }
 
-            $callable = self::bindMethodTemplates($codebase, $callable, $method_storage, $container_type_part);
+            // Resolve method-level templates against the expected callable shape, so
+            // `[Id::class, 'id']` with `@template B` matches `callable(int): int` etc.
+            if ($method_storage->template_types !== null && $container_type_part !== null) {
+                $template_result = new TemplateResult($method_storage->template_types, []);
+
+                TemplateStandinTypeReplacer::fillTemplateResult(
+                    new Union([$callable]),
+                    $template_result,
+                    $codebase,
+                    null,
+                    new Union([$container_type_part]),
+                );
+
+                $replaced = TemplateInferredTypeReplacer::replace(
+                    new Union([$callable]),
+                    $template_result,
+                    $codebase,
+                )->getSingleAtomic();
+
+                if ($replaced instanceof TCallable) {
+                    $callable = $replaced;
+                }
+            }
 
             // the templates generated for the parameters are resolved, those of the caller are not the method's
             $generated_templates = [];
@@ -836,7 +813,8 @@ final class CallableTypeComparator
         ) {
             return new TCallable();
         } elseif ($input_type_part instanceof TNamedObject
-            && ($invokable = self::getInvokeSupplier($codebase, $input_type_part)) !== null
+            && ($invokable = self::getInvokeMember($codebase, $input_type_part)) !== null
+            && $codebase->classExists($invokable->value, null, $context)
         ) {
             $invoke_id = new MethodIdentifier(
                 $invokable->value,
@@ -906,14 +884,6 @@ final class CallableTypeComparator
                         $callable,
                         $invokable,
                         $declaring_method_id,
-                    );
-                    // the templates generated for the parameters stay unbound, and a conditional return type with them
-                    $callable = self::bindMethodTemplates(
-                        $codebase,
-                        $callable,
-                        $method_storage,
-                        $container_type_part,
-                        true,
                     );
 
                     if ($template_result) {
@@ -1034,14 +1004,13 @@ final class CallableTypeComparator
     }
 
     /**
-     * The class that supplies `__invoke` to an object type: its first member if that has it, and is a class, or, if
-     * the first member has none, the first later one that is a class with it. An interface as the first member that
-     * has it supplies none: the signatures of the later members may differ from it.
+     * The member of an object type whose `__invoke` it has: the type itself, or else the first class of those it is
+     * intersected with
      */
-    public static function getInvokeSupplier(Codebase $codebase, TNamedObject $object): ?TNamedObject
+    public static function getInvokeMember(Codebase $codebase, TNamedObject $object): ?TNamedObject
     {
         if ($codebase->methodExists(new MethodIdentifier($object->value, '__invoke'))) {
-            return $codebase->classExists($object->value) ? $object : null;
+            return $object;
         }
 
         foreach ($object->getIntersectionTypes() as $member) {
@@ -1054,17 +1023,6 @@ final class CallableTypeComparator
         }
 
         return null;
-    }
-
-    /**
-     * Whether an object type can be called: a class it consists of has `__invoke`, or its first member, an interface
-     * perhaps, has
-     */
-    public static function isInvokable(Codebase $codebase, TNamedObject $object): bool
-    {
-        return self::getInvokeSupplier($codebase, $object) !== null
-            || ($codebase->classOrInterfaceExists($object->value)
-                && $codebase->methodExists(new MethodIdentifier($object->value, '__invoke')));
     }
 
     /**

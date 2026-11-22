@@ -5001,22 +5001,6 @@ final class ArrayFunctionCallTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
-            'arrayMapOfAnInvokableObjectUsingFuncGetArgsTakesAnyNumberOfArrays' => [
-                'code' => '<?php
-                    final class CountArgs
-                    {
-                        public function __invoke(): int { return count(func_get_args()); }
-
-                        public function count(): int { return count(func_get_args()); }
-                    }
-
-                    $counter = new CountArgs();
-                    $invoked = array_map($counter, [1], [2]);
-                    $counted = array_map($counter->count(...), [1], [2]);',
-                'assertions' => [],
-                'ignored_issues' => [],
-                'php_version' => '8.1',
-            ],
         ];
     }
 
@@ -5883,31 +5867,6 @@ final class ArrayFunctionCallTest extends TestCase
                         array_filter($xs, $h);
                     }',
                 'error_message' => 'InvalidScalarArgument',
-                'error_levels' => [],
-                'php_version' => '8.1',
-            ],
-            'arrayMapOfAnInvokableObjectWithAWrongElementType' => [
-                'code' => '<?php
-                    final class Token {}
-                    final class HandlesToken { public function __invoke(Token $token): int { return 1; } }
-
-                    /** @param list<int> $xs */
-                    function f(HandlesToken $h, array $xs): void {
-                        array_map($h, $xs);
-                    }',
-                'error_message' => 'Parameter 1 of closure passed to function array_map expects Token, but int',
-            ],
-            'arrayMapOfAnInvokableLaterInIntersectionWithAWrongElementType' => [
-                'code' => '<?php
-                    interface Named {}
-                    final class Token {}
-                    class HandlesToken { public function __invoke(Token $token): int { return 1; } }
-
-                    /** @param list<int> $xs */
-                    function f(Named&HandlesToken $h, array $xs): void {
-                        array_map($h, $xs);
-                    }',
-                'error_message' => 'Parameter 1 of closure passed to function array_map expects Token, but int',
                 'error_levels' => [],
                 'php_version' => '8.1',
             ],

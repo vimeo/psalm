@@ -980,20 +980,7 @@ final class ArrayFunctionArgumentsAnalyzer
     ): void {
         $codebase = $statements_analyzer->getCodebase();
 
-        // an invokable object is called with the values as a closure is: through its __invoke
-        $invoke_callable = $closure_type instanceof TNamedObject && !$closure_type instanceof TClosure
-            ? CallableTypeComparator::getCallableFromAtomic(
-                $codebase,
-                $closure_type,
-                null,
-                $statements_analyzer,
-                $context,
-            )
-            : null;
-
-        if ($invoke_callable !== null) {
-            $closure_types = [&$invoke_callable];
-        } elseif (!$closure_type instanceof TClosure) {
+        if (!$closure_type instanceof TClosure) {
             if ($method_id === 'array_map') {
                 return;
             }
@@ -1193,15 +1180,10 @@ final class ArrayFunctionArgumentsAnalyzer
             }
         }
 
-        if (!$accepts_any_count && $closure_type->callable_id !== null) {
-            $callee_id = $closure_type->callable_id;
-            $callee_method_id = str_contains($callee_id, '::') ? MethodIdentifier::wrap($callee_id) : null;
-
-            $accepts_any_count = ($callee_method_id !== null
-                ? ($codebase->methods->hasStorage($callee_method_id)
-                    ? $codebase->methods->getStorage($callee_method_id)
-                    : null)
-                : FunctionCallReturnTypeFetcher::getClosureStorage($statements_analyzer, $callee_id)
+        if (!$accepts_any_count && $closure_type instanceof TClosure && $closure_type->callable_id !== null) {
+            $accepts_any_count = FunctionCallReturnTypeFetcher::getClosureStorage(
+                $statements_analyzer,
+                $closure_type->callable_id,
             )?->variadic === true;
         }
 

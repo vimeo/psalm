@@ -1850,7 +1850,8 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                 } elseif ($var_type_part instanceof TNull) {
                     // handled above
                 } elseif (!$var_type_part instanceof TNamedObject
-                    || !CallableTypeComparator::isInvokable($codebase, $var_type_part)
+                    || ($invoke_member = CallableTypeComparator::getInvokeMember($codebase, $var_type_part)) === null
+                    || !$codebase->classlikes->classOrInterfaceExists($invoke_member->value, null, $context)
                 ) {
                     $invalid_function_call_types[] = (string)$var_type_part;
                 } else {
@@ -1950,10 +1951,8 @@ final class FunctionCallAnalyzer extends CallAnalyzer
     ): void {
         // a first-class callable of a method is looked up in the first member of an intersection only
         if ($stmt->isFirstClassCallable() && $atomic_type instanceof TNamedObject) {
-            $atomic_type = CallableTypeComparator::getInvokeSupplier(
-                $statements_analyzer->getCodebase(),
-                $atomic_type,
-            ) ?? $atomic_type;
+            $atomic_type = CallableTypeComparator::getInvokeMember($statements_analyzer->getCodebase(), $atomic_type)
+                ?? $atomic_type;
         }
 
         $old_data_provider = $statements_analyzer->node_data;

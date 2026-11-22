@@ -890,7 +890,7 @@ final class AtomicTypeComparator
                 || $input_type_part instanceof TKeyedArray
                 || (
                     $input_type_part instanceof TNamedObject &&
-                    CallableTypeComparator::isInvokable($codebase, $input_type_part)
+                    CallableTypeComparator::getInvokeMember($codebase, $input_type_part) !== null
                 )
             )
         ) {
