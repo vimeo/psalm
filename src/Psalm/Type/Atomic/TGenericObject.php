@@ -246,7 +246,8 @@ final class TGenericObject extends TNamedObject
         foreach ($this->type_params as $i => $type_param) {
             $is_star = $this->getProjection($i) === TypeArgumentProjection::Star;
 
-            // the type of a `*` is a function of the class and the other arguments
+            // the type of a `*` is a function of the class and the other arguments (a bound mixin's `*` may hold a
+            // refinement of it, see StarProjection, which this ignores)
             if ($is_star !== ($other_type->getProjection($i) === TypeArgumentProjection::Star)
                 || (!$is_star && !$type_param->equals($other_type->type_params[$i], $ensure_source_equality, false))
             ) {

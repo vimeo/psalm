@@ -9,8 +9,10 @@ use InvalidArgumentException;
 use Psalm\Codebase;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\ClassTemplateParamCollector;
 use Psalm\Internal\Provider\ClassLikeStorageProvider;
+use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
+use Psalm\Internal\Type\TypeArgumentProjection;
 use Psalm\Internal\Type\TypeExpander;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Type\Atomic;
@@ -19,6 +21,7 @@ use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
 
+use function array_keys;
 use function strtolower;
 
 /**
@@ -246,6 +249,8 @@ final class MixinLookup
             $self_call,
         );
 
+        $mixin_template_result = null;
+
         if ($mixin instanceof TTemplateParam) {
             if ($template_params === null) {
                 return null;
@@ -273,9 +278,39 @@ final class MixinLookup
             )]);
         }
 
-        $bound_mixin = TypeExpander::expandUnion(
+        $bound_mixin = self::expand($codebase, $bound_mixin, $self_storage, $storage, $receiver);
+        $bound_mixin = $bound_mixin->isSingle() ? $bound_mixin->getSingleAtomic() : null;
+
+        if ($mixin_template_result !== null
+            && $mixin_template_result->star_bindings !== []
+            && $mixin instanceof TGenericObject
+            && $bound_mixin instanceof TGenericObject
+            && $bound_mixin->hasStarProjection()
+        ) {
+            $bound_mixin = self::holdReadTypes(
+                $codebase,
+                $mixin,
+                $bound_mixin,
+                $mixin_template_result,
+                $self_storage,
+                $storage,
+                $receiver,
+            );
+        }
+
+        return $bound_mixin instanceof TNamedObject ? $bound_mixin : null;
+    }
+
+    private static function expand(
+        Codebase $codebase,
+        Union $type,
+        ClassLikeStorage $self_storage,
+        ClassLikeStorage $storage,
+        Atomic $receiver,
+    ): Union {
+        return TypeExpander::expandUnion(
             $codebase,
-            $bound_mixin,
+            $type,
             $self_storage->name,
             $receiver instanceof TGenericObject ? $receiver : $storage->name,
             $self_storage->parent_class,
@@ -283,9 +318,56 @@ final class MixinLookup
             false,
             $storage->final,
         );
+    }
 
-        $bound_mixin = $bound_mixin->isSingle() ? $bound_mixin->getSingleAtomic() : null;
+    /**
+     * The bound mixin with each `*` holding what its slot reads from the receiver (`Box<T>` of a `Many<*>` with
+     * `T of Post`: `Post`) where that is narrower than the bound of the template of the mixin. Each slot is read on
+     * its own, with the star marks, so a star template inside it (`Box<Pair<T, int>>`) stays a `*` or `never`.
+     * The result must not be expanded again: StarProjection::boundStars() would reset the held types to the bounds.
+     */
+    private static function holdReadTypes(
+        Codebase $codebase,
+        TGenericObject $mixin,
+        TGenericObject $bound_mixin,
+        TemplateResult $mixin_template_result,
+        ClassLikeStorage $self_storage,
+        ClassLikeStorage $storage,
+        Atomic $receiver,
+    ): TGenericObject {
+        $read_result = clone $mixin_template_result;
+        $read_result->star_receiver = false;
+        $read_type_params = [];
 
-        return $bound_mixin instanceof TNamedObject ? $bound_mixin : null;
+        foreach ($mixin->type_params as $type_param) {
+            $read_type_params[] = TemplateInferredTypeReplacer::replace($type_param, $read_result, $codebase);
+        }
+
+        $read_mixin = self::expand(
+            $codebase,
+            new Union([$mixin->setTypeParams($read_type_params)]),
+            $self_storage,
+            $storage,
+            $receiver,
+        );
+        $read_mixin = $read_mixin->isSingle() ? $read_mixin->getSingleAtomic() : null;
+
+        if (!$read_mixin instanceof TGenericObject) {
+            return $bound_mixin;
+        }
+
+        $type_params = $bound_mixin->type_params;
+
+        foreach (array_keys($bound_mixin->getProjections(), TypeArgumentProjection::Star, true) as $offset) {
+            $read_type = $read_mixin->type_params[$offset] ?? null;
+
+            if ($read_type !== null
+                && UnionTypeComparator::isContainedBy($codebase, $read_type, $type_params[$offset])
+            ) {
+                $type_params[$offset] = $read_type;
+            }
+        }
+
+        return $bound_mixin->setHeldTypes($type_params);
     }
 }
