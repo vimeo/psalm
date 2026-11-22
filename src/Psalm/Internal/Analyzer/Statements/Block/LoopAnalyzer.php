@@ -898,12 +898,15 @@ final class LoopAnalyzer
                 continue;
             }
 
+            // unset before one jump and set at the others is possibly undefined too
             if (($loop_scope->vars_at_breaks !== null
                     && !$loop_scope->breaks_through_finally
-                    && !isset($loop_scope->vars_at_breaks[$var_id]))
+                    && (!isset($loop_scope->vars_at_breaks[$var_id])
+                        || $loop_scope->vars_at_breaks[$var_id]->possibly_undefined))
                 || ($loop_scope->vars_at_continues !== null
                     && !$loop_scope->continues_through_finally
-                    && !isset($loop_scope->vars_at_continues[$var_id])
+                    && (!isset($loop_scope->vars_at_continues[$var_id])
+                        || $loop_scope->vars_at_continues[$var_id]->possibly_undefined)
                     && !isset($assigned_after_continue[$var_id]))
             ) {
                 $loop_parent_context->vars_in_scope[$var_id] = $type->setPossiblyUndefined(true);

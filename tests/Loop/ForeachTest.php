@@ -3315,6 +3315,42 @@ final class ForeachTest extends TestCase
                     }',
                 'error_message' => 'PossiblyUndefinedVariable',
             ],
+            'varUnsetBeforeOneOfSeveralBreaksIsPossiblyUndefinedAfterTheLoop' => [
+                'code' => '<?php
+                    /** @param list<int> $items */
+                    function f(array $items, bool $other): void {
+                        $x = 0;
+                        foreach ($items as $i) {
+                            if ($i) {
+                                unset($x);
+                                break;
+                            }
+                            if ($other) {
+                                break;
+                            }
+                        }
+                        echo $x;
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable',
+            ],
+            'varUnsetBeforeOneOfSeveralContinuesIsPossiblyUndefinedAfterTheLoop' => [
+                'code' => '<?php
+                    /** @param list<int> $items */
+                    function f(array $items, bool $other): void {
+                        $x = 0;
+                        foreach ($items as $i) {
+                            if ($i) {
+                                unset($x);
+                                continue;
+                            }
+                            if ($other) {
+                                continue;
+                            }
+                        }
+                        echo $x;
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable',
+            ],
             'varUnsetBeforeContinueOfTheOuterLoopIsPossiblyUndefinedAfterIt' => [
                 'code' => '<?php
                     /**
