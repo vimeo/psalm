@@ -752,7 +752,6 @@
       <code><![CDATA[$cased_method_id]]></code>
       <code><![CDATA[$cased_method_id]]></code>
       <code><![CDATA[$cased_method_id]]></code>
-      <code><![CDATA[$class_generic_params]]></code>
       <code><![CDATA[$context->calling_function_id]]></code>
       <code><![CDATA[$context->calling_function_id]]></code>
       <code><![CDATA[$context->calling_method_id]]></code>
@@ -2868,7 +2867,7 @@
     <ImpureMethodCall>
       <code><![CDATA[TemplateInferredTypeReplacer::replace(
                         $param->type,
-                        $template_result,
+                        $param_template_result,
                         $codebase,
                     )]]></code>
       <code><![CDATA[TemplateInferredTypeReplacer::replace(
@@ -2941,6 +2940,7 @@
                 $input_type,
                 $this,
                 $container_type_params_covariant,
+                $input_star_offsets,
             )]]></code>
       <code><![CDATA[TemplateStandinTypeReplacer::replace(
                 $type_param,

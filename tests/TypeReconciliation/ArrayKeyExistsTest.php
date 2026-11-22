@@ -1015,7 +1015,7 @@ final class ArrayKeyExistsTest extends TestCase
                      */
                     function f($a): void {
                         if (array_key_exists("k", $a)) {
-                            /** @psalm-check-type-exact $a = ArrayAccess<string, int>|array{k: mixed, ...<string, int>} */;
+                            /** @psalm-check-type-exact $a = ArrayAccess<string, int>|array{k: int, ...<string, int>} */;
                         }
                     }',
                 'assertions' => [],

@@ -515,6 +515,9 @@ final class TryAnalyzer
                     $catch_context->vars_possibly_in_scope,
                     $context->vars_possibly_in_scope,
                 );
+
+                // what a catch that goes on assigns is possibly assigned after the try
+                $context->possibly_assigned_var_ids += $catch_context->possibly_assigned_var_ids;
             } else {
                 if ($stmt->finally) {
                     $context->vars_possibly_in_scope = array_merge(
@@ -571,7 +574,36 @@ final class TryAnalyzer
                     }
                 }
 
+                // the state the code after the try starts from: the end of the try or of a catch that goes on
+                $post_try_context = clone $context;
+                $post_try_context->inside_finally = true;
+                $post_try_context->assigned_var_ids = [];
+                $post_try_context->possibly_assigned_var_ids = [];
+
                 $statements_analyzer->analyze($stmt->finally->stmts, $finally_context);
+
+                // a variable the finally block assigns on some paths only holds, after the try, what the block leaves
+                // when it runs from that state: the type it ends with has the state before the try in it too
+                $partially_assigned_var_ids = [];
+
+                /** @var string $var_id */
+                foreach ($finally_context->possibly_assigned_var_ids as $var_id => $_) {
+                    if (!isset($finally_context->assigned_var_ids[$var_id])) {
+                        $partially_assigned_var_ids[$var_id] = true;
+                    }
+                }
+
+                if ($partially_assigned_var_ids !== []) {
+                    $old_node_data = $statements_analyzer->node_data;
+                    $statements_analyzer->node_data = clone $old_node_data;
+
+                    IssueBuffer::startRecording();
+                    $statements_analyzer->analyze($stmt->finally->stmts, $post_try_context);
+                    IssueBuffer::clearRecordingLevel();
+                    IssueBuffer::stopRecording();
+
+                    $statements_analyzer->node_data = $old_node_data;
+                }
 
                 // the code after the try runs after the finally
                 $context->intersectNullArrayOffsets($finally_context);
@@ -585,20 +617,40 @@ final class TryAnalyzer
 
                 $finally_has_returned = $finally_context->has_returned;
 
+                // a variable assigned on some paths of the finally block only (in a condition, a loop, a nested try)
+                // takes what it holds after the block too
+                $finally_assigned_var_ids = $finally_context->assigned_var_ids
+                    + $finally_context->possibly_assigned_var_ids;
+
                 /** @var string $var_id */
-                foreach ($finally_context->assigned_var_ids as $var_id => $_) {
+                foreach ($finally_assigned_var_ids as $var_id => $_) {
                     if (isset($context->vars_in_scope[$var_id])
                         && isset($finally_context->vars_in_scope[$var_id])
                     ) {
-                        $possibly_undefined = $context->vars_in_scope[$var_id]->possibly_undefined
-                            && $context->vars_in_scope[$var_id]->possibly_undefined_from_try;
+                        $type_after_try = $context->vars_in_scope[$var_id];
+
+                        if (isset($partially_assigned_var_ids[$var_id])
+                            && isset($post_try_context->vars_in_scope[$var_id])
+                        ) {
+                            $context->vars_in_scope[$var_id] = $post_try_context->vars_in_scope[$var_id];
+                            continue;
+                        }
 
                         // the finally block started from every state the try and the catches can end in
                         $context->vars_in_scope[$var_id] = $finally_context->vars_in_scope[$var_id];
 
-                        if ($possibly_undefined) {
-                            $context->vars_in_scope[$var_id] = $context->vars_in_scope[$var_id]
-                                ->setPossiblyUndefined(false, false);
+                        if (isset($finally_context->assigned_var_ids[$var_id])) {
+                            // assigned on every path of the finally block: set whatever the try left
+                            if ($type_after_try->possibly_undefined && $type_after_try->possibly_undefined_from_try) {
+                                $context->vars_in_scope[$var_id] = $context->vars_in_scope[$var_id]
+                                    ->setPossiblyUndefined(false, false);
+                            }
+                        } elseif ($type_after_try->possibly_undefined) {
+                            // a path of the finally block that does not assign it leaves it as the try left it
+                            $context->vars_in_scope[$var_id] = $context->vars_in_scope[$var_id]->setPossiblyUndefined(
+                                true,
+                                $type_after_try->possibly_undefined_from_try,
+                            );
                         }
                     } elseif (isset($finally_context->vars_in_scope[$var_id])) {
                         $context->vars_in_scope[$var_id] = $finally_context->vars_in_scope[$var_id];
