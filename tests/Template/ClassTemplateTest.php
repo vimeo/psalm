@@ -57,6 +57,26 @@ final class ClassTemplateTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'literalClassStringArgumentForTheClassStringOfATemplate' => [
+                'code' => '<?php
+                    /** @psalm-consistent-constructor */
+                    class Animal {}
+                    final class Cat extends Animal {}
+
+                    /**
+                     * @template T of Animal
+                     * @param class-string<T> $species
+                     * @return T
+                     */
+                    function adopt(string $species): Animal {
+                        return new $species();
+                    }
+
+                    $cat = adopt(Cat::class);',
+                'assertions' => [
+                    '$cat' => 'Cat',
+                ],
+            ],
             'listParamInheritedFromATemplatedParentAcceptsAList' => [
                 'code' => '<?php
                     /** @template T */
@@ -6190,6 +6210,36 @@ final class ClassTemplateTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'classStringOfTheBoundAsTheClassStringOfATemplate' => [
+                'code' => '<?php
+                    /** @psalm-consistent-constructor */
+                    class Animal {}
+
+                    /** @template T of Animal */
+                    class Shelter {
+                        /** @var class-string<T> */
+                        protected string $species = Animal::class;
+
+                        /** @return T */
+                        public function adopt(): Animal {
+                            return new ($this->species)();
+                        }
+                    }',
+                'error_message' => 'PropertyTypeCoercion',
+            ],
+            'returnTheClassStringOfTheBoundAsTheClassStringOfATemplate' => [
+                'code' => '<?php
+                    class Animal {}
+
+                    /**
+                     * @template T of Animal
+                     * @return class-string<T>
+                     */
+                    function species(): string {
+                        return Animal::class;
+                    }',
+                'error_message' => 'LessSpecificReturnStatement',
+            ],
             'listParamInheritedFromATemplatedParentRejectsAWrongList' => [
                 'code' => '<?php
                     /** @template T */
