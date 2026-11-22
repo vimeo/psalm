@@ -37,6 +37,7 @@ use Psalm\Issue\TooFewArguments;
 use Psalm\Issue\TooManyArguments;
 use Psalm\IssueBuffer;
 use Psalm\Node\Expr\VirtualArrayDimFetch;
+use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\Scalar;
@@ -991,6 +992,16 @@ final class ArrayFunctionArgumentsAnalyzer
             )
             : null;
 
+        if ($invoke_callable === null
+            && $closure_type instanceof TNamedObject
+            && !$closure_type instanceof TClosure
+            && CallableTypeComparator::isInvokable($codebase, $closure_type)
+        ) {
+            self::checkInvokeMembers($statements_analyzer, $method_id, $closure_type, $closure_arg, $array_arg_types);
+
+            return;
+        }
+
         if ($invoke_callable !== null) {
             $closure_types = [&$invoke_callable];
         } elseif (!$closure_type instanceof TClosure) {
@@ -1138,6 +1149,49 @@ final class ArrayFunctionArgumentsAnalyzer
             );
         }
         unset($closure_type);
+    }
+
+    /**
+     * Where several members of an object have __invoke, the signatures may differ: the callback is called with the
+     * elements only if one of them takes them
+     *
+     * @param array<int, TArray|null> $array_arg_types
+     */
+    private static function checkInvokeMembers(
+        StatementsAnalyzer $statements_analyzer,
+        string $method_id,
+        TNamedObject $object,
+        PhpParser\Node\Arg $closure_arg,
+        array $array_arg_types,
+    ): void {
+        $values = [];
+
+        foreach ($array_arg_types as $array_arg_type) {
+            $value_type = $array_arg_type->type_params[1] ?? Type::getMixed();
+
+            if ($value_type->hasMixed()) {
+                return;
+            }
+
+            $values[] = new FunctionLikeParameter('', false, $value_type);
+        }
+
+        if (!CallableTypeComparator::isNotExplicitlyCallableTypeCallable(
+            $statements_analyzer->getCodebase(),
+            $object,
+            new TCallable($values),
+            null,
+        )) {
+            IssueBuffer::maybeAdd(
+                new InvalidArgument(
+                    'No __invoke of ' . $object->getId() . ' takes the elements of the arrays passed to '
+                        . $method_id,
+                    new CodeLocation($statements_analyzer->getSource(), $closure_arg->value),
+                    $method_id,
+                ),
+                $statements_analyzer->getSuppressedIssues(),
+            );
+        }
     }
 
     /**

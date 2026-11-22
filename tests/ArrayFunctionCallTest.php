@@ -5015,6 +5015,20 @@ final class ArrayFunctionCallTest extends TestCase
 
                     $counts = array_map(new CountArgs(), [1], [2]);',
             ],
+            'arrayMapOfSeveralLaterInvokableMembersTakesTheElementsOfOne' => [
+                'code' => '<?php
+                    interface Marker {}
+                    interface Textual { public function __invoke(string $value): int; }
+                    interface Numeric { public function __invoke(int $value): int; }
+
+                    function f(Marker&Textual&Numeric $h): void {
+                        array_map($h, [1]);
+                        array_map($h, ["a"]);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
         ];
     }
 
@@ -5906,6 +5920,19 @@ final class ArrayFunctionCallTest extends TestCase
                         array_map($h, $xs);
                     }',
                 'error_message' => 'Parameter 1 of closure passed to function array_map expects Token, but int',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'arrayMapOfSeveralLaterInvokableMembersTakesNoneOfTheElements' => [
+                'code' => '<?php
+                    interface Marker {}
+                    interface Textual { public function __invoke(string $value): int; }
+                    interface Numeric { public function __invoke(int $value): int; }
+
+                    function f(Marker&Textual&Numeric $h): void {
+                        array_map($h, [new stdClass()]);
+                    }',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:35 - No __invoke of Marker&Textual&Numeric takes the elements of the arrays passed to array_map',
                 'error_levels' => [],
                 'php_version' => '8.1',
             ],
