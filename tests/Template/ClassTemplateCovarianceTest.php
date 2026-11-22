@@ -644,6 +644,74 @@ final class ClassTemplateCovarianceTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'allowCovariantTemplateInAPseudoMethodReturnAndCallableParam' => [
+                'code' => '<?php
+                    /**
+                     * @template-covariant T
+                     * @method T get()
+                     * @method void each(Closure(T): void $f)
+                     */
+                    final class C {
+                        public function __call(string $name, array $arguments) {
+                            return null;
+                        }
+                    }',
+            ],
+            'allowAnInvariantTemplateInAPseudoMethodParam' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @method void set(T $value)
+                     */
+                    final class C {
+                        public function __call(string $name, array $arguments) {
+                            return null;
+                        }
+                    }',
+            ],
+            'allowAPseudoMethodParamOfAnUnknownClassOfACovariantClass' => [
+                'code' => '<?php
+                    /**
+                     * @template-covariant T
+                     * @method void set(Missing $value)
+                     */
+                    final class C {
+                        public function __call(string $name, array $arguments) {
+                            return null;
+                        }
+                    }',
+            ],
+            'allowAPseudoMethodParamOfACovariantTemplateTheClassSuppresses' => [
+                'code' => '<?php
+                    /**
+                     * @template-covariant T
+                     * @method void set(T $value)
+                     * @psalm-suppress InvalidTemplateParam
+                     */
+                    final class C {
+                        public function __call(string $name, array $arguments) {
+                            return null;
+                        }
+                    }',
+            ],
+            'allowAPseudoMethodParamOfAParentTemplateInAChild' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @method void set(T $value)
+                     */
+                    abstract class Base {
+                        public function __call(string $name, array $arguments) {
+                            return null;
+                        }
+                    }
+
+                    /**
+                     * @template-covariant U
+                     * @extends Base<int>
+                     */
+                    final class Child extends Base {}',
+            ],
         ];
     }
 
@@ -903,6 +971,71 @@ final class ClassTemplateCovarianceTest extends TestCase
                         /** @param Closure(): T $f */
                         public function produce(Closure $f): void {}
                     }',
+                'error_message' => 'InvalidTemplateParam',
+            ],
+            'preventCovariantTemplateInAPseudoMethodParam' => [
+                'code' => '<?php
+                    /**
+                     * @template-covariant T
+                     * @method void set(T $value)
+                     */
+                    final class C {
+                        public function __call(string $name, array $arguments) {
+                            return null;
+                        }
+                    }',
+                'error_message' => 'InvalidTemplateParam',
+            ],
+            'preventCovariantTemplateInACallableReturnOfAPseudoMethodParam' => [
+                'code' => '<?php
+                    /**
+                     * @template-covariant T
+                     * @method void produce(Closure(): T $f)
+                     */
+                    final class C {
+                        public function __call(string $name, array $arguments) {
+                            return null;
+                        }
+                    }',
+                'error_message' => 'InvalidTemplateParam',
+            ],
+            'preventCovariantTemplateInAnInvariantParamOfAGenericInAPseudoMethodParam' => [
+                'code' => '<?php
+                    /** @template U */
+                    final class Box {}
+
+                    /**
+                     * @template-covariant T
+                     * @method void set(Box<T> $box)
+                     */
+                    final class C {
+                        public function __call(string $name, array $arguments) {
+                            return null;
+                        }
+                    }',
+                'error_message' => 'InvalidTemplateParam',
+            ],
+            'preventCovariantTemplateInAnOverloadOfAPseudoMethod' => [
+                'code' => '<?php
+                    /**
+                     * @template-covariant T
+                     * @method void set(int $index)
+                     * @method void set(int $index, T $value)
+                     */
+                    final class C {
+                        public function __call(string $name, array $arguments) {
+                            return null;
+                        }
+                    }',
+                'error_message' => 'InvalidTemplateParam',
+            ],
+            'preventCovariantTemplateInAPseudoMethodParamOfAnInterface' => [
+                'code' => '<?php
+                    /**
+                     * @template-covariant T
+                     * @method void set(T $value)
+                     */
+                    interface I {}',
                 'error_message' => 'InvalidTemplateParam',
             ],
         ];

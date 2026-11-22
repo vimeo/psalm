@@ -24,6 +24,7 @@ use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Internal\Type\TypeExpander;
 use Psalm\Internal\TypeVisitor\ContainsClassLikeVisitor;
 use Psalm\Internal\TypeVisitor\ContainsStaticVisitor;
+use Psalm\Internal\TypeVisitor\TypeChecker;
 use Psalm\Issue\DeprecatedSyntax;
 use Psalm\Issue\InaccessibleProperty;
 use Psalm\Issue\InvalidClass;
@@ -940,6 +941,21 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
             $storage->name,
             $suppressed_issues,
         );
+
+        // a `@method` is never analysed: its parameters are what a real method's are for the covariant templates
+        foreach ($storage->getDeclaredPseudoMethods() as $pseudo_method) {
+            foreach ($pseudo_method->params as $param) {
+                if ($param->type && $param->type_location) {
+                    (new TypeChecker(
+                        $source,
+                        $param->type_location,
+                        $suppressed_issues,
+                        prevent_template_covariance: true,
+                        covariance_only: true,
+                    ))->check($param->type);
+                }
+            }
+        }
     }
 
     /**

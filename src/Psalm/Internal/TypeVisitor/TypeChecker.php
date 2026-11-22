@@ -100,6 +100,9 @@ final class TypeChecker extends TypeVisitor
      *                                 an input position turns into: a covariant template may be there (a method's
      *                                 `Closure(T): void` parameter hands T out), but the parameter types of a
      *                                 callable in there are an input position
+     * @param bool $covariance_only whether to report only the covariant templates in a position they are not allowed
+     *                              in, for a type that no analysis visits (a `@method` parameter) and that never
+     *                              had the classes in it reported
      * @psalm-mutation-free
      */
     public function __construct(
@@ -112,6 +115,7 @@ final class TypeChecker extends TypeVisitor
         private bool $prevent_template_covariance = false,
         private readonly ?Context $context = null,
         private bool $in_output_position = false,
+        private readonly bool $covariance_only = false,
     ) {
     }
 
@@ -130,7 +134,9 @@ final class TypeChecker extends TypeVisitor
         }
 
         if ($type instanceof TNamedObject) {
-            $prevents_covariance = $this->checkNamedObject($type);
+            $prevents_covariance = $this->covariance_only
+                ? $this->getTypeParamPositions($type)
+                : $this->checkNamedObject($type);
 
             if ($type instanceof TGenericObject && $prevents_covariance !== null) {
                 // each type param is checked with its own variance, and the siblings with the outer one. Variance
@@ -159,6 +165,10 @@ final class TypeChecker extends TypeVisitor
                 $this->markChecked($type);
 
                 return self::DONT_TRAVERSE_CHILDREN;
+            }
+        } elseif ($this->covariance_only) {
+            if ($type instanceof TTemplateParam) {
+                $this->checkTemplateParam($type);
             }
         } elseif ($type instanceof TClassConstant) {
             $this->checkScalarClassConstant($type);
@@ -241,9 +251,39 @@ final class TypeChecker extends TypeVisitor
 
     private function markChecked(Atomic|Union|MutableUnion $type): void
     {
+        if ($this->covariance_only) {
+            return;
+        }
+
         /** @psalm-suppress InaccessibleProperty Doesn't affect anything else */
         $type->checked = true;
         $this->checked_types[] = $type;
+    }
+
+    /**
+     * @return array<int, ?bool>|null whether each type param of a generic object is in a position where a covariant
+     *                                template is not allowed, null for one in the position of the generic object, as
+     *                                checkGenericParams() does without reporting what is wrong with the type params
+     */
+    private function getTypeParamPositions(TNamedObject $atomic): ?array
+    {
+        if (!$atomic instanceof TGenericObject) {
+            return null;
+        }
+
+        $class_storage_provider = $this->source->getCodebase()->classlike_storage_provider;
+        $fq_class_name_lc = strtolower($atomic->value);
+
+        if (!$class_storage_provider->has($fq_class_name_lc)) {
+            return null;
+        }
+
+        $expected_param_covariants = $class_storage_provider->get($fq_class_name_lc)->template_covariants;
+
+        return array_map(
+            static fn(int $i): ?bool => empty($expected_param_covariants[$i]) ? true : null,
+            array_keys($atomic->type_params),
+        );
     }
 
     /**
@@ -668,6 +708,7 @@ final class TypeChecker extends TypeVisitor
             if ($template_offset !== false
                 && isset($class_storage->template_covariants[$template_offset])
                 && $class_storage->template_covariants[$template_offset]
+                && !($this->covariance_only && isset($class_storage->purity_templates[$atomic->param_name]))
             ) {
                 $method_storage = $this->source instanceof MethodAnalyzer
                     ? $this->source->getFunctionLikeStorage()
@@ -685,7 +726,7 @@ final class TypeChecker extends TypeVisitor
                                 . $atomic->defining_class . ' is marked covariant and cannot be used here',
                             $this->code_location,
                         ),
-                        $this->source->getSuppressedIssues(),
+                        $this->source->getSuppressedIssues() + $this->suppressed_issues,
                     );
                 }
             }

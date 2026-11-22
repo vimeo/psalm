@@ -1478,7 +1478,7 @@ final class TypeVariableTest extends TestCase
                     $m = new Magic();
                     $m->add(1);',
                 'assertions' => [],
-                'ignored_issues' => [],
+                'ignored_issues' => ['InvalidTemplateParam'],
                 'php_version' => '8.0',
             ],
             'constructionOfAnInvariantTemplateAPseudoMethodTakes' => [
@@ -1521,7 +1521,7 @@ final class TypeVariableTest extends TestCase
                     $m = new Magic();
                     $m->add("a", 1);',
                 'assertions' => [],
-                'ignored_issues' => [],
+                'ignored_issues' => ['InvalidTemplateParam'],
                 'php_version' => '8.0',
             ],
             'constructionOfACovariantTemplateAPseudoPropertyIsAssignedTo' => [
