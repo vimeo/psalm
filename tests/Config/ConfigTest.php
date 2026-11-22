@@ -3000,6 +3000,41 @@ final class ConfigTest extends DeferredAnalyzerTestCase
         $this->assertArrayHasKey('strlen', $config->getPredefinedFunctions());
     }
 
+    public function testIsInUnrequiredPackage(): void
+    {
+        $root = sys_get_temp_dir() . DIRECTORY_SEPARATOR . uniqid('psalm-unrequired-package-');
+        $composer_dir = $root . DIRECTORY_SEPARATOR . 'vendor' . DIRECTORY_SEPARATOR . 'composer';
+        mkdir($composer_dir, 0777, true);
+        file_put_contents($root . DIRECTORY_SEPARATOR . 'composer.json', '{"require": {}}');
+        file_put_contents(
+            $composer_dir . DIRECTORY_SEPARATOR . 'installed.json',
+            '{"packages": [{"name": "acme/lib", "install-path": "../acme/lib"}]}',
+        );
+
+        try {
+            $config = Config::loadFromXML($root, '<?xml version="1.0"?><psalm></psalm>');
+
+            $package = $root . '/vendor/acme/lib';
+            $this->assertTrue($config->isInUnrequiredPackage($package . '/src/functions.php'));
+            $this->assertTrue($config->isInUnrequiredPackage($package));
+            $this->assertTrue($config->isInUnrequiredPackage(
+                str_replace('/', DIRECTORY_SEPARATOR, $package . '/functions.php'),
+            ));
+            $this->assertFalse($config->isInUnrequiredPackage($root . '/vendor/acme/lib-extra/functions.php'));
+            $this->assertFalse($config->isInUnrequiredPackage($root . '/vendor/acme'));
+            $this->assertFalse($config->isInUnrequiredPackage($root . '/src/functions.php'));
+
+            $config->setProjectPackages(['acme/lib' => true]);
+            $this->assertFalse($config->isInUnrequiredPackage($package . '/src/functions.php'));
+        } finally {
+            unlink($composer_dir . DIRECTORY_SEPARATOR . 'installed.json');
+            unlink($root . DIRECTORY_SEPARATOR . 'composer.json');
+            rmdir($composer_dir);
+            rmdir(dirname($composer_dir));
+            rmdir($root);
+        }
+    }
+
     public function testDisablesArrayCache(): void
     {
         $config = Config::loadFromXML(dirname(__DIR__, 2), '<?xml version="1.0"?><psalm arrayCache="false"></psalm>');

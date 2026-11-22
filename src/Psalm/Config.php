@@ -568,8 +568,11 @@ final class Config
      */
     private ?array $project_packages = null;
 
-    /** @var list<string>|null */
+    /** @var array<string, true>|null */
     private ?array $unrequired_package_paths = null;
+
+    /** @var array<string, bool> */
+    private array $in_unrequired_package = [];
 
     /** @var list<ClassLoader> $autoloaders */
     private array $autoloaders = [];
@@ -3312,7 +3315,7 @@ final class Config
      * project doesn't depend on, like the polyfills Psalm itself requires: their functions don't exist when the
      * project runs.
      *
-     * @return list<string>
+     * @return array<string, true> canonical paths
      */
     private function getUnrequiredPackagePaths(): array
     {
@@ -3340,7 +3343,7 @@ final class Config
         $paths = [];
         foreach ($install_paths as [$name, $path]) {
             if (!isset($project_packages[strtolower($name)])) {
-                $paths[] = Path::canonicalize($path);
+                $paths[Path::canonicalize($path)] = true;
             }
         }
 
@@ -3358,6 +3361,7 @@ final class Config
     {
         $this->project_packages = $project_packages;
         $this->unrequired_package_paths = null;
+        $this->in_unrequired_package = [];
     }
 
     /**
@@ -3365,10 +3369,27 @@ final class Config
      */
     public function isInUnrequiredPackage(string $file_path): bool
     {
-        return array_any(
-            $this->getUnrequiredPackagePaths(),
-            static fn(string $path): bool => Path::isBasePath($path, $file_path),
-        );
+        if (isset($this->in_unrequired_package[$file_path])) {
+            return $this->in_unrequired_package[$file_path];
+        }
+
+        // called for every function defined in Psalm's process and every Config: look up the file's directories
+        // instead of comparing it with every package path
+        $package_paths = $this->getUnrequiredPackagePaths();
+        $in_package = false;
+        for ($path = Path::canonicalize($file_path); $path !== ''; $path = $parent) {
+            if (isset($package_paths[$path])) {
+                $in_package = true;
+                break;
+            }
+
+            $parent = Path::getDirectory($path);
+            if ($parent === $path) {
+                break;
+            }
+        }
+
+        return $this->in_unrequired_package[$file_path] = $in_package;
     }
 
     /**

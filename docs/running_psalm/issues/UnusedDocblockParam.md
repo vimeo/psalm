@@ -3,7 +3,7 @@
 Emitted when `--find-dead-code` is turned on and a parameter specified in docblock does not have a corresponding parameter in function / method signature.
 
 ```php
-<?php
+<?php // findUnusedCode="true"
 
 /**
  * @param string $legacy_param was renamed to $newParam

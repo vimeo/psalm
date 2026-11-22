@@ -1047,6 +1047,7 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                     $this_object_type,
                     $storage,
                     $property_class_storage,
+                    null,
                 );
             }
 
