@@ -147,6 +147,47 @@ final class EnumTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'enumWithInvokeSurvivesIsCallable' => [
+                'code' => '<?php
+                    enum Operation {
+                        case Increment;
+
+                        public function __invoke(int $value): int {
+                            return $value + 1;
+                        }
+                    }
+
+                    function f(Operation|int $operation): int {
+                        if (is_callable($operation)) {
+                            return $operation(1);
+                        }
+
+                        return $operation;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'enumWithInvokeLaterInAnIntersectionIsCallable' => [
+                'code' => '<?php
+                    interface Named {}
+
+                    enum Operation implements Named {
+                        case Increment;
+
+                        public function __invoke(int $value): int {
+                            return $value + 1;
+                        }
+                    }
+
+                    /** @param Named&Operation $operation */
+                    function f($operation): int {
+                        return $operation(1);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'casesOfAnEnumString' => [
                 'code' => '<?php
                     /** @param enum-string $string */

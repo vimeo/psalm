@@ -321,6 +321,8 @@ final class ClassLikeDocblockParser
             // the class's other templates, for its parameter types
             $param_template_map = $purity_template_map + array_fill_keys(array_column($info->templates, 0), true);
 
+            $comment_lines = explode("\n", $comment->getText());
+
             foreach ($parsed_docblock->combined_tags['method'] as $offset => $method_entry) {
                 $method_entry = (string) preg_replace('/[ \t]+/', ' ', trim($method_entry));
 
@@ -562,7 +564,7 @@ final class ClassLikeDocblockParser
                 /** @var Doc */
                 $node_doc_comment = $node->getDocComment();
 
-                $method_offset = self::getMethodOffset($comment, $method_entry);
+                $method_offset = self::getMethodOffset($comment_lines, $method_entry);
 
                 $statements[0]->stmts[0]->setAttribute('startLine', $node_doc_comment->getStartLine() + $method_offset);
                 $statements[0]->stmts[0]->setAttribute('startFilePos', $node_doc_comment->getStartFilePos());
@@ -723,11 +725,11 @@ final class ClassLikeDocblockParser
     }
 
     /**
+     * @param list<string> $lines
      * @psalm-pure
      */
-    private static function getMethodOffset(Doc $comment, string $method_entry): int
+    private static function getMethodOffset(array $lines, string $method_entry): int
     {
-        $lines = explode("\n", $comment->getText());
         $method_offset = 0;
 
         foreach ($lines as $i => $line) {
