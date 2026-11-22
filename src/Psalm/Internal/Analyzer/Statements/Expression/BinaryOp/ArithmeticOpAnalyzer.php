@@ -16,6 +16,7 @@ use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
 use Psalm\Internal\Codebase\PhpDeprecations;
 use Psalm\Internal\Provider\NodeDataProvider;
+use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\LiteralCast;
 use Psalm\Internal\Type\TemplateBound;
 use Psalm\Internal\Type\TypeCombiner;
@@ -790,15 +791,17 @@ final class ArithmeticOpAnalyzer
                     $properties = [];
 
                     foreach ($right_type_part->properties as $key => $type) {
-                        $properties[$key] = Type::combineUnionTypes(
-                            $left_value_type,
-                            $type,
-                            $codebase,
-                            false,
-                            true,
-                            500,
-                            $type->possibly_undefined,
-                        );
+                        $properties[$key] = self::mayHaveKey($codebase, $left_key_type, $key)
+                            ? Type::combineUnionTypes(
+                                $left_value_type,
+                                $type,
+                                $codebase,
+                                false,
+                                true,
+                                500,
+                                $type->possibly_undefined,
+                            )
+                            : $type;
                     }
 
                     $result_type_member = new Union([TKeyedArray::make(
@@ -823,6 +826,7 @@ final class ArithmeticOpAnalyzer
 
                     foreach ($left_type_part->properties as $key => $type) {
                         $properties[$key] = $type->possibly_undefined
+                            && self::mayHaveKey($codebase, $right_key_type, $key)
                             ? Type::combineUnionTypes(
                                 $type,
                                 $right_value_type,
@@ -2013,5 +2017,17 @@ final class ArithmeticOpAnalyzer
                 $statements_analyzer->getSuppressedIssues(),
             );
         }
+    }
+
+    /**
+     * Whether an array of the key type may have the key of a shape: `array<string, V>` has no int key `0`
+     */
+    private static function mayHaveKey(?Codebase $codebase, Union $key_type, int|string $key): bool
+    {
+        return $codebase === null || UnionTypeComparator::canBeContainedBy(
+            $codebase,
+            new Union([is_int($key) ? new TLiteralInt($key) : TLiteralString::make($key)]),
+            $key_type,
+        );
     }
 }

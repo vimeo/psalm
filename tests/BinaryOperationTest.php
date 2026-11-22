@@ -764,6 +764,27 @@ final class BinaryOperationTest extends TestCase
                     '$options===' => 'array{debug: false|mixed, ...<array-key, mixed>}',
                 ],
             ],
+            'unionOfAShapeAndAnArrayTakesValuesOnlyUnderKeysTheArrayMayHave' => [
+                'code' => '<?php
+                    /** @var list{list<string>, string} $pair */
+                    $pair = [[], ""];
+                    /** @var array<string, object> $named */
+                    $named = [];
+                    /** @var array<int, int> $numbered */
+                    $numbered = [];
+                    /** @var array{0?: string, a?: string} $optional */
+                    $optional = [];
+                    $a = $named + $pair;
+                    $b = $numbered + $pair;
+                    $c = $optional + $named;
+                    $d = $optional + $numbered;',
+                'assertions' => [
+                    '$a===' => 'array{0: list<string>, 1: string, ...<string, object>}',
+                    '$b===' => 'array{0: int|list<string>, 1: int|string, ...<int, int>}',
+                    '$c===' => 'array{0?: string, a?: object|string, ...<string, object>}',
+                    '$d===' => 'array{0?: int|string, a?: string, ...<int, int>}',
+                ],
+            ],
             'unionOfAShapeAndAnArrayKeepsTheKeysOfTheShape' => [
                 'code' => '<?php
                     /** @return array<string, int> */
