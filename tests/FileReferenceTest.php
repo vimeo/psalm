@@ -17,6 +17,7 @@ use Psalm\Internal\Provider\FileReferenceProvider;
 use Psalm\Internal\Provider\Providers;
 use Psalm\Tests\Internal\Provider\FakeParserCacheProvider;
 
+use function array_keys;
 use function array_values;
 use function count;
 use function is_array;
@@ -66,6 +67,47 @@ final class FileReferenceTest extends TestCase
         } unset($loc);
 
         $this->assertEquals($expected_locations, $found_references);
+    }
+
+    public function testLeadingBackslashFindsTheSameReferencesForEverySymbolKind(): void
+    {
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                namespace App;
+
+                function helper(): int {
+                    return 1;
+                }
+
+                final class H {
+                    public const C = 1;
+                    public int $p = 1;
+
+                    public function a(): int {
+                        return $this->p + self::C + helper();
+                    }
+                }
+
+                echo (new H())->a();',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+
+        $codebase = $this->project_analyzer->getCodebase();
+
+        foreach (['App\\H', 'App\\H::a', 'App\\H::$p', 'App\\H::C', 'App\\helper'] as $symbol) {
+            $references = $codebase->findReferencesToSymbol($symbol);
+
+            $this->assertNotEmpty($references, $symbol);
+            $this->assertSame(
+                array_keys($references),
+                array_keys($codebase->findReferencesToSymbol('\\' . $symbol)),
+                $symbol,
+            );
+        }
     }
 
     public function testReferenceLocationsAreRemovedWithTheirSourceNode(): void
@@ -414,6 +456,41 @@ final class FileReferenceTest extends TestCase
                     (new A())->foo();',
                 'A::foo',
                 ['7:32:foo'],
+            ],
+            'getFunctionLocation' => [
+                '<?php
+                    namespace App;
+
+                    function helper(): int {
+                        return 1;
+                    }
+
+                    final class H {
+                        public function a(): int {
+                            return helper();
+                        }
+                    }
+
+                    helper();
+                    $f = \\App\\helper(...);',
+                'App\\helper',
+                [
+                    '10:36:helper',
+                    '14:21:helper',
+                    '15:26:\\App\\helper',
+                ],
+            ],
+            'getFunctionLocationByItsFullyQualifiedName' => [
+                '<?php
+                    namespace App;
+
+                    function helper(): int {
+                        return 1;
+                    }
+
+                    helper();',
+                '\\App\\helper',
+                ['8:21:helper'],
             ],
             'getMethodLocationWithUsedReturnValue' => [
                 '<?php

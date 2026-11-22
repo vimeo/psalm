@@ -21,6 +21,7 @@ use Psalm\Internal\Codebase\CombinedFlowGraph;
 use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\Type\ArrayType;
+use Psalm\Internal\Type\Comparator\CallableTypeComparator;
 use Psalm\Node\Expr\VirtualArrayDimFetch;
 use Psalm\Node\Expr\VirtualFuncCall;
 use Psalm\Node\Expr\VirtualMethodCall;
@@ -36,6 +37,7 @@ use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\Scalar;
 use Psalm\Type\Atomic\TArray;
+use Psalm\Type\Atomic\TClosure;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNonEmptyArray;
@@ -187,6 +189,22 @@ final class ArrayMapReturnTypeProvider implements FunctionReturnTypeProviderInte
                 $generic_key_type = $array_arg_type->key ?? Type::getArrayKey();
             } else {
                 $generic_key_type = Type::getInt();
+            }
+
+            // an invokable object maps through its __invoke, unless the arguments are yet to bind its return type
+            if ($function_call_type->isSingle()
+                && ($callback = $function_call_type->getSingleAtomic()) instanceof TNamedObject
+                && !$callback instanceof TClosure
+                && ($invoke = CallableTypeComparator::getCallableFromAtomic(
+                    $statements_source->getCodebase(),
+                    $callback,
+                    null,
+                    $statements_source,
+                    $context,
+                ))
+                && $invoke->return_type?->getTemplateTypes() === []
+            ) {
+                $function_call_type = new Union([$invoke]);
             }
 
             if ($function_call_type->hasCallableType()) {

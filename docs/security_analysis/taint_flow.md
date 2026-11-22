@@ -399,7 +399,9 @@ abstract class Model
     /** @var array<string, mixed> */
     protected array $properties = [];
 
-    abstract public function __get(string $name): mixed;
+    public function __get(string $name): mixed {
+        return $this->properties[$name] ?? null;
+    }
 }
 
 /**
