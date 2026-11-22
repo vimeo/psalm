@@ -2197,7 +2197,7 @@ final class ReferenceTest extends TestCase
                     $x = "z";
                 ',
                 'assertions' => [
-                    '$out===' => 'array{n: non-empty-array<string, \'z\'|1|true>}',
+                    '$out===' => 'array{n: array{m: \'z\'|1|true, ...<string, \'z\'|1>}}',
                 ],
             ],
             'writeAfterLoopReachesItemsBoundInNestedIf' => [

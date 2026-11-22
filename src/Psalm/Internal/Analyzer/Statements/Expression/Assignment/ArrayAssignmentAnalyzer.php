@@ -1939,13 +1939,32 @@ final class ArrayAssignmentAnalyzer
                     ]);
                 }
 
-                $new_child_type = Type::combineUnionTypes(
+                $written_key_type = $current_dim ? $statements_analyzer->node_data->getType($current_dim) : null;
+                $child_shape = self::writeUnknownKeyOfTheRootShape(
                     $child_stmt_type,
-                    $array_assignment_type,
-                    $codebase,
-                    true,
-                    true,
+                    $current_dim,
+                    $written_key_type
+                        ? [
+                            $written_key_type->hasMixed()
+                                ? Type::getArrayKey()
+                                : ArrayFetchAnalyzer::castOffsetTypeOfAWrite(
+                                    ArrayFetchAnalyzer::replaceOffsetTypeWithInts($written_key_type),
+                                ),
+                            $current_type,
+                        ]
+                        : null,
+                    $current_type,
                 );
+
+                $new_child_type = $child_shape
+                    ? new Union([$child_shape])
+                    : Type::combineUnionTypes(
+                        $child_stmt_type,
+                        $array_assignment_type,
+                        $codebase,
+                        true,
+                        true,
+                    );
             }
             if ($new_child_type->hasNull() || $new_child_type->possibly_undefined) {
                 $new_child_type = $new_child_type->getBuilder();

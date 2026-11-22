@@ -2048,6 +2048,17 @@ final class ArrayFetchAnalyzer
             return null;
         }
 
+        // an append is under the int key after the largest one, none of which is negative unless one is
+        if ($appends) {
+            $key_type = Type::getListKey();
+
+            foreach ($type->properties as $key => $_) {
+                if (is_int($key) && $key < 0) {
+                    $key_type = Type::getInt();
+                }
+            }
+        }
+
         $can_be_int = !$appends && ($key_type->hasInt() || $key_type->hasArrayKey());
         $can_be_string = !$appends && ($key_type->hasString() || $key_type->hasArrayKey());
 

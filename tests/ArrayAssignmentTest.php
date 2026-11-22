@@ -167,8 +167,8 @@ final class ArrayAssignmentTest extends TestCase
                     '$numericKey===' => 'array{a: int, ...<int, \'v\'>}',
                     '$possiblyEmpty===' => 'non-empty-array<\'name\'|int, bool|string>',
                     '$optionalMixed===' => 'array{a?: list{1}|mixed, b: int|list{1}, ...<string, list{1}|mixed>}',
-                    '$appended===' => 'array{0: int, 1: bool, 2: string, ...<int, \'a\'|mixed>}',
-                    '$sealedAppended===' => 'array{a: int, ...<int, \'v\'>}',
+                    '$appended===' => 'array{0: int, 1: bool, 2: string, ...<int<0, max>, \'a\'|mixed>}',
+                    '$sealedAppended===' => 'array{a: int, ...<int<0, max>, \'v\'>}',
                 ],
             ],
             'assignWithAScalarOffsetGivesAnArrayKey' => [
@@ -411,8 +411,8 @@ final class ArrayAssignmentTest extends TestCase
 
                     echo count($conditions) + count($pair);',
                 'assertions' => [
-                    '$conditions===' => "array{0?: array{C: array<never, never>}, A?: 'B', ...<int<0, max>, array{C: array<never, never>}>}",
-                    '$pair===' => "array{0?: array{E: 1}, A?: 'B', C?: 'D', ...<int<0, max>, array{E: 1}>}",
+                    '$conditions===' => "array{A: 'B', ...<int<0, max>, array{C: array<never, never>}>}",
+                    '$pair===' => "array{A: 'B', C: 'D', ...<int<0, max>, array{E: 1}>}",
                 ],
                 'ignored_issues' => [],
                 'php_version' => '8.0',
@@ -617,7 +617,7 @@ final class ArrayAssignmentTest extends TestCase
                         $keyed[$negative] = 2;
                     }',
                 'assertions' => [
-                    '$keyed' => 'non-empty-array<array-key, int>',
+                    '$keyed' => 'array{x: int, ...<array-key, int>}',
                 ],
                 'ignored_issues' => [
                     'MixedArgument', 'MixedArrayAccess', 'MixedArrayOffset', 'MixedAssignment', 'MixedOperand',
@@ -1009,14 +1009,20 @@ final class ArrayAssignmentTest extends TestCase
                     $a["x"] = 1;
                     $a[(string) rand()] = "b";
                     $b = $a["x"];
-                    /** @psalm-check-type-exact $b = 1|string */;
+                    /** @psalm-check-type-exact $b = 1 */;
+                    $a[str_repeat("x", rand(1, 3))] = "c";
+                    $b2 = $a["x"];
+                    /** @psalm-check-type-exact $b2 = \'c\'|1 */;
 
                     /** @var array<string, array<string, int|string>> $e */
                     $e = [];
                     $e["x"]["y"] = 1;
                     $e["x"][(string) rand()] = "b";
                     $f = $e["x"]["y"];
-                    /** @psalm-check-type-exact $f = \'b\'|1 */;
+                    /** @psalm-check-type-exact $f = 1 */;
+                    $e["x"][str_repeat("y", rand(1, 3))] = "c";
+                    $f2 = $e["x"]["y"];
+                    /** @psalm-check-type-exact $f2 = \'c\'|1 */;
 
                     $g = ["y" => 1];
                     $g["x"] = 1;
@@ -1049,7 +1055,10 @@ final class ArrayAssignmentTest extends TestCase
                     $d["any"]["y"] = 6;
                     $d[(string) rand()]["x"] = "s";
                     $e = $d["any"]["x"];
-                    /** @psalm-check-type-exact $e = int|string */;
+                    /** @psalm-check-type-exact $e = 5 */;
+                    $d[str_repeat("a", rand(1, 3))]["x"] = "s";
+                    $e2 = $d["any"]["x"];
+                    /** @psalm-check-type-exact $e2 = \'s\'|5 */;
                     $f = $d["any"]["y"];
                     /** @psalm-check-type-exact $f = 6 */;
 
