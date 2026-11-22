@@ -1185,7 +1185,8 @@ final class Codebase
                 + $this->findReferencesToClassConstant($symbol);
         }
 
-        return $this->findReferencesToClassLike($symbol);
+        // a name without `::` is a class-like's or a function's
+        return $this->findReferencesToClassLike($symbol) + $this->findReferencesToMethod(ltrim($symbol, '\\'));
     }
 
     /**

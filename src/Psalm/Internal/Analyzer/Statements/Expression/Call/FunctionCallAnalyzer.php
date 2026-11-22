@@ -305,6 +305,21 @@ final class FunctionCallAnalyzer extends CallAnalyzer
 
         $function_storage = $function_call_info->function_storage;
 
+        // where the functions of the code are called is found as where methods are
+        if ($codebase->collect_locations
+            && $function_storage !== null
+            && $function_storage->location !== null
+            && $function_call_info->function_id !== null
+        ) {
+            $codebase->addReferenceToFunctionLike(
+                strtolower($function_call_info->function_id),
+                new CodeLocation($statements_analyzer->getSource(), $stmt->name),
+                $context,
+                $context->insideUse(),
+                $statements_analyzer->getFilePath(),
+            );
+        }
+
         // a function requiring an instance of a class with @psalm-cli-only-instances is called with one: from the
         // command line
         if ($function_storage !== null

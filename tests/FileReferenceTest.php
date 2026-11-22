@@ -415,6 +415,41 @@ final class FileReferenceTest extends TestCase
                 'A::foo',
                 ['7:32:foo'],
             ],
+            'getFunctionLocation' => [
+                '<?php
+                    namespace App;
+
+                    function helper(): int {
+                        return 1;
+                    }
+
+                    final class H {
+                        public function a(): int {
+                            return helper();
+                        }
+                    }
+
+                    helper();
+                    $f = \\App\\helper(...);',
+                'App\\helper',
+                [
+                    '10:36:helper',
+                    '14:21:helper',
+                    '15:26:\\App\\helper',
+                ],
+            ],
+            'getFunctionLocationByItsFullyQualifiedName' => [
+                '<?php
+                    namespace App;
+
+                    function helper(): int {
+                        return 1;
+                    }
+
+                    helper();',
+                '\\App\\helper',
+                ['8:21:helper'],
+            ],
             'getMethodLocationWithUsedReturnValue' => [
                 '<?php
                     final class A {
