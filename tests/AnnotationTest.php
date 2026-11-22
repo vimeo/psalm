@@ -1422,6 +1422,8 @@ final class AnnotationTest extends TestCase
                     function foo(string $s = null) {
                         return $s;
                     }',
+                'assertions' => [],
+                'ignored_issues' => ['DeprecatedSyntax'],
             ],
             'missingReturnTypeWithBadDocblockIgnoreBoth' => [
                 'code' => '<?php
@@ -2208,6 +2210,22 @@ final class AnnotationTest extends TestCase
                     '$_p' => 'A|null',
                     '$_f' => 'A|null',
                 ],
+            ],
+            'phpstanParamWithStarProjectionNextToPsalmParam' => [
+                'code' => '<?php
+                    /**
+                     * @template TFirst
+                     * @template TSecond
+                     */
+                    final class Context {}
+
+                    /**
+                     * @psalm-param Context<int, string> $parent
+                     * @phpstan-param Context<*, *> $parent
+                     */
+                    function f(Context $parent): Context {
+                        return $parent;
+                    }',
             ],
             'paramNameWithTrailingSemicolon' => [
                 'code' => '<?php

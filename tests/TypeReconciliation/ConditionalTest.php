@@ -196,6 +196,18 @@ final class ConditionalTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'negatedIsFloatCombinesTheRemainingTypes' => [
+                'code' => '<?php
+                    /** @var numeric|"a" $x */
+                    $x = $_GET["x"];
+                    if (is_float($x)) {
+                        exit;
+                    }
+                ',
+                'assertions' => [
+                    '$x===' => 'int|string',
+                ],
+            ],
             'varAssignedUnderConditionIsDefinedUnderTheSameCondition' => [
                 'code' => '<?php
                     function f(bool $b): void {
@@ -1966,6 +1978,8 @@ final class ConditionalTest extends TestCase
 
                       return "backup";
                     }',
+                'assertions' => [],
+                'ignored_issues' => ['DeprecatedSyntax'],
             ],
             'stringOrCallableArg' => [
                 'code' => '<?php
@@ -5981,6 +5995,8 @@ final class ConditionalTest extends TestCase
                     final class B extends A {
                         public function onlyB(): void {}
                     }',
+                'assertions' => [],
+                'ignored_issues' => ['DeprecatedFunction'],
             ],
             'getClassInequalityWithoutArgumentsNarrowsThis' => [
                 'code' => '<?php
@@ -5995,6 +6011,8 @@ final class ConditionalTest extends TestCase
                     final class B extends A {
                         public function onlyB(): void {}
                     }',
+                'assertions' => [],
+                'ignored_issues' => ['DeprecatedFunction'],
             ],
             'privateMethodAnalysedFromTheConstructorIgnoresTheConditionsOfItsCaller' => [
                 'code' => '<?php
@@ -7133,6 +7151,24 @@ final class ConditionalTest extends TestCase
                         }
                     }',
             ],
+            'looseEqualityWithAStringKeepsTheOtherScalars' => [
+                'code' => '<?php
+                    /** @param numeric $n */
+                    function f($n, string $s): void {
+                        if ($n == $s) {
+                            /** @psalm-check-type-exact $n = numeric */;
+                        }
+                    }
+
+                    function g(int|float|bool|null $x, string $s): void {
+                        if ($x == $s) {
+                            /** @psalm-check-type-exact $x = bool|float|int|null */;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
         ];
     }
 
@@ -7143,6 +7179,17 @@ final class ConditionalTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'typeLeftByNegatedTypeChecksStaysFromDocblock' => [
+                'code' => '<?php
+                    /** @param string|float|int|bool|null $x */
+                    function f($x): void {
+                        if ($x === null) {
+                        } elseif (is_int($x) || is_float($x)) {
+                        } elseif (is_bool($x)) {
+                        } elseif (is_array($x)) {}
+                    }',
+                'error_message' => 'DocblockTypeContradiction',
+            ],
             'narrowClassAndInterfaceIntersectionToFinalSubclassWithoutInterface' => [
                 'code' => '<?php
                     abstract class A {}
@@ -8257,7 +8304,8 @@ final class ConditionalTest extends TestCase
                     function getData(): ?array { return null; }
                     function check(): bool { return true; }
                     $r = (check() && ($data = getData()) !== null) ? 1 : $data;',
-                'error_message' => 'UndefinedGlobalVariable',
+                // assigned only when check() is true, so possibly undefined
+                'error_message' => 'PossiblyUndefinedGlobalVariable',
             ],
             'orWhoseLeftSideIsAConjunctionAndRightSideReassignsAVariableKeepsTheLeftNullable' => [
                 'code' => '<?php
