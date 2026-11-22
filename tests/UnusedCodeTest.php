@@ -3372,6 +3372,47 @@ final class UnusedCodeTest extends TestCase
                     }
                     echo (new Foo())->name;',
             ],
+            'returnValueOfAnInheritedMethodIsUsedThroughTheChild' => [
+                'code' => '<?php
+                    class P {
+                        public function foo(): int {
+                            return 1;
+                        }
+                    }
+                    final class C extends P {}
+
+                    echo (new C())->foo();',
+            ],
+            'traitMethodOfAParentClassCalledThroughTheChild' => [
+                'code' => '<?php
+                    trait T {
+                        public function foo(): void {}
+                    }
+                    class P {
+                        use T;
+                    }
+                    class C extends P {}
+                    final class D extends C {}
+
+                    (new D())->foo();',
+            ],
+            'methodOfAnInterfaceOutsideACircularInheritanceIsUsedThroughTheCycle' => [
+                'code' => '<?php
+                    interface K {
+                        public function k(): int;
+                    }
+                    interface J2 extends I2 {}
+                    interface I2 extends J2, K {}
+
+                    function g(I2 $i): int {
+                        return $i->k();
+                    }
+
+                    /** @var I2 $i */
+                    $i = null;
+                    echo g($i);',
+                'ignored_issues' => ['CircularReference'],
+            ],
         ];
     }
 

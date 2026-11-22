@@ -48,6 +48,8 @@ use Psalm\Type\Atomic\TValueOf;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
+use function array_intersect_key;
+use function array_keys;
 use function array_pop;
 use function assert;
 use function count;
@@ -177,9 +179,10 @@ final class Methods
 
             if ((string) $method_id !== (string) $declaring_method_id
                 && $class_storage->user_defined
-                && isset($class_storage->potential_declaring_method_ids[$method_name])
+                && $this->file_reference_provider->code_use_graph->record_edges
+                && ($potential_ids = $this->getPotentialDeclaringMethodIds($class_storage, $method_name) ?? []) !== []
             ) {
-                foreach ($class_storage->potential_declaring_method_ids[$method_name] as $potential_id => $_) {
+                foreach ($potential_ids as $potential_id => $_) {
                     $codebase->addReferenceToFunctionLike(
                         strtolower($potential_id),
                         $code_location,
@@ -1359,5 +1362,111 @@ final class Methods
         }
 
         return true;
+    }
+
+    /**
+     * The methods a call of a method a class inherits could reach: that class's and the class's it inherits it from,
+     * down to where it appears, through the used traits first, then the parent class (or an interface's parents),
+     * as the populator inherits them. For an aliased trait method, the ids name the trait's method.
+     *
+     * A class of a circular inheritance gets nothing from the class that is being derived when the populator comes
+     * back to it, so a provider that reaches the class again is skipped, and null means the method is only reachable
+     * that way.
+     *
+     * @param lowercase-string $method_name
+     * @param array<lowercase-string, true> $deriving the classes being derived
+     * @return ?array<string, bool> empty for a method the class declares or does not have
+     * @psalm-capabilities read-props
+     */
+    private function getPotentialDeclaringMethodIds(
+        ClassLikeStorage $class_storage,
+        string $method_name,
+        array $deriving = [],
+    ): ?array {
+        // a reflected class registers where its methods appear itself, so the populator inherits no ids into it but
+        // the constructor's, which Reflection::registerClass() writes
+        if (isset($class_storage->potential_declaring_method_ids['__construct'])) {
+            return $class_storage->potential_declaring_method_ids[$method_name] ?? [];
+        }
+
+        // a method of the class itself: it appears there from the scan on, which nothing it inherits overrides
+        if (isset($class_storage->methods[$method_name])) {
+            return [];
+        }
+
+        $fq_class_name_lc = strtolower($class_storage->name);
+        $deriving[$fq_class_name_lc] = true;
+
+        $providers = array_keys($class_storage->used_traits);
+
+        if ($class_storage->parent_classes) {
+            $providers[] = reset($class_storage->parent_classes);
+        }
+
+        $providers = [...$providers, ...array_keys($class_storage->direct_interface_parents)];
+
+        $reaches_a_cycle = false;
+
+        foreach ($providers as $provider_name) {
+            try {
+                $provider_storage = $this->classlike_storage_provider->get(
+                    $this->classlikes->getUnAliasedName($provider_name),
+                );
+            } catch (InvalidArgumentException) {
+                continue;
+            }
+
+            $provided_method_name = self::getProvidedMethodName($class_storage, $provider_storage, $method_name);
+
+            if ($provided_method_name === null) {
+                continue;
+            }
+
+            $provider_name_lc = strtolower($provider_storage->name);
+
+            $ids = isset($deriving[$provider_name_lc])
+                ? null
+                : $this->getPotentialDeclaringMethodIds($provider_storage, $method_name, $deriving);
+
+            if ($ids === null) {
+                $reaches_a_cycle = true;
+                continue;
+            }
+
+            $ids[$fq_class_name_lc . '::' . $provided_method_name] = true;
+            $ids[$provider_name_lc . '::' . $provided_method_name] = true;
+
+            return $ids;
+        }
+
+        return $reaches_a_cycle ? null : [];
+    }
+
+    /**
+     * The method of the provider that appears in the class under the name, by the names the populator inherits a
+     * method of the provider under. The first of the provider's methods that does wins.
+     *
+     * @param lowercase-string $method_name
+     * @return ?lowercase-string
+     * @psalm-capabilities read-props
+     */
+    private static function getProvidedMethodName(
+        ClassLikeStorage $class_storage,
+        ClassLikeStorage $provider_storage,
+        string $method_name,
+    ): ?string {
+        $candidates = [$method_name => true, ($class_storage->trait_alias_map[$method_name] ?? $method_name) => true];
+
+        foreach (array_intersect_key($provider_storage->appearing_method_ids, $candidates) as $provided => $_) {
+            if (in_array(
+                $method_name,
+                Populator::getTraitMethodNames($class_storage, $provider_storage, $provided),
+                true,
+            )) {
+                return $provided;
+            }
+        }
+
+        return null;
     }
 }
