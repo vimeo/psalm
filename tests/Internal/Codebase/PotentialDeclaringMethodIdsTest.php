@@ -24,6 +24,7 @@ final class PotentialDeclaringMethodIdsTest extends TestCase
 
         $this->project_analyzer->getCodebase()->collectLocations();
         $this->project_analyzer->getConfig()->setCustomErrorLevel('UndefinedTrait', 'suppress');
+        $this->project_analyzer->getConfig()->setCustomErrorLevel('CircularReference', 'suppress');
     }
 
     /**
@@ -187,6 +188,19 @@ final class PotentialDeclaringMethodIdsTest extends TestCase
                 }',
             ['K::foo', 'A::foo', 'B::foo'],
             ['K::foo', 'B::foo'],
+        ];
+
+        yield 'circularInterfaceInheritanceWithAnOutsideInterface' => [
+            '<?php
+                interface K { public function k(): int; }
+                interface J2 extends I2 {}
+                interface I2 extends J2, K {}
+
+                function g(I2 $i, J2 $j): int {
+                    return $i->k() + $j->k();
+                }',
+            ['I2::k', 'J2::k', 'K::k'],
+            ['I2::k', 'J2::k', 'K::k'],
         ];
 
         yield 'reflectedParentClassMethod' => [
