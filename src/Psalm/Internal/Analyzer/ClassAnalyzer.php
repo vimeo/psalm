@@ -67,6 +67,7 @@ use Psalm\Issue\PropertyNotSetInConstructor;
 use Psalm\Issue\ReservedWord;
 use Psalm\Issue\UndefinedClass;
 use Psalm\Issue\UndefinedInterface;
+use Psalm\Issue\UndefinedMethod;
 use Psalm\Issue\UndefinedTrait;
 use Psalm\Issue\UnimplementedAbstractMethod;
 use Psalm\Issue\UnimplementedInterfaceMethod;
@@ -1635,6 +1636,70 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
     }
 
     /**
+     * Reports an alias or a precedence rule of a trait use for a method none of the traits it names has, which PHP
+     * refuses
+     */
+    private function checkTraitAdaptations(
+        Aliases $aliases,
+        PhpParser\Node\Stmt\TraitUse $stmt,
+        ClassLikeStorage $storage,
+        ?TraitAnalyzer $previous_trait_analyzer,
+    ): void {
+        $codebase = $this->getCodebase();
+
+        foreach ($stmt->adaptations as $adaptation) {
+            $trait_names = $adaptation->trait ? [$adaptation->trait] : $stmt->traits;
+            $method_name = strtolower($adaptation->method->name);
+
+            $has_method = false;
+
+            foreach ($trait_names as $trait_name) {
+                $fq_trait_name = strtolower($codebase->classlikes->getUnAliasedName(
+                    self::getFQCLNFromNameObject($trait_name, $aliases),
+                ));
+
+                // a missing trait is reported where it is used
+                if (!$codebase->classlike_storage_provider->has($fq_trait_name)) {
+                    continue 2;
+                }
+
+                if (isset($codebase->classlike_storage_provider->get($fq_trait_name)
+                    ->declaring_method_ids[$method_name])
+                ) {
+                    $has_method = true;
+                    break;
+                }
+            }
+
+            if ($has_method) {
+                continue;
+            }
+
+            $method_id = ($adaptation->trait
+                ? self::getFQCLNFromNameObject($adaptation->trait, $aliases) . '::'
+                : '') . $adaptation->method->name;
+
+            if ($adaptation instanceof PhpParser\Node\Stmt\TraitUseAdaptation\Precedence) {
+                $message = 'A precedence rule was defined for ' . $method_id . ' but this method does not exist';
+            } elseif ($adaptation instanceof PhpParser\Node\Stmt\TraitUseAdaptation\Alias && $adaptation->newName) {
+                $message = 'An alias was defined for ' . $method_id . ' but this method does not exist';
+            } else {
+                $message = 'The modifiers of the trait method ' . $method_id . '() are changed, but this method does'
+                    . ' not exist';
+            }
+
+            IssueBuffer::maybeAdd(
+                new UndefinedMethod(
+                    $message,
+                    new CodeLocation($previous_trait_analyzer ?? $this, $adaptation->method),
+                    $method_id,
+                ),
+                $storage->suppressed_issues + $this->getSuppressedIssues(),
+            );
+        }
+    }
+
+    /**
      * @return false|null
      */
     private function analyzeTraitUse(
@@ -1648,6 +1713,8 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
         ?TraitAnalyzer $previous_trait_analyzer = null,
     ): ?bool {
         $codebase = $this->getCodebase();
+
+        $this->checkTraitAdaptations($aliases, $stmt, $storage, $previous_trait_analyzer);
 
         $previous_context_include_location = $class_context->include_location;
 
