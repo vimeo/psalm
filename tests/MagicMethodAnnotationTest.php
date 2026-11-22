@@ -493,6 +493,36 @@ final class MagicMethodAnnotationTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'staticParamOfAMixinMethodTagIsTheMixinAndItsThisReturnTheCaller' => [
+                'code' => '<?php
+                    /**
+                     * @method $this with(static $other)
+                     * @method ($other is null ? $this : int) pick(static|null $other = null)
+                     */
+                    final class MixedIn {
+                        public function __call(string $name, array $args): mixed {
+                            throw new RuntimeException();
+                        }
+                    }
+
+                    /** @mixin MixedIn */
+                    final class Caller {
+                        public function __call(string $name, array $args): mixed {
+                            throw new RuntimeException();
+                        }
+                    }
+
+                    $result = (new Caller)->with(new MixedIn);
+                    $picked = (new Caller)->pick();
+                    $number = (new Caller)->pick(new MixedIn);',
+                'assertions' => [
+                    '$result' => 'Caller',
+                    '$picked' => 'Caller',
+                    '$number===' => 'int',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'staticInTheParamsOfAMethodTagIsTheClassItIsCalledOn' => [
                 'code' => '<?php
                     /**

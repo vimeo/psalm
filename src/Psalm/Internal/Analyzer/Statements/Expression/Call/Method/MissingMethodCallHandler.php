@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Psalm\Internal\Analyzer\Statements\Expression\Call\Method;
 
+use Closure;
 use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Codebase;
@@ -32,6 +33,7 @@ use Psalm\Storage\MethodStorage;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TClosure;
+use Psalm\Type\Atomic\TConditional;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
@@ -46,8 +48,8 @@ use function count;
 final class MissingMethodCallHandler
 {
     /**
-     * The pseudo method with `static` in its params and return type, and in the bounds of the templates of its
-     * conditional return type, resolved to the object it is called on
+     * The pseudo method with `static` in its params, and in the bounds of the templates of its conditional return
+     * type, resolved to the object it is called on; also in its return type unless that stays the caller's (a mixin)
      */
     public static function resolveStaticInParams(
         Codebase $codebase,
@@ -55,6 +57,7 @@ final class MissingMethodCallHandler
         ClassLikeStorage $defining_class_storage,
         Atomic\TNamedObject $static_type,
         bool $final,
+        bool $resolve_return_type = true,
     ): MethodStorage {
         $expand = static fn(Union $type): Union => TypeExpander::expandUnion(
             $codebase,
@@ -77,7 +80,9 @@ final class MissingMethodCallHandler
         ));
 
         if ($resolved_storage->return_type !== null) {
-            $resolved_storage->return_type = $expand($resolved_storage->return_type);
+            $resolved_storage->return_type = $resolve_return_type
+                ? $expand($resolved_storage->return_type)
+                : self::expandConditionsOfReturnType($resolved_storage->return_type, $expand);
         }
 
         if ($resolved_storage->template_types !== null) {
@@ -88,6 +93,30 @@ final class MissingMethodCallHandler
         }
 
         return $resolved_storage;
+    }
+
+    /**
+     * What a conditional return type tests is about the params, its results stay as written
+     *
+     * @psalm-capabilities read-props
+     * @param Closure[_](Union): Union $expand
+     */
+    private static function expandConditionsOfReturnType(Union $type, Closure $expand): Union
+    {
+        $atomics = [];
+
+        foreach ($type->getAtomicTypes() as $atomic) {
+            $atomics[] = $atomic instanceof TConditional
+                ? $atomic->setTypes(
+                    $expand($atomic->as_type),
+                    $expand($atomic->conditional_type),
+                    self::expandConditionsOfReturnType($atomic->if_type, $expand),
+                    self::expandConditionsOfReturnType($atomic->else_type, $expand),
+                )
+                : $atomic;
+        }
+
+        return $type->setTypes($atomics);
     }
 
     /**
@@ -237,6 +266,7 @@ final class MissingMethodCallHandler
                     $mixin_type === null
                         ? $class_storage->final
                         : $pseudo_method_class_storage->final,
+                    $mixin_type === null,
                 );
             }
 
