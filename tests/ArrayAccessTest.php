@@ -1515,6 +1515,26 @@ final class ArrayAccessTest extends TestCase
                     $bag->iterator[] = 1;
                     $bag->typed->offsetSet(null, 2);',
             ],
+            'writeUnderAKeyOfANewArrayObjectOrArrayIterator' => [
+                'code' => '<?php
+                    final class Storage {
+                        /** @var ArrayObject */
+                        private $config;
+
+                        public function __construct(string $collection) {
+                            $this->config = new ArrayObject();
+                            $this->config[$collection] = [];
+                        }
+                    }
+
+                    $object = new ArrayObject();
+                    $object["x"] = 1;
+                    $object[] = 2;
+                    $iterator = new ArrayIterator();
+                    $iterator["y"] = 3;',
+                'assertions' => [],
+                'ignored_issues' => ['UnusedProperty'],
+            ],
             'nullOffsetOfAnObjectThatAcceptsItInArrayAccess' => [
                 'code' => '<?php
                     /** @implements ArrayAccess<string|null, int> */

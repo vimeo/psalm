@@ -393,6 +393,30 @@ final class TypeVariableTest extends TestCase
                 'ignored_issues' => ['UndefinedMagicPropertyAssignment'],
                 'php_version' => '8.0',
             ],
+            'paramOfATemplateOrNullTakesAValueForAnObjectBuiltEmpty' => [
+                'code' => '<?php
+                    /**
+                     * @template K of array-key
+                     * @template V
+                     */
+                    final class Bag {
+                        /** @param array<K, V> $items */
+                        public function __construct(private array $items = []) {}
+
+                        /**
+                         * @param K|null $key
+                         * @param V $value
+                         */
+                        public function set(int|string|null $key, mixed $value): void {}
+                    }
+
+                    $bag = new Bag();
+                    $bag->set("x", 1);
+                    $bag->set(null, 2);',
+                'assertions' => [],
+                'ignored_issues' => ['UnusedProperty'],
+                'php_version' => '8.0',
+            ],
             'possiblyEmptyArray' => [
                 'code' => '<?php
                     /**
