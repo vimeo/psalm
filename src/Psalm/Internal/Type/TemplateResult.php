@@ -123,7 +123,7 @@ final class TemplateResult
             foreach ($defining_classes as $defining_class => $star_type) {
                 if ($this->star_input) {
                     $lower_bounds[$template_name][$defining_class] = [new TemplateBound(
-                        $this->star_input_bounds[$template_name][$defining_class] ?? Type::getNever(),
+                        $this->getStarInputBound($template_name, $defining_class),
                     )];
                 } elseif ($star_type instanceof Union) {
                     $lower_bounds[$template_name][$defining_class] = [new TemplateBound($star_type)];
@@ -142,6 +142,16 @@ final class TemplateResult
     public function isStarInput(string $template_name, string $defining_class): bool
     {
         return $this->star_input && isset($this->star_bindings[$template_name][$defining_class]);
+    }
+
+    /**
+     * What a template bound to a `*` is where the types are replaced as inputs
+     *
+     * @psalm-mutation-free
+     */
+    public function getStarInputBound(string $template_name, string $defining_class): Union
+    {
+        return $this->star_input_bounds[$template_name][$defining_class] ?? Type::getNever();
     }
 
     /**
