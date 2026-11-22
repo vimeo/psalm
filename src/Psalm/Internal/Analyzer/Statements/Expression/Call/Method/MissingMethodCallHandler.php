@@ -185,6 +185,14 @@ final class MissingMethodCallHandler
                 $found_generic_params ?? [],
             );
 
+            ClassTemplateParamCollector::markStarBindings(
+                $template_result,
+                $codebase,
+                $pseudo_method_class_storage,
+                $mixin_type ?? $lhs_type_part,
+                $found_generic_params,
+            );
+
             ArgumentsAnalyzer::analyze(
                 $statements_analyzer,
                 $stmt->getArgs(),
@@ -445,6 +453,14 @@ final class MissingMethodCallHandler
                 $found_generic_params ?? [],
             );
 
+            ClassTemplateParamCollector::markStarBindings(
+                $template_result,
+                $codebase,
+                $class_storage,
+                $lhs_type_part,
+                $found_generic_params,
+            );
+
             if (ArgumentsAnalyzer::analyze(
                 $statements_analyzer,
                 $stmt->getArgs(),
@@ -574,6 +590,15 @@ final class MissingMethodCallHandler
             !$statements_analyzer->isStatic() && $method_id->fq_class_name === $context->self,
         );
 
+        $template_result = new TemplateResult([], $found_generic_params ?? []);
+        ClassTemplateParamCollector::markStarBindings(
+            $template_result,
+            $codebase,
+            $class_storage,
+            $lhs_type_part,
+            $found_generic_params,
+        );
+
         return MethodCallReturnTypeFetcher::getFirstClassCallableType(
             $codebase,
             $stmt,
@@ -582,7 +607,7 @@ final class MissingMethodCallHandler
                 $pseudo_method_storage->return_type,
                 $pseudo_method_storage->capabilities,
             ),
-            new TemplateResult([], $found_generic_params ?? []),
+            $template_result,
             $pseudo_method_storage->template_types ?? [],
             $defining_class_storage->name,
             $lhs_type_part instanceof Atomic\TNamedObject ? $lhs_type_part : $method_id->fq_class_name,

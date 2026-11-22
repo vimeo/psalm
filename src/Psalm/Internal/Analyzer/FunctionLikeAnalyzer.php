@@ -3498,6 +3498,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 callable_id: $this->getClosureId(),
                 byref_use_scopes: ClosureAnalyzer::getByRefUseScopes($this->source, $byref_uses),
             );
+            $this->closure_type = $closure_type;
 
             $type_provider->setType(
                 $this->function,
