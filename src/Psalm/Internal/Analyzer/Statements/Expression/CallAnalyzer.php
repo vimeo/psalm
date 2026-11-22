@@ -20,6 +20,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\Call\ArgumentsAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodCallProhibitionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
+use Psalm\Internal\Codebase\ConstantTypeResolver;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Provider\NodeDataProvider;
@@ -75,6 +76,7 @@ use function array_filter;
 use function array_keys;
 use function array_map;
 use function array_merge;
+use function array_slice;
 use function array_unique;
 use function array_values;
 use function assert;
@@ -412,6 +414,31 @@ abstract class CallAnalyzer
         }
 
         if ($template_documenting_storage !== null) {
+            // the method's own storage declares no templates, so the defaults of the params not passed are bound here
+            foreach (array_slice($method_params, count($args), null, true) as $offset => $param) {
+                if ($param->type === null || $param->default_type === null || $param->is_variadic) {
+                    continue;
+                }
+
+                TemplateStandinTypeReplacer::fillTemplateResult(
+                    $param->type,
+                    $template_result,
+                    $codebase,
+                    $statements_analyzer,
+                    $param->default_type instanceof Union
+                        ? $param->default_type
+                        : new Union([ConstantTypeResolver::resolve(
+                            $codebase->classlikes,
+                            $param->default_type,
+                            $statements_analyzer,
+                        )]),
+                    $offset,
+                    $context->self,
+                    $context->calling_method_id ?? $context->calling_function_id,
+                    true,
+                );
+            }
+
             TemplateDefaults::bindUninferred($template_result, $template_documenting_storage, $codebase);
         }
 
