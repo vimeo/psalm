@@ -756,6 +756,13 @@ final class ProjectAnalyzer
             );
 
             if (isset($source_class_constants[$source_parts[1]])) {
+                // `Foo::class` is the name of the class
+                if (strtolower($destination_parts[1]) === 'class') {
+                    throw new RefactorException(
+                        'A class constant must not be called class, as ' . $destination . ' is the name of the class',
+                    );
+                }
+
                 if (!$this->codebase->classlikes->hasFullyQualifiedClassName($destination_parts[0])) {
                     throw new RefactorException(
                         'Destination class ' . $destination_parts[0] . ' doesn’t exist',

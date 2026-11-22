@@ -214,6 +214,10 @@ final class PsalterEndToEndTest extends PsalmEndToEndTestCase
             ['--move', 'Ns\A::foo', '--into', '\Ns\Missing'],
             'Destination class Ns\Missing doesn’t exist',
         ];
+        yield 'constant renamed to class' => [
+            ['--rename', 'Ns\A::K', '--to', 'Ns\A::class'],
+            'A class constant must not be called class, as Ns\A::class is the name of the class',
+        ];
     }
 
     /**
@@ -332,6 +336,18 @@ final class PsalterEndToEndTest extends PsalmEndToEndTestCase
         yield 'namespaced class renamed into the global namespace' => [
             ['--rename', 'Ns\A', '--to', 'Foo'],
             'Renaming a namespaced class into the global namespace is not supported',
+        ];
+        yield 'class renamed to a keyword' => [
+            ['--rename', 'Ns\A', '--to', 'Ns\class'],
+            'Cannot use "class" as a class name as it is reserved',
+        ];
+        yield 'class renamed to the name of a type' => [
+            ['--rename', 'Ns\A', '--to', 'Ns\Int'],
+            'Cannot use "Int" as a class name as it is reserved',
+        ];
+        yield 'method moved into a class named with a keyword' => [
+            ['--rename', 'Ns\A::foo', '--to', 'Ns\List::foo'],
+            'Cannot use "List" as a class name as it is reserved',
         ];
         yield 'namespaced class renamed to a directory name with --to=' => [
             ['--rename', 'Ns\A', '--to=src'],

@@ -46,6 +46,8 @@ use function str_contains;
 use function str_ends_with;
 use function str_starts_with;
 use function strpos;
+use function strrchr;
+use function strtolower;
 use function substr;
 use function trim;
 
@@ -68,6 +70,22 @@ final class Refactor
 {
     private const IDENTIFIER = '[a-zA-Z_\\x80-\\xff][a-zA-Z0-9_\\x80-\\xff]*';
     private const CLASS_NAME = '(?:' . self::IDENTIFIER . '\\\\)*' . self::IDENTIFIER;
+
+    /**
+     * The names PHP doesn't accept for a class: its keywords and the names of its types
+     */
+    private const RESERVED_CLASS_NAMES = [
+        '__class__', '__dir__', '__file__', '__function__', '__halt_compiler', '__line__', '__method__',
+        '__namespace__', '__property__', '__trait__', 'abstract', 'and', 'array', 'as', 'bool', 'break',
+        'callable', 'case', 'catch', 'class', 'clone', 'const', 'continue', 'declare', 'default', 'die', 'do',
+        'echo', 'else', 'elseif', 'empty', 'enddeclare', 'endfor', 'endforeach', 'endif', 'endswitch', 'endwhile',
+        'eval', 'exit', 'extends', 'false', 'final', 'finally', 'float', 'fn', 'for', 'foreach', 'function',
+        'global', 'goto', 'if', 'implements', 'include', 'include_once', 'instanceof', 'insteadof', 'int',
+        'interface', 'isset', 'iterable', 'list', 'match', 'mixed', 'namespace', 'never', 'new', 'null', 'object',
+        'or', 'parent', 'print', 'private', 'protected', 'public', 'readonly', 'require', 'require_once', 'return',
+        'self', 'static', 'string', 'switch', 'throw', 'trait', 'true', 'try', 'unset', 'use', 'var', 'void',
+        'while', 'xor', 'yield',
+    ];
 
     public const LONG_OPTIONS = [
         'help', 'debug', 'debug-by-line', 'debug-emitted-issues', 'config:', 'root:', 'monochrome',
@@ -506,7 +524,7 @@ final class Refactor
                 return 'Renaming a namespaced class into the global namespace is not supported';
             }
 
-            return null;
+            return self::getReservedClassNameError($destination);
         }
 
         if (count($source_parts) !== 2) {
@@ -529,6 +547,20 @@ final class Refactor
                 . ($is_property ? 'Foo\\Bar::$baz' : 'Foo\\Bar::baz') . ', got ' . $destination;
         }
 
-        return null;
+        return self::getReservedClassNameError($destination_parts[0]);
+    }
+
+    /**
+     * The error for a destination class named with a word PHP reserves, which can't name a class
+     *
+     * @psalm-pure
+     */
+    private static function getReservedClassNameError(string $class_name): ?string
+    {
+        $short_name = substr((string) strrchr('\\' . $class_name, '\\'), 1);
+
+        return in_array(strtolower($short_name), self::RESERVED_CLASS_NAMES, true)
+            ? 'Cannot use "' . $short_name . '" as a class name as it is reserved'
+            : null;
     }
 }
