@@ -24,6 +24,28 @@ final class FunctionCallTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'strtolowerAndStrtoupperOfLiterals' => [
+                'code' => '<?php
+                    $lower = strtolower("Hello");
+                    $upper = strtoupper(rand(0, 1) ? "get" : "Post");
+                    $accented = strtolower("ÄRGER");',
+                'assertions' => [
+                    '$lower===' => "'hello'",
+                    '$upper===' => "'GET'|'POST'",
+                    '$accented===' => "'Ärger'",
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.2',
+            ],
+            'strtolowerOfANonAsciiLiteralBeforePhp82' => [
+                'code' => '<?php
+                    $accented = strtolower("ÄRGER");',
+                'assertions' => [
+                    '$accented===' => 'non-empty-lowercase-string',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'pathinfoWithAllElementsReturnsTheArray' => [
                 'code' => '<?php
                     /** @param non-empty-string $path */

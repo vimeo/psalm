@@ -59,6 +59,7 @@ use Psalm\Internal\Provider\ReturnTypeProvider\RoundReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\SprintfReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\StrReplaceReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\StrTrReturnTypeProvider;
+use Psalm\Internal\Provider\ReturnTypeProvider\StrtolowerReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\StrvalReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\TriggerErrorReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\TrimReturnTypeProvider;
@@ -143,6 +144,7 @@ final class FunctionReturnTypeProvider
         $this->registerClass(GetParentClassReturnTypeProvider::class);
         $this->registerClass(HrtimeReturnTypeProvider::class);
         $this->registerClass(MbStrtolowerReturnTypeProvider::class);
+        $this->registerClass(StrtolowerReturnTypeProvider::class);
     }
 
     /**
