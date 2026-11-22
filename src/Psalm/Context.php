@@ -553,6 +553,13 @@ final class Context
      */
     public array $parent_remove_vars = [];
 
+    /**
+     * The lists a key type of a variable in scope is bound to (see TIntRange::$dependent_list_key)
+     *
+     * @var array<string, true>
+     */
+    public array $list_key_bound_lists = [];
+
     private static int $clause_removal_count = 0;
 
     /**
@@ -1484,6 +1491,36 @@ final class Context
     }
 
     /**
+     * A key of a list (the one of `array_key_last()`, of a foreach) is a key the list has only as long as the list
+     * is the one it was taken from: the types of the variables bound to $list_var_id are free of the binding once
+     * the list is assigned, passed by reference, unset from or forgotten. A write under one of its offsets keeps it.
+     */
+    public function releaseKeysBoundToList(string $list_var_id): void
+    {
+        if (!isset($this->list_key_bound_lists[$list_var_id])) {
+            return;
+        }
+
+        unset($this->list_key_bound_lists[$list_var_id]);
+
+        foreach ($this->vars_in_scope as $var_id => $type) {
+            foreach ($type->getAtomicTypes() as $atomic_key => $atomic_type) {
+                if ($atomic_type instanceof TIntRange && $atomic_type->dependent_list_key === $list_var_id) {
+                    $builder = $type->getBuilder();
+                    $builder->removeType($atomic_key);
+                    $builder->addType(new TIntRange(
+                        $atomic_type->min_bound,
+                        $atomic_type->max_bound,
+                        $atomic_type->from_docblock,
+                    ));
+
+                    $type = $this->vars_in_scope[$var_id] = $builder->freeze();
+                }
+            }
+        }
+    }
+
+    /**
      * Drops the clauses about the variables a nested scope, analysed in a clone of this context, changed. Inside a
      * condition, the clauses are only marked as changed: the condition is checked against them for paradoxes
      * first, and its analyser drops them afterwards (see removeClausesOfVarsChangedSince()).
@@ -1495,6 +1532,13 @@ final class Context
         Context $nested_context,
         ?StatementsAnalyzer $statements_analyzer = null,
     ): void {
+        // a list the nested scope released the keys of
+        foreach ($this->list_key_bound_lists as $list_var_id => $_) {
+            if (!isset($nested_context->list_key_bound_lists[$list_var_id])) {
+                $this->releaseKeysBoundToList($list_var_id);
+            }
+        }
+
         foreach ($nested_context->parent_remove_vars as $var_id => $stamp) {
             // an older stamp than this context's is one the nested scope was cloned with before a sibling scope
             // changed the variable (an else after its if), not a change of its own
@@ -1875,6 +1919,7 @@ final class Context
         }
 
         foreach ($vars_to_remove as $var_id) {
+            $this->releaseKeysBoundToList($var_id);
             $this->forgetPropertyBoundByReference($var_id, false);
             // forgotten, not unset: Context::update() tells the two apart
             $this->vars_possibly_in_scope[$var_id] = true;
@@ -1963,6 +2008,7 @@ final class Context
     public function forgetPropertyDescendents(string $property_id): void
     {
         $this->forgetNullArrayOffsets($property_id);
+        $this->releaseKeysBoundToList($property_id);
         $this->removeVarFromConflictingClauses($property_id);
 
         // `$a[$this->p]` too

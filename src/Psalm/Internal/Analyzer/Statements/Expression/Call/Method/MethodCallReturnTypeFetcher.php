@@ -1148,6 +1148,7 @@ final class MethodCallReturnTypeFetcher
             || $stmt?->getAttribute(self::CALL_ARGUMENT_ATTRIBUTE) === true;
         $bounds_result = new TemplateResult([], []);
         $bounds_result->lower_bounds = $template_result->lower_bounds;
+        $bounds_result->markStarBindings($template_result->star_bindings, $template_result->star_input_bounds);
 
         // in the order they are declared in, as a bound may be another template of the method (`@template B of A`)
         foreach ($method_template_types as $template_name => $bounds) {
