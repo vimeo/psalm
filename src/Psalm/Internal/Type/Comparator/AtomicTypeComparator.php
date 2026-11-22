@@ -183,6 +183,13 @@ final class AtomicTypeComparator
                 return false;
             }
 
+            // a non-empty mixed holds no falsy value, nor an empty mixed a truthy one
+            if (($container_type_part::class === TNonEmptyMixed::class && $input_type_part->isFalsy())
+                || ($container_type_part::class === TEmptyMixed::class && $input_type_part->isTruthy())
+            ) {
+                return false;
+            }
+
             return true;
         }
 
@@ -882,8 +889,7 @@ final class AtomicTypeComparator
                 || $input_type_part instanceof TKeyedArray
                 || (
                     $input_type_part instanceof TNamedObject &&
-                    $codebase->classOrInterfaceExists($input_type_part->value) &&
-                    $codebase->methodExists($input_type_part->value . '::__invoke')
+                    CallableTypeComparator::getInvokeMember($codebase, $input_type_part) !== null
                 )
             )
         ) {
@@ -1198,6 +1204,20 @@ final class AtomicTypeComparator
                 $type2_part,
                 $allow_interface_equality,
             );
+        }
+
+        // a value of a template is a value of its bound: `T of numeric` can be a numeric string
+        foreach ([[$type1_part, $type2_part], [$type2_part, $type1_part]] as [$template_part, $other_part]) {
+            if ($template_part instanceof TTemplateParam
+                && !$other_part instanceof TTemplateParam
+                && !$template_part->as->isMixed()
+            ) {
+                foreach ($template_part->as->getAtomicTypes() as $bound_part) {
+                    if (self::canBeIdentical($codebase, $bound_part, $other_part, $allow_interface_equality)) {
+                        return true;
+                    }
+                }
+            }
         }
 
         $first_comparison_result = new TypeComparisonResult();

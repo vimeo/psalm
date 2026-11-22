@@ -2,9 +2,9 @@
 
 This is a **security issue**, reported by [security analysis](https://psalm.dev/docs/security_analysis/): it flags a potential vulnerability.
 
-Emitted when user-controlled input is placed in the path of a URL whose server is fixed, and the URL is then requested, even once URL-encoded: URL encoding leaves `.` as it is, so the input can still be a `..` segment of the path.
+Emitted when user-controlled input is placed in the path of a URL whose server is fixed, and the URL is then requested or redirected to, even once URL-encoded: URL encoding leaves `.` as it is, so the input can still be a `..` segment of the path.
 
-HTTP clients such as cURL resolve these segments before sending the request, so the input can reach another path of the server than the one intended (client-side path traversal).
+HTTP clients such as cURL, and browsers following a redirect, resolve these segments before sending the request, so the input can reach another path of the server than the one intended (client-side path traversal).
 
 ## Example
 

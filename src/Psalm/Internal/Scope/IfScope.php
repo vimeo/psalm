@@ -95,6 +95,14 @@ final class IfScope
     public array $negated_types = [];
 
     /**
+     * Of the negated types, by offset, those the negation of the condition itself asserts, not the clauses that
+     * held before it
+     *
+     * @var array<string, array<int, array<int, Assertion>>>
+     */
+    public array $active_negated_types = [];
+
+    /**
      * @var array<string, bool>
      */
     public array $if_cond_changed_var_ids = [];
@@ -129,12 +137,12 @@ final class IfScope
     public array $final_actions = [];
 
     /**
-     * The classes the code after the if may use without them being reported when every other branch leaves, so it
-     * is only reached through the if block
+     * The classes known to exist at the end of each block of the if and its elseifs that falls through: when the
+     * else leaves, the code after the if is only reached through those blocks
      *
-     * @var array<lowercase-string, true>|null
+     * @var list<array<lowercase-string, true>>
      */
-    public ?array $phantom_classes_of_if_block = null;
+    public array $phantom_classes_of_blocks = [];
 
     /**
      * Whether there is no else and the conditions matched every value of a variable
