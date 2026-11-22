@@ -1921,7 +1921,8 @@ final class NewAnalyzer extends CallAnalyzer
     /**
      * Returns the set of class templates with no public channel that can constrain
      * them: a template named anywhere in a public non-constructor method parameter
-     * or a public writable property type is one that later code can still
+     * (a `@method` parameter too) or a public writable property type (a `@property`
+     * or `@property-write` type too) is one that later code can still
      * constrain, anything else can only have been fixed at the construction site and
      * so is pinned eagerly rather than minted as a type variable.
      *
@@ -1993,6 +1994,21 @@ final class NewAnalyzer extends CallAnalyzer
                 foreach ($property_storage->type->getTemplateTypes() as $template_type) {
                     unset($unconstrainable[$template_type->param_name]);
                 }
+            }
+        }
+
+        // a `@method` is called and a `@property` or `@property-write` is assigned like a real one
+        foreach ($storage->getDeclaredPseudoMethods() as $pseudo_method) {
+            foreach ($pseudo_method->params as $param) {
+                foreach ($param->type?->getTemplateTypes() ?? [] as $template_type) {
+                    unset($unconstrainable[$template_type->param_name]);
+                }
+            }
+        }
+
+        foreach ($storage->pseudo_property_set_types as $pseudo_property_type) {
+            foreach ($pseudo_property_type->getTemplateTypes() as $template_type) {
+                unset($unconstrainable[$template_type->param_name]);
             }
         }
 
