@@ -7,9 +7,15 @@ on:
   pull_request:
     branches: [master, 6.x]
     types: [opened, synchronize, reopened, ready_for_review]
-    paths-ignore:
-      - 'docs/**'
-      - '**.md'
+    # Skips PRs that only change docs, tests or CI, which can't change how fast Psalm runs. The last matching
+    # pattern wins, so changes to this workflow still run it.
+    paths:
+      - '**'
+      - '!docs/**'
+      - '!**.md'
+      - '!tests/**'
+      - '!.github/**'
+      - '.github/workflows/perf.yml'
   workflow_dispatch:
     inputs:
       pr:

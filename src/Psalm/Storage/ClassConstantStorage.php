@@ -55,6 +55,10 @@ final class ClassConstantStorage implements HasAttributesInterface
          * {@see ClassLikeStorage::$since_php_version_id} applies otherwise.
          */
         public readonly ?int $since_php_version_id = null,
+        /**
+         * The type the constant declares natively (PHP 8.3)
+         */
+        public readonly ?Union $signature_type = null,
     ) {
     }
 
