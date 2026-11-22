@@ -3,7 +3,7 @@
 Emitted when a float whose value is known to lose something is an operand of a bitwise or modulo operation (`|`, `&`, `^`, `<<`, `>>`, `~`, `%`), which converts it to an int
 
 ```php
-<?php
+<?php // strictBinaryOperands="false"
 
 function setFlag(): int {
     return 1.5 | 1; // ImplicitFloatToIntCast

@@ -6,6 +6,7 @@ namespace Psalm\Storage;
 
 use Override;
 use Psalm\CodeLocation;
+use Psalm\Exception\CircularReferenceException;
 use Psalm\Internal\Codebase\ClassLikes;
 use Psalm\Internal\Codebase\ConstantTypeResolver;
 use Psalm\Internal\Scanner\UnresolvedConstantComponent;
@@ -33,6 +34,18 @@ final class EnumCaseStorage implements HasAttributesInterface
     }
 
     public function getValue(ClassLikes $classlikes): TLiteralInt|TLiteralString|null
+    {
+        try {
+            return $this->resolveValue($classlikes);
+        } catch (CircularReferenceException) {
+            return null;
+        }
+    }
+
+    /**
+     * @throws CircularReferenceException when the value refers back to this case
+     */
+    public function resolveValue(ClassLikes $classlikes): TLiteralInt|TLiteralString|null
     {
         $case_value = $this->value;
 

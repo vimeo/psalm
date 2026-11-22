@@ -247,6 +247,53 @@ final class RedundantConditionTest extends TestCase
                         return $new;
                     }',
             ],
+            'notIdenticalToABoolLiteralOfATemplateBoundedByMixed' => [
+                'code' => '<?php
+                    /**
+                     * @template U
+                     * @param U $u
+                     */
+                    function notTrue($u): int {
+                        if ($u !== true) {
+                            return 1;
+                        }
+
+                        return 2;
+                    }
+
+                    /**
+                     * @template U
+                     * @param U $u
+                     */
+                    function notFalse($u): int {
+                        if ($u !== false) {
+                            return 1;
+                        }
+
+                        return 2;
+                    }
+
+                    /**
+                     * @template U of scalar
+                     * @param U $u
+                     */
+                    function scalarBound($u): void {
+                        if ($u !== true) {
+                            echo 1;
+                        }
+                    }
+
+                    /**
+                     * @template T
+                     * @template U of T
+                     * @param U $u
+                     */
+                    function boundOfAMixedTemplate($u): void {
+                        if ($u !== true) {
+                            echo 1;
+                        }
+                    }',
+            ],
             'coalesceInAnElseIfAfterACountCondition' => [
                 'code' => '<?php
                     /** @param list<?int> $list */
@@ -1891,6 +1938,21 @@ final class RedundantConditionTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'notIdenticalToTrueOfATemplateBoundedByInt' => [
+                'code' => '<?php
+                    /**
+                     * @template U of int
+                     * @param U $u
+                     */
+                    function notTrue($u): int {
+                        if ($u !== true) {
+                            return 1;
+                        }
+
+                        return 2;
+                    }',
+                'error_message' => 'RedundantConditionGivenDocblockType',
+            ],
             'ternaryReportsTheNegationOfItsOwnCondition' => [
                 'code' => '<?php
                     function f(int $i): int {
