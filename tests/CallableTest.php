@@ -155,6 +155,54 @@ final class CallableTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'callableOfThisTakesTheTemplatesOfTheObject' => [
+                'code' => '<?php
+                    /**
+                     * @template TKey of array-key
+                     * @template TValue
+                     */
+                    interface Items extends Countable {
+                        /** @param callable($this): void $callback */
+                        public function each(callable $callback): void;
+
+                        /** @param callable(static): void $callback */
+                        public function eachStatic(callable $callback): void;
+                    }
+
+                    /** @template T */
+                    final class Box {
+                        /** @param callable($this): void $callback */
+                        public function each(callable $callback): void { $callback($this); }
+
+                        /** @param callable(static): void $callback */
+                        public function eachStatic(callable $callback): void { $callback($this); }
+                    }
+
+                    /** @param Items<int, string> $items */
+                    function useItems(Items $items): void {
+                        $items->each(function ($i): void { echo count($i); });
+                        $items->eachStatic(
+                            /** @param Items<int, string> $i */
+                            function (Items $i): void { echo count($i); }
+                        );
+                    }
+
+                    /** @param Box<int> $box */
+                    function useBox(Box $box): void {
+                        $box->eachStatic(function ($_b): void {});
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'truthyCheckOfANullableCallableIsNotRisky' => [
+                'code' => '<?php
+                    function f(?callable $c): void {
+                        if ($c) {
+                            $c();
+                        }
+                    }',
+            ],
             'callableArrayNamingAMagicMethodMatchesATypedCallable' => [
                 'code' => '<?php
                     /**
@@ -3000,6 +3048,8 @@ final class CallableTest extends TestCase
                             return -1;
                         }
                     }',
+                'assertions' => [],
+                'ignored_issues' => ['DeprecatedSyntax'],
             ],
             'noFatalErrorOnClassWithSlash' => [
                 'code' => '<?php
@@ -3779,6 +3829,16 @@ final class CallableTest extends TestCase
                     '$r===' => '0|array<array-key, mixed>|callable-object',
                 ],
             ],
+            'negatedIsObjectKeepsArrayOfCallableOrArray' => [
+                'code' => '<?php
+                    /** @var object|callable|array $p */
+                    $p = $_GET["p"];
+                    $r = is_object($p) ? 0 : $p;
+                ',
+                'assertions' => [
+                    '$r===' => '0|array<array-key, mixed>|callable-string',
+                ],
+            ],
             'callableCheckAfterIsStringOnCallableOrArray' => [
                 'code' => '<?php
                     /** @param string|callable|array $param */
@@ -3809,6 +3869,150 @@ final class CallableTest extends TestCase
                         protected function runLoop(): void {}
                     }',
             ],
+            'invokableClassLaterInIntersectionIsCallable' => [
+                'code' => '<?php
+                    interface Named {}
+                    class StringHandler { public function __invoke(string $value): int { return 1; } }
+
+                    /** @param callable(string): int $callback */
+                    function takesCallback(callable $callback): void {}
+
+                    function f(Named&StringHandler $h): void {
+                        takesCallback($h);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'firstClassCallableOfAnInvokableLaterInIntersection' => [
+                'code' => '<?php
+                    interface Named {}
+                    class StringHandler { public function __invoke(string $value): int { return 1; } }
+
+                    /** @param callable(string): int $callback */
+                    function takesCallback(callable $callback): void {}
+
+                    function f(Named&StringHandler $h): void {
+                        takesCallback($h(...));
+                    }
+
+                    /** @var Named&StringHandler $h */
+                    $h = null;
+                    $closure = $h(...);
+                    $result = $h("a");',
+                'assertions' => [
+                    '$closure===' => 'Closure[impure](string):int',
+                    '$result===' => 'int',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'closureFromCallableOfAnInvokableLaterInIntersection' => [
+                'code' => '<?php
+                    interface Named {}
+                    class StringHandler { public function __invoke(string $value): int { return 1; } }
+
+                    /** @param callable(string): int $callback */
+                    function takesCallback(callable $callback): void {}
+
+                    function f(Named&StringHandler $h): void {
+                        takesCallback(Closure::fromCallable($h));
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'abstractClassOfAnInvokableInterfaceIsCallable' => [
+                'code' => '<?php
+                    interface Handler { public function __invoke(string $value): int; }
+                    abstract class Base implements Handler {}
+
+                    /** @param callable(string): int $callback */
+                    function takesCallback(callable $callback): void {}
+
+                    function f(Base $base): void {
+                        takesCallback($base);
+                        takesCallback($base(...));
+                        $base("a");
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'isCallableKeepsTheObjectOfAnInvokableLaterInIntersection' => [
+                'code' => '<?php
+                    interface Named { public function name(): string; }
+                    class StringHandler { public function __invoke(string $value): int { return 1; } }
+
+                    function f(Named&StringHandler $h): string {
+                        if (is_callable($h)) {
+                            return $h->name();
+                        }
+
+                        return "";
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['RedundantCondition'],
+                'php_version' => '8.1',
+            ],
+            'receiverTemplatesOfAnInvokableLaterInIntersectionAreBound' => [
+                'code' => '<?php
+                    interface Named {}
+                    /** @template T */
+                    class Box
+                    {
+                        /** @param T $value */
+                        public function __construct(private mixed $value) {}
+
+                        /** @return T */
+                        public function __invoke(string $key): mixed { return $this->value; }
+                    }
+
+                    /** @param callable(string): int $callback */
+                    function takesCallback(callable $callback): void {}
+
+                    /** @param Named&Box<int> $h */
+                    function f(Named $h): void {
+                        takesCallback($h);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'invokeOfAnInterfaceFirstInIntersectionIsNotReplacedByALaterClass' => [
+                'code' => '<?php
+                    interface Wide { public function __invoke(string|int $value): int; }
+                    class Narrow { public function __invoke(string $value): int { return 1; } }
+
+                    /** @param callable(int): int $callback */
+                    function takesCallback(callable $callback): void {}
+
+                    function f(Wide&Narrow $h): void {
+                        takesCallback($h);
+                        $closure = $h(...);
+                        $closure(1);
+                        array_map($h, [1]);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['UnusedFunctionCall'],
+                'php_version' => '8.1',
+            ],
+            'closureOfAnInvokableObjectIsAClosureParam' => [
+                'code' => '<?php
+                    class StringHandler { public function __invoke(string $value): int { return 1; } }
+
+                    /** @param Closure(string): int $closure */
+                    function takesClosure(Closure $closure): void {}
+
+                    function f(StringHandler $h): void {
+                        takesClosure($h(...));
+                        takesClosure(Closure::fromCallable($h));
+                        takesClosure(fn(string $value): int => 1);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
         ];
     }
 
@@ -3819,6 +4023,43 @@ final class CallableTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'callableOfStaticChecksTheTemplatesOfTheObject' => [
+                'code' => '<?php
+                    /** @template T */
+                    class Box {
+                        /** @param callable(static): void $callback */
+                        public function each(callable $callback): void { $callback($this); }
+                    }
+
+                    /** @param Box<int> $box */
+                    function useBox(Box $box): void {
+                        $box->each(
+                            /** @param Box<string> $_b */
+                            function (Box $_b): void {}
+                        );
+                    }',
+                'error_message' => 'InvalidArgument',
+            ],
+            'truthyCheckOfACallableOrStringIsRisky' => [
+                'code' => '<?php
+                    function f(callable|string $c): void {
+                        if ($c) {
+                            echo "truthy";
+                        }
+                    }',
+                'error_message' => 'RiskyTruthyFalsyComparison',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'truthyCheckOfACallableIsRedundant' => [
+                'code' => '<?php
+                    function f(callable $c): void {
+                        if ($c) {
+                            $c();
+                        }
+                    }',
+                'error_message' => 'RedundantCondition - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:29',
+            ],
             'callableArrayNamingAMagicMethodMismatchesATypedCallable' => [
                 'code' => '<?php
                     /**
@@ -4006,7 +4247,30 @@ final class CallableTest extends TestCase
 
                     where('my_url');
                     PHP,
-                'error_message' => 'InvalidScalarArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:9:7',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:9:7',
+            ],
+            'invokableObjectIsNotAClosureParam' => [
+                'code' => '<?php
+                    class StringHandler { public function __invoke(string $value): int { return 1; } }
+
+                    function takesClosure(Closure $closure): void {}
+
+                    function f(StringHandler $h): void {
+                        takesClosure($h);
+                    }',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:38 - Argument 1 of takesClosure expects Closure[impure], but StringHandler provided',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'arrayCallableIsNotAClosureParam' => [
+                'code' => '<?php
+                    final class Handler { public function handle(): void {} }
+
+                    function takesClosure(Closure $closure): void {}
+
+                    takesClosure([new Handler(), "handle"]);',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:34',
+                'error_levels' => [],
             ],
             'stringNamingAFunctionOfTheWrongSignatureForACallableOrLiteralsParam' => [
                 'code' => <<<'PHP'
@@ -5219,7 +5483,7 @@ final class CallableTest extends TestCase
                         call_user_func($callable);
                     }
                 }',
-                'error_message' => 'DeprecatedConstant',
+                'error_message' => 'DeprecatedSyntax',
                 'error_levels' => [],
                 'php_version' => '8.2',
             ],
@@ -5244,7 +5508,7 @@ final class CallableTest extends TestCase
                         call_user_func($callable);
                     }
                 }',
-                'error_message' => 'DeprecatedConstant',
+                'error_message' => 'DeprecatedSyntax',
                 'error_levels' => [],
                 'php_version' => '8.2',
             ],
@@ -5267,7 +5531,7 @@ final class CallableTest extends TestCase
                         call_user_func($callable);
                     }
                 }',
-                'error_message' => 'DeprecatedConstant',
+                'error_message' => 'DeprecatedSyntax',
                 'error_levels' => [],
                 'php_version' => '8.2',
             ],
@@ -5290,7 +5554,7 @@ final class CallableTest extends TestCase
                         call_user_func($callable);
                     }
                 }',
-                'error_message' => 'DeprecatedConstant',
+                'error_message' => 'DeprecatedSyntax',
                 'error_levels' => [],
                 'php_version' => '8.2',
             ],
@@ -5313,7 +5577,7 @@ final class CallableTest extends TestCase
                         call_user_func($callable);
                     }
                 }',
-                'error_message' => 'DeprecatedConstant',
+                'error_message' => 'DeprecatedSyntax',
                 'error_levels' => [],
                 'php_version' => '8.2',
             ],
@@ -5409,6 +5673,7 @@ final class CallableTest extends TestCase
                     }
                 }',
                 'error_message' => 'ParentNotFound',
+                'error_levels' => ['DeprecatedSyntax'],
             ],
             'parentCallableWithoutParent' => [
                 'code' => '<?php
@@ -5426,6 +5691,7 @@ final class CallableTest extends TestCase
                     }
                 }',
                 'error_message' => 'ParentNotFound',
+                'error_levels' => ['DeprecatedSyntax'],
             ],
             'wrongCallableInUnion' => [
                 'code' => '<?php
@@ -5501,6 +5767,83 @@ final class CallableTest extends TestCase
                         usort($a, "123");
                     }',
                 'error_message' => 'InvalidArgument',
+            ],
+            'enumWithAnInvokeMethodOfAWrongParamTypeIsNotCallable' => [
+                'code' => '<?php
+                    enum Suit {
+                        case Hearts;
+                        public function __invoke(string $value): int { return 1; }
+                    }
+
+                    /** @param callable(int): int $callback */
+                    function takesIntCallback(callable $callback): void {}
+
+                    function f(Suit $suit): void {
+                        takesIntCallback($suit);
+                    }',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:11:42',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'invokableLaterInIntersectionWithAWrongParamTypeIsNotCallable' => [
+                'code' => '<?php
+                    interface Named {}
+                    class StringHandler { public function __invoke(string $value): int { return 1; } }
+
+                    /** @param callable(int): int $callback */
+                    function takesCallback(callable $callback): void {}
+
+                    function f(Named&StringHandler $h): void {
+                        takesCallback($h);
+                    }',
+                'error_message' => 'InvalidScalarArgument',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'firstClassCallableOfAnInvokableLaterInIntersectionWithAWrongParamTypeIsNotCallable' => [
+                'code' => '<?php
+                    interface Named {}
+                    class StringHandler { public function __invoke(string $value): int { return 1; } }
+
+                    /** @param callable(int): int $callback */
+                    function takesCallback(callable $callback): void {}
+
+                    function f(Named&StringHandler $h): void {
+                        takesCallback($h(...));
+                    }',
+                'error_message' => 'InvalidScalarArgument',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'closureFromCallableOfAnInvokableLaterInIntersectionWithAWrongParamTypeIsNotCallable' => [
+                'code' => '<?php
+                    interface Named {}
+                    class StringHandler { public function __invoke(string $value): int { return 1; } }
+
+                    /** @param callable(int): int $callback */
+                    function takesCallback(callable $callback): void {}
+
+                    function f(Named&StringHandler $h): void {
+                        takesCallback(Closure::fromCallable($h));
+                    }',
+                'error_message' => 'InvalidScalarArgument',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'intersectionWithoutInvokeIsNotCallable' => [
+                'code' => '<?php
+                    interface Named {}
+                    interface Other {}
+
+                    /** @param callable(string): int $callback */
+                    function takesCallback(callable $callback): void {}
+
+                    function f(Named&Other $h): void {
+                        takesCallback($h);
+                    }',
+                'error_message' => 'InvalidArgument',
+                'error_levels' => [],
+                'php_version' => '8.1',
             ],
         ];
     }

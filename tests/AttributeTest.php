@@ -974,6 +974,7 @@ final class AttributeTest extends TestCase
                     $r->getAttributes(Attr::class);
                 ',
                 'error_message' => 'InvalidAttribute - src' . DIRECTORY_SEPARATOR . 'somefile.php:11:39 - Attribute Attr cannot be used on a method',
+                'error_levels' => ['DeprecatedMethod'],
             ],
             'getAttributesOnPropertyWithNonPropertyAttribute' => [
                 'code' => '<?php

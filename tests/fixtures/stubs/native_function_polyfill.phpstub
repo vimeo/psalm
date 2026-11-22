@@ -1,0 +1,11 @@
+<?php
+// a function native in PHP 8.6, which older runtimes don't have
+if (!function_exists('stream_last_errors')) {
+    /**
+     * @return string
+     */
+    function stream_last_errors()
+    {
+        return '';
+    }
+}
