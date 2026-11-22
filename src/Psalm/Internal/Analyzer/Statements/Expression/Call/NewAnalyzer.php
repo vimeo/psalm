@@ -78,7 +78,9 @@ use Psalm\Type\TaintKind;
 use Psalm\Type\Union;
 
 use function array_key_first;
+use function array_keys;
 use function array_map;
+use function array_search;
 use function array_values;
 use function count;
 use function in_array;
@@ -686,6 +688,7 @@ final class NewAnalyzer extends CallAnalyzer
             }
 
             $template_result ??= new TemplateResult([], []);
+            $template_result->constructed_class = $storage->name;
 
             if (!self::isInTrait($statements_analyzer)) {
                 $template_result->static_class_type = $fq_class_name;
@@ -2278,6 +2281,16 @@ final class NewAnalyzer extends CallAnalyzer
         );
 
         if (isset($unconstrainable_templates[$template_name])) {
+            $template_offset = array_search($template_name, array_keys($storage->template_types ?? []), true);
+
+            // what nothing can constrain later is, for a covariant template, a subtype of every instantiation
+            if (!isset($storage->purity_templates[$template_name])
+                && $template_offset !== false
+                && ($storage->template_covariants[$template_offset] ?? false)
+            ) {
+                return Type::getNever();
+            }
+
             return $constraint;
         }
 
