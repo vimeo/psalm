@@ -288,7 +288,7 @@ class Baz extends Foo {
 
 ## Template defaults
 
-A template can have a default type, written after `=`: `@template T = Default`, or `@template T of Bound = Default` with a bound. `@template-covariant` and the `@psalm-template` and `@phpstan-template` forms take one the same way.
+A template can have a default type, written after `=`: `@template T = Default`, or `@template T of Bound = Default` with a bound. `@template-covariant`, `@template-contravariant` and the `@psalm-template` and `@phpstan-template` forms take one the same way.
 
 Psalm uses the default when the type argument is left out:
 
@@ -537,6 +537,92 @@ class Collection {
 ```
 
 This is perfectly valid, and Psalm won't complain.
+
+## Template contravariance
+
+A class that only takes values of its template can stand in for one that takes less. Declare the template with `@template-contravariant T` (or `@psalm-template-contravariant T`):
+
+```php
+<?php
+abstract class Animal {}
+final class Dog extends Animal {}
+
+/** @template-contravariant T */
+interface Sink {
+    /** @param T $value */
+    public function put(mixed $value): void;
+}
+
+/** @param Sink<Dog> $sink */
+function takesDogSink(Sink $sink): void {}
+
+/** @param Sink<Animal> $sink */
+function takesAnimalSink(Sink $sink): void {}
+
+/**
+ * @param Sink<Animal> $animal_sink
+ * @param Sink<Dog> $dog_sink
+ */
+function f(Sink $animal_sink, Sink $dog_sink): void {
+    takesDogSink($animal_sink); // no issue: a sink of animals takes every dog
+    takesAnimalSink($dog_sink); // ArgumentTypeCoercion: a sink of dogs does not take every animal
+}
+```
+
+Psalm reports a contravariant template where the class hands a value of it out:
+
+```php
+<?php
+/** @template-contravariant T */
+interface Sink {
+    /** @param T $value */
+    public function put(mixed $value): void;
+}
+
+/** @template-contravariant T */
+final class Channel {
+    /** @var T */
+    public mixed $last; // InvalidTemplateParam
+
+    /** @var T */
+    private mixed $first; // no issue: a private property
+
+    /** @param T $first */
+    public function __construct(mixed $first) { // no issue: a constructor
+        $this->first = $first;
+        $this->last = $first;
+    }
+
+    /** @return T */
+    public function first(): mixed { // InvalidTemplateParam
+        return $this->first;
+    }
+
+    /** @param Closure(T): void $callback */
+    public function each(Closure $callback): void {} // InvalidTemplateParam: the callback is given a T
+
+    /** @return Sink<T> */
+    public function sink(): Sink { // no issue: the sink takes a T
+        throw new Exception();
+    }
+}
+```
+
+With no argument to say otherwise, `new` gives a contravariant template its bound, which fits every other type argument:
+
+```php
+<?php
+/** @template-contravariant T */
+final class NullSink {
+    /** @param T $value */
+    public function put(mixed $value): void {}
+}
+
+/** @return NullSink<int> */
+function intSink(): NullSink {
+    return new NullSink(); // no issue: NullSink<mixed>
+}
+```
 
 ## Star projection
 
