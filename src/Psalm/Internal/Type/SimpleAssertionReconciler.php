@@ -2455,25 +2455,21 @@ final class SimpleAssertionReconciler extends Reconciler
                 $callable_types[] = $type;
                 $redundant = false;
             } elseif ($type instanceof TTemplateParam) {
-                $bound = self::getTemplateBound($type);
-
-                if ($bound->hasCallableType() || $bound->hasMixed()) {
-                    $type = $type->replaceAs(self::reconcileCallable(
-                        $assertion,
-                        $codebase,
-                        $type->as,
-                        null,
-                        $negated,
-                        null,
-                        $suppressed_issues,
-                        $failed_reconciliation,
-                        $is_equality,
-                    ));
-                }
-
                 $redundant = false;
 
-                $callable_types[] = $type;
+                $callable_template = self::reconcileCallableTemplate(
+                    $assertion,
+                    $codebase,
+                    $type,
+                    $negated,
+                    $suppressed_issues,
+                    $failed_reconciliation,
+                    $is_equality,
+                );
+
+                if ($callable_template !== null) {
+                    $callable_types[] = $callable_template;
+                }
             } elseif (($parts = AtomicParts::split($type, new TCallable(), $codebase)) !== null) {
                 // e.g. the callable scalars are the callable-strings
                 $parts_failed_reconciliation = Reconciler::RECONCILIATION_OK;
@@ -2520,6 +2516,56 @@ final class SimpleAssertionReconciler extends Reconciler
             $suppressed_issues,
             $failed_reconciliation,
         );
+    }
+
+    /**
+     * The template narrowed to its callable values, null when its bound can't be callable (an object without
+     * __invoke()), as the bound itself isn't
+     *
+     * @param string[] $suppressed_issues
+     * @param Reconciler::RECONCILIATION_* $failed_reconciliation
+     */
+    private static function reconcileCallableTemplate(
+        Assertion $assertion,
+        Codebase $codebase,
+        TTemplateParam $type,
+        bool $negated,
+        array $suppressed_issues,
+        int &$failed_reconciliation,
+        bool $is_equality,
+    ): ?TTemplateParam {
+        $bound = self::getTemplateBound($type);
+        $bound_failed_reconciliation = Reconciler::RECONCILIATION_OK;
+
+        if (self::reconcileCallable(
+            $assertion,
+            $codebase,
+            $bound,
+            null,
+            $negated,
+            null,
+            $suppressed_issues,
+            $bound_failed_reconciliation,
+            $is_equality,
+        )->isNever()) {
+            return null;
+        }
+
+        if ($bound->hasCallableType() || $bound->hasMixed()) {
+            return $type->replaceAs(self::reconcileCallable(
+                $assertion,
+                $codebase,
+                $type->as,
+                null,
+                $negated,
+                null,
+                $suppressed_issues,
+                $failed_reconciliation,
+                $is_equality,
+            ));
+        }
+
+        return $type;
     }
 
     /**
