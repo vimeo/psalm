@@ -1446,7 +1446,12 @@ class Reconciler
                             }
 
                             if ($new_base_type_candidate === null) {
-                                return null;
+                                if (count($lookup_keys) === 1) {
+                                    return null;
+                                }
+
+                                // none of the keys is listed: what the shape holds, as for a key of no known value
+                                $new_base_type_candidate = $existing_key_type_part->getGenericValueType(true);
                             }
                         }
 

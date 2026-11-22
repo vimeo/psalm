@@ -117,6 +117,29 @@ final class IssetTest extends TestCase
                         return 0;
                     }',
             ],
+            'offsetUnderSeveralLiteralKeysNoneOfWhichASealedShapeListsIsItsValue' => [
+                'code' => '<?php
+                    enum Level: int {
+                        case Debug = 100;
+                        case Info = 200;
+                    }
+
+                    final class Logger {
+                        private const LEVELS = [7 => Level::Debug, 6 => Level::Info];
+
+                        /** @param 100|200|Level $level */
+                        public static function level(int|Level $level): Level {
+                            if (is_int($level) && isset(self::LEVELS[$level])) {
+                                $level = self::LEVELS[$level];
+                            }
+
+                            return $level instanceof Level ? $level : Level::from($level);
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['InvalidArrayOffset'],
+                'php_version' => '8.1',
+            ],
             'issetOnListOffsetDefinesTheOffsetsBeforeIt' => [
                 'code' => <<<'PHP'
                     <?php
