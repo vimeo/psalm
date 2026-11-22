@@ -953,16 +953,9 @@ final class Codebase
 
         // the classes scanned again may make other `new`
         $this->constructor_argument_starts = null;
-        $this->populateCodebase();
+        $this->populator->populateCodebase();
         // the files scanned again may declare other constants
         $this->global_constant_types_by_wildcard = [];
-    }
-
-    private function populateCodebase(): void
-    {
-        $this->populator->populateCodebase();
-        // they are derived from the storages populated again
-        $this->methods->forgetPotentialDeclaringMethodIds();
     }
 
     /**
@@ -1080,7 +1073,7 @@ final class Codebase
         if ($has_changes) {
             // the classes scanned again may make other `new`
             $this->constructor_argument_starts = null;
-            $this->populateCodebase();
+            $this->populator->populateCodebase();
             // the files scanned again may declare other constants
             $this->global_constant_types_by_wildcard = [];
         }

@@ -1772,7 +1772,7 @@ final class Populator
      * @return list<lowercase-string>
      * @psalm-capabilities read-props
      */
-    public static function getTraitMethodNames(
+    private static function getTraitMethodNames(
         ClassLikeStorage $storage,
         ClassLikeStorage $parent_storage,
         string $method_name_lc,

@@ -7,9 +7,7 @@ namespace Psalm\Tests\Internal\Codebase;
 use Override;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Psalm\Context;
-use Psalm\Internal\Codebase\Methods;
 use Psalm\Tests\TestCase;
-use ReflectionProperty;
 
 use function array_filter;
 use function array_values;
@@ -55,7 +53,7 @@ final class PotentialDeclaringMethodIdsTest extends TestCase
     }
 
     #[DataProvider('providerRecordEdges')]
-    public function testIdsAreDerivedOnlyWhenEdgesAreRecorded(bool $record_edges): void
+    public function testCallReferencesAreRecordedOnlyWhenEdgesAreRecorded(bool $record_edges): void
     {
         $codebase = $this->project_analyzer->getCodebase();
         $codebase->code_use_graph->record_edges = $record_edges;
@@ -67,13 +65,6 @@ final class PotentialDeclaringMethodIdsTest extends TestCase
             (new C())->foo();');
         $this->analyzeFile('somefile.php', new Context());
 
-        $derived = (new ReflectionProperty(Methods::class, 'potential_declaring_method_ids'))
-            ->getValue($codebase->methods);
-
-        self::assertSame(
-            $record_edges ? ['p::foo' => [], 'c::foo' => ['c::foo' => true, 'p::foo' => true]] : [],
-            $derived,
-        );
         self::assertSame($record_edges, $codebase->findReferencesToMethod('P::foo') !== []);
     }
 
@@ -85,65 +76,6 @@ final class PotentialDeclaringMethodIdsTest extends TestCase
     {
         yield 'recorded' => [true];
         yield 'not recorded' => [false];
-    }
-
-    public function testCallReferencesTheNewParentAfterTheClassChanges(): void
-    {
-        $codebase = $this->project_analyzer->getCodebase();
-        $files = [
-            'p.php' => '<?php class P { public function foo(): void {} }',
-            't.php' => '<?php trait T { public function foo(): void {} }',
-            'c.php' => '<?php final class C { use T; }',
-            'call.php' => '<?php (new C())->foo();',
-        ];
-
-        foreach ($files as $file_path => $contents) {
-            $this->file_provider->registerFile($file_path, $contents);
-            $codebase->addFilesToAnalyze([$file_path => $file_path]);
-        }
-
-        $codebase->scanFiles();
-        $codebase->analyzer->analyzeFiles($this->project_analyzer, 1, false);
-
-        self::assertNotSame([], $codebase->findReferencesToMethod('T::foo'));
-        self::assertSame([], $codebase->findReferencesToMethod('P::foo'));
-
-        $this->file_provider->registerFile('c.php', '<?php final class C extends P {}');
-        $codebase->reloadFiles($this->project_analyzer, ['c.php', 'call.php'], true);
-        $codebase->analyzer->analyzeFiles($this->project_analyzer, 1, false);
-
-        self::assertNotSame([], $codebase->findReferencesToMethod('P::foo'));
-    }
-
-    public function testCallReferencesTheNewParentAfterTheClassIsScannedAgain(): void
-    {
-        $codebase = $this->project_analyzer->getCodebase();
-        $files = [
-            'p.php' => '<?php class P { public function foo(): void {} }',
-            't.php' => '<?php trait T { public function foo(): void {} }',
-            'c.php' => '<?php final class C { use T; }',
-            'call.php' => '<?php (new C())->foo();',
-        ];
-
-        foreach ($files as $file_path => $contents) {
-            $this->file_provider->registerFile($file_path, $contents);
-            $codebase->addFilesToAnalyze([$file_path => $file_path]);
-        }
-
-        $codebase->scanFiles();
-        $codebase->analyzer->analyzeFiles($this->project_analyzer, 1, false);
-
-        self::assertNotSame([], $codebase->findReferencesToMethod('T::foo'));
-        self::assertSame([], $codebase->findReferencesToMethod('P::foo'));
-
-        $codebase->invalidateInformationForFile('c.php');
-        $codebase->invalidateInformationForFile('call.php');
-        $this->file_provider->registerFile('c.php', '<?php final class C extends P {}');
-        $codebase->addFilesToAnalyze(['c.php' => 'c.php', 'call.php' => 'call.php']);
-        $codebase->scanFiles();
-        $codebase->analyzer->analyzeFiles($this->project_analyzer, 1, false);
-
-        self::assertNotSame([], $codebase->findReferencesToMethod('P::foo'));
     }
 
     /**
@@ -233,6 +165,43 @@ final class PotentialDeclaringMethodIdsTest extends TestCase
                 (new C())->foo();',
             ['C::foo', 'T::foo', 'TAlias::foo'],
             ['C::foo', 'T::foo'],
+        ];
+
+        yield 'aliasAndTheTraitMethodOfThatNameTheAliasedMethodFirst' => [
+            '<?php
+                trait T {
+                    public function foo(): void {}
+                    public function bar(): void {}
+                }
+                final class C { use T { foo as bar; } }
+
+                (new C())->bar();',
+            ['C::foo', 'C::bar', 'T::foo', 'T::bar'],
+            ['C::foo', 'T::foo'],
+        ];
+
+        yield 'aliasAndTheTraitMethodOfThatNameTheTraitMethodFirst' => [
+            '<?php
+                trait T {
+                    public function bar(): void {}
+                    public function foo(): void {}
+                }
+                final class C { use T { foo as bar; } }
+
+                (new C())->bar();',
+            ['C::foo', 'C::bar', 'T::foo', 'T::bar'],
+            ['C::bar', 'T::bar'],
+        ];
+
+        yield 'aliasOfAMethodTheTraitLacks' => [
+            '<?php
+                trait T {}
+                class P { public function bar(): void {} }
+                final class C extends P { use T { foo as bar; } }
+
+                (new C())->bar();',
+            ['C::foo', 'C::bar', 'T::foo', 'P::bar'],
+            ['C::bar', 'P::bar'],
         ];
 
         yield 'reflectedParentClassMethod' => [
