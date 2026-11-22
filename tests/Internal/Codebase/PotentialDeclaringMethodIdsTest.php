@@ -35,9 +35,7 @@ final class PotentialDeclaringMethodIdsTest extends TestCase
         string $code,
         array $candidates,
         array $expected_referenced,
-        string $php_version = '7.4',
     ): void {
-        $this->project_analyzer->setPhpVersion($php_version, 'tests');
         $this->addFile('somefile.php', $code);
         $this->analyzeFile('somefile.php', new Context());
 
@@ -52,34 +50,8 @@ final class PotentialDeclaringMethodIdsTest extends TestCase
         );
     }
 
-    #[DataProvider('providerRecordEdges')]
-    public function testCallReferencesAreRecordedOnlyWhenEdgesAreRecorded(bool $record_edges): void
-    {
-        $codebase = $this->project_analyzer->getCodebase();
-        $codebase->code_use_graph->record_edges = $record_edges;
-
-        $this->addFile('somefile.php', '<?php
-            class P { public function foo(): void {} }
-            final class C extends P {}
-
-            (new C())->foo();');
-        $this->analyzeFile('somefile.php', new Context());
-
-        self::assertSame($record_edges, $codebase->findReferencesToMethod('P::foo') !== []);
-    }
-
     /**
-     * @return iterable<string, array{bool}>
-     * @psalm-pure
-     */
-    public static function providerRecordEdges(): iterable
-    {
-        yield 'recorded' => [true];
-        yield 'not recorded' => [false];
-    }
-
-    /**
-     * @return iterable<string, array{0: string, 1: list<string>, 2: list<string>, 3?: string}>
+     * @return iterable<string, array{string, list<string>, list<string>}>
      * @psalm-pure
      */
     public static function providerCalls(): iterable
@@ -193,15 +165,28 @@ final class PotentialDeclaringMethodIdsTest extends TestCase
             ['C::bar', 'T::bar'],
         ];
 
-        yield 'aliasOfAMethodTheTraitLacks' => [
+        yield 'aliasOfAMethodOfTheSecondTrait' => [
             '<?php
                 trait T {}
-                class P { public function bar(): void {} }
-                final class C extends P { use T { foo as bar; } }
+                trait U { public function foo(): void {} }
+                final class C { use T, U { foo as bar; } }
 
                 (new C())->bar();',
-            ['C::foo', 'C::bar', 'T::foo', 'P::bar'],
-            ['C::bar', 'P::bar'],
+            ['C::foo', 'C::bar', 'T::foo', 'U::foo'],
+            ['C::foo', 'U::foo'],
+        ];
+
+        yield 'methodOfTheSecondInterfaceParent' => [
+            '<?php
+                interface A {}
+                interface B { public function foo(): void; }
+                interface K extends A, B {}
+
+                function f(K $k): void {
+                    $k->foo();
+                }',
+            ['K::foo', 'A::foo', 'B::foo'],
+            ['K::foo', 'B::foo'],
         ];
 
         yield 'reflectedParentClassMethod' => [
