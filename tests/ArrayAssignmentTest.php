@@ -128,6 +128,49 @@ final class ArrayAssignmentTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'writeUnderAnUnknownKeyKeepsTheItemsTheKeyCantBe' => [
+                'code' => '<?php
+                    /**
+                     * @param array{expired: string, ...<int, list<int>>} $data
+                     * @param list<int> $ids
+                     * @return array{expired: string, ...<int, list<int>>}
+                     */
+                    function setData(array $data, int $id, array $ids): array {
+                        $data[$id] = $ids;
+                        $data["expired"] = date("Y-m-d");
+                        return $data;
+                    }
+
+                    /** @var array{0: string, name: string, ...<int, bool>} $mixedKeys */
+                    $mixedKeys[rand(0, 9)] = true;
+
+                    /** @var array{a: int} $sealed */
+                    $sealed["k" . rand()] = "v";
+
+                    /** @var array{a: int} $numericKey */
+                    $numericKey[(string) rand(0, PHP_INT_MAX)] = "v";
+
+                    /** @var array{name?: string, ...<int, bool>} $possiblyEmpty */
+                    $possiblyEmpty[rand(0, 9)] = true;
+
+                    /** @var array{a?: mixed, b: int, ...<string, mixed>} $optionalMixed */
+                    $optionalMixed["k" . rand()] = [1];
+
+                    /** @var array{0: int, 1: bool, 2: string, ...<int<3, max>, mixed>} $appended */
+                    $appended[] = "a";
+
+                    /** @var array{a: int} $sealedAppended */
+                    $sealedAppended[] = "v";',
+                'assertions' => [
+                    '$mixedKeys===' => 'array{0: string|true, name: string, ...<int, bool>}',
+                    '$sealed===' => 'array{a: \'v\'|int, ...<non-empty-lowercase-string, \'v\'>}',
+                    '$numericKey===' => 'array{a: int, ...<int, \'v\'>}',
+                    '$possiblyEmpty===' => 'non-empty-array<\'name\'|int, bool|string>',
+                    '$optionalMixed===' => 'array{a?: list{1}|mixed, b: int|list{1}, ...<string, list{1}|mixed>}',
+                    '$appended===' => 'array{0: int, 1: bool, 2: string, ...<int, \'a\'|mixed>}',
+                    '$sealedAppended===' => 'array{a: int, ...<int, \'v\'>}',
+                ],
+            ],
             'assignWithAScalarOffsetGivesAnArrayKey' => [
                 'code' => '<?php
                     /** @param scalar $key */
