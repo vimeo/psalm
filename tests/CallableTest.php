@@ -4003,6 +4003,25 @@ final class CallableTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'closureOfAnInvokableObjectIsAClosureParam' => [
+                'code' => '<?php
+                    interface Named {}
+                    class StringHandler { public function __invoke(string $value): int { return 1; } }
+
+                    /** @param Closure(string): int $closure */
+                    function takesClosure(Closure $closure): void {}
+
+                    function f(StringHandler $plain, Named&StringHandler $intersection): void {
+                        takesClosure($plain(...));
+                        takesClosure(Closure::fromCallable($plain));
+                        takesClosure($intersection(...));
+                        takesClosure(Closure::fromCallable($intersection));
+                        takesClosure(fn(string $value): int => 1);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
         ];
     }
 
@@ -5792,6 +5811,33 @@ final class CallableTest extends TestCase
                         takesCallback($h);
                     }',
                 'error_message' => 'InvalidArgument',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'invokableClassIsNotAClosureParam' => [
+                'code' => '<?php
+                    class StringHandler { public function __invoke(string $value): int { return 1; } }
+
+                    function takesClosure(Closure $closure): void {}
+
+                    function f(StringHandler $h): void {
+                        takesClosure($h);
+                    }',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:38 - Argument 1 of takesClosure expects Closure[impure], but StringHandler provided',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'invokableLaterInIntersectionIsNotAClosureParam' => [
+                'code' => '<?php
+                    interface Named {}
+                    class StringHandler { public function __invoke(string $value): int { return 1; } }
+
+                    function takesClosure(Closure $closure): void {}
+
+                    function f(Named&StringHandler $h): void {
+                        takesClosure($h);
+                    }',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:38 - Argument 1 of takesClosure expects Closure[impure], but Named&StringHandler provided',
                 'error_levels' => [],
                 'php_version' => '8.1',
             ],

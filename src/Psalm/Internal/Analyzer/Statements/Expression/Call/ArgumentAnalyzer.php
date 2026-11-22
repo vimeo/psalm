@@ -1192,6 +1192,13 @@ final class ArgumentAnalyzer
                     ? $container_callable_type
                     : null;
 
+                // only a closure is a Closure: an invokable object, a function name or an array is not
+                if ($param_type->getSingleAtomic() instanceof TClosure
+                    && !($atomic_type instanceof TNamedObject && $atomic_type->value === 'Closure')
+                ) {
+                    continue;
+                }
+
                 $candidate_callable = CallableTypeComparator::getCallableFromAtomic(
                     $codebase,
                     $atomic_type,
