@@ -121,6 +121,7 @@ final class FunctionLikeNodeScanner
             ...($storage->template_types ?? []),
         ];
         $template_map = array_fill_keys(array_keys($template_types), true);
+        $comment_lines = explode("\n", $doc_comment->getText());
 
         foreach ($overloads as ['entry' => $entry, 'offset' => $offset]) {
             try {
@@ -130,6 +131,7 @@ final class FunctionLikeNodeScanner
                     $stmt,
                     $doc_comment,
                     $doc_comment,
+                    $comment_lines,
                     'overload' . $entry,
                     $offset,
                     [],
