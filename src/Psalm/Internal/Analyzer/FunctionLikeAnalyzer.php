@@ -2816,6 +2816,17 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
     }
 
     /**
+     * The node of the function-like being analysed
+     *
+     * @return TFunction
+     * @psalm-mutation-free
+     */
+    public function getFunctionLikeNode(): Closure|Function_|ClassMethod|ArrowFunction
+    {
+        return $this->function;
+    }
+
+    /**
      * A purity made of capabilities and purity templates, where no capabilities (`pure`) are left
      * out of a union with templates: `P|pure` is just `P`.
      *
