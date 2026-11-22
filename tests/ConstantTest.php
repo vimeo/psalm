@@ -333,6 +333,84 @@ final class ConstantTest extends TestCase
                 'ignored_issues' => ['MissingClassConstType'],
                 'php_version' => '8.3',
             ],
+            'importedConstantShadowsAPhpConstantInAParameterDefault' => [
+                'code' => '<?php
+                    namespace One {
+                        const VALUE = 10;
+                    }
+
+                    namespace Lib {
+                        use const One\VALUE as JSON_THROW_ON_ERROR;
+
+                        /**
+                         * @template T
+                         * @param T $v
+                         * @return T
+                         */
+                        function f($v = JSON_THROW_ON_ERROR) {
+                            return $v;
+                        }
+
+                        /** @return 10 */
+                        function check(): int {
+                            return f();
+                        }
+                    }',
+            ],
+            'namespaceConstantShadowsAPhpConstantInAClassConstant' => [
+                'code' => '<?php
+                    namespace Lib {
+                        const JSON_THROW_ON_ERROR = 7;
+
+                        final class C {
+                            const X = JSON_THROW_ON_ERROR;
+                        }
+
+                        $a = C::X;
+                    }',
+                'assertions' => [
+                    '$a===' => '7',
+                ],
+            ],
+            'namespaceConstantShadowsAPhpConstantInAParamDefault' => [
+                'code' => '<?php
+                    namespace Lib {
+                        const JSON_THROW_ON_ERROR = 7;
+
+                        /**
+                         * @template T
+                         * @param T $v
+                         * @return T
+                         */
+                        function f($v = JSON_THROW_ON_ERROR) {
+                            return $v;
+                        }
+
+                        /** @return 7 */
+                        function check(): int {
+                            return f();
+                        }
+                    }',
+            ],
+            'importedConstantShadowsAPhpConstantInAClassConstant' => [
+                'code' => '<?php
+                    namespace One {
+                        const VALUE = 10;
+                    }
+
+                    namespace Lib {
+                        use const One\VALUE as JSON_THROW_ON_ERROR;
+
+                        final class C {
+                            const X = JSON_THROW_ON_ERROR;
+                        }
+
+                        $a = C::X;
+                    }',
+                'assertions' => [
+                    '$a===' => '10',
+                ],
+            ],
             'overrideNarrowingTheNativeTypeOfTheParentConstant' => [
                 'code' => '<?php
                     class A {

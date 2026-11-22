@@ -16,6 +16,7 @@ use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\InheritedMethodTaints;
 use Psalm\Internal\Analyzer\NamespaceAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Assignment\InstancePropertyAssignmentAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Call\ClassTemplateParamCollector;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodCallPurityAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\MethodCallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
@@ -843,6 +844,7 @@ final class AtomicPropertyFetchAnalyzer
                             ? $codebase->classlike_storage_provider->get(
                                 $declaring_property_class,
                             ) : $class_storage,
+                        false,
                     );
 
                     // reading a property through a type variable resolves it
@@ -951,12 +953,18 @@ final class AtomicPropertyFetchAnalyzer
         return true;
     }
 
+    /**
+     * @param bool|null $star_input where a template bound to a `*` of the object is a `*` again as a whole generic
+     *                              argument: false for what is read from the object, and `never` for what is assigned
+     *                              to the property (true); null for the type of the property with the bound
+     */
     public static function localizePropertyType(
         Codebase $codebase,
         Union $class_property_type,
         TGenericObject $lhs_type_part,
         ClassLikeStorage $property_class_storage,
         ClassLikeStorage $property_declaring_class_storage,
+        ?bool $star_input,
     ): Union {
         $template_types = CallAnalyzer::getTemplateTypesForCall(
             $codebase,
@@ -1042,11 +1050,35 @@ final class AtomicPropertyFetchAnalyzer
                     );
             }
 
+            $template_result = new TemplateResult([], $template_types);
+
+            if ($star_input !== null) {
+                ClassTemplateParamCollector::markStarBindings(
+                    $template_result,
+                    $codebase,
+                    $property_class_storage,
+                    $lhs_type_part,
+                    $template_types,
+                );
+                $template_result = $template_result->withStarPosition($star_input);
+            }
+
             $class_property_type = TemplateInferredTypeReplacer::replace(
                 $class_property_type,
-                new TemplateResult([], $template_types),
+                $template_result,
                 $codebase,
             );
+
+            // a new `*` holds the bound of its own class' template
+            if ($template_result->star_bindings !== []) {
+                $class_property_type = TypeExpander::expandUnion(
+                    $codebase,
+                    $class_property_type,
+                    $property_declaring_class_storage->name,
+                    $property_declaring_class_storage->name,
+                    $property_declaring_class_storage->parent_class,
+                );
+            }
         }
 
         return $class_property_type;
@@ -1694,6 +1726,7 @@ final class AtomicPropertyFetchAnalyzer
                         ? $codebase->classlike_storage_provider->get(
                             $declaring_property_class,
                         ) : $class_storage,
+                    false,
                 );
 
                 $stmt_type = TypeVariableTracker::resolveTypeVariables($stmt_type, $codebase);
@@ -1792,6 +1825,7 @@ final class AtomicPropertyFetchAnalyzer
                     $lhs_type_part,
                     $class_storage,
                     $declaring_class_storage,
+                    false,
                 );
             } elseif ($lhs_type_part instanceof TGenericObject) {
                 $class_property_type = self::localizePropertyType(
@@ -1800,6 +1834,7 @@ final class AtomicPropertyFetchAnalyzer
                     $lhs_type_part,
                     $class_storage,
                     $declaring_class_storage,
+                    false,
                 );
             }
         }

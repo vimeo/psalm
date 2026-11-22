@@ -16,6 +16,7 @@ use Psalm\Exception\UnpopulatedClasslikeException;
 use Psalm\FileManipulation;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
+use Psalm\Internal\Analyzer\Statements\ReturnAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\FileManipulation\ClassDocblockManipulator;
 use Psalm\Internal\FileManipulation\CodeMigration;
@@ -2396,7 +2397,9 @@ final class ClassLikes
                     && !$method_storage->return_type->isVoid()
                     && !$method_storage->return_type->isNever()
                     && $method_id->method_name !== '__tostring'
-                    && ($method_storage->is_static || !$method_storage->probably_fluent)
+                    && ($method_storage->is_static
+                        || !($method_storage->probably_fluent
+                            || ReturnAnalyzer::mustReturnThis($codebase, $method_storage, $method_id)))
                 ) {
                     $method_return_referenced = $codebase->code_use_graph->isUsed(
                         CodeUseGraph::functionLikeReturnNode(strtolower((string) $method_id)),

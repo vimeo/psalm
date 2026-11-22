@@ -325,6 +325,38 @@ final class CoreStubsTest extends TestCase
                 '$e===' => 'non-empty-string',
             ],
         ];
+        yield 'long || chain of str_starts_with asserts non-empty-string' => [
+            'code' => '<?php
+                /** @return non-empty-string */
+                function quirks_doctype(string $public_id): string
+                {
+                    if (str_starts_with($public_id, "+//silmaril//dtd html pro v0r11 19970101//")
+                        || str_starts_with($public_id, "-//as//dtd html 3.0 aswedit + extensions//")
+                        || str_starts_with($public_id, "-//advasoft ltd//dtd html 3.0 aswedit + extensions//")
+                        || str_starts_with($public_id, "-//ietf//dtd html 2.0 level 1//")
+                        || str_starts_with($public_id, "-//ietf//dtd html 2.0 level 2//")
+                        || str_starts_with($public_id, "-//ietf//dtd html 2.0 strict level 1//")
+                        || str_starts_with($public_id, "-//ietf//dtd html 2.0 strict level 2//")
+                        || str_starts_with($public_id, "-//ietf//dtd html 2.0 strict//")
+                        || str_starts_with($public_id, "-//ietf//dtd html 2.0//")
+                        || str_starts_with($public_id, "-//ietf//dtd html 2.1e//")
+                        || str_starts_with($public_id, "-//ietf//dtd html 3.0//")
+                        || str_starts_with($public_id, "-//ietf//dtd html 3.2 final//")
+                        || str_starts_with($public_id, "-//ietf//dtd html 3.2//")
+                        || str_starts_with($public_id, "-//ietf//dtd html 3//")
+                        || str_starts_with($public_id, "-//ietf//dtd html level 0//")
+                        || str_starts_with($public_id, "-//ietf//dtd html level 1//")
+                        || str_starts_with($public_id, "-//ietf//dtd html level 2//")
+                    ) {
+                        return $public_id;
+                    }
+                    throw new RuntimeException();
+                }
+            ',
+            'assertions' => [],
+            'ignored_issues' => [],
+            'php_version' => '8.0',
+        ];
         yield "PHP80-str_* function doesn't subtract string after assertion" => [
             'code' => '<?php
                 /** @return false|string */
