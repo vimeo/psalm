@@ -14,7 +14,6 @@ use Psalm\Internal\Codebase\CodeUseGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\PhpVisitor\ShortClosureVisitor;
 use Psalm\Internal\TypeVisitor\CapturedValueVisitor;
-use Psalm\Internal\TypeVisitor\ClosureByRefUsesCollector;
 use Psalm\Issue\DuplicateParam;
 use Psalm\Issue\ImpureByReferenceAssignment;
 use Psalm\Issue\PossiblyUndefinedVariable;
@@ -89,6 +88,26 @@ final class ClosureAnalyzer extends FunctionLikeAnalyzer
     private readonly string $closure_id;
 
     /**
+     * Set on the initializer closure passed to `ReflectionClass::newLazyGhost()` or `resetAsLazyGhost()`
+     */
+    public const LAZY_GHOST_INITIALIZER_ATTRIBUTE = 'psalm-lazy-ghost-initializer';
+
+    /**
+     * The parameter of a lazy ghost initializer that holds the object it initializes, whose
+     * constructor the initializer may call
+     */
+    public function getInitializedObjectParam(): ?string
+    {
+        if (!$this->function->getAttribute(self::LAZY_GHOST_INITIALIZER_ATTRIBUTE)) {
+            return null;
+        }
+
+        $param = $this->function->params[0]->var ?? null;
+
+        return $param instanceof PhpParser\Node\Expr\Variable && is_string($param->name) ? $param->name : null;
+    }
+
+    /**
      * @psalm-mutation-free
      */
     #[Override]
@@ -107,6 +126,11 @@ final class ClosureAnalyzer extends FunctionLikeAnalyzer
      * @var array<string, true>
      */
     public array $captured_by_ref_writes = [];
+
+    /**
+     * The type of this closure, which `Closure::getCurrent()` returns in its body
+     */
+    public ?TClosure $closure_type = null;
 
     /**
      * The types of the variables captured by reference where the closure body returns.
@@ -233,10 +257,10 @@ final class ClosureAnalyzer extends FunctionLikeAnalyzer
 
     /**
      * The variables of the current scope that calling the analysed callable may write, also recorded for
-     * {@see \Psalm\Internal\Algebra\FormulaGenerator}. Passed to a call ($passed), a closure it contains or returns
-     * may be called too. What a closure captured by reference are variables of the scopes it was made in (see
-     * getByRefUseScopes()): elsewhere, a variable of the same name is taken to be one when this scope binds it by
-     * reference to a variable outside (`use (&$x)`, `global $x`, a by-reference parameter or foreach value, ...)
+     * {@see \Psalm\Internal\Algebra\FormulaGenerator}. What a closure captured by reference are variables of the
+     * scopes it was made in (see getByRefUseScopes()): elsewhere, a variable of the same name is taken to be one when
+     * this scope binds it by reference to a variable outside (`use (&$x)`, `global $x`, a by-reference parameter or
+     * foreach value, ...)
      *
      * @return array<string, true>
      */
@@ -244,24 +268,15 @@ final class ClosureAnalyzer extends FunctionLikeAnalyzer
         StatementsAnalyzer $statements_analyzer,
         Context $context,
         PhpParser\Node\Expr $callable,
-        bool $passed,
     ): array {
         $var_ids = [];
         $scope_id = null;
-        $type = $statements_analyzer->node_data->getType($callable);
-        $closures = [];
 
-        if ($passed) {
-            $closures = ClosureByRefUsesCollector::collect($type);
-        } else {
-            foreach ($type?->getAtomicTypes() ?? [] as $atomic) {
-                if ($atomic instanceof TClosure && $atomic->byref_uses) {
-                    $closures[] = $atomic;
-                }
+        foreach ($statements_analyzer->node_data->getType($callable)?->getAtomicTypes() ?? [] as $closure) {
+            if (!$closure instanceof TClosure || !$closure->byref_uses) {
+                continue;
             }
-        }
 
-        foreach ($closures as $closure) {
             $scope_id ??= self::getScopeId($statements_analyzer);
 
             foreach ($closure->byref_uses as $use_name => $_) {

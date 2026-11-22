@@ -9,8 +9,6 @@ use Psalm\Progress\Progress;
 
 use function class_exists;
 
-use function count;
-
 /** @internal */
 final class Preloader
 {
@@ -22,10 +20,8 @@ final class Preloader
         }
 
         $progress?->startPhase($hasJit ? Phase::JIT_COMPILATION : Phase::PRELOADING);
-        $progress?->expand(count(PreloaderList::CLASSES)+1);
 
         foreach (PreloaderList::CLASSES as $class) {
-            $progress?->taskDone(0);
             class_exists($class);
         }
 

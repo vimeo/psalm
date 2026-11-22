@@ -127,9 +127,6 @@ return [
         'w' => 'integer',
         'wtimeout' => 'integer',
     ],
-    'mongodb-driver-exception-writeexception' => [
-        'writeResult' => 'MongoDBDriverWriteResult',
-    ],
     'mongoid' => [
         'id' => 'string',
     ],

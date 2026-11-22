@@ -10,11 +10,14 @@ use Psalm\Internal\Type\Comparator\TypeComparisonResult;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\TypeVisitor\ConditionalSubjectReplacer;
 use Psalm\Internal\TypeVisitor\ContainsStaticVisitor;
+use Psalm\Internal\TypeVisitor\TemplateTypeCollector;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TClassString;
+use Psalm\Type\Atomic\TClosure;
 use Psalm\Type\Atomic\TConditional;
+use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TIntersection;
 use Psalm\Type\Atomic\TIterable;
@@ -24,6 +27,7 @@ use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Type\Atomic\TNever;
 use Psalm\Type\Atomic\TNonEmptyArray;
 use Psalm\Type\Atomic\TObject;
 use Psalm\Type\Atomic\TObjectWithProperties;
@@ -39,11 +43,15 @@ use Psalm\Type\Atomic\TValueOf;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
+use function array_all;
+use function array_any;
+use function array_filter;
 use function array_merge;
 use function array_shift;
 use function array_values;
 use function assert;
 use function str_starts_with;
+use function strtolower;
 
 /**
  * @internal
@@ -64,11 +72,11 @@ final class TemplateInferredTypeReplacer
 
         $is_mixed = false;
 
-        $inferred_lower_bounds = $template_result->lower_bounds ?: [];
+        $inferred_lower_bounds = $template_result->getLowerBounds();
 
         $types = [];
 
-        foreach ($union->getAtomicTypes() as $key => $atomic_type) {
+        foreach (self::getAtomicTypesFitByAnInput($union, $template_result, $codebase) as $key => $atomic_type) {
             $should_set = true;
 
             if ($atomic_type instanceof TConditional && $codebase) {
@@ -97,38 +105,11 @@ final class TemplateInferredTypeReplacer
                     }
                 }
             } elseif ($atomic_type instanceof TTemplateParamClass) {
-                $template_type = isset($inferred_lower_bounds[$atomic_type->param_name][$atomic_type->defining_class])
-                    ? TemplateStandinTypeReplacer::getMostSpecificTypeFromBounds(
-                        $inferred_lower_bounds[$atomic_type->param_name][$atomic_type->defining_class],
-                        $codebase,
-                    )
-                    : null;
-
-                $class_template_types = [];
-
-                if ($template_type) {
-                    foreach ($template_type->getAtomicTypes() as $template_type_part) {
-                        if ($template_type_part instanceof TMixed
-                            || $template_type_part instanceof TObject
-                        ) {
-                            $class_template_types[] = new TClassString();
-                        } elseif ($template_type_part instanceof TNamedObject) {
-                            $class_template_types[] = new TClassString(
-                                $template_type_part->value,
-                                $template_type_part,
-                            );
-                        } elseif ($template_type_part instanceof TTemplateParam) {
-                            $first_atomic_type = $template_type_part->as->getSingleAtomic();
-
-                            $class_template_types[] = new TTemplateParamClass(
-                                $template_type_part->param_name,
-                                $template_type_part->as->getId(),
-                                $first_atomic_type instanceof TNamedObject ? $first_atomic_type : null,
-                                $template_type_part->defining_class,
-                            );
-                        }
-                    }
-                }
+                $class_template_types = self::replaceTemplateParamClass(
+                    $codebase,
+                    $atomic_type,
+                    $inferred_lower_bounds,
+                );
 
                 if ($class_template_types) {
                     $should_set = false;
@@ -261,6 +242,161 @@ final class TemplateInferredTypeReplacer
                 $codebase,
             )->getAtomicTypes(),
         )->freeze();
+    }
+
+    /**
+     * @param array<string, array<string, non-empty-list<TemplateBound>>> $inferred_lower_bounds
+     * @return list<Atomic>
+     * @psalm-external-mutation-free
+     */
+    private static function replaceTemplateParamClass(
+        ?Codebase $codebase,
+        TTemplateParamClass $atomic_type,
+        array $inferred_lower_bounds,
+    ): array {
+        $template_type = isset($inferred_lower_bounds[$atomic_type->param_name][$atomic_type->defining_class])
+            ? TemplateStandinTypeReplacer::getMostSpecificTypeFromBounds(
+                $inferred_lower_bounds[$atomic_type->param_name][$atomic_type->defining_class],
+                $codebase,
+            )
+            : null;
+
+        $class_template_types = [];
+
+        if ($template_type) {
+            foreach ($template_type->getAtomicTypes() as $template_type_part) {
+                if ($template_type_part instanceof TMixed
+                    || $template_type_part instanceof TObject
+                ) {
+                    $class_template_types[] = new TClassString();
+                } elseif ($template_type_part instanceof TNamedObject) {
+                    $class_template_types[] = new TClassString(
+                        $template_type_part->value,
+                        $template_type_part,
+                    );
+                } elseif ($template_type_part instanceof TTemplateParam) {
+                    $first_atomic_type = $template_type_part->as->getSingleAtomic();
+
+                    $class_template_types[] = new TTemplateParamClass(
+                        $template_type_part->param_name,
+                        $template_type_part->as->getId(),
+                        $first_atomic_type instanceof TNamedObject ? $first_atomic_type : null,
+                        $template_type_part->defining_class,
+                    );
+                }
+            }
+        }
+
+        return $class_template_types;
+    }
+
+    /**
+     * The members of a union that a value may be of as an input, `never` when there is none
+     *
+     * @return array<string, Atomic>
+     * @psalm-mutation-free
+     */
+    private static function getAtomicTypesFitByAnInput(
+        Union $union,
+        TemplateResult $template_result,
+        ?Codebase $codebase,
+    ): array {
+        $atomic_types = $union->getAtomicTypes();
+
+        if (!$template_result->star_input) {
+            return $atomic_types;
+        }
+
+        $fit_types = array_filter(
+            $atomic_types,
+            static fn(Atomic $atomic_type): bool => !self::isNeverAsInput($atomic_type, $template_result, $codebase),
+        );
+
+        return $fit_types === [] ? ['never' => new TNever()] : $fit_types;
+    }
+
+    /**
+     * Whether the bound of a template of the method (`@template U of T`) names a template bound to a `*`: no value
+     * is known to be of it
+     *
+     * @psalm-pure
+     */
+    private static function isBoundedByAStarTemplate(Union $as, TemplateResult $template_result): bool
+    {
+        $collector = new TemplateTypeCollector(true);
+        $collector->traverseArray($as->getAtomicTypes());
+
+        return array_any(
+            $collector->getTemplateTypes(),
+            static fn(TTemplateParam $template): bool => $template_result->isStarInput(
+                $template->param_name,
+                $template->defining_class,
+            ),
+        );
+    }
+
+    /**
+     * Whether no value is of a type as an input, as it is of a template bound to a `*` where it is only known to be
+     * that: `Box<T>` for the `*` of a `Box<*>` too, as the argument may be any of its `Box`es. An array that requires
+     * an element of such a type (`array{v: T}`, `list{T}`, `non-empty-list<T>`) is of no value either, not the empty
+     * array that `array{v: never}` stands for elsewhere.
+     *
+     * @psalm-mutation-free
+     */
+    private static function isNeverAsInput(
+        Atomic $atomic_type,
+        TemplateResult $template_result,
+        ?Codebase $codebase,
+    ): bool {
+        if (!$template_result->star_input) {
+            return false;
+        }
+
+        return match (true) {
+            $atomic_type instanceof TGenericObject
+                => $atomic_type->getStarBoundProjections($template_result, $codebase) !== [],
+            $atomic_type instanceof TKeyedArray
+                => array_any(
+                    $atomic_type->properties,
+                    static fn(Union $property): bool => !$property->possibly_undefined
+                        && self::isNeverUnionAsInput($property, $template_result, $codebase),
+                ),
+            $atomic_type instanceof TNonEmptyArray
+                => array_any(
+                    $atomic_type->type_params,
+                    static fn(Union $type_param): bool
+                        => self::isNeverUnionAsInput($type_param, $template_result, $codebase),
+                ),
+            $atomic_type instanceof TTemplateParamClass,
+            $atomic_type instanceof TTemplateKeyOf,
+            $atomic_type instanceof TTemplateValueOf,
+            $atomic_type instanceof TTemplatePropertiesOf,
+            $atomic_type instanceof TConditional
+                => $template_result->isStarInput($atomic_type->param_name, $atomic_type->defining_class),
+            $atomic_type instanceof TTemplateParam
+                => $template_result->isStarInput($atomic_type->param_name, $atomic_type->defining_class)
+                    ? $template_result->getStarInputBound($atomic_type->param_name, $atomic_type->defining_class)
+                        ->isNever()
+                    : self::isBoundedByAStarTemplate($atomic_type->as, $template_result),
+            $atomic_type instanceof TTemplateIndexedAccess
+                => $template_result->isStarInput($atomic_type->array_param_name, $atomic_type->defining_class)
+                    || $template_result->isStarInput($atomic_type->offset_param_name, $atomic_type->defining_class),
+            default => false,
+        };
+    }
+
+    /**
+     * @psalm-mutation-free
+     */
+    private static function isNeverUnionAsInput(
+        Union $union,
+        TemplateResult $template_result,
+        ?Codebase $codebase,
+    ): bool {
+        return array_all(
+            $union->getAtomicTypes(),
+            static fn(Atomic $atomic_type): bool => self::isNeverAsInput($atomic_type, $template_result, $codebase),
+        );
     }
 
     /**
@@ -551,6 +687,21 @@ final class TemplateInferredTypeReplacer
                     continue;
                 }
 
+                // the final Closure has no object in common with such a candidate (an interface it does not
+                // implement): nothing of it is in the if branch, so it stays only in the else one, decidably
+                if (array_all(
+                    $conditional_type->getAtomicTypes(),
+                    static fn(Atomic $conditional_atomic_type): bool
+                        => self::isDisjointFromClosure($codebase, $candidate_atomic_type, $conditional_atomic_type),
+                )) {
+                    continue;
+                }
+
+                // only a candidate that can't be of the condition is decidably in the else branch
+                if (self::isDisjoint($codebase, $candidate_atomic_type, $conditional_type)) {
+                    continue;
+                }
+
                 $if_part = Type::intersectUnionTypes(
                     $candidate,
                     $conditional_type,
@@ -560,11 +711,8 @@ final class TemplateInferredTypeReplacer
                 );
 
                 if ($if_part === null) {
-                    // only a candidate that can't be of the condition is decidably in the else branch: the
-                    // intersection of some overlapping types is unknown
-                    if (!self::isDisjoint($codebase, $candidate_atomic_type, $conditional_type)) {
-                        $is_decidable = false;
-                    }
+                    // the intersection of some overlapping types is unknown
+                    $is_decidable = false;
 
                     continue;
                 }
@@ -725,6 +873,26 @@ final class TemplateInferredTypeReplacer
      */
     private static function isDisjoint(Codebase $codebase, Atomic $candidate, Union $conditional_type): bool
     {
+        // a template is as disjoint as its bound: one bounded by `mixed` is never decidably disjoint
+        if ($candidate instanceof TTemplateParam) {
+            foreach ($candidate->as->getAtomicTypes() as $bound_atomic_type) {
+                if (!self::isDisjoint($codebase, $bound_atomic_type, $conditional_type)) {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        // `Factory&Closure`, what `$factory instanceof Closure` leaves, is of what one of its parts is
+        if ($candidate instanceof TIterable || $candidate instanceof TNamedObject) {
+            foreach ($candidate->getIntersectionTypes() as $intersection_type) {
+                if (!self::isDisjoint($codebase, $intersection_type, $conditional_type)) {
+                    return false;
+                }
+            }
+        }
+
         // the empty array is never a non-empty one, nor the reverse
         $overlapping_atomic_types = [];
 
@@ -746,6 +914,46 @@ final class TemplateInferredTypeReplacer
             new Union($overlapping_atomic_types),
             false,
         );
+    }
+
+    /**
+     * Whether $candidate can't be a Closure: it is final and extends or implements nothing, so only the
+     * class itself, `object`, `callable` and what they bound are possibly one
+     */
+    private static function isDisjointFromClosure(
+        Codebase $codebase,
+        Atomic $candidate,
+        Atomic $conditional_atomic_type,
+    ): bool {
+        if (!$conditional_atomic_type instanceof TClosure) {
+            return false;
+        }
+
+        if ($candidate instanceof TTemplateParam) {
+            return array_all(
+                $candidate->as->getAtomicTypes(),
+                static fn(Atomic $bound): bool
+                    => self::isDisjointFromClosure($codebase, $bound, $conditional_atomic_type)
+                    || !UnionTypeComparator::canExpressionTypesBeIdentical(
+                        $codebase,
+                        new Union([$bound]),
+                        new Union([$conditional_atomic_type]),
+                        false,
+                    ),
+            );
+        }
+
+        // `Factory&Closure`, what `$factory instanceof Closure` leaves, is a Closure
+        if ($candidate instanceof TIterable || $candidate instanceof TNamedObject) {
+            foreach ($candidate->getIntersectionTypes() as $intersection_type) {
+                if (!self::isDisjointFromClosure($codebase, $intersection_type, $conditional_atomic_type)) {
+                    return false;
+                }
+            }
+        }
+
+        return $candidate instanceof TIterable
+            || ($candidate instanceof TNamedObject && strtolower($candidate->value) !== 'closure');
     }
 
     /**

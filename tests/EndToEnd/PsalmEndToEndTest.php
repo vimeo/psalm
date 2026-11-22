@@ -287,6 +287,31 @@ final class PsalmEndToEndTest extends PsalmEndToEndTestCase
         );
     }
 
+    public function testThePolyfillsPsalmRequiresDontDefineFunctionsForTheProject(): void
+    {
+        @unlink(self::$tmpDir . '/src/FileWithErrors.php');
+        file_put_contents(
+            self::$tmpDir . '/psalm.xml',
+            '<?xml version="1.0"?>
+            <psalm errorLevel="8" runTaintAnalysis="false" findUnusedCode="false">
+                <projectFiles><directory name="src"/></projectFiles>
+            </psalm>',
+        );
+        file_put_contents(
+            self::$tmpDir . '/src/Polyfilled.php',
+            "<?php\narray_find([1], fn(int \$x): bool => \$x > 0);\nclamp(5, 0, 10);\n"
+                . "echo RoundingMode::HalfEven->name;\n",
+        );
+
+        $process = $this->runPsalmInTheProject(['--no-cache', '--php-version=8.3', '--output-format=compact']);
+        @unlink(self::$tmpDir . '/src/Polyfilled.php');
+
+        $this->assertStringContainsString('UndefinedFunction: Function array_find ', $process->getOutput());
+        $this->assertStringContainsString('UndefinedFunction: Function clamp ', $process->getOutput());
+        $this->assertStringContainsString('RoundingMode is not defined', $process->getOutput());
+        $this->assertSame(2, $process->getExitCode());
+    }
+
     /*
     public function testPsalmDiff(): void
     {

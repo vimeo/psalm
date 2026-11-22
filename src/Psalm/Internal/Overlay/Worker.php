@@ -161,7 +161,7 @@ final class Worker
     /**
      * The socket closes with this object
      *
-     * @psalm-capabilities read-props|write-this-props|write-refs
+     * @psalm-capabilities read-props|write-this-props|write-refs|io
      */
     public function reap(): void
     {
