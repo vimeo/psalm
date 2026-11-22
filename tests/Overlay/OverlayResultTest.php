@@ -22,7 +22,7 @@ final class OverlayResultTest extends TestCase
             'file_name' => 'src/B.php', 'file_path' => '/p/src/B.php', 'snippet' => '$a->foo();',
             'selected_text' => 'foo', 'from' => 99, 'to' => 102, 'snippet_from' => 80, 'snippet_to' => 105,
             'column_from' => 20, 'column_to' => 23, 'shortcode' => 3, 'error_level' => -1, 'taint_trace' => null,
-            'other_references' => null, 'is_security' => false,
+            'other_references' => null, 'is_security' => false, 'cwe_ids' => [],
         ];
         $envelope = [
             'protocol' => 1,
