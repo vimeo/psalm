@@ -144,6 +144,11 @@ final class YieldFromAnalyzer
             return;
         }
 
+        // `mixed` says nothing of what is sent, except that iterating the generator sends null
+        if ($outer_send_type->isMixed()) {
+            $outer_send_type = Type::getNull();
+        }
+
         $codebase = $statements_analyzer->getCodebase();
 
         foreach ($delegated_type->getAtomicTypes() as $delegated_atomic_type) {

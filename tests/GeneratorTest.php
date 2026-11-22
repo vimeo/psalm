@@ -22,6 +22,41 @@ final class GeneratorTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'yieldFromOfAnOuterGeneratorWithoutASendTypeToAnInnerOneSentNull' => [
+                'code' => '<?php
+                    /** @return Generator<int, string, null, void> */
+                    function lines(): Generator {
+                        yield "a";
+                    }
+
+                    /** @return Generator<int, string> */
+                    function allLines(): Generator {
+                        yield from lines();
+                    }
+
+                    /** @return Generator<int, string, mixed, mixed> */
+                    function allLinesWithMixedSend(): Generator {
+                        yield from lines();
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'yieldFromOfAnOuterGeneratorWithoutASendTypeToAnInnerOneTakingNull' => [
+                'code' => '<?php
+                    /** @return Generator<int, string, ?int, void> */
+                    function inner(): Generator {
+                        yield "a";
+                    }
+
+                    /** @return Generator<int, string> */
+                    function outer(): Generator {
+                        yield from inner();
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'yieldFromOfAnOuterGeneratorWithANarrowerSendType' => [
                 'code' => '<?php
                     /** @return Generator<int, string, int, void> */
@@ -495,6 +530,22 @@ final class GeneratorTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'yieldFromOfAnOuterGeneratorWithoutASendTypeToAnInnerOneExpectingInt' => [
+                'code' => '<?php
+                    /** @return Generator<int, string, int, void> */
+                    function inner(): Generator {
+                        $x = yield "a";
+                        echo $x + 1;
+                    }
+
+                    /** @return Generator<int, string> */
+                    function outer(): Generator {
+                        yield from inner();
+                    }',
+                'error_message' => 'InvalidIterator - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:36 - yield from forwards send() values of type null to Generator<int, string, int, void',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
             'yieldFromOfAnOuterGeneratorSendingNullToAnInnerOneExpectingInt' => [
                 'code' => '<?php
                     /** @return Generator<int, string, int, void> */
