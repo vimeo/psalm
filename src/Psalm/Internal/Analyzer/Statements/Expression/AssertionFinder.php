@@ -91,7 +91,6 @@ use Psalm\Type\Atomic\TArrayKey;
 use Psalm\Type\Atomic\TBool;
 use Psalm\Type\Atomic\TCallable;
 use Psalm\Type\Atomic\TCallableString;
-use Psalm\Type\Atomic\TClassConstant;
 use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TClassStringMap;
 use Psalm\Type\Atomic\TClosedResource;
@@ -990,7 +989,7 @@ final class AssertionFinder
 
     /**
      * A `function_exists()`, `class_exists()`, `interface_exists()`, `enum_exists()` or
-     * `method_exists()` check of a native symbol newer than the analysed PHP version: where it
+     * `method_exists()` or `defined()` check of a native symbol newer than the analysed PHP version: where it
      * holds, PHP_VERSION_ID is at least the version that introduced the symbol, so the symbol
      * can be used there (see Codebase::getGuardedPhpVersionId()).
      */
@@ -1038,6 +1037,15 @@ final class AssertionFinder
                 if (!$class_storage->user_defined && !$codebase->isClassLikePolyfilled($class_storage->name)) {
                     $since_php_version_id = $class_storage->since_php_version_id;
                 }
+            }
+        } elseif ($function_id === 'defined'
+            && isset($args[0])
+            && $args[0]->value instanceof PhpParser\Node\Scalar\String_
+        ) {
+            $guarded_const_name = ltrim($args[0]->value->value, '\\');
+
+            if (!ConstFetchAnalyzer::isDeclaredInCode($codebase, $guarded_const_name)) {
+                $since_php_version_id = ConstFetchAnalyzer::getIntroducingPhpVersionId($codebase, $guarded_const_name);
             }
         } elseif ($function_id === 'method_exists'
             && isset($args[0], $args[1])
@@ -1207,7 +1215,7 @@ final class AssertionFinder
             foreach ($if_true_assertions as $assertion) {
                 $if_types = [];
 
-                $assertion = self::expandClassConstantsOfRules($assertion, $source->getCodebase());
+                $assertion = self::expandTypesOfRules($assertion, $source->getCodebase());
 
                 if (is_int($assertion->var_id) && isset($expr->getArgs()[$assertion->var_id])) {
                     if ($assertion->var_id === 0) {
@@ -1303,7 +1311,7 @@ final class AssertionFinder
             foreach ($if_false_assertions as $assertion) {
                 $if_types = [];
 
-                $assertion = self::expandClassConstantsOfRules($assertion, $source->getCodebase());
+                $assertion = self::expandTypesOfRules($assertion, $source->getCodebase());
 
                 if (is_int($assertion->var_id) && isset($expr->getArgs()[$assertion->var_id])) {
                     if ($assertion->var_id === 0) {
@@ -1455,16 +1463,34 @@ final class AssertionFinder
         return $arg_var_id . substr($assertion_id, strlen($var_id));
     }
 
-    private static function expandClassConstantsOfRules(Possibilities $assertion, Codebase $codebase): Possibilities
+    /**
+     * The types of `@psalm-assert-if-true` and `-if-false` are expanded here, as those of `@psalm-assert` are (see
+     * CallAnalyzer::applyAssertionsToContext()): a class constant, and the arguments of any type (a `*` holds the
+     * bound of its template once expanded). A union they expand to is being of one of its types.
+     */
+    private static function expandTypesOfRules(Possibilities $assertion, Codebase $codebase): Possibilities
     {
         $rules = [];
 
         foreach ($assertion->rule as $rule) {
             $rule_type = $rule->getAtomicType();
 
-            $rules[] = $rule_type instanceof TClassConstant
-                ? $rule->setAtomicType(TypeExpander::expandAtomic($codebase, $rule_type, null, null, null)[0])
-                : $rule;
+            if ($rule_type === null) {
+                $rules[] = $rule;
+                continue;
+            }
+
+            $expanded = TypeExpander::expandAtomic($codebase, $rule_type, null, null, null);
+
+            if (count($expanded) === 1) {
+                $rules[] = $rule->setAtomicType($expanded[0]);
+            } elseif ($rule instanceof IsType) {
+                foreach ($expanded as $expanded_atomic) {
+                    $rules[] = new IsType($expanded_atomic);
+                }
+            } else {
+                $rules[] = $rule;
+            }
         }
 
         return new Possibilities($assertion->var_id, $rules);
@@ -1897,11 +1923,10 @@ final class AssertionFinder
             return false;
         }
 
-        // TODO get node type provider here somehow and check literal ints and int ranges
-        if ($compare_to instanceof PhpParser\Node\Scalar\Int_
-            && $compare_to->value > (-1 * $comparison_adjustment)
-        ) {
-            $min_count = $compare_to->value + $comparison_adjustment;
+        $compared_count = self::getIntLiteralValue($source, $compare_to);
+
+        if ($compared_count !== null && $compared_count > (-1 * $comparison_adjustment)) {
+            $min_count = $compared_count + $comparison_adjustment;
 
             return $assignment_to;
         }
@@ -1924,14 +1949,16 @@ final class AssertionFinder
             $conditional instanceof PhpParser\Node\Expr\BinaryOp\SmallerOrEqual
             || $conditional instanceof PhpParser\Node\Expr\BinaryOp\Smaller;
 
-        if ($left_count
-            && $operator_less_than_or_equal
-            && $conditional->right instanceof PhpParser\Node\Scalar\Int_
-        ) {
-            $max_count = $conditional->right->value -
+        $right_value = $left_count && $operator_less_than_or_equal
+            ? self::getIntLiteralValue($source, $conditional->right)
+            : null;
+
+        if ($right_value !== null) {
+            $max_count = $right_value -
                 ($conditional instanceof PhpParser\Node\Expr\BinaryOp\Smaller ? 1 : 0);
 
-            return self::ASSIGNMENT_TO_RIGHT;
+            // no count is below zero: the comparison tells nothing about the array
+            return $max_count < 0 ? false : self::ASSIGNMENT_TO_RIGHT;
         }
 
         $right_count = self::isFunctionCallToOneOf($conditional->right, $source, ['count', 'sizeof'], 1);
@@ -1940,14 +1967,15 @@ final class AssertionFinder
             $conditional instanceof PhpParser\Node\Expr\BinaryOp\GreaterOrEqual
             || $conditional instanceof PhpParser\Node\Expr\BinaryOp\Greater;
 
-        if ($right_count
-            && $operator_greater_than_or_equal
-            && $conditional->left instanceof PhpParser\Node\Scalar\Int_
-        ) {
-            $max_count = $conditional->left->value -
+        $left_value = $right_count && $operator_greater_than_or_equal
+            ? self::getIntLiteralValue($source, $conditional->left)
+            : null;
+
+        if ($left_value !== null) {
+            $max_count = $left_value -
                 ($conditional instanceof PhpParser\Node\Expr\BinaryOp\Greater ? 1 : 0);
 
-            return self::ASSIGNMENT_TO_LEFT;
+            return $max_count < 0 ? false : self::ASSIGNMENT_TO_LEFT;
         }
 
         return false;
@@ -1964,16 +1992,21 @@ final class AssertionFinder
     ): bool|int {
         $left_count = self::isFunctionCallToOneOf($conditional->left, $source, ['count', 'sizeof'], 1);
 
-        if ($left_count && $conditional->right instanceof PhpParser\Node\Scalar\Int_) {
-            $count = $conditional->right->value;
+        $right_value = $left_count ? self::getIntLiteralValue($source, $conditional->right) : null;
+
+        // no count is negative: the comparison tells nothing about the array
+        if ($right_value !== null && $right_value >= 0) {
+            $count = $right_value;
 
             return self::ASSIGNMENT_TO_RIGHT;
         }
 
         $right_count = self::isFunctionCallToOneOf($conditional->right, $source, ['count', 'sizeof'], 1);
 
-        if ($right_count && $conditional->left instanceof PhpParser\Node\Scalar\Int_) {
-            $count = $conditional->left->value;
+        $left_value = $right_count ? self::getIntLiteralValue($source, $conditional->left) : null;
+
+        if ($left_value !== null && $left_value >= 0) {
+            $count = $left_value;
 
             return self::ASSIGNMENT_TO_LEFT;
         }
@@ -2059,8 +2092,8 @@ final class AssertionFinder
         FileSource $source,
     ): bool {
         return self::isFunctionCallToOneOf($conditional->left, $source, ['count', 'sizeof'])
-            && $conditional->right instanceof PhpParser\Node\Scalar\Int_
-            && $conditional->right->value === ($conditional instanceof PhpParser\Node\Expr\BinaryOp\Greater ? 0 : 1);
+            && self::getIntLiteralValue($source, $conditional->right)
+                === ($conditional instanceof PhpParser\Node\Expr\BinaryOp\Greater ? 0 : 1);
     }
 
     /**
@@ -4031,12 +4064,15 @@ final class AssertionFinder
 
         $left_argument = self::getStringLengthArgument($conditional->left, $source);
         $right_argument = self::getStringLengthArgument($conditional->right, $source);
-        if ($left_argument && $conditional->right instanceof PhpParser\Node\Scalar\Int_) {
+        $right_value = $left_argument ? self::getIntLiteralValue($source, $conditional->right) : null;
+        $left_value = $right_argument ? self::getIntLiteralValue($source, $conditional->left) : null;
+
+        if ($left_argument && $right_value !== null) {
             $length_argument = $left_argument;
-            $compared_length = $conditional->right->value;
-        } elseif ($right_argument && $conditional->left instanceof PhpParser\Node\Scalar\Int_) {
+            $compared_length = $right_value;
+        } elseif ($right_argument && $left_value !== null) {
             $length_argument = $right_argument;
-            $compared_length = $conditional->left->value;
+            $compared_length = $left_value;
             $operator = match ($operator) {
                 '>' => '<',
                 '>=' => '<=',

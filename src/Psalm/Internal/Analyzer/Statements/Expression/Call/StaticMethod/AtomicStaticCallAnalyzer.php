@@ -1123,6 +1123,14 @@ final class AtomicStaticCallAnalyzer
             return false;
         }
 
+        ClassTemplateParamCollector::markStarBindings(
+            $template_result,
+            $codebase,
+            $static_class_storage,
+            $lhs_type_part,
+            $found_generic_params,
+        );
+
         // what `__callStatic` does (if it implements the pseudo-method), and what the purity
         // templates of the pseudo-method (`@method static int run(Closure[_](): int $f)`) are bound to
         $capabilities = CallPurityResolver::getCallCapabilities(
@@ -1333,6 +1341,13 @@ final class AtomicStaticCallAnalyzer
         );
 
         $template_result = new TemplateResult([], $found_generic_params ?? []);
+        ClassTemplateParamCollector::markStarBindings(
+            $template_result,
+            $codebase,
+            $class_storage,
+            $lhs_type_part,
+            $found_generic_params,
+        );
 
         if ($inferred_template_result) {
             $template_result->lower_bounds += $inferred_template_result->lower_bounds;
