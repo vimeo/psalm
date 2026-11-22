@@ -572,6 +572,16 @@ final class FormulaGenerator
                     );
 
                     foreach ($custom_assertions as $assertions) {
+                        // the receiver is not null where the call is truthy: said first, so that an assertion on the
+                        // receiver (`@psalm-assert-if-true =self<T> $this`) doesn't make that a redundant check
+                        if (isset($assertions[$receiver_id])) {
+                            $clauses[] = new Clause(
+                                [$receiver_id => [(string) $not_null => $not_null]],
+                                $conditional_object_id,
+                                $creating_object_id,
+                            );
+                        }
+
                         foreach ($assertions as $var => $anded_types) {
                             foreach ($anded_types as $orred_types) {
                                 $mapped_orred_types = [];

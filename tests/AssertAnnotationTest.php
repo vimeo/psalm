@@ -294,6 +294,31 @@ final class AssertAnnotationTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'assertIfTrueOnThisOfANullsafeMethodCallLeavesTheNullCheckOfTheReceiverUseful' => [
+                'code' => '<?php
+                    interface Stamp {}
+
+                    /** @return ReflectionClass<Stamp>|null */
+                    function inIf(?ReflectionClass $r): ?ReflectionClass {
+                        if ($r?->implementsInterface(Stamp::class)) {
+                            return $r;
+                        }
+                        return null;
+                    }
+
+                    function inOr(?ReflectionClass $r): ReflectionClass {
+                        if (!$r?->implementsInterface(Stamp::class) || !$r->isInstantiable()) {
+                            throw new RuntimeException();
+                        }
+                        return $r;
+                    }
+
+                    $a = inIf(null);
+                    $b = inOr(null);',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'assertIfTrueOfANullsafeMethodCallHoldsWhereItIsTruthy' => [
                 'code' => '<?php
                     final class M {
