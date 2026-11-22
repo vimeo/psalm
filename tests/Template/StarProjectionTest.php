@@ -1635,6 +1635,70 @@ final class StarProjectionTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'starProjectionReadThroughACovariantMixinReadsTheBound' => [
+                'code' => '<?php
+                    class Model {}
+
+                    /** @template-covariant T of Model */
+                    final class Box {
+                        /** @return T */
+                        public function first(): Model {
+                            throw new Exception();
+                        }
+
+                        /** @return Box<T> */
+                        public function self(): Box {
+                            return $this;
+                        }
+                    }
+
+                    /**
+                     * @template T of Model
+                     * @template D
+                     * @mixin Box<T>
+                     */
+                    final class Many {}
+
+                    /** @var Many<*, int> $many */
+                    $many = new Many();
+                    $first = $many->first();
+                    $self = $many->self();',
+                'assertions' => [
+                    '$first===' => 'Model',
+                    '$self===' => 'Box<Model>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'starProjectionCovariantMixinOfAConcreteReceiverTakesItsArgument' => [
+                'code' => '<?php
+                    class Model {}
+                    final class Post extends Model {}
+
+                    /** @template-covariant T of Model */
+                    final class Box {
+                        /** @param Box<T> $other */
+                        public function merge(Box $other): void {}
+                    }
+
+                    /**
+                     * @template T of Model
+                     * @template D
+                     * @mixin Box<T>
+                     */
+                    final class Many {}
+
+                    /**
+                     * @param Many<Post, int> $many
+                     * @param Box<Post> $other
+                     */
+                    function f(Many $many, Box $other): void {
+                        $many->merge($other);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['InvalidTemplateParam'],
+                'php_version' => '8.0',
+            ],
             'starProjectionReadThroughOffsetGetKeepsTheStar' => [
                 'code' => '<?php
                     /** @template T of object */
@@ -3155,6 +3219,71 @@ final class StarProjectionTest extends TestCase
                     }',
                 'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:20:35 - Argument 1 of Setter::set expects never, but stdClass provided',
                 'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'starProjectionWriteThroughACovariantMixinExpectsNever' => [
+                'code' => '<?php
+                    class Model {}
+                    final class Post extends Model {}
+
+                    /** @template-covariant T of Model */
+                    final class Box {
+                        /** @param Box<T> $other */
+                        public function merge(Box $other): void {}
+                    }
+
+                    /**
+                     * @template T of Model
+                     * @template D
+                     * @mixin Box<T>
+                     */
+                    final class Many {}
+
+                    /**
+                     * @param Many<*, int> $many
+                     * @param Box<Post> $other
+                     */
+                    function f(Many $many, Box $other): void {
+                        $many->merge($other);
+                    }',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:23:38 - Argument 1 of Box::merge expects Box<never>, but Box<Post> provided',
+                'error_levels' => ['InvalidTemplateParam'],
+                'php_version' => '8.0',
+            ],
+            'starProjectionWriteThroughACovariantMixinOfAParentExpectsNever' => [
+                'code' => '<?php
+                    class Model {}
+                    final class Post extends Model {}
+
+                    /** @template-covariant T of Model */
+                    final class Box {
+                        /** @param Box<T> $other */
+                        public function merge(Box $other): void {}
+                    }
+
+                    /**
+                     * @template TRelated of Model
+                     * @template TOwner
+                     * @mixin Box<TRelated>
+                     */
+                    abstract class Relation {}
+
+                    /**
+                     * @template TItem of Model
+                     * @template TParent
+                     * @extends Relation<TItem, TParent>
+                     */
+                    final class Many extends Relation {}
+
+                    /**
+                     * @param Many<*, int> $many
+                     * @param Box<Post> $other
+                     */
+                    function f(Many $many, Box $other): void {
+                        $many->merge($other);
+                    }',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:30:38 - Argument 1 of Box::merge expects Box<never>, but Box<Post> provided',
+                'error_levels' => ['InvalidTemplateParam'],
                 'php_version' => '8.0',
             ],
             'starProjectionOffsetSetOfATemplateExpectsNever' => [

@@ -258,6 +258,8 @@ final class MixinLookup
             );
         } else {
             $mixin_template_result = new TemplateResult([], $template_params ?? []);
+            // a receiver, not what is read: its methods take arguments, so a covariant `*` stays a `*` too
+            $mixin_template_result->star_receiver = true;
             ClassTemplateParamCollector::markStarBindings(
                 $mixin_template_result,
                 $codebase,

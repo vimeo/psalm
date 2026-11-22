@@ -73,6 +73,12 @@ final class TemplateResult
     public bool $star_input = false;
 
     /**
+     * Whether the types are replaced for a receiver (a bound mixin) rather than for what is read from one: a covariant
+     * argument filled by a template bound to a `*` stays a `*`, as the methods of the receiver take arguments too
+     */
+    public bool $star_receiver = false;
+
+    /**
      * `static` of the call when it is known before the arguments are analyzed (a template receiver or a forwarding call
      * has none) and whether it is final: the arguments are checked, and the return type is expanded, with them
      */
