@@ -30,30 +30,7 @@ final class StorageByPatternResolver
         ClassLikeStorage $class_like_storage,
         string $pattern,
     ): array {
-        $constants = $class_like_storage->constants;
-
-        if (!str_contains($pattern, '*')) {
-            if (isset($constants[$pattern])) {
-                return [$pattern => $constants[$pattern]];
-            }
-
-            return [];
-        } elseif ($pattern === '*') {
-            return $constants;
-        }
-
-        $regex_pattern = sprintf('#^%s$#', str_replace('*', '.*?', $pattern));
-        $matched_constants = [];
-
-        foreach ($constants as $constant => $class_constant_storage) {
-            if (preg_match($regex_pattern, $constant) === 0) {
-                continue;
-            }
-
-            $matched_constants[$constant] = $class_constant_storage;
-        }
-
-        return $matched_constants;
+        return self::filterByPattern($class_like_storage->constants, $pattern);
     }
 
     /**
@@ -64,27 +41,40 @@ final class StorageByPatternResolver
         ClassLikeStorage $class_like_storage,
         string $pattern,
     ): array {
-        $enum_cases = $class_like_storage->enum_cases;
+        return self::filterByPattern($class_like_storage->enum_cases, $pattern);
+    }
+
+    /**
+     * The items whose name matches the pattern, where `*` matches anything
+     *
+     * @template T
+     * @param array<string, T> $items
+     * @return array<string, T>
+     * @psalm-pure
+     */
+    private static function filterByPattern(array $items, string $pattern): array
+    {
         if (!str_contains($pattern, '*')) {
-            if (isset($enum_cases[$pattern])) {
-                return [$pattern => $enum_cases[$pattern]];
+            if (isset($items[$pattern])) {
+                return [$pattern => $items[$pattern]];
             }
 
             return [];
         } elseif ($pattern === '*') {
-            return $enum_cases;
+            return $items;
         }
 
         $regex_pattern = sprintf('#^%s$#', str_replace('*', '.*?', $pattern));
-        $matched_enums = [];
-        foreach ($enum_cases as $enum_case_name => $enum_case_storage) {
-            if (preg_match($regex_pattern, $enum_case_name) === 0) {
+        $matched_items = [];
+
+        foreach ($items as $name => $item) {
+            if (preg_match($regex_pattern, $name) === 0) {
                 continue;
             }
 
-            $matched_enums[$enum_case_name] = $enum_case_storage;
+            $matched_items[$name] = $item;
         }
 
-        return $matched_enums;
+        return $matched_items;
     }
 }

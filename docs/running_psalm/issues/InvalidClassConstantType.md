@@ -42,3 +42,25 @@ class LowerLimits extends Limits
     public const int MAX = 5; // no issue
 }
 ```
+
+As in PHP, an override must keep a native type contained in the parent's:
+
+```php
+<?php
+
+class Limits
+{
+    public const int MAX = 10;
+}
+
+class WiderLimits extends Limits
+{
+    public const int|string MAX = 5; // InvalidClassConstantType
+}
+
+class UntypedLimits extends Limits
+{
+    /** @var int */
+    public const MAX = 5; // InvalidClassConstantType
+}
+```

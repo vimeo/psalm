@@ -17,6 +17,8 @@ use function dirname;
 use function file_put_contents;
 use function hash_file;
 use function is_file;
+use function ksort;
+use function substr;
 use function sys_get_temp_dir;
 use function tempnam;
 use function uksort;
@@ -229,6 +231,26 @@ final class CallMapTest extends TestCase
         uksort($deltaFiles, 'strnatcasecmp');
 
         return $deltaFiles;
+    }
+
+    /**
+     * @param TCallMaps $callMaps
+     */
+    #[Depends('testLoadCallMaps')]
+    public function testIntroductionsListTheFirstCallMapOfEachNewKey(array $callMaps): void
+    {
+        $oldest = $callMaps['CallMap_70.php'];
+        $expected = [];
+        foreach ($callMaps as $file => $callMap) {
+            foreach ($callMap as $key => $_) {
+                if (!isset($oldest[$key])) {
+                    $expected[$key] ??= (int) substr($file, 8, 2);
+                }
+            }
+        }
+        ksort($expected);
+
+        self::assertSame($expected, require self::DICTIONARY_PATH . '/CallMapIntroductions.php');
     }
 
     /**

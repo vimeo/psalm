@@ -340,12 +340,8 @@
   <file src="src/Psalm/Internal/Analyzer/MethodComparator.php">
     <ImplicitToStringCast>
       <code><![CDATA[$guide_param_signature_type]]></code>
-      <code><![CDATA[$guide_param_signature_type]]></code>
-      <code><![CDATA[$guide_param_signature_type]]></code>
       <code><![CDATA[$guide_signature_return_type]]></code>
       <code><![CDATA[$guide_signature_return_type]]></code>
-      <code><![CDATA[$implementer_param_signature_type]]></code>
-      <code><![CDATA[$implementer_param_signature_type]]></code>
       <code><![CDATA[$implementer_param_signature_type]]></code>
     </ImplicitToStringCast>
     <RiskyTruthyFalsyComparison>
@@ -756,7 +752,6 @@
       <code><![CDATA[$cased_method_id]]></code>
       <code><![CDATA[$cased_method_id]]></code>
       <code><![CDATA[$cased_method_id]]></code>
-      <code><![CDATA[$class_generic_params]]></code>
       <code><![CDATA[$context->calling_function_id]]></code>
       <code><![CDATA[$context->calling_function_id]]></code>
       <code><![CDATA[$context->calling_method_id]]></code>
@@ -1797,7 +1792,6 @@
   <file src="src/Psalm/Internal/PhpVisitor/ReflectorVisitor.php">
     <RiskyTruthyFalsyComparison>
       <code><![CDATA[!$this->aliases->uses_start]]></code>
-      <code><![CDATA[!$this->aliases->uses_start]]></code>
       <code><![CDATA[!$this->skip_if_descendants]]></code>
       <code><![CDATA[!$this->skip_if_descendants]]></code>
       <code><![CDATA[$this->skip_if_descendants]]></code>
@@ -2164,7 +2158,6 @@
   <file src="src/Psalm/Internal/Stubs/Generator/ClassLikeStubGenerator.php">
     <RiskyTruthyFalsyComparison>
       <code><![CDATA[!$method_storage->cased_name]]></code>
-      <code><![CDATA[$method_storage->template_types]]></code>
       <code><![CDATA[$storage->parent_class]]></code>
       <code><![CDATA[$storage->template_types]]></code>
     </RiskyTruthyFalsyComparison>
@@ -2875,7 +2868,7 @@
     <ImpureMethodCall>
       <code><![CDATA[TemplateInferredTypeReplacer::replace(
                         $param->type,
-                        $template_result,
+                        $param_template_result,
                         $codebase,
                     )]]></code>
       <code><![CDATA[TemplateInferredTypeReplacer::replace(
@@ -2948,6 +2941,7 @@
                 $input_type,
                 $this,
                 $container_type_params_covariant,
+                $input_star_offsets,
             )]]></code>
       <code><![CDATA[TemplateStandinTypeReplacer::replace(
                 $type_param,
