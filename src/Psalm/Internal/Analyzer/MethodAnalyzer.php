@@ -336,6 +336,7 @@ final class MethodAnalyzer extends FunctionLikeAnalyzer
         $appearing_method_id = $codebase->methods->getAppearingMethodId($method_id);
 
         $appearing_method_class = null;
+        $appearing_class_storage = null;
 
         if ($appearing_method_id) {
             $appearing_method_class = $appearing_method_id->fq_class_name;
@@ -344,6 +345,8 @@ final class MethodAnalyzer extends FunctionLikeAnalyzer
             if ($appearing_method_class === $context->self) {
                 return true;
             }
+
+            $appearing_class_storage = $codebase->classlike_storage_provider->get($appearing_method_class);
         }
 
         $declaring_method_class = $declaring_method_id->fq_class_name;
@@ -356,7 +359,11 @@ final class MethodAnalyzer extends FunctionLikeAnalyzer
 
         $storage = $codebase->methods->getStorage($declaring_method_id);
 
-        switch ($storage->visibility) {
+        // a `use` adaptation (`foo as private`) changes the visibility of a trait method in the class using it
+        $visibility = $appearing_class_storage->trait_visibility_map[$appearing_method_id->method_name ?? '']
+            ?? $storage->visibility;
+
+        switch ($visibility) {
             case ClassLikeAnalyzer::VISIBILITY_PUBLIC:
                 return true;
 

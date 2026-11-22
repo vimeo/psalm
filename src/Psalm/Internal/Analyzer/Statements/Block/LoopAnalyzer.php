@@ -826,6 +826,31 @@ final class LoopAnalyzer
                 $loop_parent_context,
                 new CodeLocation($statements_analyzer->getSource(), $pre_conditions[0]),
             );
+
+            // a loop without a break is left once the condition is false, and then both operands of an `||` ran
+            if (!$is_do) {
+                $written_when_false_types = [];
+
+                if ($deciding_condition) {
+                    self::addWrittenWhenFalseTypes(
+                        $deciding_condition,
+                        $loop_context->self,
+                        $statements_analyzer,
+                        $written_when_false_types,
+                    );
+                }
+
+                foreach ($written_when_false_types as $var_id => $type) {
+                    if (!isset($loop_parent_context->vars_in_scope[$var_id])) {
+                        $loop_parent_context->vars_in_scope[$var_id] = $type->setPossiblyUndefined(false);
+                    } elseif ($loop_parent_context->vars_in_scope[$var_id]->possibly_undefined) {
+                        $loop_parent_context->vars_in_scope[$var_id]
+                            = $loop_parent_context->vars_in_scope[$var_id]->setPossiblyUndefined(false);
+                    }
+
+                    unset($loop_parent_context->vars_possibly_in_scope[$var_id]);
+                }
+            }
         }
 
         if ($always_enters_loop) {
@@ -843,6 +868,7 @@ final class LoopAnalyzer
                 $loop_parent_context,
                 $loop_scope,
                 $always_assigned_unmodified_vars,
+                is_left_after_an_iteration: $pre_conditions === [],
             );
         }
 
@@ -1144,33 +1170,79 @@ final class LoopAnalyzer
     }
 
     /**
+     * The variables the expression writes whenever it is false: both operands of an `||` ran, but not the right
+     * operand of an `&&`
+     *
+     * @param array<string, Union> $assigned_types
+     */
+    private static function addWrittenWhenFalseTypes(
+        PhpParser\Node\Expr $expr,
+        ?string $this_class_name,
+        StatementsAnalyzer $statements_analyzer,
+        array &$assigned_types,
+    ): void {
+        if ($expr instanceof PhpParser\Node\Expr\BinaryOp\BooleanOr
+            || $expr instanceof PhpParser\Node\Expr\BinaryOp\LogicalOr
+        ) {
+            self::addWrittenWhenFalseTypes($expr->left, $this_class_name, $statements_analyzer, $assigned_types);
+            self::addWrittenWhenFalseTypes($expr->right, $this_class_name, $statements_analyzer, $assigned_types);
+
+            return;
+        }
+
+        $var_ids = [];
+
+        self::addAlwaysWrittenVarIds($expr, $this_class_name, $statements_analyzer, $var_ids, $assigned_types);
+    }
+
+    /**
      * The variables the expression writes whenever it is evaluated: not in the right operand of a short-circuiting
      * operator
      *
      * @param array<string, true> $var_ids
+     * @param array<string, Union> $assigned_types gets the types the assignments give the variables
      */
     private static function addAlwaysWrittenVarIds(
         PhpParser\Node\Expr $expr,
         ?string $this_class_name,
         StatementsAnalyzer $statements_analyzer,
         array &$var_ids,
+        array &$assigned_types = [],
     ): void {
         if ($expr instanceof PhpParser\Node\Expr\Assign
             || $expr instanceof PhpParser\Node\Expr\AssignRef
             || ($expr instanceof PhpParser\Node\Expr\AssignOp
                 && !$expr instanceof PhpParser\Node\Expr\AssignOp\Coalesce)
         ) {
-            self::addAlwaysWrittenVarIds($expr->expr, $this_class_name, $statements_analyzer, $var_ids);
+            self::addAlwaysWrittenVarIds(
+                $expr->expr,
+                $this_class_name,
+                $statements_analyzer,
+                $var_ids,
+                $assigned_types,
+            );
         } elseif ($expr instanceof PhpParser\Node\Expr\BooleanNot
             || $expr instanceof PhpParser\Node\Expr\Cast
             || $expr instanceof PhpParser\Node\Expr\UnaryMinus
             || $expr instanceof PhpParser\Node\Expr\UnaryPlus
         ) {
-            self::addAlwaysWrittenVarIds($expr->expr, $this_class_name, $statements_analyzer, $var_ids);
+            self::addAlwaysWrittenVarIds(
+                $expr->expr,
+                $this_class_name,
+                $statements_analyzer,
+                $var_ids,
+                $assigned_types,
+            );
 
             return;
         } elseif ($expr instanceof PhpParser\Node\Expr\BinaryOp) {
-            self::addAlwaysWrittenVarIds($expr->left, $this_class_name, $statements_analyzer, $var_ids);
+            self::addAlwaysWrittenVarIds(
+                $expr->left,
+                $this_class_name,
+                $statements_analyzer,
+                $var_ids,
+                $assigned_types,
+            );
 
             if (!$expr instanceof PhpParser\Node\Expr\BinaryOp\BooleanAnd
                 && !$expr instanceof PhpParser\Node\Expr\BinaryOp\BooleanOr
@@ -1178,7 +1250,13 @@ final class LoopAnalyzer
                 && !$expr instanceof PhpParser\Node\Expr\BinaryOp\LogicalOr
                 && !$expr instanceof PhpParser\Node\Expr\BinaryOp\Coalesce
             ) {
-                self::addAlwaysWrittenVarIds($expr->right, $this_class_name, $statements_analyzer, $var_ids);
+                self::addAlwaysWrittenVarIds(
+                    $expr->right,
+                    $this_class_name,
+                    $statements_analyzer,
+                    $var_ids,
+                    $assigned_types,
+                );
             }
 
             return;
@@ -1190,7 +1268,13 @@ final class LoopAnalyzer
         ) {
             // the arguments of a call are evaluated, and those passed by reference written
             foreach ($expr->getArgs() as $arg) {
-                self::addAlwaysWrittenVarIds($arg->value, $this_class_name, $statements_analyzer, $var_ids);
+                self::addAlwaysWrittenVarIds(
+                    $arg->value,
+                    $this_class_name,
+                    $statements_analyzer,
+                    $var_ids,
+                    $assigned_types,
+                );
 
                 if ($statements_analyzer->node_data->isWrittenByReference($arg->value)) {
                     $var_id = ExpressionIdentifier::getExtendedVarId(
@@ -1218,6 +1302,12 @@ final class LoopAnalyzer
 
         if ($var_id !== null) {
             $var_ids[$var_id] = true;
+
+            if ($expr instanceof PhpParser\Node\Expr\Assign
+                && ($assigned_type = $statements_analyzer->node_data->getType($expr)) !== null
+            ) {
+                $assigned_types[$var_id] = $assigned_type;
+            }
         }
     }
 
@@ -1342,6 +1432,8 @@ final class LoopAnalyzer
      * @param list<string> $always_assigned_before_loop_body_vars
      * @param bool $is_only_left_by_break whether the loop is only left by a break (`while (true)`): the variables then
      *                                    hold what they held at the breaks, not what an iteration ended with
+     * @param bool $is_left_after_an_iteration whether the loop is left once an iteration ends, with no condition
+     *                                         narrowing what it ends with (`foreach`)
      */
     public static function setLoopVars(
         Context $inner_context,
@@ -1349,6 +1441,7 @@ final class LoopAnalyzer
         LoopScope $loop_scope,
         array $always_assigned_before_loop_body_vars = [],
         bool $is_only_left_by_break = false,
+        bool $is_left_after_an_iteration = false,
     ): void {
         if ($is_only_left_by_break
             && $loop_scope->vars_at_breaks !== null
@@ -1446,8 +1539,12 @@ final class LoopAnalyzer
                             $context->vars_in_scope[$var_id] = $type->setPossiblyUndefined($is_possibly_undefined);
                         }
                     } elseif (!$is_possibly_undefined && isset($context->vars_in_scope[$var_id])) {
-                        $context->vars_in_scope[$var_id] = $context->vars_in_scope[$var_id]
-                            ->setPossiblyUndefined(false);
+                        // a loop left once an iteration ends holds what an iteration ends with, at the end of the
+                        // body or at a continue, not what it held before the loop
+                        $context->vars_in_scope[$var_id] = ($is_left_after_an_iteration
+                            ? Type::combineUnionTypes($type, $loop_scope->vars_at_continues[$var_id])
+                            : $context->vars_in_scope[$var_id]
+                        )->setPossiblyUndefined(false);
                     }
                 }
             } else {

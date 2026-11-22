@@ -55,6 +55,7 @@ use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTypeVariable;
 use Psalm\Type\Union;
 
+use function abs;
 use function array_diff_key;
 use function array_values;
 use function count;
@@ -970,6 +971,11 @@ final class ArithmeticOpAnalyzer
                     && $right_type_part->value < 0
                 ) {
                     $result_type = Type::combineUnionTypes(Type::getFloat(), $result_type);
+                } elseif ($parent instanceof PhpParser\Node\Expr\BinaryOp\Pow
+                    && !$right_type_part instanceof TLiteralInt
+                ) {
+                    // a negative exponent gives a float
+                    $result_type = Type::combineUnionTypes(new Union([new TInt(), new TFloat()]), $result_type);
                 } else {
                     $left_is_positive = ($left_type_part instanceof TLiteralInt && $left_type_part->value > 0)
                         || ($left_type_part instanceof TIntRange && $left_type_part->isPositive());
@@ -1005,7 +1011,9 @@ final class ArithmeticOpAnalyzer
 
                     if ($parent instanceof PhpParser\Node\Expr\BinaryOp\Mod) {
                         if ($right_type_part instanceof TLiteralInt) {
-                            $literal_value_max = $right_type_part->value - 1;
+                            $literal_value_max = $right_type_part->value === PHP_INT_MIN
+                                ? PHP_INT_MAX
+                                : abs($right_type_part->value) - 1;
                             if ($always_positive) {
                                 $result_type = Type::getIntRange(0, $literal_value_max);
                             } else {
@@ -1868,28 +1876,16 @@ final class ArithmeticOpAnalyzer
             if ($right_type_part->max_bound === 0) {
                 $new_result_type = Type::getNever();
             } else {
+                // the result takes the sign of the dividend and is less than the divisor in absolute value
+                $max = $right_type_part->min_bound === PHP_INT_MIN
+                    ? PHP_INT_MAX
+                    : abs($right_type_part->min_bound) - 1;
+
                 if ($left_type_part->isPositiveOrZero()) {
-                    if ($right_type_part->isPositive()) {
-                        $max = $right_type_part->min_bound - 1;
-                        $new_result_type = Type::getIntRange(0, $max);
-                    } else {
-                        $max = $right_type_part->min_bound + 1;
-                        $new_result_type = Type::getIntRange($max, 0);
-                    }
+                    $new_result_type = Type::getIntRange(0, $max);
                 } elseif ($left_type_part->isNegativeOrZero()) {
-                    if ($right_type_part->isPositive()) {
-                        $max = $right_type_part->min_bound - 1;
-                        $new_result_type = Type::getIntRange(-$max, 0);
-                    } else {
-                        $max = $right_type_part->min_bound + 1;
-                        $new_result_type = Type::getIntRange(-$max, 0);
-                    }
+                    $new_result_type = Type::getIntRange(-$max, 0);
                 } else {
-                    if ($right_type_part->isPositive()) {
-                        $max = $right_type_part->min_bound - 1;
-                    } else {
-                        $max = -$right_type_part->min_bound - 1;
-                    }
                     $new_result_type = Type::getIntRange(-$max, $max);
                 }
             }
@@ -1909,10 +1905,15 @@ final class ArithmeticOpAnalyzer
                 $new_result_type = Type::getInt(true);
             }
         } elseif ($right_type_part->isNegative()) {
+            // the result is less than the divisor in absolute value, which is at most the lower bound negated
+            $max = $right_type_part->min_bound === null || $right_type_part->min_bound === PHP_INT_MIN
+                ? null
+                : -$right_type_part->min_bound - 1;
+
             if ($left_type_part->isPositiveOrZero()) {
-                $new_result_type = Type::getIntRange(null, 0);
+                $new_result_type = Type::getIntRange(0, $max);
             } elseif ($left_type_part->isNegativeOrZero()) {
-                $new_result_type = Type::getIntRange(null, 0);
+                $new_result_type = Type::getIntRange($max === null ? null : -$max, 0);
             } else {
                 $new_result_type = Type::getInt(true);
             }

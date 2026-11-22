@@ -10,7 +10,7 @@ If this property is genuinely part of your public API — used from outside the 
 See [`@api`](../../annotating_code/supported_annotations.md#api-psalm-api) for the full guidance; note that `@psalm-suppress` is not a substitute for `@api`, as it silences the report without marking the property as used.
 
 ```php
-<?php
+<?php // findUnusedCode="true"
 
 class A {
     /** @var string|null */
