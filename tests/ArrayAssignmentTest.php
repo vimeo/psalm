@@ -11,6 +11,10 @@ use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 use Psalm\Type;
 
+use function array_fill;
+use function implode;
+use function str_repeat;
+
 use const DIRECTORY_SEPARATOR;
 
 final class ArrayAssignmentTest extends TestCase
