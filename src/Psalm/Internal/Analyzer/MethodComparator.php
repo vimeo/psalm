@@ -185,8 +185,7 @@ final class MethodComparator
 
         // a trait method takes the docblock of the parent method per using class (see Populator), not per storage
         $inherits_return_type = $implementer_method_storage->inherited_return_type
-            || (!$implementer_method_storage->has_docblock_param_types
-                && !$implementer_method_storage->has_docblock_return_type
+            || (!$implementer_method_storage->has_docblock_return_type
                 && isset($codebase->classlike_storage_provider->get($implementer_called_class_name)
                     ->documenting_method_ids[strtolower($guide_method_storage->cased_name ?? '')]));
 
@@ -1058,6 +1057,16 @@ final class MethodComparator
             );
         if (!$is_contained_by) {
             $config = Config::getInstance();
+            $message = 'Argument ' . ($i + 1) . ' of '
+                . $cased_implementer_method_id
+                . ' has wrong type \''
+                . $implementer_param_signature_type . '\', expecting \''
+                . $guide_param_signature_type . '\' as defined by '
+                . $cased_guide_method_id;
+            $location = $implementer_method_storage->params[$i]->location
+                && $config->isInProjectDirs($implementer_method_storage->params[$i]->location->file_path)
+                ? $implementer_method_storage->params[$i]->location
+                : $code_location;
 
             if ($codebase->analysis_php_version_id >= 8_00_00
                 || $guide_classlike_storage->is_trait === $implementer_classlike_storage->is_trait
@@ -1066,60 +1075,14 @@ final class MethodComparator
                 || (!$implementer_method_storage->abstract
                     && !$guide_method_storage->abstract)
             ) {
-                if ($implementer_method_storage->cased_name === '__construct') {
-                    IssueBuffer::maybeAdd(
-                        new ConstructorSignatureMismatch(
-                            'Argument ' . ($i + 1) . ' of '
-                                . $cased_implementer_method_id
-                                . ' has wrong type \''
-                                . $implementer_param_signature_type . '\', expecting \''
-                                . $guide_param_signature_type . '\' as defined by '
-                                . $cased_guide_method_id,
-                            $implementer_method_storage->params[$i]->location
-                                && $config->isInProjectDirs(
-                                    $implementer_method_storage->params[$i]->location->file_path,
-                                )
-                                ? $implementer_method_storage->params[$i]->location
-                                : $code_location,
-                        ),
-                        $suppressed_issues + $implementer_classlike_storage->suppressed_issues,
-                    );
-                } else {
-                    IssueBuffer::maybeAdd(
-                        new MethodSignatureMismatch(
-                            'Argument ' . ($i + 1) . ' of '
-                                . $cased_implementer_method_id
-                                . ' has wrong type \''
-                                . $implementer_param_signature_type . '\', expecting \''
-                                . $guide_param_signature_type . '\' as defined by '
-                                . $cased_guide_method_id,
-                            $implementer_method_storage->params[$i]->location
-                                && $config->isInProjectDirs(
-                                    $implementer_method_storage->params[$i]->location->file_path,
-                                )
-                                ? $implementer_method_storage->params[$i]->location
-                                : $code_location,
-                        ),
-                        $suppressed_issues + $implementer_classlike_storage->suppressed_issues,
-                    );
-                }
+                $issue = $implementer_method_storage->cased_name === '__construct'
+                    ? new ConstructorSignatureMismatch($message, $location)
+                    : new MethodSignatureMismatch($message, $location);
             } else {
-                IssueBuffer::maybeAdd(
-                    new TraitMethodSignatureMismatch(
-                        'Argument ' . ($i + 1) . ' of ' . $cased_implementer_method_id . ' has wrong type \'' .
-                            $implementer_param_signature_type . '\', expecting \'' .
-                            $guide_param_signature_type . '\' as defined by ' .
-                            $cased_guide_method_id,
-                        $implementer_method_storage->params[$i]->location
-                            && $config->isInProjectDirs(
-                                $implementer_method_storage->params[$i]->location->file_path,
-                            )
-                            ? $implementer_method_storage->params[$i]->location
-                            : $code_location,
-                    ),
-                    $suppressed_issues + $implementer_classlike_storage->suppressed_issues,
-                );
+                $issue = new TraitMethodSignatureMismatch($message, $location);
             }
+
+            IssueBuffer::maybeAdd($issue, $suppressed_issues + $implementer_classlike_storage->suppressed_issues);
         }
     }
 
