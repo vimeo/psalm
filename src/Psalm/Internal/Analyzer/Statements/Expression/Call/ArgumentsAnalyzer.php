@@ -100,6 +100,16 @@ use function strtoupper;
  */
 final class ArgumentsAnalyzer
 {
+    /** The methods creating a lazy ghost from their `$initializer` */
+    private const LAZY_GHOST_METHODS = [
+        'reflectionclass::newlazyghost' => true,
+        'reflectionclass::resetaslazyghost' => true,
+        'reflectionobject::newlazyghost' => true,
+        'reflectionobject::resetaslazyghost' => true,
+        'reflectionenum::newlazyghost' => true,
+        'reflectionenum::resetaslazyghost' => true,
+    ];
+
     /**
      * @see self::getByRefFlowInputs()
      * @var array<lowercase-string, array<string, array<int|string, string>>>|null
@@ -159,6 +169,7 @@ final class ArgumentsAnalyzer
             );
 
             foreach ($written_var_ids as $var_id => $_) {
+                $context->releaseKeysBoundToList($var_id);
                 $context->removeVarFromConflictingClauses(
                     $var_id,
                     $context->vars_in_scope[$var_id] ?? null,
@@ -367,6 +378,13 @@ final class ArgumentsAnalyzer
                         $param,
                     );
                 }
+
+                if ($param
+                    && $param->name === 'initializer'
+                    && isset(self::LAZY_GHOST_METHODS[strtolower((string) $method_id)])
+                ) {
+                    $arg->value->setAttribute(ClosureAnalyzer::LAZY_GHOST_INITIALIZER_ATTRIBUTE, true);
+                }
             }
 
             if (($arg->value instanceof PhpParser\Node\Expr\MethodCall
@@ -568,6 +586,16 @@ final class ArgumentsAnalyzer
         }
 
         $keys = array_keys($unpacked_atomic->properties);
+
+        // integer keys that are not a list's pass as many arguments as there are keys, in the order of the shape
+        if (array_all($keys, static fn(int|string $key): bool => is_int($key))
+            && array_all(
+                $unpacked_atomic->properties,
+                static fn(Union $property): bool => !$property->possibly_undefined,
+            )
+        ) {
+            return [null, count($keys)];
+        }
 
         return [
             array_all($keys, static fn(int|string $key): bool => is_string($key)) ? $keys : null,
@@ -2684,7 +2712,8 @@ final class ArgumentsAnalyzer
         );
 
         if (!$template_types) {
-            return null;
+            // the parameters are still written to through a `*`
+            return $template_result !== null && $template_result->star_bindings !== [] ? $template_result : null;
         }
 
         if (!$template_result) {
@@ -2824,6 +2853,11 @@ final class ArgumentsAnalyzer
                         if ($arg_value_type->isSingle()
                             && ($atomic_arg_type = $arg_value_type->getSingleAtomic()) instanceof TKeyedArray
                             && !$atomic_arg_type->is_list
+                            // integer keys name no parameter: they pass as many arguments as there are keys
+                            && !array_all(
+                                array_keys($atomic_arg_type->properties),
+                                static fn(int|string $key): bool => is_int($key),
+                            )
                         ) {
                             //if we have a single shape, we'll check param names
                             foreach ($atomic_arg_type->properties as $property_name => $_property_type) {

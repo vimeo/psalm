@@ -277,7 +277,6 @@ final class Clause implements Stringable
             if (count($var_id_clauses) > 1) {
                 $clause_strings[] = '('.implode(') || (', $var_id_clauses).')';
             } else {
-                assert(!empty($var_id_clauses));
                 $clause_strings[] = reset($var_id_clauses);
             }
         }

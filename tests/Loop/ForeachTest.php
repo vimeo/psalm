@@ -210,6 +210,88 @@ final class ForeachTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'foreachOverAnIteratorAggregateGivenByACoalesceAssignment' => [
+                'code' => '<?php
+                    /** @implements IteratorAggregate<int, string> */
+                    final class Items implements IteratorAggregate {
+                        #[Override]
+                        public function getIterator(): Iterator {
+                            return new ArrayIterator(["a"]);
+                        }
+                    }
+
+                    final class Holder {
+                        private ?Items $items = null;
+
+                        public function names(): void {
+                            foreach (($this->items ??= new Items()) as $name) {
+                                echo $name;
+                            }
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
+            'yieldFromAnIteratorAggregateGivenByACoalesceAssignment' => [
+                'code' => '<?php
+                    /** @implements IteratorAggregate<int, string> */
+                    final class Items implements IteratorAggregate {
+                        #[Override]
+                        public function getIterator(): Iterator {
+                            return new ArrayIterator(["a"]);
+                        }
+                    }
+
+                    final class Holder {
+                        private ?Items $items = null;
+
+                        /** @return Generator<int, string, mixed, void> */
+                        public function names(): Generator {
+                            yield from ($this->items ??= new Items());
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
+            'foreachAndYieldFromAnAggregateOfARawIteratorGivenByACoalesceAssignment' => [
+                'code' => '<?php
+                    final class RawIt implements Iterator {
+                        #[Override]
+                        public function current(): string { return "a"; }
+                        #[Override]
+                        public function key(): int { return 0; }
+                        #[Override]
+                        public function next(): void {}
+                        #[Override]
+                        public function rewind(): void {}
+                        #[Override]
+                        public function valid(): bool { return false; }
+                    }
+
+                    final class AggRaw implements IteratorAggregate {
+                        #[Override]
+                        public function getIterator(): RawIt { return new RawIt(); }
+                    }
+
+                    final class H {
+                        private ?AggRaw $aggRaw = null;
+
+                        public function a(): void {
+                            foreach (($this->aggRaw ??= new AggRaw()) as $v) {
+                                echo $v;
+                            }
+                        }
+
+                        public function b(): Generator {
+                            yield from ($this->aggRaw ??= new AggRaw());
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MissingTemplateParam'],
+                'php_version' => '8.3',
+            ],
             'methodCallOnArrayElementSetInLoop' => [
                 'code' => '<?php
                     final class Box {
@@ -1810,7 +1892,7 @@ final class ForeachTest extends TestCase
                       continue;
                     }',
                 'assertions' => [
-                    '$a' => 'bool',
+                    '$a' => 'true',
                 ],
             ],
             'falseToBoolInBreak' => [
@@ -3173,6 +3255,55 @@ final class ForeachTest extends TestCase
                     PHP,
                 'assertions' => [],
                 'ignored_issues' => ['PossiblyNullIterator'],
+            ],
+            'foreachOverANonEmptyArrayWithAContinueRunsAtLeastOnce' => [
+                'code' => '<?php
+                    final class Flag {
+                        public function equals(Flag $other): bool {
+                            return $this === $other;
+                        }
+                    }
+
+                    /** @param non-empty-array<Flag> $items */
+                    function withContinue(array $items): Flag {
+                        $last = null;
+                        foreach ($items as $item) {
+                            if ($last === null) {
+                                $last = $item;
+                                continue;
+                            }
+                            if (!$last->equals($item)) {
+                                return new Flag();
+                            }
+                        }
+                        return $last;
+                    }
+
+                    /** @param array<Flag> $items */
+                    function maybeEmpty(array $items): ?Flag {
+                        $last = null;
+                        foreach ($items as $item) {
+                            if ($last === null) {
+                                $last = $item;
+                                continue;
+                            }
+                        }
+                        /** @psalm-check-type-exact $last = Flag|null */;
+                        return $last;
+                    }
+
+                    /** @param non-empty-list<int> $items */
+                    function unchangedOnSomePaths(array $items): bool {
+                        $seen = false;
+                        foreach ($items as $item) {
+                            if ($item > 3) {
+                                $seen = true;
+                                continue;
+                            }
+                        }
+                        /** @psalm-check-type-exact $seen = bool */;
+                        return $seen;
+                    }',
             ],
         ];
     }

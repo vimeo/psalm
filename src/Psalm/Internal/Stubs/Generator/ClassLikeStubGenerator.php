@@ -227,54 +227,6 @@ final class ClassLikeStubGenerator
                 default => PhpParser\Modifiers::PUBLIC,
             };
 
-            $docblock = new ParsedDocblock('', []);
-
-            foreach ($method_storage->template_types ?: [] as $template_name => $map) {
-                $type = array_values($map)[0];
-
-                $docblock->tags['template'][] = $template_name . ' as ' . $type->toNamespacedString(
-                    $namespace_name,
-                    [],
-                    null,
-                    false
-                );
-            }
-
-            foreach ($method_storage->params as $param) {
-                if ($param->type && $param->type !== $param->signature_type) {
-                    $docblock->tags['param'][] = $param->type->toNamespacedString(
-                        $namespace_name,
-                        [],
-                        null,
-                        false
-                    ) . ' $' . $param->name;
-                }
-            }
-
-            if ($method_storage->return_type
-                && $method_storage->signature_return_type !== $method_storage->return_type
-            ) {
-                $docblock->tags['return'][] = $method_storage->return_type->toNamespacedString(
-                    $namespace_name,
-                    [],
-                    null,
-                    false
-                );
-            }
-
-            foreach ($method_storage->getThrowGroups() as $throw_group) {
-                $docblock->tags['throws'][] = implode('&', array_map(
-                    static fn(string $exception_name): string => Type::getStringFromFQCLN(
-                        $exception_name,
-                        $namespace_name,
-                        [],
-                        null,
-                        false
-                    ),
-                    $throw_group,
-                ));
-            }
-
             $method_nodes[] = new VirtualClassMethod(
                 $method_storage->cased_name,
                 [
@@ -287,15 +239,7 @@ final class ClassLikeStubGenerator
                         : null,
                     'stmts' =>  $storage->is_interface || $method_storage->abstract ? null : [],
                 ],
-                [
-                    'comments' => $docblock->tags
-                        ? [
-                            new PhpParser\Comment\Doc(
-                                rtrim($docblock->render('        '))
-                            )
-                        ]
-                        : []
-                ]
+                ['comments' => StubsGenerator::getDocblockComments($method_storage, $namespace_name)]
             );
         }
 
