@@ -1825,7 +1825,10 @@ final class ArrayFetchAnalyzer
                     true,
                     $offset_type->ignore_falsable_issues,
                     $union_comparison_results,
-                );
+                )
+                    // isset() of a string that is numeric looks for the int key it reads as
+                    || ($context->inside_isset
+                        && self::mayReadAsAnIntKey($codebase, $offset_type->freeze(), $expected_offset_type));
 
                 if ($codebase->config->ensure_array_string_offsets_exist
                     && $offset_type_contained_by_expected
@@ -2033,6 +2036,34 @@ final class ArrayFetchAnalyzer
     }
 
     /**
+     * Whether isset() of the offset can find an int key: the strings it may be are numeric ones, read as ints
+     */
+    private static function mayReadAsAnIntKey(Codebase $codebase, Union $offset_type, Union $key_type): bool
+    {
+        if (!$key_type->hasInt()) {
+            return false;
+        }
+
+        $other_types = [];
+        $has_string = false;
+
+        foreach ($offset_type->getAtomicTypes() as $offset_atomic_type) {
+            if ($offset_atomic_type instanceof TString
+                && !$offset_atomic_type instanceof TLiteralString
+                && !$offset_atomic_type instanceof TClassString
+            ) {
+                $has_string = true;
+            } else {
+                $other_types[] = $offset_atomic_type;
+            }
+        }
+
+        return $has_string
+            && ($other_types === []
+                || UnionTypeComparator::isContainedBy($codebase, new Union($other_types), $key_type));
+    }
+
+    /**
      * @param list<string> $expected_offset_types
      * @param list<TLiteralString|TLiteralInt> $key_values
      * @param-out TArray|TKeyedArray $type
@@ -2217,7 +2248,9 @@ final class ArrayFetchAnalyzer
                     $offset_type->freeze(),
                     true,
                     $offset_type->ignore_falsable_issues,
-                );
+                )
+                    // a string that is numeric is the int key it reads as
+                    || self::mayReadAsAnIntKey($codebase, $offset_type->freeze(), $key_type);
             }
 
             if (($is_contained

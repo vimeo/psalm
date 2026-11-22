@@ -1493,6 +1493,33 @@ final class ArrayAccessTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'issetOfAStringOffsetOfIntKeysLooksForANumericString' => [
+                'code' => '<?php
+                    function label(string $id): string {
+                        $labels = ["1" => "foo", "2" => "bar"];
+
+                        if (isset($labels[$id])) {
+                            return $labels[$id];
+                        }
+
+                        return "";
+                    }
+
+                    function labelOrEmpty(string $id): string {
+                        $labels = ["1" => "foo", "2" => "bar"];
+
+                        return $labels[$id] ?? "";
+                    }
+
+                    /** @param array<int, string> $names */
+                    function name(array $names, string $id): string {
+                        if (isset($names[$id])) {
+                            return $names[$id];
+                        }
+
+                        return "";
+                    }',
+            ],
             'nullOffsetOfAnObjectThatAcceptsItInArrayAccess' => [
                 'code' => '<?php
                     /** @implements ArrayAccess<string|null, int> */
@@ -3792,6 +3819,18 @@ final class ArrayAccessTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'issetOfAMixedOrStringOffsetIsStillACoercion' => [
+                'code' => '<?php
+                    /** @param array<array-key, string> $names */
+                    function has(array $names, mixed $id, string $default, bool $useId): bool {
+                        $key = $useId ? $id : $default;
+
+                        return isset($names[$key]);
+                    }',
+                'error_message' => 'MixedArrayTypeCoercion',
+                'error_levels' => ['MixedAssignment'],
+                'php_version' => '8.0',
+            ],
             'nullOffsetOfAnObjectThatRejectsItInArrayAccess' => [
                 'code' => '<?php
                     /** @implements ArrayAccess<string, int> */
