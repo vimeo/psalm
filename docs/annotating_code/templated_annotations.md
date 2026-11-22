@@ -588,9 +588,13 @@ final class Cell {
     /** @var list<T> */
     public array $history = [];
 
+    /** @var non-empty-list<T> */
+    public array $recent;
+
     /** @param T $value */
     public function __construct(object $value) {
         $this->value = $value;
+        $this->recent = [$value];
     }
 
     /** @return Closure(T): void */
@@ -602,6 +606,7 @@ function h(Cell $cell): void {
     $cell->value; // object
     $cell->value = new DateTime(); // InvalidPropertyAssignmentValue: $cell->value with declared type 'never' cannot be assigned type 'DateTime'
     $cell->history = []; // no issue
+    $cell->recent = []; // InvalidPropertyAssignmentValue: $cell->recent with declared type 'never' cannot be assigned type 'array<never, never>'
     $cell->history[] = new DateTime(); // InvalidPropertyAssignmentValue: $cell->history with declared type 'array<never, never>' cannot be assigned type 'list{DateTime}'
     $cell->setter(); // Closure(never): void
 }
