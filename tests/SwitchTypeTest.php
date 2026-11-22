@@ -157,6 +157,7 @@ final class SwitchTypeTest extends TestCase
      *         ignored_issues?: list<string>,
      *     }
      * >
+     * @psalm-pure
      */
     public static function providerFallThroughGroups(): iterable
     {
