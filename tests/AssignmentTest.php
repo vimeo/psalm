@@ -5,13 +5,76 @@ declare(strict_types=1);
 namespace Psalm\Tests;
 
 use Override;
+use Psalm\Context;
+use Psalm\Internal\Analyzer\IssueData;
+use Psalm\IssueBuffer;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
+
+use function array_filter;
+use function array_map;
+use function array_values;
 
 final class AssignmentTest extends TestCase
 {
     use InvalidCodeAnalysisTestTrait;
     use ValidCodeAnalysisTestTrait;
+
+    public function testMixedAssignmentTypedOnEveryWayThroughTheFollowingIfIsNotReported(): void
+    {
+        $this->testConfig->throw_exception = false;
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                /** @param non-empty-list $items */
+                function firstName(array $items): string {
+                    $name = $items[0];
+
+                    if (!is_string($name)) {
+                        $name = "";
+                    }
+
+                    return $name;
+                }
+
+                function setOption(string $name): void {}
+
+                /** @param mixed $choice */
+                function chosen($choice): void {
+                    $option = $choice;
+
+                    if ($option !== "none") {
+                        setOption($option);
+                    }
+                }
+
+                /** @param non-empty-list $items */
+                function firstTitle(array $items): string {
+                    $title = $items[0];
+
+                    if (rand(0, 1)) {
+                        $title = "";
+                    }
+
+                    return (string) $title;
+                }',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+
+        $lines = array_map(
+            static fn(IssueData $issue): int => $issue->line_from,
+            array_values(array_filter(
+                IssueBuffer::getIssuesDataForFile($file_path),
+                static fn(IssueData $issue): bool => $issue->type === 'MixedAssignment',
+            )),
+        );
+
+        // $option is only typed by its use as an argument, and $title stays mixed on one way through its if
+        self::assertSame([17, 26], $lines);
+    }
 
     /**
      * @psalm-pure
@@ -103,6 +166,20 @@ final class AssignmentTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'mixedAssignmentLeftMixedByTheFollowingIf' => [
+                'code' => '<?php
+                    /** @param non-empty-list $items */
+                    function firstName(array $items): string {
+                        $name = $items[0];
+
+                        if (rand(0, 1)) {
+                            $name = "";
+                        }
+
+                        return (string) $name;
+                    }',
+                'error_message' => 'MixedAssignment',
+            ],
             'mixedAssignment' => [
                 'code' => '<?php
                     /** @var mixed */
