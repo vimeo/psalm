@@ -6210,6 +6210,18 @@ final class ClassTemplateTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'classStringOutsideTheBoundAsTheDefaultOfATemplateClassString' => [
+                'code' => '<?php
+                    class Animal {}
+                    class Stone {}
+
+                    /** @template T of Animal */
+                    class Shelter {
+                        /** @var class-string<T> */
+                        protected string $species = Stone::class;
+                    }',
+                'error_message' => 'InvalidPropertyAssignmentValue',
+            ],
             'classStringOfTheBoundAsTheClassStringOfATemplate' => [
                 'code' => '<?php
                     /** @psalm-consistent-constructor */
@@ -6226,19 +6238,6 @@ final class ClassTemplateTest extends TestCase
                         }
                     }',
                 'error_message' => 'PropertyTypeCoercion',
-            ],
-            'returnTheClassStringOfTheBoundAsTheClassStringOfATemplate' => [
-                'code' => '<?php
-                    class Animal {}
-
-                    /**
-                     * @template T of Animal
-                     * @return class-string<T>
-                     */
-                    function species(): string {
-                        return Animal::class;
-                    }',
-                'error_message' => 'LessSpecificReturnStatement',
             ],
             'listParamInheritedFromATemplatedParentRejectsAWrongList' => [
                 'code' => '<?php

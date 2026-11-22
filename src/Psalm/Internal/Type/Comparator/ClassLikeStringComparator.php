@@ -119,10 +119,8 @@ final class ClassLikeStringComparator
             return $container_type_part->value === $input_type_part->value;
         }
 
-        // the template may stand for a subclass of the class of a known class-string
         if ($container_type_part instanceof TTemplateParamClass
-            && ($input_type_part::class === TClassString::class
-                || $input_type_part instanceof TLiteralClassString)
+            && $input_type_part::class === TClassString::class
         ) {
             if ($atomic_comparison_result) {
                 $atomic_comparison_result->type_coerced = true;
