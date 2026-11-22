@@ -591,6 +591,13 @@ final class TypeCombinationTest extends TestCase
                     'array<string>',
                 ],
             ],
+            'nonEmptyArrayTraversableStaysApart' => [
+                'Traversable<int, int>|non-empty-array<int, int>',
+                [
+                    'non-empty-array<int, int>',
+                    'Traversable<int, int>',
+                ],
+            ],
             'arrayTraversableToIterable' => [
                 'iterable<array-key|mixed, mixed>',
                 [
