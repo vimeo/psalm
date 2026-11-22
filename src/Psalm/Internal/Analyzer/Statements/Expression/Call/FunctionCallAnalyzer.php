@@ -305,7 +305,7 @@ final class FunctionCallAnalyzer extends CallAnalyzer
 
         $function_storage = $function_call_info->function_storage;
 
-        // where the functions of the code are called is found as where methods are
+        // record the call sites of user functions, as Methods::methodExists() does for methods
         if ($codebase->collect_locations
             && $function_storage !== null
             && $function_storage->location !== null
