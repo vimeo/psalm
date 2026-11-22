@@ -1957,7 +1957,7 @@ final class ArrayAssignmentAnalyzer
                 );
 
                 $new_child_type = $child_shape
-                    ? new Union([$child_shape])
+                    ? $child_stmt_type->setTypes([$child_shape])
                     : Type::combineUnionTypes(
                         $child_stmt_type,
                         $array_assignment_type,
