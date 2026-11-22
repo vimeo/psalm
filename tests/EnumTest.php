@@ -1301,6 +1301,57 @@ final class EnumTest extends TestCase
                 'error_levels' => [],
                 'php_version' => '8.1',
             ],
+            'enumCaseValueCircularWithAClassConstant' => [
+                'code' => '<?php
+                    enum Level: int {
+                        case Low = Limits::MIN + 1;
+                    }
+
+                    final class Limits {
+                        public const MIN = Level::Low->value;
+                    }
+
+                    function read(): int {
+                        return Level::Low->value;
+                    }',
+                'error_message' => 'CircularReference - src' . DIRECTORY_SEPARATOR
+                    . 'somefile.php:3:25 - Enum case Level::Low contains a circular reference',
+                'error_levels' => ['MixedReturnStatement'],
+                'php_version' => '8.2',
+            ],
+            'valueOfAnEnumWithACaseInACircularReferenceIsMixed' => [
+                'code' => '<?php
+                    enum Level: int {
+                        case Low = Limits::MIN + 1;
+                    }
+
+                    final class Limits {
+                        public const MIN = Level::Low->value;
+                    }
+
+                    /** @param value-of<Level> $v */
+                    function takesValue(int $v): void {}',
+                'error_message' => 'CircularReference - src' . DIRECTORY_SEPARATOR
+                    . 'somefile.php:3:25 - Enum case Level::Low contains a circular reference',
+                'error_levels' => [],
+                'php_version' => '8.2',
+            ],
+            'valueOfAnEnumWithACaseOfAnUndefinedConstantIsMixed' => [
+                'code' => '<?php
+                    enum E: int {
+                        case A = NOPE + 1;
+                    }
+
+                    /** @param value-of<E> $v */
+                    function takesValue(int $v): void {}
+
+                    /** @param value-of<E::A> $v */
+                    function takesCase(int $v): void {}',
+                'error_message' => 'InvalidEnumCaseValue - src' . DIRECTORY_SEPARATOR
+                    . 'somefile.php:3:25 - Case of a backed enum should have either string or int value',
+                'error_levels' => [],
+                'php_version' => '8.2',
+            ],
             'enumCaseValueFromABoolConstantIsInvalid' => [
                 'code' => <<<'PHP'
                     <?php
@@ -1330,7 +1381,7 @@ final class EnumTest extends TestCase
             'enumCaseValueFromAnUndefinedConstantIsInvalid' => [
                 'code' => <<<'PHP'
                     <?php
-                    
+
 
                     enum Flag: string {
                         case On = NOT_DEFINED;
