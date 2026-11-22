@@ -53,6 +53,7 @@ use Psalm\Issue\InternalClass;
 use Psalm\Issue\InvalidEnumCaseValue;
 use Psalm\Issue\InvalidExtendClass;
 use Psalm\Issue\InvalidInterfaceImplementation;
+use Psalm\Issue\InvalidOverride;
 use Psalm\Issue\InvalidTraversableImplementation;
 use Psalm\Issue\MethodSignatureMismatch;
 use Psalm\Issue\MismatchingDocblockPropertyType;
@@ -131,6 +132,37 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
 {
     /** @var array<string, true> */
     private static array $anonymous_classes_in_analysis = [];
+    /**
+     * @psalm-capabilities read-props
+     */
+    private static function overridesAParentProperty(
+        ClassLikeStorage $storage,
+        string $property_name,
+        Codebase $codebase,
+    ): bool {
+        foreach ($storage->overridden_property_ids[$property_name] ?? [] as $overridden_property_id) {
+            [$guide_class_name] = explode('::$', $overridden_property_id);
+            $guide_property_storage = $codebase->classlike_storage_provider->get($guide_class_name)
+                ->properties[$property_name] ?? null;
+
+            if ($guide_property_storage !== null
+                && $guide_property_storage->visibility !== ClassLikeAnalyzer::VISIBILITY_PRIVATE
+            ) {
+                return true;
+            }
+        }
+
+        foreach ([...$storage->parent_classes, ...$storage->class_implements] as $ancestor) {
+            $inherited = $codebase->classlikes->getStorageFor($ancestor)?->properties[$property_name] ?? null;
+
+            if ($inherited !== null && $inherited->visibility !== ClassLikeAnalyzer::VISIBILITY_PRIVATE) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     /** Set on the call of the constructor that stands for it when the initialization of properties is checked */
     public const FAKE_CONSTRUCTOR_CALL_ATTRIBUTE = 'fake_constructor_call';
 
@@ -760,6 +792,25 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                     ),
                     $property_storage->suppressed_issues,
                 );
+            }
+
+            // PHP 8.5: #[\Override] on a property needs a property of the same name that isn't private in a parent
+            // class or an interface; a property of a trait is checked in the class using it
+            if (explode('::$', $appearing_property_id)[0] === $fq_class_name
+                && $codebase->analysis_php_version_id >= 8_05_00
+                && !self::overridesAParentProperty($storage, $property_name, $codebase)
+            ) {
+                foreach ($property_storage->attributes as $attribute) {
+                    if ($attribute->fq_class_name === 'Override') {
+                        IssueBuffer::maybeAdd(
+                            new InvalidOverride(
+                                'Property $' . $property_name . ' does not match any parent property',
+                                $attribute->name_location,
+                            ),
+                            [...$property_storage->suppressed_issues, ...$storage->suppressed_issues],
+                        );
+                    }
+                }
             }
 
             if (isset($storage->overridden_property_ids[$property_name])) {
