@@ -28,6 +28,20 @@ final class PropertyTypeInvarianceTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'typedPropertyOfABuiltinClassOverriddenWithItsType' => [
+                'code' => '<?php
+                    final class SkipFilter extends php_user_filter {
+                        public string $filtername = "";
+
+                        #[Override]
+                        public function onCreate(): bool {
+                            return true;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.4',
+            ],
             'importedTypeAliasIsTheTypeItStandsFor' => [
                 'code' => '<?php
                     /**
@@ -649,6 +663,21 @@ final class PropertyTypeInvarianceTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'typedPropertyOfABuiltinClassOverriddenWithoutAType' => [
+                'code' => '<?php
+                    final class SkipFilter extends php_user_filter {
+                        /** @var string */
+                        public $filtername = "";
+
+                        #[Override]
+                        public function onCreate(): bool {
+                            return true;
+                        }
+                    }',
+                'error_message' => 'NonInvariantPropertyType',
+                'error_levels' => [],
+                'php_version' => '8.6',
+            ],
             'importedTypeAliasOfAnotherType' => [
                 'code' => '<?php
                     /**

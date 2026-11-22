@@ -828,9 +828,13 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                         );
                     }
 
-                    if ((($property_storage->signature_type && !$guide_property_storage->signature_type)
+                    // the native type of a property of a builtin class is only known when the running PHP has it
+                    if ((($property_storage->signature_type
+                                && !$guide_property_storage->signature_type
+                                && $guide_class_storage->user_defined)
                             || (!$property_storage->signature_type && $guide_property_storage->signature_type)
                             || ($property_storage->signature_type
+                                && $guide_property_storage->signature_type
                                 && !$property_storage->signature_type->equals(
                                     $guide_property_storage->signature_type,
                                 )))
