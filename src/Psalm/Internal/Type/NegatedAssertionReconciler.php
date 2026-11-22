@@ -14,6 +14,7 @@ use Psalm\Storage\Assertion;
 use Psalm\Storage\Assertion\IsClassNotEqual;
 use Psalm\Storage\Assertion\IsNotCountable;
 use Psalm\Storage\Assertion\IsNotIdentical;
+use Psalm\Storage\Assertion\IsNotLooselyEqual;
 use Psalm\Storage\Assertion\IsNotType;
 use Psalm\Type;
 use Psalm\Type\Atomic;
@@ -455,6 +456,22 @@ final class NegatedAssertionReconciler extends Reconciler
             if ($existing_var_type->hasString()) {
                 if ($existing_var_type->getLiteralStrings()) {
                     $did_match_literal_type = true;
+
+                    // PHP compares two numeric strings by their numbers: `"1" == "01"`
+                    $php_version_id = $statements_analyzer->getCodebase()->analysis_php_version_id;
+
+                    if ($assertion instanceof IsNotLooselyEqual
+                        && AssertionReconciler::isNumericString($assertion_type->value, $php_version_id)
+                    ) {
+                        foreach ($existing_var_type->getLiteralStrings() as $literal_key => $literal_string) {
+                            if (AssertionReconciler::isNumericString($literal_string->value, $php_version_id)
+                                && $literal_string->value == $assertion_type->value
+                            ) {
+                                $existing_var_type->removeType($literal_key);
+                                $redundant = false;
+                            }
+                        }
+                    }
 
                     if ($existing_var_type->removeType($assertion_type->getKey())
                         || UnionTypeComparator::canExpressionTypesBeIdentical(
