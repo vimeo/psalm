@@ -23,7 +23,7 @@ class DateTimeImmutable implements DateTimeInterface
 
     /**
      * @psalm-mutation-free
-     * @return DateTimeZone
+     * @return DateTimeZone|false
      */
     public function getTimezone() {}
 

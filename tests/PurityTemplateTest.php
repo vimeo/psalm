@@ -1460,6 +1460,8 @@ final class PurityTemplateTest extends TestCase
                         $o->uasort(fn(int $a, int $b): int => $a <=> $b);
                         $i->uksort(fn(int $a, int $b): int => $a <=> $b);
                     }',
+                'assertions' => [],
+                'ignored_issues' => ['DeprecatedMethod'],
             ],
             'closureRebindingKeepsTheClosureType' => [
                 'code' => '<?php

@@ -1,5 +1,7 @@
 <?php
 
+namespace {
+
 class PDO
 {
     public const PARAM_NULL = 0;
@@ -126,6 +128,8 @@ class PDO
     public function query(string $query, ?int $fetchMode = null) {}
 
     /**
+     * @psalm-flow ($string) -> return
+     * @psalm-taint-escape sql
      * @return string|false
      */
     public function quote(string $string, int $type = PDO::PARAM_STR) {}
@@ -161,4 +165,212 @@ class PDOStatement implements Traversable
     /** @var int|string */
     protected $code;
     public ?array $errorInfo = null;
+}
+
+}
+
+namespace Pdo {
+    /** @since 8.4 */
+    class Mysql extends \PDO
+    {
+        public const ATTR_USE_BUFFERED_QUERY = 1000;
+        public const ATTR_LOCAL_INFILE = 1001;
+        public const ATTR_INIT_COMMAND = 1002;
+        public const ATTR_COMPRESS = 1003;
+        public const ATTR_DIRECT_QUERY = 20;
+        public const ATTR_FOUND_ROWS = 1004;
+        public const ATTR_IGNORE_SPACE = 1005;
+        public const ATTR_SSL_KEY = 1006;
+        public const ATTR_SSL_CERT = 1007;
+        public const ATTR_SSL_CA = 1008;
+        public const ATTR_SSL_CAPATH = 1009;
+        public const ATTR_SSL_CIPHER = 1010;
+        public const ATTR_SERVER_PUBLIC_KEY = 1011;
+        public const ATTR_MULTI_STATEMENTS = 1012;
+        public const ATTR_SSL_VERIFY_SERVER_CERT = 1013;
+        public const ATTR_LOCAL_INFILE_DIRECTORY = 1014;
+
+        /**
+         * @psalm-capabilities read-props
+         * @return int<0, max>
+         */
+        public function getWarningCount(): int {}
+    }
+
+    /** @since 8.4 */
+    class Sqlite extends \PDO
+    {
+        public const DETERMINISTIC = 2048;
+        public const OPEN_READONLY = 1;
+        public const OPEN_READWRITE = 2;
+        public const OPEN_CREATE = 4;
+        public const ATTR_OPEN_FLAGS = 1000;
+        public const ATTR_READONLY_STATEMENT = 1001;
+        public const ATTR_EXTENDED_RESULT_CODES = 1002;
+        public const ATTR_BUSY_STATEMENT = 1003;
+        public const ATTR_EXPLAIN_STATEMENT = 1004;
+        public const ATTR_TRANSACTION_MODE = 1005;
+        public const TRANSACTION_MODE_DEFERRED = 0;
+        public const TRANSACTION_MODE_IMMEDIATE = 1;
+        public const TRANSACTION_MODE_EXCLUSIVE = 2;
+        public const EXPLAIN_MODE_PREPARED = 0;
+        public const EXPLAIN_MODE_EXPLAIN = 1;
+        public const EXPLAIN_MODE_EXPLAIN_QUERY_PLAN = 2;
+        public const OK = 0;
+        public const DENY = 1;
+        public const IGNORE = 2;
+
+        /** @psalm-capabilities read-props|write-this-props */
+        public function createAggregate(string $name, callable $step, callable $finalize, int $numArgs = -1): bool {}
+
+        /** @psalm-capabilities read-props|write-this-props */
+        public function createCollation(string $name, callable $callback): bool {}
+
+        /** @psalm-capabilities read-props|write-this-props */
+        public function createFunction(string $function_name, callable $callback, int $num_args = -1, int $flags = 0): bool {}
+
+        /** @psalm-capabilities read-props|io */
+        public function loadExtension(string $name): void {}
+
+        /**
+         * @psalm-capabilities read-props|io
+         * @return resource|false
+         */
+        public function openBlob(
+            string $table,
+            string $column,
+            int $rowid,
+            ?string $dbname = "main",
+            int $flags = \Pdo\Sqlite::OPEN_READONLY
+        ) {}
+
+        /** @psalm-capabilities read-props|write-this-props */
+        public function setAuthorizer(?callable $callback): void {}
+    }
+
+    /** @since 8.4 */
+    class Pgsql extends \PDO
+    {
+        public const ATTR_DISABLE_PREPARES = 1000;
+        public const ATTR_RESULT_MEMORY_SIZE = 1001;
+        /** @deprecated since 8.5, as it has no effect */
+        public const TRANSACTION_IDLE = 0;
+        /** @deprecated since 8.5, as it has no effect */
+        public const TRANSACTION_ACTIVE = 1;
+        /** @deprecated since 8.5, as it has no effect */
+        public const TRANSACTION_INTRANS = 2;
+        /** @deprecated since 8.5, as it has no effect */
+        public const TRANSACTION_INERROR = 3;
+        /** @deprecated since 8.5, as it has no effect */
+        public const TRANSACTION_UNKNOWN = 4;
+
+        /** @psalm-capabilities read-props */
+        public function escapeIdentifier(string $input): string {}
+
+        /**
+         * @psalm-capabilities read-props|io
+         * @param array<array-key, string> $rows
+         */
+        public function copyFromArray(
+            string $tableName,
+            array $rows,
+            string $separator = "\t",
+            string $nullAs = "\\\\N",
+            ?string $fields = null
+        ): bool {}
+
+        /** @psalm-capabilities read-props|io */
+        public function copyFromFile(
+            string $tableName,
+            string $filename,
+            string $separator = "\t",
+            string $nullAs = "\\\\N",
+            ?string $fields = null
+        ): bool {}
+
+        /**
+         * @psalm-capabilities read-props|io
+         * @return list<string>|false
+         */
+        public function copyToArray(
+            string $tableName,
+            string $separator = "\t",
+            string $nullAs = "\\\\N",
+            ?string $fields = null
+        ): array|false {}
+
+        /** @psalm-capabilities read-props|io */
+        public function copyToFile(
+            string $tableName,
+            string $filename,
+            string $separator = "\t",
+            string $nullAs = "\\\\N",
+            ?string $fields = null
+        ): bool {}
+
+        /**
+         * @psalm-capabilities read-props|io
+         * @return numeric-string|false
+         */
+        public function lobCreate(): string|false {}
+
+        /**
+         * @psalm-capabilities read-props|io
+         * @return resource|false
+         */
+        public function lobOpen(string $oid, string $mode = "rb") {}
+
+        /** @psalm-capabilities read-props|io */
+        public function lobUnlink(string $oid): bool {}
+
+        /**
+         * @psalm-capabilities read-props|io
+         * @return array<array-key, int|string>|false
+         */
+        public function getNotify(int $fetchMode = \PDO::FETCH_DEFAULT, int $timeoutMilliseconds = 0): array|false {}
+
+        /** @psalm-capabilities read-props */
+        public function getPid(): int {}
+
+        /** @psalm-capabilities read-props|write-this-props */
+        public function setNoticeCallback(?callable $callback): void {}
+    }
+
+    /** @since 8.4 */
+    class Odbc extends \PDO
+    {
+        public const ATTR_USE_CURSOR_LIBRARY = 1000;
+        public const ATTR_ASSUME_UTF8 = 1001;
+        public const SQL_USE_IF_NEEDED = 0;
+        public const SQL_USE_DRIVER = 2;
+        public const SQL_USE_ODBC = 1;
+    }
+
+    /** @since 8.4 */
+    class Dblib extends \PDO
+    {
+        public const ATTR_CONNECTION_TIMEOUT = 1000;
+        public const ATTR_QUERY_TIMEOUT = 1001;
+        public const ATTR_STRINGIFY_UNIQUEIDENTIFIER = 1002;
+        public const ATTR_VERSION = 1003;
+        public const ATTR_TDS_VERSION = 1004;
+        public const ATTR_SKIP_EMPTY_ROWSETS = 1005;
+        public const ATTR_DATETIME_CONVERT = 1006;
+    }
+
+    /** @since 8.4 */
+    class Firebird extends \PDO
+    {
+        public const ATTR_DATE_FORMAT = 1000;
+        public const ATTR_TIME_FORMAT = 1001;
+        public const ATTR_TIMESTAMP_FORMAT = 1002;
+        public const TRANSACTION_ISOLATION_LEVEL = 1003;
+        public const READ_COMMITTED = 1004;
+        public const REPEATABLE_READ = 1005;
+        public const SERIALIZABLE = 1006;
+        public const WRITABLE_TRANSACTION = 1007;
+
+        /** @psalm-pure */
+        public static function getApiVersion(): int {}
+    }
 }

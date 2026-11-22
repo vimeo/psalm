@@ -6,6 +6,7 @@ namespace Psalm\Internal;
 
 use Psalm\Exception\ComplicatedExpressionException;
 use Psalm\Storage\Assertion;
+use Psalm\Storage\Assertion\IsType;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TKeyedArray;
 use UnexpectedValueException;
@@ -430,33 +431,56 @@ final class Algebra
             }
 
             foreach ($anded_types as $key => $orred_types) {
+                // due to type collapsing, the negation of a specific array can't be applied: it is irrelevant next
+                // to an array type the variable is asserted to have, and otherwise the group says nothing, as
+                // dropping only the negation would narrow more than the condition allows. The negation of any
+                // array (`$a is list || $a is not array`) is applied.
+                $has_array_type = false;
+                $negated_array_indexes = [];
+
                 foreach ($orred_types as $index => $assertion) {
-                    // we only need to check negations
-                    // due to type collapsing, any negations for arrays are irrelevant
+                    if (!isset($assertion->type)
+                        || !($assertion->type instanceof TArray || $assertion->type instanceof TKeyedArray)
+                    ) {
+                        continue;
+                    }
+
                     if (!$assertion->isNegation()) {
-                        continue;
-                    }
-
-                    if (!isset($assertion->type)) {
-                        continue;
-                    }
-
-                    if ($assertion->type instanceof TArray
-                        || $assertion->type instanceof TKeyedArray) {
-                        unset($truths[$var][$key][$index]);
+                        $has_array_type = $has_array_type || $assertion instanceof IsType;
+                    } elseif (count($orred_types) === 1 || !self::isAnyArray($assertion->type)) {
+                        $negated_array_indexes[] = $index;
                     }
                 }
 
-                if ($truths[$var][$key] === []) {
+                if ($negated_array_indexes === []) {
+                    continue;
+                }
+
+                if (!$has_array_type) {
                     unset($truths[$var][$key]);
-                } else {
-                    $truths[$var][$key] = array_values($truths[$var][$key]);
+                    continue;
                 }
+
+                foreach ($negated_array_indexes as $index) {
+                    unset($truths[$var][$key][$index]);
+                }
+
+                $truths[$var][$key] = array_values($truths[$var][$key]);
             }
         }
 
         /** @psalm-suppress LessSpecificReturnStatement */
         return $truths;
+    }
+
+    /**
+     * @psalm-pure
+     */
+    private static function isAnyArray(TArray|TKeyedArray $type): bool
+    {
+        return $type instanceof TArray
+            && $type->type_params[0]->isArrayKey()
+            && $type->type_params[1]->isMixed();
     }
 
     /**
@@ -640,6 +664,9 @@ final class Algebra
         }
 
         $clauses = [];
+        // operands with several clauses give the same clause for several pairs: an || chain of k such operands
+        // would otherwise grow to 2^k clauses
+        $clause_hashes = [];
 
         $all_wedges = true;
         $has_wedge = false;
@@ -716,7 +743,7 @@ final class Algebra
                     ? $right_clause->creating_conditional_id
                     : $conditional_object_id;
 
-                $clauses[] = new Clause(
+                $clause = new Clause(
                     $possibilities,
                     $creating_conditional_id,
                     $creating_conditional_id,
@@ -728,6 +755,11 @@ final class Algebra
                         || count($right_clauses) > 1,
                     [],
                 );
+
+                if (!isset($clause_hashes[$clause->hash])) {
+                    $clause_hashes[$clause->hash] = true;
+                    $clauses[] = $clause;
+                }
             }
         }
 
