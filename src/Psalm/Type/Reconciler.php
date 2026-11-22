@@ -1319,18 +1319,29 @@ class Reconciler
                 if (!isset($existing_keys[$new_base_key])) {
                     $new_base_type = null;
 
-                    // a variable holding one literal is that literal as a key
-                    $lookup_key = $array_key;
+                    // a variable holding literals is one of those literals as a key
+                    $lookup_keys = [$array_key];
 
                     if ($array_key[0] === '$' && isset($existing_keys[$array_key])) {
-                        if ($existing_keys[$array_key]->isSingleStringLiteral()) {
-                            $lookup_key = ExpressionIdentifier::quoteOffset(
-                                $existing_keys[$array_key]->getSingleStringLiteral()->value,
-                            );
-                        } elseif ($existing_keys[$array_key]->isSingleIntLiteral()) {
-                            $lookup_key = (string) $existing_keys[$array_key]->getSingleIntLiteral()->value;
+                        $literal_keys = [];
+
+                        foreach ($existing_keys[$array_key]->getAtomicTypes() as $key_atomic_type) {
+                            if ($key_atomic_type instanceof TLiteralString) {
+                                $literal_keys[] = ExpressionIdentifier::quoteOffset($key_atomic_type->value);
+                            } elseif ($key_atomic_type instanceof TLiteralInt) {
+                                $literal_keys[] = (string) $key_atomic_type->value;
+                            } else {
+                                $literal_keys = [];
+                                break;
+                            }
+                        }
+
+                        if ($literal_keys) {
+                            $lookup_keys = $literal_keys;
                         }
                     }
+
+                    $lookup_key = $lookup_keys[0];
 
                     $atomic_types = $existing_keys[$base_key]->getAtomicTypes();
 
@@ -1406,21 +1417,36 @@ class Reconciler
                             $new_base_type_candidate = $existing_key_type_part->getGenericValueType(true);
                         } else {
                             $array_properties = $existing_key_type_part->properties;
+                            $new_base_type_candidate = null;
 
-                            $key_parts_key = $lookup_key;
-                            if ($lookup_key[0] === '\'' || $lookup_key[0] === '"') {
-                                $key_parts_key = ExpressionIdentifier::unquoteOffset($lookup_key);
+                            foreach ($lookup_keys as $lookup_key) {
+                                $key_parts_key = $lookup_key;
+                                if ($lookup_key[0] === '\'' || $lookup_key[0] === '"') {
+                                    $key_parts_key = ExpressionIdentifier::unquoteOffset($lookup_key);
+                                }
+
+                                if (isset($array_properties[$key_parts_key])) {
+                                    $value_type = $array_properties[$key_parts_key];
+                                } elseif ($existing_key_type_part->fallback_params === null) {
+                                    // a sealed shape has nothing under a key it doesn't list
+                                    continue;
+                                } elseif (count($lookup_keys) === 1) {
+                                    $value_type = $existing_key_type_part->fallback_params[1]->setDifferent(true);
+                                } else {
+                                    // one of several keys the shape may not have is any of its values
+                                    $new_base_type_candidate = $existing_key_type_part->getGenericValueType(true);
+                                    break;
+                                }
+
+                                $new_base_type_candidate = Type::combineUnionTypes(
+                                    $new_base_type_candidate,
+                                    $value_type,
+                                    $codebase,
+                                );
                             }
 
-                            if (!isset($array_properties[$key_parts_key])) {
-                                if ($existing_key_type_part->fallback_params !== null) {
-                                    $new_base_type_candidate = $existing_key_type_part
-                                        ->fallback_params[1]->setDifferent(true);
-                                } else {
-                                    return null;
-                                }
-                            } else {
-                                $new_base_type_candidate = $array_properties[$key_parts_key];
+                            if ($new_base_type_candidate === null) {
+                                return null;
                             }
                         }
 

@@ -81,6 +81,42 @@ final class IssetTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'offsetUnderOneOfSeveralLiteralKeysIsTheValueOfThoseKeys' => [
+                'code' => '<?php
+                    function getUserIps(): string {
+                        $ips = [];
+                        foreach (["REMOTE_ADDR", "HTTP_X_FORWARDED_FOR", "HTTP_CLIENT_IP"] as $k) {
+                            if (isset($_SERVER[$k])) {
+                                $ips[] = $_SERVER[$k];
+                            }
+                        }
+
+                        return implode(", ", $ips);
+                    }
+
+                    /**
+                     * @param array{a?: non-empty-string, b?: non-empty-string, argv?: list<string>, ...<string, scalar>} $arr
+                     * @param "a"|"b" $k
+                     * @return non-empty-string
+                     */
+                    function setOne(array $arr, string $k): string {
+                        if (isset($arr[$k])) {
+                            return $arr[$k];
+                        }
+                        return "x";
+                    }
+
+                    /**
+                     * @param array{a: int, b: string} $arr
+                     * @param "a"|"c" $k
+                     */
+                    function sealed(array $arr, string $k): int {
+                        if (isset($arr[$k])) {
+                            return $arr[$k];
+                        }
+                        return 0;
+                    }',
+            ],
             'issetOnListOffsetDefinesTheOffsetsBeforeIt' => [
                 'code' => <<<'PHP'
                     <?php
