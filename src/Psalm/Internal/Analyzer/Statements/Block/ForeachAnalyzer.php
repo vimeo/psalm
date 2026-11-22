@@ -35,6 +35,7 @@ use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Scope\LoopScope;
 use Psalm\Internal\Type\AssertionReconciler;
 use Psalm\Internal\Type\Comparator\AtomicTypeComparator;
+use Psalm\Internal\Type\Comparator\TypeComparisonResult;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\PurityWildcardPaths;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
@@ -1655,6 +1656,8 @@ final class ForeachAnalyzer
                     );
 
                     if ($iterator_class_type) {
+                        $star_iterable = self::getStarIterable($codebase, $iterator_atomic_type);
+
                         foreach ($iterator_class_type->getAtomicTypes() as $array_atomic_type) {
                             $key_type_part = null;
                             $value_type_part = null;
@@ -1732,6 +1735,8 @@ final class ForeachAnalyzer
                             if (!$key_type_part || !$value_type_part) {
                                 break;
                             }
+
+                            self::readStarIterable($codebase, $star_iterable, $key_type_part, $value_type_part);
 
                             $key_type = Type::combineUnionTypes($key_type, $key_type_part);
                             $value_type = Type::combineUnionTypes($value_type, $value_type_part);
@@ -1867,6 +1872,74 @@ final class ForeachAnalyzer
                 return;
             }
         }
+    }
+
+    /**
+     * An invariant argument of what getIterator() returns may hold a new `*` with the bound of the
+     * iterator class's own template; the Traversable params of a `*` receiver keep its bound
+     */
+    private static function getStarIterable(Codebase $codebase, Atomic $receiver): ?TIterable
+    {
+        if (!$receiver instanceof TGenericObject
+            || !$receiver->hasStarProjection()
+            || !isset($codebase->classlike_storage_provider->get($receiver->value)
+                ->template_extended_params['Traversable'])
+        ) {
+            return null;
+        }
+
+        return $receiver->getIterable($codebase);
+    }
+
+    private static function readStarIterable(
+        Codebase $codebase,
+        ?TIterable $star_iterable,
+        Union &$key_type_part,
+        Union &$value_type_part,
+    ): void {
+        if ($star_iterable === null) {
+            return;
+        }
+
+        $key_type_part = self::readStarIterablePart($codebase, $key_type_part, $star_iterable->type_params[0]);
+        $value_type_part = self::readStarIterablePart($codebase, $value_type_part, $star_iterable->type_params[1]);
+    }
+
+    /**
+     * The receiver's declared read replaces the iterated part only when it is contained in it without
+     * coercion, so no element of the part is lost
+     */
+    private static function readStarIterablePart(Codebase $codebase, Union $part, Union $declared): Union
+    {
+        if ($declared->isMixed() || $part === $declared) {
+            return $part;
+        }
+
+        $comparison_result = new TypeComparisonResult();
+
+        if (!UnionTypeComparator::isContainedBy(
+            $codebase,
+            $declared,
+            $part,
+            false,
+            false,
+            $comparison_result,
+            false,
+            false,
+        )
+            || $comparison_result->type_coerced
+            || $comparison_result->type_coerced_from_mixed
+            || $comparison_result->type_coerced_from_as_mixed
+            || $comparison_result->type_coerced_from_scalar
+            || $comparison_result->to_string_cast
+            || $comparison_result->callable_by_reference_mismatch
+            || $comparison_result->type_variable_lower_bounds
+            || $comparison_result->type_variable_upper_bounds
+        ) {
+            return $part;
+        }
+
+        return $declared->addParentNodes($part->parent_nodes);
     }
 
     /**
