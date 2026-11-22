@@ -367,6 +367,42 @@ final class PropertyTypeTest extends TestCase
         $this->analyzeFile('somefile.php', new Context());
     }
 
+    public function testForgetReadonlyPropertyOfAGlobalACallMayReplace(): void
+    {
+        Config::getInstance()->remember_property_assignments_after_call = false;
+        $this->project_analyzer->setPhpVersion('8.1', 'tests');
+
+        $this->expectExceptionMessage('NullableReturnStatement - somefile.php:18:32');
+        $this->expectException(CodeException::class);
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                final class Num {
+                    public function __construct(public readonly ?int $n) {}
+                }
+
+                /** @var Num $num */
+                $num = new Num(1);
+
+                function replace(): void {
+                    global $num;
+                    $num = new Num(null);
+                }
+
+                function read(): int {
+                    global $num;
+                    if ($num->n !== null) {
+                        replace();
+                        return $num->n;
+                    }
+                    return 0;
+                }',
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
     public function testForgetReadonlyPropertyWithPrivateMutationAfterCall(): void
     {
         Config::getInstance()->remember_property_assignments_after_call = false;
