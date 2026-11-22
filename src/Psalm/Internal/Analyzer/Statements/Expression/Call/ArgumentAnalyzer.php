@@ -1081,7 +1081,7 @@ final class ArgumentAnalyzer
             );
         }
 
-        $bound_input_type = $input_type;
+        $input_type_is_bound = $input_type !== $unbound_input_type;
 
         if ($input_type->hasMixed()) {
             if (!$context->collect_initializations
@@ -1131,7 +1131,7 @@ final class ArgumentAnalyzer
                 ) {
                     self::coerceValueAfterGatekeeperArgument(
                         $statements_analyzer,
-                        $input_type === $bound_input_type ? $unbound_input_type : $input_type,
+                        $input_type_is_bound ? $unbound_input_type : $input_type,
                         false,
                         $input_expr,
                         $param_type,
@@ -1727,7 +1727,7 @@ final class ArgumentAnalyzer
             // the variable keeps its type in the trait's terms, only the check uses the bound one
             self::coerceValueAfterGatekeeperArgument(
                 $statements_analyzer,
-                $input_type === $bound_input_type ? $unbound_input_type : $input_type,
+                $input_type_is_bound && !$replace_input_type ? $unbound_input_type : $input_type,
                 $replace_input_type,
                 $input_expr,
                 $param_type,

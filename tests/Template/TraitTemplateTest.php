@@ -23,6 +23,45 @@ final class TraitTemplateTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'argumentRebuiltForACallableParamKeepsTheTraitTemplateInTheScope' => [
+                'code' => '<?php
+                    function takesCallable(callable $c): void {
+                        $c();
+                    }
+
+                    /** @template T of callable */
+                    trait Leak {
+                        /** @param T $x */
+                        public function h($x): void {
+                            takesCallable($x);
+                            if ($x instanceof Closure) {
+                                echo "closure";
+                            }
+                        }
+                    }
+
+                    final class LeakClosure {
+                        /** @use Leak<Closure> */
+                        use Leak;
+                    }
+
+                    /** @template T */
+                    trait Leak2 {
+                        /** @param T $x */
+                        public function h2($x): string {
+                            takesCallable($x);
+                            if (is_string($x)) {
+                                return $x;
+                            }
+                            return "o";
+                        }
+                    }
+
+                    final class LeakStr {
+                        /** @use Leak2<callable-string> */
+                        use Leak2;
+                    }',
+            ],
             'traitMethodParamIsTheTypeGivenToUse' => [
                 'code' => '<?php
                     /** @template T of object */
