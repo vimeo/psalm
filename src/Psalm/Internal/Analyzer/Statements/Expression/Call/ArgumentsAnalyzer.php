@@ -169,6 +169,7 @@ final class ArgumentsAnalyzer
             );
 
             foreach ($written_var_ids as $var_id => $_) {
+                $context->releaseKeysBoundToList($var_id);
                 $context->removeVarFromConflictingClauses(
                     $var_id,
                     $context->vars_in_scope[$var_id] ?? null,
@@ -2711,7 +2712,8 @@ final class ArgumentsAnalyzer
         );
 
         if (!$template_types) {
-            return null;
+            // the parameters are still written to through a `*`
+            return $template_result !== null && $template_result->star_bindings !== [] ? $template_result : null;
         }
 
         if (!$template_result) {

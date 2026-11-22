@@ -3,7 +3,7 @@
 Emitted when `--find-dead-code` is turned on and Psalm cannot find any references to a variable, once instantiated
 
 ```php
-<?php
+<?php // findUnusedCode="true"
 
 function foo() : void {
     $a = 5;
@@ -24,7 +24,7 @@ $_a = 22;
 If the variable contains an object with an impure destructor, the issue is not emitted, to allow for patterns used for example in timers or mutexes:
 
 ```php
-<?php
+<?php // findUnusedVariablesAndParams="true"
 
 class Timer {
     private readonly float $start;
@@ -54,7 +54,7 @@ foo();
 
 $var = [new Timer('bad')];
 
-// UnusedVariable: The issue will still be emitted even if the destructor is impure for variables used as foreach variables.
+// UnusedForeachValue: The issue is still emitted for foreach variables, even if the destructor is impure.
 foreach ($var as $timer) {
 
 }

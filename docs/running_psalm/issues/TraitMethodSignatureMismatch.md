@@ -3,7 +3,7 @@
 Emitted when a method's signature or return type differs from corresponding trait-defined method
 
 ```php
-<?php
+<?php // phpVersion="7.4"
 
 trait T {
     abstract public function foo(int $i);
