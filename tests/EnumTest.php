@@ -1381,7 +1381,7 @@ final class EnumTest extends TestCase
             'enumCaseValueFromAnUndefinedConstantIsInvalid' => [
                 'code' => <<<'PHP'
                     <?php
-
+                    
 
                     enum Flag: string {
                         case On = NOT_DEFINED;
