@@ -4983,6 +4983,70 @@ final class ArrayFunctionCallTest extends TestCase
                     '$merged===' => "array<'age'|'name', 'a'|'b'|1>",
                 ],
             ],
+            'arrayFunctionsOfAnInvokableLaterInIntersection' => [
+                'code' => '<?php
+                    interface Named {}
+                    class StringHandlerClass { public function __invoke(string $value): int { return 1; } }
+
+                    /** @var list<string> $xs */
+                    $xs = [];
+                    /** @var Named&StringHandlerClass $class */
+                    $class = null;
+                    array_map($class, $xs);
+                    array_walk($xs, $class);
+                    $filtered = array_filter($xs, $class);',
+                'assertions' => [
+                    '$filtered===' => 'array<int<0, max>, string>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'arrayMapOfAnInvokableObject' => [
+                'code' => '<?php
+                    final class IsLong {
+                        public function __invoke(string $value): bool { return strlen($value) > 3; }
+                    }
+
+                    final class Notify {
+                        public function __invoke(string $value): void {}
+                    }
+
+                    /** @template T */
+                    final class Box {
+                        /** @param T $value */
+                        public function __construct(private mixed $value) {}
+
+                        /** @return T */
+                        public function __invoke(string $key): mixed { return $this->value; }
+                    }
+
+                    final class Identity {
+                        /**
+                         * @template T
+                         * @param T $value
+                         * @return T
+                         */
+                        public function __invoke(mixed $value): mixed { return $value; }
+                    }
+
+                    /** @var list<string> $xs */
+                    $xs = [];
+                    /** @var Box<int> $box */
+                    $box = new Box(1);
+
+                    $long = array_map(new IsLong(), $xs);
+                    $notified = array_map(new Notify(), $xs);
+                    $boxed = array_map($box, $xs);
+                    $same = array_map(new Identity(), $xs);',
+                'assertions' => [
+                    '$long===' => 'list<bool>',
+                    '$notified===' => 'list<null>',
+                    '$boxed===' => 'list<int>',
+                    '$same===' => 'list<mixed>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
         ];
     }
 
@@ -5838,6 +5902,19 @@ final class ArrayFunctionCallTest extends TestCase
                         return !array_key_exists("a", $a);
                     }',
                 'error_message' => 'InvalidArrayOffset - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:50 - Cannot check offset',
+            ],
+            'arrayFilterWithAnInvokableLaterInIntersectionWithAWrongParamType' => [
+                'code' => '<?php
+                    interface Named {}
+                    class StringHandler { public function __invoke(string $value): int { return 1; } }
+
+                    /** @param list<int> $xs */
+                    function f(Named&StringHandler $h, array $xs): void {
+                        array_filter($xs, $h);
+                    }',
+                'error_message' => 'InvalidScalarArgument',
+                'error_levels' => [],
+                'php_version' => '8.1',
             ],
         ];
     }
