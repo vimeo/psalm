@@ -3473,6 +3473,38 @@ final class MethodCallTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'overrideDocumentingSomeParamsBindsTheTemplatesOfTheOthers' => [
+                'code' => <<<'PHP'
+                    <?php
+                    abstract class Base
+                    {
+                        /**
+                         * @template T
+                         * @param T $value
+                         * @param string $label
+                         * @return T
+                         */
+                        abstract public function keep($value, $label);
+                    }
+
+                    final class Partial extends Base
+                    {
+                        /**
+                         * @param string $label
+                         */
+                        #[\Override]
+                        public function keep($value, $label)
+                        {
+                            return $value;
+                        }
+                    }
+
+                    function f(Partial $p): int
+                    {
+                        return $p->keep(3, "x");
+                    }
+                PHP,
+            ],
             'overrideOfAMethodWithATemplateWithoutDocblock' => [
                 'code' => <<<'PHP'
                     <?php
