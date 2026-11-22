@@ -17,6 +17,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\IntMaskComparisonAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\PhpDeprecations;
+use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\PhpVisitor\ConditionCloningVisitor;
 use Psalm\Internal\PhpVisitor\TypeMappingVisitor;
 use Psalm\Internal\Scope\CaseScope;
@@ -42,12 +43,16 @@ use Psalm\Type;
 use Psalm\Type\Atomic\TDependentGetClass;
 use Psalm\Type\Atomic\TDependentGetDebugType;
 use Psalm\Type\Atomic\TDependentGetType;
+use Psalm\Type\Atomic\TLiteralFloat;
+use Psalm\Type\Atomic\TLiteralInt;
+use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Reconciler;
 
 use function array_diff_key;
 use function array_intersect;
 use function array_intersect_key;
 use function array_merge;
+use function array_slice;
 use function count;
 use function in_array;
 use function is_string;
@@ -411,6 +416,8 @@ final class SwitchCaseAnalyzer
 
             $switch_scope->negated_clauses = [...$switch_scope->negated_clauses, ...$negated_case_clauses];
         }
+
+        $case_stmts = self::withoutInertFallThroughCheck($statements_analyzer, $case_context, $case, $case_stmts);
 
         $statements_analyzer->analyze($case_stmts, $case_context);
 
@@ -847,5 +854,130 @@ final class SwitchCaseAnalyzer
                 $statements_analyzer->getSuppressedIssues(),
             );
         }
+    }
+
+    /**
+     * The cases that fall through to a case with statements are only checked, in an `if` with an empty body put ahead
+     * of those statements, over the `||` chain of their comparisons with the switch condition. The analysis of that
+     * chain costs time cubic in the number of cases.
+     *
+     * The check is removed when it reports and changes nothing: every case of the group, the one with the statements
+     * included, compares a variable with `===` and a literal; the variable is defined, its type in the case holds each
+     * of the distinct literals, so that no comparison is impossible, and none redundant, as the literal of the case
+     * itself is left in the type when the others are excluded; and no clause about it is left in the context.
+     *
+     * What remains of the check is done here: it reads the variable.
+     *
+     * @param array<PhpParser\Node\Stmt> $case_stmts
+     * @return array<PhpParser\Node\Stmt>
+     */
+    private static function withoutInertFallThroughCheck(
+        StatementsAnalyzer $statements_analyzer,
+        Context $case_context,
+        PhpParser\Node\Stmt\Case_ $case,
+        array $case_stmts,
+    ): array {
+        $fall_through_if = $case_stmts[0] ?? null;
+
+        // only a switch builds such a statement; a `default` is compared with `rand()`
+        if (!$fall_through_if instanceof VirtualIf
+            || $fall_through_if->stmts !== []
+            || !$case->cond
+            || !($case_literal = self::getLiteralAtomic($case->cond))
+        ) {
+            return $case_stmts;
+        }
+
+        $literals = [$case_literal];
+        $var_name = null;
+        $expr = $fall_through_if->cond;
+
+        do {
+            $comparison = $expr instanceof PhpParser\Node\Expr\BinaryOp\BooleanOr ? $expr->right : $expr;
+
+            // a `VirtualVariable` stands for a condition that is not a variable
+            if (!$comparison instanceof PhpParser\Node\Expr\BinaryOp\Identical
+                || !$comparison->left instanceof PhpParser\Node\Expr\Variable
+                || $comparison->left instanceof VirtualVariable
+                || !is_string($comparison->left->name)
+                || ($var_name !== null && $comparison->left->name !== $var_name)
+                || !($literal = self::getLiteralAtomic($comparison->right))
+            ) {
+                return $case_stmts;
+            }
+
+            $var_name = $comparison->left->name;
+            $literals[] = $literal;
+            $expr = $expr instanceof PhpParser\Node\Expr\BinaryOp\BooleanOr ? $expr->left : null;
+        } while ($expr !== null);
+
+        $var_id = '$' . $var_name;
+        $var_type = $case_context->vars_in_scope[$var_id] ?? null;
+        $graph = $statements_analyzer->data_flow_graph;
+
+        if ($var_type === null
+            || $var_type->possibly_undefined
+            || $var_type->possibly_undefined_from_try
+            || !isset($case_context->vars_possibly_in_scope[$var_id])
+            // the variable is read where a node of the data flow is created for it, and its nodes are used
+            || ($graph && !$var_type->parent_nodes)
+            // the language server stores the type of every node
+            || $statements_analyzer->getCodebase()->store_node_types
+            // a variable bound by reference: what it is bound to is narrowed with it
+            || isset($case_context->references_in_scope[$var_id])
+            || isset($case_context->references_to_external_scope[$var_id])
+            || in_array($var_id, $case_context->references_in_scope, true)
+        ) {
+            return $case_stmts;
+        }
+
+        $var_atomic_types = $var_type->getAtomicTypes();
+        $seen = [];
+
+        foreach ($literals as $literal) {
+            $key = $literal->getKey();
+
+            if (isset($seen[$key]) || !isset($var_atomic_types[$key])) {
+                return $case_stmts;
+            }
+
+            $seen[$key] = true;
+        }
+
+        // a clause about the variable that is still there, which happens when the case did not narrow it, is read by
+        // the check together with its own: not all it adds to the context is known here
+        foreach ($case_context->clauses as $clause) {
+            if (isset($clause->possibilities[$var_id])) {
+                return $case_stmts;
+            }
+        }
+
+        if ($graph) {
+            foreach ($var_type->parent_nodes as $parent_node) {
+                $graph->addPath($parent_node, DataFlowNode::getForVariableUse(), 'use-inside-conditional');
+            }
+        }
+
+        return array_slice($case_stmts, 1);
+    }
+
+    private static function getLiteralAtomic(PhpParser\Node\Expr $expr): TLiteralString|TLiteralInt|TLiteralFloat|null
+    {
+        if ($expr instanceof PhpParser\Node\Scalar\String_) {
+            // as `ExpressionAnalyzer` types a string, which a plugin may interpret or the limit on its length change
+            $atomic = Type::getAtomicStringFromLiteral($expr->value);
+
+            return $atomic::class === TLiteralString::class ? $atomic : null;
+        }
+
+        if ($expr instanceof PhpParser\Node\Scalar\Int_) {
+            return new TLiteralInt($expr->value);
+        }
+
+        if ($expr instanceof PhpParser\Node\Scalar\Float_) {
+            return new TLiteralFloat($expr->value);
+        }
+
+        return null;
     }
 }

@@ -5,12 +5,17 @@ declare(strict_types=1);
 namespace Psalm\Tests;
 
 use Override;
+use PHPUnit\Framework\Attributes\DataProvider;
+use Psalm\Config;
 use Psalm\Context;
 use Psalm\IssueBuffer;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
 use function array_column;
+use function str_ends_with;
+use function str_repeat;
+use function substr;
 
 use const DIRECTORY_SEPARATOR;
 
@@ -52,6 +57,245 @@ final class SwitchTypeTest extends TestCase
             ['ParadoxicalCondition'],
             array_column(IssueBuffer::getIssuesDataForFile($file_path), 'type'),
         );
+    }
+
+    /**
+     * A group of cases falling through to a case with statements is not checked as an `if` when the check cannot
+     * report anything: this is what the language server and the other modes that store the type of every node do not
+     * do, so the analysis here is the one of the plain run.
+     *
+     * @param list<string> $expected_issues the type and the line of each issue
+     * @param array<string, string> $assertions
+     * @param list<string> $ignored_issues
+     */
+    #[DataProvider('providerFallThroughGroups')]
+    public function testFallThroughGroups(
+        string $code,
+        array $expected_issues = [],
+        array $assertions = [],
+        array $ignored_issues = [],
+    ): void {
+        $config = $this->project_analyzer->getConfig();
+        $config->throw_exception = false;
+
+        foreach ($ignored_issues as $issue_name) {
+            $config->setCustomErrorLevel($issue_name, Config::REPORT_SUPPRESS);
+        }
+
+        $this->project_analyzer->setPhpVersion('8.1', 'tests');
+
+        $file_path = self::$src_dir_path . 'somefile.php';
+        $this->addFile($file_path, $code);
+
+        $context = new Context();
+        $this->analyzeFile($file_path, $context, false);
+
+        $issues = [];
+
+        foreach (IssueBuffer::getIssuesDataForFile($file_path) as $issue) {
+            $issues[] = $issue->type . ':' . $issue->line_from;
+        }
+
+        self::assertSame($expected_issues, $issues);
+
+        $actual_vars = [];
+
+        foreach ($assertions as $var => $_) {
+            $exact = str_ends_with($var, '===');
+            $var_id = $exact ? substr($var, 0, -3) : $var;
+
+            if (isset($context->vars_in_scope[$var_id])) {
+                $actual_vars[$var] = $context->vars_in_scope[$var_id]->getId($exact);
+            }
+        }
+
+        self::assertSame($assertions, $actual_vars);
+    }
+
+    public function testFallThroughGroupKeepsTheTypesOfTheNodesTheLanguageServerStores(): void
+    {
+        $codebase = $this->project_analyzer->getCodebase();
+        $codebase->store_node_types = true;
+        $this->project_analyzer->getConfig()->throw_exception = false;
+        $this->project_analyzer->setPhpVersion('8.1', 'tests');
+
+        $file_path = self::$src_dir_path . 'somefile.php';
+        $this->addFile(
+            $file_path,
+            '<?php
+                function f(string $a): int {
+                    switch ($a) {
+                        case "b":
+                        case "c":
+                            return 1;
+                    }
+                    return 0;
+                }',
+        );
+
+        $this->analyzeFile($file_path, new Context(), false);
+
+        [$type_map] = $codebase->analyzer->getMapsForFile($file_path);
+
+        // the subject has the type the last check of its group left it
+        self::assertSame(
+            [
+                45 => [48, 'int'],
+                79 => [81, "40-41:'b'|'c'"],
+            ],
+            $type_map,
+        );
+    }
+
+    /**
+     * @return iterable<
+     *     string,
+     *     array{
+     *         code: string,
+     *         expected_issues?: list<string>,
+     *         assertions?: array<string, string>,
+     *         ignored_issues?: list<string>,
+     *     }
+     * >
+     */
+    public static function providerFallThroughGroups(): iterable
+    {
+        return [
+            'distinctLiterals' => [
+                'code' => '<?php
+                    function s(): string {
+                        return rand(0, 1) ? "a" : "x";
+                    }
+                    $a = s();
+                    switch ($a) {
+                        case "a":
+                        case "b":
+                        case "c":
+                            $in = $a;
+                            break;
+                        default:
+                            $in = null;
+                    }',
+                'assertions' => [
+                    '$in===' => "'a'|'b'|'c'|null",
+                ],
+            ],
+            'stringCaseTooLongToBeALiteral' => [
+                'code' => '<?php
+                    function f(string $s): int {
+                        switch ($s) {
+                            case "a":
+                            case "b":
+                            case "' . str_repeat('x', 1100) . '":
+                                return 1;
+                        }
+                        return 0;
+                    }',
+            ],
+            'looseComparisonsInAGroupOfAMixedKindSubject' => [
+                'code' => '<?php
+                    function a(): int|string {
+                        return rand(0, 1) ? 1 : "a";
+                    }
+                    $x = a();
+                    switch ($x) {
+                        case 1:
+                        case "1":
+                        case "a":
+                            $in = $x;
+                            break;
+                        default:
+                            $in = null;
+                    }',
+                'assertions' => [
+                    '$in===' => "'1'|'a'|null",
+                ],
+            ],
+            'duplicateCase' => [
+                'code' => '<?php
+                    function f(string $a): int {
+                        switch ($a) {
+                            case "a":
+                            case "b":
+                            case "a":
+                            case "c":
+                                return 1;
+                        }
+                        return 0;
+                    }',
+                'expected_issues' => ['TypeDoesNotContainType:6', 'TypeDoesNotContainType:6'],
+            ],
+            'lastCaseRepeatsAFallThroughCase' => [
+                'code' => '<?php
+                    function f(string $a): int {
+                        switch ($a) {
+                            case "a":
+                            case "b":
+                            case "a":
+                                return 1;
+                        }
+                        return 0;
+                    }',
+                'expected_issues' => ['RedundantCondition:5'],
+            ],
+            'impossibleCase' => [
+                'code' => '<?php
+                    /** @param "a"|"c"|"d" $a */
+                    function f(string $a): int {
+                        switch ($a) {
+                            case "a":
+                            case "b":
+                            case "c":
+                                return 1;
+                        }
+                        return 0;
+                    }',
+                'expected_issues' => ['DocblockTypeContradiction:6', 'DocblockTypeContradiction:6'],
+            ],
+            'impossibleLastCase' => [
+                'code' => '<?php
+                    /** @param "a"|"b"|"d" $a */
+                    function f(string $a): int {
+                        switch ($a) {
+                            case "a":
+                            case "b":
+                            case "c":
+                                return 1;
+                        }
+                        return 0;
+                    }',
+                'expected_issues' => ['RedundantConditionGivenDocblockType:6'],
+            ],
+            'caseRepeatsAnEarlierGroup' => [
+                'code' => '<?php
+                    function f(string $a): int {
+                        switch ($a) {
+                            case "a":
+                                return 2;
+                            case "b":
+                            case "a":
+                            case "c":
+                                return 1;
+                        }
+                        return 0;
+                    }',
+                'expected_issues' => ['TypeDoesNotContainType:7', 'TypeDoesNotContainType:7'],
+            ],
+            'caseWithStatementsIsAnalysed' => [
+                'code' => '<?php
+                    function f(string $a): int {
+                        switch ($a) {
+                            case "a":
+                                undefined_function();
+                            case "b":
+                            case "c":
+                                return 1;
+                        }
+                        return 0;
+                    }',
+                'expected_issues' => ['UndefinedFunction:5'],
+            ],
+        ];
     }
 
     /**
