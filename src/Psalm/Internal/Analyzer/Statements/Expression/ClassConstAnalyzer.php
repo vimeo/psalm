@@ -161,23 +161,22 @@ final class ClassConstAnalyzer
                     $statements_analyzer->getAliases(),
                 );
 
-                if ($stmt->name instanceof PhpParser\Node\Identifier) {
-                    if ((!$context->inside_class_exists || $stmt->name->name !== 'class')
-                        && !isset($context->phantom_classes[strtolower($fq_class_name)])
-                        // PHP allows the name of a class that is missing, such as in the message about it
-                        && ($stmt->name->name !== 'class'
-                            || !isset($context->negated_phantom_classes[strtolower($fq_class_name)]))
-                    ) {
-                        if (ClassLikeAnalyzer::checkFullyQualifiedClassLikeName(
-                            $statements_analyzer,
-                            $fq_class_name,
-                            new CodeLocation($statements_analyzer->getSource(), $stmt->class),
-                            $context,
-                            $statements_analyzer->getSuppressedIssues(),
-                            new ClassLikeNameOptions(false, true, context: $context),
-                        ) === false) {
-                            return true;
-                        }
+                $is_class_name = $stmt->name instanceof PhpParser\Node\Identifier && $stmt->name->name === 'class';
+
+                if ((!$context->inside_class_exists || !$is_class_name)
+                    && !isset($context->phantom_classes[strtolower($fq_class_name)])
+                    // PHP allows the name of a class that is missing, such as in the message about it
+                    && (!$is_class_name || !isset($context->negated_phantom_classes[strtolower($fq_class_name)]))
+                ) {
+                    if (ClassLikeAnalyzer::checkFullyQualifiedClassLikeName(
+                        $statements_analyzer,
+                        $fq_class_name,
+                        new CodeLocation($statements_analyzer->getSource(), $stmt->class),
+                        $context,
+                        $statements_analyzer->getSuppressedIssues(),
+                        new ClassLikeNameOptions(false, true, context: $context),
+                    ) === false) {
+                        return true;
                     }
                 }
             }
@@ -269,7 +268,16 @@ final class ClassConstAnalyzer
 
                 $context->inside_general_use = $was_inside_general_use;
 
-                return $ret;
+                return $ret && self::analyzeLiteralNamedFetch(
+                    $statements_analyzer,
+                    $stmt,
+                    $stmt->name,
+                    $context,
+                    $fq_class_name,
+                    $moved_class,
+                    $first_part_lc === 'static',
+                    $first_part_lc === 'static',
+                );
             }
 
             return self::analyzeIdentifiedFetch(
@@ -383,11 +391,13 @@ final class ClassConstAnalyzer
         if ($stmt->class instanceof PhpParser\Node\Expr\Variable) {
             $fq_class_name = null;
             $lhs_type_definite_class = null;
+            $lhs_is_static = false;
             if ($lhs_type->isSingle()) {
                 $atomic_type = $lhs_type->getSingleAtomic();
                 if ($atomic_type instanceof TNamedObject || $atomic_type instanceof TLiteralClassString) {
                     $fq_class_name = $atomic_type->value;
                     $lhs_type_definite_class = $atomic_type->definite_class;
+                    $lhs_is_static = $atomic_type instanceof TNamedObject && $atomic_type->is_static;
                 } elseif ($atomic_type::class === TLiteralString::class
                     && $codebase->config->allow_string_standin_for_class
                 ) {
@@ -433,7 +443,16 @@ final class ClassConstAnalyzer
             }
 
             if (!$stmt->name instanceof PhpParser\Node\Identifier) {
-                return true;
+                return self::analyzeLiteralNamedFetch(
+                    $statements_analyzer,
+                    $stmt,
+                    $stmt->name,
+                    $context,
+                    $fq_class_name,
+                    $moved_class,
+                    !$lhs_type_definite_class,
+                    $lhs_is_static,
+                );
             }
 
             return self::analyzeIdentifiedFetch(
@@ -446,6 +465,91 @@ final class ClassConstAnalyzer
                 !$lhs_type_definite_class,
             );
         }
+
+        return true;
+    }
+
+    /**
+     * Analyses `Foo::{$name}` (PHP 8.3) like `Foo::NAME` when `$name` holds literal names
+     *
+     * @param bool $may_be_a_subclass whether the constant read may be the one of a subclass of $fq_class_name
+     * @param bool $is_static whether the class is `static`, as in `static::{$name}` or `$this::{$name}`
+     */
+    private static function analyzeLiteralNamedFetch(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr\ClassConstFetch $stmt,
+        PhpParser\Node\Expr $name,
+        Context $context,
+        string $fq_class_name,
+        bool $moved_class,
+        bool $may_be_a_subclass,
+        bool $is_static,
+    ): bool {
+        $name_type = $statements_analyzer->node_data->getType($name);
+
+        if ($name_type === null || !$name_type->allStringLiterals()) {
+            return true;
+        }
+
+        $const_types = [];
+
+        foreach ($name_type->getAtomicTypes() as $atomic) {
+            if (!$atomic instanceof TLiteralString) {
+                return true;
+            }
+
+            // `Foo::{'class'}` is `Foo::class`
+            if (strtolower($atomic->value) === 'class') {
+                $const_types[] = new Union([
+                    $may_be_a_subclass
+                        ? new TClassString($fq_class_name, new TNamedObject($fq_class_name, $is_static))
+                        : new TLiteralClassString($fq_class_name, true),
+                ]);
+
+                continue;
+            }
+
+            if ($atomic->value === '') {
+                IssueBuffer::maybeAdd(
+                    new UndefinedConstant(
+                        'Constant ' . $fq_class_name . ':: is not defined',
+                        new CodeLocation($statements_analyzer->getSource(), $stmt),
+                    ),
+                    $statements_analyzer->getSuppressedIssues(),
+                );
+
+                return true;
+            }
+
+            // a fetch of its own for each name, so that an undefined one leaves its fetch without a type
+            $identifier = new PhpParser\Node\Identifier($atomic->value, $name->getAttributes());
+            $fetch = new PhpParser\Node\Expr\ClassConstFetch($stmt->class, $identifier, $stmt->getAttributes());
+
+            if (!self::analyzeIdentifiedFetch(
+                $statements_analyzer,
+                $fetch,
+                $identifier,
+                $context,
+                $fq_class_name,
+                $moved_class,
+                $may_be_a_subclass,
+            )) {
+                return false;
+            }
+
+            $const_type = $statements_analyzer->node_data->getType($fetch);
+
+            if ($const_type === null) {
+                return true;
+            }
+
+            $const_types[] = $const_type;
+        }
+
+        $statements_analyzer->node_data->setType(
+            $stmt,
+            Type::combineUnionTypeArray($const_types, $statements_analyzer->getCodebase()),
+        );
 
         return true;
     }
@@ -813,6 +917,8 @@ final class ClassConstAnalyzer
                     ? $parent_const_storage->signature_type
                     : $parent_const_storage->type;
 
+                $reported_type = false;
+
                 // Check covariance
                 if ($const_storage->type !== null
                     && $parent_type !== null
@@ -853,6 +959,35 @@ final class ClassConstAnalyzer
                             $const_storage->suppressed_issues,
                         );
                     }
+
+                    $reported_type = true;
+                }
+
+                // PHP requires an override of a natively typed constant to declare a native type the parent's contains
+                $parent_signature_type = $parent_const_storage->signature_type;
+                if (!$reported_type
+                    && $parent_signature_type !== null
+                    && $parent_const_storage !== $const_storage
+                    && ($const_storage->signature_type === null
+                        || !UnionTypeComparator::isContainedBy(
+                            $codebase,
+                            $const_storage->signature_type,
+                            $parent_signature_type,
+                        ))
+                ) {
+                    IssueBuffer::maybeAdd(
+                        new InvalidClassConstantType(
+                            ($const_storage->signature_type === null
+                                ? "{$class_storage->name}::{$const_name} must declare a native type contained in"
+                                : "The native type \"{$const_storage->signature_type->getId()}\" of "
+                                    . "{$class_storage->name}::{$const_name} is not contained in")
+                                . " the native type \"{$parent_signature_type->getId()}\" of "
+                                . "{$parent_classlike_storage->name}::{$const_name}",
+                            $type_location,
+                            "{$class_storage->name}::{$const_name}",
+                        ),
+                        $const_storage->suppressed_issues,
+                    );
                 }
 
                 // Check overridden final

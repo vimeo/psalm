@@ -1015,10 +1015,16 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
         if ($this->function instanceof Closure
             || $this->function instanceof ArrowFunction
         ) {
+            $closure_declared_return_type = ClassAnalyzer::localizeClosureReturnType(
+                $codebase,
+                $storage->return_type,
+                $context,
+            );
+
             $this->verifyReturnType(
                 $function_stmts,
                 $statements_analyzer,
-                $storage->return_type,
+                $closure_declared_return_type,
                 $this->source->getFQCLN(),
                 $storage->return_type_location,
                 $context->has_returned,
@@ -1821,7 +1827,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 new VirtualPropertyFetch(
                     new VirtualVariable('this', $attributes),
                     new VirtualIdentifier($name, $attributes),
-                    $attributes,
+                    ['promoted_parameter' => true] + $attributes,
                 ),
                 $name,
                 new VirtualVariable($name, $var->getAttributes()),
@@ -3382,6 +3388,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 callable_id: $this->getClosureId(),
                 byref_use_scopes: ClosureAnalyzer::getByRefUseScopes($this->source, $byref_uses),
             );
+            $this->closure_type = $closure_type;
 
             $type_provider->setType(
                 $this->function,

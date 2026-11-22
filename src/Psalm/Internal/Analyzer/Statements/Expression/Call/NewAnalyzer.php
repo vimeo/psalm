@@ -55,7 +55,6 @@ use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Storage\Capabilities;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\MethodStorage;
-use Psalm\Storage\Possibilities;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TAnonymousClassInstance;
@@ -763,40 +762,6 @@ final class NewAnalyzer extends CallAnalyzer
                     $method_id,
                     $template_result,
                 );
-
-                if ($method_storage->if_true_assertions) {
-                    $statements_analyzer->node_data->setIfTrueAssertions(
-                        $stmt,
-                        array_map(
-                            static fn(Possibilities $assertion): Possibilities
-                                => $assertion->getUntemplatedCopy($template_result, null, $codebase),
-                            self::getAssertionsOnArgs(
-                                $method_storage->if_true_assertions,
-                                $method_storage,
-                                $stmt->getArgs(),
-                                $statements_analyzer->node_data,
-                                $context->strict_types,
-                            ),
-                        ),
-                    );
-                }
-
-                if ($method_storage->if_false_assertions) {
-                    $statements_analyzer->node_data->setIfFalseAssertions(
-                        $stmt,
-                        array_map(
-                            static fn(Possibilities $assertion): Possibilities
-                                => $assertion->getUntemplatedCopy($template_result, null, $codebase),
-                            self::getAssertionsOnArgs(
-                                $method_storage->if_false_assertions,
-                                $method_storage,
-                                $stmt->getArgs(),
-                                $statements_analyzer->node_data,
-                                $context->strict_types,
-                            ),
-                        ),
-                    );
-                }
             }
 
             $generic_param_types = null;

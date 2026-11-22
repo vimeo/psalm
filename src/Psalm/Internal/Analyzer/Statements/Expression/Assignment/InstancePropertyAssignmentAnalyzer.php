@@ -1733,7 +1733,8 @@ final class InstancePropertyAssignmentAnalyzer
 
         $property_storage = $declaring_class_storage->properties[$prop_name] ?? null;
         if ($property_storage !== null) {
-            if ($property_storage->deprecated) {
+            // a promoted property is initialized from its own parameter, which is not a use of it
+            if ($property_storage->deprecated && $stmt->getAttribute('promoted_parameter') !== true) {
                 IssueBuffer::maybeAdd(
                     new DeprecatedProperty(
                         $property_id . ' is marked deprecated',
@@ -1842,6 +1843,7 @@ final class InstancePropertyAssignmentAnalyzer
                     $localizing_type_part,
                     $class_storage,
                     $declaring_class_storage,
+                    true,
                 );
             }
 
@@ -1904,6 +1906,7 @@ final class InstancePropertyAssignmentAnalyzer
                     $lhs_type_part,
                     $codebase->classlike_storage_provider->get($fq_class_name),
                     $declaring_class_storage,
+                    null,
                 );
             }
         }

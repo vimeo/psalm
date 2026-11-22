@@ -200,10 +200,10 @@ final class FunctionCallAnalyzer extends CallAnalyzer
             && isset($args[0])
             && !$args[0]->unpack
         ) {
-            $original_function_id = implode('\\', $function_name->getParts());
+            $original_function_id = strtolower(implode('\\', $function_name->getParts()));
 
             // PHP 8.5 clone(...) form: parsed as a FuncCall, not Clone_, so route it in.
-            if (strtolower($original_function_id) === 'clone') {
+            if ($original_function_id === 'clone') {
                 return CloneAnalyzer::analyzeFuncCall($statements_analyzer, $stmt, $context);
             }
 
@@ -367,7 +367,10 @@ final class FunctionCallAnalyzer extends CallAnalyzer
             && $function_name instanceof PhpParser\Node\Name
             && $function_call_info->function_id
         ) {
-            if (!$function_call_info->is_stubbed && $function_call_info->in_call_map) {
+            // a stub that declares no return type keeps the callmap's
+            if ($function_call_info->in_call_map
+                && (!$function_call_info->is_stubbed || !$function_call_info->function_storage?->return_type)
+            ) {
                 $function_callable = InternalCallMapHandler::getCallableFromCallMapById(
                     $codebase,
                     $function_call_info->function_id,
@@ -375,7 +378,9 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                     $statements_analyzer->node_data,
                 );
 
-                if (!$codebase->functions->params_provider->has($function_call_info->function_id)) {
+                if (!$function_call_info->is_stubbed
+                    && !$codebase->functions->params_provider->has($function_call_info->function_id)
+                ) {
                     $function_call_info->function_params = $function_callable->params;
                 }
             }
