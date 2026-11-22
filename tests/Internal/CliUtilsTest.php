@@ -322,6 +322,31 @@ final class CliUtilsTest extends TestCase
         }
     }
 
+    #[DataProvider('provideMissingRootDirectories')]
+    public function testRootDirectoryNotFoundMessage(string $root, string $shown): void
+    {
+        self::assertSame(
+            'Could not locate root directory ' . $shown,
+            CliUtils::getRootDirectoryNotFoundMessage('C:\project', $root),
+        );
+    }
+
+    /**
+     * @return iterable<string, array{string, string}>
+     * @psalm-pure
+     */
+    public static function provideMissingRootDirectories(): iterable
+    {
+        yield 'a path from the root' => ['/does-not-exist', '/does-not-exist'];
+        yield 'a relative path' => ['does-not-exist', 'C:\project' . DIRECTORY_SEPARATOR . 'does-not-exist'];
+        yield 'a drive path' => ['D:\does-not-exist', 'D:\does-not-exist'];
+        yield 'a drive path with a slash' => ['D:/does-not-exist', 'D:/does-not-exist'];
+
+        if (DIRECTORY_SEPARATOR === '\\') {
+            yield 'a backslash path from the root of the drive' => ['\does-not-exist', '\does-not-exist'];
+        }
+    }
+
     /**
      * Runs $test with a clean color/agent environment plus $env, then restores the previous one.
      *

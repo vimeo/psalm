@@ -337,7 +337,9 @@ final class TemplateInferredTypeReplacer
 
     /**
      * Whether no value is of a type as an input, as it is of a template bound to a `*` where it is only known to be
-     * that: `Box<T>` for the `*` of a `Box<*>` too, as the argument may be any of its `Box`es
+     * that: `Box<T>` for the `*` of a `Box<*>` too, as the argument may be any of its `Box`es. An array that requires
+     * an element of such a type (`array{v: T}`, `list{T}`, `non-empty-list<T>`) is of no value either, not the empty
+     * array that `array{v: never}` stands for elsewhere.
      *
      * @psalm-mutation-free
      */
@@ -353,6 +355,18 @@ final class TemplateInferredTypeReplacer
         return match (true) {
             $atomic_type instanceof TGenericObject
                 => $atomic_type->getStarBoundProjections($template_result, $codebase) !== [],
+            $atomic_type instanceof TKeyedArray
+                => array_any(
+                    $atomic_type->properties,
+                    static fn(Union $property): bool => !$property->possibly_undefined
+                        && self::isNeverUnionAsInput($property, $template_result, $codebase),
+                ),
+            $atomic_type instanceof TNonEmptyArray
+                => array_any(
+                    $atomic_type->type_params,
+                    static fn(Union $type_param): bool
+                        => self::isNeverUnionAsInput($type_param, $template_result, $codebase),
+                ),
             $atomic_type instanceof TTemplateParamClass,
             $atomic_type instanceof TTemplateKeyOf,
             $atomic_type instanceof TTemplateValueOf,
@@ -360,13 +374,29 @@ final class TemplateInferredTypeReplacer
             $atomic_type instanceof TConditional
                 => $template_result->isStarInput($atomic_type->param_name, $atomic_type->defining_class),
             $atomic_type instanceof TTemplateParam
-                => !$template_result->isStarInput($atomic_type->param_name, $atomic_type->defining_class)
-                    && self::isBoundedByAStarTemplate($atomic_type->as, $template_result),
+                => $template_result->isStarInput($atomic_type->param_name, $atomic_type->defining_class)
+                    ? $template_result->getStarInputBound($atomic_type->param_name, $atomic_type->defining_class)
+                        ->isNever()
+                    : self::isBoundedByAStarTemplate($atomic_type->as, $template_result),
             $atomic_type instanceof TTemplateIndexedAccess
                 => $template_result->isStarInput($atomic_type->array_param_name, $atomic_type->defining_class)
                     || $template_result->isStarInput($atomic_type->offset_param_name, $atomic_type->defining_class),
             default => false,
         };
+    }
+
+    /**
+     * @psalm-mutation-free
+     */
+    private static function isNeverUnionAsInput(
+        Union $union,
+        TemplateResult $template_result,
+        ?Codebase $codebase,
+    ): bool {
+        return array_all(
+            $union->getAtomicTypes(),
+            static fn(Atomic $atomic_type): bool => self::isNeverAsInput($atomic_type, $template_result, $codebase),
+        );
     }
 
     /**

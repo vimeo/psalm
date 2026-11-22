@@ -196,6 +196,52 @@ final class ArrayAssignmentTest extends TestCase
                     '$sealedAppended===' => 'array{a: int, ...<int<0, max>, \'v\'>}',
                 ],
             ],
+            'nestedWriteUnderAKeyTheListDoesNotHaveCreatesIt' => [
+                'code' => '<?php
+                    $string_key = [1];
+                    $string_key["x"][] = 2;
+
+                    $int_key = [1];
+                    $int_key[5]["y"] = 2;
+
+                    $list_items = [[1]];
+                    $list_items["x"][] = 2;
+
+                    $by_reference = [1];
+                    $ref = &$by_reference["y"];
+
+                    /** @param list<int> $l */
+                    function unsealed(array $l): void {
+                        $l["x"][] = 2;
+                        /** @psalm-check-type-exact $l = array{0?: int, x: non-empty-list<2>, ...<int<0, max>, int>} */;
+                    }
+
+                    /** @param list<list<int>> $l */
+                    function existingItem(array $l): void {
+                        $l[0][] = 2;
+                        /** @psalm-check-type-exact $l = list{non-empty-list<int>, ...<list<int>>} */;
+                    }
+
+                    /** @param mixed $m */
+                    function mixedAfterAnAppend($m): void {
+                        $m[] = 1;
+                        $m["x"][] = 2;
+                    }
+
+                    $next_key = [1];
+                    $next_key[1]["y"] = 2;
+
+                    $negative_key = [1];
+                    $negative_key[-1]["y"] = 2;',
+                'assertions' => [
+                    '$string_key===' => 'array{0: 1, x: non-empty-list<2>}',
+                    '$int_key===' => 'array{0: 1, 5: array{y: 2}}',
+                    '$list_items===' => 'array{0: list{1}, x: non-empty-list<2>}',
+                    '$next_key===' => 'list{1, array{y: 2}}',
+                    '$negative_key===' => 'array{-1: array{y: 2}, 0: 1}',
+                ],
+                'ignored_issues' => ['MixedArrayAccess', 'MixedArrayAssignment'],
+            ],
             'assignWithAScalarOffsetGivesAnArrayKey' => [
                 'code' => '<?php
                     /** @param scalar $key */
@@ -3592,6 +3638,20 @@ final class ArrayAssignmentTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'byReferenceArgumentUnderAKeyTheListDoesNotHaveIsNull' => [
+                'code' => '<?php
+                    function takesArray(array &$x): void {}
+
+                    $l = [1];
+                    takesArray($l["y"]);',
+                'error_message' => 'NullArgument',
+            ],
+            'plainReadUnderAKeyTheListDoesNotHaveIsStillReported' => [
+                'code' => '<?php
+                    $l = [[1]];
+                    echo $l["x"][0];',
+                'error_message' => 'InvalidArrayOffset',
+            ],
             'pushWithFloatOrStringKey' => [
                 'code' => '<?php
                     /**

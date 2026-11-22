@@ -185,6 +185,8 @@ final class TypeCombiner
                     && $combination->named_object_types['Traversable']->from_docblock)
             )
             && !$combination->extra_types
+            // a non-empty array is not any iterable: the union keeps it apart from the Traversable
+            && !$combination->array_always_filled
         ) {
             $array_param_types = $combination->array_type_params;
             $traversable_param_types = $combination->builtin_type_params['Traversable']
