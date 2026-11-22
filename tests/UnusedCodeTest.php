@@ -1735,6 +1735,21 @@ final class UnusedCodeTest extends TestCase
 
                     takesCallable([C::class, "foo"]);',
             ],
+            'methodNamedByStringUsedAsCallableWithSignature' => [
+                'code' => '<?php
+                    final class C {
+                        public static function foo(int $i) : int {
+                            return $i;
+                        }
+                    }
+
+                    /** @param callable(int):int $c */
+                    function takesCallable(callable $c) : int {
+                        return $c(1);
+                    }
+
+                    echo takesCallable("C::foo");',
+            ],
             'methodUsedAsCallableArrayForArrayOrCallableParam' => [
                 'code' => '<?php
                     final class C {

@@ -22,7 +22,6 @@ use Psalm\Type\Union;
 use UnexpectedValueException;
 
 use function is_string;
-use function str_contains;
 use function strtolower;
 
 /**
@@ -351,28 +350,30 @@ final class HighOrderFunctionArgHandler
     ): ?HighOrderFunctionArgInfo {
         $literal = $constant->isSingle() ? $constant->getSingleAtomic() : null;
 
-        if (!$literal instanceof Type\Atomic\TLiteralString || empty($literal->value)) {
+        if (!$literal instanceof Type\Atomic\TLiteralString) {
             return null;
         }
 
         $codebase = $statements_analyzer->getCodebase();
 
-        if (!str_contains($literal->value, '::')) {
-            $function_id = strtolower($literal->value);
+        $callable_id = CallableStringResolver::getId($codebase, $literal->value);
 
+        if ($callable_id === null) {
+            return null;
+        }
+
+        if (is_string($callable_id)) {
             return new HighOrderFunctionArgInfo(
                 HighOrderFunctionArgInfo::TYPE_STRING_CALLABLE,
-                $codebase->functions->getStorage($statements_analyzer, $function_id),
-                callable_id: $function_id,
+                $codebase->functions->getStorage($statements_analyzer, $callable_id),
+                callable_id: $callable_id,
             );
         }
 
-        $method_id = MethodIdentifier::wrap($literal->value);
-
         return new HighOrderFunctionArgInfo(
             HighOrderFunctionArgInfo::TYPE_STRING_CALLABLE,
-            $codebase->methods->getStorage($method_id),
-            callable_id: strtolower((string) ($codebase->methods->getDeclaringMethodId($method_id) ?? $method_id)),
+            $codebase->methods->getStorage($callable_id),
+            callable_id: strtolower((string) ($codebase->methods->getDeclaringMethodId($callable_id) ?? $callable_id)),
         );
     }
 }

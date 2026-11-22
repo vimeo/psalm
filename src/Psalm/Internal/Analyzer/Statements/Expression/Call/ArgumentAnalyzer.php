@@ -1155,6 +1155,30 @@ final class ArgumentAnalyzer
             $param_type = self::resolveTypeVariablesInCallables($param_type, $codebase);
         }
 
+        foreach ($param_type->getAtomicTypes() as $param_atomic_type) {
+            if ($param_atomic_type instanceof TCallable || $param_atomic_type instanceof TCallableString) {
+                // a string passed as a callable uses what it names, also when it was given the type of its callable
+                // form already
+                /** @var Union|null $original_input_type set by HighOrderFunctionArgHandler */
+                $original_input_type = $unpack
+                    ? null
+                    : $input_expr->getAttribute(HighOrderFunctionArgHandler::ORIGINAL_ARG_TYPE_ATTRIBUTE);
+
+                foreach (($original_input_type ?? $input_type)->getAtomicTypes() as $input_atomic_type) {
+                    if ($input_atomic_type instanceof TLiteralString) {
+                        CallableStringResolver::resolveUse(
+                            $statements_analyzer,
+                            $input_atomic_type->value,
+                            $context,
+                            $arg_location,
+                        );
+                    }
+                }
+
+                break;
+            }
+        }
+
         if ($param_type->hasCallableType() && $param_type->isSingle()) {
             // we do this replacement early because later we don't have access to the
             // $statements_analyzer, which is necessary to understand string function names
@@ -1179,7 +1203,6 @@ final class ArgumentAnalyzer
                 );
 
                 if ($candidate_callable && $candidate_callable !== $atomic_type) {
-                    // if we had an array callable, mark it as used now, since it's not possible later
                     $potential_method_id = null;
 
                     if ($atomic_type instanceof TKeyedArray) {
@@ -1189,27 +1212,24 @@ final class ArgumentAnalyzer
                             $context->calling_method_id,
                             $statements_analyzer->getFilePath(),
                         );
-                    } elseif ($atomic_type instanceof TLiteralString
-                              && strpos($atomic_type->value, '::')
-                    ) {
-                        $parts = explode('::', $atomic_type->value);
-                        $potential_method_id = new MethodIdentifier(
-                            $parts[0],
-                            strtolower($parts[1]),
-                        );
+
+                        // if we had an array callable, mark it as used now, since it's not possible later
+                        if ($potential_method_id instanceof MethodIdentifier) {
+                            $codebase->methodExists(
+                                $potential_method_id,
+                                $context->calling_method_id,
+                                $arg_location,
+                                $statements_analyzer,
+                                $statements_analyzer->getFilePath(),
+                                true,
+                                $context->insideUse(),
+                            );
+                        }
+                    } elseif ($atomic_type instanceof TLiteralString) {
+                        $potential_method_id = CallableStringResolver::getId($codebase, $atomic_type->value);
                     }
 
-                    if ($potential_method_id && $potential_method_id !== 'not-callable') {
-                        $codebase->methodExists(
-                            $potential_method_id,
-                            $context->calling_method_id,
-                            $arg_location,
-                            $statements_analyzer,
-                            $statements_analyzer->getFilePath(),
-                            true,
-                            $context->insideUse(),
-                        );
-
+                    if ($potential_method_id instanceof MethodIdentifier) {
                         if (self::verifyCallableInContext(
                             $potential_method_id,
                             $cased_method_id,

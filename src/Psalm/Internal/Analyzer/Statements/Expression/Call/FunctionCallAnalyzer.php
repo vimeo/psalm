@@ -105,17 +105,14 @@ use function array_slice;
 use function array_values;
 use function assert;
 use function count;
-use function explode;
 use function implode;
 use function in_array;
 use function is_int;
 use function is_string;
-use function preg_replace;
 use function reset;
 use function spl_object_id;
 use function str_contains;
 use function str_ends_with;
-use function strpos;
 use function strtolower;
 
 use const SORT_FLAG_CASE;
@@ -1818,7 +1815,15 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                             $statements_analyzer->getFilePath(),
                         );
 
-                        if ($potential_method_id === 'not-callable') {
+                        if ($potential_method_id instanceof MethodIdentifier) {
+                            $codebase->methodExists(
+                                $potential_method_id,
+                                $context->calling_method_id,
+                                null,
+                                $statements_analyzer,
+                                $statements_analyzer->getFilePath(),
+                            );
+                        } else {
                             $potential_method_id = null;
                         }
                     } elseif ($var_type_part instanceof TLiteralString) {
@@ -1827,27 +1832,22 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                             continue;
                         }
 
-                        if (strpos($var_type_part->value, '::')) {
-                            $parts = explode('::', strtolower($var_type_part->value));
-                            $fq_class_name = $parts[0];
-                            $fq_class_name = (string) preg_replace('/^\\\/', '', $fq_class_name, 1);
-                            $potential_method_id = new MethodIdentifier($fq_class_name, $parts[1]);
+                        // each of the names may be called
+                        $callable_id = CallableStringResolver::resolveUse(
+                            $statements_analyzer,
+                            $var_type_part->value,
+                            $context,
+                            new CodeLocation($source, $function_name),
+                        );
+
+                        if ($callable_id instanceof MethodIdentifier) {
+                            $potential_method_id = $callable_id;
                         } else {
                             $function_call_info->new_function_name = new VirtualFullyQualified(
                                 $var_type_part->value,
                                 $function_name->getAttributes(),
                             );
                         }
-                    }
-
-                    if ($potential_method_id) {
-                        $codebase->methodExists(
-                            $potential_method_id,
-                            $context->calling_method_id,
-                            null,
-                            $statements_analyzer,
-                            $statements_analyzer->getFilePath(),
-                        );
                     }
 
                     // this is also kind of fine

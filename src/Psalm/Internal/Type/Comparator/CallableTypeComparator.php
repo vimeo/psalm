@@ -9,6 +9,7 @@ use PhpParser\Node\Arg;
 use PhpParser\Node\Expr\Variable;
 use Psalm\Codebase;
 use Psalm\Context;
+use Psalm\Internal\Analyzer\Statements\Expression\Call\CallableStringResolver;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\ClassTemplateParamCollector;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
@@ -43,9 +44,7 @@ use function end;
 use function is_numeric;
 use function ltrim;
 use function str_starts_with;
-use function strpos;
 use function strtolower;
-use function substr;
 
 /**
  * @internal
@@ -661,17 +660,12 @@ final class CallableTypeComparator
         }
 
         if ($input_type_part instanceof TLiteralString && $input_type_part->value) {
-            $method_separator = strpos($input_type_part->value, '::');
+            $callable_id = CallableStringResolver::getId($codebase, $input_type_part->value);
 
-            if ($method_separator !== false) {
+            if ($callable_id instanceof MethodIdentifier) {
                 $callable = self::getCallableFromMethodId(
                     $codebase,
-                    new MethodIdentifier(
-                        $codebase->classlikes->getUnAliasedName(
-                            ltrim(substr($input_type_part->value, 0, $method_separator), '\\'),
-                        ),
-                        strtolower(substr($input_type_part->value, $method_separator + 2)),
-                    ),
+                    $callable_id,
                     $container_type_part,
                     null,
                     true,
