@@ -6516,7 +6516,17 @@ final class ClassTemplateExtendsTest extends TestCase
 
                     /** @implements J<int> */
                     final class C implements I {}',
-                'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR . 'somefile.php:9:21 - @template-implements must include the name of an implemented class, got J',
+                'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR . 'somefile.php:9:21 - @template-implements must include the name of an implemented interface, got J',
+            ],
+            'implementsTagNamingAnotherInterfaceWithoutTypeArguments' => [
+                'code' => '<?php
+                    interface I {}
+
+                    interface J {}
+
+                    /** @implements J */
+                    final class C implements I {}',
+                'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:21 - @template-implements must include the name of an implemented interface, got J',
             ],
             'useTagNamingAnotherTrait' => [
                 'code' => '<?php
@@ -6530,7 +6540,7 @@ final class ClassTemplateExtendsTest extends TestCase
                         /** @use T2<int> */
                         use T1;
                     }',
-                'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:25 - @template-use must include the name of an used class, got T2',
+                'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:25 - @template-use must include the name of a used trait, got T2',
             ],
             'templatedMethodOfAMiddleParentDoesNotImplementTheInterfaceOfTheChildWithAnotherType' => [
                 'code' => '<?php
