@@ -24,14 +24,11 @@ use ReflectionException;
 use ReflectionFunction;
 use UnexpectedValueException;
 
-use function array_fill_keys;
-use function array_keys;
 use function assert;
 use function class_exists;
 use function count;
 use function dirname;
 use function explode;
-use function file_exists;
 use function function_exists;
 use function intdiv;
 use function interface_exists;
@@ -95,11 +92,11 @@ final class InternalCallMapHandler
     private static ?array $taint_escape_map = null;
 
     /**
-     * The callmap version (e.g. 80) each function/method first appears in, across all callmaps.
+     * The callmap version (e.g. 80) each function/method missing from the oldest callmap first appears in
      *
      * @var ?array<lowercase-string, int>
      */
-    private static ?array $first_callmap_versions = null;
+    private static ?array $callmap_introductions = null;
 
     /**
      * @param  list<PhpParser\Node\Arg>   $args
@@ -605,7 +602,7 @@ final class InternalCallMapHandler
      * which is missing from the callmap of the analysed version, or null when it is available there
      * or its introduction cannot be dated.
      *
-     * The callmaps are versioned, so the version is the first callmap the key appears in. Only
+     * The version is the first callmap the key appears in (dictionaries/CallMapIntroductions.php). Only
      * symbols of extensions bundled with PHP are dated: the callmaps are generated with PECL
      * extensions (swoole, redis, mongodb, ...) whose versions are unrelated to the PHP version.
      * Such symbols are only reachable through the runtime's reflection, which tells a bundled
@@ -619,24 +616,15 @@ final class InternalCallMapHandler
             return null;
         }
 
-        if (self::$first_callmap_versions === null) {
-            self::$first_callmap_versions = [];
-            for ($version = self::MIN_CALLMAP_VERSION; $version <= self::MAX_CALLMAP_VERSION; ++$version) {
-                $file = dirname(__DIR__, 4) . "/dictionaries/CallMap_$version.php";
-                if (!file_exists($file)) { // e.g. 75 to 79
-                    continue;
-                }
-
-                /** @var array<lowercase-string, mixed> */
-                $call_map = require($file);
-                self::$first_callmap_versions += array_fill_keys(array_keys($call_map), $version);
-            }
+        if (self::$callmap_introductions === null) {
+            /** @var array<lowercase-string, int> */
+            $introductions = require(dirname(__DIR__, 4) . '/dictionaries/CallMapIntroductions.php');
+            self::$callmap_introductions = $introductions;
         }
 
-        $version = self::$first_callmap_versions[$key] ?? null;
-
         // a key already in the oldest callmap predates the callmaps and cannot be dated
-        if ($version === null || $version <= self::MIN_CALLMAP_VERSION) {
+        $version = self::$callmap_introductions[$key] ?? null;
+        if ($version === null) {
             return null;
         }
 

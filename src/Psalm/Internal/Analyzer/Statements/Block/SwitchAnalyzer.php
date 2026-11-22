@@ -77,6 +77,14 @@ final class SwitchAnalyzer
 
         $case_action_map = [];
 
+        // the switches directly around this one are targets of `continue N` too, which leaves them like `break N`,
+        // while a loop around them is left to the actions of the switch (a `continue` of it ends the case)
+        $break_types = ['switch'];
+
+        for ($j = count($context->break_types) - 1; $j >= 0 && $context->break_types[$j] === 'switch'; $j--) {
+            $break_types = ['outer_switch', ...$break_types];
+        }
+
         // create a map of case statement -> ultimate exit type
         for ($i = count($stmt->cases) - 1; $i >= 0; --$i) {
             $case = $stmt->cases[$i];
@@ -84,7 +92,7 @@ final class SwitchAnalyzer
             $case_actions = $case_action_map[$i] = ScopeAnalyzer::getControlActions(
                 $case->stmts,
                 $statements_analyzer->node_data,
-                ['switch'],
+                $break_types,
             );
 
             if (!in_array(ScopeAnalyzer::ACTION_NONE, $case_actions, true)) {
