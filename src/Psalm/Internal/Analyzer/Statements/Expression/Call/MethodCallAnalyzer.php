@@ -8,6 +8,7 @@ use AssertionError;
 use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Context;
+use Psalm\Internal\Analyzer\ClosureAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\AtomicMethodCallAnalysisResult;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\AtomicMethodCallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodCallPurityAnalyzer;
@@ -123,8 +124,12 @@ final class MethodCallAnalyzer extends CallAnalyzer
                 }
             }
 
+            $source = $statements_analyzer->getSource();
+
             if ($stmt->name instanceof PhpParser\Node\Identifier
                 && strtolower($stmt->name->name) === '__construct'
+                // a lazy ghost initializer constructs the object it is given
+                && !($source instanceof ClosureAnalyzer && $source->getInitializedObjectParam() === $stmt->var->name)
             ) {
                 IssueBuffer::maybeAdd(
                     new DirectConstructorCall(
