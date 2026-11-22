@@ -2062,6 +2062,16 @@ final class ArrayFetchAnalyzer
         $can_be_int = !$appends && ($key_type->hasInt() || $key_type->hasArrayKey());
         $can_be_string = !$appends && ($key_type->hasString() || $key_type->hasArrayKey());
 
+        // PHP writes under the int key a string of a decimal int (`'0'`) names
+        foreach ($can_be_int || $appends ? [] : $key_type->getAtomicTypes() as $key_atomic_type) {
+            if ($key_atomic_type instanceof TString
+                && !$key_atomic_type instanceof TLiteralString
+                && !$key_atomic_type instanceof TClassString
+            ) {
+                $can_be_int = true;
+            }
+        }
+
         $properties = [];
 
         foreach ($type->properties as $key => $property) {

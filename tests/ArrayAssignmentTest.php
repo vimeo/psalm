@@ -128,6 +128,31 @@ final class ArrayAssignmentTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'writeUnderAStringKeyMayReachTheIntKeyOfItsDecimalString' => [
+                'code' => '<?php
+                    /**
+                     * @return array{0: int, a: int}
+                     */
+                    function shape(): array {
+                        return [0 => 1, "a" => 2];
+                    }
+
+                    function numberedKey(): string {
+                        return "0";
+                    }
+
+                    /** @var class-string $class */
+                    $class = stdClass::class;
+                    $s = numberedKey();
+                    $any = shape();
+                    $any[$s] = "v";
+                    $byClass = shape();
+                    $byClass[$class] = "v";',
+                'assertions' => [
+                    '$any===' => "array{0: 'v'|int, a: 'v'|int, ...<string, 'v'>}",
+                    '$byClass===' => "array{0: int, a: 'v'|int, ...<class-string, 'v'>}",
+                ],
+            ],
             'writeUnderAnUnknownKeyKeepsTheItemsTheKeyCantBe' => [
                 'code' => '<?php
                     /**
