@@ -759,6 +759,45 @@ final class PropertyTypeTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'offsetWriteInitializesAnUninitializedArrayProperty' => [
+                'code' => '<?php
+                    final class Bag
+                    {
+                        /** @var array<string, string> */
+                        private array $values;
+
+                        public function __construct(string $name)
+                        {
+                            $this->values["name"] = $name;
+                        }
+
+                        /** @return array<string, string> */
+                        public function all(): array
+                        {
+                            return $this->values;
+                        }
+                    }',
+            ],
+            'appendAndNestedOffsetWriteInitializeAnUninitializedArrayProperty' => [
+                'code' => '<?php
+                    final class Bag
+                    {
+                        /** @var list<string> */
+                        private array $items;
+
+                        /** @var array<string, array<string, string>> */
+                        private array $nested;
+
+                        public function __construct(string $x)
+                        {
+                            $this->items[] = $x;
+                            $this->nested["a"]["b"] = $x;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'propertySetInConstructorStaysSetAfterAnIfNarrowingThis' => [
                 'code' => '<?php
                     interface Configurable {
@@ -4843,6 +4882,69 @@ final class PropertyTypeTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'offsetWriteToAnUninitializedReadonlyArrayProperty' => [
+                'code' => '<?php
+                    final class Bag
+                    {
+                        /** @var array<string, string> */
+                        public readonly array $values;
+
+                        public function __construct(string $name)
+                        {
+                            $this->values["name"] = $name;
+                        }
+                    }',
+                'error_message' => 'UninitializedProperty',
+                'error_levels' => [],
+                'php_version' => '8.2',
+            ],
+            'offsetWriteToAnUninitializedPropertyOfAReadonlyClass' => [
+                'code' => '<?php
+                    final readonly class Bag
+                    {
+                        /** @var array<string, string> */
+                        public array $values;
+
+                        public function __construct(string $name)
+                        {
+                            $this->values["name"] = $name;
+                        }
+                    }',
+                'error_message' => 'UninitializedProperty',
+                'error_levels' => [],
+                'php_version' => '8.2',
+            ],
+            'compoundOffsetWriteToAnUninitializedArrayProperty' => [
+                'code' => '<?php
+                    final class Bag
+                    {
+                        /** @var array<string, string> */
+                        private array $values;
+
+                        public function __construct()
+                        {
+                            $this->values["a"] .= "x";
+                        }
+                    }',
+                'error_message' => 'UninitializedProperty',
+                'error_levels' => [],
+                'php_version' => '8.2',
+            ],
+            'readOfAnUninitializedArrayPropertyBeforeItsOffsetIsWritten' => [
+                'code' => '<?php
+                    final class Bag
+                    {
+                        /** @var array<string, string> */
+                        private array $values;
+
+                        public function __construct(string $name)
+                        {
+                            echo count($this->values);
+                            $this->values["name"] = $name;
+                        }
+                    }',
+                'error_message' => 'UninitializedProperty',
+            ],
             'staticPropertyOfAStaticTypeInANonFinalClassIsNotTheClass' => [
                 'code' => '<?php
                     class Config {
