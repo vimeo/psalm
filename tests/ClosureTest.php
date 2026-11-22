@@ -3257,6 +3257,51 @@ final class ClosureTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'FirstClassCallable:MethodForwardedToCallResolvesStaticAndClassTemplates' => [
+                'code' => '<?php
+                    /** @psalm-no-seal-methods */
+                    abstract class Base {
+                        public function __call(string $name, array $args): static {
+                            return $this;
+                        }
+                    }
+
+                    final class Child extends Base {
+                        public function hello(): string {
+                            return "";
+                        }
+                    }
+
+                    /**
+                     * @template T
+                     * @psalm-no-seal-methods
+                     */
+                    final class Box {
+                        /** @param T $v */
+                        public function __construct(private mixed $v) {}
+
+                        /** @return T */
+                        public function __call(string $name, array $args): mixed {
+                            return $this->v;
+                        }
+                    }
+
+                    /** @return Box<int> */
+                    function intBox(): Box {
+                        return new Box(1);
+                    }
+
+                    $viaStatic = (new Child())->x(...)();
+                    $hello = $viaStatic->hello();
+                    $viaTemplate = intBox()->x(...)();',
+                'assertions' => [
+                    '$viaStatic===' => 'Child',
+                    '$hello===' => 'string',
+                    '$viaTemplate===' => 'int',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'FirstClassCallable:MethodForwardedToCallOfAnUnsealedClass' => [
                 'code' => '<?php
                     /** @psalm-no-seal-methods */
