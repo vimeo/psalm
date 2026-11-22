@@ -1645,17 +1645,6 @@ final class TraitTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.2',
             ],
-            'constant in trait with alias' => [
-                'code' => <<<'PHP'
-                    <?php
-                    trait TraitA { private const PRIVATE_CONST = 'PRIVATE_CONST'; }
-                    class ClassB { use TraitA { PRIVATE_CONST as public PUBLIC_CONST; } }
-                    $c = ClassB::PUBLIC_CONST;
-                    PHP,
-                'assertions' => ['$c' => 'string'],
-                'ignored_issues' => [],
-                'php_version' => '8.2',
-            ],
             'thisInGenericReturnTypeParam' => [
                 'code' => '<?php
                     /**
@@ -2108,6 +2097,30 @@ final class TraitTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'constant in trait with alias' => [
+                'code' => <<<'PHP'
+                    <?php
+                    trait TraitA { private const PRIVATE_CONST = 'PRIVATE_CONST'; }
+                    class ClassB { use TraitA { PRIVATE_CONST as public PUBLIC_CONST; } }
+                    $c = ClassB::PUBLIC_CONST;
+                    PHP,
+                'error_message' => 'An alias was defined for PRIVATE_CONST but this method does not exist',
+                'error_levels' => [],
+                'php_version' => '8.2',
+            ],
+            'aliasWithATraitThatDoesNotExist' => [
+                'code' => '<?php
+                    trait Greets {
+                        public function hello(): void {}
+                    }
+
+                    final class Greeter {
+                        use Greets, Waves {
+                            wave as greet;
+                        }
+                    }',
+                'error_message' => 'UndefinedTrait',
+            ],
             'aliasOfAMethodNoTraitHas' => [
                 'code' => '<?php
                     trait Greets {

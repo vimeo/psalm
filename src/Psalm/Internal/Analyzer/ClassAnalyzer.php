@@ -1652,26 +1652,24 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
             $method_name = strtolower($adaptation->method->name);
 
             $has_method = false;
+            $has_missing_trait = false;
 
             foreach ($trait_names as $trait_name) {
                 $fq_trait_name = strtolower($codebase->classlikes->getUnAliasedName(
                     self::getFQCLNFromNameObject($trait_name, $aliases),
                 ));
 
-                // a missing trait is reported where it is used
                 if (!$codebase->classlike_storage_provider->has($fq_trait_name)) {
-                    continue 2;
-                }
-
-                if (isset($codebase->classlike_storage_provider->get($fq_trait_name)
+                    $has_missing_trait = true;
+                } elseif (isset($codebase->classlike_storage_provider->get($fq_trait_name)
                     ->declaring_method_ids[$method_name])
                 ) {
                     $has_method = true;
-                    break;
                 }
             }
 
-            if ($has_method) {
+            // a trait that doesn't exist is reported where it is used, and may have had the method
+            if ($has_method || $has_missing_trait) {
                 continue;
             }
 
