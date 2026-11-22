@@ -2428,6 +2428,27 @@ final class ConditionalReturnTypeTest extends TestCase
                     }',
                 'ignored_issues' => ['InvalidArgument'],
             ],
+            'conditionalElseBranchTemplateIsTheRestOfItsBound' => [
+                'code' => '<?php
+                    /**
+                     * @template TKey as array-key
+                     * @template TValue
+                     * @template T as array<TKey, TValue>|Iterator<TKey, TValue>
+                     * @param T $in
+                     * @return (T is array<TKey, TValue> ? array<TKey, TValue> : LimitIterator<TKey, TValue, T>)
+                     */
+                    function limit(iterable $in): array|LimitIterator {
+                        return is_array($in) ? $in : new LimitIterator($in);
+                    }
+
+                    $array = limit(["a", "b"]);
+                    $iterator = limit(new ArrayIterator([1, 2]));',
+                'assertions' => [
+                    '$array' => 'array<int<0, 1>, string>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'conditionalTrueBranchTemplateTakesTheBoundOfItsCondition' => [
                 'code' => '<?php
                     interface Animal {}
@@ -2817,6 +2838,23 @@ final class ConditionalReturnTypeTest extends TestCase
                     }',
                 'error_message' => 'Method QueryBuilder::extra does not exist',
                 'error_levels' => ['InvalidArgument'],
+            ],
+            'conditionalElseBranchTemplateIsStillCheckedAgainstTheRestOfItsBound' => [
+                'code' => '<?php
+                    /** @template T of int */
+                    final class IntBox {}
+
+                    /**
+                     * @template T of int|string|float
+                     * @param T $value
+                     * @return (T is float ? string : IntBox<T>)
+                     */
+                    function box($value): string|IntBox {
+                        throw new RuntimeException();
+                    }',
+                'error_message' => 'InvalidTemplateParam',
+                'error_levels' => [],
+                'php_version' => '8.1',
             ],
             'conditionalElseBranchTemplateKeepsItsBound' => [
                 'code' => '<?php
