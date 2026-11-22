@@ -2711,7 +2711,8 @@ final class ArgumentsAnalyzer
         );
 
         if (!$template_types) {
-            return null;
+            // the parameters are still written to through a `*`
+            return $template_result !== null && $template_result->star_bindings !== [] ? $template_result : null;
         }
 
         if (!$template_result) {

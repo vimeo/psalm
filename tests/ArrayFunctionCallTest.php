@@ -5001,6 +5001,52 @@ final class ArrayFunctionCallTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'arrayMapOfAnInvokableObject' => [
+                'code' => '<?php
+                    final class IsLong {
+                        public function __invoke(string $value): bool { return strlen($value) > 3; }
+                    }
+
+                    final class Notify {
+                        public function __invoke(string $value): void {}
+                    }
+
+                    /** @template T */
+                    final class Box {
+                        /** @param T $value */
+                        public function __construct(private mixed $value) {}
+
+                        /** @return T */
+                        public function __invoke(string $key): mixed { return $this->value; }
+                    }
+
+                    final class Identity {
+                        /**
+                         * @template T
+                         * @param T $value
+                         * @return T
+                         */
+                        public function __invoke(mixed $value): mixed { return $value; }
+                    }
+
+                    /** @var list<string> $xs */
+                    $xs = [];
+                    /** @var Box<int> $box */
+                    $box = new Box(1);
+
+                    $long = array_map(new IsLong(), $xs);
+                    $notified = array_map(new Notify(), $xs);
+                    $boxed = array_map($box, $xs);
+                    $same = array_map(new Identity(), $xs);',
+                'assertions' => [
+                    '$long===' => 'list<bool>',
+                    '$notified===' => 'list<null>',
+                    '$boxed===' => 'list<int>',
+                    '$same===' => 'list<mixed>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
         ];
     }
 
