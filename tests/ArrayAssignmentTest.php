@@ -128,6 +128,14 @@ final class ArrayAssignmentTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'appendsStopGrowingAListShapeAtTheMaximumSize' => [
+                'code' => '<?php
+                    $a = [];' . str_repeat('
+                    $a[] = "x";', 150),
+                'assertions' => [
+                    '$a===' => 'list{' . implode(', ', array_fill(0, 100, '\'x\'')) . ', ...<\'x\'>}',
+                ],
+            ],
             'assignWithAScalarOffsetGivesAnArrayKey' => [
                 'code' => '<?php
                     /** @param scalar $key */

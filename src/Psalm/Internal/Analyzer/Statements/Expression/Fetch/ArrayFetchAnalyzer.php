@@ -2055,7 +2055,12 @@ final class ArrayFetchAnalyzer
     ): void {
         $generic_key_type = $type->getGenericKeyType();
 
-        if (!$stmt->dim && $type->fallback_params === null && $type->is_list) {
+        // a list already as long as a shape gets is appended to as any list is
+        if (!$stmt->dim
+            && $type->fallback_params === null
+            && $type->is_list
+            && count($type->properties) < $codebase->config->max_shaped_array_size
+        ) {
             $key_values[] = new TLiteralInt(count($type->properties));
         }
 
