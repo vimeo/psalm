@@ -9,6 +9,8 @@ use Psalm\Tests\TestCase;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
+use const DIRECTORY_SEPARATOR;
+
 final class ClassTemplateCovarianceTest extends TestCase
 {
     use InvalidCodeAnalysisTestTrait;
@@ -683,6 +685,33 @@ final class ClassTemplateCovarianceTest extends TestCase
                         public function set($value): void {}
                     }',
                 'error_message' => 'InvalidTemplateParam',
+            ],
+            'preventCovariantTemplateInTheBoundOfAMethodTemplateAfterACallableParam' => [
+                'code' => '<?php
+                    /** @template-covariant T */
+                    interface C {
+                        /**
+                         * @template U of T
+                         * @param Closure(U): void $f
+                         * @param U $x
+                         */
+                        public function put(Closure $f, mixed $x): void;
+                    }',
+                'error_message' => 'InvalidTemplateParam - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:35'
+                    . ' - Template param T of C is marked covariant and cannot be used here',
+            ],
+            'preventCovariantTemplateInTheBoundOfAMethodTemplateInACallableParam' => [
+                'code' => '<?php
+                    /** @template-covariant T */
+                    interface C {
+                        /**
+                         * @template U of T
+                         * @param Closure(U): U $f
+                         */
+                        public function put(Closure $f): void;
+                    }',
+                'error_message' => 'InvalidTemplateParam - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:35'
+                    . ' - Template param T of C is marked covariant and cannot be used here',
             ],
             'preventExtendingWithCovariance' => [
                 'code' => '<?php
