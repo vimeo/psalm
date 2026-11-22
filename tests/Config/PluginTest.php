@@ -19,9 +19,13 @@ use Psalm\Internal\Provider\Providers;
 use Psalm\IssueBuffer;
 use Psalm\Plugin\EventHandler\AfterCodebasePopulatedInterface;
 use Psalm\Plugin\EventHandler\AfterEveryFunctionCallAnalysisInterface;
+use Psalm\Plugin\EventHandler\AfterFunctionCallAnalysisInterface;
+use Psalm\Plugin\EventHandler\AfterMethodCallAnalysisInterface;
 use Psalm\Plugin\EventHandler\BeforeFileAnalysisInterface;
 use Psalm\Plugin\EventHandler\Event\AfterCodebasePopulatedEvent;
 use Psalm\Plugin\EventHandler\Event\AfterEveryFunctionCallAnalysisEvent;
+use Psalm\Plugin\EventHandler\Event\AfterFunctionCallAnalysisEvent;
+use Psalm\Plugin\EventHandler\Event\AfterMethodCallAnalysisEvent;
 use Psalm\Plugin\EventHandler\Event\BeforeFileAnalysisEvent;
 use Psalm\PluginRegistrationSocket;
 use Psalm\Report;
@@ -1061,6 +1065,226 @@ final class PluginTest extends DeferredAnalyzerTestCase
         $this->analyzeFile($file_path, new Context());
     }
 
+    public function testMethodProviderGivenAStarTypeParameterSeesItsBound(): void
+    {
+        $this->analyzeWithTemplateParameterPlugin('
+            /** @param Box<*> $box */
+            function run(Box $box): void {
+                takesObject($box->get());
+
+                foreach ($box->all() as $item) {
+                    takesObject($item);
+                }
+            }');
+    }
+
+    public function testPluginReadingTheTypeParamsOfAStarReceiverSeesTheBounds(): void
+    {
+        $this->analyzeWithTemplateParameterPlugin('
+            abstract class Model {
+                public function save(): bool {
+                    return true;
+                }
+            }
+
+            /**
+             * @template TRelated of Model
+             * @template TParent of Model
+             */
+            final class Relation {
+                public function related(): object {
+                    throw new \Exception();
+                }
+            }
+
+            /** @param Relation<*, *> $any */
+            function run(Relation $any): void {
+                $related = $any->related();
+                /** @psalm-check-type-exact $related = Model */
+                $related->save();
+            }');
+    }
+
+    public function testPluginRebuildingAStarArgumentMeansThatType(): void
+    {
+        $this->analyzeWithTemplateParameterPlugin('
+            abstract class Model {}
+
+            final class Pivot extends Model {}
+
+            /**
+             * @template TRelated of Model
+             * @template TParent of Model
+             */
+            final class Relation {
+                public function withPivot(): static {
+                    return $this;
+                }
+
+                /** @return TParent */
+                public function parent(): Model {
+                    throw new \Exception();
+                }
+            }
+
+            /** @param Relation<Model, *> $relation */
+            function run(Relation $relation): void {
+                $refined = $relation->withPivot();
+                /** @psalm-check-type-exact $refined = Relation<Model, Pivot> */
+                $parent = $refined->parent();
+                /** @psalm-check-type-exact $parent = Pivot */
+            }');
+    }
+
+    public function testPluginRebuildingEqualArgumentsKeepsTheStar(): void
+    {
+        $this->analyzeWithTemplateParameterPlugin('
+            abstract class Model {}
+
+            /**
+             * @template TRelated of Model
+             * @template TParent of Model
+             */
+            final class Relation {
+                public function rebuilt(): static {
+                    return $this;
+                }
+            }
+
+            /** @param Relation<Model, *> $relation */
+            function run(Relation $relation): void {
+                $rebuilt = $relation->rebuilt();
+                /** @psalm-check-type-exact $rebuilt = Relation<Model, *> */
+            }');
+    }
+
+    private function analyzeWithTemplateParameterPlugin(string $code): void
+    {
+        require_once __DIR__ . '/Plugin/TemplateParameterPlugin.php';
+
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__, 2) . DIRECTORY_SEPARATOR,
+                '<?xml version="1.0"?>
+                <psalm
+                    errorLevel="1"
+                >
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+                    <plugins>
+                        <pluginClass class="Psalm\\Test\\Config\\Plugin\\TemplateParameterPlugin" />
+                    </plugins>
+                </psalm>',
+            ),
+        );
+
+        $this->project_analyzer->getCodebase()->config->initializePlugins($this->project_analyzer);
+
+        $file_path = (string) getcwd() . '/src/somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                namespace Ns;
+
+                /** @template T of object */
+                final class Box {
+                    /** @return T */
+                    public function get(): object {
+                        throw new \Exception();
+                    }
+
+                    /** @return list<T> */
+                    public function all(): array {
+                        throw new \Exception();
+                    }
+                }
+
+                function takesObject(object $value): void {}
+' . $code,
+        );
+
+        $this->analyzeFile($file_path, new Context());
+    }
+
+    public function testMethodProviderHooksStaticFirstClassCallable(): void
+    {
+        require_once __DIR__ . '/Plugin/MethodPlugin.php';
+
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__, 2) . DIRECTORY_SEPARATOR,
+                '<?xml version="1.0"?>
+                <psalm
+                    errorLevel="1"
+                >
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+                    <plugins>
+                        <pluginClass class="Psalm\\Test\\Config\\Plugin\\MethodPlugin" />
+                    </plugins>
+                </psalm>',
+            ),
+        );
+
+        $this->project_analyzer->getCodebase()->config->initializePlugins($this->project_analyzer);
+
+        $file_path = (string) getcwd() . '/src/somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                namespace Ns;
+
+                abstract class Model {
+                    /** @psalm-pure */
+                    public static function __callStatic(string $method_name, array $args): mixed {
+                        return null;
+                    }
+                }
+
+                final class Foo extends Model {
+                    /**
+                     * @template T of int|string
+                     * @param T $first
+                     * @return T
+                     */
+                    public static function sourcedGenericMethod(int|string $first): int|string {
+                        return $first;
+                    }
+                }
+
+                final class Ghost {}
+
+                $magic = Foo::magicMethod(...);
+                /** @psalm-check-type-exact $magic = \Closure[pure](string=) */
+
+                $sourced = Foo::sourcedMagicMethod(...);
+                /** @psalm-check-type-exact $sourced = \Closure[pure](int=) */
+
+                $generic = Foo::sourcedGenericMethod(...);
+                $generic_result = $generic(5);
+                /** @psalm-check-type-exact $generic_result = 5 */
+
+                $paramless = Foo::paramlessMagicMethod(...);
+                /** @psalm-check-type-exact $paramless = \Closure[pure] */
+
+                $ghost = Ghost::anything(...);
+                /** @psalm-check-type-exact $ghost = \Closure[impure] */
+
+                $name = "magicMethod";
+                $dynamic = Foo::$name(...);
+                /** @psalm-check-type-exact $dynamic = \Closure */
+
+                $instance_dynamic = (new Foo())->$name(...);
+                /** @psalm-check-type-exact $instance_dynamic = \Closure */',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+    }
+
     public function testFunctionProviderHooks(): void
     {
         require_once __DIR__ . '/Plugin/FunctionPlugin.php';
@@ -1455,6 +1679,91 @@ final class PluginTest extends DeferredAnalyzerTestCase
         );
 
         $this->project_analyzer->getCodebase()->config->initializePlugins($this->project_analyzer);
+    }
+
+    public function testAfterCallPluginsSeeResolvedTypeVariables(): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__, 2) . DIRECTORY_SEPARATOR,
+                '<?xml version="1.0"?>
+                <psalm
+                    errorLevel="1"
+                ></psalm>',
+            ),
+        );
+
+        $plugin = new class implements AfterFunctionCallAnalysisInterface, AfterMethodCallAnalysisInterface {
+            /** @var array<string, string> */
+            public static array $return_types = [];
+
+            /**
+             * @psalm-capabilities read-globals|write-globals
+             */
+            #[Override]
+            public static function afterFunctionCallAnalysis(AfterFunctionCallAnalysisEvent $event): void
+            {
+                self::$return_types[$event->getFunctionId()] = $event->getReturnTypeCandidate()->getId();
+            }
+
+            /**
+             * @psalm-capabilities read-globals|write-globals
+             */
+            #[Override]
+            public static function afterMethodCallAnalysis(AfterMethodCallAnalysisEvent $event): void
+            {
+                self::$return_types[$event->getMethodId()] = $event->getReturnTypeCandidate()?->getId() ?? '';
+            }
+        };
+
+        $codebase = $this->project_analyzer->getCodebase();
+        (new PluginRegistrationSocket($codebase->config, $codebase))->registerHooksFromClass(get_class($plugin));
+
+        $file_path = (string) getcwd() . '/src/somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+            /** @template T */
+            final class Box {
+                /** @param T $v */
+                public function __construct(public mixed $v) {}
+
+                /** @return list<T> */
+                public function all(): array { return [$this->v]; }
+
+                /**
+                 * @template R
+                 * @param list<R> $l
+                 * @return R
+                 */
+                public static function head(array $l): mixed { return $l[0]; }
+            }
+
+            /**
+             * @template R
+             * @param list<R> $l
+             * @return R
+             */
+            function head(array $l): mixed { return $l[0]; }
+
+            $b = new Box(1);
+            head($b->all());
+            Box::head($b->all());
+            $b->all();
+            ',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+
+        $this->assertSame(
+            [
+                'Box::all' => 'list<`_0:1>',
+                'head' => '1',
+                'Box::head' => '1',
+            ],
+            $plugin::$return_types,
+        );
     }
 
     public function testAfterEveryFunctionPluginIsCalledInAllCases(): void

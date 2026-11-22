@@ -5,13 +5,73 @@ declare(strict_types=1);
 namespace Psalm\Tests;
 
 use Override;
+use Psalm\Context;
+use Psalm\Internal\Analyzer\IssueData;
+use Psalm\IssueBuffer;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
+
+use function array_map;
 
 final class TryCatchTest extends TestCase
 {
     use ValidCodeAnalysisTestTrait;
     use InvalidCodeAnalysisTestTrait;
+
+    public function testANullCheckKeepsAVariableOfATryPossiblyUndefinedFromTheTry(): void
+    {
+        $this->project_analyzer->getConfig()->throw_exception = false;
+
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                function s(): string {
+                    return "s";
+                }
+
+                function afterTry(): void {
+                    try {
+                        $x = s();
+                    } catch (Exception $e) {
+                    }
+                    if ($x === null) {
+                        echo "unset";
+                    }
+                    echo $x;
+                }
+
+                /** @param list<int> $xs */
+                function inALoop(array $xs): void {
+                    foreach ($xs as $_) {
+                        if ($y !== null) {
+                            echo gettype($y);
+                        }
+                        try {
+                            $y = s();
+                        } catch (Exception $e) {
+                        }
+                    }
+                }',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+
+        self::assertSame(
+            [
+                'PossiblyUndefinedVariable 11:25 Possibly undefined variable $x defined in try block',
+                'TypeDoesNotContainNull 11:25 string does not contain null',
+                'PossiblyUndefinedVariable 14:26 Possibly undefined variable $x defined in try block',
+                'PossiblyUndefinedVariable 20:29 Possibly undefined variable $y, first seen on line 24',
+            ],
+            array_map(
+                static fn(IssueData $issue): string
+                    => $issue->type . ' ' . $issue->line_from . ':' . $issue->column_from . ' ' . $issue->message,
+                IssueBuffer::getIssuesDataForFile($file_path),
+            ),
+        );
+    }
 
     /**
      * @psalm-pure
@@ -20,6 +80,73 @@ final class TryCatchTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'propertyFetchedInTryKeepsItsTypeAfterIt' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class Entity {
+                        public function __construct(public string $id) {}
+                    }
+
+                    function foo(Entity $entity): string {
+                        try {
+                            echo $entity->id;
+                        } catch (Exception) {
+                        }
+
+                        /** @psalm-check-type-exact $entity->id = string */
+
+                        return "x" . $entity->id;
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'propertyFetchedInTryIsNotPossiblyUndefinedInArrayShape' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-immutable
+                     */
+                    final class Entity {
+                        public function __construct(public string $id) {}
+                    }
+
+                    /**
+                     * @return array{ID: string}
+                     */
+                    function foo(Entity $entity): array {
+                        try {
+                            echo $entity->id;
+                        } catch (Exception $e) {
+                        }
+
+                        return ["ID" => $entity->id];
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'staticPropertyFetchedInTryIsNotPossiblyUndefinedInArrayShape' => [
+                'code' => '<?php
+                    final class Holder {
+                        public static string $id = "x";
+                    }
+
+                    /**
+                     * @return array{ID: string}
+                     */
+                    function foo(): array {
+                        try {
+                            echo Holder::$id;
+                        } catch (Exception $e) {
+                        }
+
+                        return ["ID" => Holder::$id];
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'variableAssignedAfterABreakOfANestedLoopInADoWhileInATryIsDefinedAfterIt' => [
                 'code' => '<?php
                     function f(): string {
@@ -142,6 +269,32 @@ final class TryCatchTest extends TestCase
                         }
 
                         return $c;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'propertyOfNewObjectFetchedInTryIsNotPossiblyUndefinedInArrayShape' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-immutable
+                     */
+                    final class Entity {
+                        public function __construct(public string $id) {}
+                    }
+
+                    /**
+                     * @return array{ID: string, NAME: string}
+                     */
+                    function foo(): array {
+                        $entity = new Entity("1a2b3c");
+
+                        try {
+                            $entity->id;
+                        } catch (Exception $e) {
+                        }
+
+                        return ["ID" => $entity->id, "NAME" => $entity->id];
                     }',
                 'assertions' => [],
                 'ignored_issues' => [],
@@ -391,6 +544,8 @@ final class TryCatchTest extends TestCase
                             return true;
                         }
                     }',
+                'assertions' => [],
+                'ignored_issues' => ['DeprecatedSyntax'],
             ],
             'catchWithNoReturnButFinallyReturns' => [
                 'code' => '<?php
@@ -404,6 +559,8 @@ final class TryCatchTest extends TestCase
                             return true;
                         }
                     }',
+                'assertions' => [],
+                'ignored_issues' => ['DeprecatedSyntax'],
             ],
             'stopAnalysisAfterBadTryIssue' => [
                 'code' => '<?php
@@ -515,6 +672,8 @@ final class TryCatchTest extends TestCase
                             return $errors;
                         }
                     }',
+                'assertions' => [],
+                'ignored_issues' => ['DeprecatedSyntax'],
             ],
             'typeDoesNotContainTypeInCatch' => [
                 'code' => '<?php
@@ -799,6 +958,200 @@ final class TryCatchTest extends TestCase
                         if (isset($exception)) {}
                     }',
             ],
+            'variableAssignedInAConditionOfAFinallyBlockDoesNotKeepTheTypeBeforeTheTry' => [
+                'code' => '<?php
+                    function g(): void {}
+
+                    function f(): int {
+                        $t = null;
+
+                        try {
+                            $t = 1;
+                            g();
+                        } finally {
+                            if (rand(0, 1)) {
+                                $t = 2;
+                            }
+                        }
+
+                        /** @psalm-check-type-exact $t = 1|2 */;
+
+                        return $t;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'variableAssignedInAConditionOfAFinallyBlockAfterACatchHasTheTypesOfTheTryAndTheCatch' => [
+                'code' => '<?php
+                    function g(): void {}
+
+                    function f(): string {
+                        $s = null;
+
+                        try {
+                            $s = "a";
+                            g();
+                        } catch (Exception $e) {
+                            $s = "b";
+                        } finally {
+                            if (rand(0, 1)) {
+                                $s = "c";
+                            }
+                        }
+
+                        /** @psalm-check-type-exact $s = \'a\'|\'b\'|\'c\' */;
+
+                        return $s;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'variableAssignedInAConditionOfAFinallyBlockWithAReturnInTheTryHasNoNull' => [
+                'code' => '<?php
+                    function g(): void {}
+
+                    function f(): int {
+                        $t = 0;
+
+                        try {
+                            if (rand(0, 1)) {
+                                return 5;
+                            }
+
+                            $t = 1;
+                            g();
+                        } finally {
+                            if (rand(0, 1)) {
+                                $t = 2;
+                            }
+                        }
+
+                        /** @psalm-check-type-exact $t = 1|2 */;
+
+                        return $t + 1;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'variableAssignedInAConditionOfAFinallyBlockKeepsTheAssignedTypeAfterTheTry' => [
+                'code' => '<?php
+                    function g(): void {}
+
+                    function inAnIf(): void {
+                        $t = null;
+                        try {
+                            g();
+                        } finally {
+                            if (rand(0, 1)) {
+                                $t = new Exception();
+                            }
+                        }
+                        /** @psalm-check-type-exact $t = Exception|null */;
+                    }
+
+                    function inACatchOfANestedTry(): void {
+                        $t = null;
+                        try {
+                            g();
+                        } finally {
+                            try {
+                                g();
+                            } catch (Throwable $e) {
+                                $t = $e;
+                            }
+                        }
+                        /** @psalm-check-type-exact $t = Throwable|null */;
+                    }
+
+                    function inALoop(): void {
+                        $t = null;
+                        try {
+                            g();
+                        } finally {
+                            foreach ([1, 2] as $i) {
+                                if ($i > rand(0, 3)) {
+                                    $t = $i;
+                                }
+                            }
+                        }
+                        /** @psalm-check-type-exact $t = 1|2|null */;
+                    }
+
+                    function inAClosure(): void {
+                        $t = null;
+                        $f = function () use (&$t): void {
+                            try {
+                                g();
+                            } finally {
+                                if (rand(0, 1)) {
+                                    $t = new Exception();
+                                }
+                            }
+                        };
+                        $f();
+                        /** @psalm-check-type-exact $t = Exception|null */;
+                    }',
+            ],
+            'variableWrittenByReferenceInACatchOfAFinallyOfAClosureIsNotNull' => [
+                'code' => '<?php
+                    interface App {
+                        public function send(): void;
+                    }
+
+                    interface Term {
+                        public function terminate(): void;
+                    }
+
+                    final class R {
+                        public function __construct(private App $app) {}
+
+                        public function run(): void {
+                            $termination_exception = null;
+                            $handler = function () use (&$termination_exception): void {
+                                try {
+                                    $this->app->send();
+                                } finally {
+                                    if ($this->app instanceof Term) {
+                                        try {
+                                            $this->app->terminate();
+                                        } catch (Throwable $e) {
+                                            $termination_exception = $e;
+                                        }
+                                    }
+                                }
+                            };
+
+                            do {
+                                $ret = handle_request($handler);
+                                if (null !== $termination_exception) {
+                                    throw $termination_exception;
+                                }
+                            } while ($ret);
+                        }
+                    }
+
+                    function handle_request(callable $c): bool {
+                        $c();
+                        return true;
+                    }',
+            ],
+            'variableAssignedUnconditionallyInAFinallyBlockHasTheAssignedTypeAfterTheTry' => [
+                'code' => '<?php
+                    function g(): void {}
+
+                    function f(): void {
+                        $t = null;
+                        try {
+                            g();
+                        } finally {
+                            $t = 1;
+                        }
+                        /** @psalm-check-type-exact $t = 1 */;
+                    }',
+            ],
         ];
     }
 
@@ -809,6 +1162,39 @@ final class TryCatchTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'variableUnsetInAConditionOfAFinallyBlockIsPossiblyUndefinedAfterTheTry' => [
+                'code' => '<?php
+                    function g(): void {}
+
+                    function f(): int {
+                        $t = 1;
+
+                        try {
+                            g();
+                        } finally {
+                            if (rand(0, 1)) {
+                                unset($t);
+                            }
+                        }
+
+                        return $t;
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'possiblyUndefinedVariableInArrayItemIsStillReported' => [
+                'code' => '<?php
+                    function foo(): array {
+                        try {
+                            $x = 1;
+                        } catch (Exception $e) {
+                        }
+
+                        return ["a" => $x];
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable',
+            ],
             'variableAssignedAfterABreakTwoLevelsOutOfANestedLoopIsPossiblyUndefined' => [
                 'code' => '<?php
                     function f(): string {
@@ -1105,6 +1491,43 @@ final class TryCatchTest extends TestCase
                         }
                     }',
                 'error_message' => 'RedundantCondition',
+            ],
+            'variablePossiblyUndefinedAfterACatchStaysSoWhenTheFinallyAssignsItOnSomePaths' => [
+                'code' => '<?php
+                    function g(): int {
+                        return 1;
+                    }
+
+                    function f(): void {
+                        try {
+                            $x = g();
+                        } catch (RuntimeException $e) {
+                        } finally {
+                            if (rand(0, 1)) {
+                                $x = 1;
+                            }
+                        }
+
+                        echo $x;
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable',
+            ],
+            'variableAssignedInAConditionOfAFinallyBlockOnlyIsPossiblyUndefinedAfterTheTry' => [
+                'code' => '<?php
+                    function g(): void {}
+
+                    function f(): void {
+                        try {
+                            g();
+                        } finally {
+                            if (rand(0, 1)) {
+                                $u = 1;
+                            }
+                        }
+
+                        echo $u;
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable',
             ],
         ];
     }

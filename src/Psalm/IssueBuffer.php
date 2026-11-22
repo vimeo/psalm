@@ -9,6 +9,7 @@ use Psalm\Exception\CodeException;
 use Psalm\Internal\Analyzer\FileAnalyzer;
 use Psalm\Internal\Analyzer\IssueData;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
+use Psalm\Internal\BaselineMatcher;
 use Psalm\Internal\ExecutionEnvironment\BuildInfoCollector;
 use Psalm\Internal\ExecutionEnvironment\GitInfoCollector;
 use Psalm\Internal\Provider\FileProvider;
@@ -52,12 +53,12 @@ use function array_splice;
 use function array_sum;
 use function array_values;
 use function arsort;
-use function count;
 use function debug_print_backtrace;
 use function dirname;
 use function explode;
 use function file_put_contents;
 use function fwrite;
+use function hash;
 use function implode;
 use function in_array;
 use function intdiv;
@@ -74,13 +75,11 @@ use function ob_get_clean;
 use function ob_start;
 use function preg_match;
 use function round;
-use function sha1;
 use function sprintf;
 use function str_repeat;
 use function str_replace;
 use function str_starts_with;
 use function strlen;
-use function trim;
 use function usort;
 
 use const ARRAY_FILTER_USE_KEY;
@@ -116,6 +115,14 @@ final class IssueBuffer
 
     /** @var array<int, array<int, CodeIssue>> */
     private static array $recorded_issues = [];
+
+    /**
+     * The issues raised while collecting them, before the config or a suppression filters them, keyed by
+     * getIssueLocationKey()
+     *
+     * @var list<array<string, true>>
+     */
+    private static array $raised_issue_keys = [];
 
     /**
      * @var array<string, array<int, int>>
@@ -160,6 +167,13 @@ final class IssueBuffer
     {
         ++self::$accepted_issue_count;
         $e->group_key ??= self::$issue_group;
+
+        $raised_issue_keys = array_pop(self::$raised_issue_keys);
+
+        if ($raised_issue_keys !== null) {
+            $raised_issue_keys[self::getIssueLocationKey($e::getIssueType(), $e)] = true;
+            self::$raised_issue_keys[] = $raised_issue_keys;
+        }
 
         $config = Config::getInstance();
         $project_analyzer = ProjectAnalyzer::getInstance();
@@ -781,31 +795,14 @@ final class IssueBuffer
             // Set severity for issues in baseline to INFO
             foreach ($issues_data as $file_path => $file_issues) {
                 foreach ($file_issues as $key => $issue_data) {
-                    $file = $issue_data->file_name;
-                    $file = str_replace('\\', '/', $file);
-                    $type = $issue_data->type;
-
-                    if (isset($issue_baseline[$file][$type])
-                        && $issue_baseline[$file][$type]['o'] > 0
-                        && $codebase->config->isSuppressible($type)
-                    ) {
-                        if ($issue_baseline[$file][$type]['o'] === count($issue_baseline[$file][$type]['s'])) {
-                            $position = array_search(
-                                str_replace("\r\n", "\n", trim($issue_data->selected_text)),
-                                $issue_baseline[$file][$type]['s'],
-                                true,
-                            );
-
-                            if ($position !== false) {
-                                $issue_data->severity = IssueData::SEVERITY_INFO;
-                                array_splice($issue_baseline[$file][$type]['s'], $position, 1);
-                                $issue_baseline[$file][$type]['o']--;
-                            }
-                        } else {
-                            $issue_baseline[$file][$type]['s'] = [];
-                            $issue_data->severity = IssueData::SEVERITY_INFO;
-                            $issue_baseline[$file][$type]['o']--;
-                        }
+                    if (BaselineMatcher::consume(
+                        $codebase->config,
+                        $issue_baseline,
+                        $issue_data->file_name,
+                        $issue_data->type,
+                        $issue_data->selected_text,
+                    )) {
+                        $issue_data->severity = IssueData::SEVERITY_INFO;
                     }
 
                     $issues_data[$file_path][$key] = $issue_data;
@@ -882,7 +879,6 @@ final class IssueBuffer
                         );
                     }
                 }
-            } else {
             }
         }
 
@@ -909,13 +905,14 @@ final class IssueBuffer
 
         if ($codebase->config->eventDispatcher->after_analysis) {
             $source_control_info = null;
-            $build_info = (new BuildInfoCollector(self::$server))->collect();
 
             try {
                 $source_control_info = (new GitInfoCollector())->collect();
             } catch (RuntimeException) {
                 // do nothing
             }
+
+            $build_info = (new BuildInfoCollector(self::$server))->collect($source_control_info);
 
             /** @psalm-suppress ArgumentTypeCoercion due to Psalm bug */
             $event = new AfterAnalysisEvent(
@@ -1058,9 +1055,24 @@ final class IssueBuffer
         // runs), so cached taint sinks/sources keep matching after the analysis is reused from cache.
         $project_analyzer->persistCustomTaints();
 
+        $min_type_coverage = $codebase->config->min_type_coverage;
+
+        // a run of specific files doesn't measure the type coverage of the whole project
+        $type_coverage_message = $is_full && $min_type_coverage !== null
+            ? self::getTypeCoverageBelowMinimumMessage(
+                $codebase->analyzer->getTotalTypeCoverage($codebase),
+                $min_type_coverage,
+            )
+            : null;
+
+        if ($type_coverage_message !== null) {
+            fwrite(STDERR, $type_coverage_message . PHP_EOL);
+        }
+
         // a taint analysis run in GitHub Actions that writes a SARIF report exits successfully, so that a following
-        // step can upload the report; every other combination exits with an error when issues were found
-        if ($error_count
+        // step can upload the report; every other combination exits with an error when issues were found or the
+        // type coverage is below the minimum
+        if (($error_count || $type_coverage_message !== null)
             && !($codebase->taint_flow_graph
                 && self::hasSarifReport($project_analyzer->generated_report_options)
                 && isset($_SERVER['GITHUB_WORKFLOW']))
@@ -1090,6 +1102,37 @@ final class IssueBuffer
         }
 
         return false;
+    }
+
+    /**
+     * @internal
+     * @param array{int, int} $type_coverage the counts of mixed and of non-mixed expressions
+     * @psalm-pure
+     */
+    public static function getTypeCoverageBelowMinimumMessage(array $type_coverage, float $min_type_coverage): ?string
+    {
+        [$mixed_count, $nonmixed_count] = $type_coverage;
+        $total = $mixed_count + $nonmixed_count;
+
+        // without expressions there is no type that Psalm couldn't infer
+        if ($total === 0) {
+            return null;
+        }
+
+        // in hundredths of a percent, the coverage rounded down, so that a coverage below the minimum never prints
+        // as reaching it; the minimum has at most two decimals
+        $coverage = intdiv(10_000 * $nonmixed_count, $total);
+        $minimum = (int) round($min_type_coverage * 100.0);
+
+        if ($coverage >= $minimum) {
+            return null;
+        }
+
+        return sprintf(
+            'Type coverage %s%% is below the minimum of %s%%',
+            number_format($coverage / 100, 2),
+            number_format($minimum / 100, 2),
+        );
     }
 
     private static function printAlterSummary(
@@ -1281,7 +1324,7 @@ final class IssueBuffer
      */
     public static function alreadyEmitted(string $message): bool
     {
-        $sham = sha1($message);
+        $sham = hash('xxh3', $message);
 
         if (isset(self::$emitted[$sham])) {
             return true;
@@ -1376,6 +1419,48 @@ final class IssueBuffer
         self::$recorded_issues[self::$recording_level] = [];
 
         return $recorded_issues;
+    }
+
+    /**
+     * Start collecting the issues raised, whether they are reported or not
+     *
+     * @psalm-capabilities read-globals|write-globals
+     */
+    public static function startCollectingRaisedIssues(): void
+    {
+        self::$raised_issue_keys[] = [];
+    }
+
+    /**
+     * @return array<string, true> the getIssueLocationKey() of the issues raised since startCollectingRaisedIssues(),
+     *                             which an enclosing collection gets too
+     * @psalm-capabilities read-globals|write-globals
+     */
+    public static function stopCollectingRaisedIssues(): array
+    {
+        $raised_issue_keys = array_pop(self::$raised_issue_keys);
+
+        if ($raised_issue_keys === null) {
+            throw new UnexpectedValueException('Not currently collecting raised issues');
+        }
+
+        $enclosing_raised_issue_keys = array_pop(self::$raised_issue_keys);
+
+        if ($enclosing_raised_issue_keys !== null) {
+            self::$raised_issue_keys[] = $enclosing_raised_issue_keys + $raised_issue_keys;
+        }
+
+        return $raised_issue_keys;
+    }
+
+    /**
+     * @psalm-mutation-free
+     */
+    public static function getIssueLocationKey(string $issue_type, CodeIssue $e): string
+    {
+        [$from, $to] = $e->code_location->getSelectionBounds();
+
+        return $issue_type . ':' . $e->getFilePath() . ':' . $from . '-' . $to;
     }
 
     /**

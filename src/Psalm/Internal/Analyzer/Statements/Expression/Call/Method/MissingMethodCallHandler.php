@@ -106,6 +106,7 @@ final class MissingMethodCallHandler
             $context->mergeFunctionExceptions(
                 $found_method_and_class_storage[0],
                 new CodeLocation($statements_analyzer->getSource(), $stmt->name),
+                $statements_analyzer->getCodebase(),
             );
         }
 
@@ -183,12 +184,19 @@ final class MissingMethodCallHandler
                 $found_generic_params ?? [],
             );
 
+            ClassTemplateParamCollector::markStarBindings(
+                $template_result,
+                $codebase,
+                $pseudo_method_class_storage,
+                $mixin_type ?? $lhs_type_part,
+                $found_generic_params,
+            );
+
             ArgumentsAnalyzer::analyze(
                 $statements_analyzer,
                 $stmt->getArgs(),
                 $pseudo_method_storage->params,
                 (string) $method_id,
-                true,
                 $context,
                 $template_result->template_types !== [] || $template_result->lower_bounds !== []
                     ? $template_result
@@ -426,6 +434,7 @@ final class MissingMethodCallHandler
                 $context->mergeFunctionExceptions(
                     $pseudo_method_storage,
                     new CodeLocation($statements_analyzer, $stmt->name),
+                    $statements_analyzer->getCodebase(),
                 );
             }
 
@@ -443,12 +452,19 @@ final class MissingMethodCallHandler
                 $found_generic_params ?? [],
             );
 
+            ClassTemplateParamCollector::markStarBindings(
+                $template_result,
+                $codebase,
+                $class_storage,
+                $lhs_type_part,
+                $found_generic_params,
+            );
+
             if (ArgumentsAnalyzer::analyze(
                 $statements_analyzer,
                 $stmt->getArgs(),
                 $pseudo_method_storage->params,
                 (string) $method_id,
-                true,
                 $context,
                 $template_result,
             ) === false) {
@@ -518,19 +534,22 @@ final class MissingMethodCallHandler
             $stmt->getArgs(),
             null,
             null,
-            true,
             $context,
         ) === false) {
             return;
         }
 
-        if ($all_intersection_return_type && $all_intersection_existent_method_ids) {
+        // a part may know the method exists without knowing what it returns, like __invoke() of a callable-object
+        if ($all_intersection_existent_method_ids) {
             $result->existent_method_ids = array_merge(
                 $result->existent_method_ids,
                 $all_intersection_existent_method_ids,
             );
 
-            $result->return_type = Type::combineUnionTypes($all_intersection_return_type, $result->return_type);
+            $result->return_type = Type::combineUnionTypes(
+                $all_intersection_return_type ?? Type::getMixed(),
+                $result->return_type,
+            );
 
             return;
         }
@@ -570,6 +589,15 @@ final class MissingMethodCallHandler
             !$statements_analyzer->isStatic() && $method_id->fq_class_name === $context->self,
         );
 
+        $template_result = new TemplateResult([], $found_generic_params ?? []);
+        ClassTemplateParamCollector::markStarBindings(
+            $template_result,
+            $codebase,
+            $class_storage,
+            $lhs_type_part,
+            $found_generic_params,
+        );
+
         return MethodCallReturnTypeFetcher::getFirstClassCallableType(
             $codebase,
             $stmt,
@@ -578,7 +606,7 @@ final class MissingMethodCallHandler
                 $pseudo_method_storage->return_type,
                 $pseudo_method_storage->capabilities,
             ),
-            new TemplateResult([], $found_generic_params ?? []),
+            $template_result,
             $pseudo_method_storage->template_types ?? [],
             $defining_class_storage->name,
             $lhs_type_part instanceof Atomic\TNamedObject ? $lhs_type_part : $method_id->fq_class_name,

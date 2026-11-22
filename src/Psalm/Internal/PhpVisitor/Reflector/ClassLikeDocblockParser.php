@@ -40,6 +40,7 @@ use function implode;
 use function preg_match;
 use function preg_replace;
 use function reset;
+use function rtrim;
 use function str_contains;
 use function str_replace;
 use function strlen;
@@ -173,6 +174,8 @@ final class ClassLikeDocblockParser
         if (isset($parsed_docblock->tags['psalm-consistent-templates'])) {
             $info->consistent_templates = true;
         }
+
+        $info->named_arguments = DocblockParser::getNamedArguments($parsed_docblock);
 
         if (count($info->psalm_internal = DocblockParser::handlePsalmInternal($parsed_docblock)) !== 0) {
             $info->internal = true;
@@ -318,6 +321,8 @@ final class ClassLikeDocblockParser
             // the class's other templates, for its parameter types
             $param_template_map = $purity_template_map + array_fill_keys(array_column($info->templates, 0), true);
 
+            $comment_lines = explode("\n", $comment->getText());
+
             foreach ($parsed_docblock->combined_tags['method'] as $offset => $method_entry) {
                 $method_entry = (string) preg_replace('/[ \t]+/', ' ', trim($method_entry));
 
@@ -396,9 +401,10 @@ final class ClassLikeDocblockParser
                         if (preg_match('/^ ?: ?(\S.*)$/s', $after_paren, $return_matches)
                             && isset($return_matches[1])
                         ) {
-                            $method_entry .= ':' . CommentAnalyzer::sanitizeDocblockType(
-                                CommentAnalyzer::splitDocLine($return_matches[1])[0],
-                            );
+                            $return_type = rtrim(CommentAnalyzer::splitDocLine($return_matches[1])[0], ';');
+                            if ($return_type !== '') {
+                                $method_entry .= ':' . CommentAnalyzer::sanitizeDocblockType($return_type);
+                            }
                         }
                     }
                 }
@@ -467,12 +473,23 @@ final class ClassLikeDocblockParser
                     }
 
                     if (!$has_return) {
-                        $docblock_lines[] = '@return ' . TypeParser::getTypeFromTree(
-                            $method_tree->children[1],
-                            $codebase,
-                            null,
-                            $purity_template_map,
-                        )->toNamespacedString($aliases->namespace, $aliases->uses, null, false);
+                        try {
+                            $return_type = TypeParser::getTypeFromTree(
+                                $method_tree->children[1],
+                                $codebase,
+                                null,
+                                $purity_template_map,
+                            );
+                        } catch (TypeParseTreeException $e) {
+                            throw new DocblockParseException(
+                                $method_entry . ' is not a valid method: ' . $e->getMessage(),
+                                0,
+                                $e,
+                            );
+                        }
+
+                        $docblock_lines[] = '@return '
+                            . $return_type->toNamespacedString($aliases->namespace, $aliases->uses, null, false);
                     }
 
                     $method_tree = $method_tree->children[0];
@@ -547,7 +564,7 @@ final class ClassLikeDocblockParser
                 /** @var Doc */
                 $node_doc_comment = $node->getDocComment();
 
-                $method_offset = self::getMethodOffset($comment, $method_entry);
+                $method_offset = self::getMethodOffset($comment_lines, $method_entry);
 
                 $statements[0]->stmts[0]->setAttribute('startLine', $node_doc_comment->getStartLine() + $method_offset);
                 $statements[0]->stmts[0]->setAttribute('startFilePos', $node_doc_comment->getStartFilePos());
@@ -708,11 +725,11 @@ final class ClassLikeDocblockParser
     }
 
     /**
+     * @param list<string> $lines
      * @psalm-pure
      */
-    private static function getMethodOffset(Doc $comment, string $method_entry): int
+    private static function getMethodOffset(array $lines, string $method_entry): int
     {
-        $lines = explode("\n", $comment->getText());
         $method_offset = 0;
 
         foreach ($lines as $i => $line) {

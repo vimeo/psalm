@@ -15,7 +15,10 @@ use Psalm\Internal\Provider\FileStorageProvider;
 use Psalm\Internal\Type\IterationPurity;
 use Psalm\Internal\Type\PurityArguments;
 use Psalm\Internal\Type\TemplateDefaults;
+use Psalm\Internal\Type\TemplateInferredTypeReplacer;
+use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TypeAlias\ClassTypeAlias;
+use Psalm\Internal\TypeVisitor\ContainsTemplateExpressionVisitor;
 use Psalm\Issue\CircularReference;
 use Psalm\Issue\UndefinedTrait;
 use Psalm\IssueBuffer;
@@ -26,6 +29,7 @@ use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\FileStorage;
 use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Storage\MethodStorage;
+use Psalm\Storage\NamedArguments;
 use Psalm\Storage\PropertyStorage;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TCapabilities;
@@ -39,6 +43,7 @@ use Psalm\Type\Atomic\TTypeAlias;
 use Psalm\Type\Union;
 use UnitEnum;
 
+use function array_any;
 use function array_filter;
 use function array_flip;
 use function array_intersect_key;
@@ -48,6 +53,7 @@ use function array_pop;
 use function array_search;
 use function array_splice;
 use function count;
+use function explode;
 use function in_array;
 use function key;
 use function reset;
@@ -89,6 +95,9 @@ final class Populator
     public function populateCodebase(): void
     {
         $this->progress->debug('ClassLikeStorage is populating' . "\n");
+
+        // before the members of the classes inherit their internal namespaces
+        $this->classlikes->markUnshippedCodeInternal();
 
         foreach ($this->classlike_storage_provider->getNew() as $class_storage) {
             $this->populateClassLikeStorage($class_storage);
@@ -224,7 +233,7 @@ final class Populator
             }
         }
 
-        return $atomic_types === [] ? null : $type->setTypes($atomic_types);
+        return $type->setTypes($atomic_types);
     }
 
     /**
@@ -610,11 +619,11 @@ final class Populator
                     continue;
                 }
 
-                $storage->pseudo_methods[$method_name] ??= $pseudo_method;
-
-                if (isset($parent_interface_storage->declaring_pseudo_method_ids[$method_name])) {
+                if (!isset($storage->pseudo_methods[$method_name])) {
+                    $storage->pseudo_methods[$method_name] = $pseudo_method;
                     $storage->declaring_pseudo_method_ids[$method_name]
-                        ??= $parent_interface_storage->declaring_pseudo_method_ids[$method_name];
+                        = $parent_interface_storage->declaring_pseudo_method_ids[$method_name]
+                            ?? new MethodIdentifier($parent_interface_storage->name, $method_name);
                 }
             }
         }
@@ -684,6 +693,7 @@ final class Populator
             foreach ($storage->properties as $property) {
                 if (!$property->is_static) {
                     $property->readonly = true;
+                    $property->readonly_public_set = false;
                     $property->allow_private_mutation = false;
                 }
             }
@@ -701,6 +711,7 @@ final class Populator
                 foreach ($storage->properties as $property) {
                     if (!$property->is_static) {
                         $property->readonly = true;
+                        $property->readonly_public_set = false;
                     }
                 }
             }
@@ -723,6 +734,8 @@ final class Populator
                 $property->internal = [...$storage->internal, ...$property->internal];
             }
         }
+
+        $this->inheritPropertyTypes($storage);
 
         $this->populateOverriddenMethods($storage, $storage_provider);
 
@@ -760,6 +773,51 @@ final class Populator
 
             unset($this->invalid_class_storages[$fq_classlike_name_lc]);
         }
+    }
+
+    /**
+     * @psalm-mutation-free
+     */
+    private static function returnTypeUsesAMethodTemplate(FunctionLikeStorage $method_storage): bool
+    {
+        if ($method_storage->return_type === null
+            || $method_storage->template_types === null
+            || $method_storage->template_types === []
+        ) {
+            return false;
+        }
+
+        return array_any(
+            $method_storage->return_type->getTemplateTypes(),
+            static fn(TTemplateParam $template): bool => isset($method_storage->template_types[$template->param_name]),
+        );
+    }
+
+    /**
+     * Whether two methods document the same return type and parameter types, so that either of them may document
+     * a method implementing both
+     *
+     * @psalm-mutation-free
+     */
+    private static function documentSameSignature(MethodStorage $first, ?MethodStorage $second): bool
+    {
+        if ($second === null) {
+            return false;
+        }
+
+        if ($first->return_type?->getId() !== $second->return_type?->getId()
+            || count($first->params) !== count($second->params)
+        ) {
+            return false;
+        }
+
+        foreach ($first->params as $i => $param) {
+            if ($param->type?->getId() !== $second->params[$i]->type?->getId()) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     private function populateOverriddenMethods(
@@ -810,6 +868,7 @@ final class Populator
                                 && (!$method_storage->throws || $method_storage->inheritdoc)
                             ) {
                                 $method_storage->throws += $interface_method_storage->throws;
+                                $method_storage->throw_intersections += $interface_method_storage->throw_intersections;
                             }
                         }
                     }
@@ -879,11 +938,15 @@ final class Populator
                         ?? $declaring_class_storage->pseudo_methods[$declaring_method_name]
                         ?? $declaring_class_storage->pseudo_static_methods[$declaring_method_name];
 
+                    // a method documenting its params takes the return type of the overridden one only when that
+                    // documents it, with no template of its own: the params of the method don't bind it
                     if (($declaring_method_storage->has_docblock_param_types
                             || $declaring_method_storage->has_docblock_return_type)
-                        && !$method_storage->has_docblock_param_types
                         && !$method_storage->has_docblock_return_type
                         && $inherited_return_type !== null
+                        && (!$method_storage->has_docblock_param_types
+                            || ($declaring_method_storage->has_docblock_return_type
+                                && !self::returnTypeUsesAMethodTemplate($declaring_method_storage)))
                     ) {
                         if (!isset($storage->documenting_method_ids[$method_name])
                             || (string) $storage->documenting_method_ids[$method_name]
@@ -906,6 +969,12 @@ final class Populator
                                     $declaring_class,
                                     $documenting_class_storage->parent_interfaces,
                                 ) && $documenting_class_storage->is_interface
+                                    && !self::documentSameSignature(
+                                        $declaring_method_storage,
+                                        $documenting_class_storage->methods[
+                                            $storage->documenting_method_ids[$method_name]->method_name
+                                        ] ?? null,
+                                    )
                                 ) {
                                     unset($storage->documenting_method_ids[$method_name]);
                                     $inherited_return_type = null;
@@ -914,11 +983,7 @@ final class Populator
                         }
                     }
 
-                    if (!$is_own_method) {
-                        continue;
-                    }
-
-                    // tell the declaring class it's overridden downstream
+                    // tell the declaring class it's overridden downstream, by a method of this class or of a trait
                     $declaring_method_storage->overridden_downstream = true;
                     $declaring_method_storage->overridden_somewhere = true;
 
@@ -927,10 +992,25 @@ final class Populator
                         $declaring_method_storage->mutation_free_assumed = false;
                     }
 
+                    if (!$is_own_method) {
+                        continue;
+                    }
+
                     if ($declaring_method_storage->throws
                         && (!$method_storage->throws || $method_storage->inheritdoc)
                     ) {
                         $method_storage->throws += $declaring_method_storage->throws;
+                        $method_storage->throw_intersections += $declaring_method_storage->throw_intersections;
+                    }
+
+                    // a method without its own tag keeps the tag of the method it overrides, while a method that
+                    // disallows named arguments is reported as MethodSignatureMismatch, as the parent allows them
+                    if ($method_storage->named_arguments === null
+                        && $declaring_method_storage->named_arguments !== null
+                        && $declaring_method_storage->named_arguments !== NamedArguments::NOT_ALLOWED
+                        && ($method_name !== '__construct' || $declaring_class_storage->preserve_constructor_signature)
+                    ) {
+                        $method_storage->named_arguments = $declaring_method_storage->named_arguments;
                     }
                 }
 
@@ -1039,7 +1119,28 @@ final class Populator
                     $extended_types[] = $atomic_type;
                 }
             } else {
-                $extended_types[] = $atomic_type;
+                // a template of a class in between nested in a composed argument (`@extends Base<Box<TModel>>`)
+                $nested_arguments = [];
+
+                foreach ((new Union([$atomic_type]))->getTemplateTypes() as $nested_template) {
+                    $nested_argument = $storage
+                        ->template_extended_params[$nested_template->defining_class][$nested_template->param_name]
+                            ?? null;
+
+                    if ($nested_argument) {
+                        $nested_arguments[$nested_template->param_name][$nested_template->defining_class]
+                            = $nested_argument;
+                    }
+                }
+
+                if ($nested_arguments === []) {
+                    $extended_types[] = $atomic_type;
+                } else {
+                    $extended_types[] = $atomic_type->replaceTemplateTypesWithArgTypes(
+                        new TemplateResult([], $nested_arguments),
+                        null,
+                    );
+                }
             }
         }
 
@@ -1071,6 +1172,13 @@ final class Populator
         }
 
         $this->populateClassLikeStorage($parent_storage, $dependent_classlikes);
+
+        // The parent was named by a class_alias() that is only scanned after this class
+        if ($storage->parent_class !== null && strtolower($storage->parent_class) !== $parent_storage_class) {
+            unset($storage->parent_classes[strtolower($storage->parent_class)]);
+            $storage->parent_class = $parent_storage->name;
+            $storage->parent_classes = [$parent_storage_class => $parent_storage->name, ...$storage->parent_classes];
+        }
 
         $storage->parent_classes = [...$storage->parent_classes, ...$parent_storage->parent_classes];
 
@@ -1132,25 +1240,26 @@ final class Populator
     {
         $fq_class_name_lc = strtolower($storage->name);
 
+        // a plugin can add a `@method` without its declaring id
         foreach ($parent_storage->pseudo_methods as $method_name => $pseudo_method) {
-            if (!$this->hasPublicMethodAppearingInClass($storage, $fq_class_name_lc, $method_name)) {
-                $storage->pseudo_methods[$method_name] ??= $pseudo_method;
-
-                if (isset($parent_storage->declaring_pseudo_method_ids[$method_name])) {
-                    $storage->declaring_pseudo_method_ids[$method_name]
-                        ??= $parent_storage->declaring_pseudo_method_ids[$method_name];
-                }
+            if (!isset($storage->pseudo_methods[$method_name])
+                && !$this->hasPublicMethodAppearingInClass($storage, $fq_class_name_lc, $method_name)
+            ) {
+                $storage->pseudo_methods[$method_name] = $pseudo_method;
+                $storage->declaring_pseudo_method_ids[$method_name]
+                    = $parent_storage->declaring_pseudo_method_ids[$method_name]
+                        ?? new MethodIdentifier($parent_storage->name, $method_name);
             }
         }
 
         foreach ($parent_storage->pseudo_static_methods as $method_name => $pseudo_method) {
-            if (!$this->hasPublicMethodAppearingInClass($storage, $fq_class_name_lc, $method_name)) {
-                $storage->pseudo_static_methods[$method_name] ??= $pseudo_method;
-
-                if (isset($parent_storage->declaring_pseudo_static_method_ids[$method_name])) {
-                    $storage->declaring_pseudo_static_method_ids[$method_name]
-                        ??= $parent_storage->declaring_pseudo_static_method_ids[$method_name];
-                }
+            if (!isset($storage->pseudo_static_methods[$method_name])
+                && !$this->hasPublicMethodAppearingInClass($storage, $fq_class_name_lc, $method_name)
+            ) {
+                $storage->pseudo_static_methods[$method_name] = $pseudo_method;
+                $storage->declaring_pseudo_static_method_ids[$method_name]
+                    = $parent_storage->declaring_pseudo_static_method_ids[$method_name]
+                        ?? new MethodIdentifier($parent_storage->name, $method_name);
             }
         }
     }
@@ -1314,11 +1423,13 @@ final class Populator
         if ($parent_storage->template_types) {
             $storage->template_extended_params[$parent_storage->name] = [];
 
-            if (isset($storage->template_extended_offsets[$parent_storage->name])) {
+            $parent_name_lc = strtolower($parent_storage->name);
+
+            if (isset($storage->template_extended_offsets[$parent_name_lc])) {
                 // the generic types written in the arguments get the defaults they leave out, as in any other use
                 $written_params = [];
 
-                foreach ($storage->template_extended_offsets[$parent_storage->name] as $written_param) {
+                foreach ($storage->template_extended_offsets[$parent_name_lc] as $written_param) {
                     $written_params[] = TemplateDefaults::fillNested(
                         $written_param,
                         $this->classlike_storage_provider,
@@ -1328,12 +1439,12 @@ final class Populator
 
                 // `@extends Foo<A>` leaving out trailing templates with a default, `@extends Foo[pure]` for a
                 // class with type templates
-                $storage->template_extended_offsets[$parent_storage->name] = PurityArguments::align(
+                $storage->template_extended_offsets[$parent_name_lc] = PurityArguments::align(
                     TemplateDefaults::fillTypeArguments($written_params, $parent_storage, null, true),
                     $parent_storage,
                 );
 
-                foreach ($storage->template_extended_offsets[$parent_storage->name] as $i => $type) {
+                foreach ($storage->template_extended_offsets[$parent_name_lc] as $i => $type) {
                     $parent_template_type_names = array_keys($parent_storage->template_types);
 
                     $mapped_name = $parent_template_type_names[$i] ?? null;
@@ -1641,6 +1752,19 @@ final class Populator
                 $aliased_constant_name_lc = strtolower($constant_name);
                 $aliased_constant_name = $constant_name;
             }
+            // The class's own declaration wins over the constant of the trait. A plain isset() can't tell it from
+            // an inherited one: when a storage is populated again (the Populator resets `populated`), constants
+            // already holds the copies of the parent and of the trait from the first run.
+            $own_location = ($storage->constants[$aliased_constant_name] ?? null)?->location;
+            if ($own_location !== null
+                && $storage->stmt_location !== null
+                && $own_location->file_path === $storage->stmt_location->file_path
+                && $own_location->raw_file_start >= $storage->stmt_location->raw_file_start
+                && $own_location->raw_file_end <= $storage->stmt_location->raw_file_end
+            ) {
+                continue;
+            }
+
             $visibility = $storage->trait_visibility_map[$aliased_constant_name_lc]
                 ?? $class_constant_storage->visibility;
             $final = $storage->trait_final_map[$aliased_constant_name_lc] ?? $class_constant_storage->final;
@@ -1657,6 +1781,8 @@ final class Populator
                 $class_constant_storage->attributes,
                 $class_constant_storage->suppressed_issues,
                 $class_constant_storage->description,
+                $class_constant_storage->since_php_version_id,
+                $class_constant_storage->signature_type,
             );
         }
     }
@@ -1887,6 +2013,125 @@ final class Populator
             }
 
             $storage->inheritable_property_ids[$property_name] = $inheritable_property_id;
+        }
+    }
+
+    /**
+     * A property redeclared without a docblock type has the docblock type of the property it overrides, where the
+     * native types are the same
+     */
+    private function inheritPropertyTypes(ClassLikeStorage $storage): void
+    {
+        $promoted_params = [];
+
+        foreach ($storage->methods['__construct']->params ?? [] as $param) {
+            if ($param->promoted_property) {
+                $promoted_params[$param->name] = $param;
+            }
+        }
+
+        $parent_storage = $storage->parent_class !== null
+            && $this->classlike_storage_provider->has($storage->parent_class)
+                ? $this->classlike_storage_provider->get($storage->parent_class)
+                : null;
+        $template_result = null;
+
+        foreach ($storage->properties as $property_name => $property_storage) {
+            if ($property_storage->has_docblock_type) {
+                continue;
+            }
+
+            $promoted_param = $promoted_params[$property_name] ?? null;
+
+            if ($property_storage->inherited_type) {
+                // populated again
+                $property_storage->type = $property_storage->own_type;
+                $property_storage->own_type = null;
+                $property_storage->inherited_type = false;
+
+                if ($promoted_param) {
+                    $promoted_param->type = $property_storage->type;
+                    $promoted_param->type_location = $property_storage->type_location;
+                }
+            }
+
+            $documenting_class = $parent_storage?->declaring_property_ids[$property_name] ?? null;
+
+            if ($parent_storage === null
+                || $documenting_class === null
+                || !$this->classlike_storage_provider->has($documenting_class)
+            ) {
+                continue;
+            }
+
+            $documenting_property_storage = $this->classlike_storage_provider->get($documenting_class)
+                ->properties[$property_name] ?? null;
+
+            if ($documenting_property_storage === null
+                || $documenting_property_storage->visibility === ClassLikeAnalyzer::VISIBILITY_PRIVATE
+                || $documenting_property_storage->type === null
+                || !($documenting_property_storage->has_docblock_type || $documenting_property_storage->inherited_type)
+                || $property_storage->is_static !== $documenting_property_storage->is_static
+                || $property_storage->native_readonly !== $documenting_property_storage->native_readonly
+                || !($property_storage->signature_type === null
+                    ? $documenting_property_storage->signature_type === null
+                    : $documenting_property_storage->signature_type !== null
+                        && $property_storage->signature_type->equals($documenting_property_storage->signature_type))
+            ) {
+                continue;
+            }
+
+            // `self` and `parent` are those of the class the docblock is written for (a trait's user for a trait)
+            $appearing_property_id = $parent_storage->appearing_property_ids[$property_name] ?? $documenting_class;
+            [$self_class] = explode('::$', $appearing_property_id);
+            $type = $documenting_property_storage->type->replaceClassLike('self', $self_class);
+
+            $self_class_parent = $this->classlike_storage_provider->has($self_class)
+                ? $this->classlike_storage_provider->get($self_class)->parent_class
+                : null;
+
+            if ($self_class_parent !== null) {
+                $type = $type->replaceClassLike('parent', $self_class_parent);
+            }
+
+            if ($storage->template_extended_params !== null) {
+                // localizing a type computed from templates takes a Codebase, which population has not
+                $template_expression_finder = new ContainsTemplateExpressionVisitor();
+                $template_expression_finder->traverse($type);
+
+                if ($template_expression_finder->matches()) {
+                    continue;
+                }
+
+                if ($template_result === null) {
+                    $lower_bounds = [];
+
+                    foreach ($storage->template_extended_params as $template_class => $type_map) {
+                        foreach ($type_map as $template_name => $extended_type) {
+                            $lower_bounds[$template_name][$template_class] = $extended_type;
+                        }
+                    }
+
+                    $template_result = new TemplateResult([], $lower_bounds);
+                }
+
+                $type = TemplateInferredTypeReplacer::replace($type, $template_result, null);
+
+                // a template replaced by its bound, or by `mixed` when the bound is missing, is still a docblock type
+                if ($documenting_property_storage->type->from_docblock) {
+                    $type = $type->setFromDocblock();
+                }
+            }
+
+            $property_storage->own_type = $property_storage->type;
+            $property_storage->type = $type;
+            $property_storage->inherited_type = true;
+
+            if ($promoted_param) {
+                $promoted_param->type = $type;
+                // the default is checked against the type
+                $promoted_param->type_location ??= $promoted_param->location;
+            }
         }
     }
 }

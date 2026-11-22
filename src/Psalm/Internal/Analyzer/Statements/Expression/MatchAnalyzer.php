@@ -188,7 +188,7 @@ final class MatchAnalyzer
 
         $statements_analyzer->node_data = clone $statements_analyzer->node_data;
 
-        if (!$last_arm->conds) {
+        if ($last_arm->conds === null || $last_arm->conds === []) {
             $ternary = $last_arm->body;
         } else {
             $ternary = new VirtualTernary(
@@ -214,7 +214,7 @@ final class MatchAnalyzer
         }
 
         foreach ($arms as $arm) {
-            if (!$arm->conds) {
+            if ($arm->conds === null || $arm->conds === []) {
                 continue;
             }
 
@@ -253,13 +253,13 @@ final class MatchAnalyzer
             return false;
         }
 
-        if ($switch_var_id && $last_arm->conds) {
+        if ($switch_var_id && $last_arm->conds !== null && $last_arm->conds !== []) {
             $codebase = $statements_analyzer->getCodebase();
 
             $all_conds = $last_arm->conds;
 
             foreach ($arms as $arm) {
-                if (!$arm->conds) {
+                if ($arm->conds === null || $arm->conds === []) {
                     throw new UnexpectedValueException('bad');
                 }
 
@@ -331,7 +331,14 @@ final class MatchAnalyzer
             $statements_analyzer->removeSuppressedIssues($analysis_suppressions);
 
             $reconcilable_types = Algebra::getTruthsFromFormula(
-                Algebra::negateFormula($clauses),
+                FormulaGenerator::getNegatedFormula(
+                    $clauses,
+                    $all_match_condition,
+                    spl_object_id($all_match_condition),
+                    $context->self,
+                    $statements_analyzer,
+                    $codebase,
+                ),
             );
 
             // if the if has an || in the conditional, we cannot easily reason about it

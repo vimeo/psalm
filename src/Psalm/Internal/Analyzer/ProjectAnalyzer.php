@@ -269,6 +269,8 @@ final class ProjectAnalyzer
         }
 
         self::$instance = $this;
+
+        NamespaceAnalyzer::clearCache();
     }
 
     private bool $extra_files_initialized = false;
@@ -418,10 +420,7 @@ final class ProjectAnalyzer
         return isset($list[$file_path]);
     }
 
-    /**
-     * @psalm-mutation-free
-     */
-    private function generatePHPVersionMessage(): string
+    private function generateAnalysisSetupMessage(): string
     {
         $codebase = $this->codebase;
 
@@ -443,30 +442,35 @@ final class ProjectAnalyzer
                 break;
         }
 
+        $config = $codebase->config;
+
         $unsupported_php_extensions = array_diff(
-            array_keys($codebase->config->php_extensions_not_supported),
-            $codebase->config->php_extensions_supported_by_psalm_callmaps,
+            array_keys($config->php_extensions_not_supported),
+            $config->php_extensions_supported_by_psalm_callmaps,
         );
 
-        $message = "Target PHP version: "
-            .$codebase->getMajorAnalysisPhpVersion()."."
-            .$codebase->getMinorAnalysisPhpVersion()." "
-            .$source.'.'
-        ;
+        $lines = [
+            'Target PHP version: '
+            . $codebase->getMajorAnalysisPhpVersion() . '.' . $codebase->getMinorAnalysisPhpVersion()
+            . ' ' . $source,
+        ];
 
-        $enabled_extensions_names = array_keys(array_filter($codebase->config->php_extensions));
+        $enabled_extensions_names = array_keys(array_filter($config->php_extensions));
         if (count($enabled_extensions_names) > 0) {
-            $message .= ' Enabled extensions: ' . implode(', ', $enabled_extensions_names);
+            $lines[] = 'Enabled extensions: ' . implode(', ', $enabled_extensions_names);
         }
 
         if (count($unsupported_php_extensions) > 0) {
-            $message .= ' (unsupported extensions: ' . implode(', ', $unsupported_php_extensions) . ')';
+            $lines[] = 'Unsupported extensions: ' . implode(', ', $unsupported_php_extensions);
         }
 
-        // each sentence ends with a dot: the target version always, the extensions when there are any
-        $message .= (str_ends_with($message, '.') ? '' : '.') . PHP_EOL . PHP_EOL;
+        $plugins = $config->getPluginNames();
+        if (count($plugins) > 0) {
+            $lines[] = 'Enabled plugins: ' . implode(', ', $plugins);
+        }
 
-        return $message;
+        // no blank line at the end: Progress::startPhase(Phase::SCAN), which follows, starts with one
+        return implode(PHP_EOL, $lines) . PHP_EOL;
     }
 
     public function check(string $base_dir, bool $is_diff = false): void
@@ -474,7 +478,7 @@ final class ProjectAnalyzer
         if (!$base_dir) {
             throw new InvalidArgumentException('Cannot work with empty base_dir');
         }
-        $this->progress->write($this->generatePHPVersionMessage());
+        $this->progress->write($this->generateAnalysisSetupMessage());
         $this->progress->startPhase(Phase::SCAN, $this->scanThreads);
 
         $project_files = $this->initProjectFiles();
@@ -903,7 +907,7 @@ final class ProjectAnalyzer
 
     public function checkDir(string $dir_name): void
     {
-        $this->progress->write($this->generatePHPVersionMessage());
+        $this->progress->write($this->generateAnalysisSetupMessage());
         $this->progress->startPhase(Phase::SCAN, $this->scanThreads);
 
         if (!$this->project_files_initialized) {
@@ -1011,7 +1015,7 @@ final class ProjectAnalyzer
 
     public function checkFile(string $file_path): void
     {
-        $this->progress->write($this->generatePHPVersionMessage());
+        $this->progress->write($this->generateAnalysisSetupMessage());
         $this->progress->startPhase(Phase::SCAN, $this->scanThreads);
 
         $this->progress->debug('Checking ' . $file_path . PHP_EOL);
@@ -1054,7 +1058,7 @@ final class ProjectAnalyzer
      */
     public function checkPaths(array $paths_to_check): void
     {
-        $this->progress->write($this->generatePHPVersionMessage());
+        $this->progress->write($this->generateAnalysisSetupMessage());
         $this->progress->startPhase(Phase::SCAN, $this->scanThreads);
 
         if (!$this->project_files_initialized) {
@@ -1350,7 +1354,7 @@ final class ProjectAnalyzer
     }
 
     /**
-     * Parsed statements of files whose methods getMethodMutations() inlined, least recently used first.
+     * Parsed statements of files whose methods analyzeInFileOfClassLike() analyzed again, least recently used first.
      * Inlining $this->method() and parent::method() calls made by a constructor fetched the declaring file
      * every time: a full unserialize from the parser cache when arrayCache is off, and for vendor files, which
      * StatementsProvider keeps serialized, whatever arrayCache says.
@@ -1469,32 +1473,51 @@ final class ProjectAnalyzer
             return;
         }
 
-        $file_analyzer = $this->getFileAnalyzerForClassLike($fq_class_name);
-
-        $file_analyzer->setRootFilePath($root_file_path, $root_file_name);
-
-        if ($appearing_fq_class_name !== $fq_class_name) {
-            $file_analyzer = $this->getFileAnalyzerForClassLike($appearing_fq_class_name);
-        }
-
-        // the files being analysed when the method is called: what the method's file includes of them is not
-        // included again
-        $calling_file_analyzer?->passIncludeChainTo($file_analyzer);
-
-        $stmts = $this->getStatementsForMutations($file_analyzer->getFilePath());
-
-        $file_analyzer->populateCheckers($stmts, false);
-
         if (!$this_context->self) {
             $this_context->self = $fq_class_name;
             $this_context->vars_in_scope['$this'] = Type::parseString($fq_class_name);
         }
 
-        $file_analyzer->getMethodMutations($appearing_method_id, $this_context, true);
+        $this->analyzeInFileOfClassLike(
+            $appearing_fq_class_name,
+            $root_file_path,
+            $root_file_name,
+            static function (FileAnalyzer $file_analyzer) use ($appearing_method_id, $this_context): void {
+                $file_analyzer->getMethodMutations($appearing_method_id, $this_context, true);
+            },
+            $calling_file_analyzer,
+        );
+    }
 
-        $file_analyzer->class_analyzers_to_analyze = [];
-        $file_analyzer->interface_analyzers_to_analyze = [];
-        $file_analyzer->clearSourceBeforeDestruction();
+    /**
+     * Runs $analyze on an analyzer of the file declaring $fq_class_name, with the checkers of that file, as part of
+     * the analysis of $root_file_path
+     *
+     * @param callable(FileAnalyzer): void $analyze
+     */
+    public function analyzeInFileOfClassLike(
+        string $fq_class_name,
+        string $root_file_path,
+        string $root_file_name,
+        callable $analyze,
+        ?FileAnalyzer $calling_file_analyzer = null,
+    ): void {
+        $file_analyzer = $this->getFileAnalyzerForClassLike($fq_class_name);
+        $file_analyzer->setRootFilePath($root_file_path, $root_file_name);
+
+        // the files being analysed when the method is called: what the method's file includes of them is not
+        // included again
+        $calling_file_analyzer?->passIncludeChainTo($file_analyzer);
+
+        $file_analyzer->populateCheckers($this->getStatementsForMutations($file_analyzer->getFilePath()), false);
+
+        try {
+            $analyze($file_analyzer);
+        } finally {
+            $file_analyzer->class_analyzers_to_analyze = [];
+            $file_analyzer->interface_analyzers_to_analyze = [];
+            $file_analyzer->clearSourceBeforeDestruction();
+        }
     }
 
     public function getFunctionLikeAnalyzer(

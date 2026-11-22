@@ -48,6 +48,35 @@ final class ConstantTest extends TestCase
         $this->analyzeFile($file2, new Context());
     }
 
+    public function testTheNamespaceConstantsOfAnEarlierAnalysisAreForgotten(): void
+    {
+        $file_path = (string) getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                namespace Foo;
+
+                const E_ERROR = 4;
+            ',
+        );
+        $this->analyzeFile($file_path, new Context());
+
+        // a new analysis, as for the next test, of code without that constant
+        $this->setUp();
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                namespace Foo;
+
+                /** @psalm-check-type-exact $value = 1 */
+                $value = E_ERROR;
+            ',
+        );
+        $this->analyzeFile($file_path, new Context());
+    }
+
     public function testGlobalConstantOfEnumCasesFromAnotherFile(): void
     {
         $this->project_analyzer->setPhpVersion('8.1', 'tests');
@@ -280,6 +309,175 @@ final class ConstantTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'importedConstantShadowsAPhpConstantInAParameterDefault' => [
+                'code' => '<?php
+                    namespace One {
+                        const VALUE = 10;
+                    }
+
+                    namespace Lib {
+                        use const One\VALUE as JSON_THROW_ON_ERROR;
+
+                        /**
+                         * @template T
+                         * @param T $v
+                         * @return T
+                         */
+                        function f($v = JSON_THROW_ON_ERROR) {
+                            return $v;
+                        }
+
+                        /** @return 10 */
+                        function check(): int {
+                            return f();
+                        }
+                    }',
+            ],
+            'namespaceConstantShadowsAPhpConstantInAClassConstant' => [
+                'code' => '<?php
+                    namespace Lib {
+                        const JSON_THROW_ON_ERROR = 7;
+
+                        final class C {
+                            const X = JSON_THROW_ON_ERROR;
+                        }
+
+                        $a = C::X;
+                    }',
+                'assertions' => [
+                    '$a===' => '7',
+                ],
+            ],
+            'namespaceConstantShadowsAPhpConstantInAParamDefault' => [
+                'code' => '<?php
+                    namespace Lib {
+                        const JSON_THROW_ON_ERROR = 7;
+
+                        /**
+                         * @template T
+                         * @param T $v
+                         * @return T
+                         */
+                        function f($v = JSON_THROW_ON_ERROR) {
+                            return $v;
+                        }
+
+                        /** @return 7 */
+                        function check(): int {
+                            return f();
+                        }
+                    }',
+            ],
+            'importedConstantShadowsAPhpConstantInAClassConstant' => [
+                'code' => '<?php
+                    namespace One {
+                        const VALUE = 10;
+                    }
+
+                    namespace Lib {
+                        use const One\VALUE as JSON_THROW_ON_ERROR;
+
+                        final class C {
+                            const X = JSON_THROW_ON_ERROR;
+                        }
+
+                        $a = C::X;
+                    }',
+                'assertions' => [
+                    '$a===' => '10',
+                ],
+            ],
+            'overrideNarrowingTheNativeTypeOfTheParentConstant' => [
+                'code' => '<?php
+                    class A {
+                        public const int|string X = 1;
+                    }
+                    final class B extends A {
+                        public const int X = 2;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
+            'dynamicFetchWithLiteralNames' => [
+                'code' => '<?php
+                    final class C {
+                        public const A = 1;
+                        public const B = "b";
+                    }
+                    enum E {
+                        case One;
+                    }
+                    $name = "A";
+                    $a = C::{$name};
+                    $either = C::{rand(0, 1) ? "A" : "B"};
+                    $c = new C();
+                    $b = $c::{"B"};
+                    $case = E::{"One"};
+                    $class = "class";
+                    $className = C::{$class};',
+                'assertions' => [
+                    '$a===' => '1',
+                    '$either===' => "'b'|1",
+                    '$b===' => "'b'",
+                    '$case===' => 'enum(E::One)',
+                    '$className===' => 'C::class',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
+            'dynamicFetchOfTheClassNameOfStatic' => [
+                'code' => '<?php
+                    class A {
+                        public function f(A $o): void {
+                            $static = static::{"class"};
+                            $this_class = $this::{"class"};
+                            $o_class = $o::{"class"};
+                            /** @psalm-check-type-exact $static = class-string<A&static> */
+                            /** @psalm-check-type-exact $this_class = class-string<A&static> */
+                            /** @psalm-check-type-exact $o_class = class-string<A> */
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
+            'dynamicFetchOfLiteralNamesOneOfThemMissing' => [
+                'code' => '<?php
+                    final class C {
+                        public const A = 1;
+                    }
+                    $value = C::{rand(0, 1) ? "A" : "Z"};',
+                'assertions' => [
+                    '$value===' => 'mixed',
+                ],
+                'ignored_issues' => ['UndefinedConstant', 'MixedAssignment'],
+                'php_version' => '8.3',
+            ],
+            'overrideKeepingTheNativeTypeOfTheParentConstant' => [
+                'code' => '<?php
+                    interface HasVersion {
+                        public const string VERSION = "1";
+                    }
+
+                    class Base implements HasVersion {
+                        public const string VERSION = "2";
+                        public const int LIMIT = 10;
+                    }
+
+                    final class Child extends Base {
+                        public const string VERSION = "3";
+                        public const int LIMIT = 20;
+                    }
+
+                    $limit = Child::LIMIT;
+                ',
+                'assertions' => [
+                    '$limit===' => '20',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
             'staticConstantMapOffsetWithANullDefaultOfDestructuredValues' => [
                 'code' => '<?php
                     class Handler
@@ -441,6 +639,7 @@ final class ConstantTest extends TestCase
                     '$fromIntermediate===' => 'int',
                     '$fromNotANumber===' => 'int',
                 ],
+                'ignored_issues' => ['ImplicitFloatToIntCast'],
             ],
 
             'constantInFunction' => [
@@ -538,6 +737,19 @@ final class ConstantTest extends TestCase
                     $a = C::POTATO;',
                 'assertions' => [],
                 'ignored_issues' => ['MixedAssignment'],
+            ],
+            'classConstantTypeNamingAnUndefinedConstant' => [
+                'code' => '<?php
+                    final class A {
+                        public const X = UNDEF_CONST;
+                    }
+
+                    /** @return A::X */
+                    function g() {
+                        return 1;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['UndefinedConstant', 'MixedReturnStatement', 'MissingClassConstType'],
             ],
             'hardToDefineClassConstant' => [
                 'code' => '<?php
@@ -2695,6 +2907,52 @@ final class ConstantTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'docblockTypeOfAConstantFetchedOnAnInstance' => [
+                'code' => '<?php
+                    class A {
+                        /** @var int */
+                        const C = 1;
+                    }
+
+                    function f(A $a): int {
+                        return $a::C;
+                    }
+
+                    function g(A $a): int {
+                        $c = $a::C;
+                        /** @psalm-check-type-exact $c = int */
+                        return $c;
+                    }
+                ',
+            ],
+            'valueOfAConstantFetchedOnAFinalClassInstance' => [
+                'code' => '<?php
+                    final class A {
+                        /** @var int */
+                        const C = 1;
+                    }
+
+                    function f(A $a): int {
+                        $c = $a::C;
+                        /** @psalm-check-type-exact $c = 1 */
+                        return $c;
+                    }
+                ',
+            ],
+            'valueOfAStaticConstantFetchInAFinalClass' => [
+                'code' => '<?php
+                    final class A {
+                        /** @var int */
+                        const C = 1;
+
+                        public function f(): int {
+                            $c = static::C;
+                            /** @psalm-check-type-exact $c = 1 */
+                            return $c;
+                        }
+                    }
+                ',
+            ],
         ];
     }
 
@@ -2705,6 +2963,62 @@ final class ConstantTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'overrideWideningTheNativeTypeOfTheParentConstant' => [
+                'code' => '<?php
+                    class A {
+                        public const int X = 1;
+                    }
+                    final class B extends A {
+                        public const int|string X = 2;
+                    }',
+                'error_message' => 'InvalidClassConstantType - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:49 - The native type "int|string" of B::X is not contained in the native type "int" of A::X',
+                'error_levels' => [],
+                'php_version' => '8.3',
+            ],
+            'overrideDroppingTheNativeTypeOfTheParentConstant' => [
+                'code' => '<?php
+                    interface I {
+                        const int X = 1;
+                    }
+                    final class B implements I {
+                        /** @var int */
+                        const X = 2;
+                    }',
+                'error_message' => 'InvalidClassConstantType - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:31 - B::X must declare a native type contained in the native type "int" of I::X',
+                'error_levels' => [],
+                'php_version' => '8.3',
+            ],
+            'dynamicFetchOfAMissingConstant' => [
+                'code' => '<?php
+                    final class C {
+                        public const A = 1;
+                    }
+                    $name = "Z";
+                    echo C::{$name};',
+                'error_message' => 'UndefinedConstant',
+                'error_levels' => [],
+                'php_version' => '8.3',
+            ],
+            'dynamicFetchWithAnEmptyName' => [
+                'code' => '<?php
+                    final class C {
+                        public const A = 1;
+                    }
+                    $name = "";
+                    echo C::{$name};',
+                'error_message' => 'UndefinedConstant - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:26 - Constant C:: is not defined',
+                'error_levels' => [],
+                'php_version' => '8.3',
+            ],
+            'dynamicFetchOnAMissingClass' => [
+                'code' => '<?php
+                    function f(string $name): mixed {
+                        return Missing::{$name};
+                    }',
+                'error_message' => 'UndefinedClass',
+                'error_levels' => [],
+                'php_version' => '8.3',
+            ],
             'constantDeclaredWithClassConstantWildcardTypeRejectsOtherValues' => [
                 'code' => '<?php
                     class Foo
@@ -3260,6 +3574,35 @@ final class ConstantTest extends TestCase
                 'error_levels' => [],
                 'php_version' => '8.1',
             ],
+            'overrideViolatingTheNativeTypeOfTheParentConstant' => [
+                'code' => '<?php
+                    class Base {
+                        public const int LIMIT = 10;
+                    }
+
+                    final class Child extends Base {
+                        public const int|string LIMIT = "unlimited";
+                    }
+                ',
+                'error_message' => 'does not satisfy the type "int" inherited from Base::LIMIT',
+                'error_levels' => [],
+                'php_version' => '8.3',
+            ],
+            'overrideViolatingTheDocblockTypeOfANativelyTypedConstant' => [
+                'code' => '<?php
+                    class Base {
+                        /** @var positive-int */
+                        public const int LIMIT = 10;
+                    }
+
+                    final class Child extends Base {
+                        public const int LIMIT = -1;
+                    }
+                ',
+                'error_message' => 'InvalidClassConstantType',
+                'error_levels' => [],
+                'php_version' => '8.3',
+            ],
             'overrideFinalClassConstFromExtendedClass' => [
                 'code' => '<?php
                     class Foo
@@ -3361,6 +3704,32 @@ final class ConstantTest extends TestCase
                     }
 
                     $a = C::{"A"};
+                ',
+                'error_message' => 'ParseError',
+                'error_levels' => [],
+                'php_version' => '8.2',
+            ],
+            'unsupportedDynamicFetchOnAnInstance' => [
+                'code' => '<?php
+                    class C {
+                        const A = 0;
+                    }
+
+                    function f(C $c): void {
+                        echo $c::{"A"};
+                    }
+                ',
+                'error_message' => 'ParseError',
+                'error_levels' => [],
+                'php_version' => '8.2',
+            ],
+            'unsupportedDynamicFetchOnAnExpression' => [
+                'code' => '<?php
+                    class C {
+                        const A = 0;
+                    }
+
+                    $a = (new C())::{"A"};
                 ',
                 'error_message' => 'ParseError',
                 'error_levels' => [],

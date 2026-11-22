@@ -5,8 +5,11 @@ declare(strict_types=1);
 namespace Psalm\Tests;
 
 use Override;
+use Psalm\Context;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
+
+use function getcwd;
 
 use const DIRECTORY_SEPARATOR;
 
@@ -15,6 +18,47 @@ final class TypeAnnotationTest extends TestCase
     use InvalidCodeAnalysisTestTrait;
     use ValidCodeAnalysisTestTrait;
 
+    public function testNullableReturnOfATypeAliasOfAClassScannedLaterContainsNull(): void
+    {
+        // files are scanned in the order of their paths
+        $stage_path = (string) getcwd() . DIRECTORY_SEPARATOR . 'Stage.php';
+        $builder_path = (string) getcwd() . DIRECTORY_SEPARATOR . 'lib' . DIRECTORY_SEPARATOR . 'ZBuilder.php';
+
+        $this->addFile(
+            $stage_path,
+            '<?php
+                namespace Lib;
+
+                /** @psalm-import-type StageExpression from Builder */
+                abstract class Stage
+                {
+                    /** @return StageExpression */
+                    abstract public function getExpression(): ?array;
+                }
+
+                /** @var Stage $stage */
+                $x = $stage->getExpression();',
+        );
+
+        $this->addFile(
+            $builder_path,
+            '<?php
+                namespace Lib;
+
+                /** @psalm-type StageExpression = array<string, mixed> */
+                final class Builder {}',
+        );
+
+        // known to exist, as through an autoloader, but scanned after the class that imports the alias
+        $this->project_analyzer->getCodebase()->classlikes->addFullyQualifiedClassName('Lib\Builder', $builder_path);
+
+        $context = new Context();
+
+        $this->analyzeFile($stage_path, $context);
+
+        $this->assertSame('array<string, mixed>|null', $context->vars_in_scope['$x']->getId());
+    }
+
     /**
      * @psalm-pure
      */
@@ -22,6 +66,90 @@ final class TypeAnnotationTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'typeImportInADocblockSeparateFromTheClassDocblock' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-type X = array{a: int}
+                     */
+                    final class Other {}
+
+                    /**
+                     * @psalm-import-type X from Other
+                     * @psalm-type Y = array{key: X}
+                     */
+
+                    /**
+                     * Class doc
+                     */
+                    final class A {
+                        /** @return Y */
+                        public function y(): array {
+                            return ["key" => ["a" => 1]];
+                        }
+
+                        /** @return X */
+                        public function x(): array {
+                            return ["a" => 1];
+                        }
+                    }
+
+                    $y = (new A())->y();
+                    $x = (new A())->x();',
+                'assertions' => [
+                    '$y===' => 'array{key: array{a: int}}',
+                    '$x===' => 'array{a: int}',
+                ],
+            ],
+            'phpstanTypeImportInADocblockSeparateFromTheClassDocblock' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-type Original = array{a: int}
+                     */
+                    final class Other {}
+
+                    /**
+                     * @phpstan-import-type Original from Other as X
+                     */
+
+                    /**
+                     * Class doc
+                     */
+                    final class A {
+                        /** @return X */
+                        public function x(): array {
+                            return ["a" => 1];
+                        }
+                    }
+
+                    $x = (new A())->x();',
+                'assertions' => [
+                    '$x===' => 'array{a: int}',
+                ],
+            ],
+            'importedTypeAliasInAnIntersectionOfAnotherAlias' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-type X = array{x: int}
+                     */
+                    class A {}
+
+                    /**
+                     * @psalm-import-type X from A
+                     * @psalm-type Y = array{y: int}
+                     * @psalm-type Q = X&Y
+                     */
+                    class B {
+                        /** @return Q */
+                        public function get(): array {
+                            return ["x" => 1, "y" => 2];
+                        }
+                    }
+
+                    $q = (new B())->get();',
+                'assertions' => [
+                    '$q===' => 'array{x: int, y: int}',
+                ],
+            ],
             'typeImportRenamedWithAs' => [
                 'code' => '<?php
                     namespace A {
@@ -1240,6 +1368,20 @@ final class TypeAnnotationTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'importedTypeAliasOfAnArrayMixedWithAnObjectInAnIntersection' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-type X = array{x: int}
+                     */
+                    class A {}
+
+                    /**
+                     * @psalm-import-type X from A
+                     * @psalm-type Q = X&Countable
+                     */
+                    class B {}',
+                'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR . 'somefile.php:11:21 - Intersection types must be all objects or all keyed array',
+            ],
             'typeImportNamedLikeAnExistingClass' => [
                 'code' => '<?php
                     namespace A {
@@ -1628,6 +1770,16 @@ final class TypeAnnotationTest extends TestCase
                 'error_message' => 'InvalidDocblock',
                 'error_levels' => [],
                 'php_version' => '8.1',
+            ],
+            'typeAliasImportedFromAnExistingClassWithoutTheAliasDoesNotCrash' => [
+                'code' => '<?php
+                    /** @psalm-import-type StageExpression from \\Directory */
+                    abstract class Stage
+                    {
+                        /** @return StageExpression */
+                        abstract public function getExpression(): ?array;
+                    }',
+                'error_message' => 'MismatchingDocblockReturnType',
             ],
         ];
     }

@@ -94,6 +94,8 @@ final class FunctionLikeDocblockParser
                 $code_location,
                 $cased_function_id,
             );
+
+            self::checkDuplicatedParams($parsed_docblock, $info);
         }
 
         foreach (['param-out', 'param-closure-this'] as $tag) {
@@ -145,6 +147,12 @@ final class FunctionLikeDocblockParser
         if (isset($parsed_docblock->tags['psalm-flow'])) {
             foreach ($parsed_docblock->tags['psalm-flow'] as $param) {
                 $info->flows[] = trim($param);
+            }
+        }
+
+        foreach (['query', 'prepare', 'execute', 'bind', 'insert', 'update', 'select', 'fetch'] as $kind) {
+            foreach ($parsed_docblock->tags['psalm-database-' . $kind] ?? [] as $text) {
+                $info->database_calls[] = [$kind, trim($text)];
             }
         }
 
@@ -333,10 +341,7 @@ final class FunctionLikeDocblockParser
         );
 
         $info->variadic = isset($parsed_docblock->tags['psalm-variadic']);
-        if (isset($parsed_docblock->tags['psalm-pure'])
-            || isset($parsed_docblock->tags['phpstan-pure'])
-            || isset($parsed_docblock->tags['pure'])
-        ) {
+        if (isset($parsed_docblock->tags['psalm-pure'])) {
             $info->capabilities = Capabilities::NONE;
             $info->has_mutations_annotation = true;
         } elseif (isset($parsed_docblock->tags['psalm-mutation-free'])) {
@@ -360,6 +365,9 @@ final class FunctionLikeDocblockParser
                     $info->capabilities_expressions[] = trim($capabilities_line);
                 }
             }
+        } elseif (isset($parsed_docblock->tags['phpstan-pure']) || isset($parsed_docblock->tags['pure'])) {
+            $info->capabilities = Capabilities::NONE;
+            $info->has_mutations_annotation = true;
         }
 
         if (isset($parsed_docblock->tags['psalm-purity-from-template'])) {
@@ -373,9 +381,7 @@ final class FunctionLikeDocblockParser
             }
         }
 
-        if (isset($parsed_docblock->tags['no-named-arguments'])) {
-            $info->no_named_args = true;
-        }
+        $info->named_arguments = DocblockParser::getNamedArguments($parsed_docblock);
 
         $info->ignore_nullable_return = isset($parsed_docblock->tags['psalm-ignore-nullable-return']);
         $info->ignore_falsable_return = isset($parsed_docblock->tags['psalm-ignore-falsable-return']);
@@ -494,7 +500,9 @@ final class FunctionLikeDocblockParser
                     throw new AssertionError(preg_last_error_msg());
                 }
 
-                if (count($param_parts) >= 2) {
+                if (count($param_parts) >= 2 && $param_parts[0] === 'none') {
+                    $info->taint_sink_params[] = ['name' => $param_parts[1], 'taint' => 0];
+                } elseif (count($param_parts) >= 2) {
                     $t = self::registerTaint($codebase, $param_parts[0], $code_location, $info->scan_issues);
                     if ($t !== null) {
                         $info->taint_sink_params[] = ['name' => $param_parts[1], 'taint' => $t];
@@ -809,6 +817,15 @@ final class FunctionLikeDocblockParser
 
                 $line_parts[0] = CommentAnalyzer::sanitizeDocblockType($line_parts[0]);
 
+                if ($line_parts[0] === '') {
+                    $info->docblock_issues[] = new InvalidDocblock(
+                        'Badly-formatted @return in docblock for ' . $cased_function_id,
+                        $code_location,
+                    );
+
+                    break;
+                }
+
                 $info->return_type = array_shift($line_parts);
                 $info->return_type_description = $line_parts ? implode(' ', $line_parts) : null;
 
@@ -844,44 +861,30 @@ final class FunctionLikeDocblockParser
         ) {
             throw new DocblockParseException('Found duplicated @return or prefixed @return tag');
         }
-
-        self::checkDuplicatedParams($parsed_docblock->tags['param'] ?? []);
-        self::checkDuplicatedParams($parsed_docblock->tags['psalm-param'] ?? []);
-        self::checkDuplicatedParams($parsed_docblock->tags['phpstan-param'] ?? []);
     }
 
     /**
-     * @param array<int, string> $param
-     * @throws DocblockParseException  if a duplicate is found
-     * @psalm-pure
+     * The same name may be documented once per tag kind (`@param` and `@psalm-param`)
+     *
+     * @throws DocblockParseException if a duplicate is found
+     * @psalm-mutation-free
      */
-    private static function checkDuplicatedParams(array $param): void
+    private static function checkDuplicatedParams(ParsedDocblock $parsed_docblock, FunctionDocblockComment $info): void
     {
-        $list_names = self::extractAllParamNames($param);
+        foreach (['param', 'psalm-param', 'phpstan-param'] as $tag) {
+            $offsets = $parsed_docblock->tags[$tag] ?? [];
+            $names = [];
 
-        if (count($list_names) !== count(array_unique($list_names))) {
-            throw new DocblockParseException('Found duplicated @param or prefixed @param tag');
-        }
-    }
+            foreach ($info->params as $param) {
+                if (isset($offsets[$param['start']])) {
+                    $names[] = str_starts_with($param['name'], '...') ? substr($param['name'], 3) : $param['name'];
+                }
+            }
 
-    /**
-     * @param array<int, string> $lines
-     * @return list<string>
-     * @psalm-pure
-     */
-    private static function extractAllParamNames(array $lines): array
-    {
-        $names = [];
-
-        foreach ($lines as $line) {
-            $split_by_dollar = explode('$', $line, 2);
-            if (count($split_by_dollar) > 1) {
-                $split_by_space = explode(' ', $split_by_dollar[1], 2);
-                $names[] = $split_by_space[0];
+            if (count($names) !== count(array_unique($names))) {
+                throw new DocblockParseException('Found duplicated @param or prefixed @param tag');
             }
         }
-
-        return $names;
     }
 
     private static function checkUnexpectedTags(

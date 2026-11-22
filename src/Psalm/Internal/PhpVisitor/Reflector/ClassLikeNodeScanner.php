@@ -96,6 +96,7 @@ use function preg_match;
 use function preg_split;
 use function reset;
 use function sprintf;
+use function str_contains;
 use function str_starts_with;
 use function strlen;
 use function strtok;
@@ -295,6 +296,7 @@ final class ClassLikeNodeScanner
         if ($node instanceof PhpParser\Node\Stmt\Class_) {
             $storage->abstract = $node->isAbstract();
             $storage->final = $node->isFinal();
+            $storage->anonymous = $node->name === null;
             $storage->readonly = $node->isReadonly();
 
             $this->codebase->classlikes->addFullyQualifiedClassName($fq_classlike_name, $this->file_path);
@@ -422,6 +424,24 @@ final class ClassLikeNodeScanner
                 continue;
             }
 
+            // like `@psalm-type`, an import is read from any docblock before the class, not only from the last one
+            if ($comment !== $doc_comment
+                && (str_contains($comment->getText(), '@psalm-import-type')
+                    || str_contains($comment->getText(), '@phpstan-import-type'))
+            ) {
+                try {
+                    $this->type_aliases += $this->getImportedTypeAliases(
+                        ClassLikeDocblockParser::parse($node, $comment, $this->aliases),
+                        $fq_classlike_name,
+                    );
+                } catch (DocblockParseException $e) {
+                    $storage->docblock_issues[] = new InvalidDocblock(
+                        $e->getMessage() . ' in docblock for ' . $fq_classlike_name,
+                        $name_location ?? $class_location,
+                    );
+                }
+            }
+
             try {
                 $type_aliases = self::getTypeAliasesFromComment(
                     $comment,
@@ -430,9 +450,18 @@ final class ClassLikeNodeScanner
                     $fq_classlike_name,
                 );
 
+                $known_type_aliases = $this->type_aliases + $type_aliases;
+
                 foreach ($type_aliases as $type_alias) {
                     // finds issues, if there are any; `_` is checked where the alias is used
-                    TypeParser::parseTokens($type_alias->replacement_tokens, null, [], [], false, true);
+                    TypeParser::parseTokens(
+                        $type_alias->replacement_tokens,
+                        null,
+                        [],
+                        $known_type_aliases,
+                        false,
+                        true,
+                    );
                 }
 
                 $this->type_aliases += $type_aliases;
@@ -895,6 +924,7 @@ final class ClassLikeNodeScanner
 
 
             $storage->deprecated = $docblock_info->deprecated;
+            $storage->named_arguments = $docblock_info->named_arguments;
 
             if (count($docblock_info->psalm_internal) !== 0) {
                 $storage->internal = $docblock_info->psalm_internal;
@@ -1095,6 +1125,8 @@ final class ClassLikeNodeScanner
             }
         }
 
+        $docblock_has_mutations_annotation = $storage->has_mutations_annotation;
+
         foreach ($node->attrGroups as $attr_group) {
             foreach ($attr_group->attrs as $attr) {
                 $attribute = AttributeResolver::resolve(
@@ -1132,8 +1164,10 @@ final class ClassLikeNodeScanner
                     $storage->internal = [NamespaceAnalyzer::getNameSpaceRoot($fq_classlike_name)];
                 }
 
+                // the PhpStorm attribute gives way to a purity tag of the docblock
                 if ($attribute->fq_class_name === 'Psalm\\Immutable'
-                    || $attribute->fq_class_name === 'JetBrains\\PhpStorm\\Immutable'
+                    || ($attribute->fq_class_name === 'JetBrains\\PhpStorm\\Immutable'
+                        && !$docblock_has_mutations_annotation)
                 ) {
                     $storage->capabilities = Capabilities::MUTATION_FREE & $storage->capabilities;
                     $storage->has_mutations_annotation = true;
@@ -1175,23 +1209,29 @@ final class ClassLikeNodeScanner
             $mapped_properties = PropertyMap::getPropertyMap()[strtolower($fq_classlike_name)];
 
             foreach ($mapped_properties as $property_name => $public_mapped_property) {
-                $property_type = Type::parseString($public_mapped_property);
+                $property_storage = $classlike_storage->properties[$property_name] ??= new PropertyStorage();
 
-                /** @psalm-suppress UnusedMethodCall */
-                $property_type->queueClassLikesForScanning($this->codebase, $this->file_storage);
+                // Stubs are curated by hand and win over the map, like they do over the CallMap.
+                // The map still corrects real sources (e.g. vendored php-parser nodes) and types merely
+                // inferred from the constructor, which have no type location.
+                $is_declared_by_stub = $classlike_storage->stubbed
+                    && ($property_storage->type_location !== null || $property_storage->is_promoted);
+                $property_type = $is_declared_by_stub ? $property_storage->type : null;
 
-                if (!isset($classlike_storage->properties[$property_name])) {
-                    $classlike_storage->properties[$property_name] = new PropertyStorage();
+                if ($property_type === null) {
+                    $property_type = Type::parseString($public_mapped_property);
+
+                    /** @psalm-suppress UnusedMethodCall */
+                    $property_type->queueClassLikesForScanning($this->codebase, $this->file_storage);
                 }
 
                 $property_id = $fq_classlike_name . '::$' . $property_name;
 
                 if ($property_id === 'DateInterval::$days') {
-                    /** @psalm-suppress InaccessibleProperty We just parsed this type */
-                    $property_type->ignore_falsable_issues = true;
+                    $property_type = $property_type->setProperties(['ignore_falsable_issues' => true]);
                 }
 
-                $classlike_storage->properties[$property_name]->type = $property_type;
+                $property_storage->type = $property_type;
 
                 $classlike_storage->declaring_property_ids[$property_name] = $fq_classlike_name;
                 $classlike_storage->appearing_property_ids[$property_name] = $property_id;
@@ -1323,82 +1363,18 @@ final class ClassLikeNodeScanner
         PhpParser\Node\Stmt\ClassLike $node,
         string $extended_class_name,
     ): void {
-        if (trim($extended_class_name) === '') {
-            $storage->docblock_issues[] = new InvalidDocblock(
-                'Extended class cannot be empty in docblock for ' . $storage->name,
-                new CodeLocation($this->file_scanner, $node, null, true),
-            );
-
-            return;
-        }
-
-        try {
-            $extended_union_type = TypeParser::parseTokens(
-                TypeTokenizer::getFullyQualifiedTokens(
-                    $extended_class_name,
-                    $this->aliases,
-                    $this->class_template_types,
-                    $this->type_aliases,
-                ),
-                null,
-                $this->class_template_types,
-                $this->type_aliases,
-                true,
-            );
-        } catch (TypeParseTreeException $e) {
-            $storage->docblock_issues[] = new InvalidDocblock(
-                $e->getMessage() . ' in docblock for ' . $storage->name,
-                new CodeLocation($this->file_scanner, $node, null, true),
-            );
-
-            return;
-        }
-
-        if (!$extended_union_type->isSingle()) {
-            $storage->docblock_issues[] = new InvalidDocblock(
-                '@template-extends cannot be a union type',
-                new CodeLocation($this->file_scanner, $node, null, true),
-            );
-        }
-
-        /** @psalm-suppress UnusedMethodCall */
-        $extended_union_type->queueClassLikesForScanning(
-            $this->codebase,
-            $this->file_storage,
-            $storage->template_types ?: [],
+        $counts = $this->addTemplatedParents(
+            $storage,
+            $node,
+            $extended_class_name,
+            '@template-extends',
+            'Extended class',
+            'an extended class',
+            $storage->parent_classes + $storage->parent_interfaces,
         );
 
-        foreach ($extended_union_type->getAtomicTypes() as $atomic_type) {
-            if (!$atomic_type instanceof TGenericObject) {
-                $storage->docblock_issues[] = new InvalidDocblock(
-                    '@template-extends has invalid class ' . $atomic_type->getId(),
-                    new CodeLocation($this->file_scanner, $node, null, true),
-                );
-
-                return;
-            }
-
-            $generic_class_lc = strtolower($atomic_type->value);
-
-            if (!isset($storage->parent_classes[$generic_class_lc])
-                && !isset($storage->parent_interfaces[$generic_class_lc])
-            ) {
-                $storage->docblock_issues[] = new InvalidDocblock(
-                    '@template-extends must include the name of an extended class,'
-                        . ' got ' . $atomic_type->getId(),
-                    new CodeLocation($this->file_scanner, $node, null, true),
-                );
-            }
-
-            $extended_type_parameters = [];
-
-            $storage->template_type_extends_count[$atomic_type->value] = count($atomic_type->type_params);
-
-            foreach ($atomic_type->type_params as $type_param) {
-                $extended_type_parameters[] = $type_param;
-            }
-
-            $storage->template_extended_offsets[$atomic_type->value] = $extended_type_parameters;
+        if ($counts) {
+            $storage->template_type_extends_count = [...$storage->template_type_extends_count ?? [], ...$counts];
         }
     }
 
@@ -1407,84 +1383,18 @@ final class ClassLikeNodeScanner
         PhpParser\Node\Stmt\ClassLike $node,
         string $implemented_class_name,
     ): void {
-        if (trim($implemented_class_name) === '') {
-            $storage->docblock_issues[] = new InvalidDocblock(
-                'Extended class cannot be empty in docblock for ' . $storage->name,
-                new CodeLocation($this->file_scanner, $node, null, true),
-            );
-
-            return;
-        }
-
-        try {
-            $implemented_union_type = TypeParser::parseTokens(
-                TypeTokenizer::getFullyQualifiedTokens(
-                    $implemented_class_name,
-                    $this->aliases,
-                    $this->class_template_types,
-                    $this->type_aliases,
-                ),
-                null,
-                $this->class_template_types,
-                $this->type_aliases,
-                true,
-            );
-        } catch (TypeParseTreeException $e) {
-            $storage->docblock_issues[] = new InvalidDocblock(
-                $e->getMessage() . ' in docblock for ' . $storage->name,
-                new CodeLocation($this->file_scanner, $node, null, true),
-            );
-
-            return;
-        }
-
-        if (!$implemented_union_type->isSingle()) {
-            $storage->docblock_issues[] = new InvalidDocblock(
-                '@template-implements cannot be a union type',
-                new CodeLocation($this->file_scanner, $node, null, true),
-            );
-
-            return;
-        }
-
-        /** @psalm-suppress UnusedMethodCall */
-        $implemented_union_type->queueClassLikesForScanning(
-            $this->codebase,
-            $this->file_storage,
-            $storage->template_types ?: [],
+        $counts = $this->addTemplatedParents(
+            $storage,
+            $node,
+            $implemented_class_name,
+            '@template-implements',
+            'Implemented class',
+            'an implemented class',
+            $storage->class_implements,
         );
 
-        foreach ($implemented_union_type->getAtomicTypes() as $atomic_type) {
-            if (!$atomic_type instanceof TGenericObject) {
-                $storage->docblock_issues[] = new InvalidDocblock(
-                    '@template-implements has invalid class ' . $atomic_type->getId(),
-                    new CodeLocation($this->file_scanner, $node, null, true),
-                );
-
-                return;
-            }
-
-            $generic_class_lc = strtolower($atomic_type->value);
-
-            if (!isset($storage->class_implements[$generic_class_lc])) {
-                $storage->docblock_issues[] = new InvalidDocblock(
-                    '@template-implements must include the name of an implemented class,'
-                        . ' got ' . $atomic_type->getId(),
-                    new CodeLocation($this->file_scanner, $node, null, true),
-                );
-
-                return;
-            }
-
-            $implemented_type_parameters = [];
-
-            $storage->template_type_implements_count[$generic_class_lc] = count($atomic_type->type_params);
-
-            foreach ($atomic_type->type_params as $type_param) {
-                $implemented_type_parameters[] = $type_param;
-            }
-
-            $storage->template_extended_offsets[$atomic_type->value] = $implemented_type_parameters;
+        if ($counts) {
+            $storage->template_type_implements_count = [...$storage->template_type_implements_count ?? [], ...$counts];
         }
     }
 
@@ -1493,19 +1403,50 @@ final class ClassLikeNodeScanner
         PhpParser\Node\Stmt\TraitUse $node,
         string $used_class_name,
     ): void {
-        if (trim($used_class_name) === '') {
+        $counts = $this->addTemplatedParents(
+            $storage,
+            $node,
+            $used_class_name,
+            '@template-use',
+            'Used class',
+            'an used class',
+            $storage->used_traits,
+        );
+
+        if ($counts) {
+            $storage->template_type_uses_count = [...$storage->template_type_uses_count ?? [], ...$counts];
+        }
+    }
+
+    /**
+     * Records the type arguments given in `@extends`, `@implements` or `@use`, keyed by the lowercase name of the
+     * parent class, interface or trait, and returns how many each one got
+     *
+     * @param array<lowercase-string, string> $related_classes the classlikes the tag may name
+     * @return array<lowercase-string, int>
+     */
+    private function addTemplatedParents(
+        ClassLikeStorage $storage,
+        PhpParser\Node $node,
+        string $written_type,
+        string $tag,
+        string $empty_name,
+        string $related_name,
+        array $related_classes,
+    ): array {
+        if (trim($written_type) === '') {
             $storage->docblock_issues[] = new InvalidDocblock(
-                'Extended class cannot be empty in docblock for ' . $storage->name,
+                $empty_name . ' cannot be empty in docblock for ' . $storage->name,
                 new CodeLocation($this->file_scanner, $node, null, true),
             );
 
-            return;
+            return [];
         }
 
         try {
-            $used_union_type = TypeParser::parseTokens(
+            $union_type = TypeParser::parseTokens(
                 TypeTokenizer::getFullyQualifiedTokens(
-                    $used_class_name,
+                    $written_type,
                     $this->aliases,
                     $this->class_template_types,
                     $this->type_aliases,
@@ -1521,57 +1462,83 @@ final class ClassLikeNodeScanner
                 new CodeLocation($this->file_scanner, $node, null, true),
             );
 
-            return;
+            return [];
         }
 
-        if (!$used_union_type->isSingle()) {
+        // a union is still read member by member, so the parents it names don't also miss their arguments
+        if (!$union_type->isSingle()) {
             $storage->docblock_issues[] = new InvalidDocblock(
-                '@template-use cannot be a union type',
+                $tag . ' cannot be a union type',
                 new CodeLocation($this->file_scanner, $node, null, true),
             );
-
-            return;
         }
 
         /** @psalm-suppress UnusedMethodCall */
-        $used_union_type->queueClassLikesForScanning(
+        $union_type->queueClassLikesForScanning(
             $this->codebase,
             $this->file_storage,
             $storage->template_types ?: [],
         );
 
-        foreach ($used_union_type->getAtomicTypes() as $atomic_type) {
+        $counts = [];
+
+        foreach ($union_type->getAtomicTypes() as $atomic_type) {
             if (!$atomic_type instanceof TGenericObject) {
                 $storage->docblock_issues[] = new InvalidDocblock(
-                    '@template-use has invalid class ' . $atomic_type->getId(),
+                    $tag . ' has invalid class ' . $atomic_type->getId(),
                     new CodeLocation($this->file_scanner, $node, null, true),
                 );
 
-                return;
+                continue;
             }
 
             $generic_class_lc = strtolower($atomic_type->value);
 
-            if (!isset($storage->used_traits[$generic_class_lc])) {
+            if (!isset($related_classes[$generic_class_lc])) {
                 $storage->docblock_issues[] = new InvalidDocblock(
-                    '@template-use must include the name of an used class,'
-                        . ' got ' . $atomic_type->getId(),
+                    $tag . ' must include the name of ' . $related_name . ', got ' . $atomic_type->getId(),
                     new CodeLocation($this->file_scanner, $node, null, true),
                 );
 
-                return;
+                continue;
             }
 
-            $used_type_parameters = [];
+            if ($this->reportStarArgument($storage, $node, $atomic_type, $tag)) {
+                continue;
+            }
 
-            $storage->template_type_uses_count[$generic_class_lc] = count($atomic_type->type_params);
+            $type_parameters = [];
 
             foreach ($atomic_type->type_params as $type_param) {
-                $used_type_parameters[] = $type_param->replaceClassLike('self', $storage->name);
+                $type_parameters[] = $type_param->replaceClassLike('self', $storage->name);
             }
 
-            $storage->template_extended_offsets[$atomic_type->value] = $used_type_parameters;
+            $storage->template_extended_offsets[$generic_class_lc] = $type_parameters;
+            $counts[$generic_class_lc] = count($atomic_type->type_params);
         }
+
+        return $counts;
+    }
+
+    /**
+     * Reports a `*` argument, which cannot bind a template of the parent (`@extends Box<*>`), as PHPStan does
+     */
+    private function reportStarArgument(
+        ClassLikeStorage $storage,
+        PhpParser\Node $node,
+        TGenericObject $atomic_type,
+        string $tag,
+    ): bool {
+        if (!$atomic_type->hasStarProjection()) {
+            return false;
+        }
+
+        $storage->docblock_issues[] = new InvalidDocblock(
+            'The * type argument of ' . $atomic_type->getId() . ' is not allowed in ' . $tag,
+            new CodeLocation($this->file_scanner, $node, null, true),
+        );
+
+        return true;
     }
 
     private static function registerEmptyConstructor(ClassLikeStorage $class_storage): void
@@ -1774,6 +1741,8 @@ final class ClassLikeNodeScanner
                     $const_type = Type::getMixed();
                 }
             }
+            /** @var Identifier|IntersectionType|Name|NullableType|UnionType|null $parser_const_type */
+            $parser_const_type = $stmt->type;
             $storage->constants[$const->name->name] = $constant_storage = new ClassConstantStorage(
                 $const_type,
                 $inferred_type,
@@ -1798,10 +1767,20 @@ final class ClassLikeNodeScanner
                 $suppressed_issues,
                 $description,
                 $since_php_version_id,
+                $parser_const_type === null ? null : TypeHintResolver::resolve(
+                    $parser_const_type,
+                    new CodeLocation($this->file_scanner, $parser_const_type),
+                    $this->codebase,
+                    $this->file_storage,
+                    $storage,
+                    $this->aliases,
+                    $this->codebase->analysis_php_version_id,
+                ),
             );
 
             if ($this->codebase->analysis_php_version_id >= 8_03_00
                 && !$storage->final
+                && !$stmt->isFinal()
                 && $stmt->type === null
             ) {
                 $missing_type_issue = new MissingClassConstType(
@@ -1937,6 +1916,7 @@ final class ClassLikeNodeScanner
                 $enum_value,
                 $case_location,
                 $deprecated,
+                $attrs,
             );
         } else {
             $this->file_storage->scan_issues[] = new DuplicateEnumCase(
@@ -2084,6 +2064,7 @@ final class ClassLikeNodeScanner
             $property_storage->signature_type = $signature_type;
             $property_storage->signature_type_location = $signature_type_location;
             $property_storage->type_location = $signature_type_location;
+            $property_storage->has_docblock_type = $doc_var_group_type !== null;
             $property_storage->location = new CodeLocation($this->file_scanner, $property->name);
             $property_storage->stmt_location = new CodeLocation($this->file_scanner, $stmt);
             $property_storage->has_default = (bool)$property->default;
@@ -2096,10 +2077,10 @@ final class ClassLikeNodeScanner
             if (count($property_storage->internal) === 0 && $var_comment && $var_comment->internal) {
                 $property_storage->internal = [NamespaceAnalyzer::getNameSpaceRoot($fq_classlike_name)];
             }
-            $property_storage->readonly = $storage->readonly
-                || $stmt->isReadonly()
+            $property_storage->native_readonly = $storage->readonly || $stmt->isReadonly();
+            $property_storage->readonly = $property_storage->native_readonly
                 || ($var_comment && $var_comment->readonly);
-            $property_storage->readonly_default = ($storage->readonly || $stmt->isReadonly())
+            $property_storage->readonly_default = $property_storage->native_readonly
                 && !$stmt->isStatic()
                 && $property->default !== null;
             $property_storage->allow_private_mutation = $var_comment ? $var_comment->allow_private_mutation : false;
@@ -2240,6 +2221,26 @@ final class ClassLikeNodeScanner
                 if ($hook_name === 'get'
                     || $hook_name === 'set'
                 ) {
+                    // Hook docblocks are not part of the external write contract yet.
+                    $param_type = null;
+                    $hook_param_type = $hook->params[0]->type ?? null;
+                    if ($hook_name === 'set'
+                        && ($hook_param_type instanceof PhpParser\Node\Identifier
+                            || $hook_param_type instanceof PhpParser\Node\Name
+                            || $hook_param_type instanceof PhpParser\Node\NullableType
+                            || $hook_param_type instanceof PhpParser\Node\UnionType
+                            || $hook_param_type instanceof PhpParser\Node\IntersectionType)
+                    ) {
+                        $param_type = TypeHintResolver::resolve(
+                            $hook_param_type,
+                            new CodeLocation($this->file_scanner, $hook_param_type),
+                            $this->codebase,
+                            $this->file_storage,
+                            $this->storage,
+                            $this->aliases,
+                            $this->codebase->analysis_php_version_id,
+                        );
+                    }
                     $hook_storage = new PropertyHookStorage(
                         $hook_name === 'get',
                         $hook->isFinal(),
@@ -2250,6 +2251,7 @@ final class ClassLikeNodeScanner
                             null,
                             true,
                         ),
+                        $param_type,
                     );
                     if ($hook_storage->is_get) {
                         $property_storage->hook_get = $hook_storage;

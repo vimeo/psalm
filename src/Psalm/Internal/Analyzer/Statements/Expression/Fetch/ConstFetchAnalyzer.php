@@ -15,10 +15,14 @@ use Psalm\Internal\Analyzer\Statements\Expression\SimpleTypeInferer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\ConstantTypeResolver;
+use Psalm\Internal\Codebase\PhpDeprecations;
 use Psalm\Internal\DataFlow\DataFlowNode;
+use Psalm\Internal\Provider\FileStorageProvider;
 use Psalm\Internal\Provider\NodeDataProvider;
 use Psalm\Internal\Scanner\UnresolvedConstantComponent;
+use Psalm\Issue\DeprecatedConstant;
 use Psalm\Issue\ForbiddenCode;
+use Psalm\Issue\ReservedWord;
 use Psalm\Issue\UndefinedConstant;
 use Psalm\IssueBuffer;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
@@ -28,6 +32,7 @@ use ReflectionProperty;
 
 use function array_key_exists;
 use function array_pop;
+use function dirname;
 use function explode;
 use function implode;
 use function in_array;
@@ -42,6 +47,9 @@ use function strtolower;
  */
 final class ConstFetchAnalyzer
 {
+    /** @var ?array<string, int> */
+    private static ?array $constant_introductions = null;
+
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\ConstFetch $stmt,
@@ -118,8 +126,41 @@ final class ConstFetchAnalyzer
                             . $const_name,
                 );
 
+                // an unqualified name falls back to the global constant
+                $global_const_name = isset($aliased_constants[$const_name]) ? $fq_const_name : $const_name;
+                $deprecation_message = $const_type && !str_contains($global_const_name, '\\')
+                    ? PhpDeprecations::getConstantMessage($global_const_name)
+                    : null;
+
+                $deprecated_name = $deprecation_message === null && $const_type
+                    ? self::getDeprecatedName($statements_analyzer, $const_name, $fq_const_name)
+                    : null;
+                if ($deprecated_name !== null) {
+                    $deprecation_message = 'Constant ' . $deprecated_name . ' is deprecated';
+                }
+
+                if ($deprecation_message !== null) {
+                    IssueBuffer::maybeAdd(
+                        new DeprecatedConstant(
+                            $deprecation_message,
+                            new CodeLocation($statements_analyzer->getSource(), $stmt),
+                        ),
+                        $statements_analyzer->getSuppressedIssues(),
+                    );
+                }
+
+                // a native constant newer than the PHP Psalm runs on is unknown to it, but not undefined
+                $is_dated_native = !str_contains($global_const_name, '\\')
+                    && self::getIntroduction($global_const_name) !== null;
+
+                if ($const_type || $is_dated_native) {
+                    self::checkAvailability($statements_analyzer, $stmt, $context, $global_const_name, $fq_const_name);
+                }
+
                 if ($const_type) {
                     $statements_analyzer->node_data->setType($stmt, $const_type);
+                } elseif ($is_dated_native) {
+                    $statements_analyzer->node_data->setType($stmt, Type::getMixed());
                 } elseif ($context->check_consts) {
                     IssueBuffer::maybeAdd(
                         new UndefinedConstant(
@@ -131,6 +172,81 @@ final class ConstFetchAnalyzer
                     );
                 }
         }
+    }
+
+    /**
+     * Reports a native constant introduced after the analysed PHP version, unless code guards it or
+     * declares it (a polyfill)
+     */
+    private static function checkAvailability(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr\ConstFetch $stmt,
+        Context $context,
+        string $const_name,
+        string $fq_const_name,
+    ): void {
+        $codebase = $statements_analyzer->getCodebase();
+        $since_php_version_id = self::getIntroducingPhpVersionId($codebase, $const_name);
+
+        if ($since_php_version_id === null
+            || ($codebase->getGuardedPhpVersionId($context) ?? $codebase->analysis_php_version_id)
+                >= $since_php_version_id
+            || self::isDeclaredInCode($codebase, $fq_const_name)
+            || self::isDeclaredInCode($codebase, $const_name)
+        ) {
+            return;
+        }
+
+        IssueBuffer::maybeAdd(
+            new UndefinedConstant(
+                'Constant ' . $const_name . ' ' . $codebase->getUnavailableSymbolMessageSuffix($since_php_version_id),
+                new CodeLocation($statements_analyzer->getSource(), $stmt),
+            ),
+            $statements_analyzer->getSuppressedIssues(),
+        );
+    }
+
+    /**
+     * The PHP version that introduced a native global constant after the analysed one, or null when
+     * the analysed version has it or it can't be dated (see bin/stubs/gen_constant_introductions.php)
+     */
+    public static function getIntroducingPhpVersionId(Codebase $codebase, string $const_name): ?int
+    {
+        $since_php_version_id = self::getIntroduction($const_name);
+
+        return $since_php_version_id !== null && $since_php_version_id > $codebase->analysis_php_version_id
+            ? $since_php_version_id
+            : null;
+    }
+
+    /**
+     * The PHP version that introduced a native global constant, if it is dated
+     */
+    private static function getIntroduction(string $const_name): ?int
+    {
+        if (self::$constant_introductions === null) {
+            /** @var array<string, int> */
+            $introductions = require dirname(__DIR__, 7) . '/dictionaries/ConstantIntroductions.php';
+            self::$constant_introductions = $introductions;
+        }
+
+        return self::$constant_introductions[$const_name] ?? null;
+    }
+
+    /**
+     * Whether scanned PHP code (a project or autoloaded file, not a stub) declares the constant, as a polyfill does
+     *
+     * @psalm-capabilities read-props|write-this-props|write-refs
+     */
+    public static function isDeclaredInCode(Codebase $codebase, string $const_name): bool
+    {
+        foreach (FileStorageProvider::getAll() as $file_path => $file_storage) {
+            if (isset($file_storage->constants[$const_name]) && !$codebase->scanner->isStubFile($file_path)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
@@ -176,6 +292,11 @@ final class ConstFetchAnalyzer
             || $const_name === 'STDIN'
         ) {
             return Type::getResource();
+        }
+
+        // defined once a session starts: empty, or the session name and id when the id isn't in a cookie
+        if ($const_name === 'SID') {
+            return Type::getString();
         }
 
         if ($fq_const_name) {
@@ -391,6 +512,38 @@ final class ConstFetchAnalyzer
     }
 
     /**
+     * The name of the constant if it is declared with @deprecated or #[\Deprecated], found like getConstType() does
+     */
+    private static function getDeprecatedName(
+        StatementsAnalyzer $statements_analyzer,
+        string $const_name,
+        string $fq_const_name,
+    ): ?string {
+        $codebase = $statements_analyzer->getCodebase();
+        $file_storage_provider = $codebase->file_storage_provider;
+
+        foreach ([$statements_analyzer->getRootFilePath(), $statements_analyzer->getFilePath()] as $file_path) {
+            $file_storage = $file_storage_provider->get($file_path);
+
+            foreach ([$fq_const_name, $const_name] as $name) {
+                if (isset($file_storage->declaring_constants[$name])) {
+                    $declaring_storage = $file_storage_provider->get($file_storage->declaring_constants[$name]);
+
+                    return isset($declaring_storage->deprecated_constants[$name]) ? $name : null;
+                }
+            }
+        }
+
+        foreach ([$fq_const_name, $const_name] as $name) {
+            if ($codebase->isDeprecatedGlobalConstant($name)) {
+                return $name;
+            }
+        }
+
+        return null;
+    }
+
+    /**
      * The id under which `defined()` records a constant without a declaration, so that a check of it
      * (`defined('X') && is_string(X)`) narrows it; declared constants have their own type and no id
      */
@@ -424,6 +577,7 @@ final class ConstFetchAnalyzer
     public static function isConstVarId(string $var_id): bool
     {
         return $var_id !== Context::PHP_VERSION_ID_VAR_ID
+            && $var_id !== Context::PHP_SYMBOL_GUARD_VAR_ID
             && $var_id !== Context::PHP_SAPI_VAR_ID
             && preg_match('/^[a-zA-Z_\x80-\xff][\w\x80-\xff]*(\\\\[a-zA-Z_\x80-\xff][\w\x80-\xff]*)*$/', $var_id) === 1;
     }
@@ -489,6 +643,12 @@ final class ConstFetchAnalyzer
         Context $context,
     ): void {
         foreach ($stmt->consts as $const) {
+            self::checkDeprecatedName(
+                $statements_analyzer,
+                $const->name->name,
+                new CodeLocation($statements_analyzer, $const->name),
+            );
+
             ExpressionAnalyzer::analyze($statements_analyzer, $const->value, $context);
 
             self::setConstType(
@@ -496,6 +656,26 @@ final class ConstFetchAnalyzer
                 $const->name->name,
                 $statements_analyzer->node_data->getType($const->value) ?? Type::getMixed(),
                 $context,
+            );
+        }
+    }
+
+    /**
+     * Reports a constant, declared with `const` or define(), whose name PHP deprecates
+     */
+    public static function checkDeprecatedName(
+        StatementsAnalyzer $statements_analyzer,
+        string $const_name,
+        CodeLocation $code_location,
+    ): void {
+        $name_parts = explode('\\', $const_name);
+        $name = array_pop($name_parts);
+        $message = PhpDeprecations::getConstantNameMessage($name);
+
+        if ($message !== null) {
+            IssueBuffer::maybeAdd(
+                new ReservedWord($message, $code_location, $name),
+                $statements_analyzer->getSuppressedIssues(),
             );
         }
     }

@@ -6,6 +6,12 @@ const REPORT_MAX_BYTES = 60_000;
 const DETAILS_BUDGET_BYTES = 40_000;
 const LOG_TAIL_LINES = 15;
 const LOG_TAIL_BYTES = 2_000;
+/** Cap on an added or removed issue line, after class names are shortened. */
+const EXAMPLE_CHARS = 300;
+/** Unchanged text kept on each side of a change. */
+const CONTEXT_CHARS = 40;
+/** Cap on each side of one change. */
+const CHANGE_CHARS = 300;
 /** Wall changes within ±this are runner noise; a larger drop counts as an improvement. */
 const WALL_NOISE_PCT = 10.0;
 const VERDICT_ICONS = ['pass' => '✅', 'warn' => '⚠️', 'fail' => '❌', 'skip' => '💥'];
@@ -14,26 +20,32 @@ const VERDICT_ORDER = ['fail' => 0, 'warn' => 1, 'skip' => 2, 'pass' => 3];
 const TABLE_LEGEND = "<details><summary>How to read this table</summary>\n\n"
     . "- **Memory**: Psalm's own peak figure, `threads=1`. More than +5 % fails, unless the PR changes "
     . "`composer.json`.\n"
-    . '- **Wall**: base and head run on the same runner; ±10 % is noise. Above +20 % warns, never fails. '
+    . '- **Wall**: base and head run on the same runner; ±10 % is noise. Above +10 % warns, never fails. '
     . "*re-run*: a reversed second run was taken and the faster kept.\n"
-    . '- **Issues**: head count, then $\color{red}{\textsf{+added}}$ $\color{green}{\textsf{-removed}}$ '
-    . "against base.\n"
-    . '- **Weighted**: issues weighted by error level (levels 1–8 as is, always-errors 10, feature-specific and '
-    . "purity suggestions 0). The projects' own code is pinned and their dependencies resolve identically for base "
-    . 'and head, so a change means Psalm reports more, fewer or differently serious issues. A rise is not '
-    . "necessarily a regression.\n"
-    . "- **Total**: sum over the projects compared on both sides. Thresholds apply per project, not to the total.\n"
+    . '- **Issues**: head count over all categories, then $\color{red}{\textsf{+added}}$ '
+    . '$\color{green}{\textsf{-removed}}$ against base.' . "\n"
+    . '- **Weighted (types)**: type issues weighted by error level (levels 1–8 as is, always-errors 10, strictness '
+    . "checks 1). Taint and dead-code issues are not weighed. The projects' own code is pinned and their dependencies "
+    . 'resolve identically for base and head, so a change means Psalm reports more, fewer or differently serious '
+    . "issues. A rise is not necessarily a regression.\n"
+    . '- **Taint**: head count of `Tainted*` issues, then $\color{orange}{\textsf{+added}}$ '
+    . '$\color{orange}{\textsf{-removed}}$ against base. Both are orange as either direction needs review: more can '
+    . "be new detection or false positives, fewer can be fixed false positives or lost detection.\n"
+    . "- **Dead code**: head count of unused-code issues, shown only when a run reported some (`findUnusedCode`). "
+    . "More is red, fewer is green.\n"
+    . "- **Total**: sum over the projects compared on both sides. Its wall time warns above +5 % (±5 % is noise); "
+    . "the other thresholds apply per project.\n"
     . '- **Colors**: $\color{red}{\textsf{red}}$ past a fail or warn threshold (or more issues), '
     . '$\color{green}{\textsf{green}}$ an improvement past noise (or fewer issues), '
+    . '$\color{orange}{\textsf{orange}}$ needs review, '
     . '$\color{gray}{\textsf{gray}}$ noise.' . "\n"
     . '- **Performance**: *regressed* if a head run crashed or timed out or a memory or wall delta is red, '
     . 'else *improved* if one is green, else *unchanged*. Its icon is the check result: ❌ fail · ⚠️ warn · '
     . "✅ pass; the icon next to each project is that project's result, 💥 = not comparable: base crashed or "
     . "timed out (counts as ⚠️).\n"
-    . '- **Issues** (heading): the total weighted change, *increased* · *decreased* · *unchanged*, followed by the '
-    . 'issues added and removed across the projects, e.g. *increased (+175 −128)*. If the weighted total is zero '
-    . 'but issues were added or removed (those weighted 0 changed, or changes offset), it reads *changed (+175 −128, '
-    . "weighted unchanged)*. Informational, never fails the check.\n\n"
+    . '- **Types** (heading): direction of the total weighted change, *increased* · *decreased* · *unchanged*. '
+    . '**Taint** and **Dead code** (heading): added and removed counts, present only when non-zero. '
+    . "Informational, never fails the check.\n\n"
     . '</details>';
 
 /** Signed relative change; 'n/a' for null, '<0.01 %' when a non-zero change rounds to zero. */
@@ -102,13 +114,86 @@ function countBadge(int $delta): string
         : ' ' . colored(($delta > 0 ? '+' : '-') . fmtInt(abs($delta)), $delta > 0 ? 'red' : 'green');
 }
 
-/** " +9 -3"; '' when nothing was added or removed. */
-function addedRemovedBadge(int $added, int $removed): string
+/** " +9 -3" in the given colors, a side that did not move in gray; '' when nothing was added or removed. */
+function addedRemovedBadge(int $added, int $removed, string $addedColor = 'red', string $removedColor = 'green'): string
 {
     return $added === 0 && $removed === 0
         ? ''
-        : ' ' . colored("+{$added}", $added > 0 ? 'red' : 'gray') . ' '
-            . colored("-{$removed}", $removed > 0 ? 'green' : 'gray');
+        : ' ' . colored("+{$added}", $added > 0 ? $addedColor : 'gray') . ' '
+            . colored("-{$removed}", $removed > 0 ? $removedColor : 'gray');
+}
+
+/**
+ * " +9 -3" for a taint or dead-code move. Taint is orange both ways: more can be a new detection or a false positive,
+ * fewer a fixed false positive or a lost detection.
+ *
+ * @param array{added: int, removed: int} $m
+ */
+function categoryBadge(array $m, string $category): string
+{
+    return $category === 'taint'
+        ? addedRemovedBadge($m['added'], $m['removed'], 'orange', 'orange')
+        : addedRemovedBadge($m['added'], $m['removed']);
+}
+
+/**
+ * Head count of taint or dead-code issues with its +added/−removed badge.
+ *
+ * @param array<string, mixed> $p
+ */
+function categoryCell(array $p, string $category): string
+{
+    $m = $p['issues']['categories'][$category] ?? null;
+
+    return $m === null ? '–' : fmtInt($m['head']) . categoryBadge($m, $category);
+}
+
+/**
+ * Taint or dead-code counts summed over the projects with issue lists on both sides.
+ *
+ * @param array<string, array<string, mixed>> $projects
+ * @return array{base: int, head: int, added: int, removed: int}
+ */
+function categoryTotals(array $projects, string $category): array
+{
+    $sum = ['base' => 0, 'head' => 0, 'added' => 0, 'removed' => 0];
+    foreach ($projects as $p) {
+        foreach ($sum as $key => $n) {
+            $sum[$key] = $n + ($p['issues']['categories'][$category][$key] ?? 0);
+        }
+    }
+
+    return $sum;
+}
+
+/**
+ * Dead code is only reported when the run finds unused code, so the column needs some unused-code issue on a side.
+ *
+ * @param array<string, array<string, mixed>> $projects
+ */
+function deadCodeShown(array $projects): bool
+{
+    $total = categoryTotals($projects, 'deadcode');
+
+    return $total['base'] + $total['head'] > 0;
+}
+
+/**
+ * " · Taint: +132 −0" and " · Dead code: +2 −5", each only when something was added or removed.
+ *
+ * @param array<string, array<string, mixed>> $projects
+ */
+function categoryHeading(array $projects, bool $deadCode): string
+{
+    $heading = '';
+    foreach (['taint' => 'Taint', 'deadcode' => 'Dead code'] as $category => $label) {
+        $total = categoryTotals($projects, $category);
+        if (($category === 'taint' || $deadCode) && ($total['added'] > 0 || $total['removed'] > 0)) {
+            $heading .= sprintf(' · %s: +%s −%s', $label, fmtInt($total['added']), fmtInt($total['removed']));
+        }
+    }
+
+    return $heading;
 }
 
 /**
@@ -197,7 +282,7 @@ function weightedSummary(array $w): string
  *
  * @param array<string, array<string, mixed>> $projects
  */
-function totalRow(array $projects): ?string
+function totalRow(array $projects, bool $deadCode): ?string
 {
     $mb = $wall = ['base' => 0.0, 'head' => 0.0];
     $issues = ['head' => 0, 'added' => 0, 'removed' => 0];
@@ -224,17 +309,22 @@ function totalRow(array $projects): ?string
         return null;
     }
 
-    return sprintf(
-        "| **Total** | %s%s | %.1f%s | %s%s | %s%s |\n",
-        fmtInt((int) round($mb['head'])),
-        pctBadge(pctDelta($mb['base'], $mb['head']), MB_FAIL_PCT, MB_FAIL_PCT),
-        $wall['head'],
-        pctBadge(pctDelta($wall['base'], $wall['head']), WALL_WARN_PCT, WALL_NOISE_PCT),
-        fmtInt($issues['head']),
-        addedRemovedBadge($issues['added'], $issues['removed']),
-        fmtInt($weighted['head']),
-        countBadge($weighted['delta']),
-    );
+    $category = static function (string $category) use ($projects): string {
+        $total = categoryTotals($projects, $category);
+
+        return fmtInt($total['head']) . categoryBadge($total, $category);
+    };
+
+    return '| ' . implode(' | ', [
+        '**Total**',
+        fmtInt((int) round($mb['head'])) . pctBadge(pctDelta($mb['base'], $mb['head']), MB_FAIL_PCT, MB_FAIL_PCT),
+        sprintf('%.1f', $wall['head'])
+            . pctBadge(pctDelta($wall['base'], $wall['head']), TOTAL_WALL_WARN_PCT, TOTAL_WALL_WARN_PCT),
+        fmtInt($issues['head']) . addedRemovedBadge($issues['added'], $issues['removed']),
+        fmtInt($weighted['head']) . countBadge($weighted['delta']),
+        $category('taint'),
+        ...($deadCode ? [$category('deadcode')] : []),
+    ]) . " |\n";
 }
 
 /**
@@ -264,16 +354,24 @@ function performanceWord(array $projects): string
         $improved = $improved || $mb < -MB_FAIL_PCT || $wall < -WALL_NOISE_PCT;
     }
 
-    return $compared ? ($improved ? 'improved' : 'unchanged') : 'not compared';
+    if (!$compared) {
+        return 'not compared';
+    }
+
+    $totalWall = totalWallDelta($projects) ?? 0.0;
+    if ($totalWall > TOTAL_WALL_WARN_PCT) {
+        return 'regressed';
+    }
+
+    return $improved || $totalWall < -TOTAL_WALL_WARN_PCT ? 'improved' : 'unchanged';
 }
 
 /**
- * Direction of the total weighted change plus the raw added and removed counts when non-zero, so that a small weighted
- * change cannot hide many issues (feature-specific ones weigh 0); null when no project has issue lists on both sides.
+ * Direction of the total weighted type-issue change; null when no project has issue lists on both sides.
  *
  * @param array<string, array<string, mixed>> $projects
  */
-function issuesWord(array $projects): ?string
+function typesWord(array $projects): ?string
 {
     $deltas = array_filter(array_map(
         static fn(array $p): ?int => $p['weighted_issues']['delta'] ?? null,
@@ -283,19 +381,9 @@ function issuesWord(array $projects): ?string
         return null;
     }
 
-    $added = $removed = 0;
-    foreach ($projects as $p) {
-        $added += $p['issues']['added'] ?? 0;
-        $removed += $p['issues']['removed'] ?? 0;
-    }
-
     $sum = array_sum($deltas);
-    $raw = sprintf('+%s −%s', fmtInt($added), fmtInt($removed));
-    if ($added === 0 && $removed === 0) {
-        return $sum > 0 ? 'increased' : ($sum < 0 ? 'decreased' : 'unchanged');
-    }
 
-    return $sum > 0 ? "increased ({$raw})" : ($sum < 0 ? "decreased ({$raw})" : "changed ({$raw}, weighted unchanged)");
+    return $sum > 0 ? 'increased' : ($sum < 0 ? 'decreased' : 'unchanged');
 }
 
 /**
@@ -343,6 +431,20 @@ function detailsBody(array $p): string
         $parts[] = '**Weighted** ' . weightedSummary($p['weighted_issues']) . ": {$levels}";
     }
 
+    foreach (['taint' => 'Taint', 'deadcode' => 'Dead code'] as $category => $label) {
+        $m = $i['categories'][$category] ?? null;
+        if ($m !== null && ($m['added'] > 0 || $m['removed'] > 0)) {
+            $parts[] = sprintf(
+                '**%s** %s → %s (+%s −%s)',
+                $label,
+                fmtInt($m['base']),
+                fmtInt($m['head']),
+                fmtInt($m['added']),
+                fmtInt($m['removed']),
+            );
+        }
+    }
+
     if ($i !== null && ($i['added'] > 0 || $i['removed'] > 0)) {
         $rows = ['| Issue type | added | removed |', '|:--|--:|--:|'];
         foreach ($i['types'] as $type => $n) {
@@ -351,11 +453,27 @@ function detailsBody(array $p): string
 
         $parts[] = implode("\n", $rows);
 
+        if ($i['changed'] > 0) {
+            $shown = array_sum(array_column($i['changed_examples'], 'count'));
+            $hunks = implode("\n\n", array_map(changeHunk(...), $i['changed_examples']));
+            $parts[] = "**Changed in place** ({$i['changed']})"
+                . (str_contains($hunks, '{self}') ? '; `{self}` is the class named after the file' : '')
+                . "\n\n```diff\n{$hunks}\n```"
+                . ($i['changed'] > $shown ? "\n\n… and " . ($i['changed'] - $shown) . ' more' : '');
+        }
+
         foreach (['added', 'removed'] as $kind) {
             if ($i["{$kind}_examples"] !== []) {
-                $more = $i[$kind] - count($i["{$kind}_examples"]);
-                $items = array_map(static fn(string $e): string => '- ' . inlineCode($e), $i["{$kind}_examples"]);
-                $parts[] = '**' . ucfirst($kind) . "** ({$i[$kind]})\n\n" . implode("\n", $items)
+                $total = $i["unpaired_{$kind}"];
+                $more = $total - count($i["{$kind}_examples"]);
+                $items = array_map(static fn(array $e): string => '- ' . inlineCode(mb_strimwidth(
+                    "{$e['file']}:{$e['line']} {$e['type']} ({$e['severity']}): "
+                        . shortClassNames([$e['message']])[0],
+                    0,
+                    EXAMPLE_CHARS,
+                    '…',
+                )), $i["{$kind}_examples"]);
+                $parts[] = '**' . ucfirst($kind) . "** ({$total})\n\n" . implode("\n", $items)
                     . ($more > 0 ? "\n- … and {$more} more" : '');
             }
         }
@@ -396,6 +514,90 @@ function detailsBody(array $p): string
 }
 
 /**
+ * One hunk for a group of identical in-place changes: `@@ location type @@` (several locations as context lines),
+ * then the old messages as `-` lines and the new ones as `+` lines, their shared text trimmed alike.
+ *
+ * @param array{
+ *     old: list<array{type: string, message: string}>, new: list<array{type: string, message: string}>,
+ *     locations: list<string>, count: int
+ * } $g
+ */
+function changeHunk(array $g): string
+{
+    $issues = [...$g['old'], ...$g['new']];
+    $messages = shortClassNames(array_column($issues, 'message'));
+    $oldCount = count($g['old']);
+    $segments = changeSegments(array_slice($messages, 0, $oldCount), array_slice($messages, $oldCount));
+    $types = array_values(array_unique(array_column($issues, 'type')));
+    $type = count($types) === 1 ? " {$types[0]}" : '';
+    if ($g['count'] === 1) {
+        $lines = ["@@ {$g['locations'][0]}{$type} @@"];
+    } else {
+        $more = $g['count'] - count($g['locations']);
+        $lines = [
+            "@@ {$g['count']} places{$type} @@",
+            ...array_map(static fn(string $location): string => "  {$location}", $g['locations']),
+            ...($more > 0 ? ["  … and {$more} more"] : []),
+        ];
+    }
+
+    $width = max(array_map(strlen(...), $types));
+    foreach ($issues as $k => $issue) {
+        $lines[] = ($k < $oldCount ? '- ' : '+ ') . ($type === '' ? str_pad("{$issue['type']}:", $width + 2) : '')
+            . changeLine($segments, $k);
+    }
+
+    return implode("\n", $lines);
+}
+
+/**
+ * Message $k of the segments: shared text cut to whole words around the changes, CONTEXT_CHARS or a bit more on
+ * each side, so that the `-` and `+` lines are trimmed alike.
+ *
+ * @param list<list<string>> $segments
+ */
+function changeLine(array $segments, int $k): string
+{
+    $line = '';
+    $last = count($segments) - 1;
+    foreach ($segments as $s => $segment) {
+        $text = $segment[$k];
+        if (!isShared($segment)) {
+            $line .= mb_strimwidth($text, 0, CHANGE_CHARS, '…');
+            continue;
+        }
+
+        $start = contextTokens($text, false);
+        $end = contextTokens($text, true);
+        $line .= match (true) {
+            $last === 0 => mb_strimwidth($text, 0, EXAMPLE_CHARS, '…'),
+            $s === 0 => $end === $text ? $text : "…{$end}",
+            $s === $last => $start === $text ? $text : "{$start}…",
+            mb_strlen($start) + mb_strlen($end) < mb_strlen($text) => "{$start}…{$end}",
+            default => $text,
+        };
+    }
+
+    return $line;
+}
+
+/** Whole tokens from the start (or the end) of $text, at least CONTEXT_CHARS long. */
+function contextTokens(string $text, bool $fromEnd): string
+{
+    $tokens = messageTokens($text);
+    $kept = '';
+    foreach ($fromEnd ? array_reverse($tokens) : $tokens as $token) {
+        if (mb_strlen($kept) >= CONTEXT_CHARS) {
+            break;
+        }
+
+        $kept = $fromEnd ? $token . $kept : $kept . $token;
+    }
+
+    return $kept;
+}
+
+/**
  * "Psalm memory +7.7 % (limit +5 %); issues +9 −3": notes and issue changes.
  *
  * @param array<string, mixed> $p
@@ -422,27 +624,31 @@ function renderReport(array $summary, ?string $runUrl): string
         static fn(array $a, array $b): int => VERDICT_ORDER[$a['verdict']] <=> VERDICT_ORDER[$b['verdict']],
     );
 
-    $issuesWord = issuesWord($projects);
+    $typesWord = typesWord($projects);
+    $deadCode = deadCodeShown($projects);
     $out = sprintf(
-        "## %s Performance: %s%s\n\n",
+        "## %s Performance: %s%s%s\n\n",
         VERDICT_ICONS[$summary['verdict']],
         performanceWord($projects),
-        $issuesWord === null ? '' : " · Issues: {$issuesWord}",
+        $typesWord === null ? '' : " · Types: {$typesWord}",
+        categoryHeading($projects, $deadCode),
     );
-    $out .= "| Project | Memory (MB) | Wall (s) | Issues | Weighted |\n|:--|--:|--:|--:|--:|\n";
+    $header = ['Project', 'Memory (MB)', 'Wall (s)', 'Issues', 'Weighted (types)', 'Taint',
+        ...($deadCode ? ['Dead code'] : [])];
+    $out .= '| ' . implode(' | ', $header) . " |\n|:--" . str_repeat('|--:', count($header) - 1) . "|\n";
     foreach ($projects as $name => $p) {
-        $out .= sprintf(
-            "| %s %s | %s | %s | %s | %s |\n",
-            VERDICT_ICONS[$p['verdict']],
-            $name,
+        $out .= '| ' . implode(' | ', [
+            VERDICT_ICONS[$p['verdict']] . " {$name}",
             memoryCell($p),
             wallCell($p),
             issuesCell($p),
             weightedCell($p),
-        );
+            categoryCell($p, 'taint'),
+            ...($deadCode ? [categoryCell($p, 'deadcode')] : []),
+        ]) . " |\n";
     }
 
-    $out .= totalRow($projects) ?? '';
+    $out .= totalRow($projects, $deadCode) ?? '';
     $out .= "\n" . TABLE_LEGEND . "\n";
 
     $footer = $summary['deps_changed']
@@ -512,7 +718,7 @@ function runCompare(array $args): int
     requireOptions($options, array_slice($names, 0, 7));
     $summary = compareAll(readJsonFile($options['plan']), $options['in'], $options['deps-changed'] === '1');
     $summary += ['base_sha' => $options['base-sha'], 'head_sha' => $options['head-sha']];
-    writeJsonFile($options['out-json'], ['schema' => 1] + $summary);
+    writeJsonFile($options['out-json'], ['schema' => 2] + $summary);
     if (file_put_contents($options['out-md'], renderReport($summary, $options['run-url'] ?? null)) === false) {
         throw new RuntimeException("cannot write {$options['out-md']}");
     }

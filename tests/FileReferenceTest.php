@@ -9,6 +9,7 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\IssueData;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
+use Psalm\Internal\CacheMode;
 use Psalm\Internal\Codebase\CodeUseGraph;
 use Psalm\Internal\Provider\FakeFileProvider;
 use Psalm\Internal\Provider\FileReferenceCacheProvider;
@@ -16,6 +17,7 @@ use Psalm\Internal\Provider\FileReferenceProvider;
 use Psalm\Internal\Provider\Providers;
 use Psalm\Tests\Internal\Provider\FakeParserCacheProvider;
 
+use function array_keys;
 use function array_values;
 use function count;
 use function is_array;
@@ -65,6 +67,47 @@ final class FileReferenceTest extends TestCase
         } unset($loc);
 
         $this->assertEquals($expected_locations, $found_references);
+    }
+
+    public function testLeadingBackslashFindsTheSameReferencesForEverySymbolKind(): void
+    {
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                namespace App;
+
+                function helper(): int {
+                    return 1;
+                }
+
+                final class H {
+                    public const C = 1;
+                    public int $p = 1;
+
+                    public function a(): int {
+                        return $this->p + self::C + helper();
+                    }
+                }
+
+                echo (new H())->a();',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+
+        $codebase = $this->project_analyzer->getCodebase();
+
+        foreach (['App\\H', 'App\\H::a', 'App\\H::$p', 'App\\H::C', 'App\\helper'] as $symbol) {
+            $references = $codebase->findReferencesToSymbol($symbol);
+
+            $this->assertNotEmpty($references, $symbol);
+            $this->assertSame(
+                array_keys($references),
+                array_keys($codebase->findReferencesToSymbol('\\' . $symbol)),
+                $symbol,
+            );
+        }
     }
 
     public function testReferenceLocationsAreRemovedWithTheirSourceNode(): void
@@ -201,7 +244,7 @@ final class FileReferenceTest extends TestCase
     public function testAnalysisPersistsEveryResultToTheReferenceCache(): void
     {
         $config = new TestConfig();
-        $cache = new FileReferenceCacheProvider($config, '', false);
+        $cache = new FileReferenceCacheProvider($config, '', CacheMode::Memory);
         $file_path = $this->scanFileWithReferenceCache($cache);
         $this->project_analyzer->getCodebase()->analyzer->analyzeFiles($this->project_analyzer, 1, false);
 
@@ -216,7 +259,7 @@ final class FileReferenceTest extends TestCase
 
     public function testCacheSavedWithoutEdgesIsOnlyLoadedByRunsThatDoNotNeedThem(): void
     {
-        $cache = new FileReferenceCacheProvider(new TestConfig(), '', false);
+        $cache = new FileReferenceCacheProvider(new TestConfig(), '', CacheMode::Memory);
         $file_path = $this->scanFileWithReferenceCache($cache);
         $codebase = $this->project_analyzer->getCodebase();
         $codebase->code_use_graph->record_edges = false;
@@ -239,7 +282,7 @@ final class FileReferenceTest extends TestCase
 
     public function testCacheSavedWithEdgesIsLoadedByAnyRun(): void
     {
-        $cache = new FileReferenceCacheProvider(new TestConfig(), '', false);
+        $cache = new FileReferenceCacheProvider(new TestConfig(), '', CacheMode::Memory);
         $this->scanFileWithReferenceCache($cache);
         $this->project_analyzer->getCodebase()->analyzer->analyzeFiles($this->project_analyzer, 1, false);
 
@@ -258,7 +301,7 @@ final class FileReferenceTest extends TestCase
 
     public function testCacheSavedBeforeEdgesWereOptionalIsLoadedByRunsNeedingThem(): void
     {
-        $cache = new FileReferenceCacheProvider(new TestConfig(), '', false);
+        $cache = new FileReferenceCacheProvider(new TestConfig(), '', CacheMode::Memory);
         $this->scanFileWithReferenceCache($cache);
         $this->project_analyzer->getCodebase()->analyzer->analyzeFiles($this->project_analyzer, 1, false);
 
@@ -300,7 +343,7 @@ final class FileReferenceTest extends TestCase
     public function testAnalysisWritesTheReferenceCacheOnce(): void
     {
         $cache = $this->getMockBuilder(FileReferenceCacheProvider::class)
-            ->setConstructorArgs([new TestConfig(), '', false])
+            ->setConstructorArgs([new TestConfig(), '', CacheMode::Memory])
             ->onlyMethods(['setCachedFileReferences'])
             ->getMock();
 
@@ -414,6 +457,71 @@ final class FileReferenceTest extends TestCase
                 'A::foo',
                 ['7:32:foo'],
             ],
+            'getFunctionLocation' => [
+                '<?php
+                    namespace App;
+
+                    function helper(): int {
+                        return 1;
+                    }
+
+                    final class H {
+                        public function a(): int {
+                            return helper();
+                        }
+                    }
+
+                    helper();
+                    $f = \\App\\helper(...);',
+                'App\\helper',
+                [
+                    '10:36:helper',
+                    '14:21:helper',
+                    '15:26:\\App\\helper',
+                ],
+            ],
+            'getFunctionLocationByItsFullyQualifiedName' => [
+                '<?php
+                    namespace App;
+
+                    function helper(): int {
+                        return 1;
+                    }
+
+                    helper();',
+                '\\App\\helper',
+                ['8:21:helper'],
+            ],
+            'getMethodLocationWithUsedReturnValue' => [
+                '<?php
+                    final class A {
+                        public function foo(): ?string {
+                            return null;
+                        }
+                    }
+
+                    function f(A $a): string {
+                        return $a->foo() ?? "";
+                    }
+
+                    function g(A $a): void {
+                        $a->foo();
+                    }',
+                'A::foo',
+                ['9:36:foo', '13:29:foo'],
+            ],
+            'getInterfaceMethodLocationWithUsedReturnValue' => [
+                '<?php
+                    interface I {
+                        public function foo(): string;
+                    }
+
+                    function f(I $i): string {
+                        return $i->foo();
+                    }',
+                'I::foo',
+                ['7:36:foo'],
+            ],
             'getPropertyLocation' => [
                 '<?php
                     class A {
@@ -518,11 +626,11 @@ final class FileReferenceTest extends TestCase
                     'return foo\\d::__construct' => [
                         'file /var/www/somefile.php' => true,
                     ],
-                    'use-alias use:A:d7863b8594fe57f85cb8183fe55a6c15' => [
+                    'use-alias use:A:bcf863c38be34a3d' => [
                         'func foo\\b::__construct' => true,
                         'func foo\\c::foo' => true,
                     ],
-                    'use-alias use:C:d7863b8594fe57f85cb8183fe55a6c15' => [
+                    'use-alias use:C:bcf863c38be34a3d' => [
                         'func foo\\b::bar' => true,
                     ],
                 ],
@@ -587,7 +695,7 @@ final class FileReferenceTest extends TestCase
                     'return foo\\c::__construct' => [
                         'func foo\\d::bat' => true,
                     ],
-                    'use-alias use:C:d7863b8594fe57f85cb8183fe55a6c15' => [
+                    'use-alias use:C:bcf863c38be34a3d' => [
                         'func foo\\d::bat' => true,
                     ],
                 ],
@@ -651,7 +759,7 @@ final class FileReferenceTest extends TestCase
                         'func foo\\b::__construct' => true,
                         'func foo\\c::foo' => true,
                     ],
-                    'use-alias use:A:d7863b8594fe57f85cb8183fe55a6c15' => [
+                    'use-alias use:A:bcf863c38be34a3d' => [
                         'func foo\\b::__construct' => true,
                         'func foo\\c::foo' => true,
                     ],
@@ -690,7 +798,7 @@ final class FileReferenceTest extends TestCase
                         'func foo\\b::__construct' => true,
                         'func foo\\c::foo' => true,
                     ],
-                    'use-alias use:A:d7863b8594fe57f85cb8183fe55a6c15' => [
+                    'use-alias use:A:bcf863c38be34a3d' => [
                         'func foo\\b::__construct' => true,
                         'func foo\\c::foo' => true,
                     ],
@@ -725,7 +833,7 @@ final class FileReferenceTest extends TestCase
                     'func ns\\a::foo' => [
                         'func ns\\c::bar' => true,
                     ],
-                    'use-alias use:A:d7863b8594fe57f85cb8183fe55a6c15' => [
+                    'use-alias use:A:bcf863c38be34a3d' => [
                         'func ns\\c::bar' => true,
                     ],
                 ],

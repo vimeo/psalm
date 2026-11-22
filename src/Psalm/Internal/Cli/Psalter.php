@@ -134,8 +134,14 @@ final class Psalter
                 --debug, --debug-by-line, --debug-emitted-issues
                     Debug information
 
+                -f, --file=FILE
+                    Path to a file to update
+
                 -c, --config=psalm.xml
                     Path to a psalm.xml configuration file. Run psalm --init to create one.
+
+                --memory-limit=LIMIT
+                    Use a specific memory limit.
 
                 -m, --monochrome
                     Enable monochrome output.
@@ -225,7 +231,7 @@ final class Psalter
             if ($root_path === false) {
                 fwrite(
                     STDERR,
-                    'Could not locate root directory ' . $current_dir . DIRECTORY_SEPARATOR . $options['r'] . PHP_EOL,
+                    CliUtils::getRootDirectoryNotFoundMessage($current_dir, $options['r']) . PHP_EOL,
                 );
                 exit(1);
             }

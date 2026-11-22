@@ -37,6 +37,43 @@ final class CapabilitiesTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'decodingAWaitStatusIsPure' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function exitCode(int $status): int|false {
+                        return pcntl_wifexited($status) ? pcntl_wexitstatus($status) : false;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'aSodiumKeyPairFromASeedIsPure' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function keyPair(string $seed): string {
+                        return sodium_crypto_sign_seed_keypair($seed);
+                    }',
+            ],
+            'externalMutationFreeCalleesCostWriteRefsOnlyThroughTheirByReferenceArguments' => [
+                'code' => '<?php
+                    final class Box {
+                        public int $n = 0;
+
+                        /** @psalm-capabilities read-props|write-this-props|write-refs */
+                        public function bump(): void {
+                            $this->n++;
+                        }
+
+                        /** @psalm-capabilities read-props|write-this-props|write-refs */
+                        public function __construct() {}
+                    }
+
+                    /** @psalm-capabilities read-props|write-this-props|write-props */
+                    function caller(Box $b): void {
+                        $b->bump();
+                        new Box();
+                    }',
+            ],
             'parentCallOfATraitMethodReturnsThisInEveryClassUsingTheTrait' => [
                 'code' => <<<'PHP'
                     <?php
@@ -332,6 +369,8 @@ final class CapabilitiesTest extends TestCase
                         $storage[$key] = 2;
                         return $storage[$key] + (int) $storage->contains($key);
                     }',
+                'assertions' => [],
+                'ignored_issues' => ['DeprecatedMethod'],
             ],
             'mutatingAnSplContainerForgetsWhatItsReadersReturned' => [
                 'code' => '<?php
@@ -799,6 +838,69 @@ final class CapabilitiesTest extends TestCase
                 'assertions' => [],
                 'ignored_issues' => [],
             ],
+            'callsWritingNothingKeepGetterResults' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class Value {
+                        /** @var mixed */
+                        private $value;
+                        /** @param mixed $value */
+                        public function __construct($value) { $this->value = $value; }
+                        /** @return mixed */
+                        public function getValue() { return $this->value; }
+                        public function noop(): void {}
+                    }
+                    final class Checker {
+                        public function check(string $s): bool { return $s !== ''; }
+                    }
+                    final class Dumper {
+                        private function canBe(string $s): bool { return $s !== ''; }
+                        private function nothing(): void {}
+                        private function ind(string $s): string { return $s; }
+
+                        public function inCondition(Value $value): string {
+                            if (is_string($value->getValue()) && $this->canBe($value->getValue())) {
+                                return $this->ind($value->getValue());
+                            }
+                            return '';
+                        }
+                        public function inStatement(Value $value): string {
+                            if (is_string($value->getValue())) {
+                                $this->nothing();
+                                return $this->ind($value->getValue());
+                            }
+                            return '';
+                        }
+                        public function onTheGetterReceiver(Value $value): string {
+                            if (is_string($value->getValue())) {
+                                $value->noop();
+                                return $this->ind($value->getValue());
+                            }
+                            return '';
+                        }
+                        public function onAnotherReceiver(Value $value, Checker $checker): string {
+                            if (is_string($value->getValue()) && $checker->check($value->getValue())) {
+                                return $this->ind($value->getValue());
+                            }
+                            return '';
+                        }
+                    }
+                    PHP,
+            ],
+            'stubWithAnEmptyBodyMayWriteItsReceiver' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param ArrayObject<int, int> $ao */
+                    function resetFlags(ArrayObject $ao): void {
+                        if ($ao->getFlags() === ArrayObject::ARRAY_AS_PROPS) {
+                            $ao->setFlags(0);
+                            if ($ao->getFlags() === 0) {
+                                echo 'reset';
+                            }
+                        }
+                    }
+                    PHP,
+            ],
             'mutatingAnotherObjectKeepsWhatPureClassMethodsReturned' => [
                 'code' => '<?php
                     /** @psalm-pure */
@@ -937,6 +1039,8 @@ final class CapabilitiesTest extends TestCase
                         $storage[$key] = 1;
                         $storage->attach(new stdClass(), 2);
                     }',
+                'assertions' => [],
+                'ignored_issues' => ['DeprecatedMethod'],
             ],
             'fillingAFreshSplObjectStorageWithoutATypeIsPure' => [
                 'code' => '<?php
@@ -977,6 +1081,8 @@ final class CapabilitiesTest extends TestCase
                             echo "detached";
                         }
                     }',
+                'assertions' => [],
+                'ignored_issues' => ['DeprecatedMethod'],
             ],
             'traversableWithPurityCombinesWithIterable' => [
                 'code' => '<?php
@@ -1361,6 +1467,122 @@ final class CapabilitiesTest extends TestCase
                     function greet(Name $n): string {
                         return "hello $n" . (string) $n;
                     }',
+            ],
+            'noToStringInStrictOrNonStringSearch' => [
+                'code' => '<?php
+                    final class Name {
+                        public function __toString(): string { return "name"; }
+                    }
+
+                    /**
+                     * @psalm-pure
+                     * @param array<string> $names
+                     * @param array<int> $ids
+                     * @param list<Name> $known
+                     * @return list<array-key>
+                     */
+                    function find(Name $name, array $names, array $ids, array $known, string $s): array {
+                        return in_array($name, $known, true) || in_array($name, $ids) || in_array($s, ["name"])
+                            ? array_keys($names, $name, true)
+                            : [];
+                    }',
+            ],
+            'noToStringOfValuesNotComparedAsStrings' => [
+                'code' => '<?php
+                    final class Name {
+                        public function __toString(): string { return "name"; }
+                    }
+
+                    /**
+                     * @psalm-pure
+                     * @param list<Name> $names
+                     * @param list<string> $strings
+                     * @param list<Name|string> $names_or_strings
+                     * @param list<Name|int> $names_or_ints
+                     * @param non-empty-list<Name> $some_names
+                     */
+                    function f(
+                        array $names,
+                        array $strings,
+                        array $names_or_strings,
+                        array $names_or_ints,
+                        array $some_names,
+                        string $s
+                    ): bool {
+                        $sorted = $names;
+                        sort($sorted);
+                        rsort($sorted, SORT_NUMERIC);
+
+                        return array_unique($names, SORT_REGULAR) !== []
+                            && array_unique($names, SORT_NUMERIC) !== []
+                            && in_array($s, $names_or_strings, true)
+                            && in_array(1, $names_or_ints)
+                            && implode(",", $strings) !== ""
+                            && array_diff_key($names, ["a"]) !== []
+                            && max($some_names) !== min($some_names[0], $some_names[0]);
+                    }',
+            ],
+            'noToStringOfCallbackInArrayDiffUassoc' => [
+                'code' => '<?php
+                    final class Comparer {
+                        public function __toString(): string { return "comparer"; }
+
+                        /** @psalm-pure */
+                        public function compare(int|string $a, int|string $b): int {
+                            return 0;
+                        }
+                    }
+
+                    /**
+                     * @psalm-pure
+                     * @param array<string> $strings
+                     */
+                    function f(array $strings, Comparer $comparer): array {
+                        return array_diff_uassoc($strings, ["a"], [$comparer, "compare"]);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'pureToStringInStringConversionsOfValues' => [
+                'code' => '<?php
+                    final class Name {
+                        /** @psalm-pure */
+                        public function __toString(): string {
+                            return "name";
+                        }
+                    }
+
+                    /**
+                     * @psalm-pure
+                     * @param list<Name> $names
+                     */
+                    function f(Name $name, array $names, string $s): bool {
+                        return strval($name) !== ""
+                            && implode(",", $names) !== ""
+                            && array_diff($names, ["a"]) !== []
+                            && array_unique($names) !== []
+                            && in_array($s, $names);
+                    }',
+            ],
+            'pureToStringInEchoPrintAndStringArguments' => [
+                'code' => '<?php
+                    final class Name {
+                        /** @psalm-pure */
+                        public function __toString(): string {
+                            return "name";
+                        }
+                    }
+
+                    /** @psalm-capabilities io */
+                    function show(Name $name, Name|int $maybe): void {
+                        echo $name, $maybe;
+                        print $name;
+                        echo strlen($name), sprintf("%s", $name), in_array($name, ["name"]) ? "y" : "n";
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['ImplicitToStringCast'],
+                'php_version' => '8.0',
             ],
             'pureInvoke' => [
                 'code' => '<?php
@@ -3035,6 +3257,202 @@ final class CapabilitiesTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.3',
             ],
+            'closureCallingAnImpureInstanceMethodIsInferredWithWriteRefs' => [
+                'code' => '<?php
+                    final class Impure {
+                        public function run(): void {}
+                    }
+
+                    function f(Impure $i): void {
+                        $c = function () use ($i): void {
+                            $i->run();
+                        };
+                        /** @psalm-check-type-exact $c = Closure[write-props|read-globals|write-globals|write-refs|io|time]():void */
+                        $c();
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'psalmCapabilitiesWinOverPure' => [
+                'code' => '<?php
+                    interface Message {
+                        /**
+                         * @pure
+                         * @psalm-capabilities read-props
+                         */
+                        public function body(): string;
+                    }
+
+                    final class MyMessage implements Message {
+                        public function __construct(private string $body) {}
+
+                        public function body(): string {
+                            return $this->body;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'psalmCapabilitiesWinOverPhpstanPure' => [
+                'code' => '<?php
+                    interface Message {
+                        /**
+                         * @psalm-capabilities read-props
+                         * @phpstan-pure
+                         */
+                        public function body(): string;
+                    }
+
+                    final class MyMessage implements Message {
+                        public function __construct(private string $body) {}
+
+                        public function body(): string {
+                            return $this->body;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'psalmMutationFreeWinsOverPure' => [
+                'code' => '<?php
+                    interface Message {
+                        /**
+                         * @psalm-mutation-free
+                         * @pure
+                         */
+                        public function body(): string;
+                    }
+
+                    final class MyMessage implements Message {
+                        public function __construct(private string $body) {}
+
+                        public function body(): string {
+                            return $this->body;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'psalmMutationFreeWinsOverPhpstanPure' => [
+                'code' => '<?php
+                    interface Message {
+                        /**
+                         * @phpstan-pure
+                         * @psalm-mutation-free
+                         */
+                        public function body(): string;
+                    }
+
+                    final class MyMessage implements Message {
+                        public function __construct(private string $body) {}
+
+                        public function body(): string {
+                            return $this->body;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'psalmCapabilitiesWinOverPureInTheBody' => [
+                'code' => '<?php
+                    /**
+                     * @pure
+                     * @psalm-capabilities io
+                     */
+                    function greet(string $name): void {
+                        echo $name;
+                    }',
+            ],
+            'psalmImpureWinsOverPure' => [
+                'code' => '<?php
+                    /**
+                     * @pure
+                     * @psalm-impure
+                     */
+                    function now(): int {
+                        return time();
+                    }',
+            ],
+            'psalmCapabilitiesWinOverPhpStormPure' => [
+                'code' => '<?php
+                    namespace JetBrains\\PhpStorm {
+                        #[\\Attribute]
+                        final class Pure {}
+
+                        #[\\Attribute]
+                        final class Immutable {}
+                    }
+
+                    namespace {
+                        interface Message {
+                            /** @psalm-capabilities read-props */
+                            #[\\JetBrains\\PhpStorm\\Pure]
+                            public function body(): string;
+                        }
+
+                        final class MyMessage implements Message {
+                            public function __construct(private string $body) {}
+
+                            public function body(): string {
+                                return $this->body;
+                            }
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'psalmImpureWinsOverPhpStormPure' => [
+                'code' => '<?php
+                    namespace JetBrains\\PhpStorm {
+                        #[\\Attribute]
+                        final class Pure {}
+
+                        #[\\Attribute]
+                        final class Immutable {}
+                    }
+
+                    namespace {
+                        /** @psalm-impure */
+                        #[\\JetBrains\\PhpStorm\\Pure]
+                        function now(): int {
+                            return time();
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'psalmCapabilitiesWinOverPhpStormImmutable' => [
+                'code' => '<?php
+                    namespace JetBrains\\PhpStorm {
+                        #[\\Attribute]
+                        final class Pure {}
+
+                        #[\\Attribute]
+                        final class Immutable {}
+                    }
+
+                    namespace {
+                        /** @psalm-capabilities read-props|write-this-props */
+                        #[\\JetBrains\\PhpStorm\\Immutable]
+                        final class Counter {
+                            private int $n = 0;
+
+                            public function next(): int {
+                                return ++$this->n;
+                            }
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
         ];
     }
 
@@ -3045,6 +3463,174 @@ final class CapabilitiesTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'parsingTheRequestBodyIsImpure' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function body(): array {
+                        return request_parse_body();
+                    }',
+                'error_message' => 'function call on request_parse_body requires io',
+                'error_levels' => [],
+                'php_version' => '8.4',
+            ],
+            'copyingIntoPostgresIsImpure' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function copyRow(PgSql\\Connection $db, string $row): int {
+                        return pg_put_copy_data($db, $row);
+                    }',
+                'error_message' => 'ImpureFunctionCall',
+                'error_levels' => [],
+                'php_version' => '8.4',
+            ],
+            'runningAPostgresQueryIsImpure' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function run(PgSql\\Connection $db): PgSql\\Result|false {
+                        return pg_query($db, "SELECT 1");
+                    }',
+                'error_message' => 'function call on pg_query requires io',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'escapingForPostgresIsImpure' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function quote(PgSql\\Connection $db, string $value): string {
+                        return pg_escape_literal($db, $value);
+                    }',
+                'error_message' => 'function call on pg_escape_literal requires io',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'lookingUpAUserIsImpure' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function home(string $name): array|false {
+                        return posix_getpwnam($name);
+                    }',
+                'error_message' => 'function call on posix_getpwnam requires io',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'waitingForAChildIsImpure' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function reap(int $pid): int {
+                        return pcntl_waitpid($pid, $status);
+                    }',
+                'error_message' => 'function call on pcntl_waitpid requires io',
+                'error_levels' => [],
+            ],
+            'runningAMysqliQueryIsImpure' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function run(mysqli $db): mysqli_result|bool {
+                        return mysqli_execute_query($db, "SELECT 1");
+                    }',
+                'error_message' => 'ImpureFunctionCall',
+                'error_levels' => [],
+                'php_version' => '8.2',
+            ],
+            'readingTheErrorHandlerIsImpure' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function handler(): ?callable {
+                        return get_error_handler();
+                    }',
+                'error_message' => 'function call on get_error_handler requires read-globals',
+                'error_levels' => [],
+                'php_version' => '8.5',
+            ],
+            'generatingASodiumKeyIsImpure' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function newKey(): string {
+                        return sodium_crypto_secretbox_keygen();
+                    }',
+                'error_message' => 'function call on sodium_crypto_secretbox_keygen requires io',
+                'error_levels' => [],
+            ],
+            'generatingASodiumKeyPairIsImpure' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function newKeyPair(): string {
+                        return sodium_crypto_sign_keypair();
+                    }',
+                'error_message' => 'function call on sodium_crypto_sign_keypair requires io',
+                'error_levels' => [],
+            ],
+            'sealingASodiumBoxIsImpure' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function seal(string $message, string $publicKey): string {
+                        return sodium_crypto_box_seal($message, $publicKey);
+                    }',
+                'error_message' => 'ImpureFunctionCall',
+                'error_levels' => [],
+            ],
+            'hashingAPasswordWithSodiumIsImpure' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function hashPassword(string $password): string {
+                        return sodium_crypto_pwhash_str($password, 2, 67108864);
+                    }',
+                'error_message' => 'ImpureFunctionCall',
+                'error_levels' => [],
+            ],
+            'hashingAPasswordIsImpure' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function hashPassword(string $password): string {
+                        return password_hash($password, PASSWORD_DEFAULT);
+                    }',
+                'error_message' => 'ImpureFunctionCall',
+                'error_levels' => [],
+            ],
+            'opensslRandomBytesAreImpure' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function bytes(): string {
+                        return openssl_random_pseudo_bytes(16);
+                    }',
+                'error_message' => 'ImpureFunctionCall',
+                'error_levels' => [],
+            ],
+            'gmpRandomNumbersAreImpure' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function number(): GMP {
+                        return gmp_random_bits(16);
+                    }',
+                'error_message' => 'ImpureFunctionCall',
+                'error_levels' => [],
+            ],
+            'impureInstanceMethodCostsWriteRefsLikeAnImpureFunction' => [
+                'code' => '<?php
+                    final class Impure {
+                        public function run(): void {}
+                    }
+
+                    /** @psalm-capabilities read-props|write-this-props|write-props|read-globals|write-globals|io|time */
+                    function caller(Impure $i): void {
+                        $i->run();
+                    }',
+                'error_message' => 'ImpureMethodCall',
+            ],
+            'impureConstructorCostsWriteRefsLikeAnImpureFunction' => [
+                'code' => '<?php
+                    final class Impure {
+                        public function __construct() {
+                            echo "created";
+                        }
+                    }
+
+                    /** @psalm-capabilities read-props|write-this-props|write-props|read-globals|write-globals|io|time */
+                    function caller(): void {
+                        new Impure();
+                    }',
+                'error_message' => 'ImpureMethodCall',
+            ],
             'impureToStringCalledImplicitlyByAnArgument' => [
                 'code' => '<?php
                     final class Imp {
@@ -3435,6 +4021,125 @@ final class CapabilitiesTest extends TestCase
                     }',
                 'error_message' => 'NullableReturnStatement',
             ],
+            'overriddenMethodWritingNothingMustNotKeepGetter' => [
+                'code' => '<?php
+                    final class Child {}
+                    final class Owner {
+                        public ?Child $child = null;
+                        /** @psalm-mutation-free */
+                        public function getChild(): ?Child { return $this->child; }
+                    }
+                    class Base {
+                        protected function hook(Owner $owner): void {}
+                        public function afterHook(Owner $owner): Child {
+                            if ($owner->getChild() === null) {
+                                return new Child();
+                            }
+                            $this->hook($owner);
+                            return $owner->getChild();
+                        }
+                    }
+                    final class Clearing extends Base {
+                        protected function hook(Owner $owner): void { $owner->child = null; }
+                    }',
+                'error_message' => 'NullableReturnStatement',
+            ],
+            'overrideFromATraitMustNotKeepGetter' => [
+                'code' => '<?php
+                    final class Child {}
+                    final class Owner {
+                        public ?Child $child = null;
+                        /** @psalm-mutation-free */
+                        public function getChild(): ?Child { return $this->child; }
+                    }
+                    trait Clears {
+                        protected function hook(Owner $owner): void { $owner->child = null; }
+                    }
+                    class Base {
+                        protected function hook(Owner $owner): void {}
+                        public function afterHook(Owner $owner): Child {
+                            if ($owner->getChild() === null) {
+                                return new Child();
+                            }
+                            $this->hook($owner);
+                            return $owner->getChild();
+                        }
+                    }
+                    final class Clearing extends Base {
+                        use Clears;
+                    }',
+                'error_message' => 'NullableReturnStatement',
+            ],
+            'methodReturningByReferenceMustNotKeepGetter' => [
+                'code' => '<?php
+                    final class Child {}
+                    final class Owner {
+                        public ?Child $child = null;
+                        /** @psalm-mutation-free */
+                        public function getChild(): ?Child { return $this->child; }
+                    }
+                    final class Holder {
+                        private Owner $owner;
+                        public function __construct(Owner $owner) { $this->owner = $owner; }
+                        public function &slot(): ?Child { return $this->owner->child; }
+                    }
+                    function afterWrite(Owner $owner, Holder $holder): Child {
+                        if ($owner->getChild() === null) {
+                            return new Child();
+                        }
+                        $slot = &$holder->slot();
+                        $slot = null;
+                        return $owner->getChild();
+                    }',
+                'error_message' => 'NullableReturnStatement',
+            ],
+            'methodSpreadingATraversableMustNotKeepGetter' => [
+                'code' => '<?php
+                    final class Child {}
+                    final class Owner {
+                        public ?Child $child = null;
+                        /** @psalm-mutation-free */
+                        public function getChild(): ?Child { return $this->child; }
+                    }
+                    final class Drainer {
+                        /** @param Traversable<int, int> $items */
+                        public function drain(Traversable $items): array { return [...$items]; }
+                    }
+                    /** @return Generator<int, int> */
+                    function clearing(Owner $owner): Generator {
+                        $owner->child = null;
+                        yield 1;
+                    }
+                    function afterDrain(Owner $owner, Drainer $drainer): Child {
+                        $items = clearing($owner);
+                        if ($owner->getChild() === null) {
+                            return new Child();
+                        }
+                        $drainer->drain($items);
+                        return $owner->getChild();
+                    }',
+                'error_message' => 'NullableReturnStatement',
+            ],
+            'methodWritingAByReferenceParameterMustNotKeepGetter' => [
+                'code' => '<?php
+                    final class Child {}
+                    final class Owner {
+                        public ?Child $child = null;
+                        /** @psalm-mutation-free */
+                        public function getChild(): ?Child { return $this->child ?? null; }
+                    }
+                    final class Clearer {
+                        public function clear(?Child &$slot): void { $slot = null; }
+                    }
+                    function afterClear(Owner $owner, Clearer $clearer): Child {
+                        if ($owner->getChild() === null) {
+                            return new Child();
+                        }
+                        $clearer->clear($owner->child);
+                        return $owner->getChild();
+                    }',
+                'error_message' => 'NullableReturnStatement',
+            ],
             'mutatorWritingThroughAnotherMethodMustNotKeepGetterOfAnAlias' => [
                 'code' => '<?php
                     final class Box {
@@ -3637,7 +4342,7 @@ final class CapabilitiesTest extends TestCase
                         return $h->getX();
                     }',
                 'error_message' => 'NullableReturnStatement - src' . DIRECTORY_SEPARATOR . 'somefile.php:19:32',
-                'error_levels' => [],
+                'error_levels' => ['DeprecatedMethod'],
                 'php_version' => '8.0',
             ],
             'itemOfAnObjectWithoutOffsetSetPassedByReference' => [
@@ -3657,7 +4362,7 @@ final class CapabilitiesTest extends TestCase
                     function sortFirst(ReadOnlyBox $o): bool {
                         return sort($o[0]);
                     }',
-                'error_message' => 'UndefinedMethod - src' . DIRECTORY_SEPARATOR . 'somefile.php:15:37 - Method ReadOnlyBox::offsetSet does not exist',
+                'error_message' => 'InvalidArrayAccess - src' . DIRECTORY_SEPARATOR . 'somefile.php:15:37 - Cannot access array value on non-array variable $o of type ReadOnlyBox',
             ],
             'itemOfAnIntersectionWithArrayObjectPassedByReferenceWritesIt' => [
                 'code' => '<?php
@@ -3684,7 +4389,7 @@ final class CapabilitiesTest extends TestCase
                     function sortFirst(ReadOnlyBox $o): bool {
                         return sort($o[0]);
                     }',
-                'error_message' => 'InaccessibleMethod - src' . DIRECTORY_SEPARATOR . 'somefile.php:12:37',
+                'error_message' => 'InvalidArrayAccess - src' . DIRECTORY_SEPARATOR . 'somefile.php:12:37 - Cannot access array value on non-array variable $o of type ReadOnlyBox',
             ],
             'itemOfAnObjectWithMagicMethodsPassedByReference' => [
                 'code' => '<?php
@@ -3702,7 +4407,7 @@ final class CapabilitiesTest extends TestCase
                     function sortFirst(MagicBox $o): bool {
                         return sort($o[0]);
                     }',
-                'error_message' => 'UndefinedMagicMethod - src' . DIRECTORY_SEPARATOR . 'somefile.php:14:37 - Magic method MagicBox::offsetset does not exist',
+                'error_message' => 'InvalidArrayAccess - src' . DIRECTORY_SEPARATOR . 'somefile.php:14:37 - Cannot access array value on non-array variable $o of type MagicBox',
                 'error_levels' => [],
                 'php_version' => '8.0',
             ],
@@ -3729,6 +4434,7 @@ final class CapabilitiesTest extends TestCase
                         return count($object);
                     }',
                 'error_message' => 'ImpureMethodCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:33 - The context is pure but method ArrayObject::offsetSet requires write-props',
+                'error_levels' => ['DeprecatedMethod'],
             ],
             'conditionalCapabilitiesOfAFunctionCalledWithoutTheArgument' => [
                 'code' => '<?php
@@ -4057,6 +4763,7 @@ final class CapabilitiesTest extends TestCase
                         return count($object);
                     }',
                 'error_message' => 'ImpureMethodCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:25 - The context is pure but method ArrayObject::offsetSet requires write-props',
+                'error_levels' => ['DeprecatedMethod'],
             ],
             'arrayIteratorBackedByAnObjectWritesIt' => [
                 'code' => '<?php
@@ -4067,6 +4774,7 @@ final class CapabilitiesTest extends TestCase
                         return count($iterator);
                     }',
                 'error_message' => 'ImpureMethodCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:25 - The context is pure but method ArrayIterator::offsetSet requires write-props',
+                'error_levels' => ['DeprecatedMethod'],
             ],
             'arrayObjectExchangingItsStorageWritesProps' => [
                 'code' => '<?php
@@ -4078,6 +4786,7 @@ final class CapabilitiesTest extends TestCase
                         return count($object);
                     }',
                 'error_message' => 'ImpureMethodCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:25 - The context is pure but method ArrayObject::exchangeArray requires write-props',
+                'error_levels' => ['DeprecatedMethod'],
             ],
             'arrayObjectOfUnknownStorageWritesProps' => [
                 'code' => '<?php
@@ -5027,6 +5736,603 @@ final class CapabilitiesTest extends TestCase
                     }',
                 'error_message' => 'ImpureMethodCall',
             ],
+            'impureToStringInEcho' => [
+                'code' => '<?php
+                    final class Name {
+                        public function __toString(): string { return "name"; }
+                    }
+
+                    /** @psalm-capabilities io */
+                    function show(Name $name): void {
+                        echo $name;
+                    }',
+                'error_message' => 'ImpureMethodCall',
+            ],
+            'impureToStringInEchoOfUnion' => [
+                'code' => '<?php
+                    final class Name {
+                        public function __toString(): string { return "name"; }
+                    }
+
+                    /** @psalm-capabilities io */
+                    function show(Name|int $name): void {
+                        echo $name;
+                    }',
+                'error_message' => 'ImpureMethodCall',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'impureToStringInPrint' => [
+                'code' => '<?php
+                    final class Name {
+                        public function __toString(): string { return "name"; }
+                    }
+
+                    /** @psalm-capabilities io */
+                    function show(Name $name): void {
+                        print $name;
+                    }',
+                'error_message' => 'ImpureMethodCall',
+            ],
+            'impureToStringInSprintfArgument' => [
+                'code' => '<?php
+                    final class Name {
+                        public function __toString(): string { return "name"; }
+                    }
+
+                    /** @psalm-pure */
+                    function format(Name $name): string {
+                        return sprintf("%s", $name);
+                    }',
+                'error_message' => 'ImpureMethodCall',
+            ],
+            'impureToStringInLooseInArray' => [
+                'code' => '<?php
+                    final class Name {
+                        public function __toString(): string { return "name"; }
+                    }
+
+                    /** @psalm-pure */
+                    function isKnown(Name $name): bool {
+                        return in_array($name, ["name"]);
+                    }',
+                'error_message' => 'ImpureMethodCall',
+            ],
+            'impureToStringInInArrayNotKnownToBeStrict' => [
+                'code' => '<?php
+                    final class Name {
+                        public function __toString(): string { return "name"; }
+                    }
+
+                    /** @psalm-pure */
+                    function isKnown(Name $name, bool $strict): bool {
+                        return in_array(needle: $name, haystack: ["name"], strict: $strict);
+                    }',
+                'error_message' => 'ImpureMethodCall',
+            ],
+            'impureToStringInLooseArraySearch' => [
+                'code' => '<?php
+                    final class Name {
+                        public function __toString(): string { return "name"; }
+                    }
+
+                    /**
+                     * @psalm-pure
+                     * @param array<string> $names
+                     */
+                    function find(Name $name, array $names): int|string|false {
+                        return array_search($name, $names);
+                    }',
+                'error_message' => 'ImpureMethodCall',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'impureToStringInLooseArrayKeys' => [
+                'code' => '<?php
+                    final class Name {
+                        public function __toString(): string { return "name"; }
+                    }
+
+                    /**
+                     * @psalm-pure
+                     * @param array<string> $names
+                     * @return list<array-key>
+                     */
+                    function find(Name $name, array $names): array {
+                        return array_keys($names, $name);
+                    }',
+                'error_message' => 'ImpureMethodCall',
+            ],
+            'impureToStringInStrval' => [
+                'code' => '<?php
+                    final class Name {
+                        public function __toString(): string { return "name"; }
+                    }
+
+                    /** @psalm-pure */
+                    function f(Name $name): string {
+                        return strval($name);
+                    }',
+                'error_message' => 'possibly-mutating method Name::__toString',
+            ],
+            'impureToStringInImplodeValues' => [
+                'code' => '<?php
+                    final class Name {
+                        public function __toString(): string { return "name"; }
+                    }
+
+                    /**
+                     * @psalm-pure
+                     * @param list<Name> $names
+                     */
+                    function f(array $names): string {
+                        return implode(",", $names);
+                    }',
+                'error_message' => 'possibly-mutating method Name::__toString',
+            ],
+            'impureToStringInImplodeCalledInAnotherCase' => [
+                'code' => '<?php
+                    namespace App;
+
+                    final class Name {
+                        public function __toString(): string { return "name"; }
+                    }
+
+                    /**
+                     * @psalm-pure
+                     * @param list<Name> $names
+                     */
+                    function f(array $names): string {
+                        return \Implode(",", $names);
+                    }',
+                'error_message' => 'possibly-mutating method App\Name::__toString',
+                'error_levels' => ['WrongCaseFunction'],
+            ],
+            'impureToStringInLooseInArrayCalledInAnotherCase' => [
+                'code' => '<?php
+                    final class Name {
+                        public function __toString(): string { return "name"; }
+                    }
+
+                    /** @psalm-pure */
+                    function isKnown(Name $name): bool {
+                        return In_Array($name, ["name"]);
+                    }',
+                'error_message' => 'possibly-mutating method Name::__toString',
+            ],
+            'impureToStringInJoinWithoutSeparator' => [
+                'code' => '<?php
+                    final class Name {
+                        public function __toString(): string { return "name"; }
+                    }
+
+                    /**
+                     * @psalm-pure
+                     * @param array{Name, string} $names
+                     */
+                    function f(array $names): string {
+                        return join($names);
+                    }',
+                'error_message' => 'possibly-mutating method Name::__toString',
+            ],
+            'impureToStringInImplodeOfTemplatedArray' => [
+                'code' => '<?php
+                    final class Name {
+                        public function __toString(): string { return "name"; }
+                    }
+
+                    /**
+                     * @psalm-pure
+                     * @template T of list<Name>
+                     * @param T $names
+                     */
+                    function f(array $names): string {
+                        return implode(separator: ",", array: $names);
+                    }',
+                'error_message' => 'possibly-mutating method Name::__toString',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'impureToStringInVsprintfValues' => [
+                'code' => '<?php
+                    final class Name {
+                        public function __toString(): string { return "name"; }
+                    }
+
+                    /**
+                     * @psalm-pure
+                     * @param list<Name> $names
+                     */
+                    function f(array $names): string {
+                        return vsprintf("%s", $names);
+                    }',
+                'error_message' => 'possibly-mutating method Name::__toString',
+                'error_levels' => ['ImplicitToStringCast'],
+            ],
+            'impureToStringInVfprintfValues' => [
+                'code' => '<?php
+                    final class Name {
+                        public function __toString(): string { return "name"; }
+                    }
+
+                    /**
+                     * @psalm-capabilities io
+                     * @param resource $stream
+                     * @param list<Name> $names
+                     */
+                    function f($stream, array $names): void {
+                        vfprintf($stream, "%s", $names);
+                    }',
+                'error_message' => 'possibly-mutating method Name::__toString',
+                'error_levels' => ['ImplicitToStringCast'],
+            ],
+            'impureToStringInArrayDiffOfLaterArray' => [
+                'code' => '<?php
+                    final class Name {
+                        public function __toString(): string { return "name"; }
+                    }
+
+                    /**
+                     * @psalm-pure
+                     * @param array<string> $strings
+                     * @param array<Name> $names
+                     */
+                    function f(array $strings, array $names): array {
+                        return array_diff($strings, ["a"], $names);
+                    }',
+                'error_message' => 'possibly-mutating method Name::__toString',
+            ],
+            'impureToStringInArrayIntersectAssoc' => [
+                'code' => '<?php
+                    final class Name {
+                        public function __toString(): string { return "name"; }
+                    }
+
+                    /**
+                     * @psalm-pure
+                     * @param array<Name> $names
+                     */
+                    function f(array $names): array {
+                        return array_intersect_assoc($names, ["a"]);
+                    }',
+                'error_message' => 'possibly-mutating method Name::__toString',
+            ],
+            'impureToStringInArrayDiffUassocValues' => [
+                'code' => '<?php
+                    final class Name {
+                        public function __toString(): string { return "name"; }
+                    }
+
+                    /**
+                     * @psalm-pure
+                     * @param array<Name> $names
+                     */
+                    function f(array $names): array {
+                        return array_diff_uassoc($names, ["a"], static fn(int|string $a, int|string $b): int => 0);
+                    }',
+                'error_message' => 'possibly-mutating method Name::__toString',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'impureToStringInArrayFillKeys' => [
+                'code' => '<?php
+                    final class Name {
+                        public function __toString(): string { return "name"; }
+                    }
+
+                    /**
+                     * @psalm-pure
+                     * @param list<Name> $names
+                     */
+                    function f(array $names): array {
+                        return array_fill_keys($names, 1);
+                    }',
+                'error_message' => 'possibly-mutating method Name::__toString',
+                'error_levels' => ['InvalidArgument', 'ArgumentTypeCoercion'],
+            ],
+            'impureToStringInArrayUnique' => [
+                'code' => '<?php
+                    final class Name {
+                        public function __toString(): string { return "name"; }
+                    }
+
+                    /**
+                     * @psalm-pure
+                     * @param array<Name> $names
+                     */
+                    function f(array $names): array {
+                        return array_unique($names);
+                    }',
+                'error_message' => 'possibly-mutating method Name::__toString',
+            ],
+            'impureToStringInArrayUniqueWithUnknownFlags' => [
+                'code' => '<?php
+                    final class Name {
+                        public function __toString(): string { return "name"; }
+                    }
+
+                    /**
+                     * @psalm-pure
+                     * @param array<Name> $names
+                     */
+                    function f(array $names, int $flags): array {
+                        return array_unique($names, $flags);
+                    }',
+                'error_message' => 'possibly-mutating method Name::__toString',
+            ],
+            'impureToStringInSortAsStrings' => [
+                'code' => '<?php
+                    final class Name {
+                        public function __toString(): string { return "name"; }
+                    }
+
+                    /**
+                     * @psalm-pure
+                     * @param list<Name> $names
+                     * @return list<Name>
+                     */
+                    function f(array $names): array {
+                        sort($names, SORT_STRING | SORT_FLAG_CASE);
+                        return $names;
+                    }',
+                'error_message' => 'possibly-mutating method Name::__toString',
+            ],
+            'impureToStringInNaturalSort' => [
+                'code' => '<?php
+                    final class Name {
+                        public function __toString(): string { return "name"; }
+                    }
+
+                    /**
+                     * @psalm-pure
+                     * @param list<Name> $names
+                     * @return list<Name>
+                     */
+                    function f(array $names): array {
+                        rsort($names, SORT_NATURAL);
+                        return $names;
+                    }',
+                'error_message' => 'possibly-mutating method Name::__toString',
+            ],
+            'impureToStringInCaseInsensitiveNaturalSort' => [
+                'code' => '<?php
+                    final class Name {
+                        public function __toString(): string { return "name"; }
+                    }
+
+                    /**
+                     * @psalm-pure
+                     * @param array<Name> $names
+                     * @return array<Name>
+                     */
+                    function f(array $names): array {
+                        asort($names, SORT_NATURAL | SORT_FLAG_CASE);
+                        return $names;
+                    }',
+                'error_message' => 'possibly-mutating method Name::__toString',
+            ],
+            'impureToStringInNatsort' => [
+                'code' => '<?php
+                    final class Name {
+                        public function __toString(): string { return "name"; }
+                    }
+
+                    /**
+                     * @psalm-pure
+                     * @param array<Name> $names
+                     * @return array<Name>
+                     */
+                    function f(array $names): array {
+                        natsort($names);
+                        return $names;
+                    }',
+                'error_message' => 'possibly-mutating method Name::__toString',
+            ],
+            'impureToStringInNatcasesort' => [
+                'code' => '<?php
+                    final class Name {
+                        public function __toString(): string { return "name"; }
+                    }
+
+                    /**
+                     * @psalm-pure
+                     * @param array<Name> $names
+                     * @return array<Name>
+                     */
+                    function f(array $names): array {
+                        natcasesort($names);
+                        return $names;
+                    }',
+                'error_message' => 'possibly-mutating method Name::__toString',
+            ],
+            'impureToStringInStrReplaceArrayArgument' => [
+                'code' => '<?php
+                    final class Name {
+                        public function __toString(): string { return "name"; }
+                    }
+
+                    /**
+                     * @psalm-pure
+                     * @param list<Name> $names
+                     */
+                    function f(array $names): string {
+                        return str_replace(["a"], $names, "abc");
+                    }',
+                'error_message' => 'possibly-mutating method Name::__toString',
+                'error_levels' => ['ImplicitToStringCast'],
+            ],
+            'impureToStringInPregReplaceSubjects' => [
+                'code' => '<?php
+                    final class Name {
+                        public function __toString(): string { return "name"; }
+                    }
+
+                    /**
+                     * @psalm-pure
+                     * @param list<Name> $names
+                     */
+                    function f(array $names): bool {
+                        return preg_replace("/a/", "b", $names) !== null;
+                    }',
+                'error_message' => 'possibly-mutating method Name::__toString',
+                'error_levels' => ['ImplicitToStringCast'],
+            ],
+            'impureToStringInImplodeOfNullableArray' => [
+                'code' => '<?php
+                    final class Name {
+                        public function __toString(): string { return "name"; }
+                    }
+
+                    /**
+                     * @psalm-pure
+                     * @param list<Name>|null $names
+                     */
+                    function f(?array $names): string {
+                        return implode(",", $names);
+                    }',
+                'error_message' => 'possibly-mutating method Name::__toString',
+                'error_levels' => ['PossiblyNullArgument'],
+            ],
+            'impureToStringInMaxOfObjectAndString' => [
+                'code' => '<?php
+                    final class Name {
+                        public function __toString(): string { return "name"; }
+                    }
+
+                    /** @psalm-pure */
+                    function f(Name $name): Name|string {
+                        return max("a", $name);
+                    }',
+                'error_message' => 'possibly-mutating method Name::__toString',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'impureToStringInMaxWithUnpackedStrings' => [
+                'code' => '<?php
+                    final class Name {
+                        public function __toString(): string { return "name"; }
+                    }
+
+                    /**
+                     * @psalm-pure
+                     * @param list<string> $strings
+                     */
+                    function f(Name $name, array $strings): Name|string {
+                        return max($name, ...$strings);
+                    }',
+                'error_message' => 'possibly-mutating method Name::__toString',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'impureToStringInMinOfArray' => [
+                'code' => '<?php
+                    final class Name {
+                        public function __toString(): string { return "name"; }
+                    }
+
+                    /**
+                     * @psalm-pure
+                     * @param non-empty-list<Name|string> $values
+                     */
+                    function f(array $values): Name|string {
+                        return min($values);
+                    }',
+                'error_message' => 'possibly-mutating method Name::__toString',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'impureToStringInRegularSortOfObjectsAndStrings' => [
+                'code' => '<?php
+                    final class Name {
+                        public function __toString(): string { return "name"; }
+                    }
+
+                    /**
+                     * @psalm-pure
+                     * @param array<Name|string> $names
+                     * @return array<Name|string>
+                     */
+                    function f(array $names): array {
+                        asort($names);
+                        return $names;
+                    }',
+                'error_message' => 'possibly-mutating method Name::__toString',
+            ],
+            'impureToStringInInArrayWithStringNeedle' => [
+                'code' => '<?php
+                    final class Name {
+                        public function __toString(): string { return "name"; }
+                    }
+
+                    /**
+                     * @psalm-pure
+                     * @param array<Name> $names
+                     */
+                    function f(string $s, array $names): bool {
+                        return in_array($s, $names);
+                    }',
+                'error_message' => 'possibly-mutating method Name::__toString',
+            ],
+            'impureToStringInArrayKeysWithStringFilter' => [
+                'code' => '<?php
+                    final class Name {
+                        public function __toString(): string { return "name"; }
+                    }
+
+                    /**
+                     * @psalm-pure
+                     * @param array<Name> $names
+                     * @return list<array-key>
+                     */
+                    function f(array $names): array {
+                        return array_keys($names, "name");
+                    }',
+                'error_message' => 'possibly-mutating method Name::__toString',
+            ],
+            'impureToStringInLooseInArrayOfScalars' => [
+                'code' => '<?php
+                    final class Name {
+                        public function __toString(): string { return "name"; }
+                    }
+
+                    /**
+                     * @psalm-pure
+                     * @param array<scalar> $values
+                     */
+                    function has(Name $name, array $values): bool {
+                        return in_array($name, $values);
+                    }',
+                'error_message' => 'ImpureMethodCall',
+            ],
+            'impureToStringInLooseInArrayOfTemplatedStrings' => [
+                'code' => '<?php
+                    final class Name {
+                        public function __toString(): string { return "name"; }
+                    }
+
+                    /**
+                     * @psalm-pure
+                     * @template T of string
+                     * @param array<T> $values
+                     */
+                    function has(Name $name, array $values): bool {
+                        return in_array($name, $values);
+                    }',
+                'error_message' => 'ImpureMethodCall',
+            ],
+            'impureToStringInBuiltinStringArgument' => [
+                'code' => '<?php
+                    final class Name {
+                        public function __toString(): string { return "name"; }
+                    }
+
+                    /** @psalm-pure */
+                    function size(Name $name): int {
+                        return strlen($name);
+                    }',
+                'error_message' => 'ImpureMethodCall',
+                'error_levels' => ['ImplicitToStringCast'],
+            ],
             'impureInvoke' => [
                 'code' => '<?php
                     final class Inc {
@@ -5535,6 +6841,19 @@ final class CapabilitiesTest extends TestCase
                         return $x;
                     }',
                 'error_message' => 'ImpureFunctionCall',
+            ],
+            'passingSuperGlobalByReferenceReadsIt' => [
+                'code' => '<?php
+                    /** @psalm-capabilities write-refs */
+                    function byRef(array &$a): void {
+                        $a = [];
+                    }
+
+                    /** @psalm-capabilities write-globals */
+                    function f(): void {
+                        byRef($_SESSION);
+                    }',
+                'error_message' => 'ImpureGlobalVariable - src' . DIRECTORY_SEPARATOR . 'somefile.php:9:31 - The context is write-globals but superglobal $_SESSION requires read-globals',
             ],
             'writingBoundGlobalNeedsWriteGlobals' => [
                 'code' => '<?php
@@ -6932,6 +8251,256 @@ final class CapabilitiesTest extends TestCase
                     }',
                 'error_message' => 'ImpurePropertyAssignment',
             ],
+            'pureAloneStillForbidsReadingProps' => [
+                'code' => '<?php
+                    interface Message {
+                        /**
+                         * @pure
+                         */
+                        public function body(): string;
+                    }
+
+                    final class MyMessage implements Message {
+                        public function __construct(private string $body) {}
+
+                        public function body(): string {
+                            return $this->body;
+                        }
+                    }',
+                'error_message' => 'ImmutableDependency - src' . DIRECTORY_SEPARATOR . 'somefile.php:9:33 - Message::body is pure, but MyMessage::body additionally requires read-props',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'psalmCapabilitiesWithPureIsTheContract' => [
+                'code' => '<?php
+                    interface Counter {
+                        /**
+                         * @pure
+                         * @psalm-capabilities read-props
+                         */
+                        public function next(): int;
+                    }
+
+                    final class MyCounter implements Counter {
+                        private int $n = 0;
+
+                        public function next(): int {
+                            return ++$this->n;
+                        }
+                    }',
+                'error_message' => 'ImmutableDependency - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:33 - Counter::next is read-props, but MyCounter::next additionally requires write-this-props',
+            ],
+            'conditionalPsalmCapabilitiesWinOverPure' => [
+                'code' => '<?php
+                    /**
+                     * @pure
+                     * @psalm-capabilities ($p is null ? io : pure)
+                     */
+                    function show(?int $p): int {
+                        if ($p === null) {
+                            echo "none";
+                        }
+                        return 0;
+                    }
+
+                    /** @psalm-pure */
+                    function quiet(): int {
+                        return show(1);
+                    }
+
+                    /** @psalm-pure */
+                    function loud(): int {
+                        return show(null);
+                    }',
+                'error_message' => 'ImpureFunctionCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:20:32 - The context is pure but function call on show requires io',
+            ],
+            'psalmCapabilitiesWithPureChecksTheBody' => [
+                'code' => '<?php
+                    /**
+                     * @pure
+                     * @psalm-capabilities read-props
+                     */
+                    function greet(string $name): void {
+                        echo $name;
+                    }',
+                'error_message' => 'ImpureFunctionCall',
+            ],
+            'phpStormPureAloneStillForbidsReadingProps' => [
+                'code' => '<?php
+                    namespace JetBrains\\PhpStorm {
+                        #[\\Attribute]
+                        final class Pure {}
+
+                        #[\\Attribute]
+                        final class Immutable {}
+                    }
+
+                    namespace {
+                        interface Message {
+                            #[\\JetBrains\\PhpStorm\\Pure]
+                            public function body(): string;
+                        }
+
+                        final class MyMessage implements Message {
+                            public function __construct(private string $body) {}
+
+                            public function body(): string {
+                                return $this->body;
+                            }
+                        }
+                    }',
+                'error_message' => 'ImmutableDependency - src' . DIRECTORY_SEPARATOR . 'somefile.php:16:37 - Message::body is pure, but MyMessage::body additionally requires read-props',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'psalmPureAttributeStillWinsOverPsalmCapabilities' => [
+                'code' => '<?php
+                    namespace JetBrains\\PhpStorm {
+                        #[\\Attribute]
+                        final class Pure {}
+
+                        #[\\Attribute]
+                        final class Immutable {}
+                    }
+
+                    namespace Psalm {
+                        #[\\Attribute]
+                        final class Pure {}
+                    }
+
+                    namespace {
+                        interface Message {
+                            /** @psalm-capabilities read-props */
+                            #[\\Psalm\\Pure]
+                            public function body(): string;
+                        }
+
+                        final class MyMessage implements Message {
+                            public function __construct(private string $body) {}
+
+                            public function body(): string {
+                                return $this->body;
+                            }
+                        }
+                    }',
+                'error_message' => 'ImmutableDependency - src' . DIRECTORY_SEPARATOR . 'somefile.php:22:37 - Message::body is pure, but MyMessage::body additionally requires read-props',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'phpStormImmutableAloneIsStillReadProps' => [
+                'code' => '<?php
+                    namespace JetBrains\\PhpStorm {
+                        #[\\Attribute]
+                        final class Pure {}
+
+                        #[\\Attribute]
+                        final class Immutable {}
+                    }
+
+                    namespace {
+                        #[\\JetBrains\\PhpStorm\\Immutable]
+                        final class Counter {
+                            private int $n = 0;
+
+                            public function next(): int {
+                                return ++$this->n;
+                            }
+                        }
+                    }',
+                'error_message' => 'ImpurePropertyAssignment',
+                'error_levels' => ['InaccessibleProperty'],
+                'php_version' => '8.0',
+            ],
+            'psalmAttributeBeforePhpStormImmutableStillNarrows' => [
+                'code' => '<?php
+                    namespace JetBrains\\PhpStorm {
+                        #[\\Attribute]
+                        final class Pure {}
+
+                        #[\\Attribute]
+                        final class Immutable {}
+                    }
+
+                    namespace Psalm {
+                        #[\\Attribute]
+                        final class ExternalMutationFree {}
+                    }
+
+                    namespace {
+                        #[\\Psalm\\ExternalMutationFree]
+                        #[\\JetBrains\\PhpStorm\\Immutable]
+                        final class Counter {
+                            private int $n = 0;
+
+                            public function next(): int {
+                                return ++$this->n;
+                            }
+                        }
+                    }',
+                'error_message' => 'ImpurePropertyAssignment',
+                'error_levels' => ['InaccessibleProperty'],
+                'php_version' => '8.0',
+            ],
+            'psalmAttributeAfterPhpStormImmutableStillNarrows' => [
+                'code' => '<?php
+                    namespace JetBrains\\PhpStorm {
+                        #[\\Attribute]
+                        final class Pure {}
+
+                        #[\\Attribute]
+                        final class Immutable {}
+                    }
+
+                    namespace Psalm {
+                        #[\\Attribute]
+                        final class ExternalMutationFree {}
+                    }
+
+                    namespace {
+                        #[\\JetBrains\\PhpStorm\\Immutable]
+                        #[\\Psalm\\ExternalMutationFree]
+                        final class Counter {
+                            private int $n = 0;
+
+                            public function next(): int {
+                                return ++$this->n;
+                            }
+                        }
+                    }',
+                'error_message' => 'ImpurePropertyAssignment',
+                'error_levels' => ['InaccessibleProperty'],
+                'php_version' => '8.0',
+            ],
+            'psalmAttributeBeforePhpStormPureStillNarrows' => [
+                'code' => '<?php
+                    namespace JetBrains\\PhpStorm {
+                        #[\\Attribute]
+                        final class Pure {}
+
+                        #[\\Attribute]
+                        final class Immutable {}
+                    }
+
+                    namespace Psalm {
+                        #[\\Attribute]
+                        final class ExternalMutationFree {}
+                    }
+
+                    namespace {
+                        final class Counter {
+                            private int $n = 0;
+
+                            #[\\Psalm\\ExternalMutationFree]
+                            #[\\JetBrains\\PhpStorm\\Pure]
+                            public function next(): int {
+                                return ++$this->n;
+                            }
+                        }
+                    }',
+                'error_message' => 'ImpureVariable - src' . DIRECTORY_SEPARATOR . 'somefile.php:22:42 - The context is pure but $this requires read-props',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
         ];
     }
 
@@ -7117,6 +8686,41 @@ final class CapabilitiesTest extends TestCase
                         return new Child();
                     }
                     $other->touch();
+                    return $owner->getChild();
+                }',
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    public function testCallToAShallowScannedMethodForgetsGetters(): void
+    {
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessage('NullableReturnStatement');
+
+        $this->addFile(
+            'dependency.php',
+            '<?php
+                final class Child {}
+                final class Owner {
+                    public ?Child $child = null;
+                    /** @psalm-mutation-free */
+                    public function getChild(): ?Child { return $this->child; }
+                }
+                final class Clearer {
+                    public function clear(Owner $owner): void { $owner->child = null; }
+                }',
+        );
+        $this->project_analyzer->getCodebase()->scanner->addFilesToShallowScan(['dependency.php' => 'dependency.php']);
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                function afterClear(Owner $owner, Clearer $clearer): Child {
+                    if ($owner->getChild() === null) {
+                        return new Child();
+                    }
+                    $clearer->clear($owner);
                     return $owner->getChild();
                 }',
         );

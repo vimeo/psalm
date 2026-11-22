@@ -21,11 +21,11 @@ return [
     ],
     'domnode' => [
         // documented as 'DomNodeList' in doc-en/reference/dom/domnode.xml:57.
-        'childnodes' => 'DomNodeList<DomNode>'
+        'childNodes' => 'DomNodeList<DomNode>'
     ],
     'tidy' => [
         // documented via <xi:include> in doc-en/reference/tidy/tidy.xml:33
-        'errorbuffer' => 'string',
+        'errorBuffer' => 'string',
     ],
     //
     // Undocumented classes from here on.
@@ -43,10 +43,10 @@ return [
         'items' => 'array<int, PhpParser\\Node\\Expr\\ArrayItem|null>',
     ],
     'phpparser\\node\\expr\\shellexec' => [
-        'parts' => 'list<PhpParser\\Node>',
+        'parts' => 'list<PhpParser\\Node\\Expr|PhpParser\\Node\\InterpolatedStringPart>',
     ],
     'phpparser\\node\\matcharm' => [
-        'conds' => 'null|non-empty-list<PhpParser\\Node\\Expr>',
+        'conds' => 'null|list<PhpParser\\Node\\Expr>',
     ],
     'phpparser\\node\\name' => [
         'parts' => 'non-empty-list<non-empty-string>',
@@ -120,15 +120,12 @@ return [
         'wtimeout' => 'integer',
     ],
     'mongocursor' => [
-        'slaveokay' => 'boolean',
+        'slaveOkay' => 'boolean',
         'timeout' => 'integer',
     ],
     'mongodb' => [
         'w' => 'integer',
         'wtimeout' => 'integer',
-    ],
-    'mongodb-driver-exception-writeexception' => [
-        'writeresult' => 'MongoDBDriverWriteResult',
     ],
     'mongoid' => [
         'id' => 'string',

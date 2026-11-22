@@ -8,6 +8,7 @@ use DOMDocument;
 use DOMElement;
 use Psalm\Exception\ConfigException;
 use Psalm\Internal\Analyzer\IssueData;
+use Psalm\Internal\BaselineMatcher;
 use Psalm\Internal\Provider\FileProvider;
 use RuntimeException;
 
@@ -210,7 +211,9 @@ final class ErrorBaseline
                 }
 
                 ++$carry[$fileName][$issueType]['o'];
-                $carry[$fileName][$issueType]['s'][] = $issue->selected_text;
+                $carry[$fileName][$issueType]['s'][] = BaselineMatcher::normalizeSelectedText(
+                    trim($issue->selected_text),
+                );
 
                 return $carry;
             },

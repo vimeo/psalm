@@ -23,6 +23,107 @@ final class TraitTemplateTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'closureReturnTypeNamesTraitTemplate' => [
+                'code' => '<?php
+                    interface a {}
+                    class b implements a {}
+
+                    /**
+                     * @template T as a
+                     */
+                    trait c {
+                        /** @return T */
+                        abstract public function get(): a;
+
+                        public function getCb(): callable {
+                            return
+                                /** @return T */
+                                function (): a {
+                                    return $this->get();
+                                };
+                        }
+                    }
+
+                    class d {
+                        /** @use c<b> */
+                        use c;
+
+                        public function get(): b {
+                            return new b;
+                        }
+                    }',
+            ],
+            'closureReturnTypeNamesTraitTemplateOfACapturedValue' => [
+                'code' => '<?php
+                    interface a {}
+                    final class b implements a {}
+
+                    /** @template T of a */
+                    trait e {
+                        /** @param T $p */
+                        public function m($p): Closure {
+                            return /** @return T */ function () use ($p) { return $p; };
+                        }
+
+                        public function n(): Closure {
+                            return /** @return T */ function () {
+                                /** @var T $t */
+                                $t = $this->make();
+                                return $t;
+                            };
+                        }
+
+                        /** @param T $p */
+                        public function o($p, bool $b): Closure {
+                            return /** @return T */ function () use ($p, $b) {
+                                if ($b) {
+                                    return $p;
+                                }
+
+                                return $this->make();
+                            };
+                        }
+
+                        abstract public function make(): a;
+                    }
+
+                    final class f {
+                        /** @use e<b> */
+                        use e;
+
+                        public function make(): b {
+                            return new b;
+                        }
+                    }',
+            ],
+            'closureReturnTypeNamesInheritedTemplate' => [
+                'code' => '<?php
+                    interface a {}
+                    class b implements a {}
+
+                    /**
+                     * @template T as a
+                     */
+                    abstract class Base {
+                        /** @return T */
+                        abstract public function get(): a;
+
+                        public function getCb(): callable {
+                            return
+                                /** @return T */
+                                function (): a {
+                                    return $this->get();
+                                };
+                        }
+                    }
+
+                    /** @extends Base<b> */
+                    final class Child extends Base {
+                        public function get(): b {
+                            return new b;
+                        }
+                    }',
+            ],
             'receiverWithoutTypeArgumentsOfAGenericClassUsingATraitTakesTheBoundsOfItsTemplates' => [
                 'code' => '<?php
                     /**
@@ -827,6 +928,54 @@ final class TraitTemplateTest extends TestCase
                         }
                     }',
             ],
+            'insteadofTraitMethodWithoutDocblockBindsTheMethodTemplateOfTheParent' => [
+                'code' => '<?php
+                    /** @template T of object */
+                    final class Query {}
+
+                    trait Original
+                    {
+                        /**
+                         * @template T of object
+                         * @param class-string<T> $class
+                         * @param Closure(T, Query<T>): void $callback
+                         */
+                        public function each(string $class, Closure $callback): void {}
+                    }
+
+                    trait Replacement
+                    {
+                        public function each($class, $callback): void {}
+                    }
+
+                    class Base
+                    {
+                        use Original;
+                    }
+
+                    final class Box extends Base
+                    {
+                        use Original, Replacement {
+                            Replacement::each insteadof Original;
+                        }
+                    }
+
+                    function takesStdClass(stdClass $_s): void {}
+
+                    /** @param Query<stdClass> $_q */
+                    function takesQuery(Query $_q): void {}
+
+                    function f(Box $box): void
+                    {
+                        $box->each(stdClass::class, function ($item, $query): void {
+                            takesStdClass($item);
+                            takesQuery($query);
+                        });
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
         ];
     }
 
@@ -837,6 +986,31 @@ final class TraitTemplateTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'closureReturnTypeNamesTraitTemplateStillChecked' => [
+                'code' => '<?php
+                    interface a {}
+                    class b implements a {}
+                    class other implements a {}
+
+                    /**
+                     * @template T as a
+                     */
+                    trait c {
+                        public function getCb(): callable {
+                            return
+                                /** @return T */
+                                function (): a {
+                                    return new other;
+                                };
+                        }
+                    }
+
+                    class d {
+                        /** @use c<b> */
+                        use c;
+                    }',
+                'error_message' => 'InvalidReturnStatement',
+            ],
             'receiverWithoutTypeArgumentsOfAGenericClassUsingATraitStillChecksTheBound' => [
                 'code' => '<?php
                     /**

@@ -9,6 +9,8 @@ use Psalm\Config;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
+use const DIRECTORY_SEPARATOR;
+
 final class OverrideTest extends TestCase
 {
     use ValidCodeAnalysisTestTrait;
@@ -29,6 +31,54 @@ final class OverrideTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'overrideOfAPropertyFromATraitAndOfAPromotedPropertyWithAParentProperty' => [
+                'code' => '<?php
+                    class Base {
+                        public int $x = 1;
+                        public int $y = 1;
+                    }
+
+                    trait T {
+                        #[Override]
+                        public int $x = 2;
+                    }
+
+                    final class FromTrait extends Base {
+                        use T;
+                    }
+
+                    final class Promoted extends Base {
+                        public function __construct(#[Override] public int $y = 3) {}
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.5',
+            ],
+            'overrideOfAPropertyOfAParentClassOrAnInterface' => [
+                'code' => '<?php
+                    interface HasName {
+                        public string $name { get; }
+                    }
+
+                    class Base {
+                        public int $a = 1;
+                        protected int $b = 1;
+                    }
+
+                    final class Child extends Base implements HasName {
+                        #[Override]
+                        public int $a = 2;
+
+                        #[Override]
+                        protected int $b = 2;
+
+                        #[Override]
+                        public string $name = "x";
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.5',
+            ],
             'constructor' => [
                 'code' => '<?php
                     /**
@@ -165,6 +215,162 @@ final class OverrideTest extends TestCase
                     }
                 ',
             ],
+            'constantOverridesParentConstant' => [
+                'code' => '<?php
+                    class P {
+                        public const int A = 1;
+                        protected const int B = 1;
+                    }
+
+                    class C extends P {
+                        #[\Override]
+                        public const int A = 1;
+
+                        #[\Override]
+                        protected const int B = 1;
+                    }
+                ',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.6',
+            ],
+            'constantOverridesInterfaceConstant' => [
+                'code' => '<?php
+                    interface I {
+                        public const int A = 1;
+                    }
+
+                    interface J extends I {
+                        #[\Override]
+                        public const int A = 1;
+                    }
+
+                    class C implements I {
+                        #[\Override]
+                        public const int A = 1;
+                    }
+                ',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.6',
+            ],
+            'constantOverridesGrandparentConstant' => [
+                'code' => '<?php
+                    class G {
+                        public const int A = 1;
+                    }
+
+                    class P extends G {}
+
+                    class C extends P {
+                        #[\Override]
+                        public const int A = 1;
+                    }
+                ',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.6',
+            ],
+            'inheritedOverrideConstantIsNotRechecked' => [
+                'code' => '<?php
+                    class G {
+                        public const int A = 1;
+                    }
+
+                    class P extends G {
+                        #[\Override]
+                        public const int A = 1;
+                    }
+
+                    class C extends P {}
+                ',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.6',
+            ],
+            'constantOverrideInTraitIsIgnored' => [
+                'code' => '<?php
+                    trait T {
+                        #[\Override]
+                        public const int A = 1;
+                    }
+                ',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.6',
+            ],
+            'traitConstantOverridesParentConstant' => [
+                'code' => '<?php
+                    trait T {
+                        #[\Override]
+                        public const int A = 1;
+                    }
+
+                    class P {
+                        public const int A = 1;
+                    }
+
+                    class C extends P {
+                        use T;
+                    }
+                ',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.6',
+            ],
+            'constantOfClassUsingTraitConstantOverridesParentConstant' => [
+                'code' => '<?php
+                    trait T {
+                        public const int K = 1;
+                    }
+
+                    class P {
+                        public const int K = 1;
+                    }
+
+                    class C extends P {
+                        use T;
+
+                        #[\Override]
+                        public const int K = 1;
+                    }
+                ',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.6',
+            ],
+            'enumCaseOverridesInterfaceConstant' => [
+                'code' => '<?php
+                    interface I {
+                        public const int A = 1;
+                    }
+
+                    enum E: int implements I {
+                        #[\Override]
+                        case A = 1;
+                    }
+                ',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.6',
+            ],
+            'enumConstantOverridesInterfaceConstant' => [
+                'code' => '<?php
+                    interface I {
+                        public const int A = 1;
+                    }
+
+                    enum E implements I {
+                        case X;
+
+                        #[\Override]
+                        public const int A = 1;
+                    }
+                ',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.6',
+            ],
         ];
     }
 
@@ -175,6 +381,80 @@ final class OverrideTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'overrideOfAPropertyOfATraitWithoutAParentProperty' => [
+                'code' => '<?php
+                    trait T {
+                        #[Override]
+                        public int $x = 1;
+                    }
+
+                    final class A {
+                        use T;
+                    }',
+                'error_message' => 'InvalidOverride - src' . DIRECTORY_SEPARATOR
+                    . 'somefile.php:3:27 - Property $x does not match any parent property',
+                'error_levels' => [],
+                'php_version' => '8.5',
+            ],
+            'overrideOfAPropertyOfATraitWhoseParentPropertyIsPrivate' => [
+                'code' => '<?php
+                    class Base {
+                        private int $x = 1;
+                    }
+
+                    trait T {
+                        #[Override]
+                        public int $x = 2;
+                    }
+
+                    final class A extends Base {
+                        use T;
+                    }',
+                'error_message' => 'InvalidOverride - src' . DIRECTORY_SEPARATOR
+                    . 'somefile.php:7:27 - Property $x does not match any parent property',
+                'error_levels' => [],
+                'php_version' => '8.5',
+            ],
+            'overrideOfAPromotedPropertyWithoutAParentProperty' => [
+                'code' => '<?php
+                    final class C {
+                        public function __construct(#[Override] public int $x) {}
+                    }',
+                'error_message' => 'InvalidOverride - src' . DIRECTORY_SEPARATOR
+                    . 'somefile.php:3:55 - Property $x does not match any parent property',
+                'error_levels' => [],
+                'php_version' => '8.5',
+            ],
+            'overrideOfAPropertyWithoutAParentProperty' => [
+                'code' => '<?php
+                    class Base {
+                        public int $a = 1;
+                        private int $secret = 1;
+                    }
+
+                    final class Child extends Base {
+                        #[Override]
+                        public int $b = 2;
+                    }',
+                'error_message' => 'InvalidOverride - src' . DIRECTORY_SEPARATOR
+                    . 'somefile.php:8:27 - Property $b does not match any parent property',
+                'error_levels' => [],
+                'php_version' => '8.5',
+            ],
+            'overrideOfAPropertyWhoseParentPropertyIsPrivate' => [
+                'code' => '<?php
+                    class Base {
+                        private int $secret = 1;
+                    }
+
+                    final class Child extends Base {
+                        #[Override]
+                        public int $secret = 2;
+                    }',
+                'error_message' => 'InvalidOverride',
+                'error_levels' => [],
+                'php_version' => '8.5',
+            ],
             'noParent' => [
                 'code' => '<?php
                     class C {
@@ -322,6 +602,114 @@ final class OverrideTest extends TestCase
                 'error_message' => 'MissingOverrideAttribute',
                 'error_levels' => [],
                 'php_version' => '8.3',
+            ],
+            'constantOverridesNothing' => [
+                'code' => '<?php
+                    class C {
+                        #[\Override]
+                        public const int K = 1;
+                    }
+                ',
+                'error_message' => 'InvalidOverride - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:27 - Class constant C::K does not match any parent constant',
+                'error_levels' => [],
+                'php_version' => '8.6',
+            ],
+            'constantOverridesPrivateParentConstant' => [
+                'code' => '<?php
+                    class P {
+                        private const int K = 1;
+                    }
+
+                    class C extends P {
+                        #[\Override]
+                        public const int K = 1;
+                    }
+                ',
+                'error_message' => 'InvalidOverride',
+                'error_levels' => [],
+                'php_version' => '8.6',
+            ],
+            'interfaceConstantOverridesNothing' => [
+                'code' => '<?php
+                    interface I {
+                        #[\Override]
+                        public const int K = 1;
+                    }
+                ',
+                'error_message' => 'InvalidOverride',
+                'error_levels' => [],
+                'php_version' => '8.6',
+            ],
+            'traitConstantOverridesNothingInUsingClass' => [
+                'code' => '<?php
+                    trait T {
+                        #[\Override]
+                        public const int K = 1;
+                    }
+
+                    class C {
+                        use T;
+                    }
+                ',
+                'error_message' => 'InvalidOverride',
+                'error_levels' => [],
+                'php_version' => '8.6',
+            ],
+            'constantOfClassUsingTraitConstantOverridesNothing' => [
+                'code' => '<?php
+                    trait T {
+                        public const int K = 1;
+                    }
+
+                    class C {
+                        use T;
+
+                        #[\Override]
+                        public const int K = 1;
+                    }
+                ',
+                'error_message' => 'InvalidOverride - src' . DIRECTORY_SEPARATOR . 'somefile.php:9:27 - Class constant C::K does not match any parent constant',
+                'error_levels' => [],
+                'php_version' => '8.6',
+            ],
+            'enumCaseOverridesNothing' => [
+                'code' => '<?php
+                    enum E {
+                        #[\Override]
+                        case A;
+                    }
+                ',
+                'error_message' => 'InvalidOverride - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:27 - Enum case E::A does not match any parent constant',
+                'error_levels' => [],
+                'php_version' => '8.6',
+            ],
+            'enumConstantOverridesNothing' => [
+                'code' => '<?php
+                    enum E {
+                        case A;
+
+                        #[\Override]
+                        public const int K = 1;
+                    }
+                ',
+                'error_message' => 'InvalidOverride',
+                'error_levels' => [],
+                'php_version' => '8.6',
+            ],
+            'constantOverrideAttributeBeforePhp86' => [
+                'code' => '<?php
+                    class P {
+                        public const int K = 1;
+                    }
+
+                    class C extends P {
+                        #[\Override]
+                        public const int K = 1;
+                    }
+                ',
+                'error_message' => 'InvalidAttribute - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:27 - Attribute Override cannot be used on a class constant',
+                'error_levels' => [],
+                'php_version' => '8.5',
             ],
         ];
     }

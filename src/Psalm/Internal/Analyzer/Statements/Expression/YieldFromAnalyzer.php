@@ -26,6 +26,8 @@ final class YieldFromAnalyzer
         PhpParser\Node\Expr\YieldFrom $stmt,
         Context $context,
     ): bool {
+        YieldAnalyzer::checkGeneratorConstructorOrDestructor($statements_analyzer, $stmt);
+
         $was_inside_call = $context->inside_call;
 
         $context->inside_call = true;
@@ -69,9 +71,7 @@ final class YieldFromAnalyzer
                         && isset($atomic_type->type_params[3])
                     ) {
                         $yield_from_type = $atomic_type->type_params[3];
-                    } elseif ($atomic_type instanceof TArray) {
-                        $yield_from_type = Type::getNull();
-                    } elseif ($atomic_type instanceof TKeyedArray) {
+                    } elseif ($atomic_type instanceof TArray || $atomic_type instanceof TKeyedArray) {
                         $yield_from_type = Type::getNull();
                     }
                 } else {

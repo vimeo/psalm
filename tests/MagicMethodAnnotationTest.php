@@ -390,6 +390,59 @@ final class MagicMethodAnnotationTest extends TestCase
         $this->assertSame('string', (string) $context->vars_in_scope['$foo']);
     }
 
+    public function testPseudoMethodAPluginAddsWithoutDeclaringIdYieldsToProtectedMethodWhereItIsVisible(): void
+    {
+        $hook = new class implements AfterClassLikeVisitInterface {
+            /**
+             * @return void
+             * @phpcsSuppress SlevomatCodingStandard.TypeHints.ReturnTypeHint
+             */
+            #[Override]
+            public static function afterClassLikeVisit(AfterClassLikeVisitEvent $event)
+            {
+                $storage = $event->getStorage();
+
+                if ($storage->name === 'Base') {
+                    $method_storage = new MethodStorage();
+                    $method_storage->cased_name = 'product';
+                    $method_storage->visibility = ClassLikeAnalyzer::VISIBILITY_PUBLIC;
+                    $method_storage->return_type = Type::getInt();
+                    $storage->pseudo_methods['product'] = $method_storage;
+                }
+            }
+        };
+        $codebase = $this->project_analyzer->getCodebase();
+        (new PluginRegistrationSocket($codebase->config, $codebase))->registerHooksFromClass($hook::class);
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                class Base {
+                    public function __call(string $name, array $args): int {
+                        return 1;
+                    }
+
+                    protected function product(): string {
+                        return "Screen";
+                    }
+                }
+
+                final class Child extends Base {
+                    public function test(): string {
+                        return $this->product();
+                    }
+                }
+
+                $a = (new Child)->product();',
+        );
+
+        $context = new Context();
+
+        $this->analyzeFile('somefile.php', $context);
+
+        $this->assertSame('int', (string) $context->vars_in_scope['$a']);
+    }
+
     /**
      * @psalm-pure
      */
@@ -397,6 +450,90 @@ final class MagicMethodAnnotationTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'intersectionTypeOfAMethodParam' => [
+                'code' => '<?php
+                    interface I1 {}
+                    interface I2 {}
+                    interface I3 {}
+
+                    /**
+                     * @method int m(I1&I2 $x)
+                     * @method int n(I1 & I2 $x)
+                     * @method int o(I1&I2&I3 $x, int $y)
+                     * @method int p(I1&I2 &$x)
+                     * @method int q(I1&I2 ...$x)
+                     * @method int r(I1&I2 &...$x)
+                     * @method int s(I1 &$x)
+                     * @method int t(I1 &...$x)
+                     */
+                    final class C {
+                        public function __call(string $name, array $args): int {
+                            return 1;
+                        }
+                    }
+
+                    function f(I1&I2 $a, I1&I2&I3 $b, I1 $c): void {
+                        $byRef = $a;
+                        $byRefVariadic = $a;
+                        $plain = $c;
+                        $o = new C();
+                        $o->m($a);
+                        $o->n($a);
+                        $o->o($b, 1);
+                        $o->p($byRef);
+                        $o->q($a, $a);
+                        $o->r($byRefVariadic);
+                        $o->s($plain);
+                        $o->t($plain);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'returnTypeAfterParamsWithTrailingSemicolon' => [
+                'code' => '<?php
+                    /**
+                     * @method exists(string $path): bool;
+                     * @method readStream(string $path): ?resource;
+                     * @method string url(string $url): string;
+                     */
+                    final class Filesystem {
+                        public function __call(string $name, array $args) {
+                            return null;
+                        }
+                    }
+
+                    $f = new Filesystem();
+                    $exists = $f->exists("a");
+                    $stream = $f->readStream("a");
+                    $url = $f->url("a");',
+                'assertions' => [
+                    '$exists===' => 'bool',
+                    '$stream===' => 'null|resource',
+                    '$url===' => 'string',
+                ],
+            ],
+            'emptyReturnTypeAfterParamsWithTrailingSemicolon' => [
+                'code' => '<?php
+                    /**
+                     * @method foo(): ;
+                     * @method bar():
+                     */
+                    final class A {
+                        public function __call(string $name, array $args) {
+                            return null;
+                        }
+                    }
+
+                    $a = new A();
+                    $foo = $a->foo();
+                    $bar = $a->bar();',
+                'assertions' => [
+                    '$foo===' => 'mixed',
+                    '$bar===' => 'mixed',
+                ],
+                'ignored_issues' => ['MixedAssignment'],
+            ],
             'magicMethodOverloadsAreChosenByTheTypeOfTheArgument' => [
                 'code' => '<?php
                     interface Query {}
@@ -1011,6 +1148,8 @@ final class MagicMethodAnnotationTest extends TestCase
                             return $query;
                         }
                     }',
+                'assertions' => [],
+                'ignored_issues' => ['DeprecatedSyntax'],
             ],
             'magicMethodReturnSelf' => [
                 'code' => '<?php
@@ -2057,6 +2196,260 @@ final class MagicMethodAnnotationTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'parentPseudoMethodYieldsToPrivateMethodOfTheChildWhereItIsVisible' => [
+                'code' => '<?php
+                    /** @method int product() */
+                    class ParentClass {
+                        public function __call(string $name, array $args): int {
+                            return 1;
+                        }
+                    }
+
+                    final class Child extends ParentClass {
+                        public function test(): string {
+                            return $this->product();
+                        }
+
+                        private function product(): string {
+                            return "Screen";
+                        }
+                    }
+
+                    $a = (new Child)->product();',
+                'assertions' => [
+                    '$a===' => 'int',
+                ],
+            ],
+            'pseudoMethodOfATraitOfTheParentYieldsToPrivateMethodOfTheChildWhereItIsVisible' => [
+                'code' => '<?php
+                    /** @method int product() */
+                    trait PseudoTrait {}
+
+                    class ParentClass {
+                        use PseudoTrait;
+
+                        public function __call(string $name, array $args): int {
+                            return 1;
+                        }
+                    }
+
+                    final class Child extends ParentClass {
+                        public function test(): string {
+                            return $this->product();
+                        }
+
+                        private function product(): string {
+                            return "Screen";
+                        }
+                    }
+
+                    $a = (new Child)->product();',
+                'assertions' => [
+                    '$a===' => 'int',
+                ],
+            ],
+            'parentPseudoMethodYieldsToProtectedMethodOfTheChildWhereItIsVisible' => [
+                'code' => '<?php
+                    /** @method int product() */
+                    class ParentClass {
+                        public function __call(string $name, array $args): int {
+                            return 1;
+                        }
+                    }
+
+                    class Child extends ParentClass {
+                        public function test(): string {
+                            return $this->product();
+                        }
+
+                        protected function product(): string {
+                            return "Screen";
+                        }
+                    }
+
+                    final class GrandChild extends Child {
+                        public function test2(): string {
+                            return $this->product();
+                        }
+                    }
+
+                    $a = (new Child)->product();
+                    $b = (new GrandChild)->product();',
+                'assertions' => [
+                    '$a===' => 'int',
+                    '$b===' => 'int',
+                ],
+            ],
+            'parentPseudoMethodYieldsToTraitMethodTheChildMakesPrivate' => [
+                'code' => '<?php
+                    /** @method int product() */
+                    class ParentClass {
+                        public function __call(string $name, array $args): int {
+                            return 1;
+                        }
+                    }
+
+                    trait RealTrait {
+                        public function product(): string {
+                            return "Screen";
+                        }
+                    }
+
+                    final class Child extends ParentClass {
+                        use RealTrait {
+                            product as private;
+                        }
+
+                        public function test(): string {
+                            return $this->product();
+                        }
+                    }',
+            ],
+            'pseudoMethodOfTheClassYieldsToItsPrivateMethodWhereItIsVisible' => [
+                'code' => '<?php
+                    /** @method int product() */
+                    final class A {
+                        public function __call(string $name, array $args): int {
+                            return 1;
+                        }
+
+                        public function test(): string {
+                            return $this->product();
+                        }
+
+                        private function product(): string {
+                            return "Screen";
+                        }
+                    }
+
+                    $a = (new A)->product();',
+                'assertions' => [
+                    '$a===' => 'int',
+                ],
+            ],
+            'parentStaticPseudoMethodYieldsToPrivateStaticMethodOfTheChildWhereItIsVisible' => [
+                'code' => '<?php
+                    /** @method static int product() */
+                    class ParentClass {
+                        public static function __callStatic(string $name, array $args): int {
+                            return 1;
+                        }
+                    }
+
+                    final class Child extends ParentClass {
+                        public static function test(): string {
+                            return self::product();
+                        }
+
+                        public static function test2(): string {
+                            return static::product();
+                        }
+
+                        private static function product(): string {
+                            return "Screen";
+                        }
+                    }
+
+                    $a = Child::product();',
+                'assertions' => [
+                    '$a===' => 'int',
+                ],
+            ],
+            'childPseudoMethodRefinesProtectedMethodOfTheParent' => [
+                'code' => '<?php
+                    interface UserInterface {}
+
+                    final class User implements UserInterface {}
+
+                    abstract class AbstractController {
+                        protected function getUser(): ?UserInterface {
+                            return null;
+                        }
+
+                        protected static function make(): ?UserInterface {
+                            return null;
+                        }
+                    }
+
+                    /**
+                     * @method User getUser()
+                     * @method static User make()
+                     */
+                    final class MyController extends AbstractController {
+                        public function index(): User {
+                            return $this->getUser();
+                        }
+
+                        public static function s(): User {
+                            return self::make();
+                        }
+
+                        public static function s2(): User {
+                            return static::make();
+                        }
+                    }',
+            ],
+            'pseudoMethodOfTheChildWinsOverInheritedProtectedMethodWithAPseudoMethodOfTheParent' => [
+                'code' => '<?php
+                    /** @method int product() */
+                    class ParentClass {
+                        public function __call(string $name, array $args): int {
+                            return 1;
+                        }
+                    }
+
+                    class Child extends ParentClass {
+                        protected function product(): string {
+                            return "Screen";
+                        }
+                    }
+
+                    /** @method float product() */
+                    final class GrandChild extends Child {
+                        public function test(): float {
+                            return $this->product();
+                        }
+                    }',
+            ],
+            'parentPseudoMethodYieldsToPrivateMethodOfTheChildInFirstClassCallable' => [
+                'code' => '<?php
+                    /**
+                     * @method int product()
+                     * @method static int staticProduct()
+                     */
+                    class ParentClass {
+                        public function __call(string $name, array $args): int {
+                            return 1;
+                        }
+
+                        public static function __callStatic(string $name, array $args): int {
+                            return 1;
+                        }
+                    }
+
+                    final class Child extends ParentClass {
+                        /** @return Closure(): string */
+                        public function test(): Closure {
+                            return $this->product(...);
+                        }
+
+                        /** @return Closure(): string */
+                        public static function test2(): Closure {
+                            return self::staticProduct(...);
+                        }
+
+                        private function product(): string {
+                            return "Screen";
+                        }
+
+                        private static function staticProduct(): string {
+                            return "Screen";
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
         ];
     }
 
@@ -2067,6 +2460,48 @@ final class MagicMethodAnnotationTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'intersectionTypeOfAMethodParamIsEnforced' => [
+                'code' => '<?php
+                    interface I1 {}
+                    interface I2 {}
+
+                    /**
+                     * @method int m(I1&I2 $x)
+                     */
+                    final class C {
+                        public function __call(string $name, array $args): int {
+                            return 1;
+                        }
+                    }
+
+                    function f(I1 $a): void {
+                        (new C())->m($a);
+                    }',
+                'error_message' => 'InvalidArgument',
+            ],
+            'methodParamOfAShapeIsEnforced' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @method static foo(array{k: int, l?: string} $x)
+                     */
+                    final class Foo
+                    {
+                        public function __call(string $name, array $arguments): static
+                        {
+                            return $this;
+                        }
+                    }
+
+                    function test(Foo $foo): void
+                    {
+                        $foo->foo(['k' => 'x']);
+                    }
+                    PHP,
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:15:15',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
             'magicMethodOverloadReportsAMethodOfAnotherResult' => [
                 'code' => '<?php
                     final class PagedResult {
@@ -2299,6 +2734,14 @@ final class MagicMethodAnnotationTest extends TestCase
                     }',
                 'error_message' => 'ImpureMethodCall',
             ],
+            'unparsableReturnTypeAfterParams' => [
+                'code' => '<?php
+                    /**
+                     * @method foo(): bool!
+                     */
+                    abstract class A {}',
+                'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:36 - foo():bool! is not a valid method: Invalid type',
+            ],
             'annotationWithBadDocblock' => [
                 'code' => '<?php
                     class ParentClass {
@@ -2416,6 +2859,90 @@ final class MagicMethodAnnotationTest extends TestCase
                     /** @method D foo(int $s) */
                     class B extends A {}',
                 'error_message' => 'ImplementedParamTypeMismatch - src' . DIRECTORY_SEPARATOR . 'somefile.php:11:33',
+            ],
+            'magicMethodRepeatedInTheDocblockIsReportedOnItsFirstLine' => [
+                'code' => '<?php
+                    class C {}
+                    class D {}
+
+                    class A {
+                        public function foo(string $s) : C {
+                            return new C;
+                        }
+                    }
+
+                    /**
+                     * @method C bar()
+                     * @method D foo(string $s)
+                     * @method C baz()
+                     * @method D foo(string $s)
+                     */
+                    class B extends A {}',
+                'error_message' => 'ImplementedReturnTypeMismatch - src' . DIRECTORY_SEPARATOR . 'somefile.php:13:',
+            ],
+            'magicMethodMismatchIsReportedOnItsOwnDocblockOfASecondClass' => [
+                'code' => '<?php
+                    class C {}
+                    class D {}
+
+                    class A {
+                        public function foo(string $s) : C {
+                            return new C;
+                        }
+                    }
+
+                    /**
+                     * @method C foo(string $s)
+                     * @method C bar()
+                     * @method C baz()
+                     * @method C qux()
+                     */
+                    class B extends A {}
+
+                    /**
+                     * @method C one()
+                     * @method D foo(string $s)
+                     */
+                    class E extends A {}',
+                'error_message' => 'ImplementedReturnTypeMismatch - src' . DIRECTORY_SEPARATOR . 'somefile.php:21:',
+            ],
+            'magicMethodTextAlsoInTheDescriptionIsReportedOnTheDescriptionLine' => [
+                'code' => '<?php
+                    class C {}
+                    class D {}
+
+                    class A {
+                        public function foo(string $s) : C {
+                            return new C;
+                        }
+                    }
+
+                    /**
+                     * Calls D foo(string $s) under the hood.
+                     *
+                     * @method C bar()
+                     * @method D foo(string $s)
+                     */
+                    class B extends A {}',
+                'error_message' => 'ImplementedReturnTypeMismatch - src' . DIRECTORY_SEPARATOR . 'somefile.php:12:',
+            ],
+            'magicMethodWithExtraSpacesIsReportedOnTheFirstDocblockLine' => [
+                'code' => '<?php
+                    class C {}
+                    class D {}
+
+                    class A {
+                        public function foo(string $s) : C {
+                            return new C;
+                        }
+                    }
+
+                    /**
+                     * @method C bar()
+                     * @method D   foo(string  $s)
+                     */
+                    class B extends A {}',
+                'error_message' => 'ImplementedReturnTypeMismatch - src' . DIRECTORY_SEPARATOR . 'somefile.php:11:',
             ],
             'parseBadMethodAnnotation' => [
                 'code' => '<?php
@@ -2577,7 +3104,7 @@ final class MagicMethodAnnotationTest extends TestCase
                     ',
                 'error_message' => 'ImplementedParamTypeMismatch',
             ],
-            'SKIPPED-MagicMethodMadeConcreteChecksParams' => [
+            'SKIPPED-MagicMethodMadeConcreteChecksParams' => [ // #3871
                 'code' => '<?php
                     /**
                      * @method static void create(array $x)

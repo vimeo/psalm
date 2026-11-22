@@ -296,7 +296,7 @@ When `true`, Psalm infers property types from assignments seen in straightforwar
   findUnusedVariablesAndParams="[bool]"
 >
 ```
-When `true`, Psalm will attempt to find all unused variables, the equivalent of running with `--find-unused-variables`. Defaults to `false`.
+When `true`, Psalm will attempt to find all unused variables, the equivalent of running with `--find-unused-variables`. If not given, it takes the value of `findUnusedCode` when that is set; otherwise it is `true` at `errorLevel="1"` (unless `reportMixedIssues="false"`) and `false` at the other levels.
 
 #### findUnusedCode
 ```xml
@@ -309,6 +309,38 @@ When `true`, Psalm will attempt to find all unused code (including unused variab
 Unused-code detection is based on a graph of references between code elements, resolved by reachability from the program's entry points (the public API, top-level code, free functions, and code outside of the project directories). As a result, a class, method, property or constant that is referenced only by other unused code — including cycles of otherwise unreferenced code — is reported as unused. Suppressing an unused-code issue (e.g. `@psalm-suppress UnusedClass`) only silences the report for that symbol; it does not turn the symbol into an entry point, so code that only it references is still reported.
 
 This is enabled by default since Psalm 6, so unused code issues are reported even without passing `--find-unused-code` (or `--find-dead-code`). Set `findUnusedCode="false"` to turn it off.
+
+#### markAllNonInternalCodeAsApi
+```xml
+<psalm
+  markAllNonInternalCodeAsApi="[bool]"
+>
+```
+**For libraries only.** When `true`, unused-code detection treats every class that isn't marked `@internal` or `@psalm-internal` as if it were marked [`@api`](../annotating_code/supported_annotations.md#api-psalm-api), except for its members that are marked internal. Other checks, like `ClassMustBeFinal`, are not affected. Defaults to `false`.
+
+```php
+<?php // findUnusedCode="true" markAllNonInternalCodeAsApi="true"
+namespace Lib;
+
+class Client {                           // ClassMustBeFinal, but no UnusedClass
+    public function send(): void {       // no issue
+        $this->encode();
+    }
+    private function encode(): void {}   // no issue, used by an API method
+    private function unused(): void {}   // UnusedMethod
+    /** @internal */
+    public function reset(): void {}     // PossiblyUnusedMethod
+}
+
+/** @internal */
+final class Helper {}                    // UnusedClass
+```
+
+The code the library doesn't ship, such as its tests, [is internal](../annotating_code/supported_annotations.md#psalm-internal) without the annotation.
+
+**This breaks unused-code detection for internal code that isn't marked `@internal`**: Psalm treats it as public API, so it is never reported as unused, and neither is any code that only it uses. Mark every class and member that isn't meant for users of the library with `@internal` (or `@psalm-internal`) before enabling this.
+
+Don't enable it in applications: almost all of their code is internal, so it would turn off most of unused-code detection. Code that a framework calls (controllers, commands, …) is already marked as used by the framework's Psalm plugin; mark any other such code with `@api` instead.
 
 #### forceJit
 ```xml
@@ -471,9 +503,10 @@ When `true`, Psalm enables these plugins without listing them in [`<plugins>`](p
 | `psalm/plugin-mockery` | `composer.json` requires `mockery/mockery` |
 | `psalm/plugin-symfony` | `composer.json` requires `symfony/framework-bundle` |
 | `psalm/plugin-laravel` | `composer.json` requires `laravel/framework` or `orchestra/testbench` |
+| `weirdan/doctrine-psalm-plugin` | `composer.json` requires `doctrine/orm`, `doctrine/dbal`, `doctrine/collections` or `doctrine/persistence` |
 | the plugin of `webmozart/assert` (2.4 and later) | `webmozart/assert` is installed |
 
-Psalm itself requires the `psalm/*` plugins, so they don't need installing.
+Psalm itself requires these plugins, so they don't need installing.
 
 #### phpVersion
 ```xml
@@ -598,7 +631,7 @@ Whether or not to report issues only for files that were passed explicitly as ar
 ```
 The directory used to store Psalm's cache data. Psalm creates it recursively when initializing the cache.
 
-Defaults to `$XDG_CACHE_HOME/psalm`. If `$XDG_CACHE_HOME` is either not set or empty, a default equal to `$HOME/.cache/psalm` is used or `sys_get_temp_dir() . '/psalm'` when not defined.
+Defaults to `$XDG_CACHE_HOME/psalm`. If `$XDG_CACHE_HOME` is either not set or empty, `$HOME/.cache/psalm` is used (on Windows, `%HOMEDRIVE%%HOMEPATH%` is used when `$HOME` is not set). If no home directory is set, or it is not writable (for example `$HOME` is `/` or does not exist), `sys_get_temp_dir() . '/psalm'` is used.
 
 #### allowFileIncludes
 ```xml
@@ -698,6 +731,15 @@ Please note that changing this setting might introduce unwanted side effects and
 Specifies the maximum scan and analysis duration for individual files; files which take longer than the specified amount of seconds (as a floating point, so values smaller than one second are also accepted) will print out a warning to CLI (the scan will **not** be interrupted).  
 
 Only used in multithreaded mode, defaults to 10 seconds.  
+
+#### minTypeCoverage
+```xml
+<psalm
+  minTypeCoverage="95"
+>
+```
+
+Fails a full run whose [type coverage](command_line_usage.md#minimum-type-coverage) is below this percentage. By default there is no minimum.
 
 #### restrictReturnTypes
 
@@ -927,7 +969,7 @@ Optional. Allows you to specify a list of constants that should emit the [`Forbi
 #### &lt;taintAnalysis&gt;
 Optional. Settings of the [security analysis](../security_analysis/index.md):
 - `<ignoreFiles>`: the files and directories whose taint paths are not reported (see
-  [Avoiding files in taint paths](../security_analysis/avoiding_false_positives.md#avoiding-files-in-taint-paths)).
+  [Ignoring files](../security_analysis/index.md#ignoring-files)).
 - `<taints>`: custom taints, which the annotations can then name without a plugin registering them. Each can be added
   to aliases of built-in taints (`input`, `tainted`, `input_except_sleep`) with `<alias>`: a taint added to `input` is
   user input, which the built-in sources give (see

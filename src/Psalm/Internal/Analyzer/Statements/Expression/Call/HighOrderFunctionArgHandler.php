@@ -182,6 +182,16 @@ final class HighOrderFunctionArgHandler
             return null;
         }
 
+        // only a closure is a Closure: a string naming a function, or an object, is not
+        if ($container_param->type?->isSingle()
+            && $container_param->type->getSingleAtomic() instanceof TClosure
+            && !$input_arg_expr instanceof PhpParser\Node\Expr\FuncCall
+            && !$input_arg_expr instanceof PhpParser\Node\Expr\MethodCall
+            && !$input_arg_expr instanceof PhpParser\Node\Expr\StaticCall
+        ) {
+            return null;
+        }
+
         $codebase = $statements_analyzer->getCodebase();
 
         try {
@@ -207,6 +217,7 @@ final class HighOrderFunctionArgHandler
                         ? HighOrderFunctionArgInfo::TYPE_FIRST_CLASS_CALLABLE
                         : HighOrderFunctionArgInfo::TYPE_CALLABLE,
                     $dynamic_storage ?? $codebase->functions->getStorage($statements_analyzer, $function_id),
+                    callable_id: $function_id,
                 );
             }
 
@@ -288,7 +299,7 @@ final class HighOrderFunctionArgHandler
                     ? $class_storage->methods['__invoke']
                     : null;
 
-                if (!$invoke_storage) {
+                if (!$class_storage || !$invoke_storage) {
                     return null;
                 }
 
@@ -296,6 +307,7 @@ final class HighOrderFunctionArgHandler
                     HighOrderFunctionArgInfo::TYPE_CLASS_CALLABLE,
                     $invoke_storage,
                     $class_storage,
+                    strtolower($class_storage->name . '::__invoke'),
                 );
             }
         } catch (UnexpectedValueException) {
@@ -345,11 +357,22 @@ final class HighOrderFunctionArgHandler
 
         $codebase = $statements_analyzer->getCodebase();
 
+        if (!str_contains($literal->value, '::')) {
+            $function_id = strtolower($literal->value);
+
+            return new HighOrderFunctionArgInfo(
+                HighOrderFunctionArgInfo::TYPE_STRING_CALLABLE,
+                $codebase->functions->getStorage($statements_analyzer, $function_id),
+                callable_id: $function_id,
+            );
+        }
+
+        $method_id = MethodIdentifier::wrap($literal->value);
+
         return new HighOrderFunctionArgInfo(
             HighOrderFunctionArgInfo::TYPE_STRING_CALLABLE,
-            str_contains($literal->value, '::')
-                ? $codebase->methods->getStorage(MethodIdentifier::wrap($literal->value))
-                : $codebase->functions->getStorage($statements_analyzer, strtolower($literal->value)),
+            $codebase->methods->getStorage($method_id),
+            callable_id: strtolower((string) ($codebase->methods->getDeclaringMethodId($method_id) ?? $method_id)),
         );
     }
 }

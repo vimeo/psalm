@@ -840,8 +840,20 @@ final class TypeParser
         }
 
         $generic_params = [];
+        /** @var list<Union> the `*` arguments among the generic params, by identity */
+        $star_params = [];
 
         foreach ($parse_tree->children as $i => $child_tree) {
+            if ($child_tree instanceof Value && $child_tree->value === StarProjection::NAME) {
+                // without the class there is no template bound to hold: see StarProjection::resolve()
+                $generic_params[] = $star_params[] = new Union(
+                    [new TMixed(false, $from_docblock)],
+                    ['from_docblock' => $from_docblock],
+                );
+
+                continue;
+            }
+
             $tree_type = self::getTypeFromTree(
                 $child_tree,
                 $codebase,
@@ -878,11 +890,35 @@ final class TypeParser
 
         $generic_type_value = TypeTokenizer::fixScalarTerms($generic_type);
 
+        // a builtin generic has no template for `*` to stand for: `array<*>` is `array<mixed>`, as in PHPStan
+        if (in_array(
+            $generic_type_value,
+            ['array', 'non-empty-array', 'associative-array', 'list', 'non-empty-list', 'iterable'],
+            true,
+        )) {
+            foreach ($generic_params as $i => $generic_param) {
+                if (in_array($generic_param, $star_params, true)) {
+                    $generic_params[$i] = new Union([new TMixed(false, $from_docblock)]);
+                }
+            }
+        }
+
+        // the rest of the builtin generics read their arguments, they have no template for `*` to stand for
+        if ($star_params !== []
+            && (in_array($generic_type_value, ['int', 'int-mask', 'int-mask-of', 'key-of', 'value-of'], true)
+                || in_array($generic_type_value, TPropertiesOf::tokenNames(), true))
+        ) {
+            throw new TypeParseTreeException(
+                'The * type argument is only for the type arguments of a class, not of ' . $generic_type_value,
+            );
+        }
+
         if ($purity_params !== []) {
             return self::getTypeWithPurityArguments(
                 $generic_type_value,
                 $generic_params,
                 $purity_params,
+                $star_params,
                 $from_docblock,
             );
         }
@@ -1040,6 +1076,18 @@ final class TypeParser
             || $generic_type_value === 'interface-string'
             || $generic_type_value === 'enum-string'
         ) {
+            // `class-string<*>` is any class-string, as in PHPStan
+            if (in_array($generic_params[0], $star_params, true)) {
+                return new TClassString(
+                    'object',
+                    null,
+                    false,
+                    $generic_type_value === 'interface-string',
+                    $generic_type_value === 'enum-string',
+                    $from_docblock,
+                );
+            }
+
             $class_name = $generic_params[0]->getId(false);
 
             if (isset($template_type_map[$class_name])) {
@@ -1083,6 +1131,11 @@ final class TypeParser
                     'There should only be two params for class-string-map, '
                     . count($generic_params) . ' provided',
                 );
+            }
+
+            // the values of a class-string-map are read, and it has no template for `*` to stand for
+            if (in_array($generic_params[1], $star_params, true)) {
+                throw new TypeParseTreeException('class-string-map cannot take a * value');
             }
 
             $template_marker_parts = array_values($generic_params[0]->getAtomicTypes());
@@ -1214,7 +1267,7 @@ final class TypeParser
         if ($generic_type_value === 'int-mask') {
             $atomic_types = [];
 
-            foreach ($generic_params as $generic_param) {
+            foreach ($generic_params as $generic_param_offset => $generic_param) {
                 if (!$generic_param->isSingle()) {
                     throw new TypeParseTreeException(
                         'int-mask types must all be non-union',
@@ -1239,13 +1292,21 @@ final class TypeParser
 
                         $atomic_type = new TLiteralInt($constant_value, $from_docblock);
                     } else {
-                        throw new TypeParseTreeException(
-                            'int-mask types must all be integer values',
+                        // the constants of the analysed code are not known yet: an unqualified name in a namespace
+                        // falls back to the global constant as in PHP, when it is resolved with the codebase
+                        $constant_tree = $parse_tree->children[$generic_param_offset] ?? null;
+                        $written_name = $constant_tree instanceof Value ? $constant_tree->text : null;
+
+                        $atomic_type = new TGlobalConstant(
+                            ltrim($atomic_type->value, '\\'),
+                            $written_name !== null && !str_contains($written_name, '\\') ? $written_name : null,
+                            $from_docblock,
                         );
                     }
                 }
 
                 if (!$atomic_type instanceof TLiteralInt
+                    && !$atomic_type instanceof TGlobalConstant
                     && !($atomic_type instanceof TClassConstant
                         && !str_contains($atomic_type->const_name, '*'))
                 ) {
@@ -1358,7 +1419,27 @@ final class TypeParser
             throw new TypeParseTreeException('Cannot create generic object with reserved word');
         }
 
-        return new TGenericObject($generic_type_value, $generic_params, false, false, [], $from_docblock);
+        return (new TGenericObject($generic_type_value, $generic_params, false, false, [], $from_docblock))
+            ->setProjections(self::getStarProjections($generic_params, $star_params));
+    }
+
+    /**
+     * @param list<Union> $generic_params
+     * @param list<Union> $star_params
+     * @return array<int, TypeArgumentProjection>
+     * @psalm-pure
+     */
+    private static function getStarProjections(array $generic_params, array $star_params): array
+    {
+        $projections = [];
+
+        foreach ($generic_params as $offset => $generic_param) {
+            if (in_array($generic_param, $star_params, true)) {
+                $projections[$offset] = TypeArgumentProjection::Star;
+            }
+        }
+
+        return $projections;
     }
 
     /**
@@ -1367,6 +1448,7 @@ final class TypeParser
      *
      * @param list<Union> $generic_params
      * @param non-empty-list<Union> $purity_params
+     * @param list<Union> $star_params the `*` arguments among the generic params, by identity
      * @throws TypeParseTreeException
      * @psalm-pure
      */
@@ -1374,6 +1456,7 @@ final class TypeParser
         string $generic_type_value,
         array $generic_params,
         array $purity_params,
+        array $star_params,
         bool $from_docblock,
     ): TIterable|TGenericObject {
         if (isset(TypeTokenizer::PSALM_RESERVED_WORDS[$generic_type_value])
@@ -1421,14 +1504,14 @@ final class TypeParser
 
         // the purity templates of a class come after its type templates; the type parameters of a
         // class left out are filled in once the class is known (see TypeExpander)
-        return new TGenericObject(
+        return (new TGenericObject(
             $generic_type_value,
             [...$generic_params, ...$purity_params],
             false,
             false,
             [],
             $from_docblock,
-        );
+        ))->setProjections(self::getStarProjections($generic_params, $star_params));
     }
 
     /**
@@ -1540,10 +1623,6 @@ final class TypeParser
                 $members[$name] = array_values($type->getAtomicTypes());
                 $member_types[] = $type;
                 continue;
-            }
-
-            if (!$type instanceof Atomic) {
-                throw new TypeParseTreeException('Invalid intersection member');
             }
 
             $member_types[] = new Union([$type], ['from_docblock' => $from_docblock]);
