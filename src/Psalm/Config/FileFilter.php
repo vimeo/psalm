@@ -232,8 +232,6 @@ class FileFilter
 
                         $iterator->next();
                     }
-
-                    $iterator->next();
                 }
 
                 if ($ignore_type_stats && $filter instanceof ProjectFileFilter) {
