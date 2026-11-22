@@ -396,40 +396,10 @@ final class ClassConstAnalyzer
             return true;
         }
 
-        // each class the variable may be an object or a name of
-        $lhs_classes = [];
+        $lhs_classes = self::getClassesOfAVariable($statements_analyzer, $codebase, $stmt->class, $lhs_type);
 
-        foreach ($lhs_type->getAtomicTypes() as $atomic_type) {
-            // PHP fails on a constant fetched on null, as on a static call: the other classes are checked
-            if ($atomic_type instanceof TNull && !$lhs_type->isNull()) {
-                if (!$lhs_type->ignore_nullable_issues) {
-                    IssueBuffer::maybeAdd(
-                        new UndefinedClass(
-                            'Type null cannot be used as a class',
-                            new CodeLocation($statements_analyzer->getSource(), $stmt->class),
-                            'null',
-                        ),
-                        $statements_analyzer->getSuppressedIssues(),
-                    );
-                }
-
-                continue;
-            }
-
-            if ($atomic_type instanceof TNamedObject || $atomic_type instanceof TLiteralClassString) {
-                $lhs_classes[] = [
-                    $atomic_type->value,
-                    $atomic_type->definite_class,
-                    $atomic_type instanceof TNamedObject && $atomic_type->is_static,
-                ];
-            } elseif ($atomic_type::class === TLiteralString::class
-                && $codebase->config->allow_string_standin_for_class
-                && $codebase->classlike_storage_provider->has(ltrim($atomic_type->value, '\\'))
-            ) {
-                $lhs_classes[] = [ltrim($atomic_type->value, '\\'), true, false];
-            } else {
-                return true;
-            }
+        if ($lhs_classes === null) {
+            return true;
         }
 
         $stmt_types = [];
@@ -1231,5 +1201,51 @@ final class ClassConstAnalyzer
             return [$parent_classlike_storage, $parent_const_storage];
         }
         return null;
+    }
+
+    /**
+     * Each class the variable may be an object or a name of, or null when one of its types is none of them. PHP fails
+     * on a constant fetched on null, as on a static call: the null of a union with classes is reported, and the other
+     * classes are checked
+     *
+     * @return list<array{string, bool, bool}>|null
+     */
+    private static function getClassesOfAVariable(
+        StatementsAnalyzer $statements_analyzer,
+        Codebase $codebase,
+        PhpParser\Node\Expr $class,
+        Union $lhs_type,
+    ): ?array {
+        $lhs_classes = [];
+
+        foreach ($lhs_type->getAtomicTypes() as $atomic_type) {
+            if ($atomic_type instanceof TNamedObject || $atomic_type instanceof TLiteralClassString) {
+                $lhs_classes[] = [
+                    $atomic_type->value,
+                    $atomic_type->definite_class,
+                    $atomic_type instanceof TNamedObject && $atomic_type->is_static,
+                ];
+            } elseif ($atomic_type::class === TLiteralString::class
+                && $codebase->config->allow_string_standin_for_class
+                && $codebase->classlike_storage_provider->has(ltrim($atomic_type->value, '\\'))
+            ) {
+                $lhs_classes[] = [ltrim($atomic_type->value, '\\'), true, false];
+            } elseif (!$atomic_type instanceof TNull || $lhs_type->isNull()) {
+                return null;
+            }
+        }
+
+        if ($lhs_type->isNullable() && !$lhs_type->ignore_nullable_issues) {
+            IssueBuffer::maybeAdd(
+                new UndefinedClass(
+                    'Type null cannot be used as a class',
+                    new CodeLocation($statements_analyzer->getSource(), $class),
+                    'null',
+                ),
+                $statements_analyzer->getSuppressedIssues(),
+            );
+        }
+
+        return $lhs_classes;
     }
 }
