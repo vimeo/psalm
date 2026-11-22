@@ -338,6 +338,22 @@ final class OverrideTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.5',
             ],
+            'promotedPropertyWithTheOverrideAttributeNeedsNoMissingOverrideAttribute' => [
+                'code' => '<?php
+                    class P {
+                        public function __construct(public string $label = "p") {}
+                    }
+
+                    class C extends P {
+                        public function __construct(#[\\Override] public string $label = "c") {
+                            parent::__construct($label);
+                        }
+                    }
+                ',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.5',
+            ],
             'propertyOverridingAPrivatePropertyOrNothingNeedsNoOverrideAttribute' => [
                 'code' => '<?php
                     class P {

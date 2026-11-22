@@ -717,7 +717,18 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
     ): void {
         $codebase = $statements_source->getCodebase();
 
-        foreach ($property_storage->attributes as $attribute) {
+        $attributes = $property_storage->attributes;
+
+        // the attributes of a promoted property are written on the param of the constructor
+        if ($property_storage->is_promoted) {
+            foreach ($storage->methods['__construct']->params ?? [] as $param) {
+                if ($param->name === $property_name) {
+                    $attributes = [...$attributes, ...$param->attributes];
+                }
+            }
+        }
+
+        foreach ($attributes as $attribute) {
             if ($attribute->fq_class_name === 'Override') {
                 return;
             }
