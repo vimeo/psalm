@@ -45,6 +45,14 @@ final class MbStrtolowerReturnTypeProvider implements FunctionReturnTypeProvider
             }
         }
 
+        if ($string_arg_type !== null && !$call_args[0]->unpack) {
+            $literals = StrtolowerReturnTypeProvider::lowercaseLiterals($string_arg_type, true);
+
+            if ($literals !== null) {
+                return $literals;
+            }
+        }
+
         return $is_non_empty ? Type::getNonEmptyLowercaseString() : Type::getLowercaseString();
     }
 }

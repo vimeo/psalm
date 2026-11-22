@@ -70,7 +70,10 @@ final class Php86Test extends TestCase
             ],
             'pureCodeCanUseDurationsAndBuilders' => [
                 'code' => '<?php
-                    /** @psalm-pure */
+                    /**
+                     * @param positive-int $attempt
+                     * @psalm-pure
+                     */
                     function delay(int $attempt): Time\Duration {
                         return Time\Duration::fromSeconds(1)->multiplyBy(2 ** $attempt);
                     }

@@ -221,6 +221,27 @@ final class StubsGenerator
         string $function_name,
         string $namespace_name
     ) : PhpParser\Node\Stmt\Function_ {
+        return new VirtualFunction(
+            $function_name,
+            [
+                'params' => self::getFunctionParamNodes($function_storage),
+                'returnType' => $function_storage->signature_return_type
+                    ? self::getParserTypeFromPsalmType($function_storage->signature_return_type)
+                    : null,
+                'stmts' => [],
+            ],
+            ['comments' => self::getDocblockComments($function_storage, $namespace_name)]
+        );
+    }
+
+    /**
+     * The docblock of a function or method stub: its templates, and the types its signature doesn't express
+     *
+     * @return list<PhpParser\Comment\Doc>
+     * @psalm-capabilities read-props
+     */
+    public static function getDocblockComments(FunctionLikeStorage $function_storage, string $namespace_name): array
+    {
         $docblock = new ParsedDocblock('', []);
 
         foreach ($function_storage->template_types ?: [] as $template_name => $map) {
@@ -269,25 +290,7 @@ final class StubsGenerator
             ));
         }
 
-        return new VirtualFunction(
-            $function_name,
-            [
-                'params' => self::getFunctionParamNodes($function_storage),
-                'returnType' => $function_storage->signature_return_type
-                    ? self::getParserTypeFromPsalmType($function_storage->signature_return_type)
-                    : null,
-                'stmts' => [],
-            ],
-            [
-                'comments' => $docblock->tags
-                    ? [
-                        new PhpParser\Comment\Doc(
-                            rtrim($docblock->render('        '))
-                        )
-                    ]
-                    : []
-            ]
-        );
+        return $docblock->tags ? [new PhpParser\Comment\Doc(rtrim($docblock->render('        ')))] : [];
     }
 
     /**

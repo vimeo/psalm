@@ -147,6 +147,7 @@ final class GetObjectVarsReturnTypeProvider implements FunctionReturnTypeProvide
                                 $object_type,
                                 $class_storage,
                                 $class_storage,
+                                false,
                             )
                             : $property_type
                         ;
