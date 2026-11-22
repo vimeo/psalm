@@ -39,6 +39,7 @@ use Psalm\Issue\OverriddenFinalConstant;
 use Psalm\Issue\OverriddenInterfaceConstant;
 use Psalm\Issue\ParentNotFound;
 use Psalm\Issue\ParseError;
+use Psalm\Issue\UndefinedClass;
 use Psalm\Issue\UndefinedConstant;
 use Psalm\IssueBuffer;
 use Psalm\Storage\ClassConstantStorage;
@@ -50,6 +51,7 @@ use Psalm\Type\Atomic\TLiteralClassString;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TObject;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateParam;
@@ -398,6 +400,22 @@ final class ClassConstAnalyzer
         $lhs_classes = [];
 
         foreach ($lhs_type->getAtomicTypes() as $atomic_type) {
+            // PHP fails on a constant fetched on null, as on a static call: the other classes are checked
+            if ($atomic_type instanceof TNull && !$lhs_type->isNull()) {
+                if (!$lhs_type->ignore_nullable_issues) {
+                    IssueBuffer::maybeAdd(
+                        new UndefinedClass(
+                            'Type null cannot be used as a class',
+                            new CodeLocation($statements_analyzer->getSource(), $stmt->class),
+                            'null',
+                        ),
+                        $statements_analyzer->getSuppressedIssues(),
+                    );
+                }
+
+                continue;
+            }
+
             if ($atomic_type instanceof TNamedObject || $atomic_type instanceof TLiteralClassString) {
                 $lhs_classes[] = [
                     $atomic_type->value,

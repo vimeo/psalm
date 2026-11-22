@@ -309,6 +309,19 @@ final class ConstantTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'constantOfANullableObjectCheckedForNullIsTheConstantOfItsClass' => [
+                'code' => '<?php
+                    final class A {
+                        public const NAME = "a";
+                    }
+
+                    /** @var A|null $a */
+                    $a = rand(0, 1) ? new A() : null;
+                    $name = $a === null ? "" : $a::NAME;',
+                'assertions' => [
+                    '$name===' => "''|'a'",
+                ],
+            ],
             'constantOfAnObjectOfSeveralClassesIsTheConstantOfEach' => [
                 'code' => '<?php
                     final class A {
@@ -2926,6 +2939,17 @@ final class ConstantTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'constantOfAPossiblyNullObjectIsAnUndefinedClass' => [
+                'code' => '<?php
+                    final class A {
+                        public const NAME = "a";
+                    }
+
+                    function name(?A $a): string {
+                        return $a::NAME;
+                    }',
+                'error_message' => 'UndefinedClass - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:32 - Type null cannot be used as a class',
+            ],
             'constantMissingFromOneClassOfAnObjectIsUndefined' => [
                 'code' => '<?php
                     final class A {
