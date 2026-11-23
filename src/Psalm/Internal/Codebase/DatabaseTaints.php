@@ -458,10 +458,6 @@ final class DatabaseTaints
                 }
             }
 
-            if ($read['any_key']) {
-                $graph->addPath($read_node, $row_node, 'arrayvalue-assignment');
-            }
-
             foreach ($read['keys'] as $key) {
                 // a node of its own for each key: there is one edge between two nodes
                 $key_node = DataFlowNode::getForAssignment('database column #' . $offset . ' ' . $key, $call_location);
@@ -484,6 +480,11 @@ final class DatabaseTaints
                     'database column #' . $offset,
                     $call_location,
                 );
+            }
+
+            // after the columns by position: it replaces their edge, as any key holds them
+            if ($read['any_key']) {
+                $graph->addPath($read_node, $row_node, 'arrayvalue-assignment');
             }
         }
 
@@ -1055,7 +1056,6 @@ final class DatabaseTaints
      * The text of the SQL, where each part whose text the analysis doesn't know is a hole (see SqlStatement)
      *
      * @param list<Expr> $holes the parts that are holes, in their order
-     * @psalm-capabilities read-props|write-this-props|write-refs
      */
     private static function getText(StatementsAnalyzer $statements_analyzer, Expr $expr, array &$holes): string
     {
@@ -1108,7 +1108,6 @@ final class DatabaseTaints
      *
      * @param array<array-key, Arg> $args
      * @param list<Expr> $holes
-     * @psalm-capabilities read-props|write-this-props|write-refs
      */
     private static function getSprintfText(StatementsAnalyzer $statements_analyzer, array $args, array &$holes): ?string
     {
@@ -1135,13 +1134,13 @@ final class DatabaseTaints
         // the argument of each conversion, null for `%%`
         $arguments = [];
         $next = 1;
-        foreach ($conversions as $conversion) {
-            if ($conversion[2][0] === '%') {
+        foreach ($conversions as [, [$position], [$type]]) {
+            if ($type === '%') {
                 $arguments[] = null;
                 continue;
             }
 
-            $argument = $conversion[1][0] !== '' ? (int) $conversion[1][0] : $next++;
+            $argument = $position !== '' ? (int) $position : $next++;
             if (!isset($args[$argument])) {
                 return null;
             }
@@ -1151,10 +1150,10 @@ final class DatabaseTaints
 
         $text = '';
         $offset = 0;
-        foreach ($conversions as $i => $conversion) {
-            $text .= substr($format, $offset, $conversion[0][1] - $offset);
+        foreach ($conversions as $i => [[$conversion, $conversion_offset]]) {
+            $text .= substr($format, $offset, $conversion_offset - $offset);
             $text .= $arguments[$i] === null ? '%' : self::getText($statements_analyzer, $arguments[$i], $holes);
-            $offset = $conversion[0][1] + strlen($conversion[0][0]);
+            $offset = $conversion_offset + strlen($conversion);
         }
 
         return $text . substr($format, $offset);

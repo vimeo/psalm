@@ -23,8 +23,8 @@ use function substr;
  * UPDATE stores in each column, and the columns of the rows a SELECT gives. A value is made of the parts of the query
  * the analysis doesn't know the text of (holes, numbered in the order they appear in the text, where the text has
  * HOLE_MARKER, the number and HOLE_MARKER again), of its placeholders (`?`, numbered from 0, `:name`, `{name}` and
- * `{name:Type}` (ClickHouse), named without `:`, `{`, the type and `}`, and `$1`, numbered from 0), and of the columns it
- * copies.
+ * `{name:Type}` (ClickHouse), named without `:`, `{`, the type and `}`, and `$1`, numbered from 0), and of the columns
+ * it copies.
  *
  * A table or column the query doesn't name (`INSERT INTO t VALUES (...)`, `SELECT *`, a name with a hole) is null:
  * any of them. Tables, and the columns of values, are lowercase; the column of a write and the keys of a read are
@@ -129,7 +129,6 @@ final class SqlStatement
 
             $parser->tokens = $statement;
             $parser->position = 0;
-            $parser->ends_with_data = false;
             $result = $parser->parseStatement();
             $statement = [];
 
@@ -153,6 +152,7 @@ final class SqlStatement
      */
     private function parseStatement(): ?array
     {
+        $this->ends_with_data = false;
         $first = $this->peekWord();
 
         if ($first === 'select' || (($this->tokens[0][0] ?? '') === '(' && $this->containsWordAtDepth('select', 1))) {
@@ -899,11 +899,15 @@ final class SqlStatement
             }
 
             // FINAL, SAMPLE 1/10 OFFSET 1/2 (ClickHouse)
-            if (isset($tokens[$offset]) && $tokens[$offset][0] === 'word' && strtolower($tokens[$offset][1]) === 'final') {
+            if (isset($tokens[$offset]) && $tokens[$offset][0] === 'word'
+                && strtolower($tokens[$offset][1]) === 'final'
+            ) {
                 $offset++;
             }
 
-            if (isset($tokens[$offset]) && $tokens[$offset][0] === 'word' && strtolower($tokens[$offset][1]) === 'sample') {
+            if (isset($tokens[$offset]) && $tokens[$offset][0] === 'word'
+                && strtolower($tokens[$offset][1]) === 'sample'
+            ) {
                 $offset++;
                 while (isset($tokens[$offset]) && ($tokens[$offset][0] === 'number' || $tokens[$offset][0] === '/'
                     || ($tokens[$offset][0] === 'word' && strtolower($tokens[$offset][1]) === 'offset'))

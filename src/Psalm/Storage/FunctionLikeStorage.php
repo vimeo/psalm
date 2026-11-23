@@ -403,6 +403,7 @@ abstract class FunctionLikeStorage implements HasAttributesInterface, Stringable
      *     from?: int,
      *     result?: 'result'|'rows'|'value'|'column'|'any_value'|'any_column'|'value_or_row'|'none',
      *     optional_first?: int,
+     *     readonly?: true,
      * }>
      */
     public array $database_calls = [];
