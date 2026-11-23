@@ -8,7 +8,9 @@ use Psalm\Codebase;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Type\Atomic;
+use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
 
 use function is_string;
@@ -52,6 +54,11 @@ final class Possibilities
             $assertion_type = $assertion->getAtomicType();
 
             if ($assertion_type) {
+                // `static` of the called method is the class it is called on; one a template is bound to is the caller's
+                if ($static_type !== null) {
+                    $assertion_type = self::resolveStatic($assertion_type, $static_type, $codebase);
+                }
+
                 $union = new Union([$assertion_type]);
                 $union = TemplateInferredTypeReplacer::replace(
                     $union,
@@ -60,14 +67,6 @@ final class Possibilities
                 );
 
                 foreach ($union->getAtomicTypes() as $atomic_type) {
-                    // `static` is the class the method is called on
-                    if ($static_type !== null
-                        && $atomic_type instanceof TNamedObject
-                        && ($atomic_type->is_static || strtolower($atomic_type->value) === 'static')
-                    ) {
-                        $atomic_type = $static_type;
-                    }
-
                     $assertion = $assertion->setAtomicType($atomic_type);
                     $assertion_rules[] = $assertion;
                 }
@@ -82,5 +81,53 @@ final class Possibilities
                 : $this->var_id,
             $assertion_rules,
         );
+    }
+
+    /**
+     * The asserted type with `static` replaced by the class the method is called on, keeping its type arguments and
+     * the types the assertion intersects it with (`static&Marker`)
+     *
+     * @psalm-capabilities read-props
+     */
+    private static function resolveStatic(Atomic $asserted_type, Atomic $static_type, ?Codebase $codebase): Atomic
+    {
+        if (!$asserted_type instanceof TNamedObject
+            || (!$asserted_type->is_static && strtolower($asserted_type->value) !== 'static')
+        ) {
+            return $asserted_type;
+        }
+
+        if ($asserted_type instanceof TGenericObject
+            && $static_type instanceof TNamedObject
+            && !$static_type instanceof TGenericObject
+        ) {
+            $static_type = new TGenericObject(
+                $static_type->value,
+                $asserted_type->type_params,
+                false,
+                false,
+                $static_type->extra_types,
+            );
+        }
+
+        if (!$static_type instanceof TNamedObject && !$static_type instanceof TTemplateParam) {
+            return $static_type;
+        }
+
+        $extra_types = $static_type->extra_types + $asserted_type->extra_types;
+
+        // `static&Marker` is `Marker` flagged as static: the class the call is on doesn't always implement it
+        if ($codebase !== null
+            && $static_type instanceof TNamedObject
+            && strtolower($asserted_type->value) !== 'static'
+            && strtolower($asserted_type->value) !== strtolower($static_type->value)
+            && $codebase->classlike_storage_provider->has($static_type->value)
+            && !$codebase->classExtendsOrImplements($static_type->value, $asserted_type->value)
+        ) {
+            $intersected = new TNamedObject($asserted_type->value);
+            $extra_types[$intersected->getKey()] = $intersected;
+        }
+
+        return $extra_types ? $static_type->setIntersectionTypes($extra_types) : $static_type;
     }
 }

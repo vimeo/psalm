@@ -1218,6 +1218,82 @@ final class AssertAnnotationTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'staticATemplateOfAnAssertionIsBoundToIsTheCallers' => [
+                'code' => '<?php
+                    final class Guard {
+                        /**
+                         * @template T of object
+                         * @param class-string<T> $class
+                         * @psalm-assert-if-true T $value
+                         */
+                        public static function isInstanceOf(string $class, mixed $value): bool {
+                            return $value instanceof $class;
+                        }
+
+                        /**
+                         * @template T of object
+                         * @param class-string<T> $class
+                         * @psalm-assert-if-true T $value
+                         */
+                        public function isAnInstanceOf(string $class, mixed $value): bool {
+                            return $value instanceof $class;
+                        }
+                    }
+
+                    class Caller {
+                        public function viaStatic(mixed $value): ?static {
+                            if (Guard::isInstanceOf(static::class, $value)) {
+                                return $value;
+                            }
+
+                            return null;
+                        }
+
+                        public function viaInstance(Guard $guard, mixed $value): ?static {
+                            if ($guard->isAnInstanceOf(static::class, $value)) {
+                                return $value;
+                            }
+
+                            return null;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'staticInAnAssertionKeepsWhatItIsIntersectedWith' => [
+                'code' => '<?php
+                    interface Marker {
+                        public function mark(): void;
+                    }
+
+                    class Shape {
+                        /** @psalm-assert-if-true static&Marker $value */
+                        public static function isMarked(mixed $value): bool {
+                            return $value instanceof static && $value instanceof Marker;
+                        }
+
+                        /** @psalm-assert-if-true static&Marker $value */
+                        public function isAlsoMarked(mixed $value): bool {
+                            return $value instanceof static && $value instanceof Marker;
+                        }
+                    }
+
+                    function viaStatic(mixed $value): void {
+                        if (Shape::isMarked($value)) {
+                            $value->mark();
+                        }
+                    }
+
+                    function viaInstance(Shape $shape, mixed $value): void {
+                        if ($shape->isAlsoMarked($value)) {
+                            $value->mark();
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'staticInAnAssertionOfAnInheritedMethodIsTheCalledClass' => [
                 'code' => '<?php
                     interface Comparable {
