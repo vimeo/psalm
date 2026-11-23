@@ -770,7 +770,7 @@ final class CallableTypeComparator
         } elseif ($input_type_part instanceof TNamedObject
             && $input_type_part->value === 'Closure'
         ) {
-            return new TCallable();
+            return new TClosure();
         } elseif ($input_type_part instanceof TNamedObject
             && $codebase->classExists($input_type_part->value, null, $context)
         ) {
