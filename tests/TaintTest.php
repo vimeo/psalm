@@ -11345,6 +11345,23 @@ final class TaintTest extends TestCase
                 'error_message' => 'TaintedHtml',
                 'php_version' => '8.1',
             ],
+            'taintAPrivatelyMutablePropertyAcrossInstances' => [
+                'code' => '<?php // --taint-analysis
+                    final class Counter {
+                        /** @psalm-readonly-allow-private-mutation */
+                        public string $value = "a";
+
+                        public function set(string $value): void {
+                            $this->value = $value;
+                        }
+                    }
+
+                    $first = new Counter();
+                    $second = new Counter();
+                    $first->set((string) $_GET["x"]);
+                    echo $second->value;',
+                'error_message' => 'TaintedHtml',
+            ],
             'taintAMutableObjectHeldByAReadonlyObject' => [
                 'code' => '<?php // --taint-analysis
                     final class Text {

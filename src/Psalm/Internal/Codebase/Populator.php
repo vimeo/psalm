@@ -164,6 +164,7 @@ final class Populator
     /**
      * A readonly class (whose subclasses PHP requires to be readonly too), or a final class without a parent
      * whose properties are all readonly or computed by a get hook.
+     * Properties annotated @psalm-readonly-allow-private-mutation count as mutable.
      *
      * @psalm-capabilities read-props
      */
