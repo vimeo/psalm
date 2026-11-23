@@ -114,6 +114,41 @@ final class PsalterDryRunEndToEndTest extends PsalmEndToEndTestCase
         $this->assertSame($source, file_get_contents(self::$tmpDir . '/src/A.php'));
     }
 
+    #[DataProvider('singlePathProvider')]
+    public function testPsalterWithASinglePathSeesFunctionsOfTheAutoloader(string $path): void
+    {
+        $this->runPsalmInit();
+        $psalmXml = file_get_contents(self::$tmpDir . '/psalm.xml');
+        $psalmXml = str_replace(
+            '<psalm',
+            '<psalm runTaintAnalysis="false" autoloader="bootstrap.php"',
+            (string)$psalmXml,
+        );
+        file_put_contents(self::$tmpDir . '/psalm.xml', $psalmXml);
+        file_put_contents(self::$tmpDir . '/bootstrap.php', "<?php\n\nfunction helper(): int {\n    return 1;\n}\n");
+        file_put_contents(self::$tmpDir . '/src/A.php', "<?php\n\nfunction a() {\n    return helper();\n}\n");
+
+        $process = self::newProcess(
+            [PHP_BINARY, $this->psalter, '--dry-run', '--no-cache', '--issues=MissingReturnType', $path],
+            self::$tmpDir,
+            self::agentEnvVarsToUnset(),
+        );
+        $process->run();
+
+        $this->assertSame(2, $process->getExitCode(), $process->getOutput() . $process->getErrorOutput());
+        $this->assertStringContainsString("\n+function a(): int {\n", $process->getOutput());
+    }
+
+    /**
+     * @return iterable<string, array{string}>
+     * @psalm-pure
+     */
+    public static function singlePathProvider(): iterable
+    {
+        yield 'file' => ['src/A.php'];
+        yield 'directory' => ['src'];
+    }
+
     public function testPsalmAlterDryRunExitsWithCode2WhenFilesWouldChange(): void
     {
         $this->runPsalmInit();

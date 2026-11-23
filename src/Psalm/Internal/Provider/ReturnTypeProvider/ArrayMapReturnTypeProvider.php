@@ -21,6 +21,7 @@ use Psalm\Internal\Codebase\CombinedFlowGraph;
 use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\Type\ArrayType;
+use Psalm\Internal\Type\Comparator\CallableTypeComparator;
 use Psalm\Node\Expr\VirtualArrayDimFetch;
 use Psalm\Node\Expr\VirtualFuncCall;
 use Psalm\Node\Expr\VirtualMethodCall;
@@ -36,6 +37,7 @@ use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\Scalar;
 use Psalm\Type\Atomic\TArray;
+use Psalm\Type\Atomic\TClosure;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNonEmptyArray;
@@ -187,6 +189,22 @@ final class ArrayMapReturnTypeProvider implements FunctionReturnTypeProviderInte
                 $generic_key_type = $array_arg_type->key ?? Type::getArrayKey();
             } else {
                 $generic_key_type = Type::getInt();
+            }
+
+            // an invokable object maps through its __invoke, unless the arguments are yet to bind its return type
+            if ($function_call_type->isSingle()
+                && ($callback = $function_call_type->getSingleAtomic()) instanceof TNamedObject
+                && !$callback instanceof TClosure
+                && ($invoke = CallableTypeComparator::getCallableFromAtomic(
+                    $statements_source->getCodebase(),
+                    $callback,
+                    null,
+                    $statements_source,
+                    $context,
+                ))
+                && $invoke->return_type?->getTemplateTypes() === []
+            ) {
+                $function_call_type = new Union([$invoke]);
             }
 
             if ($function_call_type->hasCallableType()) {
@@ -641,6 +659,14 @@ final class ArrayMapReturnTypeProvider implements FunctionReturnTypeProviderInte
 
         foreach ($mapping_function_ids as $mapping_function_id) {
             $mapping_function_id_parts = explode('&', $mapping_function_id);
+
+            // the methods of an intersection (`$Foo::m&Bar::m`) are all called on the same object
+            if ($mapping_function_id[0] === '$') {
+                $mapping_function_id_parts = array_map(
+                    static fn(string $part): string => $part[0] === '$' ? $part : '$' . $part,
+                    $mapping_function_id_parts,
+                );
+            }
 
             if ($fake_var_discriminator === null) {
                 // Derive the discriminator deterministically from the call's position instead of mt_rand(),

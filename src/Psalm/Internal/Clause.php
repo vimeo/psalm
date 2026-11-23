@@ -7,6 +7,7 @@ namespace Psalm\Internal;
 use Override;
 use Psalm\Storage\Assertion;
 use Psalm\Storage\Assertion\InArray;
+use Psalm\Storage\Assertion\IsClassEqual;
 use Psalm\Storage\Assertion\IsEqualIsset;
 use Psalm\Storage\Assertion\IsIdentical;
 use Psalm\Storage\Assertion\IsIsset;
@@ -399,6 +400,8 @@ final class Clause implements Stringable
                 // comparison with an operand, not for `$a === $b` being false, nor for an assertion of a docblock
                 if (!$type->hasEquality()
                     || ($type instanceof IsNotIdentical && $type->comparand !== null)
+                    // an object whose class is not the one compared with: only a final class is then excluded
+                    || $type instanceof IsClassEqual
                     || (($inner_type = $type->getAtomicType())
                         && ($inner_type instanceof TLiteralInt
                             || $inner_type instanceof TLiteralFloat

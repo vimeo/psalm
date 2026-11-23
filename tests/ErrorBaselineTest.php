@@ -421,6 +421,62 @@ bar&#13;
             );
     }
 
+    public function testACharacterXmlForbidsInTheSelectedTextKeepsTheBaselineLoadable(): void
+    {
+        $baselineFile = 'baseline.xml';
+
+        $this->fileProvider = Mockery::spy(FileProvider::class);
+
+        ErrorBaseline::create(
+            $this->fileProvider,
+            $baselineFile,
+            [
+                'src/a.php' => [
+                    new IssueData(
+                        IssueData::SEVERITY_ERROR,
+                        3,
+                        3,
+                        'InvalidScalarArgument',
+                        'Message',
+                        'src/a.php',
+                        'src/a.php',
+                        'takesInt("a' . "\x1b" . '");',
+                        '"a' . "\x1b" . '"',
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                    ),
+                ],
+            ],
+            false,
+        );
+
+        $document = null;
+
+        $this->fileProvider->shouldHaveReceived()
+            ->setContents(
+                $baselineFile,
+                Mockery::on(static function (string $contents) use (&$document): bool {
+                    $document = $contents;
+
+                    return true;
+                }),
+            );
+
+        $this->assertIsString($document);
+
+        $this->fileProvider->allows()->fileExists($baselineFile)->andReturns(true);
+        $this->fileProvider->allows()->getContents($baselineFile)->andReturns($document);
+
+        $this->assertSame(
+            ['src/a.php' => ['InvalidScalarArgument' => ['o' => 1, 's' => ["\"a\u{FFFD}\""]]]],
+            ErrorBaseline::read($this->fileProvider, $baselineFile),
+        );
+    }
+
     public function testUpdateShouldRemoveExistingIssuesWithoutAddingNewOnes(): void
     {
         $baselineFile = 'baseline.xml';
@@ -561,6 +617,79 @@ bar&#13;
             ],
             'sample/sample-file2.php' => [
                 'TypeCoercion' => ['o' => 1, 's' => []],
+            ],
+        ], $remainingBaseline);
+    }
+
+    public function testUpdateShouldRemoveADuplicatedCodeSampleFixedOnce(): void
+    {
+        $baselineFile = 'baseline.xml';
+
+        $this->fileProvider->allows()->fileExists($baselineFile)->andReturns(true);
+        $this->fileProvider->allows()->getContents($baselineFile)->andReturns(
+            '<?xml version="1.0" encoding="UTF-8"?>
+            <files>
+              <file src="sample/sample-file.php">
+                <MixedAssignment>
+                    <code>foo</code>
+                    <code>foo</code>
+                    <code>bar</code>
+                </MixedAssignment>
+              </file>
+            </files>',
+        );
+
+        $this->fileProvider->allows()->setContents(Mockery::andAnyOtherArgs());
+
+        $newIssues = [
+            'sample/sample-file.php' => [
+                new IssueData(
+                    IssueData::SEVERITY_ERROR,
+                    0,
+                    0,
+                    'MixedAssignment',
+                    'Message',
+                    'sample/sample-file.php',
+                    'sample/sample-file.php',
+                    'foo',
+                    'foo',
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                ),
+                new IssueData(
+                    IssueData::SEVERITY_ERROR,
+                    0,
+                    0,
+                    'MixedAssignment',
+                    'Message',
+                    'sample/sample-file.php',
+                    'sample/sample-file.php',
+                    'bar',
+                    'bar',
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                ),
+            ],
+        ];
+
+        $remainingBaseline = ErrorBaseline::update(
+            $this->fileProvider,
+            $baselineFile,
+            $newIssues,
+            false,
+        );
+
+        $this->assertSame([
+            'sample/sample-file.php' => [
+                'MixedAssignment' => ['o' => 2, 's' => ['foo', 'bar']],
             ],
         ], $remainingBaseline);
     }
