@@ -1637,10 +1637,16 @@ final class ArrayFetchAnalyzer
                     $single_atomic = $key_values[0];
                     $from_mixed_array = $type->type_params[1]->isMixed();
 
-                    // ok, type becomes a TKeyedArray
+                    // ok, type becomes a TKeyedArray: the item an assignment writes into (no replacement type) is the
+                    // one the array may hold already, an ArrayAccess object whose offsetSet() is called
                     $type = TKeyedArray::make(
                         [
-                            $single_atomic->value => $from_mixed_array ? Type::getMixed() : Type::getNever(),
+                            $single_atomic->value => match (true) {
+                                $from_mixed_array => Type::getMixed(),
+                                $replacement_type === null && !$from_empty_array
+                                    => $type->type_params[1]->setPossiblyUndefined(true),
+                                default => Type::getNever(),
+                            },
                         ],
                         $single_atomic instanceof TLiteralClassString ? [
                             $single_atomic->value => true,
@@ -1971,6 +1977,16 @@ final class ArrayFetchAnalyzer
         $offset_type_parts = array_values($offset_type->getAtomicTypes());
 
         foreach ($offset_type_parts as $offset_type_part) {
+            // `Foo::class` is the class-string of Foo
+            $is_literal = $offset_type_part instanceof TLiteralClassString;
+
+            if ($offset_type_part instanceof TLiteralClassString) {
+                $offset_type_part = new TClassString(
+                    $offset_type_part->value,
+                    new TNamedObject($offset_type_part->value),
+                );
+            }
+
             if ($offset_type_part instanceof TClassString) {
                 if ($offset_type_part instanceof TTemplateParamClass) {
                     $template_result_get = new TemplateResult(
@@ -2030,7 +2046,11 @@ final class ArrayFetchAnalyzer
                     $codebase,
                 );
 
-                if ($replacement_type) {
+                // what the map holds under `Foo::class` is a Foo: writing one leaves the map as it is
+                if ($replacement_type
+                    && !($is_literal
+                        && UnionTypeComparator::isContainedBy($codebase, $replacement_type, $expected_value_param_get))
+                ) {
                     $replacement_type = TemplateInferredTypeReplacer::replace(
                         $replacement_type,
                         $template_result_set,
