@@ -1208,12 +1208,6 @@ final class IncludeTest extends TestCase
         ];
     }
 
-    /**
-     * Regression test: InterfaceAnalyzer must not crash when storage was
-     * overwritten by a class with the same FQCN (e.g. loaded via reflection
-     * from vendor). The interface's methods are absent from the overwritten
-     * storage, so InterfaceAnalyzer must skip them gracefully.
-     */
     public function testCallWhoseArgumentRequiresAFileThatReturnsIsStillReturned(): void
     {
         $codebase = $this->project_analyzer->getCodebase();
@@ -1246,6 +1240,12 @@ final class IncludeTest extends TestCase
         );
     }
 
+    /**
+     * Regression test: InterfaceAnalyzer must not crash when storage was
+     * overwritten by a class with the same FQCN (e.g. loaded via reflection
+     * from vendor). The interface's methods are absent from the overwritten
+     * storage, so InterfaceAnalyzer must skip them gracefully.
+     */
     public function testInterfaceAnalysisDoesNotCrashWhenStorageOverwritten(): void
     {
         $codebase = $this->project_analyzer->getCodebase();
