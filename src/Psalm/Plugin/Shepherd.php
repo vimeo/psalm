@@ -6,6 +6,7 @@ namespace Psalm\Plugin;
 
 use BadMethodCallException;
 use Override;
+use Psalm\Codebase;
 use Psalm\Config;
 use Psalm\Internal\Analyzer\IssueData;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
@@ -59,6 +60,7 @@ use const JSON_PRESERVE_ZERO_FRACTION;
 use const JSON_THROW_ON_ERROR;
 use const PHP_EOL;
 use const PHP_URL_HOST;
+use const PHP_VERSION;
 
 /**
  * @api
@@ -105,6 +107,12 @@ final class Shepherd implements AfterAnalysisInterface
      *     info: object,
      *     fixable: object,
      *     run: array{wall_seconds: float, peak_memory_bytes: int, threads: int, full: bool, files: int},
+     *     config: array{
+     *         php_version: string,
+     *         php_version_source: string,
+     *         find_unused_code: bool,
+     *         taint_analysis: bool
+     *     },
      *     coverage: list<int>,
      *     level: int<1, 8>,
      *     versions: array<string, string>
@@ -169,11 +177,20 @@ final class Shepherd implements AfterAnalysisInterface
                 'full' => IssueBuffer::getFinishIsFull(),
                 'files' => $codebase->analyzer->getFileCountWithAnalysisResults(),
             ],
+            'config' => [
+                // the PHP version Psalm analyses for, not the one it runs on
+                'php_version' => Codebase::getPhpVersionString($codebase->analysis_php_version_id),
+                'php_version_source' => $codebase->php_version_source,
+                'find_unused_code' => $codebase->find_unused_code !== null,
+                // set exactly when the config or a CLI flag turns taint analysis on
+                'taint_analysis' => $codebase->taint_flow_graph !== null,
+            ],
             'coverage' => $codebase->analyzer->getTotalTypeCoverage($codebase),
             'level' => Config::getInstance()->level,
             'versions' => [
                 'psalm' => VersionUtils::getPsalmVersion(),
                 'parser' => VersionUtils::getPhpParserVersion(),
+                'php' => PHP_VERSION,
             ],
         ];
     }

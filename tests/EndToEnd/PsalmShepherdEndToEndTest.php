@@ -32,6 +32,7 @@ use function trim;
 
 use const JSON_THROW_ON_ERROR;
 use const PHP_BINARY;
+use const PHP_VERSION;
 
 /**
  * Tests which endpoint the psalm command sends the Shepherd report to and what it says when it can't send a report,
@@ -206,8 +207,12 @@ final class PsalmShepherdEndToEndTest extends PsalmEndToEndTestCase
         $this->assertStringContainsString('"baseline_entries":0', $report);
 
         $this->runPsalm(['--set-baseline'], self::$tmpDir, true);
-        $report = $this->runPsalmAndReadTheRawReport(['--no-cache', '--ignore-baseline'], self::githubActions());
+        $report = $this->runPsalmAndReadTheRawReport(
+            ['--no-cache', '--ignore-baseline', '--php-version=8.1'],
+            self::githubActions(),
+        );
 
+        $this->assertStringContainsString('"php_version":"8.1","php_version_source":"cli"', $report);
         $this->assertStringContainsString('"baselined":{}', $report);
         $this->assertStringContainsString('"baseline_entries":0', $report);
         $this->assertSame(
@@ -277,6 +282,17 @@ final class PsalmShepherdEndToEndTest extends PsalmEndToEndTestCase
         $this->assertSame(['src/B.php InvalidReturnStatement'], self::sentIssues($report));
         // all the issues Psalm can fix, whether reported as errors, as info or covered by the baseline
         $this->assertSame(['InvalidReturnType' => 3, 'MissingReturnType' => 1], self::decode($report)['fixable']);
+        // composer.json requires PHP >= 7.1, and the generated psalm.xml has no phpVersion
+        $this->assertSame(
+            [
+                'php_version' => '7.1',
+                'php_version_source' => 'composer',
+                'find_unused_code' => true,
+                'taint_analysis' => false,
+            ],
+            self::decode($report)['config'],
+        );
+        $this->assertStringContainsString('"php":"' . PHP_VERSION . '"', $report);
     }
 
     public function testPsalmSendsTheSameBaselinedIssuesWithTheCacheAndWithThreads(): void
