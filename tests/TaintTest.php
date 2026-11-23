@@ -7399,6 +7399,16 @@ final class TaintTest extends TestCase
     public static function providerInvalidCodeParse(): array
     {
         return [
+            'urldecodeKeepsTheTaintOfItsArgument' => [
+                'code' => '<?php
+                    echo urldecode($_GET["x"]);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'rawurldecodeKeepsTheTaintOfItsArgument' => [
+                'code' => '<?php
+                    echo rawurldecode($_GET["x"]);',
+                'error_message' => 'TaintedHtml',
+            ],
             'superglobalIsStillTaintedAfterEval' => [
                 'code' => '<?php // --taint-analysis
                     eval("return 1;");

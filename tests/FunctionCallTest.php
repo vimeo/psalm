@@ -34,6 +34,14 @@ final class FunctionCallTest extends TestCase
                         $rawEncoded = rawurlencode($input);
                         /** @psalm-check-type-exact $maybeEmpty = string */
                         $maybeEmpty = urlencode($any);
+                        /** @psalm-check-type-exact $decoded = non-empty-string */
+                        $decoded = urldecode($input);
+                        /** @psalm-check-type-exact $rawDecoded = non-empty-string */
+                        $rawDecoded = rawurldecode($input);
+                        /** @psalm-check-type-exact $maybeEmptyDecoded = string */
+                        $maybeEmptyDecoded = urldecode($any);
+                        /** @psalm-check-type-exact $maybeEmptyRawDecoded = string */
+                        $maybeEmptyRawDecoded = rawurldecode($any);
                     }',
             ],
             'strtolowerOfStringLiteralsIsTheLoweredLiterals' => [

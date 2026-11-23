@@ -1078,6 +1078,24 @@ function rawurlencode(string $string) : string {}
 /**
  * @psalm-pure
  *
+ * @psalm-flow ($string) -> return
+ *
+ * @return ($string is non-empty-string ? non-empty-string : string)
+ */
+function urldecode(string $string) : string {}
+
+/**
+ * @psalm-pure
+ *
+ * @psalm-flow ($string) -> return
+ *
+ * @return ($string is non-empty-string ? non-empty-string : string)
+ */
+function rawurldecode(string $string) : string {}
+
+/**
+ * @psalm-pure
+ *
  * @psalm-taint-escape html
  * @psalm-taint-escape has_quotes
  * @psalm-taint-escape url_component
