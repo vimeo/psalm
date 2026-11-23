@@ -2528,12 +2528,6 @@ final class AssertionReconciler extends Reconciler
         return $type_2_atomic;
     }
 
-    /**
-     * No object is an instance of two classes that don't extend one another, or of a final class and an interface
-     * it doesn't implement
-     *
-     * @psalm-capabilities read-props|write-props
-     */
     private static function isOnlyImplementedByEnums(Codebase $codebase, string $interface_name): bool
     {
         return strtolower($interface_name) === 'unitenum'
@@ -2541,6 +2535,12 @@ final class AssertionReconciler extends Reconciler
                 && $codebase->interfaceExtends($interface_name, 'UnitEnum'));
     }
 
+    /**
+     * No object is an instance of two classes that don't extend one another, or of a final class and an interface
+     * it doesn't implement
+     *
+     * @psalm-capabilities read-props|write-props
+     */
     private static function canBeIntersected(
         Codebase $codebase,
         TNamedObject $existing_type_part,
