@@ -439,6 +439,7 @@ final class AtomicPropertyFetchAnalyzer
             $class_storage,
             $get_method_id,
             $in_assignment,
+            $has_valid_fetch_type,
         ) === false) {
             return;
         }
@@ -794,6 +795,7 @@ final class AtomicPropertyFetchAnalyzer
         ClassLikeStorage $class_storage,
         MethodIdentifier $get_method_id,
         bool $in_assignment,
+        bool &$has_valid_fetch_type,
     ): bool {
         if ((!$naive_property_exists
                 || ($stmt_var_id !== '$this'
@@ -822,51 +824,20 @@ final class AtomicPropertyFetchAnalyzer
             $has_magic_getter = true;
 
             if (isset($class_storage->pseudo_property_get_types['$' . $prop_name])) {
-                $stmt_type = TypeExpander::expandUnion(
-                    $codebase,
-                    $class_storage->pseudo_property_get_types['$' . $prop_name],
-                    $class_storage->name,
-                    $class_storage->name,
-                    $class_storage->parent_class,
-                );
-
-                if (count($template_types = $class_storage->getClassTemplateTypes()) !== 0) {
-                    if (!$lhs_type_part instanceof TGenericObject) {
-                        $lhs_type_part = new TGenericObject($lhs_type_part->value, $template_types);
-                    }
-
-                    $stmt_type = self::localizePropertyType(
-                        $codebase,
-                        $stmt_type,
-                        $lhs_type_part,
-                        $class_storage,
-                        $declaring_property_class
-                            ? $codebase->classlike_storage_provider->get(
-                                $declaring_property_class,
-                            ) : $class_storage,
-                        false,
-                    );
-
-                    // reading a property through a type variable resolves it
-                    // via its accumulated bounds (a concrete shape is required
-                    // here)
-                    $stmt_type = TypeVariableTracker::resolveTypeVariables($stmt_type, $codebase);
-                }
-
-                self::processTaints(
+                self::addPseudoPropertyType(
                     $statements_analyzer,
+                    $codebase,
                     $stmt,
-                    $stmt_type,
-                    $property_id,
-                    $class_storage,
-                    $in_assignment,
                     $context,
+                    $class_storage,
+                    $prop_name,
+                    $lhs_type_part,
+                    $declaring_property_class,
+                    $property_id,
+                    $in_assignment,
                 );
 
-                $statements_analyzer->node_data->setType(
-                    $stmt,
-                    Type::combineUnionTypes($stmt_type, $statements_analyzer->node_data->getType($stmt)),
-                );
+                $has_valid_fetch_type = true;
 
                 return false;
             }
@@ -931,6 +902,8 @@ final class AtomicPropertyFetchAnalyzer
             if (!($class_storage->hasSealedProperties($codebase->config))
                 && !$override_property_visibility
             ) {
+                $has_valid_fetch_type = true;
+
                 return false;
             }
 
@@ -1682,6 +1655,68 @@ final class AtomicPropertyFetchAnalyzer
         )['type'] ?? null;
     }
 
+    /**
+     * Adds the type of a `@property` / `@property-read` to the fetch
+     */
+    private static function addPseudoPropertyType(
+        StatementsAnalyzer $statements_analyzer,
+        Codebase $codebase,
+        PhpParser\Node\Expr\PropertyFetch $stmt,
+        Context $context,
+        ClassLikeStorage $class_storage,
+        string $prop_name,
+        TNamedObject $lhs_type_part,
+        ?string $declaring_property_class,
+        string $property_id,
+        bool $in_assignment,
+    ): void {
+        $stmt_type = TypeExpander::expandUnion(
+            $codebase,
+            $class_storage->pseudo_property_get_types['$' . $prop_name],
+            $class_storage->name,
+            $class_storage->name,
+            $class_storage->parent_class,
+        );
+
+        if (count($template_types = $class_storage->getClassTemplateTypes()) !== 0) {
+            if (!$lhs_type_part instanceof TGenericObject) {
+                $lhs_type_part = new TGenericObject($lhs_type_part->value, $template_types);
+            }
+
+            $stmt_type = self::localizePropertyType(
+                $codebase,
+                $stmt_type,
+                $lhs_type_part,
+                $class_storage,
+                $declaring_property_class
+                    ? $codebase->classlike_storage_provider->get(
+                        $declaring_property_class,
+                    ) : $class_storage,
+                false,
+            );
+
+            // reading a property through a type variable resolves it
+            // via its accumulated bounds (a concrete shape is required
+            // here)
+            $stmt_type = TypeVariableTracker::resolveTypeVariables($stmt_type, $codebase);
+        }
+
+        self::processTaints(
+            $statements_analyzer,
+            $stmt,
+            $stmt_type,
+            $property_id,
+            $class_storage,
+            $in_assignment,
+            $context,
+        );
+
+        $statements_analyzer->node_data->setType(
+            $stmt,
+            Type::combineUnionTypes($stmt_type, $statements_analyzer->node_data->getType($stmt)),
+        );
+    }
+
     private static function handleNonExistentProperty(
         StatementsAnalyzer $statements_analyzer,
         Codebase $codebase,
@@ -1704,49 +1739,20 @@ final class AtomicPropertyFetchAnalyzer
             || $class_storage->hasAttributeIncludingParents('AllowDynamicProperties', $codebase))
             && isset($class_storage->pseudo_property_get_types['$' . $prop_name])
         ) {
-            $stmt_type = TypeExpander::expandUnion(
-                $codebase,
-                $class_storage->pseudo_property_get_types['$' . $prop_name],
-                $class_storage->name,
-                $class_storage->name,
-                $class_storage->parent_class,
-            );
-
-            if (count($template_types = $class_storage->getClassTemplateTypes()) !== 0) {
-                if (!$lhs_type_part instanceof TGenericObject) {
-                    $lhs_type_part = new TGenericObject($lhs_type_part->value, $template_types);
-                }
-
-                $stmt_type = self::localizePropertyType(
-                    $codebase,
-                    $stmt_type,
-                    $lhs_type_part,
-                    $class_storage,
-                    $declaring_property_class
-                        ? $codebase->classlike_storage_provider->get(
-                            $declaring_property_class,
-                        ) : $class_storage,
-                    false,
-                );
-
-                $stmt_type = TypeVariableTracker::resolveTypeVariables($stmt_type, $codebase);
-            }
-
-            self::processTaints(
+            self::addPseudoPropertyType(
                 $statements_analyzer,
+                $codebase,
                 $stmt,
-                $stmt_type,
-                $property_id,
-                $class_storage,
-                $in_assignment,
                 $context,
+                $class_storage,
+                $prop_name,
+                $lhs_type_part,
+                $declaring_property_class,
+                $property_id,
+                $in_assignment,
             );
 
             $has_valid_fetch_type = true;
-            $statements_analyzer->node_data->setType(
-                $stmt,
-                Type::combineUnionTypes($stmt_type, $statements_analyzer->node_data->getType($stmt)),
-            );
 
             return;
         }

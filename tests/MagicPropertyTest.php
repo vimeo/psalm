@@ -5,9 +5,11 @@ declare(strict_types=1);
 namespace Psalm\Tests;
 
 use Override;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Psalm\Config;
 use Psalm\Context;
 use Psalm\Exception\CodeException;
+use Psalm\IssueBuffer;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\InvalidCodeAnalysisWithIssuesTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
@@ -62,6 +64,131 @@ final class MagicPropertyTest extends TestCase
 
         $this->project_analyzer->setPhpVersion('8.1', 'tests');
         $this->analyzeFile('somefile.php', new Context());
+    }
+
+    /**
+     * @param list<string> $expected_issues
+     */
+    #[DataProvider('providerPseudoPropertyOnUnionWithNonObject')]
+    public function testPseudoPropertyOnUnionWithNonObject(
+        string $code,
+        array $expected_issues,
+        bool $use_phpdoc_property_without_magic_or_parent = false,
+    ): void {
+        $this->testConfig->throw_exception = false;
+        Config::getInstance()->use_phpdoc_property_without_magic_or_parent
+            = $use_phpdoc_property_without_magic_or_parent;
+
+        $file_path = self::$src_dir_path . 'somefile.php';
+        $this->addFile($file_path, $code);
+        $this->project_analyzer->setPhpVersion('8.0', 'tests');
+        $this->analyzeFile($file_path, new Context());
+
+        $issues = [];
+        foreach (IssueBuffer::getIssuesDataForFile($file_path) as $issue) {
+            $issues[] = $issue->line_from . ':' . $issue->type;
+        }
+
+        $this->assertSame($expected_issues, $issues);
+    }
+
+    /**
+     * @return iterable<string, array{0: string, 1: list<string>, 2?: bool}>
+     */
+    public static function providerPseudoPropertyOnUnionWithNonObject(): iterable
+    {
+        yield 'magicGetterOfUnsealedProperties' => [
+            '<?php
+                /** @psalm-no-seal-properties */
+                final class A {
+                    public function __get(string $n): string { return ""; }
+                }
+                function f(A|int $a): string { return $a->foo; }',
+            ['6:PossiblyInvalidPropertyFetch'],
+        ];
+        yield 'magicGetterOfSealedPropertiesStaysInvalid' => [
+            '<?php
+                final class A {
+                    public function __get(string $n): string { return ""; }
+                }
+                function f(A|int $a): mixed { return $a->foo; }',
+            ['5:UndefinedMagicPropertyFetch', '5:InvalidPropertyFetch'],
+        ];
+        yield 'phpDocProperty' => [
+            '<?php
+                /** @property string $foo */
+                final class A {
+                    public function __get(string $n): mixed { return ""; }
+                }
+                function f(A|int $a): string { return $a->foo; }',
+            ['6:PossiblyInvalidPropertyFetch'],
+        ];
+        yield 'phpDocPropertyRead' => [
+            '<?php
+                /** @property-read string $foo */
+                final class A {
+                    public function __get(string $n): mixed { return ""; }
+                }
+                function f(A|int $a): string { return $a->foo; }',
+            ['6:PossiblyInvalidPropertyFetch'],
+        ];
+        yield 'magicGetterOfAnInaccessibleProperty' => [
+            '<?php
+                /** @psalm-no-seal-properties */
+                final class A {
+                    private string $foo = "";
+                    public function __get(string $n): string { return $this->foo; }
+                }
+                function f(A|int $a): string { return $a->foo; }',
+            ['7:PossiblyInvalidPropertyFetch'],
+        ];
+        yield 'phpDocPropertyWithoutMagicGetter' => [
+            '<?php
+                /** @property string $foo */
+                final class A {}
+                function f(A|int $a): string { return $a->foo; }',
+            ['4:PossiblyInvalidPropertyFetch'],
+            true,
+        ];
+        yield 'undeclaredPropertyOfSealedPropertiesStaysInvalid' => [
+            '<?php
+                /**
+                 * @property string $foo
+                 * @psalm-seal-properties
+                 */
+                final class A {
+                    public function __get(string $n): mixed { return ""; }
+                }
+                function f(A|int $a): mixed { return $a->bar; }',
+            ['9:UndefinedMagicPropertyFetch', '9:InvalidPropertyFetch'],
+        ];
+        yield 'magicSetterOfUnsealedProperties' => [
+            '<?php
+                /** @psalm-no-seal-properties */
+                final class A {
+                    public function __set(string $n, mixed $v): void {}
+                }
+                function f(A|int $a): void { $a->foo = "x"; }',
+            ['6:PossiblyInvalidPropertyAssignment'],
+        ];
+        yield 'magicSetterOfNullableReceiver' => [
+            '<?php
+                /** @psalm-no-seal-properties */
+                final class A {
+                    public function __set(string $n, mixed $v): void {}
+                }
+                function f(?A $a): void { $a->foo = "x"; }',
+            ['6:PossiblyNullPropertyAssignment'],
+        ];
+        yield 'phpDocPropertyAssignment' => [
+            '<?php
+                /** @property string $foo */
+                final class A {
+                    public function __set(string $n, mixed $v): void {}
+                }
+                function f(A|int $a): void { $a->foo = "x"; }',
+            ['6:PossiblyInvalidPropertyAssignment'],
+        ];
     }
 
     public function testPhpDocPropertyAssignmentWithoutSetInheritedFromParent(): void
