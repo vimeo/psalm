@@ -195,7 +195,7 @@ final class KeyedArrayComparator
 
                 if (UnionTypeComparator::isContainedBy(
                     $codebase,
-                    $container_part->setPossiblyUndefined(false),
+                    $container_part,
                     $input_part,
                     false,
                     false,

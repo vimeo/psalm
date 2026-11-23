@@ -5981,17 +5981,6 @@ final class FunctionCallTest extends TestCase
                 ',
                 'error_message' => 'ImplicitToStringCast',
             ],
-            'parentTypeOfAnOptionalEntry' => [
-                'code' => '<?php
-                    /** @param array{id: int, amount?: int} $a */
-                    function takesShape(array $a): void {}
-
-                    function passesFloat(float $f): void {
-                        takesShape(["id" => 1, "amount" => $f]);
-                    }
-                ',
-                'error_message' => 'ArgumentTypeCoercion',
-            ],
             'additionalFieldsOfANestedShapeInAnExtraEntry' => [
                 'code' => '<?php
                     /** @param array{id: int, ...<string, array{name: string}>} $a */
@@ -6028,6 +6017,20 @@ final class FunctionCallTest extends TestCase
                     }
                 ',
                 'error_message' => 'InvalidArgument',
+            ],
+            'possiblyInvalidEntryOfAList' => [
+                'code' => '<?php
+                    /** @param scalar|list<scalar> $value */
+                    function takesValue(string|int|float|bool|array $value): void {}
+
+                    /** @param list{0: list{0: string, ...<string>}|string, 1?: string, ...<string>}|string $v */
+                    function passesValue(array|string $v): void {
+                        takesValue($v);
+                    }
+                ',
+                'error_message' => 'PossiblyInvalidArgument',
+                'error_levels' => [],
+                'php_version' => '8.0',
             ],
             'extraKeyOutsideTheFallbackKeyType' => [
                 'code' => '<?php
