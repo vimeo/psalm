@@ -17,7 +17,6 @@ use Psalm\Internal\Analyzer\Statements\Expression\NullsafeChainState;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\Statements\UnsetAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
-use Psalm\Internal\Analyzer\TraitAnalyzer;
 use Psalm\Internal\Type\TypeExpander;
 use Psalm\Internal\TypeVisitor\TypeVariableResolver;
 use Psalm\Issue\ImpurePropertyAssignment;
@@ -170,14 +169,7 @@ final class InstancePropertyFetchAnalyzer
         }
 
         if ($stmt_var_type->hasMixed()) {
-            if (!$context->collect_initializations
-                && $statements_analyzer->getFilePath() === $statements_analyzer->getRootFilePath()
-                && (!(($parent_source = $statements_analyzer->getSource())
-                        instanceof FunctionLikeAnalyzer)
-                    || !$parent_source->getSource() instanceof TraitAnalyzer)
-            ) {
-                $codebase->analyzer->incrementMixedCount($statements_analyzer->getFilePath());
-            }
+            $statements_analyzer->countMixed($context, true);
 
             if ($stmt->name instanceof PhpParser\Node\Identifier) {
                 $codebase->analyzer->addMixedMemberName(
@@ -207,14 +199,7 @@ final class InstancePropertyFetchAnalyzer
             }
         }
 
-        if (!$context->collect_initializations
-            && $statements_analyzer->getFilePath() === $statements_analyzer->getRootFilePath()
-            && (!(($parent_source = $statements_analyzer->getSource())
-                    instanceof FunctionLikeAnalyzer)
-                || !$parent_source->getSource() instanceof TraitAnalyzer)
-        ) {
-            $codebase->analyzer->incrementNonMixedCount($statements_analyzer->getRootFilePath());
-        }
+        $statements_analyzer->countMixed($context, false);
 
         if ($stmt_var_type->isNullable() && !$stmt_var_type->ignore_nullable_issues) {
             // we can only be sure that the variable is possibly null if we know the var_id
@@ -509,14 +494,7 @@ final class InstancePropertyFetchAnalyzer
         // we don't need to check anything
         $statements_analyzer->node_data->setType($stmt, $stmt_type);
 
-        if (!$context->collect_initializations
-            && $statements_analyzer->getFilePath() === $statements_analyzer->getRootFilePath()
-            && (!(($parent_source = $statements_analyzer->getSource())
-                    instanceof FunctionLikeAnalyzer)
-                || !$parent_source->getSource() instanceof TraitAnalyzer)
-        ) {
-            $codebase->analyzer->incrementNonMixedCount($statements_analyzer->getFilePath());
-        }
+        $statements_analyzer->countMixed($context, false);
 
         if ($codebase->store_node_types
             && !$context->collect_initializations

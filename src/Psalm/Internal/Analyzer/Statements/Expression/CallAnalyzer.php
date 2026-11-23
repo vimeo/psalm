@@ -1448,12 +1448,7 @@ abstract class CallAnalyzer
                         && isset($context->vars_in_scope[$var_id])
                         && $context->vars_in_scope[$var_id]->hasMixed()
                     ) {
-                        if (!$context->collect_initializations
-                            && $statements_analyzer->getFilePath() === $statements_analyzer->getRootFilePath()
-                            && (!(($parent_source = $statements_analyzer->getSource())
-                                        instanceof FunctionLikeAnalyzer)
-                                    || !$parent_source->getSource() instanceof TraitAnalyzer)
-                        ) {
+                        if ($statements_analyzer->shouldCountMixed($context)) {
                             $codebase->analyzer->decrementMixedCount($statements_analyzer->getFilePath());
                         }
 
