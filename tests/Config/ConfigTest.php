@@ -44,6 +44,7 @@ use function array_keys;
 use function array_map;
 use function array_pop;
 use function basename;
+use function class_exists;
 use function dirname;
 use function error_get_last;
 use function file_get_contents;
@@ -2308,6 +2309,79 @@ final class ConfigTest extends DeferredAnalyzerTestCase
     }
 
     /**
+     * @return array<string, array{string, string, string}>
+     * @psalm-pure
+     */
+    public static function providerSinksOfExtensionsWithoutTheirStubs(): array
+    {
+        return [
+            'PDO::query' => ['PDO', 'query', 'TaintedSql'],
+            'PDO::exec' => ['PDO', 'exec', 'TaintedSql'],
+            'PDO::prepare' => ['PDO', 'prepare', 'TaintedSql'],
+            'PDOStatement::fetchObject' => ['PDOStatement', 'fetchObject', 'TaintedCallable'],
+            'mysqli::execute_query' => ['mysqli', 'execute_query', 'TaintedSql'],
+            'mysqli_result::fetch_object' => ['mysqli_result', 'fetch_object', 'TaintedCallable'],
+            'DOMXPath::query' => ['DOMXPath', 'query', 'TaintedXpath'],
+            'DOMXPath::evaluate' => ['DOMXPath', 'evaluate', 'TaintedXpath'],
+            'SimpleXMLElement::xpath' => ['SimpleXMLElement', 'xpath', 'TaintedXpath'],
+            'SoapClient::__setLocation' => ['SoapClient', '__setLocation', 'TaintedSSRF'],
+        ];
+    }
+
+    /**
+     * The extension stubs are only loaded when composer.json requires their extension, which projects often leave
+     * out for the bundled ones: the sinks of their functions still apply
+     */
+    #[DataProvider('providerSinksOfExtensionsWithoutTheirStubs')]
+    public function testSinksOfExtensionsWithoutTheirStubs(string $class, string $method, string $error): void
+    {
+        if (!class_exists($class)) {
+            // without its stub, Psalm only knows the class of an extension that PHP loads
+            $this->markTestSkipped('The extension of ' . $class . ' is not loaded');
+        }
+
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__, 2),
+                '<?xml version="1.0"?>
+                <psalm>
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+                    <disableExtensions>
+                        <extension name="pdo" />
+                        <extension name="mysqli" />
+                        <extension name="dom" />
+                        <extension name="simplexml" />
+                        <extension name="soap" />
+                    </disableExtensions>
+                </psalm>',
+            ),
+        );
+        $this->project_analyzer->setPhpVersion('8.4', 'tests');
+        $this->project_analyzer->trackTaintedInputs();
+
+        $file_path = (string) getcwd() . '/src/somefile.php';
+        $this->addFile(
+            $file_path,
+            '<?php
+                /** @psalm-suppress ArgumentTypeCoercion, PossiblyUnusedReturnValue, UnusedFunctionCall */
+                function run(' . $class . ' $object): void {
+                    $input = $_GET["input"] ?? "";
+                    if (!is_string($input)) {
+                        return;
+                    }
+                    $object->' . $method . '($input);
+                }',
+        );
+
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessageMatches('/\b' . $error . '\b/');
+
+        $this->analyzeFile($file_path, new Context());
+    }
+
+    /**
      * @return array<string, array{0: string, 1: string}>
      * @psalm-pure
      */
@@ -3101,6 +3175,7 @@ final class ConfigTest extends DeferredAnalyzerTestCase
      */
     public static function providerLowestComposerPhpVersion(): iterable
     {
+        yield 'empty composer.json' => ['{}', null];
         yield 'no php requirement' => ['{"require": {}}', null];
         yield 'one major version' => ['{"require": {"php": "^8.2"}}', 8_02_00];
         yield 'several major versions' => ['{"require": {"php": "^7.3 || ^8.0"}}', 7_03_00];

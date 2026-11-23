@@ -1712,7 +1712,7 @@ final class ArgumentAnalyzer
         return $potential_method_id->fq_class_name !== $context->self
             || ($cased_method_id !== null
                 && !$method_id
-                && !in_array($cased_method_id, self::PHP_NATIVE_NON_PUBLIC_CB, true))
+                && !in_array(strtolower($cased_method_id), self::PHP_NATIVE_NON_PUBLIC_CB, true))
             || ($method_id
                 && $method_id->fq_class_name !== $context->self
                 && $method_id->fq_class_name !== 'Closure');
