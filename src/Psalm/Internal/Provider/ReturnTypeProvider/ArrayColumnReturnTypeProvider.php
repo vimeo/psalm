@@ -40,7 +40,6 @@ use Psalm\Type\Union;
 
 use function count;
 use function is_string;
-use function strtolower;
 
 /**
  * @internal
@@ -469,12 +468,14 @@ final class ArrayColumnReturnTypeProvider implements FunctionReturnTypeProviderI
                     // array_column() reads the properties of an object that are visible where it is called
                     if (is_string($column_name)
                         && isset($declaring_property_ids[$column_name])
-                        && self::isPropertyVisible(
-                            $codebase,
+                        && ClassLikeAnalyzer::checkPropertyVisibility(
+                            $row_atomic->value . '::$' . $column_name,
                             $context,
-                            $declaring_property_ids[$column_name],
-                            $column_name,
-                        )
+                            $statements_source,
+                            $code_location,
+                            $statements_source->getSuppressedIssues(),
+                            false,
+                        ) === true
                     ) {
                         $codebase->properties->propertyExists(
                             $codebase,
@@ -488,38 +489,5 @@ final class ArrayColumnReturnTypeProvider implements FunctionReturnTypeProviderI
                 }
             }
         }
-    }
-
-    /**
-     * @psalm-capabilities read-props
-     */
-    private static function isPropertyVisible(
-        Codebase $codebase,
-        Context $context,
-        string $declaring_class,
-        string $property_name,
-    ): bool {
-        $visibility = $codebase->properties->getStorage($declaring_class . '::$' . $property_name)->visibility;
-
-        if ($visibility === ClassLikeAnalyzer::VISIBILITY_PUBLIC) {
-            return true;
-        }
-
-        if ($context->self === null) {
-            return false;
-        }
-
-        if ($visibility === ClassLikeAnalyzer::VISIBILITY_PRIVATE) {
-            return strtolower($context->self) === strtolower($declaring_class);
-        }
-
-        // from a parent of the declaring class, a protected property is visible only when that parent has it too: the
-        // declaring class redeclares it, and a property the child introduces can't be read there
-        return $codebase->classExtendsOrImplements($context->self, $declaring_class)
-            || ($codebase->classExtendsOrImplements($declaring_class, $context->self)
-                && isset(
-                    $codebase->classlike_storage_provider->get($context->self)->declaring_property_ids[$property_name],
-                ))
-            || strtolower($context->self) === strtolower($declaring_class);
     }
 }

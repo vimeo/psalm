@@ -1070,6 +1070,28 @@ final class UnusedCodeTest extends TestCase
     public static function providerValidCodeParse(): array
     {
         return [
+            'protectedPropertyOfAChildReadAsAColumnFromAParentScopeIsUsed' => [
+                'code' => '<?php
+                    class Row {
+                        public function __construct(public int $id) {}
+
+                        /**
+                         * @param list<ChildRow> $rows
+                         * @return array<int, mixed>
+                         */
+                        public function notes(array $rows): array {
+                            return array_column($rows, "note", "id");
+                        }
+                    }
+
+                    final class ChildRow extends Row {
+                        public function __construct(int $id, protected string $note) {
+                            parent::__construct($id);
+                        }
+                    }
+
+                    echo count((new Row(1))->notes([new ChildRow(1, "a")]));',
+            ],
             'propertiesReadAsColumnsByArrayColumnAreUsed' => [
                 'code' => '<?php
                     final class Row {
@@ -3474,11 +3496,19 @@ final class UnusedCodeTest extends TestCase
                     echo count(secrets([new Row(1, "a")]));',
                 'error_message' => 'UnusedProperty',
             ],
-            'protectedPropertyOfAChildNotDeclaredByTheParentIsUnusedForAParentScopeArrayColumn' => [
+            'protectedPropertyOfAChildReadAsAColumnFromASiblingScopeIsUnused' => [
                 'code' => '<?php
                     class Row {
                         public function __construct(public int $id) {}
+                    }
 
+                    final class ChildRow extends Row {
+                        public function __construct(int $id, protected string $note) {
+                            parent::__construct($id);
+                        }
+                    }
+
+                    final class Sibling extends Row {
                         /**
                          * @param list<ChildRow> $rows
                          * @return array<int, mixed>
@@ -3488,14 +3518,8 @@ final class UnusedCodeTest extends TestCase
                         }
                     }
 
-                    final class ChildRow extends Row {
-                        public function __construct(int $id, protected string $note) {
-                            parent::__construct($id);
-                        }
-                    }
-
-                    echo count((new Row(1))->notes([new ChildRow(1, "a")]));',
-                'error_message' => 'PossiblyUnusedProperty',
+                    echo count((new Sibling(1))->notes([new ChildRow(1, "a")]));',
+                'error_message' => 'Cannot find any references to property ChildRow::$note',
             ],
             'propertyNotReadAsAColumnByArrayColumnIsUnused' => [
                 'code' => '<?php
