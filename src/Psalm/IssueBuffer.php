@@ -973,7 +973,6 @@ final class IssueBuffer
             [Report::TYPE_CONSOLE, Report::TYPE_PHP_STORM, Report::TYPE_GITHUB_ACTIONS],
         );
         $prints_performance_summary = false;
-        $performance_summary_to_stderr = false;
         $printed_peak_bytes = null;
 
         if ($prints_to_console && $codebase->alter_code && !$error_count) {
@@ -1052,20 +1051,6 @@ final class IssueBuffer
                     . PHP_EOL . 'project with diff mode off to enable unused issue handler detection.' . PHP_EOL,
                 );
             }
-        } elseif ($start_time) {
-            // the report is the output of the other formats: the statistics go to stderr, as plain text
-            $printed_peak_bytes = memory_get_peak_usage();
-
-            $statistics = self::timingLine($start_time, $printed_peak_bytes)
-                . $codebase->analyzer->getTypeInferenceSummary($codebase) . "\n";
-
-            if ($add_stats) {
-                $statistics .= '-----------------' . "\n" . $codebase->analyzer->getNonMixedStats() . "\n";
-            }
-
-            $project_analyzer->progress->write($statistics);
-            $prints_performance_summary = Collector::$enabled;
-            $performance_summary_to_stderr = true;
         }
 
         if ($is_full && $start_time) {
@@ -1093,12 +1078,7 @@ final class IssueBuffer
         // after everything that takes time, so that the report stage and the totals cover the whole run
         $performance = Collector::finish($error_count, $info_count, $printed_peak_bytes);
         if ($performance !== null) {
-            DumpWriter::emit(
-                $performance,
-                $project_analyzer,
-                $prints_performance_summary,
-                $performance_summary_to_stderr,
-            );
+            DumpWriter::emit($performance, $project_analyzer, $prints_performance_summary);
         }
 
         // a taint analysis run in GitHub Actions that writes a SARIF report exits successfully, so that a following
@@ -1194,15 +1174,10 @@ final class IssueBuffer
     {
         $peak_bytes = memory_get_peak_usage();
 
-        echo self::timingLine($start_time, $peak_bytes);
+        echo 'Checks took ' . number_format(microtime(true) - $start_time, 2) . ' seconds';
+        echo ' and used ' . number_format($peak_bytes / (1_024 * 1_024), 3) . 'MB of memory' . "\n";
 
         return $peak_bytes;
-    }
-
-    private static function timingLine(float $start_time, int $peak_bytes): string
-    {
-        return 'Checks took ' . number_format(microtime(true) - $start_time, 2) . ' seconds'
-            . ' and used ' . number_format($peak_bytes / (1_024 * 1_024), 3) . 'MB of memory' . "\n";
     }
 
     public static function printSuccessMessage(ProjectAnalyzer $project_analyzer): void
