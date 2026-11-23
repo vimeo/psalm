@@ -16,6 +16,10 @@ If you want to run on specific files, use
 
 Run with `--help` to see a list of options that Psalm supports.
 
+## Statistics
+
+At the end of a run Psalm prints how long it took, how much memory it used and how much of the code it could infer types for, plus the output of `--stats` and [`--debug-performance`](performance.md) if you give them. With any output format other than `console`, `phpstorm` and `github` (`json`, `checkstyle`, `sarif`, …) this goes to stderr, so that stdout stays the report; `--no-progress` leaves stderr empty.
+
 ## Exit status
 
 Psalm exits with status `0` when it successfully completed and found no issues,
