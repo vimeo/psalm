@@ -1463,7 +1463,7 @@ final class Populator
                 ) as $template_name => $type) {
                     if (!isset($storage->template_extended_params[$parent_storage->name][$template_name])) {
                         $storage->template_extended_params[$parent_storage->name][$template_name]
-                            = $type->setFromDocblock(true);
+                            = $type->setProperties(['from_docblock' => true]);
                     }
                 }
 
@@ -1481,7 +1481,7 @@ final class Populator
                 // templates with a default are bound to it, others to their bound
                 foreach (TemplateDefaults::bindOmitted($parent_storage, [], true) as $template_name => $type) {
                     $storage->template_extended_params[$parent_storage->name][$template_name]
-                        = $type->setFromDocblock(false);
+                        = $type->setProperties(['from_docblock' => false]);
                 }
 
                 if ($from_direct_parent) {

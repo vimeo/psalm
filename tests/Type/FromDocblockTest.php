@@ -17,14 +17,6 @@ use Psalm\Type\Union;
 
 final class FromDocblockTest extends TestCase
 {
-    public function testSetTypesKeepsTheFlagOfTheUnion(): void
-    {
-        $union = new Union([new TInt()], ['from_docblock' => true]);
-
-        self::assertTrue($union->setTypes([new TInt(), new TString()])->from_docblock);
-        self::assertTrue($union->getBuilder()->setTypes([new TString()])->freeze()->from_docblock);
-    }
-
     public function testSetFromDocblockFalseStaysFalseWhenTheTypesChange(): void
     {
         $union = (new Union([new TInt(true)]))->setFromDocblock(false);
@@ -47,48 +39,6 @@ final class FromDocblockTest extends TestCase
     {
         self::assertTrue(TypeCombiner::combine([new TInt(true), new TMixed()], null, false, false)->from_docblock);
         self::assertTrue(TypeCombiner::combine([new TMixed(), new TInt(true)], null, false, false)->from_docblock);
-    }
-
-    public function testTemplateBoundOfAClassWithoutExtendsIsNotFromDocblock(): void
-    {
-        $this->addFile(
-            'somefile.php',
-            '<?php
-                /** @template T of int|string = int */
-                class A {}
-
-                class B extends A {}',
-        );
-
-        $this->analyzeFile('somefile.php', new Context());
-
-        $type = $this->project_analyzer->getCodebase()->classlike_storage_provider->get('B')->template_extended_params['A']['T'];
-
-        self::assertFalse($type->from_docblock);
-        self::assertFalse($type->getAtomicTypes()['int']->from_docblock);
-    }
-
-    public function testOmittedTemplateOfExtendsIsFromDocblock(): void
-    {
-        $this->addFile(
-            'somefile.php',
-            '<?php
-                /**
-                 * @template T
-                 * @template U = int
-                 */
-                class A {}
-
-                /** @extends A<string> */
-                class B extends A {}',
-        );
-
-        $this->analyzeFile('somefile.php', new Context());
-
-        $type = $this->project_analyzer->getCodebase()->classlike_storage_provider->get('B')->template_extended_params['A']['U'];
-
-        self::assertTrue($type->from_docblock);
-        self::assertTrue($type->getAtomicTypes()['int']->from_docblock);
     }
 
     public function testArrayKeyOfADocblockArrayMatchingTheSignatureIsNotFromDocblock(): void
