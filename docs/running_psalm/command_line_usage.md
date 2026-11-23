@@ -62,7 +62,7 @@ See [Using Shepherd](shepherd.md) for badges, what is sent, and how to send repo
 ./vendor/bin/psalm --no-cache --debug-performance=psalm-perf.json
 ```
 
-See [Finding out why Psalm is slow](performance.md) for how to read the dump.
+See [Finding out why Psalm is slow](performance.md) for how to read the profile.
 
 ## Running Psalm faster
 
