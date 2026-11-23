@@ -1193,6 +1193,31 @@ final class AssertAnnotationTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'staticInAnAssertionOfAStaticMethodOfAGenericClassKeepsTheTypeArguments' => [
+                'code' => '<?php
+                    /** @template T */
+                    class Box {
+                        /** @psalm-assert-if-true static $value */
+                        public static function is(mixed $value): bool {
+                            return $value instanceof static;
+                        }
+                    }
+
+                    /**
+                     * @param Box<int>|string $value
+                     * @return Box<int>|null
+                     */
+                    function boxOrNull($value): ?Box {
+                        if (Box::is($value)) {
+                            return $value;
+                        }
+
+                        return null;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'staticInAnAssertionOfAnInheritedMethodIsTheCalledClass' => [
                 'code' => '<?php
                     interface Comparable {
