@@ -1740,6 +1740,12 @@ final class AssertionFinder
 
                 return [new IsType($named_object)];
             }
+
+            if (strtolower($stmt->class->getFirst()) === 'parent'
+                && ($parent_class_name = self::getParentClassName($this_class_name, $source)) !== null
+            ) {
+                return [new IsType(new TNamedObject($parent_class_name))];
+            }
         } elseif ($stmt->class instanceof PhpParser\Node\Expr\Variable && $stmt->class->name === 'this') {
             if ($this_class_name !== null) {
                 $named_object = new TNamedObject($this_class_name, true);
@@ -2200,6 +2206,20 @@ final class AssertionFinder
         }
 
         return false;
+    }
+
+    /**
+     * The parent of the class `parent` stands for: the class using a trait for the code of the trait too
+     *
+     * @psalm-capabilities read-props
+     */
+    private static function getParentClassName(?string $this_class_name, FileSource $source): ?string
+    {
+        if ($this_class_name === null || !$source instanceof StatementsAnalyzer) {
+            return null;
+        }
+
+        return $source->getCodebase()->classlike_storage_provider->get($this_class_name)->parent_class;
     }
 
     /**
@@ -3023,7 +3043,7 @@ final class AssertionFinder
             if ($var_type === 'self' || $var_type === 'static') {
                 $var_type = $this_class_name;
             } elseif ($var_type === 'parent') {
-                $var_type = null;
+                $var_type = self::getParentClassName($this_class_name, $source);
             }
 
             if ($var_type
@@ -3243,7 +3263,12 @@ final class AssertionFinder
                             $if_types[$first_var_name] = [[new IsAClass($object, $third_arg_value === 'true')]];
                         }
                     } elseif ($class_node->getParts() === ['parent']) {
-                        // do nothing
+                        $parent_class_name = self::getParentClassName($this_class_name, $source);
+
+                        if ($parent_class_name !== null) {
+                            $object = new TNamedObject($parent_class_name);
+                            $if_types[$first_var_name] = [[new IsAClass($object, $third_arg_value === 'true')]];
+                        }
                     } else {
                         $object = new TNamedObject(
                             ClassLikeAnalyzer::getFQCLNFromNameObject(
