@@ -145,6 +145,14 @@ final class Pool
 
         $cnt = 0;
 
+        // Fork the missing workers before submitting anything. A worker forked while tasks run inherits the
+        // parent's event loop, reads of the other workers' channels included, and can take their results.
+        $workers = [];
+        while ($this->pool->getWorkerCount() < $this->threads) {
+            $workers []= $this->pool->getWorker();
+        }
+        unset($workers);
+
         $results = [];
         foreach ($process_task_data_iterator as $file) {
             $execution = $this->pool->submit(new $main_task($file));

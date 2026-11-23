@@ -134,6 +134,7 @@
  - [MissingConstructor](issues/MissingConstructor.md)
  - [MissingDependency](issues/MissingDependency.md)
  - [MissingDocblockType](issues/MissingDocblockType.md)
+ - [MissingExtensionRequirement](issues/MissingExtensionRequirement.md)
  - [MissingFile](issues/MissingFile.md)
  - [MissingImmutableAnnotation](issues/MissingImmutableAnnotation.md)
  - [MissingInterfaceImmutableAnnotation](issues/MissingInterfaceImmutableAnnotation.md)

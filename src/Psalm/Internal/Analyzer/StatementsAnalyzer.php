@@ -714,6 +714,7 @@ final class StatementsAnalyzer extends SourceAnalyzer
                             $e->getMessage(),
                             new CodeLocation($statements_analyzer->getSource(), $stmt),
                         ),
+                        $statements_analyzer->getSuppressedIssues(),
                     );
                 } catch (DocblockParseException $e) {
                     IssueBuffer::maybeAdd(
@@ -721,6 +722,7 @@ final class StatementsAnalyzer extends SourceAnalyzer
                             $e->getMessage(),
                             new CodeLocation($statements_analyzer->getSource(), $stmt),
                         ),
+                        $statements_analyzer->getSuppressedIssues(),
                     );
                 }
 
@@ -972,6 +974,7 @@ final class StatementsAnalyzer extends SourceAnalyzer
                     $e->getMessage(),
                     new CodeLocation($this->getSource(), $stmt, null, true),
                 ),
+                $this->getSuppressedIssues(),
             );
 
             $this->parsed_docblock = null;
@@ -1309,6 +1312,34 @@ final class StatementsAnalyzer extends SourceAnalyzer
     public function getBranchPoint(string $var_id): ?int
     {
         return $this->var_branch_points[$var_id] ?? null;
+    }
+
+    /**
+     * Whether the mixed and non-mixed counts (the inferred-type percentage) include
+     * the expressions analysed here: not in initialization passes, included files,
+     * or trait methods (they are analysed once per using class).
+     *
+     * @psalm-mutation-free
+     */
+    public function shouldCountMixed(Context $context): bool
+    {
+        return !$context->collect_initializations
+            && $this->getFilePath() === $this->getRootFilePath()
+            && (!(($parent_source = $this->getSource()) instanceof FunctionLikeAnalyzer)
+                || !$parent_source->getSource() instanceof TraitAnalyzer);
+    }
+
+    public function countMixed(Context $context, bool $is_mixed): void
+    {
+        if (!$this->shouldCountMixed($context)) {
+            return;
+        }
+
+        if ($is_mixed) {
+            $this->codebase->analyzer->incrementMixedCount($this->getFilePath());
+        } else {
+            $this->codebase->analyzer->incrementNonMixedCount($this->getFilePath());
+        }
     }
 
     /**
