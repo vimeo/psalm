@@ -49,6 +49,79 @@ final class ToStringTest extends TestCase
         );
     }
 
+    public function testTheCodeOfATraitRunsUnderTheStrictTypesOfItsOwnFile(): void
+    {
+        $this->testConfig->throw_exception = false;
+
+        $defs_path = self::$src_dir_path . 'defs.php';
+        $trait_path = self::$src_dir_path . 'trait.php';
+        $strict_trait_path = self::$src_dir_path . 'stricttrait.php';
+        $strict_class_path = self::$src_dir_path . 'strictclass.php';
+        $class_path = self::$src_dir_path . 'class.php';
+
+        $this->addFile(
+            $defs_path,
+            '<?php
+                final class S {
+                    public function __toString(): string {
+                        return "s";
+                    }
+                }
+
+                function takesString(string $s): void {}',
+        );
+        $this->addFile(
+            $trait_path,
+            '<?php
+                trait T {
+                    public string $s = "";
+
+                    public function set(S $o): void {
+                        $this->s = $o;
+                        takesString($o);
+                    }
+                }',
+        );
+        $this->addFile(
+            $strict_trait_path,
+            '<?php
+                declare(strict_types=1);
+
+                trait U {
+                    public function call(S $o): void {
+                        takesString($o);
+                    }
+                }',
+        );
+        $this->addFile(
+            $strict_class_path,
+            '<?php
+                declare(strict_types=1);
+
+                final class UsesT {
+                    use T;
+                }',
+        );
+        $this->addFile(
+            $class_path,
+            '<?php
+                final class UsesU {
+                    use U;
+                }',
+        );
+
+        $this->analyzeFile($strict_class_path, new Context());
+        $this->analyzeFile($class_path, new Context());
+
+        $types = static fn(string $file_path): array => array_map(
+            static fn(IssueData $issue): string => $issue->type,
+            IssueBuffer::getIssuesDataForFile($file_path),
+        );
+
+        self::assertSame(['ImplicitToStringCast', 'ImplicitToStringCast'], $types($trait_path));
+        self::assertSame(['InvalidArgument'], $types($strict_trait_path));
+    }
+
     /**
      * @return iterable<string, array{bool}>
      * @psalm-pure

@@ -29,6 +29,7 @@ final class ReturnTypeMismatchReporter extends TypeMismatchReporter
     /**
      * @param Union $value_type the returned type, expanded
      * @param Union $returned_type the returned type as inferred
+     * @psalm-capabilities read-props
      */
     public function __construct(
         StatementsAnalyzer $statements_analyzer,
@@ -42,6 +43,9 @@ final class ReturnTypeMismatchReporter extends TypeMismatchReporter
         parent::__construct($statements_analyzer, $value_type, $expected_type, $location);
     }
 
+    /**
+     * @psalm-capabilities read-props
+     */
     #[Override]
     protected function mixedCoercion(TypeComparisonResult $result): ?CodeIssue
     {
@@ -56,6 +60,9 @@ final class ReturnTypeMismatchReporter extends TypeMismatchReporter
         return new MixedReturnTypeCoercion($this->getMoreGeneralMessage(), $this->location);
     }
 
+    /**
+     * @psalm-capabilities read-props
+     */
     #[Override]
     protected function coercion(): ?CodeIssue
     {
@@ -64,6 +71,8 @@ final class ReturnTypeMismatchReporter extends TypeMismatchReporter
 
     /**
      * ReturnTypeAnalyzer reports it once for the function-like
+     *
+     * @psalm-pure
      */
     #[Override]
     protected function toStringCast(): ?CodeIssue
@@ -71,6 +80,9 @@ final class ReturnTypeMismatchReporter extends TypeMismatchReporter
         return null;
     }
 
+    /**
+     * @psalm-capabilities read-props
+     */
     #[Override]
     protected function mismatch(TypeComparisonResult $result, bool $possibly): ?CodeIssue
     {
@@ -85,6 +97,9 @@ final class ReturnTypeMismatchReporter extends TypeMismatchReporter
         );
     }
 
+    /**
+     * @psalm-capabilities read-props
+     */
     #[Override]
     protected function possiblyNullIssue(): ?CodeIssue
     {
@@ -95,6 +110,9 @@ final class ReturnTypeMismatchReporter extends TypeMismatchReporter
         );
     }
 
+    /**
+     * @psalm-capabilities read-props
+     */
     #[Override]
     protected function possiblyFalseIssue(): ?CodeIssue
     {
@@ -105,12 +123,18 @@ final class ReturnTypeMismatchReporter extends TypeMismatchReporter
         );
     }
 
+    /**
+     * @psalm-capabilities read-props
+     */
     #[Override]
     protected function isStrict(): bool
     {
         return $this->strict_types && !$this->expected_type->from_docblock;
     }
 
+    /**
+     * @psalm-pure
+     */
     #[Override]
     protected function reportsPossiblyInvalid(): bool
     {
@@ -123,6 +147,9 @@ final class ReturnTypeMismatchReporter extends TypeMismatchReporter
         return parent::acceptsNull() || $this->expected_type->hasTemplate();
     }
 
+    /**
+     * @psalm-capabilities read-props
+     */
     private function getMoreGeneralMessage(): string
     {
         return 'The type \'' . $this->returned_type->getId() . '\' is more general than the declared return type \''

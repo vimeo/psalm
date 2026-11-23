@@ -33,6 +33,9 @@ final class ArgumentTypeMismatchReporter extends TypeMismatchReporter
     /** echo and print take any scalar, which they cast to string */
     private readonly bool $casts_to_string;
 
+    /**
+     * @psalm-capabilities read-props
+     */
     public function __construct(
         StatementsAnalyzer $statements_analyzer,
         Union $value_type,
@@ -40,11 +43,26 @@ final class ArgumentTypeMismatchReporter extends TypeMismatchReporter
         CodeLocation $location,
         int $argument_offset,
         private readonly ?string $cased_method_id,
+        private readonly bool $strict_types,
     ) {
         parent::__construct($statements_analyzer, $value_type, $expected_type, $location);
 
-        $this->argument = 'Argument ' . ($argument_offset + 1) . ($cased_method_id ? ' of ' . $cased_method_id : '');
+        $this->argument = 'Argument ' . ($argument_offset + 1)
+            . ($cased_method_id !== null && $cased_method_id !== '' ? ' of ' . $cased_method_id : '');
         $this->casts_to_string = $cased_method_id === 'echo' || $cased_method_id === 'print';
+    }
+
+    /**
+     * @psalm-capabilities read-props
+     */
+    #[Override]
+    protected function isStrict(): bool
+    {
+        return $this->strict_types
+            && !$this->value_type->hasArray()
+            && !$this->expected_type->from_docblock
+            && !$this->casts_to_string
+            && $this->cased_method_id !== 'sprintf';
     }
 
     #[Override]
@@ -63,6 +81,9 @@ final class ArgumentTypeMismatchReporter extends TypeMismatchReporter
         );
     }
 
+    /**
+     * @psalm-capabilities read-props
+     */
     #[Override]
     protected function coercion(): ?CodeIssue
     {
@@ -78,6 +99,9 @@ final class ArgumentTypeMismatchReporter extends TypeMismatchReporter
         );
     }
 
+    /**
+     * @psalm-capabilities read-props
+     */
     #[Override]
     protected function toStringCast(): ?CodeIssue
     {
@@ -92,6 +116,9 @@ final class ArgumentTypeMismatchReporter extends TypeMismatchReporter
         );
     }
 
+    /**
+     * @psalm-capabilities read-props
+     */
     #[Override]
     protected function mismatch(TypeComparisonResult $result, bool $possibly): ?CodeIssue
     {
@@ -129,6 +156,9 @@ final class ArgumentTypeMismatchReporter extends TypeMismatchReporter
         );
     }
 
+    /**
+     * @psalm-capabilities read-props
+     */
     #[Override]
     protected function nullIssue(): ?CodeIssue
     {
@@ -140,6 +170,9 @@ final class ArgumentTypeMismatchReporter extends TypeMismatchReporter
         );
     }
 
+    /**
+     * @psalm-capabilities read-props
+     */
     #[Override]
     protected function possiblyNullIssue(): ?CodeIssue
     {
@@ -150,6 +183,9 @@ final class ArgumentTypeMismatchReporter extends TypeMismatchReporter
         );
     }
 
+    /**
+     * @psalm-capabilities read-props
+     */
     #[Override]
     protected function falseIssue(): ?CodeIssue
     {
@@ -160,6 +196,9 @@ final class ArgumentTypeMismatchReporter extends TypeMismatchReporter
         );
     }
 
+    /**
+     * @psalm-capabilities read-props
+     */
     #[Override]
     protected function possiblyFalseIssue(): ?CodeIssue
     {

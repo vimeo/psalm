@@ -7263,6 +7263,46 @@ final class PropertyTypeTest extends TestCase
                     }',
                 'error_message' => 'InvalidPropertyAssignmentValue',
             ],
+            'stringableAssignedToANonEmptyStringPropertyUnderStrictTypes' => [
+                'code' => '<?php
+                    declare(strict_types=1);
+
+                    final class S {
+                        public function __toString(): string {
+                            return "s";
+                        }
+                    }
+
+                    final class A {
+                        /** @var non-empty-string */
+                        public string $s = "a";
+
+                        public function set(S $s): void {
+                            $this->s = $s;
+                        }
+                    }',
+                'error_message' => 'InvalidPropertyAssignmentValue',
+            ],
+            'stringableAssignedToANonEmptyStringStaticPropertyUnderStrictTypes' => [
+                'code' => '<?php
+                    declare(strict_types=1);
+
+                    final class S {
+                        public function __toString(): string {
+                            return "s";
+                        }
+                    }
+
+                    final class A {
+                        /** @var non-empty-string */
+                        public static string $s = "a";
+
+                        public static function set(S $s): void {
+                            self::$s = $s;
+                        }
+                    }',
+                'error_message' => 'InvalidPropertyAssignmentValue',
+            ],
             'stringableAssignedToADocblockStringPropertyUnderStrictTypes' => [
                 'code' => '<?php
                     declare(strict_types=1);

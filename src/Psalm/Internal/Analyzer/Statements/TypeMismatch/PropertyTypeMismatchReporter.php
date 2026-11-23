@@ -27,6 +27,7 @@ final class PropertyTypeMismatchReporter extends TypeMismatchReporter
      * @param string $name the property as written at the assignment
      * @param bool $defers_mismatch a mismatch is reported by reportDeferredMismatch(), once the other properties the
      *                              assignment may write are checked
+     * @psalm-capabilities read-props
      */
     public function __construct(
         StatementsAnalyzer $statements_analyzer,
@@ -46,6 +47,9 @@ final class PropertyTypeMismatchReporter extends TypeMismatchReporter
         $this->add($this->createMismatch($possibly));
     }
 
+    /**
+     * @psalm-capabilities read-props
+     */
     #[Override]
     protected function mixedCoercion(TypeComparisonResult $result): ?CodeIssue
     {
@@ -57,6 +61,9 @@ final class PropertyTypeMismatchReporter extends TypeMismatchReporter
         );
     }
 
+    /**
+     * @psalm-capabilities read-props
+     */
     #[Override]
     protected function coercion(): ?CodeIssue
     {
@@ -68,56 +75,77 @@ final class PropertyTypeMismatchReporter extends TypeMismatchReporter
         );
     }
 
+    /**
+     * @psalm-capabilities read-props
+     */
     #[Override]
     protected function toStringCast(): ?CodeIssue
     {
         return new ImplicitToStringCast(
-            $this->name . ' expects \'' . $this->expected_type . '\', '
-                . '\'' . $this->value_type . '\' provided with a __toString method',
+            $this->name . ' expects \'' . $this->expected_type->__toString() . '\', '
+                . '\'' . $this->value_type->__toString() . '\' provided with a __toString method',
             $this->location,
         );
     }
 
+    /**
+     * @psalm-capabilities read-props
+     */
     #[Override]
     protected function mismatch(TypeComparisonResult $result, bool $possibly): ?CodeIssue
     {
         return $this->defers_mismatch ? null : $this->createMismatch($possibly);
     }
 
+    /**
+     * @psalm-capabilities read-props
+     */
     #[Override]
     protected function possiblyNullIssue(): ?CodeIssue
     {
         return new PossiblyNullPropertyAssignmentValue(
-            $this->name . ' with non-nullable declared type \'' . $this->expected_type
-                . '\' cannot be assigned nullable type \'' . $this->value_type . '\'',
+            $this->name . ' with non-nullable declared type \'' . $this->expected_type->__toString()
+                . '\' cannot be assigned nullable type \'' . $this->value_type->__toString() . '\'',
             $this->location,
             $this->property_id,
         );
     }
 
+    /**
+     * @psalm-capabilities read-props
+     */
     #[Override]
     protected function possiblyFalseIssue(): ?CodeIssue
     {
         return new PossiblyFalsePropertyAssignmentValue(
-            $this->name . ' with non-falsable declared type \'' . $this->expected_type
-                . '\' cannot be assigned possibly false type \'' . $this->value_type . '\'',
+            $this->name . ' with non-falsable declared type \'' . $this->expected_type->__toString()
+                . '\' cannot be assigned possibly false type \'' . $this->value_type->__toString() . '\'',
             $this->location,
             $this->property_id,
         );
     }
 
+    /**
+     * @psalm-capabilities read-props
+     */
     #[Override]
     protected function isStrict(): bool
     {
         return $this->strict_types && !$this->expected_type->from_docblock;
     }
 
+    /**
+     * @psalm-capabilities read-props
+     */
     #[Override]
     protected function reportsPossiblyInvalid(): bool
     {
         return !$this->defers_mismatch;
     }
 
+    /**
+     * @psalm-capabilities read-props
+     */
     private function createMismatch(bool $possibly): CodeIssue
     {
         if ($possibly) {

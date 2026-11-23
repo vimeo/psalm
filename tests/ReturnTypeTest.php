@@ -4258,6 +4258,37 @@ final class ReturnTypeTest extends TestCase
                 'error_levels' => [],
                 'php_version' => '8.2',
             ],
+            'stringableReturnedForANonEmptyStringUnderStrictTypes' => [
+                'code' => '<?php
+                    declare(strict_types=1);
+
+                    final class S {
+                        public function __toString(): string {
+                            return "s";
+                        }
+                    }
+
+                    /** @return non-empty-string */
+                    function f(S $s): string {
+                        return $s;
+                    }',
+                'error_message' => 'InvalidReturnStatement',
+            ],
+            'falseReturnedThroughAnIgnoredFalsableReturnType' => [
+                'code' => '<?php
+                    /**
+                     * @return false
+                     * @psalm-ignore-falsable-return
+                     */
+                    function no(): bool {
+                        return false;
+                    }
+
+                    function f(): int {
+                        return no();
+                    }',
+                'error_message' => 'FalsableReturnStatement',
+            ],
             'stringableReturnedForADocblockStringUnderStrictTypes' => [
                 'code' => '<?php
                     declare(strict_types=1);

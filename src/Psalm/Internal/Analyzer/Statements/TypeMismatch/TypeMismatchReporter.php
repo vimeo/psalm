@@ -38,10 +38,17 @@ abstract class TypeMismatchReporter
      */
     final public function reportComparison(bool $type_match_found, TypeComparisonResult $result): bool
     {
-        if ($result->to_string_cast && $this->isStrict()) {
-            // under strict_types, a native type does not cast an object to string
-            $result->to_string_cast = false;
-            $type_match_found = false;
+        if ($this->isStrict()) {
+            // under strict_types, a native type casts neither a scalar nor an object
+            $result->scalar_type_match_found = false;
+
+            if ($result->to_string_cast) {
+                // the object fits neither through the cast nor through a coercion of the cast string
+                $result->to_string_cast = false;
+                $result->type_coerced = false;
+                $result->type_coerced_from_mixed = false;
+                $type_match_found = false;
+            }
         }
 
         if ($result->type_coerced) {
@@ -174,7 +181,7 @@ abstract class TypeMismatchReporter
     }
 
     /**
-     * Whether an object is not cast to string where the expected type is a string
+     * Whether the value is checked under strict_types, where only an int fits a float
      */
     protected function isStrict(): bool
     {

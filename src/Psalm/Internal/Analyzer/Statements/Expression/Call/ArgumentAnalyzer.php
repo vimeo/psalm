@@ -1423,21 +1423,6 @@ final class ArgumentAnalyzer
             }
         }
 
-        if ($context->strict_types
-            && !$input_type->hasArray()
-            && !$param_type->from_docblock
-            && $cased_method_id !== 'echo'
-            && $cased_method_id !== 'print'
-            && $cased_method_id !== 'sprintf'
-        ) {
-            $union_comparison_results->scalar_type_match_found = false;
-
-            if ($union_comparison_results->to_string_cast) {
-                $union_comparison_results->to_string_cast = false;
-                $type_match_found = false;
-            }
-        }
-
         if ($union_comparison_results->callable_by_reference_mismatch) {
             IssueBuffer::maybeAdd(
                 new CallableByReferenceMismatch(
@@ -1458,6 +1443,7 @@ final class ArgumentAnalyzer
             $arg_location,
             $argument_offset,
             $cased_method_id,
+            $context->strict_types,
         );
 
         if (!$mismatch_reporter->reportComparison($type_match_found, $union_comparison_results)) {

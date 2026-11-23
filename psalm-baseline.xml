@@ -593,12 +593,6 @@
   </file>
   <file src="src/Psalm/Internal/Analyzer/Statements/Expression/Assignment/InstancePropertyAssignmentAnalyzer.php">
     <ImplicitToStringCast>
-      <code><![CDATA[$assignment_type]]></code>
-      <code><![CDATA[$assignment_type]]></code>
-      <code><![CDATA[$assignment_type]]></code>
-      <code><![CDATA[$class_property_type]]></code>
-      <code><![CDATA[$class_property_type]]></code>
-      <code><![CDATA[$class_property_type]]></code>
       <code><![CDATA[$lhs_type]]></code>
       <code><![CDATA[$stmt->name]]></code>
       <code><![CDATA[$stmt->name]]></code>
@@ -629,8 +623,6 @@
   </file>
   <file src="src/Psalm/Internal/Analyzer/Statements/Expression/Assignment/StaticPropertyAssignmentAnalyzer.php">
     <ImplicitToStringCast>
-      <code><![CDATA[$assignment_value_type]]></code>
-      <code><![CDATA[$class_property_type]]></code>
       <code><![CDATA[$prop_name]]></code>
     </ImplicitToStringCast>
     <RiskyTruthyFalsyComparison>
