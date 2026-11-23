@@ -802,35 +802,19 @@ final class IssueBuffer
                 self::$issues_data[$file_path] = $file_issues;
             }
 
-            // a copy for the issues added below, but its IssueData objects are the buffer's, so the baseline
-            // changes their severity there too; the issue cache is already written (Analyzer::analyzeFiles())
+            // the report: the buffer's issues, the baseline applied to copies of them, and the issues added below
             $issues_data = self::$issues_data;
         }
 
         $baselined_issue_counts = [];
 
         if (!empty($issue_baseline)) {
-            // Set severity for issues in baseline to INFO
-            foreach ($issues_data as $file_path => $file_issues) {
-                foreach ($file_issues as $key => $issue_data) {
-                    if (BaselineMatcher::consume(
-                        $codebase->config,
-                        $issue_baseline,
-                        $issue_data->file_name,
-                        $issue_data->type,
-                        $issue_data->selected_text,
-                    )) {
-                        $issue_data->severity = IssueData::SEVERITY_INFO;
-                        $baselined_issue_counts[$issue_data->type]
-                            = ($baselined_issue_counts[$issue_data->type] ?? 0) + 1;
-                    }
-
-                    $issues_data[$file_path][$key] = $issue_data;
-                }
-            }
+            $baseline_application = BaselineMatcher::apply($codebase->config, $issues_data, $issue_baseline);
+            $issues_data = $baseline_application->issues_data;
+            $baselined_issue_counts = $baseline_application->baselined_issue_counts;
 
             if ($codebase->config->find_unused_baseline_entry) {
-                foreach ($issue_baseline as $file_path => $issues) {
+                foreach ($baseline_application->remaining_baseline as $file_path => $issues) {
                     foreach ($issues as $issue_name => $issue) {
                         if ($issue['o'] !== 0) {
                             $issues_data[$file_path][] = new IssueData(
@@ -923,7 +907,6 @@ final class IssueBuffer
         }
 
 
-        ksort($baselined_issue_counts);
         self::$baselined_issue_counts = $baselined_issue_counts;
 
         if ($codebase->config->eventDispatcher->after_analysis) {
@@ -937,7 +920,6 @@ final class IssueBuffer
 
             $build_info = (new BuildInfoCollector(self::$server))->collect($source_control_info);
 
-            /** @psalm-suppress ArgumentTypeCoercion due to Psalm bug */
             $event = new AfterAnalysisEvent(
                 $codebase,
                 $issues_data,

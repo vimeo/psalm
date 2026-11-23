@@ -138,6 +138,17 @@ final class IssueBufferTest extends TestCase
         IssueBuffer::finish($projectAnalyzer, false, microtime(true), false, $baseline);
         $output = (string) ob_get_clean();
         $this->assertStringContainsString('No errors found!', $output, 'all issues baselined');
+        $severities = [];
+        foreach (IssueBuffer::getIssuesData() as $file_issues) {
+            foreach ($file_issues as $issue_data) {
+                $severities[] = $issue_data->severity;
+            }
+        }
+        $this->assertSame(
+            ['error', 'error', 'error', 'error'],
+            $severities,
+            'the buffer keeps the analysed severity',
+        );
         IssueBuffer::clear();
     }
 
