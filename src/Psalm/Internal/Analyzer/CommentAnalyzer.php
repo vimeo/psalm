@@ -308,7 +308,7 @@ final class CommentAnalyzer
     {
         $line_parts = self::splitDocLine($line);
 
-        if (count($line_parts) === 1) {
+        if (!isset($line_parts[1])) {
             return isset($line_parts[0][0]) && $line_parts[0][0] === '$' ? null : false;
         }
 

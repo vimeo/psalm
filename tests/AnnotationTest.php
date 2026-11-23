@@ -40,6 +40,7 @@ final class AnnotationTest extends TestCase
 
     /**
      * @return iterable<string, array{string}>
+     * @psalm-pure
      */
     public static function providerVariableTagWithoutType(): iterable
     {
@@ -2834,6 +2835,14 @@ final class AnnotationTest extends TestCase
                         global $bar;
                     }',
                 'error_message' => 'InvalidClass',
+            ],
+            'globalWithoutName' => [
+                'code' => '<?php
+                    /**
+                     * @global int
+                     */
+                    function f(): void {}',
+                'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:21 - Badly-formatted @global in docblock for f',
             ],
             'globalDocblockUndefinedClass' => [
                 'code' => '<?php
