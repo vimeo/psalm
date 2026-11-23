@@ -115,7 +115,23 @@ final class TConditional extends Atomic
         ?string $this_class,
         bool $use_phpdoc_format,
     ): string {
-        return '';
+        if ($use_phpdoc_format) {
+            return '';
+        }
+
+        $to_string = static fn(Union $type): string => $type->toNamespacedString(
+            $namespace,
+            $aliased_classes,
+            $this_class,
+            false,
+        );
+
+        return '('
+            . ($this->subject_type !== null ? $to_string($this->subject_type) : $this->param_name)
+            . ' is ' . $to_string($this->conditional_type)
+            . ' ? ' . $to_string($this->if_type)
+            . ' : ' . $to_string($this->else_type)
+            . ')';
     }
 
     /**

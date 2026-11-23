@@ -3213,7 +3213,6 @@
       <code><![CDATA[$fallback_params[1]]]></code>
       <code><![CDATA[$fallback_params[1]]]></code>
       <code><![CDATA[$this->properties[0]]]></code>
-      <code><![CDATA[$this->properties[0]]]></code>
     </PossiblyUndefinedIntArrayOffset>
   </file>
   <file src="src/Psalm/Type/Atomic/TLiteralClassString.php">
