@@ -83,6 +83,11 @@ final class FileStorage
     public bool $has_visitor_issues = false;
 
     /**
+     * Whether the file declares strict_types
+     */
+    public bool $strict_types = false;
+
+    /**
      * @var list<CodeIssue>
      */
     public array $docblock_issues = [];

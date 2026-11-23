@@ -628,6 +628,9 @@ final class UnionTypeComparator
 
     /**
      * Does the input param type match the given param type
+     *
+     * @param bool $ignore_null  a null input value does not count as fitting
+     * @param bool $ignore_false a false input value does not count as fitting
      */
     public static function canBeContainedBy(
         Codebase $codebase,
@@ -649,6 +652,20 @@ final class UnionTypeComparator
             return false;
         }
 
+        $input_type_parts = [];
+
+        foreach (self::getTypeParts($codebase, $input_type) as $input_type_part) {
+            if (!$input_type_part instanceof TTypeVariable
+                && (($ignore_null && AtomicTypeComparator::isContainedBy($codebase, $input_type_part, new TNull()))
+                    || ($ignore_false
+                        && AtomicTypeComparator::isContainedBy($codebase, $input_type_part, new TFalse())))
+            ) {
+                continue;
+            }
+
+            $input_type_parts[] = $input_type_part;
+        }
+
         foreach (self::getTypeParts($codebase, $container_type) as $container_type_part) {
             if ($container_type_part instanceof TNull && $ignore_null) {
                 continue;
@@ -658,7 +675,7 @@ final class UnionTypeComparator
                 continue;
             }
 
-            foreach (self::getTypeParts($codebase, $input_type) as $input_type_part) {
+            foreach ($input_type_parts as $input_type_part) {
                 if ($input_type_part instanceof TTypeVariable) {
                     // an unresolved type variable can still become anything
                     // its bounds allow, so it can be contained here; it is
