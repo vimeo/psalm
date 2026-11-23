@@ -1144,7 +1144,7 @@ This applies to function calls, method calls, static calls and `new`. With
 `rememberPropertyAssignmentsAfterCall="false"`, this code reports one issue:
 
 ```php
-<?php
+<?php // rememberPropertyAssignmentsAfterCall="false"
 final class Order {
     public ?int $total = null;
     public static ?string $currency = null;
@@ -1232,7 +1232,7 @@ and a constructor.
 Given this code:
 
 ```php
-<?php
+<?php // suggestPurityAnnotations="true"
 function slug(string $title): string { // MissingPureAnnotation: slug could be marked @psalm-pure to aid security analysis, run with --alter --issues=MissingPureAnnotation to fix this
     return strtolower(trim($title));
 }
@@ -1269,7 +1269,7 @@ bound is left as `impure`, gets no class-level suggestion. A subclass without an
 suggested a contract on the next run, once its parent has one.
 
 ```php
-<?php
+<?php // suggestPurityAnnotations="true"
 abstract class Shape { // fine: no suggestion, as only impure covers Circle
     /** @psalm-pure */
     public function name(): string {

@@ -21,6 +21,7 @@ use Psalm\Internal\Fork\AnalyzerTask;
 use Psalm\Internal\Fork\InitAnalyzerTask;
 use Psalm\Internal\Fork\Pool;
 use Psalm\Internal\Fork\ShutdownAnalyzerTask;
+use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Provider\FileProvider;
 use Psalm\Internal\Provider\FileStorageProvider;
 use Psalm\Internal\Provider\StatementsProvider;
@@ -29,6 +30,7 @@ use Psalm\Progress\Phase;
 use Psalm\Progress\Progress;
 use Psalm\Storage\Capabilities;
 use Psalm\Type;
+use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
@@ -174,6 +176,13 @@ final class Analyzer
      * @var array<string, array<int, Union>>
      */
     public array $possible_method_param_types = [];
+
+    /**
+     * Whether usage-inferred param types are recorded for a declaring method (lowercase id)
+     *
+     * @var array<lowercase-string, bool>
+     */
+    private array $param_type_inference_targets = [];
 
     /**
      * @var array<string, CapabilitySet>
@@ -387,7 +396,7 @@ final class Analyzer
                     } else {
                         foreach ($possible_param_types as $offset => $possible_param_type) {
                             $this->possible_method_param_types[$declaring_method_id][$offset]
-                                = Type::combineUnionTypes(
+                                = self::combinePossibleParamTypes(
                                     $this->possible_method_param_types[$declaring_method_id][$offset] ?? null,
                                     $possible_param_type,
                                     $codebase,
@@ -1375,6 +1384,90 @@ final class Analyzer
     public function getPossibleMethodParamTypes(): array
     {
         return $this->possible_method_param_types;
+    }
+
+    /**
+     * @psalm-capabilities read-props|write-this-props|write-refs
+     */
+    public function addPossibleMethodParamType(
+        Codebase $codebase,
+        MethodIdentifier $declaring_method_id,
+        int $offset,
+        Union $type,
+    ): void {
+        $method_id_lc = strtolower((string) $declaring_method_id);
+
+        if (!($this->param_type_inference_targets[$method_id_lc]
+            ??= $this->isParamTypeInferenceTarget($codebase, $declaring_method_id))
+        ) {
+            return;
+        }
+
+        $this->possible_method_param_types[$method_id_lc][$offset] = self::combinePossibleParamTypes(
+            $this->possible_method_param_types[$method_id_lc][$offset] ?? null,
+            $type,
+            $codebase,
+        );
+    }
+
+    /**
+     * @psalm-capabilities read-props|write-this-props|write-refs
+     */
+    private static function combinePossibleParamTypes(?Union $possible_type, Union $type, Codebase $codebase): Union
+    {
+        if ($possible_type !== null && self::holdsAbsorbingMixed($possible_type)) {
+            return $possible_type;
+        }
+
+        if (self::holdsAbsorbingMixed($type)) {
+            return Type::getMixed();
+        }
+
+        return Type::combineUnionTypes($possible_type, $type, $codebase);
+    }
+
+    /**
+     * A plain mixed stays through every later combination (TypeCombiner::scrapeTypeProperties()), so
+     * ClassLikes::findPossibleMethodParamTypes() skips the param whatever else is passed to it. Other mixed types are
+     * not proven to: a mixed from a loop isset is dropped next to other types, and a union that failed reconciliation
+     * is dropped when combined with one that did not.
+     *
+     * @psalm-pure
+     */
+    private static function holdsAbsorbingMixed(Union $type): bool
+    {
+        $mixed = $type->getAtomicTypes()['mixed'] ?? null;
+
+        return $mixed !== null
+            && $mixed::class === TMixed::class
+            && !$mixed->from_loop_isset
+            && !$type->failed_reconciliation;
+    }
+
+    /**
+     * Whether usage-inferred param types are recorded for a method. They are for every method that
+     * ClassLikes::findPossibleMethodParamTypes() can use: it visits the non-trait classes in the project directories
+     * and takes the methods those declare, if they have a location and the file is reportable. The config fixes the
+     * project directories for the whole run, in every process, while the reportable files can still grow (a plugin
+     * hook), so only the part of the reader's test that cannot change is applied here.
+     *
+     * @psalm-capabilities read-props
+     */
+    private function isParamTypeInferenceTarget(Codebase $codebase, MethodIdentifier $declaring_method_id): bool
+    {
+        try {
+            $class_storage = $codebase->classlike_storage_provider->get($declaring_method_id->fq_class_name);
+        } catch (InvalidArgumentException) {
+            return true;
+        }
+
+        $method_storage = $class_storage->methods[$declaring_method_id->method_name] ?? null;
+
+        return $method_storage === null
+            || ($method_storage->location !== null
+                && !$class_storage->is_trait
+                && $class_storage->location !== null
+                && $this->config->isInProjectDirs($class_storage->location->file_path));
     }
 
     /**

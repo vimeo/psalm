@@ -78,6 +78,7 @@ use stdClass;
 use function array_any;
 use function array_column;
 use function array_filter;
+use function array_is_list;
 use function array_key_exists;
 use function array_keys;
 use function array_merge;
@@ -568,8 +569,11 @@ final class Config
      */
     private ?array $project_packages = null;
 
-    /** @var list<string>|null */
+    /** @var array<string, true>|null */
     private ?array $unrequired_package_paths = null;
+
+    /** @var array<string, bool> */
+    private array $in_unrequired_package = [];
 
     /** @var list<ClassLoader> $autoloaders */
     private array $autoloaders = [];
@@ -632,6 +636,22 @@ final class Config
     public ?int $threads = null;
     /** @var ?int<1, max> */
     public ?int $scan_threads = null;
+
+    /**
+     * The extensions the project declares, by their Composer name without `ext-` (`mbstring`, `zend-opcache`): those
+     * composer.json requires (also for development) or suggests, those its installed packages provide or replace
+     * (polyfills), and those `<enableExtensions>` lists. Null without a composer.json, which turns off
+     * MissingExtensionRequirement.
+     *
+     * @var array<string, true>|null
+     */
+    public ?array $declared_extensions = null;
+
+    /**
+     * The lowest PHP version the `php` requirement of composer.json allows, as an id (`70300`), or null when it doesn't
+     * constrain it. An extension only needs no declaration if every PHP version from this one on builds it in.
+     */
+    public ?int $lowest_composer_php_version_id = null;
 
     /**
      * A list of php extensions supported by Psalm.
@@ -1139,6 +1159,76 @@ final class Config
     }
 
     /**
+     * @param array<array-key, mixed> $composer_json
+     * @return array<string, true>
+     */
+    private static function getDeclaredExtensions(array $composer_json, string $base_dir): array
+    {
+        $declarations = [];
+        foreach (['require', 'require-dev', 'suggest', 'provide', 'replace'] as $key) {
+            if (isset($composer_json[$key]) && is_array($composer_json[$key])) {
+                $declarations[] = $composer_json[$key];
+            }
+        }
+
+        $vendor_dir = 'vendor';
+        if (isset($composer_json['config'])
+            && is_array($composer_json['config'])
+            && isset($composer_json['config']['vendor-dir'])
+            && is_string($composer_json['config']['vendor-dir'])
+        ) {
+            $vendor_dir = $composer_json['config']['vendor-dir'];
+        }
+
+        // the polyfills installed provide the extensions they replace
+        $installed_path = $base_dir . DIRECTORY_SEPARATOR . $vendor_dir . DIRECTORY_SEPARATOR . 'composer'
+            . DIRECTORY_SEPARATOR . 'installed.json';
+        foreach ([$installed_path, Composer::getLockFilePath($base_dir)] as $path) {
+            if (!is_file($path)) {
+                continue;
+            }
+
+            $installed = json_decode((string) file_get_contents($path), true);
+            if (!is_array($installed)) {
+                continue;
+            }
+
+            $packages = [];
+            if (isset($installed['packages']) && is_array($installed['packages'])) {
+                $packages = $installed['packages'];
+                if (isset($installed['packages-dev']) && is_array($installed['packages-dev'])) {
+                    $packages = [...$packages, ...$installed['packages-dev']];
+                }
+            } elseif (array_is_list($installed)) {
+                // the installed.json of Composer 1
+                $packages = $installed;
+            }
+
+            foreach (array_filter($packages, is_array(...)) as $package) {
+                foreach (['provide', 'replace'] as $key) {
+                    if (isset($package[$key]) && is_array($package[$key])) {
+                        $declarations[] = $package[$key];
+                    }
+                }
+            }
+
+            break;
+        }
+
+        $extensions = [];
+        foreach ($declarations as $declaration) {
+            foreach (array_keys($declaration) as $name) {
+                $name = strtolower((string) $name);
+                if (str_starts_with($name, 'ext-')) {
+                    $extensions[substr($name, 4)] = true;
+                }
+            }
+        }
+
+        return $extensions;
+    }
+
+    /**
      * @param non-empty-string $file_contents
      * @psalm-suppress MixedAssignment
      * @psalm-suppress MixedPropertyFetch
@@ -1262,12 +1352,25 @@ final class Config
             }
         }
 
+        if ($composer_json !== null) {
+            $config->declared_extensions = self::getDeclaredExtensions($composer_json, $config->base_dir);
+
+            $lowest_php_version = $config->getPHPVersionFromComposerJson();
+            if ($lowest_php_version !== null) {
+                [$major, $minor] = explode('.', $lowest_php_version);
+                $config->lowest_composer_php_version_id = (int) $major * 10_000 + (int) $minor * 100;
+            }
+        }
+
         if (isset($config_xml->enableExtensions) && isset($config_xml->enableExtensions->extension)) {
             foreach ($config_xml->enableExtensions->extension as $extension) {
                 assert(isset($extension["name"]));
                 $extensionName = (string) $extension["name"];
                 assert(array_key_exists($extensionName, $config->php_extensions));
                 $config->php_extensions[$extensionName] = true;
+                if ($config->declared_extensions !== null) {
+                    $config->declared_extensions[strtolower($extensionName)] = true;
+                }
             }
         }
 
@@ -3319,7 +3422,7 @@ final class Config
      * project doesn't depend on, like the polyfills Psalm itself requires: their functions don't exist when the
      * project runs.
      *
-     * @return list<string>
+     * @return array<string, true> canonical paths
      */
     private function getUnrequiredPackagePaths(): array
     {
@@ -3347,7 +3450,7 @@ final class Config
         $paths = [];
         foreach ($install_paths as [$name, $path]) {
             if (!isset($project_packages[strtolower($name)])) {
-                $paths[] = Path::canonicalize($path);
+                $paths[Path::canonicalize($path)] = true;
             }
         }
 
@@ -3365,6 +3468,7 @@ final class Config
     {
         $this->project_packages = $project_packages;
         $this->unrequired_package_paths = null;
+        $this->in_unrequired_package = [];
     }
 
     /**
@@ -3372,10 +3476,27 @@ final class Config
      */
     public function isInUnrequiredPackage(string $file_path): bool
     {
-        return array_any(
-            $this->getUnrequiredPackagePaths(),
-            static fn(string $path): bool => Path::isBasePath($path, $file_path),
-        );
+        if (isset($this->in_unrequired_package[$file_path])) {
+            return $this->in_unrequired_package[$file_path];
+        }
+
+        // called for every function defined in Psalm's process and every Config: look up the file's directories
+        // instead of comparing it with every package path
+        $package_paths = $this->getUnrequiredPackagePaths();
+        $in_package = false;
+        for ($path = Path::canonicalize($file_path); $path !== ''; $path = $parent) {
+            if (isset($package_paths[$path])) {
+                $in_package = true;
+                break;
+            }
+
+            $parent = Path::getDirectory($path);
+            if ($parent === $path) {
+                break;
+            }
+        }
+
+        return $this->in_unrequired_package[$file_path] = $in_package;
     }
 
     /**

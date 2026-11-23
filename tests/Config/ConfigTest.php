@@ -3000,6 +3000,171 @@ final class ConfigTest extends DeferredAnalyzerTestCase
         $this->assertArrayHasKey('strlen', $config->getPredefinedFunctions());
     }
 
+    public function testIsInUnrequiredPackage(): void
+    {
+        $root = sys_get_temp_dir() . DIRECTORY_SEPARATOR . uniqid('psalm-unrequired-package-');
+        $composer_dir = $root . DIRECTORY_SEPARATOR . 'vendor' . DIRECTORY_SEPARATOR . 'composer';
+        mkdir($composer_dir, 0777, true);
+        file_put_contents($root . DIRECTORY_SEPARATOR . 'composer.json', '{"require": {}}');
+        file_put_contents(
+            $composer_dir . DIRECTORY_SEPARATOR . 'installed.json',
+            '{"packages": [{"name": "acme/lib", "install-path": "../acme/lib"}]}',
+        );
+
+        try {
+            $config = Config::loadFromXML($root, '<?xml version="1.0"?><psalm></psalm>');
+
+            $package = $root . '/vendor/acme/lib';
+            $this->assertTrue($config->isInUnrequiredPackage($package . '/src/functions.php'));
+            $this->assertTrue($config->isInUnrequiredPackage($package));
+            $this->assertTrue($config->isInUnrequiredPackage(
+                str_replace('/', DIRECTORY_SEPARATOR, $package . '/functions.php'),
+            ));
+            $this->assertFalse($config->isInUnrequiredPackage($root . '/vendor/acme/lib-extra/functions.php'));
+            $this->assertFalse($config->isInUnrequiredPackage($root . '/vendor/acme'));
+            $this->assertFalse($config->isInUnrequiredPackage($root . '/src/functions.php'));
+
+            $config->setProjectPackages(['acme/lib' => true]);
+            $this->assertFalse($config->isInUnrequiredPackage($package . '/src/functions.php'));
+        } finally {
+            unlink($composer_dir . DIRECTORY_SEPARATOR . 'installed.json');
+            unlink($root . DIRECTORY_SEPARATOR . 'composer.json');
+            rmdir($composer_dir);
+            rmdir(dirname($composer_dir));
+            rmdir($root);
+        }
+    }
+
+    /**
+     * @param array<string, string> $files
+     * @param list<string>|null $expected
+     */
+    #[DataProvider('providerDeclaredExtensions')]
+    public function testCollectsTheDeclaredExtensions(array $files, string $config_xml, ?array $expected): void
+    {
+        $root = sys_get_temp_dir() . DIRECTORY_SEPARATOR . uniqid('psalm-declared-extensions-');
+        mkdir($root);
+        $dirs = [$root];
+        $paths = [];
+        foreach ($files as $path => $contents) {
+            $path = $root . DIRECTORY_SEPARATOR . $path;
+            for ($dir = dirname($path); !is_dir($dir); $dir = dirname($dir)) {
+                $dirs[] = $dir;
+            }
+            if (!is_dir(dirname($path))) {
+                mkdir(dirname($path), 0777, true);
+            }
+            file_put_contents($path, $contents);
+            $paths[] = $path;
+        }
+
+        try {
+            $config = Config::loadFromXML($root, '<?xml version="1.0"?>' . $config_xml);
+        } finally {
+            foreach ($paths as $path) {
+                unlink($path);
+            }
+            rsort($dirs);
+            foreach ($dirs as $dir) {
+                rmdir($dir);
+            }
+        }
+
+        $declared = $config->declared_extensions === null ? null : array_keys($config->declared_extensions);
+        if ($declared !== null) {
+            sort($declared);
+        }
+
+        $this->assertSame($expected, $declared);
+    }
+
+    #[DataProvider('providerLowestComposerPhpVersion')]
+    public function testReadsTheLowestPhpVersionComposerAllows(string $composer_json, ?int $expected): void
+    {
+        $root = sys_get_temp_dir() . DIRECTORY_SEPARATOR . uniqid('psalm-lowest-php-');
+        mkdir($root);
+        file_put_contents($root . DIRECTORY_SEPARATOR . 'composer.json', $composer_json);
+
+        try {
+            $config = Config::loadFromXML($root, '<?xml version="1.0"?><psalm/>');
+        } finally {
+            unlink($root . DIRECTORY_SEPARATOR . 'composer.json');
+            rmdir($root);
+        }
+
+        $this->assertSame($expected, $config->lowest_composer_php_version_id);
+    }
+
+    /**
+     * @return iterable<string, array{string, ?int}>
+     * @psalm-pure
+     */
+    public static function providerLowestComposerPhpVersion(): iterable
+    {
+        yield 'no php requirement' => ['{"require": {}}', null];
+        yield 'one major version' => ['{"require": {"php": "^8.2"}}', 8_02_00];
+        yield 'several major versions' => ['{"require": {"php": "^7.3 || ^8.0"}}', 7_03_00];
+    }
+
+    /**
+     * @return iterable<string, array{array<string, string>, string, list<string>|null}>
+     * @psalm-pure
+     */
+    public static function providerDeclaredExtensions(): iterable
+    {
+        yield 'no composer.json' => [[], '<psalm/>', null];
+
+        yield 'require, require-dev and suggest' => [
+            ['composer.json' => '{"require": {"php": "^8.2", "ext-SimpleXML": "*", "psr/log": "^3"},'
+                . ' "require-dev": {"ext-curl": "*"}, "suggest": {"ext-igbinary": "faster cache"}}'],
+            '<psalm/>',
+            ['curl', 'igbinary', 'simplexml'],
+        ];
+
+        yield 'provided and replaced by installed packages' => [
+            [
+                'composer.json' => '{"require": {}}',
+                'vendor/composer/installed.json' => '{"packages": [{"name": "symfony/polyfill-mbstring",'
+                    . ' "provide": {"ext-mbstring": "*"}}, {"name": "a/b", "replace": {"ext-ctype": "*"}}]}',
+            ],
+            '<psalm/>',
+            ['ctype', 'mbstring'],
+        ];
+
+        yield 'installed.json of Composer 1' => [
+            [
+                'composer.json' => '{"require": {}}',
+                'vendor/composer/installed.json' => '[{"name": "a/b", "provide": {"ext-iconv": "*"}}]',
+            ],
+            '<psalm/>',
+            ['iconv'],
+        ];
+
+        yield 'custom vendor-dir' => [
+            [
+                'composer.json' => '{"config": {"vendor-dir": "lib"}}',
+                'lib/composer/installed.json' => '{"packages": [{"name": "a/b", "provide": {"ext-iconv": "*"}}]}',
+            ],
+            '<psalm/>',
+            ['iconv'],
+        ];
+
+        yield 'composer.lock without installed packages' => [
+            [
+                'composer.json' => '{"require": {}}',
+                'composer.lock' => '{"packages": [], "packages-dev": [{"name": "a/b", "provide": {"ext-intl": "*"}}]}',
+            ],
+            '<psalm/>',
+            ['intl'],
+        ];
+
+        yield 'enableExtensions' => [
+            ['composer.json' => '{"require": {"ext-pdo": "*"}}'],
+            '<psalm><enableExtensions><extension name="redis"/></enableExtensions></psalm>',
+            ['pdo', 'redis'],
+        ];
+    }
+
     public function testDisablesArrayCache(): void
     {
         $config = Config::loadFromXML(dirname(__DIR__, 2), '<?xml version="1.0"?><psalm arrayCache="false"></psalm>');

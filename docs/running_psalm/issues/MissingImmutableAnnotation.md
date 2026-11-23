@@ -5,7 +5,7 @@ Emitted when the config flag [`suggestPurityAnnotations`](../configuration.md#su
 To automatically add immutable annotations where needed, run Psalm with `--alter --issues=MissingImmutableAnnotation` (it does not need the config flag).  
 
 ```php
-<?php
+<?php // suggestPurityAnnotations="true"
 
 /** @api */
 final class CouldBeExternallyMutationFree {
