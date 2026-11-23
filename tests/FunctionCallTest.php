@@ -24,6 +24,31 @@ final class FunctionCallTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'ignoredNullableReturnInAnExtraEntryOfAnUnsealedShape' => [
+                'code' => '<?php
+                    /** @psalm-ignore-nullable-return */
+                    function maybeName(): ?string {
+                        return rand(0, 1) ? "a" : null;
+                    }
+
+                    /** @param array{id: int, ...<string, string>} $a */
+                    function takesShape(array $a): void {}
+
+                    takesShape(["id" => 1, "name" => maybeName()]);
+                ',
+            ],
+            'containedEntriesOfAnUnsealedShape' => [
+                'code' => '<?php
+                    /** @param array{id: int, ...<string, int>} $a */
+                    function takesShape(array $a): void {}
+
+                    /** @param array{id: positive-int, ...<non-empty-string, positive-int>} $b */
+                    function passesShape(array $b): void {
+                        takesShape($b);
+                        takesShape(["id" => 1, "a" => 2, "b" => 3]);
+                    }
+                ',
+            ],
             'strtolowerOfStringLiteralsIsTheLoweredLiterals' => [
                 'code' => '<?php
                     /** @return \'Interface\'|\'Trait\'|\'Enum\'|\'Class\' */
@@ -5891,6 +5916,106 @@ final class FunctionCallTest extends TestCase
                     takesArrayShapeWithZeroOrPositiveInt(["bar" => $mayBeInt]);
                 ',
                 'error_message' => 'ArgumentTypeCoercion',
+            ],
+            'implicitToStringCastOfAnExtraEntryOfAnUnsealedShape' => [
+                'code' => '<?php
+                    final class S {
+                        public function __toString(): string {
+                            return "s";
+                        }
+                    }
+
+                    /** @param array{id: int, ...<string, string>} $a */
+                    function takesShape(array $a): void {}
+
+                    takesShape(["id" => 1, "name" => new S()]);
+                ',
+                'error_message' => 'ImplicitToStringCast',
+            ],
+            'implicitToStringCastOfTheFallbackOfAnUnsealedShape' => [
+                'code' => '<?php
+                    final class S {
+                        public function __toString(): string {
+                            return "s";
+                        }
+                    }
+
+                    /** @param array{id: int, ...<string, string>} $a */
+                    function takesShape(array $a): void {}
+
+                    /** @param array{id: int, ...<string, S>} $b */
+                    function passesShape(array $b): void {
+                        takesShape($b);
+                    }
+                ',
+                'error_message' => 'ImplicitToStringCast',
+            ],
+            'implicitToStringCastOfAnExtraEntryOfAnUnsealedList' => [
+                'code' => '<?php
+                    final class S {
+                        public function __toString(): string {
+                            return "s";
+                        }
+                    }
+
+                    /** @param list{int, ...<string>} $a */
+                    function takesList(array $a): void {}
+
+                    takesList([1, new S()]);
+                ',
+                'error_message' => 'ImplicitToStringCast',
+            ],
+            'parentTypeOfAnExtraEntryOfAnUnsealedShape' => [
+                'code' => '<?php
+                    /** @param array{id: int, ...<string, int>} $a */
+                    function takesShape(array $a): void {}
+
+                    function passesFloat(float $f): void {
+                        takesShape(["id" => 1, "amount" => $f]);
+                    }
+                ',
+                'error_message' => 'ArgumentTypeCoercion',
+            ],
+            'parentTypeOfTheFallbackOfAnUnsealedShape' => [
+                'code' => '<?php
+                    /** @param array{id: int, ...<string, array>} $a */
+                    function takesShape(array $a): void {}
+
+                    /** @param array{id: int, ...<string, iterable>} $b */
+                    function passesShape(array $b): void {
+                        takesShape($b);
+                    }
+                ',
+                'error_message' => 'ArgumentTypeCoercion',
+            ],
+            'parentTypeOfAnOptionalEntry' => [
+                'code' => '<?php
+                    /** @param array{id: int, amount?: int} $a */
+                    function takesShape(array $a): void {}
+
+                    function passesFloat(float $f): void {
+                        takesShape(["id" => 1, "amount" => $f]);
+                    }
+                ',
+                'error_message' => 'ArgumentTypeCoercion',
+            ],
+            'additionalFieldsOfANestedShapeInAnExtraEntry' => [
+                'code' => '<?php
+                    /** @param array{id: int, ...<string, array{name: string}>} $a */
+                    function takesShape(array $a): void {}
+
+                    takesShape(["id" => 1, "child" => ["name" => 1, "age" => 2]]);
+                ',
+                'error_message' => 'with additional array shape fields (age) was provided',
+            ],
+            'extraEntryOfASealedShape' => [
+                'code' => '<?php
+                    /** @param array{id: int} $a */
+                    function takesShape(array $a): void {}
+
+                    takesShape(["id" => 1, "name" => "a"]);
+                ',
+                'error_message' => 'InvalidArgument',
             ],
             'strtolowerOfALowercaseString' => [
                 'code' => '<?php
