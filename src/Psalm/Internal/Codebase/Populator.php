@@ -1043,8 +1043,16 @@ final class Populator
 
         $this->extendTemplateParams($storage, $trait_storage, false);
 
-        $storage->pseudo_property_get_types += $trait_storage->pseudo_property_get_types;
-        $storage->pseudo_property_set_types += $trait_storage->pseudo_property_set_types;
+        $storage->pseudo_property_get_types += self::localizeInheritedTypes(
+            $storage,
+            $trait_storage,
+            $trait_storage->pseudo_property_get_types,
+        );
+        $storage->pseudo_property_set_types += self::localizeInheritedTypes(
+            $storage,
+            $trait_storage,
+            $trait_storage->pseudo_property_set_types,
+        );
 
         return $trait_storage;
     }
@@ -1197,12 +1205,7 @@ final class Populator
     }
 
     /**
-     * A public method that appears in the class, being declared there or in a used trait, and a `@method` the class
-     * already has, win over the `@method` of a used trait or parent class. A call of a method that isn't public goes
-     * through `__call` or `__callStatic` from outside the class, so the `@method` still describes it.
-     */
-    /**
-     * The `@property` types of a generic parent, in terms of the template arguments the class gives it
+     * The `@property` types of a generic parent or used trait, in terms of the template arguments the class gives it
      *
      * @param array<string, Union> $types
      * @return array<string, Union>
@@ -1225,6 +1228,11 @@ final class Populator
         return $types;
     }
 
+    /**
+     * A public method that appears in the class, being declared there or in a used trait, and a `@method` the class
+     * already has, win over the `@method` of a used trait or parent class. A call of a method that isn't public goes
+     * through `__call` or `__callStatic` from outside the class, so the `@method` still describes it.
+     */
     private function inheritPseudoMethods(ClassLikeStorage $storage, ClassLikeStorage $parent_storage): void
     {
         $fq_class_name_lc = strtolower($storage->name);
