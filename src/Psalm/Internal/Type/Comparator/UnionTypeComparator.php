@@ -11,6 +11,7 @@ use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TArrayKey;
+use Psalm\Type\Atomic\TBool;
 use Psalm\Type\Atomic\TCallable;
 use Psalm\Type\Atomic\TClassConstant;
 use Psalm\Type\Atomic\TEmptyMixed;
@@ -30,6 +31,7 @@ use Psalm\Type\Atomic\TObjectWithProperties;
 use Psalm\Type\Atomic\TTemplateKeyOf;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTemplateValueOf;
+use Psalm\Type\Atomic\TTrue;
 use Psalm\Type\Atomic\TTypeAlias;
 use Psalm\Type\Atomic\TTypeVariable;
 use Psalm\Type\Atomic\TValueOf;
@@ -628,6 +630,9 @@ final class UnionTypeComparator
 
     /**
      * Does the input param type match the given param type
+     *
+     * @param bool $ignore_null  skip the null of the container type
+     * @param bool $ignore_false skip the false of the container type, and the false of a bool of either type
      */
     public static function canBeContainedBy(
         Codebase $codebase,
@@ -658,6 +663,10 @@ final class UnionTypeComparator
                 continue;
             }
 
+            if ($ignore_false && self::isBool($container_type_part)) {
+                $container_type_part = new TTrue();
+            }
+
             foreach (self::getTypeParts($codebase, $input_type) as $input_type_part) {
                 if ($input_type_part instanceof TTypeVariable) {
                     // an unresolved type variable can still become anything
@@ -673,7 +682,7 @@ final class UnionTypeComparator
                 $atomic_comparison_result = new TypeComparisonResult();
                 $is_atomic_contained_by = AtomicTypeComparator::isContainedBy(
                     $codebase,
-                    $input_type_part,
+                    $ignore_false && self::isBool($input_type_part) ? new TTrue() : $input_type_part,
                     $container_type_part,
                     false,
                     false,
@@ -865,6 +874,14 @@ final class UnionTypeComparator
         }
 
         return false;
+    }
+
+    /**
+     * @psalm-pure
+     */
+    private static function isBool(Atomic $atomic): bool
+    {
+        return $atomic instanceof TBool && !$atomic instanceof TTrue && !$atomic instanceof TFalse;
     }
 
     /**

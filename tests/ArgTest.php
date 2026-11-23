@@ -729,6 +729,48 @@ final class ArgTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'falseOfAValueDoesNotMakeItPossiblyValidForABoolParameter' => [
+                'code' => '<?php
+                    final class Foo {}
+                    final class Bar {}
+
+                    function takes(Bar|bool $b): void {}
+
+                    function f(Foo|false $foo): void {
+                        takes($foo);
+                    }',
+                'error_message' => 'InvalidArgument',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'boolOfAValueMakesItPossiblyValidForABoolParameter' => [
+                'code' => '<?php
+                    final class Foo {}
+                    final class Bar {}
+
+                    function takes(Bar|bool $b): void {}
+
+                    function f(Foo|bool $foo): void {
+                        takes($foo);
+                    }',
+                'error_message' => 'PossiblyInvalidArgument',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'trueOfAValueMakesItPossiblyValidForABoolParameter' => [
+                'code' => '<?php
+                    final class Foo {}
+                    final class Bar {}
+
+                    function takes(Bar|bool $b): void {}
+
+                    function f(Foo|true $foo): void {
+                        takes($foo);
+                    }',
+                'error_message' => 'PossiblyInvalidArgument',
+                'error_levels' => [],
+                'php_version' => '8.2',
+            ],
             'arrayObjectNamedArgumentsOfPhp7AreRejected' => [
                 'code' => '<?php
                     $o = new ArrayObject([3, 1, 2]);

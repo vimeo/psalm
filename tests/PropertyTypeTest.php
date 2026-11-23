@@ -4963,6 +4963,22 @@ final class PropertyTypeTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'falseOfAValueDoesNotMakeItPossiblyValidForABoolProperty' => [
+                'code' => '<?php
+                    final class Foo {}
+                    final class Bar {}
+
+                    final class A {
+                        public Bar|bool $p = false;
+
+                        public function set(Foo|false $foo): void {
+                            $this->p = $foo;
+                        }
+                    }',
+                'error_message' => 'InvalidPropertyAssignmentValue',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
             'writingAPropertyOfAnUndefinedDocblockClassIsADocblockIssue' => [
                 'code' => '<?php
                     /** @return mixed */
