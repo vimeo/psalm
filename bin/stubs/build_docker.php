@@ -55,9 +55,9 @@ const INCLUDES = [
 const EXCLUDES = [
     // php-zmq does not build on PHP 8.5 (it calls zend_exception_get_default(), removed in 8.5).
     '8.5' => ['zmq'],
-    // these don't build on PHP 8.6 yet: it removed zval_dtor(), INI_STR(), zend_exception_get_default(), ...;
-    // swoole requires PHP 8.5 at most
-    '8.6' => ['zmq', 'amqp', 'apcu', 'ds', 'grpc', 'memcached', 'redis', 'swoole', 'zookeeper'],
+    // php-zmq still calls zend_exception_get_default(); redis, memcached, amqp, apcu and ds use APIs 8.6 removed;
+    // swoole and zookeeper require PHP <= 8.5
+    '8.6' => ['zmq', 'redis', 'memcached', 'amqp', 'apcu', 'ds', 'swoole', 'zookeeper'],
 ];
 
 /** Extension versions pinned for specific versions, by base extension name. */
@@ -582,7 +582,7 @@ function explainRebuild(string $image, string $cacheKey, array $components): voi
  *
  * @param array<string, string> $pieInstalls
  */
-function pieStep(array $pieInstalls, string $cflags): string
+function pieStep(array $pieInstalls, string $cppflags): string
 {
     if ($pieInstalls === []) {
         return '';
@@ -592,7 +592,7 @@ function pieStep(array $pieInstalls, string $cflags): string
     foreach ($pieInstalls as $extension => $version) {
         $pie = PIE_PACKAGES[explode('-', $extension, 2)[0]];
         $packages = array_merge($packages, $pie['apk']);
-        $commands[] = "{$cflags}pie install --with-php-config=/usr/local/bin/php-config "
+        $commands[] = "{$cppflags}pie install --with-php-config=/usr/local/bin/php-config "
             . implode(' ', [$pie['package'] . ':' . $version, ...$pie['options']]);
     }
     $pieVersion = PIE_VERSION;
@@ -628,8 +628,9 @@ function generateDockerfile(string $version, array $extensions, array $pieInstal
             . " && \\\n    curl -fsSL https://pear.php.net/install-pear-nozlib.phar -o /tmp/pear.phar"
             . " && \\\n    php /tmp/pear.phar && rm /tmp/pear.phar";
     }
-    // 8.6 dropped XtOffsetOf, an alias of offsetof, which imagick still uses
-    $cflags = version_compare($version, '8.6', '>=') ? "CFLAGS='-DXtOffsetOf=offsetof' " : '';
+    // 8.6 dropped XtOffsetOf, an alias of offsetof, which grpc and imagick still use. Not CFLAGS:
+    // grpc's config.m4 overwrites it
+    $cppflags = version_compare($version, '8.6', '>=') ? "CPPFLAGS='-DXtOffsetOf=offsetof' " : '';
     $packages = BASE_IMAGE_PACKAGES[$version] ?? [];
     $packageStep = $packages === []
         ? ''
@@ -642,9 +643,9 @@ function generateDockerfile(string $version, array $extensions, array $pieInstal
         static fn(string $extension): bool => PIE_PACKAGES[explode('-', $extension, 2)[0]]['own_layer'] ?? false,
         ARRAY_FILTER_USE_KEY,
     );
-    $ownLayerStep = pieStep($ownLayerInstalls, $cflags);
+    $ownLayerStep = pieStep($ownLayerInstalls, $cppflags);
     // after install-php-extensions, which installs igbinary for the memcached and redis serializers
-    $pieStep = pieStep(array_diff_key($pieInstalls, $ownLayerInstalls), $cflags);
+    $pieStep = pieStep(array_diff_key($pieInstalls, $ownLayerInstalls), $cppflags);
     // PHP 8.5 builds opcache in and always loads it
     $opcacheStep = version_compare($version, '8.5', '<') ? "\nRUN echo 'zend_extension=opcache' > /usr/local/etc/php/php.ini" : '';
 
@@ -661,7 +662,7 @@ function generateDockerfile(string $version, array $extensions, array $pieInstal
         # exactly when PHP or any extension version changes, rebuilding the layer below.
         ARG CACHEBUST
         RUN echo "cache key: \${CACHEBUST:-none}" && \\
-            {$packageStep}{$cflags}install-php-extensions $extensionList
+            {$packageStep}{$cppflags}install-php-extensions $extensionList
         {$pieStep}{$opcacheStep}
         DOCKERFILE;
 }
