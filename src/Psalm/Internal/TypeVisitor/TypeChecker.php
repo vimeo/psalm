@@ -20,6 +20,7 @@ use Psalm\Internal\Type\TemplateBound;
 use Psalm\Internal\Type\TemplateDefaults;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
+use Psalm\Internal\Type\TypeArgumentProjection;
 use Psalm\Internal\Type\TypeExpander;
 use Psalm\Internal\Type\TypeParser;
 use Psalm\Issue\DeprecatedClass;
@@ -142,6 +143,11 @@ final class TypeChecker extends TypeVisitor
                 }
 
                 foreach ($type->type_params as $i => $type_param) {
+                    // what a `*` holds is the bound of its template, checked where the template is declared
+                    if ($type->getProjection($i) === TypeArgumentProjection::Star) {
+                        continue;
+                    }
+
                     $this->prevent_template_covariance = $prevents_covariance[$i] ?? $outer_prevents_covariance;
                     $this->in_invariant_position = $outer_in_invariant_position || ($prevents_covariance[$i] ?? false);
                     $this->traverse($type_param);
@@ -433,6 +439,14 @@ final class TypeChecker extends TypeVisitor
                         $template_result,
                         $codebase,
                     );
+
+                    // `*` fits any bound, and stands for the bound in those of the other templates
+                    if ($atomic->getProjection($i) === TypeArgumentProjection::Star) {
+                        $template_result->lower_bounds[$expected_template_name][$defining_class][]
+                            = new TemplateBound($expected_type_param);
+
+                        continue;
+                    }
 
                     $type_param = TypeExpander::expandUnion(
                         $codebase,

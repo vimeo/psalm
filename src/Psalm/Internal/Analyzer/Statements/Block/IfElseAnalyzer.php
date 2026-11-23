@@ -18,7 +18,6 @@ use Psalm\Internal\Analyzer\Statements\Block\IfElse\ElseIfAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Block\IfElse\IfAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\BinaryOp\GuardedClasses;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
-use Psalm\Internal\Analyzer\TraitAnalyzer;
 use Psalm\Internal\Clause;
 use Psalm\Internal\Codebase\VariableUseGraph;
 use Psalm\Internal\Scope\IfConditionalScope;
@@ -644,18 +643,12 @@ final class IfElseAnalyzer
                 && $post_if_context->vars_in_scope[$var_id]->hasMixed()
                 && !$reconciled_type->hasMixed()
             ) {
-                if (!$post_if_context->collect_initializations
-                    && $statements_analyzer->getFilePath() === $statements_analyzer->getRootFilePath()
-                ) {
+                if ($statements_analyzer->shouldCountMixed($post_if_context)) {
                     $parent_source = $statements_analyzer->getSource();
 
-                    $functionlike_storage = $parent_source instanceof FunctionLikeAnalyzer
-                        ? $parent_source->getFunctionLikeStorage($statements_analyzer)
-                        : null;
-
-                    if (!$functionlike_storage
-                            || (!$parent_source->getSource() instanceof TraitAnalyzer
-                                && !isset($functionlike_storage->param_lookup[substr($var_id, 1)]))
+                    if (!$parent_source instanceof FunctionLikeAnalyzer
+                        || !isset($parent_source->getFunctionLikeStorage($statements_analyzer)
+                            ->param_lookup[substr($var_id, 1)])
                     ) {
                         $codebase = $statements_analyzer->getCodebase();
                         $codebase->analyzer->decrementMixedCount($statements_analyzer->getFilePath());
@@ -673,8 +666,7 @@ final class IfElseAnalyzer
 
     /**
      * A class that doesn't exist is only known to be there in the block run when `class_exists()` (or the like)
-     * is true, and after the if where the condition is false; after an if whose other branches leave, it is
-     * known where the condition is true
+     * is true, and in the elseifs, the else and after the if where the condition is false
      *
      * @throws ScopeAnalysisException
      */
@@ -702,12 +694,8 @@ final class IfElseAnalyzer
             ...GuardedClasses::unknownWhenResult($stmt->cond, false, $codebase),
         ];
 
-        if ($stmt->else) {
-            $if_scope->phantom_classes_of_if_block = [
-                ...$phantom_classes_before_cond,
-                ...GuardedClasses::unknownWhenResult($stmt->cond, true, $codebase),
-            ];
-        }
+        // the elseifs and the else run where the condition is false too
+        $if_conditional_scope->post_if_context->phantom_classes = $context->phantom_classes;
 
         return $if_conditional_scope;
     }
