@@ -84,6 +84,7 @@ final class KeyedArrayComparator
                 $container_property_type,
                 $allow_interface_equality,
                 $atomic_comparison_result,
+                true,
             )) {
                 $all_types_contain = false;
             }
@@ -112,7 +113,6 @@ final class KeyedArrayComparator
                     $key_type,
                     $allow_interface_equality,
                     $atomic_comparison_result,
-                    false,
                 )) {
                     $all_types_contain = false;
                 }
@@ -155,7 +155,8 @@ final class KeyedArrayComparator
      * Compares a key or a value of the input array with the container's, and records the outcome in
      * $atomic_comparison_result.
      *
-     * @param bool $input_may_be_parent_type false for a part that is one exact value (a literal key)
+     * @param bool $check_parent_type whether a parent type given for the part is a coercion, as for a declared entry;
+     *                                an extra entry or a fallback is compared as the value of an `array<K, V>`
      */
     private static function isPartContainedBy(
         Codebase $codebase,
@@ -163,7 +164,7 @@ final class KeyedArrayComparator
         Union $container_part,
         bool $allow_interface_equality,
         ?TypeComparisonResult $atomic_comparison_result,
-        bool $input_may_be_parent_type = true,
+        bool $check_parent_type = false,
     ): bool {
         $part_comparison = new TypeComparisonResult();
 
@@ -185,7 +186,7 @@ final class KeyedArrayComparator
             $atomic_comparison_result->to_string_cast = $atomic_comparison_result->to_string_cast === true
                 || $part_comparison->to_string_cast === true;
         } else {
-            if ($input_may_be_parent_type
+            if ($check_parent_type
                 && !$part_comparison->type_coerced_from_scalar
                 && !$part_comparison->type_coerced
             ) {

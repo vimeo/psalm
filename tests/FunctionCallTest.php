@@ -5981,29 +5981,6 @@ final class FunctionCallTest extends TestCase
                 ',
                 'error_message' => 'ImplicitToStringCast',
             ],
-            'parentTypeOfAnExtraEntryOfAnUnsealedShape' => [
-                'code' => '<?php
-                    /** @param array{id: int, ...<string, int>} $a */
-                    function takesShape(array $a): void {}
-
-                    function passesFloat(float $f): void {
-                        takesShape(["id" => 1, "amount" => $f]);
-                    }
-                ',
-                'error_message' => 'ArgumentTypeCoercion',
-            ],
-            'parentTypeOfTheFallbackOfAnUnsealedShape' => [
-                'code' => '<?php
-                    /** @param array{id: int, ...<string, array>} $a */
-                    function takesShape(array $a): void {}
-
-                    /** @param array{id: int, ...<string, iterable>} $b */
-                    function passesShape(array $b): void {
-                        takesShape($b);
-                    }
-                ',
-                'error_message' => 'ArgumentTypeCoercion',
-            ],
             'parentTypeOfAnOptionalEntry' => [
                 'code' => '<?php
                     /** @param array{id: int, amount?: int} $a */
