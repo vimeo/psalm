@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Psalm\Tests;
 
 use Override;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Psalm\Config;
 use Psalm\Context;
 use Psalm\Exception\CodeException;
@@ -24,6 +25,72 @@ final class AnnotationTest extends TestCase
         parent::setUp();
         $codebase = $this->project_analyzer->getCodebase();
         $codebase->reportUnusedVariables();
+    }
+
+    #[DataProvider('providerVariableTagWithoutType')]
+    public function testVariableTagWithoutTypeIsAMisplacedVariable(string $code): void
+    {
+        $this->addFile('somefile.php', $code);
+
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessage('Misplaced variable');
+
+        $this->withErrorsThrown(fn() => $this->analyzeFile('somefile.php', new Context()));
+    }
+
+    /**
+     * @return iterable<string, array{string}>
+     */
+    public static function providerVariableTagWithoutType(): iterable
+    {
+        yield 'property' => [
+            '<?php
+                /**
+                 * @property
+                 *        $p
+                 */
+                final class A {}',
+        ];
+        yield 'propertyRead' => [
+            '<?php
+                /**
+                 * @property-read
+                 *        $p
+                 */
+                final class A {}',
+        ];
+        yield 'global' => [
+            '<?php
+                /**
+                 * @global
+                 *        $g
+                 */
+                function f(): void {}',
+        ];
+        yield 'param' => [
+            '<?php
+                /**
+                 * @param
+                 *        $p
+                 */
+                function f(int $p): void {}',
+        ];
+        yield 'paramOut' => [
+            '<?php
+                /**
+                 * @param-out
+                 *        $p
+                 */
+                function f(?int &$p): void {}',
+        ];
+        yield 'paramClosureThis' => [
+            '<?php
+                /**
+                 * @param-closure-this
+                 *        $c
+                 */
+                function f(Closure $c): void {}',
+        ];
     }
 
     public function testLessSpecificImplementedReturnTypeWithDocblockOnMultipleLines(): void
@@ -2340,6 +2407,59 @@ final class AnnotationTest extends TestCase
 
                         return $foo;
                     }',
+            ],
+            'typeAndVariableLinesOfEachTag' => [
+                'code' => '<?php
+                    /**
+                     * @property int $a
+                     * @property-read string &$b
+                     */
+                    final class A {
+                        public function __get(string $name) {
+                            return null;
+                        }
+                    }
+
+                    /**
+                     * @param int ...$xs
+                     * @return list<int>
+                     */
+                    function variadic(...$xs): array {
+                        return array_values($xs);
+                    }
+
+                    /**
+                     * @param int &$x
+                     * @param-out string $x
+                     */
+                    function byRef(&$x): int {
+                        $old = $x;
+                        $x = "a";
+                        return $old;
+                    }
+
+                    /**
+                     * @global float $g
+                     */
+                    function readGlobal(): float {
+                        global $g;
+                        return $g;
+                    }
+
+                    $o = new A();
+                    $pa = $o->a;
+                    $pb = $o->b;
+                    $xs = variadic(1, 2);
+                    $r = 1;
+                    $old = byRef($r);',
+                'assertions' => [
+                    '$pa===' => 'int',
+                    '$pb===' => 'string',
+                    '$xs===' => 'list<int>',
+                    '$r===' => 'string',
+                    '$old===' => 'int',
+                ],
+                'ignored_issues' => ['UnusedVariable'],
             ],
             'fileLevelVarDocblockBeforeAUseStatement' => [
                 'code' => '<?php
