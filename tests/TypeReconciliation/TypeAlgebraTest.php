@@ -96,6 +96,72 @@ final class TypeAlgebraTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'falsyStoredConditionThatReadsTheVariableItselfDoesNotNarrow' => [
+                'code' => '<?php
+                    final class Node {}
+
+                    function selfRef(?Node $x, bool $ok): void {
+                        $ok = $x !== null && $ok;
+                        if (!$ok) {
+                            if ($x !== null) {
+                                echo "reachable";
+                            }
+                        }
+                    }',
+            ],
+            'falsyStoredConditionNarrowsToItsNegation' => [
+                'code' => '<?php
+                    final class Node {}
+                    final class Leaf {}
+
+                    function takesNode(Node $n): void {}
+                    function takesLeaf(Leaf $l): void {}
+
+                    function earlyReturn(?Node $initial): void {
+                        $missing = $initial === null;
+                        if ($missing) {
+                            return;
+                        }
+                        takesNode($initial);
+                    }
+
+                    function negatedFlag(?Node $initial): void {
+                        $missing = $initial === null;
+                        if (!$missing) {
+                            takesNode($initial);
+                        }
+                    }
+
+                    function elseOfAnInstanceofFlag(Node|Leaf $n): void {
+                        $is_node = $n instanceof Node;
+                        if ($is_node) {
+                            takesNode($n);
+                        } else {
+                            takesLeaf($n);
+                        }
+                    }
+
+                    function orFlag(?Node $a, ?Node $b): void {
+                        $either = $a === null || $b === null;
+                        if ($either) {
+                            return;
+                        }
+                        takesNode($a);
+                        takesNode($b);
+                    }
+
+                    function andFlag(?Node $a, ?Node $b): void {
+                        $both = $a !== null && $b !== null;
+                        if (!$both) {
+                            /** @psalm-check-type-exact $a = Node|null */;
+                            return;
+                        }
+                        takesNode($a);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'isArrayAndNotListThatDoesNotHoldKeepsTheOtherTypesOfTheUnion' => [
                 'code' => '<?php
                     function test(array|int $value): void {
@@ -5891,7 +5957,7 @@ final class TypeAlgebraTest extends TestCase
                         }
                     }
                     PHP,
-                'error_message' => 'PossiblyNullReference',
+                'error_message' => 'NullReference - src' . DIRECTORY_SEPARATOR . 'somefile.php:13:18',
                 'error_levels' => [],
                 'php_version' => '8.1',
             ],

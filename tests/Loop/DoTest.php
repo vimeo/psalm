@@ -43,6 +43,17 @@ final class DoTest extends TestCase
                 'ignored_issues' => ['MixedArrayAccess'],
                 'php_version' => '8.0',
             ],
+            'doWhileBarePostDecrementConditionIsMinusOneAfterTheLoop' => [
+                'code' => '<?php
+                    $c = 3;
+                    do {
+                        $c = 0;
+                    } while ($c--);
+                    $afterLoop = $c;',
+                'assertions' => [
+                    '$afterLoop===' => '-1',
+                ],
+            ],
             'doCounterIncrementedThroughAReferenceIsWidened' => [
                 'code' => <<<'PHP'
                     <?php

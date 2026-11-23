@@ -824,6 +824,39 @@ final class ClassLikeStringTest extends TestCase
                 'assertions' => [],
                 'ignored_issues' => ['DeprecatedFunction'],
             ],
+            'getParentClassWithoutArgumentIsTheParentClass' => [
+                'code' => '<?php
+                    class A {}
+
+                    class B extends A {
+                        public function f(): void {
+                            $parent = get_parent_class();
+                            /** @psalm-check-type-exact $parent = A::class */;
+                            $object = new $parent();
+                            /** @psalm-check-type-exact $object = A */;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['DeprecatedFunction'],
+            ],
+            'getParentClassWithoutArgumentInATraitIsTheParentOfTheUsingClass' => [
+                'code' => '<?php
+                    class A {}
+                    class B extends A {}
+
+                    trait T {
+                        public function f(): void {
+                            $parent = get_parent_class();
+                            /** @psalm-check-type-exact $parent = B::class */;
+                        }
+                    }
+
+                    class C extends B {
+                        use T;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['DeprecatedFunction'],
+            ],
             'createClassOfTypeFromString' => [
                 'code' => '<?php
                     class A {}
@@ -1426,6 +1459,26 @@ final class ClassLikeStringTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'getParentClassWithoutArgumentInATraitIsExactlyTheParentOfTheUsingClass' => [
+                'code' => '<?php
+                    class A {}
+                    class B extends A {}
+
+                    trait T {
+                        public function f(): void {
+                            $parent = get_parent_class();
+                            if ($parent !== B::class) {
+                                echo "never";
+                            }
+                        }
+                    }
+
+                    class C extends B {
+                        use T;
+                    }',
+                'error_message' => 'TypeDoesNotContainType',
+                'error_levels' => ['DeprecatedFunction'],
+            ],
             'classExistsOnTheLeftOfAnOrDoesNotAllowTheClassOnTheRight' => [
                 'code' => '<?php
                     function check(): bool {

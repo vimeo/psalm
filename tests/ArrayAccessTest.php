@@ -1493,6 +1493,144 @@ final class ArrayAccessTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'issetOnArrayOrArrayAccessKeepsTheArrayValueType' => [
+                'code' => '<?php
+                    /** @var array<string, string>|ArrayAccess<string, string> $test */
+                    $test = $_GET["x"];
+                    $a = $test["a"] ?? "a";',
+                'assertions' => [
+                    '$a===' => 'string',
+                ],
+            ],
+            'issetOnANullableObjectOffsetKeepsTheOffsetUnknown' => [
+                'code' => '<?php
+                    function f(?SimpleXMLElement $a, bool $b): void {
+                        if (!(isset($a["r"]) || $b)) {
+                            return;
+                        }
+                        echo isset($a["r"]) && $a["r"] ? 1 : 0;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['RiskyTruthyFalsyComparison'],
+            ],
+            'issetOnAnObjectOrFalseOffsetKeepsTheOffsetUnknown' => [
+                'code' => '<?php
+                    /** @implements ArrayAccess<string, mixed> */
+                    final class SomeObject implements ArrayAccess {
+                        public function offsetExists(mixed $offset): bool {
+                            return true;
+                        }
+
+                        public function offsetGet(mixed $offset): mixed {
+                            return 1;
+                        }
+
+                        public function offsetSet(mixed $offset, mixed $value): void {}
+
+                        public function offsetUnset(mixed $offset): void {}
+                    }
+
+                    function f(SomeObject|false $a, bool $b): void {
+                        if (!(isset($a["r"]) || $b)) {
+                            return;
+                        }
+                        echo isset($a["r"]) && $a["r"] ? 1 : 0;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['PossiblyFalseReference', 'MixedArgument'],
+                'php_version' => '8.0',
+            ],
+            'issetOnArrayOrArrayAccessNarrowsTheArray' => [
+                'code' => '<?php
+                    /** @var array<string, string>|ArrayAccess<string, string> $test */
+                    $test = $_GET["x"];
+                    if (isset($test["a"])) {
+                        $a = $test;
+                    } else {
+                        $a = null;
+                    }',
+                'assertions' => [
+                    '$a===' => 'ArrayAccess<string, string>|array{a: string, ...<string, string>}|null',
+                ],
+            ],
+            'issetOnArrayOrArrayAccessWithKnownOffset' => [
+                'code' => '<?php
+                    /** @var array{a: int}|ArrayAccess<string, int> $test */
+                    $test = $_GET["x"];
+                    if (isset($test["a"])) {
+                        $a = $test;
+                    } else {
+                        $a = null;
+                    }',
+                'assertions' => [
+                    '$a===' => 'ArrayAccess<string, int>|array{a: int}|null',
+                ],
+            ],
+            'issetOnMixedArrayOrArrayAccessHasNoValueType' => [
+                'code' => '<?php
+                    /** @var array<string, mixed>|ArrayAccess<string, mixed> $test */
+                    $test = $_GET["x"];
+                    if (isset($test["a"])) {
+                        $a = $test;
+                    } else {
+                        $a = null;
+                    }',
+                'assertions' => [
+                    '$a===' => 'ArrayAccess<string, mixed>|array{a: mixed, ...<string, mixed>}|null',
+                ],
+            ],
+            'issetOnNestedArrayOrArrayAccess' => [
+                'code' => '<?php
+                    /** @var array<string, array<string, int>|ArrayAccess<string, int>> $test */
+                    $test = $_GET["x"];
+                    if (isset($test["a"]["b"])) {
+                        $a = $test["a"];
+                    } else {
+                        $a = null;
+                    }',
+                'assertions' => [
+                    '$a===' => 'ArrayAccess<string, int>|array{b: int, ...<string, int>}|null',
+                ],
+            ],
+            'issetOnANestedOffsetOfAnArrayOrArrayAccessDefinesTheOuterOffset' => [
+                'code' => '<?php
+                    /** @var array{a?: array{b?: int}}|ArrayAccess<string, int> $test */
+                    $test = $_GET["x"];
+                    if (isset($test["a"]["b"])) {
+                        $a = $test["a"]["b"];
+                    } else {
+                        $a = 0;
+                    }',
+                'assertions' => [
+                    '$a===' => 'int',
+                ],
+            ],
+            'issetOnANestedOffsetOfAnArrayOrArrayAccessKeepsTheValueTypeOfTheObject' => [
+                'code' => '<?php
+                    /** @var array{a?: array{b?: int}}|ArrayAccess<string, array{b?: string}> $test */
+                    $test = $_GET["x"];
+                    if (isset($test["a"]["b"])) {
+                        $a = $test["a"]["b"];
+                    } else {
+                        $a = 0;
+                    }',
+                'assertions' => [
+                    '$a===' => 'int|string',
+                ],
+            ],
+            'issetOnArrayOrArrayAccessKeepsTheValueTypeOfTheObject' => [
+                'code' => '<?php
+                    /** @var array{a?: int}|ArrayAccess<string, string> $test */
+                    $test = $_GET["x"];
+                    if (isset($test["a"])) {
+                        $a = $test["a"];
+                    } else {
+                        $a = 0;
+                    }',
+                'assertions' => [
+                    '$a===' => 'int|null|string',
+                ],
+            ],
             'nullOffsetOfAnObjectThatAcceptsItInArrayAccess' => [
                 'code' => '<?php
                     /** @implements ArrayAccess<string|null, int> */
@@ -3792,6 +3930,27 @@ final class ArrayAccessTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'offsetSetOfAnItemOfAnArrayChecksTheValue' => [
+                'code' => '<?php
+                    final class Dog {}
+                    final class Cat {}
+
+                    /** @implements ArrayAccess<int, Dog> */
+                    final class Dogs implements ArrayAccess {
+                        public function offsetExists(mixed $offset): bool { return false; }
+                        public function offsetGet(mixed $offset): Dog { return new Dog(); }
+                        public function offsetSet(mixed $offset, mixed $value): void { echo "set"; }
+                        public function offsetUnset(mixed $offset): void { echo "unset"; }
+                    }
+
+                    /** @param array<string, Dogs> $packs */
+                    function addCat(array $packs): void {
+                        $packs["k"][] = new Cat();
+                    }',
+                'error_message' => 'InvalidArgument',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
             'nullOffsetOfAnObjectThatRejectsItInArrayAccess' => [
                 'code' => '<?php
                     /** @implements ArrayAccess<string, int> */
