@@ -216,7 +216,7 @@ final class ClassLikeStubGenerator
             foreach ($storage->used_traits as $trait_lc => $trait) {
                 if (isset($excluded_traits[$trait_lc])
                     || !$codebase->classlike_storage_provider->has($trait)
-                    || !isset($codebase->classlike_storage_provider->get($trait)->methods[$method_name])
+                    || !isset($codebase->classlike_storage_provider->get($trait)->declaring_method_ids[$method_name])
                 ) {
                     continue;
                 }

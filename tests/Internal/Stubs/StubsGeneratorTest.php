@@ -166,6 +166,27 @@ final class StubsGeneratorTest extends TestCase
         self::assertStringContainsString('baz as private;', $stub);
     }
 
+    public function testInsteadofKeepsAMethodTheWinningTraitGetsFromItsOwnTrait(): void
+    {
+        $stub = $this->getStub('<?php
+            trait Inner {
+                public function f(): int { return 0; }
+            }
+            trait A {
+                use Inner;
+            }
+            trait B {
+                public function f(): int { return 2; }
+            }
+            class Nested {
+                use A, B {
+                    A::f insteadof B;
+                }
+            }');
+
+        self::assertStringContainsString('\\A::f insteadof \\B;', $stub);
+    }
+
     public function testAnIntIsAnIdentifier(): void
     {
         $type = StubsGenerator::getParserTypeFromPsalmType(Type::getInt());
