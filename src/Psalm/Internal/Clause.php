@@ -101,6 +101,11 @@ final class Clause implements Stringable
     /**
      * @param array<string, non-empty-array<string, Assertion>>  $possibilities
      * @param array<string, bool> $redefined_vars
+     * @param bool $implied belongs to the formula as read with what its calls assert in place of their results,
+     *                      taking that to be all there is to them: negating the formula negates this reading apart
+     * @param ?string $premise_var_id makes the clause an implication, from what that variable is (what a call
+     *                                returns) to the clause's other disjuncts, which holds whether or not the
+     *                                formula does: negating the formula keeps it as it is
      */
     public function __construct(
         array $possibilities,
@@ -110,6 +115,8 @@ final class Clause implements Stringable
         bool $reconcilable = true,
         public bool $generated = false,
         public array $redefined_vars = [],
+        public bool $implied = false,
+        public ?string $premise_var_id = null,
     ) {
         if ($wedge) {
             $this->hash = 'w' . $creating_object_id;
@@ -129,7 +136,9 @@ final class Clause implements Stringable
 
             // a clause that is not reconcilable is not the same as one with the same possibilities from another
             // condition: it also holds what the condition says about its other disjuncts
-            $this->hash = ($reconcilable ? '' : 'u' . $creating_object_id . ':') . hash('xxh128', $data);
+            $this->hash = ($premise_var_id !== null ? 'p' : '')
+                . ($reconcilable ? '' : 'u' . $creating_object_id . ':')
+                . hash('xxh128', $data);
         }
 
         $this->possibilities = $possibilities;
@@ -340,6 +349,8 @@ final class Clause implements Stringable
             $this->reconcilable,
             true,
             $this->redefined_vars,
+            $this->implied,
+            $this->premise_var_id,
         );
     }
 
@@ -360,6 +371,7 @@ final class Clause implements Stringable
             $this->reconcilable,
             $this->generated,
             $this->redefined_vars,
+            $this->implied,
         );
     }
 
@@ -379,6 +391,21 @@ final class Clause implements Stringable
             $this->reconcilable,
             $this->generated,
             $this->redefined_vars,
+            $this->implied,
+        );
+    }
+
+    public function setImplied(): self
+    {
+        return new self(
+            $this->possibilities,
+            $this->creating_conditional_id,
+            $this->creating_object_id,
+            $this->wedge,
+            $this->reconcilable,
+            $this->generated,
+            $this->redefined_vars,
+            true,
         );
     }
 
