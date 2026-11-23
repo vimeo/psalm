@@ -330,7 +330,7 @@ $searcher->count(1.5);                                    // InvalidArgument, To
 
 ### `@psalm-overload`
 
-Declares one signature a function can be called with, for a function whose behaviour depends on the arguments. A call is checked against the first `@psalm-overload` whose parameters accept its arguments, or against the last one when none does. The function's own signature is not used for calls that have overloads.
+Declares one signature a function can be called with, for a function whose behaviour depends on the arguments. A call is checked against the first `@psalm-overload` whose parameters accept its arguments, or, when none does, against the function's own signature if it accepts them, else against the last overload.
 
 ```php
 <?php
@@ -345,6 +345,22 @@ function search(Query $query): Result {
 search(new LimitedQuery())->getPageCount();    // no issue
 search(new LimitedQuery())->getAllRecords();   // UndefinedMethod
 search(new UnlimitedQuery())->getAllRecords(); // no issue
+
+/** @var LimitedQuery|UnlimitedQuery $query */
+search($query);                                // Result, from the function's own signature
+```
+
+An overload has to fit the signature: the same parameter names at the same positions, and types the signature accepts. By-reference comes from the signature.
+
+```php
+<?php
+/**
+ * @psalm-overload (int $value): int
+ * @psalm-overload (string $other): string
+ */
+function pick(int|string $value): int|string { // InvalidDocblock: $other is at the position of $value
+    return $value;
+}
 ```
 
 ### `@psalm-seal-methods`, `@psalm-no-seal-methods`, `@seal-methods`, `@no-seal-methods`
