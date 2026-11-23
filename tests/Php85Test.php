@@ -542,6 +542,42 @@ final class Php85Test extends TestCase
                 'error_levels' => [],
                 'php_version' => '8.5',
             ],
+            'arrayPushToAPropertyOfAConstantObjectBeforePhp86' => [
+                'code' => '<?php
+                    const CONFIG = new stdClass();
+
+                    array_push(CONFIG->items, 1);',
+                'error_message' => 'ParseError - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:32 - Cannot use temporary expression in write context before PHP 8.6',
+                'error_levels' => [],
+                'php_version' => '8.5',
+            ],
+            'arrayUnshiftToAPropertyOfAConstantObjectBeforePhp86' => [
+                'code' => '<?php
+                    const CONFIG = new stdClass();
+
+                    array_unshift(CONFIG->items, 1);',
+                'error_message' => 'ParseError - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:35 - Cannot use temporary expression in write context before PHP 8.6',
+                'error_levels' => [],
+                'php_version' => '8.5',
+            ],
+            'arraySpliceOfAPropertyOfAConstantObjectBeforePhp86' => [
+                'code' => '<?php
+                    const CONFIG = new stdClass();
+
+                    array_splice(CONFIG->items, 1);',
+                'error_message' => 'ParseError - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:34 - Cannot use temporary expression in write context before PHP 8.6',
+                'error_levels' => [],
+                'php_version' => '8.5',
+            ],
+            'byReferenceArrayItemOfAPropertyOfAConstantObjectBeforePhp86' => [
+                'code' => '<?php
+                    const CONFIG = new stdClass();
+
+                    $r = [&CONFIG->items];',
+                'error_message' => 'ParseError - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:28 - Cannot use temporary expression in write context before PHP 8.6',
+                'error_levels' => ['MixedAssignment'],
+                'php_version' => '8.5',
+            ],
             'referenceToAPropertyOfAConstantObjectBeforePhp86' => [
                 'code' => '<?php
                     const CONFIG = new stdClass();

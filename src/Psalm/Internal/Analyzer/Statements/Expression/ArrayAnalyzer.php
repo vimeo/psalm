@@ -609,6 +609,8 @@ final class ArrayAnalyzer
         }
 
         if ($item->byRef) {
+            AssignmentAnalyzer::checkConstantObjectWrite($statements_analyzer, $item->value);
+
             $var_id = ExpressionIdentifier::getExtendedVarId(
                 $item->value,
                 $statements_analyzer->getFQCLN(),
