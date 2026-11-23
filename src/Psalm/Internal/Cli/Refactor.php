@@ -96,17 +96,12 @@ final class Refactor
         // --refactor is an option of psalm, which forwards the call to psalm-refactor
         CliUtils::rejectUnrecognisedOptions($args, $valid_short_options, $valid_long_options, ['--refactor']);
 
-        if (array_key_exists('help', $options)) {
-            $options['h'] = false;
-        }
-
-        if (array_key_exists('monochrome', $options)) {
-            $options['m'] = false;
-        }
-
-        if (isset($options['config'])) {
-            $options['c'] = $options['config'];
-        }
+        CliUtils::syncShortOptions($options, [
+            'help' => 'h',
+            'monochrome' => 'm',
+            'config' => 'c',
+            'root' => 'r',
+        ]);
 
         if (isset($options['c']) && is_array($options['c'])) {
             fwrite(STDERR, 'Too many config files provided' . PHP_EOL);
@@ -179,9 +174,6 @@ final class Refactor
             exit;
         }
 
-        if (isset($options['root'])) {
-            $options['r'] = $options['root'];
-        }
         CliUtils::setMemoryLimit($options);
 
         $current_dir = (string) getcwd();
@@ -206,12 +198,11 @@ final class Refactor
         IssueBuffer::captureServer($_SERVER);
 
         $include_collector = new IncludeCollector();
-        $autoloaders = $include_collector->runAndCollect(
-            // we ignore the FQN because of a hack in scoper.inc that needs full path
-            // phpcs:ignore SlevomatCodingStandard.Namespaces.ReferenceUsedNamesOnly.ReferenceViaFullyQualifiedName
-            /** @return list<ClassLoader> */
-            static fn(): array =>
-                CliUtils::requireAutoloaders($current_dir, isset($options['r']), $vendor_dir),
+        $autoloaders = CliUtils::loadAutoloaders(
+            $include_collector,
+            $current_dir,
+            isset($options['r']),
+            $vendor_dir,
         );
 
         // If Xdebug is enabled, restart without it

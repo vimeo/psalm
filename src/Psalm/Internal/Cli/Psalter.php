@@ -11,7 +11,6 @@ use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\CliUtils;
 use Psalm\Internal\Composer;
 use Psalm\Internal\ErrorHandler;
-use Psalm\Internal\Fork\PsalmRestarter;
 use Psalm\Internal\IncludeCollector;
 use Psalm\Internal\Preloader;
 use Psalm\Internal\Provider\ClassLikeStorageCacheProvider;
@@ -115,7 +114,13 @@ final class Psalter
 
         CliUtils::setMemoryLimit($options);
 
-        self::syncShortOptions($options);
+        CliUtils::syncShortOptions($options, [
+            'help' => 'h',
+            'monochrome' => 'm',
+            'config' => 'c',
+            'root' => 'r',
+            'file' => 'f',
+        ]);
 
         if (isset($options['c']) && is_array($options['c'])) {
             fwrite(STDERR, 'Too many config files provided' . PHP_EOL);
@@ -245,25 +250,15 @@ final class Psalter
         IssueBuffer::captureServer($_SERVER);
 
         $include_collector = new IncludeCollector();
-        $autoloaders = $include_collector->runAndCollect(
-            // we ignore the FQN because of a hack in scoper.inc that needs full path
-            // phpcs:ignore SlevomatCodingStandard.Namespaces.ReferenceUsedNamesOnly.ReferenceViaFullyQualifiedName
-            /** @return list<ClassLoader> */
-            static fn(): array =>
-                CliUtils::requireAutoloaders($current_dir, isset($options['r']), $vendor_dir),
+        $autoloaders = CliUtils::loadAutoloaders(
+            $include_collector,
+            $current_dir,
+            isset($options['r']),
+            $vendor_dir,
         );
-        $ini_handler = new PsalmRestarter('PSALTER');
-        $ini_handler->disableExtensions([
-            'grpc',
-            'uopz',
-            'pcov',
-            'blackfire',
-            // Issues w/ parallel forking
-            'uv',
-        ]);
 
         // If Xdebug is enabled, restart without it
-        $ini_handler->check();
+        CliUtils::createRestarter('PSALTER')->check();
 
         Preloader::preload();
 
@@ -501,34 +496,6 @@ final class Psalter
         }
 
         IssueBuffer::finish($project_analyzer, false, $start_time);
-    }
-
-    /**
-     * @param array<string, false|list<mixed>|string> $options
-     * @param-out array<string, false|list<mixed>|string> $options
-     * @psalm-capabilities write-refs|read-props
-     */
-    private static function syncShortOptions(array &$options): void
-    {
-        if (array_key_exists('help', $options)) {
-            $options['h'] = false;
-        }
-
-        if (array_key_exists('monochrome', $options)) {
-            $options['m'] = false;
-        }
-
-        if (isset($options['config'])) {
-            $options['c'] = $options['config'];
-        }
-
-        if (isset($options['root'])) {
-            $options['r'] = $options['root'];
-        }
-
-        if (isset($options['file'])) {
-            $options['f'] = $options['file'];
-        }
     }
 
     /** @return array<string, array<int, string>> */
