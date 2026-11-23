@@ -57,6 +57,7 @@ use Psalm\Storage\Assertion\NonEmptyCountable;
 use Psalm\Storage\Assertion\NotNestedAssertions;
 use Psalm\Storage\Assertion\Truthy;
 use Psalm\Type;
+use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TArrayKey;
 use Psalm\Type\Atomic\TBool;
@@ -901,7 +902,9 @@ class Reconciler
                     if (($offset === 0 || count($assertions) === 1)
                         && ($assertion instanceof IsEqualIsset
                             || $assertion instanceof IsIsset
-                            || $assertion instanceof NonEmpty)
+                            || $assertion instanceof NonEmpty
+                            || ($assertion instanceof IsIdentical
+                                && self::isCharacterOfAString($nk, $assertion->type, $existing_types)))
                     ) {
                         $is_set = true;
                         break;
@@ -1009,6 +1012,26 @@ class Reconciler
         }
 
         return $new_types;
+    }
+
+    /**
+     * Whether an offset of a string is asserted to be a character, which it is only where the string has it
+     *
+     * @param array<string, Union> $existing_types
+     * @psalm-capabilities read-props|write-this-props
+     */
+    private static function isCharacterOfAString(string $offset_id, Atomic $type, array $existing_types): bool
+    {
+        if (!$type instanceof TLiteralString || $type->value === '') {
+            return false;
+        }
+
+        $key_parts = self::breakUpPathIntoParts($offset_id);
+
+        return count($key_parts) === 4
+            && $key_parts[1] === '['
+            && isset($existing_types[$key_parts[0]])
+            && $existing_types[$key_parts[0]]->isString();
     }
 
     /**
@@ -1290,6 +1313,10 @@ class Reconciler
                 return $existing_keys[$key] ?? Type::getString();
             }
 
+            if (str_starts_with($key, Context::PHP_EXTENSION_VAR_ID_PREFIX)) {
+                return $existing_keys[$key] ?? Type::getBool();
+            }
+
             if (!isset($existing_keys[$key_parts[0]]) && str_contains($key, '::') && !str_contains($key, '$')) {
                 return self::getClassConstantTypeOfKey($codebase, $key, $statements_analyzer);
             }
@@ -1357,18 +1384,29 @@ class Reconciler
                     $has_unknown_object_part = false;
                     $object_value_type = null;
 
-                    // a variable holding one literal is that literal as a key
-                    $lookup_key = $array_key;
+                    // a variable holding literals is one of those literals as a key
+                    $lookup_keys = [$array_key];
 
                     if ($array_key[0] === '$' && isset($existing_keys[$array_key])) {
-                        if ($existing_keys[$array_key]->isSingleStringLiteral()) {
-                            $lookup_key = ExpressionIdentifier::quoteOffset(
-                                $existing_keys[$array_key]->getSingleStringLiteral()->value,
-                            );
-                        } elseif ($existing_keys[$array_key]->isSingleIntLiteral()) {
-                            $lookup_key = (string) $existing_keys[$array_key]->getSingleIntLiteral()->value;
+                        $literal_keys = [];
+
+                        foreach ($existing_keys[$array_key]->getAtomicTypes() as $key_atomic_type) {
+                            if ($key_atomic_type instanceof TLiteralString) {
+                                $literal_keys[] = ExpressionIdentifier::quoteOffset($key_atomic_type->value);
+                            } elseif ($key_atomic_type instanceof TLiteralInt) {
+                                $literal_keys[] = (string) $key_atomic_type->value;
+                            } else {
+                                $literal_keys = [];
+                                break;
+                            }
+                        }
+
+                        if ($literal_keys) {
+                            $lookup_keys = $literal_keys;
                         }
                     }
+
+                    $lookup_key = $lookup_keys[0];
 
                     $atomic_types = $existing_keys[$base_key]->getAtomicTypes();
 
@@ -1470,21 +1508,41 @@ class Reconciler
                             $new_base_type_candidate = $existing_key_type_part->getGenericValueType(true);
                         } else {
                             $array_properties = $existing_key_type_part->properties;
+                            $new_base_type_candidate = null;
 
-                            $key_parts_key = $lookup_key;
-                            if ($lookup_key[0] === '\'' || $lookup_key[0] === '"') {
-                                $key_parts_key = ExpressionIdentifier::unquoteOffset($lookup_key);
+                            foreach ($lookup_keys as $lookup_key) {
+                                $key_parts_key = $lookup_key;
+                                if ($lookup_key[0] === '\'' || $lookup_key[0] === '"') {
+                                    $key_parts_key = ExpressionIdentifier::unquoteOffset($lookup_key);
+                                }
+
+                                if (isset($array_properties[$key_parts_key])) {
+                                    $value_type = $array_properties[$key_parts_key];
+                                } elseif ($existing_key_type_part->fallback_params === null) {
+                                    // a sealed shape has nothing under a key it doesn't list
+                                    continue;
+                                } elseif (count($lookup_keys) === 1) {
+                                    $value_type = $existing_key_type_part->fallback_params[1]->setDifferent(true);
+                                } else {
+                                    // one of several keys the shape may not have is any of its values
+                                    $new_base_type_candidate = $existing_key_type_part->getGenericValueType(true);
+                                    break;
+                                }
+
+                                $new_base_type_candidate = Type::combineUnionTypes(
+                                    $new_base_type_candidate,
+                                    $value_type,
+                                    $codebase,
+                                );
                             }
 
-                            if (!isset($array_properties[$key_parts_key])) {
-                                if ($existing_key_type_part->fallback_params !== null) {
-                                    $new_base_type_candidate = $existing_key_type_part
-                                        ->fallback_params[1]->setDifferent(true);
-                                } else {
+                            if ($new_base_type_candidate === null) {
+                                if (count($lookup_keys) === 1) {
                                     return null;
                                 }
-                            } else {
-                                $new_base_type_candidate = $array_properties[$key_parts_key];
+
+                                // none of the keys is listed: what the shape holds, as for a key of no known value
+                                $new_base_type_candidate = $existing_key_type_part->getGenericValueType(true);
                             }
                         }
 

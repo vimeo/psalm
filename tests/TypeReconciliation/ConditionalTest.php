@@ -196,6 +196,91 @@ final class ConditionalTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'strictFalseComparisonOfACoalesceWithNullIsReachableAfterATruthyCoalesce' => [
+                'code' => '<?php
+                    /** @param array<string, mixed> $context */
+                    function g(array $context): void {
+                        if ($context["k"] ?? false) {
+                            echo 0;
+                        } elseif (false !== ($context["k"] ?? null)) {
+                            echo 1;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.2',
+            ],
+            'truthyCoalesceWithFalseEstablishesTheKey' => [
+                'code' => '<?php
+                    /** @param array{k?: string} $a */
+                    function both(array $a): string {
+                        if (($a["k"] ?? false) && strlen($a["k"]) > 1) {
+                            return $a["k"];
+                        }
+
+                        return "";
+                    }
+
+                    /** @param array{k?: string|null} $a */
+                    function withNull(array $a): string {
+                        if (!($a["k"] ?? null)) {
+                            return "";
+                        }
+
+                        return $a["k"];
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['RiskyTruthyFalsyComparison'],
+            ],
+            'truthyCoalesceWithAnotherFalsyDefaultEstablishesTheKey' => [
+                'code' => '<?php
+                    /** @param array{k?: string} $a */
+                    function emptyString(array $a): string {
+                        if (($a["k"] ?? "") && strlen($a["k"]) > 1) {
+                            return $a["k"];
+                        }
+
+                        return "";
+                    }
+
+                    /** @param array{k?: string} $a */
+                    function zeroString(array $a): string {
+                        if (($a["k"] ?? "0") && strlen($a["k"]) > 1) {
+                            return $a["k"];
+                        }
+
+                        return "";
+                    }
+
+                    /** @param array{k?: int} $a */
+                    function zero(array $a): int {
+                        if (($a["k"] ?? 0) && $a["k"] > 1) {
+                            return $a["k"];
+                        }
+
+                        return 0;
+                    }
+
+                    /** @param array{k?: float} $a */
+                    function zeroFloat(array $a): float {
+                        if (($a["k"] ?? 0.0) && $a["k"] > 1) {
+                            return $a["k"];
+                        }
+
+                        return 0.0;
+                    }
+
+                    /** @param array{k?: list<int>} $a */
+                    function emptyArray(array $a): int {
+                        if (($a["k"] ?? []) && count($a["k"]) > 1) {
+                            return count($a["k"]);
+                        }
+
+                        return 0;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['RiskyTruthyFalsyComparison'],
+            ],
             'countComparedToAClassConstantNarrowsTheArray' => [
                 'code' => '<?php
                     final class Terms {
@@ -385,90 +470,129 @@ final class ConditionalTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.3',
             ],
-            'strictFalseComparisonOfACoalesceWithNullIsReachableAfterATruthyCoalesce' => [
+            'instanceofParentNarrowsToTheParentClass' => [
                 'code' => '<?php
-                    /** @param array<string, mixed> $context */
-                    function g(array $context): void {
-                        if ($context["k"] ?? false) {
-                            echo 0;
-                        } elseif (false !== ($context["k"] ?? null)) {
-                            echo 1;
+                    interface Shape {}
+
+                    class Box implements Shape {
+                        public function getSize(): int {
+                            return 1;
+                        }
+                    }
+
+                    final class TaggedBox extends Box {
+                        public function narrowed(Shape $shape): int {
+                            if ($shape instanceof parent) {
+                                /** @psalm-check-type-exact $shape = Box */
+                                return $shape->getSize();
+                            }
+
+                            return 0;
+                        }
+
+                        public function negated(Shape $shape): int {
+                            if (!$shape instanceof parent) {
+                                return 0;
+                            }
+
+                            return $shape->getSize();
                         }
                     }',
                 'assertions' => [],
                 'ignored_issues' => [],
-                'php_version' => '8.2',
             ],
-            'truthyCoalesceWithFalseEstablishesTheKey' => [
+            'parentOfTheClassUsingATraitNarrowsInTheTraitCode' => [
                 'code' => '<?php
-                    /** @param array{k?: string} $a */
-                    function both(array $a): string {
-                        if (($a["k"] ?? false) && strlen($a["k"]) > 1) {
-                            return $a["k"];
-                        }
+                    interface Shape {}
 
-                        return "";
+                    class Box implements Shape {
+                        public function getSize(): int {
+                            return 1;
+                        }
                     }
 
-                    /** @param array{k?: string|null} $a */
-                    function withNull(array $a): string {
-                        if (!($a["k"] ?? null)) {
-                            return "";
-                        }
+                    trait T {
+                        public function viaInstanceof(Shape $shape): int {
+                            if ($shape instanceof parent) {
+                                return $shape->getSize();
+                            }
 
-                        return $a["k"];
+                            return 0;
+                        }
+                    }
+
+                    final class UsesTrait extends Box {
+                        use T;
                     }',
                 'assertions' => [],
-                'ignored_issues' => ['RiskyTruthyFalsyComparison'],
+                'ignored_issues' => [],
             ],
-            'truthyCoalesceWithAnotherFalsyDefaultEstablishesTheKey' => [
+            'isAParentClassNarrowsToTheParentClass' => [
                 'code' => '<?php
-                    /** @param array{k?: string} $a */
-                    function emptyString(array $a): string {
-                        if (($a["k"] ?? "") && strlen($a["k"]) > 1) {
-                            return $a["k"];
-                        }
+                    interface Shape {}
 
-                        return "";
+                    class Box implements Shape {
+                        public function getSize(): int {
+                            return 1;
+                        }
                     }
 
-                    /** @param array{k?: string} $a */
-                    function zeroString(array $a): string {
-                        if (($a["k"] ?? "0") && strlen($a["k"]) > 1) {
-                            return $a["k"];
+                    final class TaggedBox extends Box {
+                        public function narrowed(Shape $shape): int {
+                            if (is_a($shape, parent::class)) {
+                                /** @psalm-check-type-exact $shape = Box */
+                                return $shape->getSize();
+                            }
+
+                            return 0;
                         }
-
-                        return "";
-                    }
-
-                    /** @param array{k?: int} $a */
-                    function zero(array $a): int {
-                        if (($a["k"] ?? 0) && $a["k"] > 1) {
-                            return $a["k"];
-                        }
-
-                        return 0;
-                    }
-
-                    /** @param array{k?: float} $a */
-                    function zeroFloat(array $a): float {
-                        if (($a["k"] ?? 0.0) && $a["k"] > 1) {
-                            return $a["k"];
-                        }
-
-                        return 0.0;
-                    }
-
-                    /** @param array{k?: list<int>} $a */
-                    function emptyArray(array $a): int {
-                        if (($a["k"] ?? []) && count($a["k"]) > 1) {
-                            return count($a["k"]);
-                        }
-
-                        return 0;
                     }',
                 'assertions' => [],
-                'ignored_issues' => ['RiskyTruthyFalsyComparison'],
+                'ignored_issues' => [],
+            ],
+            'getClassIdenticalToParentClassNarrowsToTheParentClass' => [
+                'code' => '<?php
+                    interface Shape {}
+
+                    class Box implements Shape {
+                        public function getSize(): int {
+                            return 1;
+                        }
+                    }
+
+                    final class TaggedBox extends Box {
+                        public function narrowed(Shape $shape): int {
+                            if (get_class($shape) === parent::class) {
+                                return $shape->getSize();
+                            }
+
+                            return 0;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+            ],
+            'classConstantIdenticalToParentClassNarrowsToTheParentClass' => [
+                'code' => '<?php
+                    interface Shape {}
+
+                    class Box implements Shape {
+                        public function getSize(): int {
+                            return 1;
+                        }
+                    }
+
+                    final class TaggedBox extends Box {
+                        public function narrowed(Shape $shape): int {
+                            if ($shape::class === parent::class) {
+                                return $shape->getSize();
+                            }
+
+                            return 0;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
             ],
             'negatedIsFloatCombinesTheRemainingTypes' => [
                 'code' => '<?php
@@ -6778,6 +6902,35 @@ final class ConditionalTest extends TestCase
                 'assertions' => [],
                 'ignored_issues' => [],
                 'php_version' => '8.0',
+            ],
+            'classNotEqualToAFinalClassExcludesIt' => [
+                'code' => '<?php
+                    final class A {}
+                    class B {}
+
+                    /** @var A|stdClass $final */;
+                    if ($final::class === A::class) {
+                        $final_if = $final;
+                    } else {
+                        $final_else = $final;
+                    }
+
+                    /** @var A|stdClass $by_get_class */;
+                    if (get_class($by_get_class) !== A::class) {
+                        $get_class_if = $by_get_class;
+                    }
+
+                    /** @var B|stdClass $not_final */;
+                    if ($not_final::class === B::class) {
+                        $not_final_if = $not_final;
+                    } else {
+                        $not_final_else = $not_final;
+                    }',
+                'assertions' => [
+                    '$final_else===' => 'stdClass',
+                    '$get_class_if===' => 'stdClass',
+                    '$not_final_else===' => 'B|stdClass',
+                ],
             ],
             'classEqualToTheClassOfAnotherClassStillNarrows' => [
                 'code' => '<?php

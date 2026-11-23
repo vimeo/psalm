@@ -2156,6 +2156,27 @@ final class ArrayFunctionCallTest extends TestCase
                     '$foo' => 'float',
                 ],
             ],
+            'arrayProductOfBools' => [
+                'code' => '<?php
+                    /** @param array<bool> $a */
+                    function allTrue(array $a): int {
+                        return array_product($a);
+                    }
+                    /** @param list<true> $a */
+                    function product(array $a): int {
+                        return array_product($a);
+                    }
+                    /** @var array<bool> $bools */
+                    $all = array_product($bools);
+                    /** @var list<true> $trues */
+                    $one = array_product($trues);
+                    $empty = array_product([]);',
+                'assertions' => [
+                    '$all===' => '0|1',
+                    '$one===' => '1',
+                    '$empty===' => '1',
+                ],
+            ],
             'arrayMapWithArrayAndCallable' => [
                 'code' => '<?php
                     /**
@@ -5131,6 +5152,43 @@ final class ArrayFunctionCallTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'closureParameterSharingOnlyNullWithTheArrayValuesIsInvalid' => [
+                'code' => '<?php
+                    final class Foo {}
+                    final class Bar {}
+
+                    /** @param list<?Foo> $l */
+                    function f(array $l): void {
+                        array_map(function (?Bar $b): int { return 1; }, $l);
+                    }',
+                'error_message' => 'InvalidArgument',
+            ],
+            'closureParameterSharingOnlyFalseWithTheArrayValuesIsInvalid' => [
+                'code' => '<?php
+                    final class Foo {}
+                    final class Bar {}
+
+                    /** @param list<Foo|false> $l */
+                    function f(array $l): void {
+                        array_map(
+                            /** @param Bar|false $b */
+                            function ($b): int { return 1; },
+                            $l,
+                        );
+                    }',
+                'error_message' => 'InvalidArgument',
+            ],
+            'closureParameterSharingAnObjectWithTheArrayValuesIsPossiblyInvalid' => [
+                'code' => '<?php
+                    final class Foo {}
+                    final class Bar {}
+
+                    /** @param list<Foo|Bar|null> $l */
+                    function f(array $l): void {
+                        array_map(function (?Bar $b): int { return 1; }, $l);
+                    }',
+                'error_message' => 'PossiblyInvalidArgument',
+            ],
             'keyOfAListTakenBeforeTheListShrinksIsNoKeyAnyMore' => [
                 'code' => '<?php
                     /**
