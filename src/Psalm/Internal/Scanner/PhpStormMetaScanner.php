@@ -208,6 +208,7 @@ final class PhpStormMetaScanner
      *
      * @param list<PhpParser\Node\Arg> $call_args
      * @param array<string, Union|string> $map
+     * @psalm-capabilities read-props|write-this-props|write-refs
      */
     private static function resolveOverride(
         StatementsAnalyzer $statements_analyzer,
@@ -231,6 +232,7 @@ final class PhpStormMetaScanner
 
     /**
      * @param array<string, Union|string> $map
+     * @psalm-pure
      */
     private static function resolveMapOverride(Union $call_arg_type, array $map): ?Union
     {
@@ -255,6 +257,9 @@ final class PhpStormMetaScanner
         return null;
     }
 
+    /**
+     * @psalm-capabilities read-props|write-this-props|write-refs
+     */
     private static function resolveElementTypeOverride(Union $call_arg_type): ?Union
     {
         if (!$call_arg_type->hasArray()) {
