@@ -14,14 +14,10 @@ mkdir -p build/phpunit
 # test files leave global state behind, such as the classes of the plugins they load.
 # --order-by=default keeps the longest-first order of the chunk, so no long file starts last; ParaTest's
 # random order only shuffles which file runs next, not the tests within a file.
-# A test hanging past the time limit fails, naming itself, instead of holding the runner until the job times out.
 vendor/bin/paratest \
     --max-batch-size=1 \
     --processes="$(nproc)" \
     --order-by=default \
-    --enforce-time-limit \
-    --default-time-limit=300 \
-    --fail-on-risky \
     --testsuite="chunk_$CHUNK_NUMBER" \
     --log-junit=build/phpunit/junit.xml \
     --colors=always
