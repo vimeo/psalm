@@ -5152,6 +5152,43 @@ final class ArrayFunctionCallTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'closureParameterSharingOnlyNullWithTheArrayValuesIsInvalid' => [
+                'code' => '<?php
+                    final class Foo {}
+                    final class Bar {}
+
+                    /** @param list<?Foo> $l */
+                    function f(array $l): void {
+                        array_map(function (?Bar $b): int { return 1; }, $l);
+                    }',
+                'error_message' => 'InvalidArgument',
+            ],
+            'closureParameterSharingOnlyFalseWithTheArrayValuesIsInvalid' => [
+                'code' => '<?php
+                    final class Foo {}
+                    final class Bar {}
+
+                    /** @param list<Foo|false> $l */
+                    function f(array $l): void {
+                        array_map(
+                            /** @param Bar|false $b */
+                            function ($b): int { return 1; },
+                            $l,
+                        );
+                    }',
+                'error_message' => 'InvalidArgument',
+            ],
+            'closureParameterSharingAnObjectWithTheArrayValuesIsPossiblyInvalid' => [
+                'code' => '<?php
+                    final class Foo {}
+                    final class Bar {}
+
+                    /** @param list<Foo|Bar|null> $l */
+                    function f(array $l): void {
+                        array_map(function (?Bar $b): int { return 1; }, $l);
+                    }',
+                'error_message' => 'PossiblyInvalidArgument',
+            ],
             'keyOfAListTakenBeforeTheListShrinksIsNoKeyAnyMore' => [
                 'code' => '<?php
                     /**

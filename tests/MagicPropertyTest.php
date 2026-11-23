@@ -1458,6 +1458,40 @@ final class MagicPropertyTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'explicitSetCallSharingOnlyNullWithThePropertyIsInvalid' => [
+                'code' => '<?php
+                    final class Foo {}
+                    final class Bar {}
+
+                    /** @property ?Bar $p */
+                    final class A {
+                        /** @param mixed $value */
+                        public function __set(string $name, $value): void {}
+                    }
+
+                    function f(A $a, ?Foo $foo): void {
+                        $a->__set("p", $foo);
+                    }',
+                'error_message' => 'InvalidPropertyAssignmentValue',
+            ],
+            'explicitSetCallSharingAnObjectWithThePropertyIsPossiblyInvalid' => [
+                'code' => '<?php
+                    final class Foo {}
+                    final class Bar {}
+
+                    /** @property ?Bar $p */
+                    final class A {
+                        /** @param mixed $value */
+                        public function __set(string $name, $value): void {}
+                    }
+
+                    function f(A $a, Foo|Bar|null $foo): void {
+                        $a->__set("p", $foo);
+                    }',
+                'error_message' => 'PossiblyInvalidPropertyAssignmentValue',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
             'annotationWithoutGetter' => [
                 'code' => '<?php
                     /**
