@@ -1164,9 +1164,8 @@ class Reconciler
         }
 
         // narrowing a template of the class gives its property a more precise type
-        $property_type = $declaring_class !== null
-            ? $codebase->classlike_storage_provider->get($declaring_class)->properties[$match[1]]->type ?? null
-            : null;
+        $property_type = $codebase->classlike_storage_provider->get($declaring_class)->properties[$match[1]]->type
+            ?? null;
 
         if ($property_type !== null) {
             $template_collector = new TemplateTypeCollector(true);
