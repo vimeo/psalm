@@ -7,6 +7,7 @@ namespace Psalm\Internal\Analyzer\Statements;
 use PhpParser;
 use PhpParser\Node\DeclareItem;
 use Psalm\CodeLocation;
+use Psalm\Codebase;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Issue\UnrecognizedStatement;
@@ -19,6 +20,16 @@ use function in_array;
  */
 final class DeclareAnalyzer
 {
+    /**
+     * Whether the code of a file runs under strict_types
+     */
+    public static function declaresStrictTypes(Codebase $codebase, string $file_path): bool
+    {
+        return $codebase->config->useStrictTypesForFile($file_path)
+            || ($codebase->file_storage_provider->has($file_path)
+                && $codebase->file_storage_provider->get($file_path)->strict_types);
+    }
+
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Stmt\Declare_ $stmt,

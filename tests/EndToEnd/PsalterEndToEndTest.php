@@ -134,6 +134,30 @@ final class PsalterEndToEndTest extends PsalmEndToEndTestCase
         ];
     }
 
+    public function testRefactorPrintsNoProgressBarOnAPipedStderr(): void
+    {
+        $this->runPsalmInit();
+        $psalmXml = file_get_contents(self::$tmpDir . '/psalm.xml');
+        $psalmXml = str_replace('<psalm', '<psalm runTaintAnalysis="false"', (string)$psalmXml);
+        file_put_contents(self::$tmpDir . '/psalm.xml', $psalmXml);
+        file_put_contents(
+            self::$tmpDir . '/src/Moves.php',
+            "<?php\n\nnamespace Ns;\n\nclass A\n{\n    public static function foo(): void\n    {\n    }\n}\n\n"
+            . "class B\n{\n}\n",
+        );
+
+        $process = self::newProcess(
+            [PHP_BINARY, $this->psalmRefactor, '--no-cache', '--move', 'Ns\A::foo', '--into', 'Ns\B'],
+            self::$tmpDir,
+            self::agentEnvVarsToUnset(),
+        );
+        $process->run();
+
+        $this->assertSame(0, $process->getExitCode(), $process->getOutput() . $process->getErrorOutput());
+        $this->assertStringContainsString('Scanning files', $process->getErrorOutput());
+        $this->assertDoesNotMatchRegularExpression('/\r(?!\n)/', $process->getErrorOutput());
+    }
+
     /**
      * @param list<string> $args
      */
@@ -215,6 +239,10 @@ final class PsalterEndToEndTest extends PsalmEndToEndTestCase
         yield 'leading backslash on --into' => [
             ['--move', 'Ns\A::foo', '--into', '\Ns\Missing'],
             'Destination class Ns\Missing doesn’t exist',
+        ];
+        yield 'constant renamed to class' => [
+            ['--rename', 'Ns\A::K', '--to', 'Ns\A::class'],
+            'A class constant must not be called class, it is reserved for class name fetching',
         ];
     }
 
@@ -346,6 +374,14 @@ final class PsalterEndToEndTest extends PsalmEndToEndTestCase
         yield 'valid mapping followed by a malformed one' => [
             ['--rename', 'Ns\A::foo', '--to', 'Ns\A::baz', '--rename', 'Ns\B', '--to', 'Foo'],
             'Renaming a namespaced class into the global namespace is not supported',
+        ];
+        yield 'keyword as class name' => [
+            ['--rename', 'Ns\A', '--to', 'Ns\class'],
+            'Cannot use class as a class name as it is reserved',
+        ];
+        yield 'reserved type name as class name' => [
+            ['--rename', 'Ns\A', '--to', 'Ns\Int'],
+            'Cannot use Int as a class name as it is reserved',
         ];
     }
 
