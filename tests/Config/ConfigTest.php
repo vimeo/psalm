@@ -1868,6 +1868,12 @@ final class ConfigTest extends DeferredAnalyzerTestCase
                 echo OPENSSL_ALGO_SHA256, OPENSSL_KEYTYPE_RSA, OPENSSL_VERSION_NUMBER;',
         ];
 
+        yield 'pgsql' => [
+            'pgsql',
+            '<?php
+                echo PGSQL_CONNECT_FORCE_NEW, PGSQL_ASSOC, PGSQL_DIAG_SQLSTATE, PGSQL_LIBPQ_VERSION;',
+        ];
+
         yield 'intl' => [
             'intl',
             '<?php
