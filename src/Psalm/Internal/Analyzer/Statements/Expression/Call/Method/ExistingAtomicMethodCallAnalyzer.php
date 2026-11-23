@@ -646,6 +646,8 @@ final class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
                             $codebase,
                             $second_arg_type,
                             $pseudo_set_type,
+                            true,
+                            true,
                         )) {
                             IssueBuffer::maybeAdd(
                                 new PossiblyInvalidPropertyAssignmentValue(

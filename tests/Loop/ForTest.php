@@ -56,6 +56,19 @@ final class ForTest extends TestCase
                         return $item;
                     }',
             ],
+            'varUnsetBeforeContinueAndAssignedByThePostExpressionStaysDefined' => [
+                'code' => '<?php
+                    function f(): int {
+                        $x = 0;
+                        for ($i = 0; $i < 3; $i++, $x = 1) {
+                            if ($i) {
+                                unset($x);
+                                continue;
+                            }
+                        }
+                        return $x;
+                    }',
+            ],
             'forWithoutAConditionIsOnlyLeftByABreak' => [
                 'code' => '<?php
                     function withInit(): string {

@@ -122,6 +122,72 @@ final class EnumTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'enumCaseWithInvokeIsCallable' => [
+                'code' => '<?php
+                    /**
+                     * @param callable(int): int $operation
+                     */
+                    function apply(callable $operation, int $value): int {
+                        return $operation($value);
+                    }
+
+                    enum Operation {
+                        case Increment;
+
+                        public function __invoke(int $value): int {
+                            return $value + 1;
+                        }
+                    }
+
+                    $applied = apply(Operation::Increment, 1);
+                    $called = (Operation::Increment)(1);',
+                'assertions' => [
+                    '$called===' => 'int',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'enumWithInvokeSurvivesIsCallable' => [
+                'code' => '<?php
+                    enum Operation {
+                        case Increment;
+
+                        public function __invoke(int $value): int {
+                            return $value + 1;
+                        }
+                    }
+
+                    function f(Operation|int $operation): int {
+                        if (is_callable($operation)) {
+                            return $operation(1);
+                        }
+
+                        return $operation;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'enumWithInvokeLaterInAnIntersectionIsCallable' => [
+                'code' => '<?php
+                    interface Named {}
+
+                    enum Operation implements Named {
+                        case Increment;
+
+                        public function __invoke(int $value): int {
+                            return $value + 1;
+                        }
+                    }
+
+                    /** @param Named&Operation $operation */
+                    function f($operation): int {
+                        return $operation(1);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'casesOfAnEnumString' => [
                 'code' => '<?php
                     /** @param enum-string $string */
@@ -1213,6 +1279,28 @@ final class EnumTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'enumCaseWithInvokeOfAnotherSignatureIsNotThatCallable' => [
+                'code' => '<?php
+                    /**
+                     * @param callable(): int $operation
+                     */
+                    function apply(callable $operation): int {
+                        return $operation();
+                    }
+
+                    enum Operation {
+                        case Name;
+
+                        public function __invoke(): string {
+                            return "x";
+                        }
+                    }
+
+                    apply(Operation::Name);',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:17:27 - Argument 1 of apply expects callable[impure]():int, but callable[impure]():string provided',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
             'enumCaseValueCircularWithAClassConstant' => [
                 'code' => '<?php
                     enum Level: int {
