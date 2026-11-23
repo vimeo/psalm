@@ -334,13 +334,7 @@ final class InstancePropertyAssignmentAnalyzer
             }
 
             if (!$type_match_found && !$union_comparison_results->type_coerced) {
-                if (UnionTypeComparator::canBeContainedBy(
-                    $codebase,
-                    $assignment_type,
-                    $class_property_type,
-                    true,
-                    true,
-                )) {
+                if (UnionTypeComparator::canBeContainedBy($codebase, $assignment_type, $class_property_type)) {
                     $has_valid_assignment_value_type = true;
                 }
 

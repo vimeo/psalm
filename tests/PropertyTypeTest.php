@@ -704,6 +704,49 @@ final class PropertyTypeTest extends TestCase
         self::assertSame(['UndefinedDocblockClass src' . DIRECTORY_SEPARATOR . 'parent.php:7'], $issues);
     }
 
+    public function testStaticPropertyOfSeveralClassesIsCheckedOnceAndAnalysisGoesOn(): void
+    {
+        $this->testConfig->throw_exception = false;
+
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile($file_path, '<?php
+            final class P {
+                public static string $s = "";
+            }
+
+            final class Q {
+                public static string $s = "";
+            }
+
+            /** @param class-string<P>|class-string<Q> $c */
+            function set(string $c, ?string $x): void {
+                $c::$s = $x;
+                undefinedAfterNull();
+                P::$s = 1.0;
+                undefinedAfterInvalid();
+            }
+        ');
+
+        $this->analyzeFile($file_path, new Context());
+
+        $issues = [];
+
+        foreach (IssueBuffer::getIssuesDataForFile($file_path) as $issue) {
+            $issues[] = $issue->type . ':' . $issue->line_from;
+        }
+
+        self::assertSame(
+            [
+                'PossiblyNullPropertyAssignmentValue:12',
+                'UndefinedFunction:13',
+                'InvalidPropertyAssignmentValue:14',
+                'UndefinedFunction:15',
+            ],
+            $issues,
+        );
+    }
+
     /**
      * @return iterable<string, array{string}>
      * @psalm-pure
@@ -5639,19 +5682,72 @@ final class PropertyTypeTest extends TestCase
                     }
 
                     final class A {
-                        /** @var Box<array> */
+                        /** @var Box<string> */
                         public static Box $box;
 
-                        public static function set(): void {
-                            self::$box = new Box(["foo" => "bar"]);
+                        /** @param Box<"foo"> $b */
+                        public static function set(Box $b): void {
+                            self::$box = $b;
                             $box = self::$box;
                             /** @psalm-trace $box */;
                         }
                     }',
-                'error_message' => 'Trace - src' . DIRECTORY_SEPARATOR
-                    . 'somefile.php:15:53 - $box: Box<`_0:array<array-key, mixed',
+                'error_message' => 'Trace - src' . DIRECTORY_SEPARATOR . 'somefile.php:16:53 - $box: Box<string',
                 'error_levels' => [],
                 'php_version' => '8.0',
+            ],
+            'nullableValueOfAnotherTypeToNullableStaticProperty' => [
+                'code' => '<?php
+                    final class A {
+                        public static ?string $s = null;
+
+                        public static function set(?int $i): void {
+                            self::$s = $i;
+                        }
+                    }',
+                'error_message' => 'PossiblyInvalidPropertyAssignmentValue - src' . DIRECTORY_SEPARATOR
+                    . 'somefile.php:6:40 - A::$s with declared type \'null|string\' cannot be assigned possibly'
+                    . ' different type \'int|null',
+            ],
+            'falsableValueOfAnotherTypeToFalsableStaticProperty' => [
+                'code' => '<?php
+                    final class A {
+                        /** @var string|false */
+                        public static $s = false;
+
+                        /** @param int|false $i */
+                        public static function set($i): void {
+                            self::$s = $i;
+                        }
+                    }',
+                'error_message' => 'PossiblyInvalidPropertyAssignmentValue',
+            ],
+            'nullableValueOfAnotherTypeToNullableProperty' => [
+                'code' => '<?php
+                    final class A {
+                        public ?string $s = null;
+
+                        public function set(?int $i): void {
+                            $this->s = $i;
+                        }
+                    }',
+                'error_message' => 'PossiblyInvalidPropertyAssignmentValue',
+            ],
+            'staticPropertyOfSeveralClassesTakingAValueOnlySomeAllow' => [
+                'code' => '<?php
+                    final class R {
+                        public static string $t = "";
+                    }
+
+                    final class T {
+                        public static int $t = 0;
+                    }
+
+                    /** @param class-string<R>|class-string<T> $c */
+                    function set(string $c): void {
+                        $c::$t = 1;
+                    }',
+                'error_message' => 'PossiblyInvalidPropertyAssignmentValue',
             ],
             'nullableAssignmentToStaticProperty' => [
                 'code' => '<?php

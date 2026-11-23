@@ -629,13 +629,10 @@
   </file>
   <file src="src/Psalm/Internal/Analyzer/Statements/Expression/Assignment/StaticPropertyAssignmentAnalyzer.php">
     <ImplicitToStringCast>
-      <code><![CDATA[$assignment_value_type]]></code>
-      <code><![CDATA[$class_property_type]]></code>
       <code><![CDATA[$prop_name]]></code>
     </ImplicitToStringCast>
     <RiskyTruthyFalsyComparison>
       <code><![CDATA[$context->calling_method_id]]></code>
-      <code><![CDATA[$var_id]]></code>
       <code><![CDATA[$var_id]]></code>
     </RiskyTruthyFalsyComparison>
   </file>

@@ -68,6 +68,7 @@ final class StaticPropertyAssignmentAnalyzer
         $prop_name = $stmt->name;
 
         $fq_class_names = [];
+        $assigned_properties = [];
 
         foreach ($lhs_type->getAtomicTypes() as $lhs_atomic_type) {
             if ($lhs_atomic_type instanceof TNamedObject) {
@@ -213,7 +214,7 @@ final class StaticPropertyAssignmentAnalyzer
             }
 
             if ($class_property_type->hasMixed()) {
-                return null;
+                continue;
             }
 
             $class_property_type = TypeExpander::expandUnion(
@@ -229,11 +230,15 @@ final class StaticPropertyAssignmentAnalyzer
                 )->final,
             );
 
+            $assigned_properties[] = new AssignedProperty($class_property_type, $property_id, $assignment_value_type);
+        }
+
+        if ($assigned_properties) {
             InstancePropertyAssignmentAnalyzer::checkAssignedPropertyTypes(
                 $statements_analyzer,
                 $assignment_value ?? $stmt,
                 $var_id,
-                [new AssignedProperty($class_property_type, $property_id, $assignment_value_type)],
+                $assigned_properties,
                 $assignment_value_type,
                 $context,
             );
