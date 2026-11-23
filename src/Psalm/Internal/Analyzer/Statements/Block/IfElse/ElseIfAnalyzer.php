@@ -339,11 +339,10 @@ final class ElseIfAnalyzer
 
                 foreach ($newly_reconciled_var_ids as $changed_var_id => $_) {
                     foreach ($elseif_context->vars_in_scope as $var_id => $_) {
-                        if (AlgebraAnalyzer::isForgottenOnNarrowing(
+                        if (Reconciler::dependsOnNarrowedVar(
                             $statements_analyzer->getCodebase(),
-                            $changed_var_id,
-                            $elseif_context->vars_in_scope[$changed_var_id] ?? null,
                             $var_id,
+                            $changed_var_id,
                             $elseif_context->vars_in_scope,
                         )
                             && !array_key_exists($var_id, $newly_reconciled_var_ids)

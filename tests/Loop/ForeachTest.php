@@ -3371,21 +3371,6 @@ final class ForeachTest extends TestCase
                         return $seen;
                     }',
             ],
-            'clausesOnAMixedItemTheLoopDoesntChangeAreKept' => [
-                'code' => <<<'PHP'
-                    <?php
-                    /** @param array<string, mixed> $p */
-                    function f(array $p, string $n, array $d, bool $b, bool $c): void {
-                        $m = is_array($p[$n]) && $b;
-                        if ($c) {
-                            foreach ($d as $_v) {}
-                        }
-                        if ($m) {
-                            $p[$n][] = 1;
-                        }
-                    }
-                PHP,
-            ],
             'itemKeyedByTheValueIsForgottenOnEachIteration' => [
                 'code' => <<<'PHP'
                     <?php

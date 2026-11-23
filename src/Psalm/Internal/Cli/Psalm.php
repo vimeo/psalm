@@ -1492,7 +1492,7 @@ final class Psalm
 
             --debug-performance[=PATH]
                 Print where the time and memory went: stages, slowest files, hottest statements and functions.
-                With =PATH, also write all of it as JSON to PATH. The path needs the `=`: after a space it is
+                With =PATH, also write all of it as a JSON performance profile to PATH. The path needs the `=`: after a space it is
                 a file to analyse. Debug output (--debug) distorts the timings.
 
             --debug-emitted-issues
