@@ -394,110 +394,18 @@ final class CastAnalyzer
         while ($atomic_types) {
             $atomic_type = array_pop($atomic_types);
 
-            if ($is_int ? $atomic_type instanceof TInt : $atomic_type instanceof TFloat) {
-                $valid_numbers[] = $atomic_type;
+            $numbers = self::castScalarToNumber($codebase, $atomic_type, $is_int);
 
-                continue;
-            }
-
-            // from here on, a TFloat is cast to int and a TInt to float
-            if ($atomic_type instanceof TFloat) {
-                $int = $atomic_type instanceof TLiteralFloat ? LiteralCast::toInt($atomic_type->value) : null;
-
-                if ($int === null) {
-                    $castable_types[] = $numeric_type;
-                } else {
-                    $valid_numbers[] = new TLiteralInt($int);
-                }
-
-                continue;
-            }
-
-            if ($atomic_type instanceof TIntRange
-                && $atomic_type->min_bound !== null
-                && $atomic_type->max_bound !== null
-                && ($atomic_type->max_bound - $atomic_type->min_bound) < 500
-            ) {
-                foreach (range($atomic_type->min_bound, $atomic_type->max_bound) as $literal_int_value) {
-                    $valid_numbers[] = new TLiteralFloat((float) $literal_int_value);
-                }
-
-                continue;
-            }
-
-            if ($atomic_type instanceof TInt) {
-                if ($atomic_type instanceof TLiteralInt) {
-                    $valid_numbers[] = new TLiteralFloat((float) $atomic_type->value);
-                } else {
-                    $castable_types[] = $numeric_type;
-                }
-
-                continue;
-            }
-
-            if ($atomic_type instanceof TString) {
-                if ($atomic_type instanceof TLiteralString) {
-                    $valid_numbers[] = self::getNumericLiteral($atomic_type->value, $is_int);
-                } else {
-                    // a numeric string can be any number, and any other string is technically 0,
-                    // however we cannot be certain that it's not inferred, therefore less strict
-                    $castable_types[] = $numeric_type;
-                }
-
-                continue;
-            }
-
-            if ($atomic_type instanceof TNull || $atomic_type instanceof TFalse) {
-                $valid_numbers[] = self::getNumericLiteral(0, $is_int);
-                continue;
-            }
-
-            if ($atomic_type instanceof TTrue) {
-                $valid_numbers[] = self::getNumericLiteral(1, $is_int);
-                continue;
-            }
-
-            if ($atomic_type instanceof TBool) {
-                // do NOT use TIntRange here, as it will cause invalid behavior, e.g. bitwiseAssignment
-                $valid_numbers[] = self::getNumericLiteral(0, $is_int);
-                $valid_numbers[] = self::getNumericLiteral(1, $is_int);
-                continue;
-            }
-
-            // could be invalid, but allow it, as it is allowed for TString below too
-            if ($atomic_type instanceof TMixed
-                || $atomic_type instanceof TClosedResource
-                || $atomic_type instanceof TResource
-                || $atomic_type instanceof Scalar
-            ) {
+            if ($numbers === []) {
                 $castable_types[] = $numeric_type;
 
                 continue;
             }
 
-            if ($atomic_type instanceof TNamedObject) {
-                foreach ([$atomic_type, ...$atomic_type->extra_types] as $intersection_type) {
-                    if (!$intersection_type instanceof TNamedObject) {
-                        continue;
-                    }
+            if ($numbers !== null) {
+                $valid_numbers = [...$valid_numbers, ...$numbers];
 
-                    // prevent "Could not get class storage for mixed"
-                    if (!$codebase->classExists($intersection_type->value)) {
-                        continue;
-                    }
-
-                    foreach (self::PSEUDO_CASTABLE_CLASSES as $pseudo_castable_class) {
-                        if (strtolower($intersection_type->value) === strtolower($pseudo_castable_class)
-                            || $codebase->classExtends(
-                                $intersection_type->value,
-                                $pseudo_castable_class,
-                            )
-                        ) {
-                            $castable_types[] = $numeric_type;
-                            continue 3;
-                        }
-                    }
-                }
+                continue;
             }
 
             if ($atomic_type instanceof TNonEmptyArray
@@ -564,6 +472,104 @@ final class CastAnalyzer
             $target,
             $stmt_type,
         );
+    }
+
+    /**
+     * The numbers (int) or (float) makes of a number, a string, a bool, null, mixed, a resource or an object that
+     * can be cast: [] stands for any number, and null for the other types
+     *
+     * @return list<Atomic>|null
+     */
+    private static function castScalarToNumber(Codebase $codebase, Atomic $atomic_type, bool $is_int): ?array
+    {
+        if ($is_int ? $atomic_type instanceof TInt : $atomic_type instanceof TFloat) {
+            return [$atomic_type];
+        }
+
+        // from here on, a TFloat is cast to int and a TInt to float
+        if ($atomic_type instanceof TFloat) {
+            $int = $atomic_type instanceof TLiteralFloat ? LiteralCast::toInt($atomic_type->value) : null;
+
+            return $int === null ? [] : [new TLiteralInt($int)];
+        }
+
+        if ($atomic_type instanceof TIntRange
+            && $atomic_type->min_bound !== null
+            && $atomic_type->max_bound !== null
+            && ($atomic_type->max_bound - $atomic_type->min_bound) < 500
+        ) {
+            $floats = [];
+
+            foreach (range($atomic_type->min_bound, $atomic_type->max_bound) as $literal_int_value) {
+                $floats[] = new TLiteralFloat((float) $literal_int_value);
+            }
+
+            return $floats;
+        }
+
+        if ($atomic_type instanceof TInt) {
+            return $atomic_type instanceof TLiteralInt ? [new TLiteralFloat((float) $atomic_type->value)] : [];
+        }
+
+        if ($atomic_type instanceof TString) {
+            // a numeric string can be any number, and any other string is technically 0,
+            // however we cannot be certain that it's not inferred, therefore less strict
+            return $atomic_type instanceof TLiteralString
+                ? [self::getNumericLiteral($atomic_type->value, $is_int)]
+                : [];
+        }
+
+        if ($atomic_type instanceof TNull || $atomic_type instanceof TFalse) {
+            return [self::getNumericLiteral(0, $is_int)];
+        }
+
+        if ($atomic_type instanceof TTrue) {
+            return [self::getNumericLiteral(1, $is_int)];
+        }
+
+        if ($atomic_type instanceof TBool) {
+            // do NOT use TIntRange here, as it will cause invalid behavior, e.g. bitwiseAssignment
+            return [self::getNumericLiteral(0, $is_int), self::getNumericLiteral(1, $is_int)];
+        }
+
+        // could be invalid, but allow it, as it is allowed for TString above too
+        if ($atomic_type instanceof TMixed
+            || $atomic_type instanceof TClosedResource
+            || $atomic_type instanceof TResource
+            || $atomic_type instanceof Scalar
+            || ($atomic_type instanceof TNamedObject && self::isPseudoCastableObject($codebase, $atomic_type))
+        ) {
+            return [];
+        }
+
+        return null;
+    }
+
+    private static function isPseudoCastableObject(Codebase $codebase, TNamedObject $atomic_type): bool
+    {
+        foreach ([$atomic_type, ...$atomic_type->extra_types] as $intersection_type) {
+            if (!$intersection_type instanceof TNamedObject) {
+                continue;
+            }
+
+            // prevent "Could not get class storage for mixed"
+            if (!$codebase->classExists($intersection_type->value)) {
+                continue;
+            }
+
+            foreach (self::PSEUDO_CASTABLE_CLASSES as $pseudo_castable_class) {
+                if (strtolower($intersection_type->value) === strtolower($pseudo_castable_class)
+                    || $codebase->classExtends(
+                        $intersection_type->value,
+                        $pseudo_castable_class,
+                    )
+                ) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
     }
 
     /**
