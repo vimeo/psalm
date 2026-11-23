@@ -27,10 +27,12 @@ Times are integer microseconds (`_us`), sizes integer bytes (`_bytes`).
 |`stages`|The main process, stage by stage|
 |`pools`, `workers`|The forked processes: tasks, busy time, CPU time, memory|
 |`files`|One record per file scanned or analysed|
-|`hot`, `top`|Statements and functions that took 50 ms or more, and the 20 slowest of each|
+|`hot`, `top`|Statements and function-likes by place, with the number of `passes` over them (a constructor is analysed twice) and the time of all of them. Only a statement execution (own time) or a function-like pass of 1 ms or more is counted. `hot` holds those that add up to 50 ms or more, `top` the 20 slowest of each|
 |`hooks`|Time per handler of a plugin or of Psalm, and per hook|
 |`counts`|Class-likes, functions, methods, parsed files, parser cache hits and misses|
 |`taint`|Size of the taint graph|
+
+The file is also a Trace Event Format file (`traceEvents`: the stages and the files, in one lane per process): open it in https://ui.perfetto.dev or https://www.speedscope.app to see what the workers did when.
 
 `schema` changes when a key is removed or changes its meaning.
 
