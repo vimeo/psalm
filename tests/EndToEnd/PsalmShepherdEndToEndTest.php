@@ -281,8 +281,23 @@ final class PsalmShepherdEndToEndTest extends PsalmEndToEndTestCase
         $this->assertStringContainsString('"baselined":{"InvalidReturnStatement":2,"InvalidReturnType":2}', $report);
         $this->assertStringContainsString('"info":{"InvalidReturnType":1,"MissingReturnType":1}', $report);
         $this->assertSame(['src/B.php InvalidReturnStatement'], self::sentIssues($report));
-        // all the issues Psalm can fix, whether reported as errors, as info or covered by the baseline
-        $this->assertSame(['InvalidReturnType' => 3, 'MissingReturnType' => 1], self::decode($report)['fixable']);
+        // the whole payload, so that no key is added or removed unnoticed
+        $this->assertSame(
+            [
+                'build',
+                'git',
+                'issues',
+                'baselined',
+                'baseline_entries',
+                'info',
+                'run',
+                'config',
+                'coverage',
+                'level',
+                'versions',
+            ],
+            array_keys(self::decode($report)),
+        );
         // composer.json requires PHP >= 7.1, and the generated psalm.xml has no phpVersion; the whole object, so
         // that no key is added or removed unnoticed
         $this->assertSame(
@@ -319,18 +334,14 @@ final class PsalmShepherdEndToEndTest extends PsalmEndToEndTestCase
             $report = self::decode($this->runPsalmAndReadTheRawReport($args, self::githubActions(), $error_output));
 
             $this->assertSame($without_cache['baselined'], $report['baselined'], implode(' ', $args));
-            $this->assertSame($without_cache['fixable'], $report['fixable'], implode(' ', $args));
             $this->assertSame($without_cache['issues'], $report['issues'], implode(' ', $args));
 
-            /** @var array{wall_seconds: mixed, threads: mixed, full: mixed, files: mixed} $run */
+            /** @var array{full: mixed, files: mixed} $run */
             $run = $report['run'];
-            $this->assertSame(['wall_seconds', 'threads', 'full', 'files'], array_keys($run), implode(' ', $args));
+            $this->assertSame(['full', 'files'], array_keys($run), implode(' ', $args));
             // Clean.php, FileWithErrors.php, A.php, B.php and C.php
             $this->assertSame(5, $run['files'], implode(' ', $args));
             $this->assertTrue($run['full'], implode(' ', $args));
-            $this->assertSame($args[0] === '--threads=2' && $can_fork ? 2 : 1, $run['threads'], implode(' ', $args));
-            $this->assertIsFloat($run['wall_seconds']);
-            $this->assertGreaterThanOrEqual(0, $run['wall_seconds']);
         }
 
         if ($can_fork) {

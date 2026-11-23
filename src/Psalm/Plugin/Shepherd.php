@@ -9,7 +9,6 @@ use Override;
 use Psalm\Codebase;
 use Psalm\Config;
 use Psalm\Internal\Analyzer\IssueData;
-use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\VersionUtils;
 use Psalm\IssueBuffer;
 use Psalm\Plugin\EventHandler\AfterAnalysisInterface;
@@ -36,11 +35,9 @@ use function is_array;
 use function is_string;
 use function json_encode;
 use function ksort;
-use function microtime;
 use function parse_url;
 use function preg_replace;
 use function rawurldecode;
-use function round;
 use function sprintf;
 use function str_replace;
 use function strip_tags;
@@ -56,7 +53,6 @@ use const CURLOPT_POST;
 use const CURLOPT_POSTFIELDS;
 use const CURLOPT_RETURNTRANSFER;
 use const CURLOPT_TIMEOUT;
-use const JSON_PRESERVE_ZERO_FRACTION;
 use const JSON_THROW_ON_ERROR;
 use const PHP_EOL;
 use const PHP_URL_HOST;
@@ -105,8 +101,7 @@ final class Shepherd implements AfterAnalysisInterface
      *     baselined: object,
      *     baseline_entries: int,
      *     info: object,
-     *     fixable: object,
-     *     run: array{wall_seconds: float, threads: int, full: bool, files: int},
+     *     run: array{full: bool, files: int},
      *     config: array{
      *         php_version: string,
      *         find_unused_code: bool,
@@ -156,9 +151,6 @@ final class Shepherd implements AfterAnalysisInterface
 
         $codebase = $event->getCodebase();
 
-        $fixable_issue_counts = IssueBuffer::getFixableIssues();
-        ksort($fixable_issue_counts);
-
         // AfterAnalysisEvent is only made by IssueBuffer::finish(), which sets the summary first
         $summary = IssueBuffer::getRunSummary();
         if ($summary === null) {
@@ -194,10 +186,7 @@ final class Shepherd implements AfterAnalysisInterface
             'baselined' => (object) $summary->baselined_issue_counts,
             'baseline_entries' => $summary->baseline_entry_count,
             'info' => (object) $info_issue_counts,
-            'fixable' => (object) $fixable_issue_counts,
             'run' => [
-                'wall_seconds' => round(microtime(true) - $summary->start_time, 2),
-                'threads' => ProjectAnalyzer::getInstance()->threads,
                 'full' => $summary->is_full,
                 'files' => $codebase->analyzer->getFileCountWithAnalysisResults(),
             ],
@@ -220,8 +209,7 @@ final class Shepherd implements AfterAnalysisInterface
 
     private static function sendPayload(string $endpoint, array $rawPayload, Progress $progress): void
     {
-        // so that `run.wall_seconds` is always a float, 2.0 included
-        $payload = json_encode($rawPayload, JSON_THROW_ON_ERROR | JSON_PRESERVE_ZERO_FRACTION);
+        $payload = json_encode($rawPayload, JSON_THROW_ON_ERROR);
 
         // Prepare new cURL resource
         $ch = curl_init($endpoint);

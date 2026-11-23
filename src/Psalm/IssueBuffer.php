@@ -928,7 +928,6 @@ final class IssueBuffer
         self::$run_summary = new AnalysisRunSummary(
             $baselined_issue_counts,
             $baseline_entry_count,
-            $start_time,
             $is_full,
         );
 

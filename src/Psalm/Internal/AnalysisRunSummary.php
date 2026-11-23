@@ -24,8 +24,6 @@ final class AnalysisRunSummary
         public readonly array $baselined_issue_counts,
         /** How many entries the baseline held before it covered any issue */
         public readonly int $baseline_entry_count,
-        /** When the analysis started, as microtime(true) */
-        public readonly float $start_time,
         /** Whether the run was for the whole project, not for given paths */
         public readonly bool $is_full,
     ) {
