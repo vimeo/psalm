@@ -432,6 +432,26 @@ final class PsalmEndToEndTest extends PsalmEndToEndTestCase
         $this->assertSame('', $process->getErrorOutput());
     }
 
+    public function testRefactorHelpListsMonochromeOnceAndRejectsTheUnusedFileOption(): void
+    {
+        $help = self::newProcess([PHP_BINARY, $this->psalmRefactor, '--help'], self::$tmpDir, self::agentEnvVarsToUnset());
+        $help->run();
+
+        $this->assertSame(0, $help->getExitCode(), $help->getErrorOutput());
+        $this->assertSame(1, substr_count($help->getOutput(), '-m, --monochrome'));
+        $this->assertDoesNotMatchRegularExpression('/^\s*-m\s*$/m', $help->getOutput());
+
+        $file = self::newProcess(
+            [PHP_BINARY, $this->psalmRefactor, '-f', 'src/Foo.php', '--help'],
+            self::$tmpDir,
+            self::agentEnvVarsToUnset(),
+        );
+        $file->run();
+
+        $this->assertSame(1, $file->getExitCode());
+        $this->assertStringContainsString('Unrecognised argument "-f"', $file->getErrorOutput());
+    }
+
     public function testRefactorAcceptsMemoryLimitAndUseIniDefaultsOptions(): void
     {
         $process = self::newProcess(

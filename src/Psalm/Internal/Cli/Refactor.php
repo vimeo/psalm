@@ -84,7 +84,7 @@ final class Refactor
 
         $args = array_slice($argv, 1);
 
-        $valid_short_options = ['f:', 'm', 'h', 'r:', 'c:'];
+        $valid_short_options = ['m', 'h', 'r:', 'c:'];
         $valid_long_options = self::LONG_OPTIONS;
 
         // get options from command line
@@ -117,7 +117,7 @@ final class Refactor
                 --debug, --debug-by-line, --debug-emitted-issues
                     Debug information
 
-                -m
+                -m, --monochrome
                     Enable monochrome output.
                     Auto-enabled when NO_COLOR is set to a non-empty value, when
                     TERM=dumb, when stdout is not a terminal, or when an AI coding
@@ -127,9 +127,6 @@ final class Refactor
                 --no-progress
                     Disable the progress indicator.
                     Auto-enabled when an AI coding agent is driving the shell outside CI.
-
-                -m, --monochrome
-                    Enable monochrome output.
 
                 -c, --config=psalm.xml
                     Path to a psalm.xml configuration file. Run psalm --init to create one.
