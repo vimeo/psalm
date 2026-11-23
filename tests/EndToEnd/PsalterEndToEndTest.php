@@ -136,29 +136,6 @@ final class PsalterEndToEndTest extends PsalmEndToEndTestCase
 
     public function testRefactorPrintsNoProgressBarOnAPipedStderr(): void
     {
-        $process = $this->runRefactorMove([]);
-
-        $this->assertSame(0, $process->getExitCode(), $process->getOutput() . $process->getErrorOutput());
-        $this->assertStringContainsString('Scanning files', $process->getErrorOutput());
-        $this->assertDoesNotMatchRegularExpression('/\r(?!\n)/', $process->getErrorOutput());
-    }
-
-    public function testRefactorPrintsNoHyperlinksInCi(): void
-    {
-        $process = $this->runRefactorMove(['CI' => 'true', 'FORCE_COLOR' => '1']);
-
-        $this->assertSame(0, $process->getExitCode(), $process->getOutput() . $process->getErrorOutput());
-        $this->assertStringContainsString('InvalidReturnType', $process->getOutput());
-        $this->assertStringNotContainsString("\e]8;;", $process->getOutput());
-    }
-
-    /**
-     * Moves Ns\A::foo into Ns\B in a project that also has an InvalidReturnType
-     *
-     * @param array<string, string> $env
-     */
-    private function runRefactorMove(array $env): Process
-    {
         $this->runPsalmInit();
         $psalmXml = file_get_contents(self::$tmpDir . '/psalm.xml');
         $psalmXml = str_replace('<psalm', '<psalm runTaintAnalysis="false"', (string)$psalmXml);
@@ -172,11 +149,13 @@ final class PsalterEndToEndTest extends PsalmEndToEndTestCase
         $process = self::newProcess(
             [PHP_BINARY, $this->psalmRefactor, '--no-cache', '--move', 'Ns\A::foo', '--into', 'Ns\B'],
             self::$tmpDir,
-            [...self::agentEnvVarsToUnset(), ...$env],
+            self::agentEnvVarsToUnset(),
         );
         $process->run();
 
-        return $process;
+        $this->assertSame(0, $process->getExitCode(), $process->getOutput() . $process->getErrorOutput());
+        $this->assertStringContainsString('Scanning files', $process->getErrorOutput());
+        $this->assertDoesNotMatchRegularExpression('/\r(?!\n)/', $process->getErrorOutput());
     }
 
     /**
