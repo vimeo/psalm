@@ -308,7 +308,17 @@ final class Properties
             if ($source instanceof ClosureAnalyzer
                 && ($hook_id = $source->getPropertyHookId()) !== null
             ) {
-                return str_starts_with(strtolower($hook_id), strtolower($class_name . '::$' . $property_name . '::'));
+                // the hook of a trait's property is analysed for the class using the trait
+                $hook_class = explode('::$', $hook_id, 2)[0];
+                $hook_property_id = $hook_class . '::$' . $property_name;
+                $declaring_class = $source->getCodebase()->properties->getDeclaringClassForProperty(
+                    $hook_property_id,
+                    true,
+                );
+
+                return $declaring_class !== null
+                    && strtolower($declaring_class) === strtolower($class_name)
+                    && str_starts_with(strtolower($hook_id), strtolower($hook_property_id . '::'));
             }
 
             $parent_source = $source->getSource();

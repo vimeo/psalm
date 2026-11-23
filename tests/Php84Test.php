@@ -415,6 +415,43 @@ final class Php84Test extends TestCase
                 'error_levels' => [],
                 'php_version' => '8.4',
             ],
+            'writeInsideTheSetHookOfATraitPropertyIsCheckedAgainstTheProperty' => [
+                'code' => '<?php
+                    trait T {
+                        public string $v = "" {
+                            set(string|array $value) {
+                                $this->v = $value;
+                            }
+                        }
+                    }
+
+                    final class UsesT {
+                        use T;
+                    }',
+                'error_message' => 'PossiblyInvalidPropertyAssignmentValue',
+                'error_levels' => [],
+                'php_version' => '8.4',
+            ],
+            'writeInsideTheSetHookOfATraitPropertyIsRemembered' => [
+                'code' => '<?php
+                    trait T {
+                        public string $value = "" {
+                            set(string $value) {
+                                $this->value = "X";
+                                if ($this->value === "Y") {
+                                    echo "never";
+                                }
+                            }
+                        }
+                    }
+
+                    final class UsesT {
+                        use T;
+                    }',
+                'error_message' => 'TypeDoesNotContainType',
+                'error_levels' => [],
+                'php_version' => '8.4',
+            ],
             'writeOutsideTheHooksIsCheckedAgainstTheSetHookParameter' => [
                 'code' => '<?php
                     final class Tags {
