@@ -111,6 +111,23 @@ final class FunctionTemplateTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'isCallableLeavesOutATemplateOfAClassWithoutInvoke' => [
+                'code' => '<?php
+                    /**
+                     * @template E of Exception
+                     * @param E|(callable():E)|null $exception
+                     */
+                    function fail(callable|Exception|null $exception = null): never {
+                        if (is_callable($exception)) {
+                            $exception = $exception();
+                        }
+
+                        throw $exception ?? new RuntimeException("No value");
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'closureOfATemplateWithANullDefaultOfTheSameTemplate' => [
                 'code' => '<?php
                     /** @template T */
@@ -3458,6 +3475,73 @@ final class FunctionTemplateTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'templateBoundedByNumericCanBeIdenticalToAString' => [
+                'code' => '<?php
+                    /**
+                     * @template T of numeric
+                     * @param T $t
+                     */
+                    function f($t, string $s): void {
+                        if ($t === $s) {
+                            takesNumericString($t);
+                        }
+                    }
+
+                    /** @param numeric-string $s */
+                    function takesNumericString(string $s): void {}',
+            ],
+            'templateBoundIsNarrowedByAnIdenticalValueOfTheOtherSide' => [
+                'code' => '<?php
+                    /** @param positive-int $i */
+                    function takesPositiveInt(int $i): void {}
+                    /** @param list<string> $l */
+                    function takesListOfStrings(array $l): void {}
+                    /** @param numeric-string $s */
+                    function takesNumericString(string $s): void {}
+
+                    /**
+                     * @template T of positive-int
+                     * @param T $t
+                     */
+                    function e1($t, int $i): void {
+                        if ($i === $t) {
+                            takesPositiveInt($i);
+                        }
+                    }
+
+                    /**
+                     * @template T of list<string>
+                     * @param T $t
+                     */
+                    function e2($t, array $a): void {
+                        if ($a === $t) {
+                            takesListOfStrings($a);
+                        }
+                    }
+
+                    /**
+                     * @template T of numeric
+                     * @param T $t
+                     */
+                    function e3($t, string $s): void {
+                        if ($t === $s) {
+                            takesNumericString($s);
+                        }
+                    }
+
+                    /**
+                     * @template T of numeric
+                     * @param T $t
+                     */
+                    function e4($t): void {
+                        if (is_string($t)) {
+                            takesNumericString($t);
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
         ];
     }
 
@@ -3468,6 +3552,19 @@ final class FunctionTemplateTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'isCallableOfATemplateOfAClassWithoutInvoke' => [
+                'code' => '<?php
+                    /**
+                     * @template E of Exception
+                     * @param E $exception
+                     */
+                    function check($exception): void {
+                        if (is_callable($exception)) {
+                            echo "never";
+                        }
+                    }',
+                'error_message' => 'DocblockTypeContradiction',
+            ],
             'methodTemplateBoundStillReportsTheClassStringOfANonFinalClassThatWasExcluded' => [
                 'code' => '<?php
                     interface StampInterface {}
@@ -4397,6 +4494,19 @@ final class FunctionTemplateTest extends TestCase
 
                     (new Garage)->find(Countable::class);',
                 'error_message' => 'InvalidArgument',
+            ],
+            'templateBoundedByIntCannotBeIdenticalToAString' => [
+                'code' => '<?php
+                    /**
+                     * @template T of int
+                     * @param T $t
+                     */
+                    function f($t, string $s): void {
+                        if ($t === $s) {
+                            echo "never";
+                        }
+                    }',
+                'error_message' => 'DocblockTypeContradiction',
             ],
         ];
     }

@@ -163,6 +163,38 @@ final class ArrayFunctionCallTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'writeUnderTheLastKeyTwiceAndOfAPropertyKeepsAList' => [
+                'code' => '<?php
+                    /**
+                     * @param non-empty-list<int> $l
+                     * @return list<int>
+                     */
+                    function twice(array $l): array {
+                        $k = array_key_last($l);
+                        $l[$k] = 1;
+                        $l[$k] = 2;
+
+                        return $l;
+                    }
+
+                    final class Bag {
+                        /** @var list<int> */
+                        public array $items = [];
+
+                        public function m(): void {
+                            $k = array_key_last($this->items);
+
+                            if ($k === null) {
+                                return;
+                            }
+
+                            $this->items[$k] = 1;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MoreSpecificReturnType'],
+                'php_version' => '8.2',
+            ],
             'arrayColumnAndGetObjectVarsResolveClassConstantsOfThePropertyType' => [
                 'code' => '<?php
                     class Level {
@@ -2122,6 +2154,27 @@ final class ArrayFunctionCallTest extends TestCase
                     $foo = array_sum([5,18.5]);',
                 'assertions' => [
                     '$foo' => 'float',
+                ],
+            ],
+            'arrayProductOfBools' => [
+                'code' => '<?php
+                    /** @param array<bool> $a */
+                    function allTrue(array $a): int {
+                        return array_product($a);
+                    }
+                    /** @param list<true> $a */
+                    function product(array $a): int {
+                        return array_product($a);
+                    }
+                    /** @var array<bool> $bools */
+                    $all = array_product($bools);
+                    /** @var list<true> $trues */
+                    $one = array_product($trues);
+                    $empty = array_product([]);',
+                'assertions' => [
+                    '$all===' => '0|1',
+                    '$one===' => '1',
+                    '$empty===' => '1',
                 ],
             ],
             'arrayMapWithArrayAndCallable' => [
@@ -4983,6 +5036,48 @@ final class ArrayFunctionCallTest extends TestCase
                     '$merged===' => "array<'age'|'name', 'a'|'b'|1>",
                 ],
             ],
+            'writeUnderTheLastKeyOfAListKeepsAList' => [
+                'code' => '<?php
+                    /**
+                     * @param list<string> $names
+                     * @return list<array{name: string, note: ?string}>
+                     */
+                    function annotate(array $names, string $note): array {
+                        $entries = [];
+                        foreach ($names as $name) {
+                            $entries[] = ["name" => $name, "note" => null];
+                            $key = array_key_last($entries);
+                            $entries[$key]["note"] = $note;
+                        }
+                        return $entries;
+                    }
+
+                    /** @param list<array{n: int}> $l */
+                    function maybeEmpty(array $l): void {
+                        $k = array_key_first($l);
+                        if ($k !== null) {
+                            $l[$k]["n"] = 2;
+                        }
+                        /** @psalm-check-type-exact $l = list<array{n: int}> */;
+                    }
+
+                    /** @param list<array{n: int}> $l */
+                    function anyKey(array $l, int $k): void {
+                        $l[$k]["n"] = 2;
+                        /** @psalm-check-type-exact $l = non-empty-array<int, array{n: int}> */;
+                    }',
+            ],
+            'writeUnderTheLastKeyOfAListPassedByNameKeepsAList' => [
+                'code' => '<?php
+                    /** @param non-empty-list<array{n: int}> $l */
+                    function named(array $l): void {
+                        $l[array_key_last(array: $l)]["n"] = 2;
+                        /** @psalm-check-type-exact $l = non-empty-list<array{n: int}> */;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'arrayFunctionsOfAnInvokableLaterInIntersection' => [
                 'code' => '<?php
                     interface Named {}
@@ -5057,6 +5152,102 @@ final class ArrayFunctionCallTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'keyOfAListTakenBeforeTheListShrinksIsNoKeyAnyMore' => [
+                'code' => '<?php
+                    /**
+                     * @param non-empty-list<int> $l
+                     * @return list<int>
+                     */
+                    function popTwice(array $l): array {
+                        $k = array_key_last($l);
+                        array_pop($l);
+                        array_pop($l);
+                        $l[$k] = 1;
+
+                        return $l;
+                    }',
+                'error_message' => 'LessSpecificReturnStatement',
+                'error_levels' => [],
+                'php_version' => '8.2',
+            ],
+            'keyOfAListTakenBeforeTheListIsReassignedIsNoKeyAnyMore' => [
+                'code' => '<?php
+                    /**
+                     * @param list<int> $a
+                     * @param non-empty-list<int> $b
+                     * @return list<int>
+                     */
+                    function reassign(array $a, array $b): array {
+                        $k = array_key_last($b);
+                        $b = $a;
+                        $b[$k] = 1;
+
+                        return $b;
+                    }',
+                'error_message' => 'LessSpecificReturnStatement',
+                'error_levels' => [],
+                'php_version' => '8.2',
+            ],
+            'keyOfAListTakenBeforeTheListIsSlicedIsNoKeyAnyMore' => [
+                'code' => '<?php
+                    /**
+                     * @param non-empty-list<int> $l
+                     * @return list<int>
+                     */
+                    function sliced(array $l): array {
+                        $k = array_key_last($l);
+                        $l = array_slice($l, 1);
+                        $l[$k] = 1;
+
+                        return $l;
+                    }',
+                'error_message' => 'LessSpecificReturnStatement',
+                'error_levels' => [],
+                'php_version' => '8.2',
+            ],
+            'keyOfAListPropertyTakenBeforeAMethodCallIsNoKeyAnyMore' => [
+                'code' => '<?php
+                    final class Bag {
+                        /** @var list<int> */
+                        public array $items = [];
+
+                        public function reset(): void {
+                            $this->items = [];
+                        }
+
+                        public function m(): void {
+                            $k = array_key_last($this->items);
+
+                            if ($k === null) {
+                                return;
+                            }
+
+                            $this->reset();
+                            $this->items[$k] = 1;
+                        }
+                    }',
+                'error_message' => 'PropertyTypeCoercion',
+                'error_levels' => [],
+                'php_version' => '8.2',
+            ],
+            'foreachKeyOfAListIsNoKeyAnyMoreOnceTheListIsReassigned' => [
+                'code' => '<?php
+                    /**
+                     * @param list<int> $l
+                     * @return list<int>
+                     */
+                    function f(array $l): array {
+                        foreach ($l as $k => $_) {
+                            $l = [];
+                            $l[$k] = 1;
+                        }
+
+                        return $l;
+                    }',
+                'error_message' => 'LessSpecificReturnStatement',
+                'error_levels' => [],
+                'php_version' => '8.2',
+            ],
             'arrayMapOnAUnionOfAnArrayAndATemplateBoundedByAListIsNotAList' => [
                 'code' => '<?php
                     /**
