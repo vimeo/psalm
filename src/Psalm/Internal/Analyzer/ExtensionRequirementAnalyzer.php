@@ -22,7 +22,8 @@ use function str_replace;
 final class ExtensionRequirementAnalyzer
 {
     /**
-     * The extensions PHP can't be built without, from the PHP version (as an id) they are part of the core
+     * The extensions PHP can't be built without (php-src has no configure option to disable them), from the PHP
+     * version (as an id) they are always built in
      */
     private const CORE_EXTENSIONS = [
         'core' => 0,
@@ -34,6 +35,8 @@ final class ExtensionRequirementAnalyzer
         'hash' => 7_04_00,
         'json' => 8_00_00,
         'random' => 8_02_00,
+        'uri' => 8_05_00,
+        'zend opcache' => 8_05_00,
     ];
 
     /**
@@ -84,8 +87,12 @@ final class ExtensionRequirementAnalyzer
             return null;
         }
 
+        // the code also runs on the older PHP versions composer.json allows, which may have been built without it
         $core_since = self::CORE_EXTENSIONS[$extension] ?? null;
-        if ($core_since !== null && $core_since <= $codebase->analysis_php_version_id) {
+        if ($core_since !== null
+            && $core_since <= $codebase->analysis_php_version_id
+            && $core_since <= ($codebase->config->lowest_composer_php_version_id ?? $core_since)
+        ) {
             return null;
         }
 

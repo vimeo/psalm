@@ -7,6 +7,7 @@ namespace Psalm\Tests;
 use Override;
 use Psalm\Config;
 use Psalm\Context;
+use Psalm\Exception\CodeException;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
@@ -41,6 +42,37 @@ final class MissingExtensionRequirementTest extends TestCase
         $this->analyzeFile($file_path, new Context());
     }
 
+    public function testCoreExtensionOfAPhpNewerThanComposerAllows(): void
+    {
+        $this->project_analyzer->getConfig()->lowest_composer_php_version_id = 7_03_00;
+        $this->project_analyzer->setPhpVersion('8.2', 'tests');
+
+        $file_path = (string) getcwd() . '/src/somefile.php';
+        $this->addFile($file_path, '<?php
+            function digest(string $s): string {
+                return hash("sha256", $s);
+            }');
+
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessage('hash is part of the ext-hash extension');
+
+        $this->analyzeFile($file_path, new Context());
+    }
+
+    public function testCoreExtensionsOfTheLowestPhpComposerAllows(): void
+    {
+        $this->project_analyzer->getConfig()->lowest_composer_php_version_id = 8_02_00;
+        $this->project_analyzer->setPhpVersion('8.4', 'tests');
+
+        $file_path = (string) getcwd() . '/src/somefile.php';
+        $this->addFile($file_path, '<?php
+            function f(string $s): string {
+                return hash("sha256", $s) . json_encode($s) . random_int(1, 2);
+            }');
+
+        $this->analyzeFile($file_path, new Context());
+    }
+
     /**
      * @psalm-pure
      */
@@ -59,6 +91,15 @@ final class MissingExtensionRequirementTest extends TestCase
                 'assertions' => [],
                 'ignored_issues' => [],
                 'php_version' => '8.2',
+            ],
+            'extensionsAlwaysBuiltFromPhp85' => [
+                'code' => '<?php
+                    function f(string $url): bool {
+                        return Uri\Rfc3986\Uri::parse($url) !== null && opcache_get_status() !== false;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.5',
             ],
             'declaredExtensions' => [
                 'code' => '<?php

@@ -630,6 +630,12 @@ final class Config
     public ?array $declared_extensions = null;
 
     /**
+     * The lowest PHP version the `php` requirement of composer.json allows, as an id (`70300`), or null when it doesn't
+     * constrain it. An extension only needs no declaration if every PHP version from this one on builds it in.
+     */
+    public ?int $lowest_composer_php_version_id = null;
+
+    /**
      * A list of php extensions supported by Psalm.
      * Where key - extension name (without ext- prefix), value - whether to load extension’s stub.
      * Values:
@@ -1298,6 +1304,12 @@ final class Config
 
         if ($composer_json !== null) {
             $config->declared_extensions = self::getDeclaredExtensions($composer_json, $config->base_dir);
+
+            $lowest_php_version = $config->getPHPVersionFromComposerJson();
+            if ($lowest_php_version !== null) {
+                [$major, $minor] = explode('.', $lowest_php_version);
+                $config->lowest_composer_php_version_id = (int) $major * 10_000 + (int) $minor * 100;
+            }
         }
 
         if (isset($config_xml->enableExtensions) && isset($config_xml->enableExtensions->extension)) {

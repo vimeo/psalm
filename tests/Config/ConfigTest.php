@@ -2768,6 +2768,34 @@ final class ConfigTest extends DeferredAnalyzerTestCase
         $this->assertSame($expected, $declared);
     }
 
+    #[DataProvider('providerLowestComposerPhpVersion')]
+    public function testReadsTheLowestPhpVersionComposerAllows(string $composer_json, ?int $expected): void
+    {
+        $root = sys_get_temp_dir() . DIRECTORY_SEPARATOR . uniqid('psalm-lowest-php-');
+        mkdir($root);
+        file_put_contents($root . DIRECTORY_SEPARATOR . 'composer.json', $composer_json);
+
+        try {
+            $config = Config::loadFromXML($root, '<?xml version="1.0"?><psalm/>');
+        } finally {
+            unlink($root . DIRECTORY_SEPARATOR . 'composer.json');
+            rmdir($root);
+        }
+
+        $this->assertSame($expected, $config->lowest_composer_php_version_id);
+    }
+
+    /**
+     * @return iterable<string, array{string, ?int}>
+     * @psalm-pure
+     */
+    public static function providerLowestComposerPhpVersion(): iterable
+    {
+        yield 'no php requirement' => ['{"require": {}}', null];
+        yield 'one major version' => ['{"require": {"php": "^8.2"}}', 8_02_00];
+        yield 'several major versions' => ['{"require": {"php": "^7.3 || ^8.0"}}', 7_03_00];
+    }
+
     /**
      * @return iterable<string, array{array<string, string>, string, list<string>|null}>
      * @psalm-pure

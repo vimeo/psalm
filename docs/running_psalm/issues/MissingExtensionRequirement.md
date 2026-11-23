@@ -57,5 +57,16 @@ final class Client extends SoapClient {}                    // MissingExtensionR
 An extension is declared when `composer.json` requires it (`require-dev` too) or suggests it, when an installed
 package provides or replaces it (the polyfills, such as `symfony/polyfill-mbstring`), and when
 [`<enableExtensions>`](../configuration.md#enableextensions) lists it. Without a `composer.json`, the issue isn't
-reported. The core extensions (`Core`, `standard`, `date`, `pcre`, `SPL`, `Reflection`, `hash`, `json` from PHP 8.0
-and `random` from PHP 8.2) need no declaration.
+reported.
+
+The extensions PHP is always built with need no declaration: `Core`, `standard`, `date`, `pcre`, `SPL`, `Reflection`,
+`hash` from PHP 7.4, `json` from PHP 8.0, `random` from PHP 8.2, `uri` and `Zend OPcache` from PHP 8.5. Psalm checks
+the lowest PHP version the `php` requirement of `composer.json` allows:
+
+```php
+<?php // composer.json requires "php": "^7.3"
+
+function digest(string $s): string {
+    return hash('sha256', $s);                              // MissingExtensionRequirement: PHP 7.3 can be built without it
+}
+```
