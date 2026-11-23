@@ -2077,7 +2077,10 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                         $this->getParentFQCLN(),
                         true,
                         $param_type->hasConditional(),
-                        $this_object instanceof TNamedObject && !$this_object->is_static,
+                        ($this_object instanceof TNamedObject && !$this_object->is_static)
+                            || ($context->self !== null
+                                && $codebase->classlike_storage_provider->has($context->self)
+                                && $codebase->classlike_storage_provider->get($context->self)->final),
                         true,
                         false,
                         true,
