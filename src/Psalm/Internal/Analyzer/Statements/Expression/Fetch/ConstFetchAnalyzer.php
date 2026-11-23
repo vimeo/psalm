@@ -17,6 +17,7 @@ use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\ConstantTypeResolver;
 use Psalm\Internal\Codebase\PhpDeprecations;
 use Psalm\Internal\DataFlow\DataFlowNode;
+use Psalm\Internal\Provider\FileStorageProvider;
 use Psalm\Internal\Provider\NodeDataProvider;
 use Psalm\Internal\Scanner\UnresolvedConstantComponent;
 use Psalm\Issue\DeprecatedConstant;
@@ -31,6 +32,7 @@ use ReflectionProperty;
 
 use function array_key_exists;
 use function array_pop;
+use function dirname;
 use function explode;
 use function implode;
 use function in_array;
@@ -45,6 +47,9 @@ use function strtolower;
  */
 final class ConstFetchAnalyzer
 {
+    /** @var ?array<string, int> */
+    private static ?array $constant_introductions = null;
+
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\ConstFetch $stmt,
@@ -144,8 +149,18 @@ final class ConstFetchAnalyzer
                     );
                 }
 
+                // a native constant newer than the PHP Psalm runs on is unknown to it, but not undefined
+                $is_dated_native = !str_contains($global_const_name, '\\')
+                    && self::getIntroduction($global_const_name) !== null;
+
+                if ($const_type || $is_dated_native) {
+                    self::checkAvailability($statements_analyzer, $stmt, $context, $global_const_name, $fq_const_name);
+                }
+
                 if ($const_type) {
                     $statements_analyzer->node_data->setType($stmt, $const_type);
+                } elseif ($is_dated_native) {
+                    $statements_analyzer->node_data->setType($stmt, Type::getMixed());
                 } elseif ($context->check_consts) {
                     IssueBuffer::maybeAdd(
                         new UndefinedConstant(
@@ -157,6 +172,81 @@ final class ConstFetchAnalyzer
                     );
                 }
         }
+    }
+
+    /**
+     * Reports a native constant introduced after the analysed PHP version, unless code guards it or
+     * declares it (a polyfill)
+     */
+    private static function checkAvailability(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr\ConstFetch $stmt,
+        Context $context,
+        string $const_name,
+        string $fq_const_name,
+    ): void {
+        $codebase = $statements_analyzer->getCodebase();
+        $since_php_version_id = self::getIntroducingPhpVersionId($codebase, $const_name);
+
+        if ($since_php_version_id === null
+            || ($codebase->getGuardedPhpVersionId($context) ?? $codebase->analysis_php_version_id)
+                >= $since_php_version_id
+            || self::isDeclaredInCode($codebase, $fq_const_name)
+            || self::isDeclaredInCode($codebase, $const_name)
+        ) {
+            return;
+        }
+
+        IssueBuffer::maybeAdd(
+            new UndefinedConstant(
+                'Constant ' . $const_name . ' ' . $codebase->getUnavailableSymbolMessageSuffix($since_php_version_id),
+                new CodeLocation($statements_analyzer->getSource(), $stmt),
+            ),
+            $statements_analyzer->getSuppressedIssues(),
+        );
+    }
+
+    /**
+     * The PHP version that introduced a native global constant after the analysed one, or null when
+     * the analysed version has it or it can't be dated (see bin/stubs/gen_constant_introductions.php)
+     */
+    public static function getIntroducingPhpVersionId(Codebase $codebase, string $const_name): ?int
+    {
+        $since_php_version_id = self::getIntroduction($const_name);
+
+        return $since_php_version_id !== null && $since_php_version_id > $codebase->analysis_php_version_id
+            ? $since_php_version_id
+            : null;
+    }
+
+    /**
+     * The PHP version that introduced a native global constant, if it is dated
+     */
+    private static function getIntroduction(string $const_name): ?int
+    {
+        if (self::$constant_introductions === null) {
+            /** @var array<string, int> */
+            $introductions = require dirname(__DIR__, 7) . '/dictionaries/ConstantIntroductions.php';
+            self::$constant_introductions = $introductions;
+        }
+
+        return self::$constant_introductions[$const_name] ?? null;
+    }
+
+    /**
+     * Whether scanned PHP code (a project or autoloaded file, not a stub) declares the constant, as a polyfill does
+     *
+     * @psalm-capabilities read-props|write-this-props|write-refs
+     */
+    public static function isDeclaredInCode(Codebase $codebase, string $const_name): bool
+    {
+        foreach (FileStorageProvider::getAll() as $file_path => $file_storage) {
+            if (isset($file_storage->constants[$const_name]) && !$codebase->scanner->isStubFile($file_path)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**

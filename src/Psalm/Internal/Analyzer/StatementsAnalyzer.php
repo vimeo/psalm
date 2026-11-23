@@ -674,35 +674,7 @@ final class StatementsAnalyzer extends SourceAnalyzer
             if (isset($statements_analyzer->parsed_docblock->tags['psalm-suppress'])) {
                 $suppressed = $statements_analyzer->parsed_docblock->tags['psalm-suppress'];
                 if ($suppressed) {
-                    $new_issues = [];
-
-                    foreach ($suppressed as $offset => $suppress_entry) {
-                        foreach (DocComment::parseSuppressList($suppress_entry) as $issue_offset => $issue_type) {
-                            $new_issues[$issue_offset + $offset] = $issue_type;
-                        }
-                    }
-
-                    if ($codebase->track_unused_suppressions
-                        && (
-                            (count($new_issues) === 1) // UnusedPsalmSuppress by itself should be marked as unused
-                            || !$codebase->config->suppressesIssueType($new_issues, 'UnusedPsalmSuppress')
-                        )
-                    ) {
-                        foreach ($new_issues as $offset => $issue_type) {
-                            if ($issue_type === 'InaccessibleMethod') {
-                                continue;
-                            }
-
-                            IssueBuffer::addUnusedSuppression(
-                                $statements_analyzer->getFilePath(),
-                                $offset,
-                                $issue_type,
-                                $codebase->taint_flow_graph !== null,
-                            );
-                        }
-                    }
-
-                    $statements_analyzer->addSuppressedIssues($new_issues);
+                    $new_issues = ExpressionAnalyzer::addSuppressions($statements_analyzer, $suppressed);
                 }
             }
 
@@ -742,6 +714,7 @@ final class StatementsAnalyzer extends SourceAnalyzer
                             $e->getMessage(),
                             new CodeLocation($statements_analyzer->getSource(), $stmt),
                         ),
+                        $statements_analyzer->getSuppressedIssues(),
                     );
                 } catch (DocblockParseException $e) {
                     IssueBuffer::maybeAdd(
@@ -749,6 +722,7 @@ final class StatementsAnalyzer extends SourceAnalyzer
                             $e->getMessage(),
                             new CodeLocation($statements_analyzer->getSource(), $stmt),
                         ),
+                        $statements_analyzer->getSuppressedIssues(),
                     );
                 }
 
@@ -1000,6 +974,7 @@ final class StatementsAnalyzer extends SourceAnalyzer
                     $e->getMessage(),
                     new CodeLocation($this->getSource(), $stmt, null, true),
                 ),
+                $this->getSuppressedIssues(),
             );
 
             $this->parsed_docblock = null;
@@ -1337,6 +1312,34 @@ final class StatementsAnalyzer extends SourceAnalyzer
     public function getBranchPoint(string $var_id): ?int
     {
         return $this->var_branch_points[$var_id] ?? null;
+    }
+
+    /**
+     * Whether the mixed and non-mixed counts (the inferred-type percentage) include
+     * the expressions analysed here: not in initialization passes, included files,
+     * or trait methods (they are analysed once per using class).
+     *
+     * @psalm-mutation-free
+     */
+    public function shouldCountMixed(Context $context): bool
+    {
+        return !$context->collect_initializations
+            && $this->getFilePath() === $this->getRootFilePath()
+            && (!(($parent_source = $this->getSource()) instanceof FunctionLikeAnalyzer)
+                || !$parent_source->getSource() instanceof TraitAnalyzer);
+    }
+
+    public function countMixed(Context $context, bool $is_mixed): void
+    {
+        if (!$this->shouldCountMixed($context)) {
+            return;
+        }
+
+        if ($is_mixed) {
+            $this->codebase->analyzer->incrementMixedCount($this->getFilePath());
+        } else {
+            $this->codebase->analyzer->incrementNonMixedCount($this->getFilePath());
+        }
     }
 
     /**
