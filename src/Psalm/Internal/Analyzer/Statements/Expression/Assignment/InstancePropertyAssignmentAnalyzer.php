@@ -247,6 +247,8 @@ final class InstancePropertyAssignmentAnalyzer
             $property_name = $var_id ?? $assigned_property->id;
 
             if ($class_property_type->hasMixed()) {
+                $has_valid_assignment_value_type = true;
+
                 continue;
             }
 

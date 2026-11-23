@@ -133,7 +133,7 @@ final class StaticPropertyAssignmentAnalyzer
                     $statements_analyzer->getSuppressedIssues(),
                 );
 
-                return null;
+                continue;
             }
 
             if (ClassLikeAnalyzer::checkPropertyVisibility(
@@ -211,10 +211,6 @@ final class StaticPropertyAssignmentAnalyzer
 
             if ($assignment_value_type->hasMixed()) {
                 return null;
-            }
-
-            if ($class_property_type->hasMixed()) {
-                continue;
             }
 
             $class_property_type = TypeExpander::expandUnion(

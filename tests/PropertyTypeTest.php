@@ -5696,6 +5696,57 @@ final class PropertyTypeTest extends TestCase
                 'error_levels' => [],
                 'php_version' => '8.0',
             ],
+            'staticPropertyIsCheckedWhenAnotherClassOfTheReceiverLacksIt' => [
+                'code' => '<?php
+                    final class A {
+                        public static string $s = "";
+                    }
+
+                    final class B {}
+
+                    /** @param class-string<A>|class-string<B> $c */
+                    function set(string $c): void {
+                        $c::$s = 1;
+                    }',
+                'error_message' => 'InvalidPropertyAssignmentValue - src' . DIRECTORY_SEPARATOR
+                    . 'somefile.php:10:34 - A::$s with declared type',
+                'error_levels' => ['UndefinedPropertyFetch', 'UndefinedPropertyAssignment'],
+            ],
+            'staticPropertyOfSeveralClassesOneOfThemMixed' => [
+                'code' => '<?php
+                    final class M {
+                        /** @var mixed */
+                        public static $s;
+                    }
+
+                    final class A {
+                        public static string $s = "";
+                    }
+
+                    /** @param class-string<M>|class-string<A> $c */
+                    function set(string $c): void {
+                        $c::$s = 1;
+                    }',
+                'error_message' => 'PossiblyInvalidPropertyAssignmentValue',
+            ],
+            'propertyOfSeveralClassesOneOfThemMixed' => [
+                'code' => '<?php
+                    final class M {
+                        /** @var mixed */
+                        public $s;
+                    }
+
+                    final class A {
+                        public string $s = "";
+                    }
+
+                    function set(M|A $o): void {
+                        $o->s = 1;
+                    }',
+                'error_message' => 'PossiblyInvalidPropertyAssignmentValue',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
             'nullableValueOfAnotherTypeToNullableStaticProperty' => [
                 'code' => '<?php
                     final class A {
