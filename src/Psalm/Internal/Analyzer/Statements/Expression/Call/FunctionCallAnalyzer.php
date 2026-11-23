@@ -844,12 +844,24 @@ final class FunctionCallAnalyzer extends CallAnalyzer
             return;
         }
 
-        $return_type = $callable->return_type ?? Type::getMixed();
+        self::addToTypeOfCall($statements_analyzer, $real_stmt, $callable->return_type);
+    }
+
+    /**
+     * What a callable the call may be returns is part of the type of the call, or all of it when it has none yet
+     */
+    private static function addToTypeOfCall(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr\FuncCall $real_stmt,
+        ?Union $return_type,
+    ): void {
         $stmt_type = $statements_analyzer->node_data->getType($real_stmt);
 
         $statements_analyzer->node_data->setType(
             $real_stmt,
-            $stmt_type ? Type::combineUnionTypes($stmt_type, $return_type) : $return_type,
+            $stmt_type && $return_type
+                ? Type::combineUnionTypes($stmt_type, $return_type)
+                : ($return_type ?? Type::getMixed()),
         );
     }
 
@@ -1639,6 +1651,129 @@ final class FunctionCallAnalyzer extends CallAnalyzer
         );
     }
 
+    /**
+     * The function called on a mixed value may do anything
+     */
+    private static function reportCallOfMixed(
+        StatementsAnalyzer $statements_analyzer,
+        Context $context,
+        PhpParser\Node\Expr\FuncCall $stmt,
+        TMixed $var_type_part,
+    ): void {
+        IssueBuffer::maybeAdd(
+            new MixedFunctionCall(
+                'Cannot call function on ' . $var_type_part->getId(),
+                new CodeLocation($statements_analyzer->getSource(), $stmt),
+            ),
+            $statements_analyzer->getSuppressedIssues(),
+        );
+
+        $statements_analyzer->signalMutation(
+            Capabilities::ALL,
+            $context,
+            'function call on ' . $var_type_part->getId(),
+            ImpureFunctionCall::class,
+            $stmt,
+        );
+    }
+
+    /**
+     * The call of a closure, or of a callable of a known signature: what it requires, and the type it returns
+     */
+    private static function analyzeCallOfAClosure(
+        StatementsAnalyzer $statements_analyzer,
+        Context $context,
+        PhpParser\Node\Expr\FuncCall $stmt,
+        PhpParser\Node\Expr\FuncCall $real_stmt,
+        PhpParser\Node\Expr $function_name,
+        TClosure|TCallable $var_type_part,
+        FunctionCallInfo $function_call_info,
+    ): void {
+        $codebase = $statements_analyzer->getCodebase();
+        $source = $statements_analyzer->getSource();
+
+            // the purity of the closure, where a purity template the enclosing function-like
+            // inherits its purity from requires nothing: that is deferred to its callers
+            $closure_capabilities = CallPurityResolver::resolvePurity(
+                $var_type_part->purity,
+                $statements_analyzer,
+            );
+
+            // a closure created in this scope: what it does to the variables it captured
+            // by reference, and through its by-reference parameters, stays in this scope
+        if ($statements_analyzer->node_data->isPureCompatible($function_name)) {
+            $closure_capabilities &= ~Capabilities::RECEIVER_LOCAL;
+        }
+
+            $closure_capabilities = ByRefArgumentAnalyzer::adjustCapabilities(
+                $statements_analyzer,
+                $context,
+                $closure_capabilities,
+                $var_type_part->params,
+                $stmt->isFirstClassCallable() ? [] : $stmt->getArgs(),
+            );
+
+        if (!$stmt->isFirstClassCallable()) {
+            if (($closure_capabilities & Capabilities::READ_GLOBALS) !== 0) {
+                $stmt->setAttribute(GlobalStateAnalyzer::ATTRIBUTE, true);
+            }
+
+            GlobalStateAnalyzer::checkArguments(
+                $statements_analyzer,
+                $context,
+                $stmt->getArgs(),
+                $closure_capabilities,
+                ImpureFunctionCall::class,
+                'the closure',
+            );
+        }
+
+        if ($function_name instanceof PhpParser\Node\Expr\Variable
+                && is_string($function_name->name)
+                && $source instanceof ClosureAnalyzer
+                && $source->getRecursiveVarId() === '$' . $function_name->name
+            ) {
+            // a recursive call of the closure being analysed: not a mutation of its own
+        } elseif ($statements_analyzer->signalMutation(
+            $closure_capabilities,
+            $context,
+            'function call on ' . $var_type_part->getId(),
+            ImpureFunctionCall::class,
+            $stmt,
+            self::isPurityWildcardCandidate($statements_analyzer, $function_name, $var_type_part)
+                    ? Capabilities::NONE
+                    : null,
+            false,
+            $function_call_info->function_storage,
+        )) {
+            if (!$function_call_info->function_storage) {
+                $function_call_info->function_storage = new FunctionStorage();
+            }
+
+            $function_call_info->function_storage->capabilities |= $closure_capabilities;
+        }
+
+            $function_call_info->function_params = $var_type_part->params;
+
+            // the type variables the closure returns resolve as those a method call returns
+            $closure_return_type = $var_type_part->return_type
+                ? TypeVariableTracker::resolveTypeVariables($var_type_part->return_type, $codebase)
+                : null;
+
+            self::addToTypeOfCall($statements_analyzer, $real_stmt, $closure_return_type);
+
+        if ($var_type_part->callable_id !== null) {
+            // Collect every known underlying id. When the call target is a union of
+            // distinct callables, any of them may run, so the taint behavior of all
+            // of them is re-dispatched on invocation (an over-approximation, which is
+            // the sound direction for taint). Callables with no known id contribute
+            // nothing to re-dispatch and are simply skipped.
+            $function_call_info->addCallableId($var_type_part->callable_id);
+        }
+
+            $function_call_info->function_exists = true;
+    }
+
     private static function getAnalyzeNamedExpression(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\FuncCall $stmt,
@@ -1695,8 +1830,6 @@ final class FunctionCallAnalyzer extends CallAnalyzer
 
             $var_atomic_types = $stmt_name_type->getAtomicTypes();
 
-            $source = $statements_analyzer->getSource();
-
             while ($var_atomic_types) {
                 $var_type_part = array_shift($var_atomic_types);
 
@@ -1712,121 +1845,20 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                 }
 
                 if ($var_type_part instanceof TClosure || $var_type_part instanceof TCallable) {
-                    // the purity of the closure, where a purity template the enclosing function-like
-                    // inherits its purity from requires nothing: that is deferred to its callers
-                    $closure_capabilities = CallPurityResolver::resolvePurity(
-                        $var_type_part->purity,
-                        $statements_analyzer,
-                    );
-
-                    // a closure created in this scope: what it does to the variables it captured
-                    // by reference, and through its by-reference parameters, stays in this scope
-                    if ($statements_analyzer->node_data->isPureCompatible($function_name)) {
-                        $closure_capabilities &= ~Capabilities::RECEIVER_LOCAL;
-                    }
-
-                    $closure_capabilities = ByRefArgumentAnalyzer::adjustCapabilities(
+                    self::analyzeCallOfAClosure(
                         $statements_analyzer,
                         $context,
-                        $closure_capabilities,
-                        $var_type_part->params,
-                        $stmt->isFirstClassCallable() ? [] : $stmt->getArgs(),
-                    );
-
-                    if (!$stmt->isFirstClassCallable()) {
-                        if (($closure_capabilities & Capabilities::READ_GLOBALS) !== 0) {
-                            $stmt->setAttribute(GlobalStateAnalyzer::ATTRIBUTE, true);
-                        }
-
-                        GlobalStateAnalyzer::checkArguments(
-                            $statements_analyzer,
-                            $context,
-                            $stmt->getArgs(),
-                            $closure_capabilities,
-                            ImpureFunctionCall::class,
-                            'the closure',
-                        );
-                    }
-
-                    if ($function_name instanceof PhpParser\Node\Expr\Variable
-                        && is_string($function_name->name)
-                        && $source instanceof ClosureAnalyzer
-                        && $source->getRecursiveVarId() === '$' . $function_name->name
-                    ) {
-                        // a recursive call of the closure being analysed: not a mutation of its own
-                    } elseif ($statements_analyzer->signalMutation(
-                        $closure_capabilities,
-                        $context,
-                        'function call on ' . $var_type_part->getId(),
-                        ImpureFunctionCall::class,
                         $stmt,
-                        self::isPurityWildcardCandidate($statements_analyzer, $function_name, $var_type_part)
-                            ? Capabilities::NONE
-                            : null,
-                        false,
-                        $function_call_info->function_storage,
-                    )) {
-                        if (!$function_call_info->function_storage) {
-                            $function_call_info->function_storage = new FunctionStorage();
-                        }
-
-                        $function_call_info->function_storage->capabilities |= $closure_capabilities;
-                    }
-
-                    $function_call_info->function_params = $var_type_part->params;
-
-                    // the type variables the closure returns resolve as those a method call returns
-                    $closure_return_type = $var_type_part->return_type
-                        ? TypeVariableTracker::resolveTypeVariables($var_type_part->return_type, $codebase)
-                        : null;
-
-                    if (($stmt_type = $statements_analyzer->node_data->getType($real_stmt))
-                        && $closure_return_type
-                    ) {
-                        $statements_analyzer->node_data->setType(
-                            $real_stmt,
-                            Type::combineUnionTypes(
-                                $stmt_type,
-                                $closure_return_type,
-                            ),
-                        );
-                    } else {
-                        $statements_analyzer->node_data->setType(
-                            $real_stmt,
-                            $closure_return_type ?? Type::getMixed(),
-                        );
-                    }
-
-                    if ($var_type_part->callable_id !== null) {
-                        // Collect every known underlying id. When the call target is a union of
-                        // distinct callables, any of them may run, so the taint behavior of all
-                        // of them is re-dispatched on invocation (an over-approximation, which is
-                        // the sound direction for taint). Callables with no known id contribute
-                        // nothing to re-dispatch and are simply skipped.
-                        $function_call_info->addCallableId($var_type_part->callable_id);
-                    }
-
-                    $function_call_info->function_exists = true;
+                        $real_stmt,
+                        $function_name,
+                        $var_type_part,
+                        $function_call_info,
+                    );
                     $has_valid_function_call_type = true;
                 } elseif ($var_type_part instanceof TMixed) {
                     $has_valid_function_call_type = true;
 
-                    IssueBuffer::maybeAdd(
-                        new MixedFunctionCall(
-                            'Cannot call function on ' . $var_type_part->getId(),
-                            new CodeLocation($statements_analyzer->getSource(), $stmt),
-                        ),
-                        $statements_analyzer->getSuppressedIssues(),
-                    );
-
-                    // the callee is unknown, so it may do anything
-                    $statements_analyzer->signalMutation(
-                        Capabilities::ALL,
-                        $context,
-                        'function call on ' . $var_type_part->getId(),
-                        ImpureFunctionCall::class,
-                        $stmt,
-                    );
+                    self::reportCallOfMixed($statements_analyzer, $context, $stmt, $var_type_part);
                 } elseif ($var_type_part instanceof TCallableObject) {
                     $has_valid_function_call_type = true;
                     self::analyzeInvokeCall(
