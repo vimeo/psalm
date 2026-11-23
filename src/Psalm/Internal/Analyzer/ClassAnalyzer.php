@@ -787,34 +787,9 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
             }
         }
 
-        $overrides_a_parent_property = false;
-
-        foreach ($storage->overridden_property_ids[$property_name] ?? [] as $overridden_property_id) {
-            [$guide_class_name] = explode('::$', $overridden_property_id);
-            $guide_property_storage = $codebase->classlike_storage_provider->get($guide_class_name)
-                ->properties[$property_name] ?? null;
-
-            if ($guide_property_storage !== null
-                && $guide_property_storage->visibility !== ClassLikeAnalyzer::VISIBILITY_PRIVATE
-            ) {
-                $overrides_a_parent_property = true;
-                break;
-            }
-        }
-
-        if (!$overrides_a_parent_property) {
-            foreach ($storage->class_implements as $interface_name) {
-                $interface_property = $codebase->classlikes->getStorageFor($interface_name)
-                    ?->properties[$property_name] ?? null;
-
-                if ($interface_property !== null) {
-                    $overrides_a_parent_property = true;
-                    break;
-                }
-            }
-        }
-
-        if (!$overrides_a_parent_property || $property_storage->location === null) {
+        if ($property_storage->location === null
+            || !self::overridesAParentProperty($storage, $property_name, $codebase)
+        ) {
             return;
         }
 
@@ -880,7 +855,6 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                 && $codebase->analysis_php_version_id >= 8_05_00
                 && $codebase->config->ensure_override_attribute
                 && $property_storage->location
-                && !$property_storage->is_static
             ) {
                 self::checkOverrideAttributeOfProperty($statements_source, $storage, $property_storage, $property_name);
             }

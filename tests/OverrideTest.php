@@ -406,12 +406,10 @@ final class OverrideTest extends TestCase
                 'code' => '<?php
                     class P {
                         private string $secret = "p";
-                        public static int $count = 0;
                     }
 
                     class C extends P {
                         private string $secret = "c";
-                        public static int $count = 1;
                         public int $own = 1;
                     }
                 ',
@@ -892,6 +890,34 @@ final class OverrideTest extends TestCase
                     }
                 ',
                 'error_message' => 'MissingOverrideAttribute - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:42 - Class constant Kind::SIDES should have the "Override" attribute',
+                'error_levels' => [],
+                'php_version' => '8.6',
+            ],
+            'staticPropertyOverridingAParentPropertyNeedsTheOverrideAttribute' => [
+                'code' => '<?php
+                    class P {
+                        public static int $count = 0;
+                    }
+
+                    class C extends P {
+                        public static int $count = 1;
+                    }
+                ',
+                'error_message' => 'MissingOverrideAttribute - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:43 - Property C::$count should have the "Override" attribute',
+                'error_levels' => [],
+                'php_version' => '8.5',
+            ],
+            'enumCaseImplementingAnInterfaceConstantNeedsTheOverrideAttribute' => [
+                'code' => '<?php
+                    interface HasA {
+                        public const int A = 1;
+                    }
+
+                    enum E: int implements HasA {
+                        case A = 1;
+                    }
+                ',
+                'error_message' => 'MissingOverrideAttribute - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:25 - Enum case E::A should have the "Override" attribute',
                 'error_levels' => [],
                 'php_version' => '8.6',
             ],
