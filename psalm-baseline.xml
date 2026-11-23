@@ -2114,10 +2114,6 @@
   <file src="src/Psalm/Internal/Scanner/PhpStormMetaScanner.php">
     <RiskyTruthyFalsyComparison>
       <code><![CDATA[!$resolved_name]]></code>
-      <code><![CDATA[$mapped_type = $map[$offset_arg_value] ?? null]]></code>
-      <code><![CDATA[$mapped_type = $map[$offset_arg_value] ?? null]]></code>
-      <code><![CDATA[$mapped_type = $map[''] ?? null]]></code>
-      <code><![CDATA[$mapped_type = $map[''] ?? null]]></code>
     </RiskyTruthyFalsyComparison>
   </file>
   <file src="src/Psalm/Internal/Stubs/Generator/ClassLikeStubGenerator.php">
