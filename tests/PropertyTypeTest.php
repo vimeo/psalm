@@ -755,6 +755,39 @@ final class PropertyTypeTest extends TestCase
         );
     }
 
+    public function testStaticPropertyOfSeveralClassesIsReportedOnce(): void
+    {
+        $this->testConfig->throw_exception = false;
+
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile($file_path, '<?php
+            final class P {
+                public static string $s = "";
+            }
+
+            final class Q {
+                public static string $s = "";
+            }
+
+            /** @param class-string<P>|class-string<Q> $c */
+            function set(string $c): void {
+                $c::$s = 1.0;
+                undefinedFunction();
+            }
+        ');
+
+        $this->analyzeFile($file_path, new Context());
+
+        $issues = [];
+
+        foreach (IssueBuffer::getIssuesDataForFile($file_path) as $issue) {
+            $issues[] = $issue->type . ':' . $issue->line_from;
+        }
+
+        self::assertSame(['InvalidPropertyAssignmentValue:12', 'UndefinedFunction:13'], $issues);
+    }
+
     /**
      * @return iterable<string, array{string}>
      * @psalm-pure
