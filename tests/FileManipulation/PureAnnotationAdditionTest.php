@@ -55,6 +55,208 @@ final class PureAnnotationAdditionTest extends FileManipulationTestCase
                 'issues_to_fix' => ['MissingPureAnnotation'],
                 'safe_types' => true,
             ],
+            'traitMethodSuitsTheClassUsingItLast' => [
+                'input' => '<?php
+                    trait Fmt {
+                        public string $p = "";
+
+                        public function outer(): string {
+                            return $this->ref();
+                        }
+
+                        /**
+                         * @psalm-capabilities read-props|write-this-props
+                         */
+                        public function ref(): string {
+                            $this->p .= "x";
+                            return $this->p;
+                        }
+                    }
+
+                    final class Console {
+                        use Fmt;
+                    }
+
+                    final class Storm {
+                        use Fmt;
+
+                        /**
+                         * @psalm-capabilities read-props
+                         */
+                        public function ref(): string {
+                            return $this->p;
+                        }
+                    }',
+                'output' => '<?php
+                    trait Fmt {
+                        public string $p = "";
+
+                        /**
+                         * @psalm-capabilities read-props|write-this-props|write-refs
+                         */
+                        public function outer(): string {
+                            return $this->ref();
+                        }
+
+                        /**
+                         * @psalm-capabilities read-props|write-this-props
+                         */
+                        public function ref(): string {
+                            $this->p .= "x";
+                            return $this->p;
+                        }
+                    }
+
+                    final class Console {
+                        use Fmt;
+                    }
+
+                    final class Storm {
+                        use Fmt;
+
+                        /**
+                         * @psalm-capabilities read-props
+                         */
+                        public function ref(): string {
+                            return $this->p;
+                        }
+                    }',
+                'php_version' => '7.4',
+                'issues_to_fix' => ['MissingPureAnnotation'],
+                'safe_types' => true,
+            ],
+            'traitMethodSuitsTheClassUsingItFirst' => [
+                'input' => '<?php
+                    trait Fmt {
+                        public string $p = "";
+
+                        public function outer(): string {
+                            return $this->ref();
+                        }
+
+                        /**
+                         * @psalm-capabilities read-props|write-this-props
+                         */
+                        public function ref(): string {
+                            $this->p .= "x";
+                            return $this->p;
+                        }
+                    }
+
+                    final class Storm {
+                        use Fmt;
+
+                        /**
+                         * @psalm-capabilities read-props
+                         */
+                        public function ref(): string {
+                            return $this->p;
+                        }
+                    }
+
+                    final class Console {
+                        use Fmt;
+                    }',
+                'output' => '<?php
+                    trait Fmt {
+                        public string $p = "";
+
+                        /**
+                         * @psalm-capabilities read-props|write-this-props|write-refs
+                         */
+                        public function outer(): string {
+                            return $this->ref();
+                        }
+
+                        /**
+                         * @psalm-capabilities read-props|write-this-props
+                         */
+                        public function ref(): string {
+                            $this->p .= "x";
+                            return $this->p;
+                        }
+                    }
+
+                    final class Storm {
+                        use Fmt;
+
+                        /**
+                         * @psalm-capabilities read-props
+                         */
+                        public function ref(): string {
+                            return $this->p;
+                        }
+                    }
+
+                    final class Console {
+                        use Fmt;
+                    }',
+                'php_version' => '7.4',
+                'issues_to_fix' => ['MissingPureAnnotation'],
+                'safe_types' => true,
+            ],
+            'traitMethodUsedByOneClassSuitsIt' => [
+                'input' => '<?php
+                    trait Fmt {
+                        public string $p = "";
+
+                        public function outer(): string {
+                            return $this->ref();
+                        }
+
+                        /**
+                         * @psalm-capabilities read-props|write-this-props
+                         */
+                        public function ref(): string {
+                            $this->p .= "x";
+                            return $this->p;
+                        }
+                    }
+
+                    final class Storm {
+                        use Fmt;
+
+                        /**
+                         * @psalm-capabilities read-props
+                         */
+                        public function ref(): string {
+                            return $this->p;
+                        }
+                    }',
+                'output' => '<?php
+                    trait Fmt {
+                        public string $p = "";
+
+                        /**
+                         * @psalm-capabilities read-props
+                         */
+                        public function outer(): string {
+                            return $this->ref();
+                        }
+
+                        /**
+                         * @psalm-capabilities read-props|write-this-props
+                         */
+                        public function ref(): string {
+                            $this->p .= "x";
+                            return $this->p;
+                        }
+                    }
+
+                    final class Storm {
+                        use Fmt;
+
+                        /**
+                         * @psalm-capabilities read-props
+                         */
+                        public function ref(): string {
+                            return $this->p;
+                        }
+                    }',
+                'php_version' => '7.4',
+                'issues_to_fix' => ['MissingPureAnnotation'],
+                'safe_types' => true,
+            ],
             'propertyWritesOfArgumentsAreNotPure' => [
                 'input' => '<?php
                     final class C {
