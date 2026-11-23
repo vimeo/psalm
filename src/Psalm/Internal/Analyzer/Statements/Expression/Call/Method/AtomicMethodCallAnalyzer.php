@@ -18,7 +18,6 @@ use Psalm\Internal\Analyzer\Statements\Expression\Call\ClassTemplateParamCollect
 use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
-use Psalm\Internal\Analyzer\TraitAnalyzer;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Internal\Codebase\MixinLookup;
 use Psalm\Internal\DataFlow\DataFlowNode;
@@ -177,12 +176,7 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
             return;
         }
 
-        if (!$context->collect_initializations
-            && $statements_analyzer->getFilePath() === $statements_analyzer->getRootFilePath()
-            && (!(($parent_source = $statements_analyzer->getSource())
-                    instanceof FunctionLikeAnalyzer)
-                || !$parent_source->getSource() instanceof TraitAnalyzer)
-        ) {
+        if ($statements_analyzer->shouldCountMixed($context)) {
             $codebase->analyzer->incrementNonMixedCount($statements_analyzer->getFilePath());
         }
 
@@ -752,12 +746,7 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
             case TNonEmptyMixed::class:
             case TObject::class:
             case TObjectWithProperties::class:
-                if (!$context->collect_initializations
-                    && $statements_analyzer->getFilePath() === $statements_analyzer->getRootFilePath()
-                    && (!(($parent_source = $statements_analyzer->getSource())
-                            instanceof FunctionLikeAnalyzer)
-                        || !$parent_source->getSource() instanceof TraitAnalyzer)
-                ) {
+                if ($statements_analyzer->shouldCountMixed($context)) {
                     $codebase->analyzer->incrementMixedCount($statements_analyzer->getFilePath());
                 }
 

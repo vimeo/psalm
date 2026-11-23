@@ -539,10 +539,7 @@ final class ReturnAnalyzer
                             }
                         }
 
-                        if (!$context->collect_initializations
-                            && $statements_analyzer->getFilePath() === $statements_analyzer->getRootFilePath()
-                            && !($source->getSource() instanceof TraitAnalyzer)
-                        ) {
+                        if ($statements_analyzer->shouldCountMixed($context)) {
                             $codebase->analyzer->incrementMixedCount($statements_analyzer->getFilePath());
                         }
 
@@ -591,10 +588,7 @@ final class ReturnAnalyzer
                         return;
                     }
 
-                    if (!$context->collect_initializations
-                        && $statements_analyzer->getFilePath() === $statements_analyzer->getRootFilePath()
-                        && !($source->getSource() instanceof TraitAnalyzer)
-                    ) {
+                    if ($statements_analyzer->shouldCountMixed($context)) {
                         $codebase->analyzer->incrementNonMixedCount($statements_analyzer->getFilePath());
                     }
 

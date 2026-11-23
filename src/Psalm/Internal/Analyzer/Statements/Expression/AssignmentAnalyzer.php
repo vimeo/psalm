@@ -34,7 +34,6 @@ use Psalm\Internal\Analyzer\Statements\Expression\Fetch\VariableFetchAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\Statements\GlobalAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
-use Psalm\Internal\Analyzer\TraitAnalyzer;
 use Psalm\Internal\Clause;
 use Psalm\Internal\Codebase\CombinedFlowGraph;
 use Psalm\Internal\Codebase\DataFlowGraph;
@@ -763,12 +762,7 @@ final class AssignmentAnalyzer
                 $statements_analyzer,
             );
 
-            if (!$context->collect_initializations
-                && $statements_analyzer->getFilePath() === $statements_analyzer->getRootFilePath()
-                && (!(($parent_source = $statements_analyzer->getSource())
-                            instanceof FunctionLikeAnalyzer)
-                        || !$parent_source->getSource() instanceof TraitAnalyzer)
-            ) {
+            if ($statements_analyzer->shouldCountMixed($context)) {
                 $codebase->analyzer->incrementMixedCount($statements_analyzer->getFilePath());
             }
 
@@ -810,12 +804,7 @@ final class AssignmentAnalyzer
                 );
             }
         } else {
-            if (!$context->collect_initializations
-                && $statements_analyzer->getFilePath() === $statements_analyzer->getRootFilePath()
-                && (!(($parent_source = $statements_analyzer->getSource())
-                        instanceof FunctionLikeAnalyzer)
-                    || !$parent_source->getSource() instanceof TraitAnalyzer)
-            ) {
+            if ($statements_analyzer->shouldCountMixed($context)) {
                 $codebase->analyzer->incrementNonMixedCount($statements_analyzer->getFilePath());
             }
 

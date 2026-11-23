@@ -19,7 +19,6 @@ use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\CastAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
-use Psalm\Internal\Analyzer\TraitAnalyzer;
 use Psalm\Internal\Codebase\CliOutput;
 use Psalm\Internal\Codebase\ConstantTypeResolver;
 use Psalm\Internal\Codebase\PhpDeprecations;
@@ -216,12 +215,7 @@ final class ArgumentAnalyzer
 
         if (!$arg_value_type) {
             if ($function_param && !$function_param->by_ref) {
-                if (!$context->collect_initializations
-                    && $statements_analyzer->getFilePath() === $statements_analyzer->getRootFilePath()
-                    && (!(($parent_source = $statements_analyzer->getSource())
-                            instanceof FunctionLikeAnalyzer)
-                        || !$parent_source->getSource() instanceof TraitAnalyzer)
-                ) {
+                if ($statements_analyzer->shouldCountMixed($context)) {
                     $codebase->analyzer->incrementMixedCount($statements_analyzer->getFilePath());
                 }
 
@@ -555,12 +549,7 @@ final class ArgumentAnalyzer
 
         if ($arg->unpack) {
             if ($arg_value_type->hasMixed()) {
-                if (!$context->collect_initializations
-                    && $statements_analyzer->getFilePath() === $statements_analyzer->getRootFilePath()
-                    && (!(($parent_source = $statements_analyzer->getSource())
-                            instanceof FunctionLikeAnalyzer)
-                        || !$parent_source->getSource() instanceof TraitAnalyzer)
-                ) {
+                if ($statements_analyzer->shouldCountMixed($context)) {
                     $codebase->analyzer->incrementMixedCount($statements_analyzer->getFilePath());
                 }
 
@@ -1034,12 +1023,7 @@ final class ArgumentAnalyzer
         $method_identifier = $cased_method_id ? ' of ' . $cased_method_id : '';
 
         if ($input_type->hasMixed()) {
-            if (!$context->collect_initializations
-                && $statements_analyzer->getFilePath() === $statements_analyzer->getRootFilePath()
-                && (!(($parent_source = $statements_analyzer->getSource())
-                        instanceof FunctionLikeAnalyzer)
-                    || !$parent_source->getSource() instanceof TraitAnalyzer)
-            ) {
+            if ($statements_analyzer->shouldCountMixed($context)) {
                 $codebase->analyzer->incrementMixedCount($statements_analyzer->getFilePath());
             }
 
@@ -1133,12 +1117,7 @@ final class ArgumentAnalyzer
             return null;
         }
 
-        if (!$context->collect_initializations
-            && $statements_analyzer->getFilePath() === $statements_analyzer->getRootFilePath()
-            && (!(($parent_source = $statements_analyzer->getSource())
-                    instanceof FunctionLikeAnalyzer)
-                || !$parent_source->getSource() instanceof TraitAnalyzer)
-        ) {
+        if ($statements_analyzer->shouldCountMixed($context)) {
             $codebase->analyzer->incrementNonMixedCount($statements_analyzer->getFilePath());
         }
 

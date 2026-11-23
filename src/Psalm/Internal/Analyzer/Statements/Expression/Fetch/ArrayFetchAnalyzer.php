@@ -9,7 +9,6 @@ use PhpParser\Node\Expr;
 use Psalm\CodeLocation;
 use Psalm\Codebase;
 use Psalm\Context;
-use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ArrayAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\ArgumentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\ClassTemplateParamCollector;
@@ -20,7 +19,6 @@ use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\Statements\GlobalAnalyzer;
 use Psalm\Internal\Analyzer\Statements\UnsetAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
-use Psalm\Internal\Analyzer\TraitAnalyzer;
 use Psalm\Internal\Codebase\CombinedFlowGraph;
 use Psalm\Internal\Codebase\PropertyBagTaints;
 use Psalm\Internal\Codebase\ServerVariableTaints;
@@ -1129,12 +1127,7 @@ final class ArrayFetchAnalyzer
                 continue;
             }
 
-            if (!$context->collect_initializations
-                && $statements_analyzer->getFilePath() === $statements_analyzer->getRootFilePath()
-                && (!(($parent_source = $statements_analyzer->getSource())
-                        instanceof FunctionLikeAnalyzer)
-                    || !$parent_source->getSource() instanceof TraitAnalyzer)
-            ) {
+            if ($statements_analyzer->shouldCountMixed($context)) {
                 $codebase->analyzer->incrementNonMixedCount($statements_analyzer->getFilePath());
             }
 
@@ -1220,12 +1213,7 @@ final class ArrayFetchAnalyzer
         }
 
         if ($offset_type->hasMixed()) {
-            if (!$context->collect_initializations
-                && $statements_analyzer->getFilePath() === $statements_analyzer->getRootFilePath()
-                && (!(($parent_source = $statements_analyzer->getSource())
-                        instanceof FunctionLikeAnalyzer)
-                    || !$parent_source->getSource() instanceof TraitAnalyzer)
-            ) {
+            if ($statements_analyzer->shouldCountMixed($context)) {
                 $codebase->analyzer->incrementMixedCount($statements_analyzer->getFilePath());
             }
 
@@ -1238,12 +1226,7 @@ final class ArrayFetchAnalyzer
                 $statements_analyzer->getSuppressedIssues(),
             );
         } else {
-            if (!$context->collect_initializations
-                && $statements_analyzer->getFilePath() === $statements_analyzer->getRootFilePath()
-                && (!(($parent_source = $statements_analyzer->getSource())
-                        instanceof FunctionLikeAnalyzer)
-                    || !$parent_source->getSource() instanceof TraitAnalyzer)
-            ) {
+            if ($statements_analyzer->shouldCountMixed($context)) {
                 $codebase->analyzer->incrementNonMixedCount($statements_analyzer->getFilePath());
             }
 
@@ -1538,12 +1521,7 @@ final class ArrayFetchAnalyzer
         Atomic $type,
         bool $by_reference = false,
     ): Union {
-        if (!$context->collect_initializations
-            && $statements_analyzer->getFilePath() === $statements_analyzer->getRootFilePath()
-            && (!(($parent_source = $statements_analyzer->getSource())
-                    instanceof FunctionLikeAnalyzer)
-                || !$parent_source->getSource() instanceof TraitAnalyzer)
-        ) {
+        if ($statements_analyzer->shouldCountMixed($context)) {
             $codebase->analyzer->incrementMixedCount($statements_analyzer->getFilePath());
         }
 
@@ -2768,12 +2746,7 @@ final class ArrayFetchAnalyzer
     ): void {
         if ($in_assignment && $replacement_type) {
             if ($replacement_type->hasMixed()) {
-                if (!$context->collect_initializations
-                    && $statements_analyzer->getFilePath() === $statements_analyzer->getRootFilePath()
-                    && (!(($parent_source = $statements_analyzer->getSource())
-                            instanceof FunctionLikeAnalyzer)
-                        || !$parent_source->getSource() instanceof TraitAnalyzer)
-                ) {
+                if ($statements_analyzer->shouldCountMixed($context)) {
                     $codebase->analyzer->incrementMixedCount($statements_analyzer->getFilePath());
                 }
 
@@ -2785,12 +2758,7 @@ final class ArrayFetchAnalyzer
                     $statements_analyzer->getSuppressedIssues(),
                 );
             } else {
-                if (!$context->collect_initializations
-                    && $statements_analyzer->getFilePath() === $statements_analyzer->getRootFilePath()
-                    && (!(($parent_source = $statements_analyzer->getSource())
-                            instanceof FunctionLikeAnalyzer)
-                        || !$parent_source->getSource() instanceof TraitAnalyzer)
-                ) {
+                if ($statements_analyzer->shouldCountMixed($context)) {
                     $codebase->analyzer->incrementNonMixedCount($statements_analyzer->getFilePath());
                 }
             }

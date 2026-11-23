@@ -17,7 +17,6 @@ use Psalm\Internal\Analyzer\Statements\Expression\NullsafeChainState;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\Statements\UnsetAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
-use Psalm\Internal\Analyzer\TraitAnalyzer;
 use Psalm\Internal\Type\TypeExpander;
 use Psalm\Internal\TypeVisitor\TypeVariableResolver;
 use Psalm\Issue\ImpurePropertyAssignment;
@@ -170,12 +169,7 @@ final class InstancePropertyFetchAnalyzer
         }
 
         if ($stmt_var_type->hasMixed()) {
-            if (!$context->collect_initializations
-                && $statements_analyzer->getFilePath() === $statements_analyzer->getRootFilePath()
-                && (!(($parent_source = $statements_analyzer->getSource())
-                        instanceof FunctionLikeAnalyzer)
-                    || !$parent_source->getSource() instanceof TraitAnalyzer)
-            ) {
+            if ($statements_analyzer->shouldCountMixed($context)) {
                 $codebase->analyzer->incrementMixedCount($statements_analyzer->getFilePath());
             }
 
@@ -207,12 +201,7 @@ final class InstancePropertyFetchAnalyzer
             }
         }
 
-        if (!$context->collect_initializations
-            && $statements_analyzer->getFilePath() === $statements_analyzer->getRootFilePath()
-            && (!(($parent_source = $statements_analyzer->getSource())
-                    instanceof FunctionLikeAnalyzer)
-                || !$parent_source->getSource() instanceof TraitAnalyzer)
-        ) {
+        if ($statements_analyzer->shouldCountMixed($context)) {
             $codebase->analyzer->incrementNonMixedCount($statements_analyzer->getRootFilePath());
         }
 
@@ -509,12 +498,7 @@ final class InstancePropertyFetchAnalyzer
         // we don't need to check anything
         $statements_analyzer->node_data->setType($stmt, $stmt_type);
 
-        if (!$context->collect_initializations
-            && $statements_analyzer->getFilePath() === $statements_analyzer->getRootFilePath()
-            && (!(($parent_source = $statements_analyzer->getSource())
-                    instanceof FunctionLikeAnalyzer)
-                || !$parent_source->getSource() instanceof TraitAnalyzer)
-        ) {
+        if ($statements_analyzer->shouldCountMixed($context)) {
             $codebase->analyzer->incrementNonMixedCount($statements_analyzer->getFilePath());
         }
 

@@ -9,11 +9,9 @@ use Psalm\CodeLocation;
 use Psalm\Codebase;
 use Psalm\Config;
 use Psalm\Context;
-use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Assignment\ArrayAssignmentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
-use Psalm\Internal\Analyzer\TraitAnalyzer;
 use Psalm\Internal\Codebase\PhpDeprecations;
 use Psalm\Internal\Provider\NodeDataProvider;
 use Psalm\Internal\Type\LiteralCast;
@@ -501,15 +499,12 @@ final class ArithmeticOpAnalyzer
         }
 
         if ($left_type_part instanceof TMixed || $right_type_part instanceof TMixed) {
-            if ($statements_source && $codebase && $context) {
-                if (!$context->collect_initializations
-                    && $statements_source->getFilePath() === $statements_source->getRootFilePath()
-                    && (!(($source = $statements_source->getSource())
-                            instanceof FunctionLikeAnalyzer)
-                        || !$source->getSource() instanceof TraitAnalyzer)
-                ) {
-                    $codebase->analyzer->incrementMixedCount($statements_source->getFilePath());
-                }
+            if ($statements_source instanceof StatementsAnalyzer
+                && $codebase
+                && $context
+                && $statements_source->shouldCountMixed($context)
+            ) {
+                $codebase->analyzer->incrementMixedCount($statements_source->getFilePath());
             }
 
             if ($left_type_part instanceof TMixed) {
@@ -584,15 +579,12 @@ final class ArithmeticOpAnalyzer
             return null;
         }
 
-        if ($statements_source && $codebase && $context) {
-            if (!$context->collect_initializations
-                && $statements_source->getFilePath() === $statements_source->getRootFilePath()
-                && (!(($parent_source = $statements_source->getSource())
-                        instanceof FunctionLikeAnalyzer)
-                    || !$parent_source->getSource() instanceof TraitAnalyzer)
-            ) {
-                $codebase->analyzer->incrementNonMixedCount($statements_source->getFilePath());
-            }
+        if ($statements_source instanceof StatementsAnalyzer
+            && $codebase
+            && $context
+            && $statements_source->shouldCountMixed($context)
+        ) {
+            $codebase->analyzer->incrementNonMixedCount($statements_source->getFilePath());
         }
 
         if ($left_type_part instanceof TArray
