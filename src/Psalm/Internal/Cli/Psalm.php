@@ -529,6 +529,12 @@ final class Psalm
             $other_paths[] = $config->error_baseline;
         }
 
+        // what Psalm writes in this run, for the dump writer to check again by file once they are written
+        Collector::protect(array_map(
+            static fn(string $other_path): string => Collector::absolutePath($other_path, $cwd),
+            $other_paths,
+        ));
+
         foreach ($other_paths as $other_path) {
             if (self::destination($other_path, $cwd) === self::destination($dump_path, $cwd)) {
                 fwrite(
@@ -546,7 +552,8 @@ final class Psalm
      */
     private static function destination(string $path, string $cwd): string
     {
-        $absolute = Path::makeAbsolute($path, $cwd);
+        // a `..` after a symlink is resolved by realpath() on the file system, not by the name
+        $absolute = Collector::absolutePath($path, $cwd);
         $directory = realpath(dirname($absolute));
         $destination = ($directory === false ? dirname($absolute) : Path::canonicalize($directory))
             . '/' . basename($absolute);

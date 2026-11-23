@@ -15,6 +15,7 @@ use function array_column;
 use function array_slice;
 use function array_values;
 use function basename;
+use function chmod;
 use function count;
 use function dirname;
 use function error_get_last;
@@ -37,9 +38,12 @@ use function php_uname;
 use function rename;
 use function sort;
 use function sprintf;
+use function stat;
 use function str_ends_with;
 use function str_replace;
 use function strlen;
+use function tempnam;
+use function umask;
 use function unlink;
 use function usort;
 
@@ -92,7 +96,6 @@ final class DumpWriter
                     'env' => self::env($project_analyzer),
                     'counts' => $counts,
                 ] + $measurements,
-                $project_analyzer,
             );
 
         if ($print_summary) {
@@ -410,17 +413,11 @@ final class DumpWriter
      * @param array<string, mixed> $document
      * @return ?string why the dump could not be written
      */
-    private static function write(string $path, array $document, ProjectAnalyzer $project_analyzer): ?string
+    private static function write(string $path, array $document): ?string
     {
         // the reports and the baseline are written by now: the check at the start can't see them by a name that
-        // the file system maps to one file, such as a Unicode name in another normalization
-        $protected = [];
-        foreach ($project_analyzer->generated_report_options as $report_options) {
-            $protected[] = (string) $report_options->output_path;
-        }
-
-        $protected[] = (string) $project_analyzer->getConfig()->error_baseline;
-        $same_file = Collector::sameFileAs($path, $protected);
+        // the file system maps to one file, such as a symlink or a Unicode name in another normalization
+        $same_file = Collector::sameFileAs($path, Collector::protectedPaths());
 
         if ($same_file !== null) {
             return 'The performance dump ' . $path . ' is the file ' . $same_file . ', which Psalm wrote: not written';
@@ -437,12 +434,20 @@ final class DumpWriter
                 . ': ' . (error_get_last()['message'] ?? 'unknown error');
         }
 
-        // a reader never sees half a dump
-        $temporary = $path . '.tmp';
+        // a reader never sees half a dump: write a file of this run's own, and rename it
+        $temporary = @tempnam($folder, basename($path) . '.');
+        $existing = @stat($path);
 
-        if (@file_put_contents($temporary, $json) !== strlen($json) || !@rename($temporary, $path)) {
+        if ($temporary === false
+            || @file_put_contents($temporary, $json) !== strlen($json)
+            || !@chmod($temporary, $existing === false ? 0666 & ~umask() : $existing['mode'] & 0777)
+            || !@rename($temporary, $path)
+        ) {
             $reason = error_get_last()['message'] ?? 'unknown error';
-            @unlink($temporary);
+
+            if ($temporary !== false) {
+                @unlink($temporary);
+            }
 
             return 'Could not write the performance dump ' . $path . ': ' . $reason;
         }

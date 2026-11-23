@@ -16,9 +16,12 @@ use function array_sum;
 use function array_unique;
 use function array_values;
 use function assert;
+use function chmod;
+use function clearstatcache;
 use function count;
 use function file_get_contents;
 use function file_put_contents;
+use function fileperms;
 use function glob;
 use function intdiv;
 use function json_decode;
@@ -91,20 +94,27 @@ final class PsalmDebugPerformanceEndToEndTest extends PsalmEndToEndTestCase
 
         $this->assertSame(2, $result['CODE']);
         $this->assertSame(1, $dump['schema']);
-        // the stages come in this order, a stage that comes back (the scan of the stubs) after its first time
+        // the stages in order: the scan stages come back, as the stubs and the project are scanned in rounds
         $this->assertSame(
             [
                 'bootstrap',
                 'scan.setup',
                 'scan.files',
                 'scan.populate',
+                'scan.setup',
+                'scan.files',
+                'scan.populate',
+                'scan.setup',
+                'scan.files',
+                'scan.populate',
+                'scan.setup',
                 'analysis.setup',
                 'analysis.files',
                 'analysis.finish',
                 'post',
                 'report',
             ],
-            array_values(array_unique(array_column($dump['stages'], 'name'))),
+            array_column($dump['stages'], 'name'),
         );
         $this->assertSame('bootstrap', $dump['stages'][0]['name']);
         $this->assertSame('report', array_slice($dump['stages'], -1)[0]['name']);
@@ -285,7 +295,8 @@ final class PsalmDebugPerformanceEndToEndTest extends PsalmEndToEndTestCase
         $this->assertStringContainsString('Warning: Could not write the performance dump ', $result['STDERR']);
         $this->assertStringContainsString('perf-dir', $result['STDERR']);
         $this->assertStringNotContainsString('Performance dump written', $result['STDERR']);
-        $this->assertFileDoesNotExist($dump_path . '.tmp');
+        // no file of this run is left next to it
+        $this->assertSame([], glob(self::$tmpDir . '/perf-dir.*'));
         // the summary is there, but it doesn't point at a file that doesn't hold the data
         $this->assertStringContainsString("\nSlowest files by CPU\n", $result['STDOUT']);
         $this->assertStringNotContainsString('The full data is in', $result['STDOUT']);
@@ -393,6 +404,7 @@ final class PsalmDebugPerformanceEndToEndTest extends PsalmEndToEndTestCase
         $dump_path = self::$tmpDir . '/perf.json';
 
         foreach (['--threads=1', '--threads=2'] as $threads) {
+            @unlink($dump_path);
             $this->runPsalm(['--no-cache', '--no-progress', $threads, '--debug-performance=' . $dump_path], self::$tmpDir, true);
             $dump = $this->readDump($dump_path);
 
@@ -464,6 +476,100 @@ final class PsalmDebugPerformanceEndToEndTest extends PsalmEndToEndTestCase
         $this->assertLessThan($cold['parser_cache_misses'], $warm['parser_cache_misses']);
         $this->assertLessThan($cold['files_parsed'], $warm['files_parsed']);
         $this->assertGreaterThan(0, $warm['parser_cache_hits']);
+    }
+
+    public function testAFileNamedLikeTheTemporaryFileOfTheDumpIsNotTouched(): void
+    {
+        $this->setUpProject(0);
+        $dump_path = self::$tmpDir . '/perf.json';
+        $baseline_path = self::$tmpDir . '/perf.json.tmp';
+
+        $this->runPsalm(
+            ['--no-cache', '--no-progress', '--set-baseline=' . $baseline_path, '--debug-performance=' . $dump_path],
+            self::$tmpDir,
+            true,
+        );
+
+        try {
+            $this->assertSame(1, $this->readDump($dump_path)['schema']);
+            $this->assertStringStartsWith('<?xml', (string) file_get_contents($baseline_path));
+        } finally {
+            @unlink($baseline_path);
+        }
+    }
+
+    public function testAnExistingDumpKeepsItsMode(): void
+    {
+        if (DIRECTORY_SEPARATOR === '\\') {
+            $this->markTestSkipped('File modes are not the same on Windows');
+        }
+
+        $this->setUpProject(0);
+        $dump_path = self::$tmpDir . '/perf.json';
+        file_put_contents($dump_path, '{}');
+        chmod($dump_path, 0600);
+
+        $this->runPsalm(['--no-cache', '--no-progress', '--debug-performance=' . $dump_path], self::$tmpDir, true);
+
+        clearstatcache();
+        $this->assertSame(0600, (int) fileperms($dump_path) & 0777);
+        $this->assertSame(1, $this->readDump($dump_path)['schema']);
+    }
+
+    public function testABaselineThatIsALinkToTheDumpIsNotOverwritten(): void
+    {
+        if (DIRECTORY_SEPARATOR === '\\') {
+            $this->markTestSkipped('Creating symlinks needs a privilege on Windows');
+        }
+
+        $this->setUpProject(0);
+        $dump_path = self::$tmpDir . '/perf.json';
+        $baseline_path = self::$tmpDir . '/baseline.xml';
+        symlink($dump_path, $baseline_path);
+
+        try {
+            $result = $this->runPsalm(
+                ['--no-cache', '--no-progress', '--set-baseline=' . $baseline_path, '--debug-performance=' . $dump_path],
+                self::$tmpDir,
+                true,
+            );
+
+            $this->assertSame(2, $result['CODE']);
+            $this->assertStringContainsString('Warning: The performance dump ', $result['STDERR']);
+            $this->assertStringStartsWith('<?xml', (string) file_get_contents($dump_path));
+        } finally {
+            @unlink($baseline_path);
+        }
+    }
+
+    public function testDotDotAfterASymlinkIsResolvedByTheFileSystem(): void
+    {
+        if (DIRECTORY_SEPARATOR === '\\') {
+            $this->markTestSkipped('Creating symlinks needs a privilege on Windows');
+        }
+
+        $this->setUpProject(0);
+        mkdir(self::$tmpDir . '/deep/inner', 0777, true);
+        symlink(self::$tmpDir . '/deep/inner', self::$tmpDir . '/link');
+
+        try {
+            // link/.. is deep, so this is not the file of the report, result.json of the project
+            $this->runPsalm(
+                ['--no-cache', '--no-progress', '--report=result.json', '--debug-performance=link/../result.json'],
+                self::$tmpDir,
+                true,
+                false,
+            );
+
+            $this->assertSame(1, $this->readDump(self::$tmpDir . '/deep/result.json')['schema']);
+            $this->assertFileExists(self::$tmpDir . '/result.json');
+        } finally {
+            @unlink(self::$tmpDir . '/link');
+            @unlink(self::$tmpDir . '/result.json');
+            @unlink(self::$tmpDir . '/deep/result.json');
+            @rmdir(self::$tmpDir . '/deep/inner');
+            @rmdir(self::$tmpDir . '/deep');
+        }
     }
 
     public function testATaintRunHasATaintStageAndGraphSizes(): void

@@ -171,6 +171,9 @@ final class Collector
 
     private static ?string $dump_path = null;
 
+    /** @var list<string> the absolute paths of the files Psalm writes in this run besides the dump */
+    private static array $protected_paths = [];
+
     /** @var list<string> */
     private static array $option_names = [];
 
@@ -260,6 +263,7 @@ final class Collector
         self::$stage = '';
         self::clearRecords();
         self::$dump_path = null;
+        self::$protected_paths = [];
         self::$option_names = [];
         self::$marks = [];
         self::$pools = [];
@@ -282,6 +286,18 @@ final class Collector
         self::$files_parsed = 0;
         self::$parser_cache_hits = 0;
         self::$parser_cache_misses = 0;
+    }
+
+    /** @param list<string> $paths */
+    public static function protect(array $paths): void
+    {
+        self::$protected_paths = $paths;
+    }
+
+    /** @return list<string> */
+    public static function protectedPaths(): array
+    {
+        return self::$protected_paths;
     }
 
     public static function dumpPath(): ?string
