@@ -729,6 +729,56 @@ final class ArgTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'falseOfAValueDoesNotMakeItPossiblyValidForAScalarParameter' => [
+                'code' => '<?php
+                    final class Foo {}
+                    final class Bar {}
+
+                    function takes(Bar|int|string|float|bool $b): void {}
+
+                    function f(Foo|false $foo): void {
+                        takes($foo);
+                    }',
+                'error_message' => 'InvalidArgument',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'templateOfFalseDoesNotMakeAValuePossiblyValidForABoolParameter' => [
+                'code' => '<?php
+                    final class Foo {}
+                    final class Bar {}
+
+                    function takes(Bar|bool $b): void {}
+
+                    /**
+                     * @template T of false
+                     * @param Foo|T $foo
+                     */
+                    function f($foo): void {
+                        takes($foo);
+                    }',
+                'error_message' => 'InvalidArgument',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'templateOfBoolMakesAValuePossiblyValidForABoolParameter' => [
+                'code' => '<?php
+                    final class Foo {}
+                    final class Bar {}
+
+                    function takes(Bar|bool $b): void {}
+
+                    /**
+                     * @template T of bool
+                     * @param Foo|T $foo
+                     */
+                    function f($foo): void {
+                        takes($foo);
+                    }',
+                'error_message' => 'PossiblyInvalidArgument',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
             'falseOfAValueDoesNotMakeItPossiblyValidForABoolParameter' => [
                 'code' => '<?php
                     final class Foo {}

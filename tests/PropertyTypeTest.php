@@ -4963,6 +4963,26 @@ final class PropertyTypeTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'templateOfBoolMakesAValuePossiblyValidForABoolProperty' => [
+                'code' => '<?php
+                    final class Foo {}
+                    final class Bar {}
+
+                    final class A {
+                        public Bar|bool $p = false;
+
+                        /**
+                         * @template T of bool
+                         * @param Foo|T $foo
+                         */
+                        public function set($foo): void {
+                            $this->p = $foo;
+                        }
+                    }',
+                'error_message' => 'PossiblyInvalidPropertyAssignmentValue',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
             'falseOfAValueDoesNotMakeItPossiblyValidForABoolProperty' => [
                 'code' => '<?php
                     final class Foo {}
