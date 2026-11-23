@@ -1143,6 +1143,8 @@ final class MethodSignatureTest extends TestCase
                     }
 
                     echo (new B)->foo();',
+                'assertions' => [],
+                'ignored_issues' => ['DeprecatedSyntax'],
             ],
             'allowSubclassesForNonInheritedMethodParams' => [
                 'code' => '<?php
@@ -1284,6 +1286,8 @@ final class MethodSignatureTest extends TestCase
                             return serialize([$this->id]);
                         }
                     }',
+                'assertions' => [],
+                'ignored_issues' => ['DeprecatedInterface'],
             ],
             'clashWithCallMapClass' => [
                 'code' => '<?php
@@ -2159,6 +2163,26 @@ final class MethodSignatureTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'overrideNativeFinalMethodOfDocblockFinalClass' => [
+                'code' => '<?php
+                    /**
+                     * @final
+                     */
+                    class A {
+                       final public function foo(): void {}
+                    }
+
+                    /**
+                     * @psalm-suppress InvalidExtendClass
+                     */
+                    class B extends A {
+                        /**
+                         * @psalm-suppress MethodSignatureMismatch
+                         */
+                        public function foo(): void {}
+                    }',
+                'error_message' => 'MethodSignatureMismatch',
+            ],
             'staticTypeArgumentStillChecksDocumentedReturnType' => [
                 'code' => '<?php
                     /** @template T */
@@ -2487,6 +2511,7 @@ final class MethodSignatureTest extends TestCase
                     function foo(string $bar = null, int $bat): void {}
                     foo();',
                 'error_message' => 'TooFewArguments',
+                'error_levels' => ['DeprecatedSyntax'],
             ],
             'clasginByRef' => [
                 'code' => '<?php
@@ -2810,6 +2835,7 @@ final class MethodSignatureTest extends TestCase
                         public function serialize() {}
                     }',
                 'error_message' => 'ImplementedParamTypeMismatch',
+                'error_levels' => ['DeprecatedInterface'],
             ],
             'returnsParentWithNoParent' => [
                 'code' => '<?php

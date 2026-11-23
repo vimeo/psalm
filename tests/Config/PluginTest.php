@@ -1065,6 +1065,149 @@ final class PluginTest extends DeferredAnalyzerTestCase
         $this->analyzeFile($file_path, new Context());
     }
 
+    public function testMethodProviderGivenAStarTypeParameterSeesItsBound(): void
+    {
+        $this->analyzeWithTemplateParameterPlugin('
+            /** @param Box<*> $box */
+            function run(Box $box): void {
+                takesObject($box->get());
+
+                foreach ($box->all() as $item) {
+                    takesObject($item);
+                }
+            }');
+    }
+
+    public function testPluginReadingTheTypeParamsOfAStarReceiverSeesTheBounds(): void
+    {
+        $this->analyzeWithTemplateParameterPlugin('
+            abstract class Model {
+                public function save(): bool {
+                    return true;
+                }
+            }
+
+            /**
+             * @template TRelated of Model
+             * @template TParent of Model
+             */
+            final class Relation {
+                public function related(): object {
+                    throw new \Exception();
+                }
+            }
+
+            /** @param Relation<*, *> $any */
+            function run(Relation $any): void {
+                $related = $any->related();
+                /** @psalm-check-type-exact $related = Model */
+                $related->save();
+            }');
+    }
+
+    public function testPluginRebuildingAStarArgumentMeansThatType(): void
+    {
+        $this->analyzeWithTemplateParameterPlugin('
+            abstract class Model {}
+
+            final class Pivot extends Model {}
+
+            /**
+             * @template TRelated of Model
+             * @template TParent of Model
+             */
+            final class Relation {
+                public function withPivot(): static {
+                    return $this;
+                }
+
+                /** @return TParent */
+                public function parent(): Model {
+                    throw new \Exception();
+                }
+            }
+
+            /** @param Relation<Model, *> $relation */
+            function run(Relation $relation): void {
+                $refined = $relation->withPivot();
+                /** @psalm-check-type-exact $refined = Relation<Model, Pivot> */
+                $parent = $refined->parent();
+                /** @psalm-check-type-exact $parent = Pivot */
+            }');
+    }
+
+    public function testPluginRebuildingEqualArgumentsKeepsTheStar(): void
+    {
+        $this->analyzeWithTemplateParameterPlugin('
+            abstract class Model {}
+
+            /**
+             * @template TRelated of Model
+             * @template TParent of Model
+             */
+            final class Relation {
+                public function rebuilt(): static {
+                    return $this;
+                }
+            }
+
+            /** @param Relation<Model, *> $relation */
+            function run(Relation $relation): void {
+                $rebuilt = $relation->rebuilt();
+                /** @psalm-check-type-exact $rebuilt = Relation<Model, *> */
+            }');
+    }
+
+    private function analyzeWithTemplateParameterPlugin(string $code): void
+    {
+        require_once __DIR__ . '/Plugin/TemplateParameterPlugin.php';
+
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__, 2) . DIRECTORY_SEPARATOR,
+                '<?xml version="1.0"?>
+                <psalm
+                    errorLevel="1"
+                >
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+                    <plugins>
+                        <pluginClass class="Psalm\\Test\\Config\\Plugin\\TemplateParameterPlugin" />
+                    </plugins>
+                </psalm>',
+            ),
+        );
+
+        $this->project_analyzer->getCodebase()->config->initializePlugins($this->project_analyzer);
+
+        $file_path = (string) getcwd() . '/src/somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                namespace Ns;
+
+                /** @template T of object */
+                final class Box {
+                    /** @return T */
+                    public function get(): object {
+                        throw new \Exception();
+                    }
+
+                    /** @return list<T> */
+                    public function all(): array {
+                        throw new \Exception();
+                    }
+                }
+
+                function takesObject(object $value): void {}
+' . $code,
+        );
+
+        $this->analyzeFile($file_path, new Context());
+    }
+
     public function testMethodProviderHooksStaticFirstClassCallable(): void
     {
         require_once __DIR__ . '/Plugin/MethodPlugin.php';

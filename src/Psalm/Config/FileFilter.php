@@ -11,6 +11,7 @@ use RecursiveIteratorIterator;
 use SimpleXMLElement;
 use Symfony\Component\Filesystem\Path;
 
+use function array_diff;
 use function array_filter;
 use function array_map;
 use function array_merge;
@@ -232,8 +233,6 @@ class FileFilter
 
                         $iterator->next();
                     }
-
-                    $iterator->next();
                 }
 
                 if ($ignore_type_stats && $filter instanceof ProjectFileFilter) {
@@ -501,6 +500,16 @@ class FileFilter
         $first_dir = self::slashify($parts[0]);
         $paths = glob($first_dir . '*', GLOB_ONLYDIR | GLOB_NOSORT);
         assert($paths !== false);
+
+        // A directory that matches the next part is not searched for the whole pattern: what matches inside it
+        // is found below by searching it for the rest of the pattern, or is inside a match. A matching file is
+        // not a directory, so a directory may match the last part of a file pattern and still contain matches.
+        if ($only_dir || count($parts) > 2) {
+            $next = glob($first_dir . $parts[1], GLOB_ONLYDIR | GLOB_NOSORT);
+            assert($next !== false);
+            $paths = array_diff($paths, $next);
+        }
+
         $result = [];
         foreach ($paths as $path) {
             $parts[0] = $path;

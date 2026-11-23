@@ -29,6 +29,7 @@ use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
 use Psalm\Internal\Codebase\CliOutput;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
+use Psalm\Internal\Codebase\PhpDeprecations;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\Comparator\CallableTypeComparator;
@@ -199,10 +200,10 @@ final class FunctionCallAnalyzer extends CallAnalyzer
             && isset($args[0])
             && !$args[0]->unpack
         ) {
-            $original_function_id = implode('\\', $function_name->getParts());
+            $original_function_id = strtolower(implode('\\', $function_name->getParts()));
 
             // PHP 8.5 clone(...) form: parsed as a FuncCall, not Clone_, so route it in.
-            if (strtolower($original_function_id) === 'clone') {
+            if ($original_function_id === 'clone') {
                 return CloneAnalyzer::analyzeFuncCall($statements_analyzer, $stmt, $context);
             }
 
@@ -304,6 +305,21 @@ final class FunctionCallAnalyzer extends CallAnalyzer
 
         $function_storage = $function_call_info->function_storage;
 
+        // record the call sites of user functions, as Methods::methodExists() does for methods
+        if ($codebase->collect_locations
+            && $function_storage !== null
+            && $function_storage->location !== null
+            && $function_call_info->function_id !== null
+        ) {
+            $codebase->addReferenceToFunctionLike(
+                strtolower($function_call_info->function_id),
+                new CodeLocation($statements_analyzer->getSource(), $stmt->name),
+                $context,
+                $context->insideUse(),
+                $statements_analyzer->getFilePath(),
+            );
+        }
+
         // a function requiring an instance of a class with @psalm-cli-only-instances is called with one: from the
         // command line
         if ($function_storage !== null
@@ -366,7 +382,10 @@ final class FunctionCallAnalyzer extends CallAnalyzer
             && $function_name instanceof PhpParser\Node\Name
             && $function_call_info->function_id
         ) {
-            if (!$function_call_info->is_stubbed && $function_call_info->in_call_map) {
+            // a stub that declares no return type keeps the callmap's
+            if ($function_call_info->in_call_map
+                && (!$function_call_info->is_stubbed || !$function_call_info->function_storage?->return_type)
+            ) {
                 $function_callable = InternalCallMapHandler::getCallableFromCallMapById(
                     $codebase,
                     $function_call_info->function_id,
@@ -374,7 +393,9 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                     $statements_analyzer->node_data,
                 );
 
-                if (!$codebase->functions->params_provider->has($function_call_info->function_id)) {
+                if (!$function_call_info->is_stubbed
+                    && !$codebase->functions->params_provider->has($function_call_info->function_id)
+                ) {
                     $function_call_info->function_params = $function_callable->params;
                 }
             }
@@ -710,6 +731,20 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                     $statements_analyzer->getSuppressedIssues(),
                 );
             }
+        }
+
+        // a builtin a PHP version deprecates, whether or not a stub declares it
+        $deprecation_message = $function_call_info->function_id !== null
+            && $function_call_info->in_call_map
+            && !$function_call_info->function_storage?->deprecated
+                ? PhpDeprecations::getFunctionMessage($function_call_info->function_id)
+                : null;
+
+        if ($deprecation_message !== null && $function_call_info->function_id !== null) {
+            IssueBuffer::maybeAdd(
+                new DeprecatedFunction($deprecation_message, $code_location, $function_call_info->function_id),
+                $statements_analyzer->getSuppressedIssues(),
+            );
         }
 
         if ($function_name instanceof PhpParser\Node\Name && $function_call_info->function_id) {
@@ -1830,13 +1865,8 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                 } elseif ($var_type_part instanceof TNull) {
                     // handled above
                 } elseif (!$var_type_part instanceof TNamedObject
-                    || !$codebase->classlikes->classOrInterfaceExists($var_type_part->value, null, $context)
-                    || !$codebase->methodExists(
-                        new MethodIdentifier(
-                            $var_type_part->value,
-                            '__invoke',
-                        ),
-                    )
+                    || ($invoke_member = CallableTypeComparator::getInvokeMember($codebase, $var_type_part)) === null
+                    || !$codebase->classlikes->classOrInterfaceExists($invoke_member->value, null, $context)
                 ) {
                     $invalid_function_call_types[] = (string)$var_type_part;
                 } else {
@@ -1934,6 +1964,12 @@ final class FunctionCallAnalyzer extends CallAnalyzer
         Context $context,
         Atomic $atomic_type,
     ): void {
+        // a first-class callable of a method is looked up in the first member of an intersection only
+        if ($stmt->isFirstClassCallable() && $atomic_type instanceof TNamedObject) {
+            $atomic_type = CallableTypeComparator::getInvokeMember($statements_analyzer->getCodebase(), $atomic_type)
+                ?? $atomic_type;
+        }
+
         $old_data_provider = $statements_analyzer->node_data;
 
         $statements_analyzer->node_data = clone $statements_analyzer->node_data;
