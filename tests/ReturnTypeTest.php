@@ -73,6 +73,45 @@ final class ReturnTypeTest extends TestCase
         );
     }
 
+    public function testStringableReturnedForANativeStringUnderStrictTypes(): void
+    {
+        $this->project_analyzer->getConfig()->throw_exception = false;
+
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                declare(strict_types=1);
+
+                final class S {
+                    public function __toString(): string {
+                        return "s";
+                    }
+                }
+
+                function f(S $s): string {
+                    return $s;
+                }
+
+                final class A {
+                    public function __toString(): string {
+                        return new S();
+                    }
+                }',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+
+        $types = array_column(IssueBuffer::getIssuesDataForFile($file_path), 'type');
+        sort($types);
+
+        self::assertSame(
+            ['InvalidReturnStatement', 'InvalidReturnStatement', 'InvalidReturnType', 'InvalidToString'],
+            $types,
+        );
+    }
+
     public function testUnicodeEscapeOfADocblockStringLiteralIsNotTheInternalEncoding(): void
     {
         $encoding = mb_internal_encoding();
@@ -4199,6 +4238,41 @@ final class ReturnTypeTest extends TestCase
                         }
                     }',
                 'error_message' => 'LessSpecificReturnStatement',
+            ],
+            'possiblyFalseReturnTypeForTrueOrInt' => [
+                'code' => '<?php
+                    /** @psalm-suppress FalsableReturnStatement */
+                    function f(int|false $i): true|int {
+                        return $i;
+                    }',
+                'error_message' => 'InvalidFalsableReturnType',
+                'error_levels' => [],
+                'php_version' => '8.2',
+            ],
+            'possiblyFalseReturnedForTrueOrInt' => [
+                'code' => '<?php
+                    function f(int|false $i): true|int {
+                        return $i;
+                    }',
+                'error_message' => 'FalsableReturnStatement',
+                'error_levels' => [],
+                'php_version' => '8.2',
+            ],
+            'stringableReturnedForADocblockStringUnderStrictTypes' => [
+                'code' => '<?php
+                    declare(strict_types=1);
+
+                    final class S {
+                        public function __toString(): string {
+                            return "s";
+                        }
+                    }
+
+                    /** @return string */
+                    function f(S $s) {
+                        return $s;
+                    }',
+                'error_message' => 'ImplicitToStringCast',
             ],
         ];
     }

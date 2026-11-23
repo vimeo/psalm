@@ -400,11 +400,17 @@ final class ReturnTypeAnalyzer
 
             if ($union_comparison_results->to_string_cast) {
                 IssueBuffer::maybeAdd(
-                    new ImplicitToStringCast(
-                        'The declared return type for ' . $cased_method_id . ' expects string, ' .
-                        '\'' . $inferred_return_type->getId() . '\' provided with a __toString method',
-                        $return_type_location,
-                    ),
+                    // under strict_types, the string return type of __toString does not cast an object to string
+                    $source->getFileAnalyzer()->context?->strict_types
+                        ? new InvalidToString(
+                            '__toString methods must return a string, ' . $inferred_return_type->getId() . ' returned',
+                            $return_type_location,
+                        )
+                        : new ImplicitToStringCast(
+                            'The declared return type for ' . $cased_method_id . ' expects string, ' .
+                            '\'' . $inferred_return_type->getId() . '\' provided with a __toString method',
+                            $return_type_location,
+                        ),
                     $suppressed_issues,
                 );
             }
@@ -816,12 +822,19 @@ final class ReturnTypeAnalyzer
 
             if ($union_comparison_results->to_string_cast) {
                 IssueBuffer::maybeAdd(
-                    new ImplicitToStringCast(
-                        'The declared return type for ' . $cased_method_id . ' expects \'' .
-                        $declared_return_type->getId() . '\', ' . '\'' . $inferred_return_type->getId() .
-                        '\' provided with a __toString method',
-                        $return_type_location,
-                    ),
+                    // under strict_types, a native type does not cast an object to string
+                    $source->getFileAnalyzer()->context?->strict_types && !$declared_return_type->from_docblock
+                        ? new InvalidReturnType(
+                            'The declared return type \'' . $declared_return_type->getId() . '\' for '
+                                . $cased_method_id . ' is incorrect, got \'' . $inferred_return_type->getId() . '\'',
+                            $return_type_location,
+                        )
+                        : new ImplicitToStringCast(
+                            'The declared return type for ' . $cased_method_id . ' expects \'' .
+                            $declared_return_type->getId() . '\', ' . '\'' . $inferred_return_type->getId() .
+                            '\' provided with a __toString method',
+                            $return_type_location,
+                        ),
                     $suppressed_issues,
                 );
             }
@@ -867,7 +880,8 @@ final class ReturnTypeAnalyzer
             if (!$inferred_return_type->ignore_falsable_issues
                 && $inferred_return_type->isFalsable()
                 && !$declared_return_type->isFalsable()
-                && !$declared_return_type->hasBool()
+                // true does not accept false
+                && !isset($declared_return_type->getAtomicTypes()['bool'])
                 && !$declared_return_type->hasScalar()
             ) {
                 if ($codebase->alter_code
