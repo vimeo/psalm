@@ -234,8 +234,8 @@ final class CliUtils
     /**
      * Copies each given long option onto its short alias
      *
-     * @param array<string, false|list<mixed>|string> $options
-     * @param-out array<string, false|list<mixed>|string> $options
+     * @param array<string, false|list<false|string>|string> $options
+     * @param-out array<string, false|list<false|string>|string> $options
      * @param array<string, string> $long_to_short
      * @psalm-capabilities write-refs
      */
@@ -272,11 +272,14 @@ final class CliUtils
     /**
      * A restarter that also drops the extensions that break forked workers or slow Psalm down
      */
-    public static function createRestarter(string $prefix): PsalmRestarter
+    public static function createRestarter(string $prefix, bool $disable_grpc = true): PsalmRestarter
     {
         $ini_handler = new PsalmRestarter($prefix);
+        if ($disable_grpc) {
+            $ini_handler->disableExtension('grpc');
+        }
+
         $ini_handler->disableExtensions([
-            'grpc',
             'uopz',
             // extensions that are incompatible with JIT (they also usually make Psalm slow)
             'pcov',

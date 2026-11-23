@@ -19,7 +19,6 @@ use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Internal\Codebase\ReferenceMapGenerator;
 use Psalm\Internal\Composer;
 use Psalm\Internal\ErrorHandler;
-use Psalm\Internal\Fork\PsalmRestarter;
 use Psalm\Internal\IncludeCollector;
 use Psalm\Internal\Preloader;
 use Psalm\Internal\Provider\ClassLikeStorageCacheProvider;
@@ -972,7 +971,8 @@ final class Psalm
         int $scanThreads,
         Progress $progress,
     ): void {
-        $ini_handler = new PsalmRestarter('PSALM');
+        // grpc is only disabled below when it would break forked workers
+        $ini_handler = CliUtils::createRestarter('PSALM', false);
         $ini_handler->enableJit = $force_jit;
 
         if (isset($options['disable-extension'])) {
@@ -1000,15 +1000,6 @@ final class Psalm
                 . ' (https://github.com/grpc/grpc/issues/20250#issuecomment-531321945)',
             );
         }
-
-        $ini_handler->disableExtensions([
-            'uopz',
-            // extensions that are incompatible with JIT (they are also usually make Psalm slow)
-            'pcov',
-            'blackfire',
-            // Issues w/ parallel forking
-            'uv',
-        ]);
 
         // If Xdebug is enabled, restart without it
         $ini_handler->check();
