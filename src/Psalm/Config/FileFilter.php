@@ -201,6 +201,8 @@ class FileFilter
                         /** @var RecursiveDirectoryIterator */
                         $iterator = new RecursiveIteratorIterator(
                             new RecursiveDirectoryIterator($directory_path, FilesystemIterator::SKIP_DOTS),
+                            RecursiveIteratorIterator::LEAVES_ONLY,
+                            RecursiveIteratorIterator::CATCH_GET_CHILD,
                         );
                         $iterator->rewind();
 

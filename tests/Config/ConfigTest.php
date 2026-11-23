@@ -44,6 +44,7 @@ use function array_keys;
 use function array_map;
 use function array_pop;
 use function basename;
+use function chmod;
 use function class_exists;
 use function dirname;
 use function error_get_last;
@@ -59,6 +60,7 @@ use function in_array;
 use function is_array;
 use function is_dir;
 use function is_link;
+use function is_readable;
 use function json_encode;
 use function mkdir;
 use function preg_match;
@@ -455,6 +457,54 @@ final class ConfigTest extends DeferredAnalyzerTestCase
         yield 'relative link target' => ['src', 'src/lib', '../outside'];
         yield 'link in a wildcard directory' => ['pkgs/*', 'pkgs/a/lib', '{root}/outside'];
         yield 'link target sharing the directory prefix' => ['src', 'src/lib', '{root}/src-shared'];
+    }
+
+    #[RequiresOperatingSystem('^(?!WIN)')]
+    #[DataProvider('providerResolveSymlinksSkipsUnreadableDirectories')]
+    public function testResolveSymlinksSkipsUnreadableDirectories(string $directory_name): void
+    {
+        $root = (string) realpath(sys_get_temp_dir()) . '/psalm_unreadable_' . uniqid();
+        mkdir($root . '/pkgs/a/private', 0777, true);
+        file_put_contents($root . '/pkgs/a/a.php', '<?php');
+        chmod($root . '/pkgs/a/private', 0);
+
+        try {
+            if (is_readable($root . '/pkgs/a/private')) {
+                $this->markTestSkipped('directory permissions are not enforced');
+            }
+
+            $config = Config::loadFromXML(
+                $root,
+                '<?xml version="1.0"?>
+                <psalm>
+                    <projectFiles>
+                        <directory name="' . $directory_name . '" resolveSymlinks="true" />
+                        <ignoreFiles>
+                            <directory name="pkgs/a/private" />
+                        </ignoreFiles>
+                    </projectFiles>
+                </psalm>',
+            );
+
+            $this->assertTrue($config->isInProjectDirs($root . '/pkgs/a/a.php'));
+        } finally {
+            chmod($root . '/pkgs/a/private', 0777);
+            rmdir($root . '/pkgs/a/private');
+            unlink($root . '/pkgs/a/a.php');
+            rmdir($root . '/pkgs/a');
+            rmdir($root . '/pkgs');
+            rmdir($root);
+        }
+    }
+
+    /**
+     * @psalm-pure
+     * @return iterable<string, array{string}>
+     */
+    public static function providerResolveSymlinksSkipsUnreadableDirectories(): iterable
+    {
+        yield 'directory' => ['pkgs'];
+        yield 'wildcard directory' => ['pkgs/*'];
     }
 
     public function testDirectoryOptionsDoNotApplyToSiblingDirectories(): void
