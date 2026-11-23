@@ -392,6 +392,62 @@ final class ConfigTest extends DeferredAnalyzerTestCase
         }
     }
 
+    #[RequiresOperatingSystem('^(?!WIN)')]
+    #[DataProvider('providerSymlinkedDirectoryKeepsDirectoryOptions')]
+    public function testSymlinkedDirectoryKeepsDirectoryOptions(
+        string $directory_name,
+        string $link_path,
+        string $link_target,
+    ): void {
+        $root = (string) realpath(sys_get_temp_dir()) . '/psalm_symlink_options_' . uniqid();
+        mkdir($root . '/src', 0777, true);
+        mkdir($root . '/pkgs/a', 0777, true);
+        mkdir($root . '/outside');
+        file_put_contents($root . '/outside/a.php', '<?php');
+
+        if (!@symlink(str_replace('{root}', $root, $link_target), $root . '/' . $link_path)) {
+            $this->markTestSkipped('symlinks cannot be created');
+        }
+
+        try {
+            $config = Config::loadFromXML(
+                $root,
+                '<?xml version="1.0"?>
+                <psalm>
+                    <projectFiles>
+                        <directory name="' . $directory_name . '" resolveSymlinks="true"
+                            useStrictTypes="true" ignoreTypeStats="true" />
+                    </projectFiles>
+                </psalm>',
+            );
+
+            $file_path = $root . '/outside/a.php';
+
+            $this->assertTrue($config->isInProjectDirs($file_path));
+            $this->assertTrue($config->useStrictTypesForFile($file_path));
+            $this->assertFalse($config->reportTypeStatsForFile($file_path));
+        } finally {
+            unlink($root . '/' . $link_path);
+            unlink($root . '/outside/a.php');
+            rmdir($root . '/outside');
+            rmdir($root . '/pkgs/a');
+            rmdir($root . '/pkgs');
+            rmdir($root . '/src');
+            rmdir($root);
+        }
+    }
+
+    /**
+     * @psalm-pure
+     * @return iterable<string, array{string, string, string}>
+     */
+    public static function providerSymlinkedDirectoryKeepsDirectoryOptions(): iterable
+    {
+        yield 'absolute link target' => ['src', 'src/lib', '{root}/outside'];
+        yield 'relative link target' => ['src', 'src/lib', '../outside'];
+        yield 'link in a wildcard directory' => ['pkgs/*', 'pkgs/a/lib', '{root}/outside'];
+    }
+
     public function testIgnoreWildcardProjectDirectory(): void
     {
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
