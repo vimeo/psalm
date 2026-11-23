@@ -1016,7 +1016,6 @@ final class ArrayFetchAnalyzer
                     $array_access_type = self::handleMixedArrayAccess(
                         $context,
                         $statements_analyzer,
-                        $codebase,
                         $in_assignment,
                         $extended_var_id,
                         $stmt,
@@ -1507,7 +1506,6 @@ final class ArrayFetchAnalyzer
     public static function handleMixedArrayAccess(
         Context $context,
         StatementsAnalyzer $statements_analyzer,
-        Codebase $codebase,
         bool $in_assignment,
         ?string $extended_var_id,
         PhpParser\Node\Expr\ArrayDimFetch $stmt,
