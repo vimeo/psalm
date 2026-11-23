@@ -33,6 +33,8 @@ final class ClassTemplateParamCollector
     /**
      * @param lowercase-string $method_name
      * @return array<string, non-empty-array<string, Union>>|null
+     * @psalm-suppress MoreSpecificReturnType
+     * @psalm-suppress LessSpecificReturnStatement
      */
     public static function collect(
         Codebase $codebase,
