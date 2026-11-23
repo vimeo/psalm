@@ -73,6 +73,69 @@ final class MissingExtensionRequirementTest extends TestCase
         $this->analyzeFile($file_path, new Context());
     }
 
+    public function testFunctionMovedIntoACoreExtensionByANewerPhpThanComposerAllows(): void
+    {
+        $this->project_analyzer->getConfig()->lowest_composer_php_version_id = 8_01_00;
+        $this->project_analyzer->setPhpVersion('8.3', 'tests');
+
+        $file_path = (string) getcwd() . '/src/somefile.php';
+        $this->addFile($file_path, '<?php
+            function f(): int {
+                return random_int(1, 2) + mt_rand();
+            }');
+
+        $this->analyzeFile($file_path, new Context());
+    }
+
+    public function testFunctionOfAnExtensionInAnOlderPhpComposerAllows(): void
+    {
+        // utf8_encode() moved from ext-xml to the core in PHP 7.2, and is deprecated since 8.2
+        $this->project_analyzer->getConfig()->setCustomErrorLevel('DeprecatedFunction', Config::REPORT_SUPPRESS);
+        $this->project_analyzer->getConfig()->lowest_composer_php_version_id = 7_01_00;
+        $this->project_analyzer->setPhpVersion('7.4', 'tests');
+
+        $file_path = (string) getcwd() . '/src/somefile.php';
+        $this->addFile($file_path, '<?php
+            function f(string $s): string {
+                return utf8_encode($s);
+            }');
+
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessage('utf8_encode is part of the ext-xml extension');
+
+        $this->analyzeFile($file_path, new Context());
+    }
+
+    public function testCheckOfAFunctionOfAnExtensionInAnOlderPhpComposerAllows(): void
+    {
+        // utf8_encode() moved from ext-xml to the core in PHP 7.2, and is deprecated since 8.2
+        $this->project_analyzer->getConfig()->setCustomErrorLevel('DeprecatedFunction', Config::REPORT_SUPPRESS);
+        $this->project_analyzer->getConfig()->lowest_composer_php_version_id = 7_01_00;
+        $this->project_analyzer->setPhpVersion('7.4', 'tests');
+
+        $file_path = (string) getcwd() . '/src/somefile.php';
+        $this->addFile($file_path, '<?php
+            function f(string $s): string {
+                return function_exists("utf8_encode") ? utf8_encode($s) : $s;
+            }');
+
+        $this->analyzeFile($file_path, new Context());
+    }
+
+    public function testFunctionAddedAfterTheLowestPhpComposerAllows(): void
+    {
+        $this->project_analyzer->getConfig()->lowest_composer_php_version_id = 7_04_00;
+        $this->project_analyzer->setPhpVersion('8.3', 'tests');
+
+        $file_path = (string) getcwd() . '/src/somefile.php';
+        $this->addFile($file_path, '<?php
+            function f(string $s): bool {
+                return json_validate($s);
+            }');
+
+        $this->analyzeFile($file_path, new Context());
+    }
+
     /**
      * @psalm-pure
      */

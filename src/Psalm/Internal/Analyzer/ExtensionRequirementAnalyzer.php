@@ -69,7 +69,8 @@ final class ExtensionRequirementAnalyzer
     }
 
     /**
-     * The Composer name of the extension of the symbol, unless it is part of the core, declared or checked
+     * The Composer name of an extension of the symbol in a PHP version the code runs on, unless it is part of the core
+     * in that version, declared or checked
      */
     private static function getUndeclaredExtension(
         Codebase $codebase,
@@ -82,28 +83,24 @@ final class ExtensionRequirementAnalyzer
             return null;
         }
 
-        $extension = InternalCallMapHandler::getExtension($function_or_class, $is_class);
-        if ($extension === null) {
-            return null;
-        }
-
         // the code also runs on the older PHP versions composer.json allows, which may have been built without it
-        $core_since = self::CORE_EXTENSIONS[$extension] ?? null;
-        if ($core_since !== null
-            && $core_since <= $codebase->analysis_php_version_id
-            && $core_since <= ($codebase->config->lowest_composer_php_version_id ?? $core_since)
-        ) {
-            return null;
+        foreach (InternalCallMapHandler::getExtensions($function_or_class, $is_class) as $extension => $since) {
+            $core_since = self::CORE_EXTENSIONS[$extension] ?? null;
+            if ($core_since !== null && $core_since <= $since) {
+                continue;
+            }
+
+            $composer_name = str_replace(' ', '-', $extension);
+            if (isset($declared_extensions[$composer_name])
+                || ($extension === 'zend opcache' && isset($declared_extensions['opcache']))
+                || ($context?->vars_in_scope[Context::getExtensionVarId($extension)] ?? null)?->isTrue()
+            ) {
+                continue;
+            }
+
+            return $composer_name;
         }
 
-        $composer_name = str_replace(' ', '-', $extension);
-        if (isset($declared_extensions[$composer_name])
-            || ($extension === 'zend opcache' && isset($declared_extensions['opcache']))
-            || ($context?->vars_in_scope[Context::getExtensionVarId($extension)] ?? null)?->isTrue()
-        ) {
-            return null;
-        }
-
-        return $composer_name;
+        return null;
     }
 }

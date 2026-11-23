@@ -124,6 +124,7 @@ use Psalm\Type\Union;
 use UnexpectedValueException;
 
 use function array_all;
+use function array_keys;
 use function array_map;
 use function array_push;
 use function assert;
@@ -918,7 +919,7 @@ final class AssertionFinder
                 $if_types[$first_var_name] = [[new IsType(new TCallableString())]];
             }
         } elseif ($function_id === 'extension_loaded') {
-            // see getCheckedExtension()
+            // see getCheckedExtensions()
         } elseif ($function_id === 'method_exists'
             && isset($expr->getArgs()[1])
             && $expr->getArgs()[1]->value instanceof PhpParser\Node\Scalar\String_
@@ -1005,8 +1006,7 @@ final class AssertionFinder
             $if_types[Context::PHP_SYMBOL_GUARD_VAR_ID] = [[$native_symbol_guard]];
         }
 
-        $checked_extension = self::getCheckedExtension($expr, $function_id);
-        if ($checked_extension !== null) {
+        foreach (self::getCheckedExtensions($expr, $function_id) as $checked_extension) {
             $if_types[Context::getExtensionVarId($checked_extension)] = [[new IsType(new TTrue())]];
         }
 
@@ -1014,35 +1014,37 @@ final class AssertionFinder
     }
 
     /**
-     * The extension an `extension_loaded()` call checks, or the extension of the builtin function or class a
+     * The extension an `extension_loaded()` call checks, or the extensions of the builtin function or class a
      * `function_exists()`, `class_exists()`, `interface_exists()` or `enum_exists()` call checks
+     *
+     * @return list<string>
      */
-    private static function getCheckedExtension(
+    private static function getCheckedExtensions(
         PhpParser\Node\Expr\FuncCall $expr,
         ?string $function_id,
-    ): ?string {
+    ): array {
         $first_arg = $expr->isFirstClassCallable() ? null : ($expr->getArgs()[0] ?? null);
         if ($first_arg === null) {
-            return null;
+            return [];
         }
 
         if ($function_id === 'extension_loaded') {
-            return $first_arg->value instanceof PhpParser\Node\Scalar\String_ ? $first_arg->value->value : null;
+            return $first_arg->value instanceof PhpParser\Node\Scalar\String_ ? [$first_arg->value->value] : [];
         }
 
         if ($function_id === 'function_exists') {
             return $first_arg->value instanceof PhpParser\Node\Scalar\String_
-                ? InternalCallMapHandler::getExtension($first_arg->value->value, false)
-                : null;
+                ? array_keys(InternalCallMapHandler::getExtensions($first_arg->value->value, false))
+                : [];
         }
 
         if (in_array($function_id, ['class_exists', 'interface_exists', 'enum_exists'], true)) {
             $class = self::getLiteralClassName($first_arg->value);
 
-            return $class !== null ? InternalCallMapHandler::getExtension($class, true) : null;
+            return $class !== null ? array_keys(InternalCallMapHandler::getExtensions($class, true)) : [];
         }
 
-        return null;
+        return [];
     }
 
     /**
