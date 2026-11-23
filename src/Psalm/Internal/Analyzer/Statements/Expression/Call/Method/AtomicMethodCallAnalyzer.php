@@ -770,7 +770,8 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
                             && !array_any(
                                 $lhs_type->getAtomicTypes(),
                                 static fn(Atomic $part): bool => $part instanceof TMixed
-                                    || ($part instanceof TTemplateParam && $part->as->hasMixed()),
+                                    || ($part instanceof TTemplateParam
+                                        && ($part->as->hasMixed() || $part->as->hasTemplate())),
                             )
                             ? ' (' . $lhs_type_part->getId() . ')'
                             : '';

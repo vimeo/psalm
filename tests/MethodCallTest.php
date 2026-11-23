@@ -91,6 +91,15 @@ final class MethodCallTest extends TestCase
                 /** @param mixed|object $o */
                 function mixedOrObject($o): void {
                     $o->foo();
+                }
+
+                /**
+                 * @template U
+                 * @template T of U
+                 * @param T|object $o
+                 */
+                function nested($o): void {
+                    $o->foo();
                 }',
         );
 
@@ -102,6 +111,7 @@ final class MethodCallTest extends TestCase
                 '7: Cannot determine the type of $o when calling method foo',
                 '15: Cannot determine the methods of $o (object) when calling method foo',
                 '20: Cannot determine the type of $o when calling method foo',
+                '29: Cannot determine the type of $o when calling method foo',
             ],
             array_map(
                 static fn(IssueData $issue): string => $issue->line_from . ': ' . $issue->message,
