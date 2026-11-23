@@ -438,7 +438,8 @@ The code a project doesn't ship is internal without the annotation: classes that
 `autoload-dev` loads, files that `.gitattributes` leaves out of the package with `export-ignore`, and, with
 [psalm/plugin-phpunit](https://github.com/psalm/psalm-plugin-phpunit), the test suites of `phpunit.xml` and the test
 cases. It is internal to the root namespaces of all that code, so test code may use the test code of another namespace.
-Code in the global namespace can't be internal.
+The code the project doesn't ship may use it whatever its namespace, the global one included (as in Pest test files),
+and the code it ships may not. Code in the global namespace can't be internal.
 
 ```php
 <?php
@@ -450,7 +451,7 @@ namespace Lib {
     new Tests\Helper(); // this is fine
 }
 
-namespace Other {
+namespace Other { // in a file that the package ships
     new \Lib\Tests\Helper(); // InternalClass
 }
 ```

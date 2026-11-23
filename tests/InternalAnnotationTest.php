@@ -1849,4 +1849,136 @@ final class InternalAnnotationTest extends TestCase
             ),
         );
     }
+
+    public function testCodeTheProjectDoesNotShipMayUseItInAnyNamespace(): void
+    {
+        $this->project_analyzer->getConfig()->throw_exception = false;
+        // Psalm's composer.json autoloads Psalm\Tests\ from tests/ for development only, and its .gitattributes
+        // leaves tests/ out of the package
+        $test_file_path = (string) getcwd() . DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR . 'somefile.php';
+        $src_file_path = self::$src_dir_path . 'somefile.php';
+
+        // the global namespace is where Pest files are: top-level code, a closure, a function and a class
+        $this->addFile(
+            $test_file_path,
+            '<?php
+                namespace Psalm\Tests {
+                    class Helper {
+                        public const NAME = "helper";
+                        public int $value = 0;
+                        public function __construct() {}
+                        public static function make(): void {}
+                        public function run(): void {}
+                    }
+
+                    final class Annotated {
+                        /** @psalm-internal Other */
+                        public int $value = 0;
+
+                        /** @psalm-internal Other */
+                        public function run(): void {}
+                    }
+
+                    /** @psalm-internal Other */
+                    final class Restricted {}
+                }
+
+                namespace {
+                    $helper = new \Psalm\Tests\Helper();
+                    $helper->run();
+                    echo $helper->value;
+                    $helper->value = 1;
+                    \Psalm\Tests\Helper::make();
+                    echo \Psalm\Tests\Helper::NAME;
+
+                    $closure = function (\Psalm\Tests\Helper $other) use ($helper): void {
+                        new \Psalm\Tests\Helper();
+                        $helper->run();
+                        echo $other->value;
+                        $other->value = 2;
+                    };
+
+                    function globalFunction(\Psalm\Tests\Helper $helper): void {
+                        $helper->run();
+                    }
+
+                    final class GlobalNamespaceTest extends \Psalm\Tests\Helper {
+                        public function testSomething(): void {
+                            $helper = new \Psalm\Tests\Helper();
+                            $helper->run();
+                            echo $helper->value;
+                            $helper->value = 1;
+                            \Psalm\Tests\Helper::make();
+                            echo \Psalm\Tests\Helper::NAME;
+                        }
+                    }
+
+                    new \Psalm\Tests\Restricted();
+                    (new \Psalm\Tests\Annotated())->run();
+                    echo (new \Psalm\Tests\Annotated())->value;
+                }',
+        );
+        $this->addFile(
+            $src_file_path,
+            '<?php
+                namespace Lib {
+                    final class Client {
+                        public function run(): void {
+                            $helper = new \Psalm\Tests\Helper();
+                            $helper->run();
+                            echo $helper->value;
+                            $helper->value = 1;
+                            \Psalm\Tests\Helper::make();
+                            echo \Psalm\Tests\Helper::NAME;
+                        }
+                    }
+                }
+
+                namespace {
+                    final class GlobalClient {
+                        public function run(): void {
+                            new \Psalm\Tests\Helper();
+                        }
+                    }
+
+                    new \Psalm\Tests\Helper();
+                }',
+        );
+        $this->analyzeFile($test_file_path, new Context(), false);
+        $this->analyzeFile($src_file_path, new Context(), false);
+
+        $issues = static fn(string $file_path): array => array_map(
+            static fn(IssueData $issue): array => [$issue->type, $issue->line_from, $issue->message],
+            IssueBuffer::getIssuesDataForFile($file_path),
+        );
+
+        // what Psalm marked internal is not enforced on the code the project doesn't ship, but what an annotation
+        // marked is
+        $this->assertSame(
+            [
+                ['InternalClass', 53, 'Psalm\\Tests\\Restricted is internal to Other but called from root namespace'],
+                ['InternalMethod', 54, 'The method Psalm\\Tests\\Annotated::run is internal to Psalm and Other but called from root namespace'],
+                ['InternalProperty', 55, 'Psalm\\Tests\\Annotated::$value is internal to Psalm and Other but called from root namespace'],
+            ],
+            $issues($test_file_path),
+        );
+        // the code the project ships is not allowed to use it, whatever its namespace
+        $this->assertSame(
+            [
+                ['InternalClass', 22, 'Psalm\\Tests\\Helper is internal to Psalm but called from root namespace'],
+                ['InternalMethod', 22, 'Constructor Psalm\\Tests\\Helper::__construct is internal to Psalm but called from root namespace'],
+                ['InternalClass', 5, 'Psalm\\Tests\\Helper is internal to Psalm but called from Lib\\Client::run'],
+                ['InternalMethod', 5, 'Constructor Psalm\\Tests\\Helper::__construct is internal to Psalm but called from Lib\\Client::run'],
+                ['InternalMethod', 6, 'The method Psalm\\Tests\\Helper::run is internal to Psalm but called from Lib\\Client::run'],
+                ['InternalProperty', 7, 'Psalm\\Tests\\Helper::$value is internal to Psalm but called from Lib\\Client::run'],
+                ['InternalProperty', 8, 'Psalm\\Tests\\Helper::$value is internal to Psalm but called from Lib\\Client::run'],
+                ['InternalClass', 9, 'Psalm\\Tests\\Helper is internal to Psalm but called from Lib\\Client::run'],
+                ['InternalMethod', 9, 'The method Psalm\\Tests\\Helper::make is internal to Psalm but called from Lib\\Client::run'],
+                ['InternalClass', 10, 'Psalm\\Tests\\Helper is internal to Psalm but called from Lib\\Client::run'],
+                ['InternalClass', 18, 'Psalm\\Tests\\Helper is internal to Psalm but called from GlobalClient::run'],
+                ['InternalMethod', 18, 'Constructor Psalm\\Tests\\Helper::__construct is internal to Psalm but called from GlobalClient::run'],
+            ],
+            $issues($src_file_path),
+        );
+    }
 }

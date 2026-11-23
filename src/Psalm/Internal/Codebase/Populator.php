@@ -727,10 +727,15 @@ final class Populator
 
         if (!$storage->is_interface && !$storage->is_trait) {
             foreach ($storage->methods as $method) {
+                // a repopulated member keeps the flag, but a member with an annotation of its own never had it
+                $method->unshipped_internal = $storage->unshipped_internal
+                    && ($method->unshipped_internal || !$method->internal);
                 $method->internal = [...$storage->internal, ...$method->internal];
             }
 
             foreach ($storage->properties as $property) {
+                $property->unshipped_internal = $storage->unshipped_internal
+                    && ($property->unshipped_internal || !$property->internal);
                 $property->internal = [...$storage->internal, ...$property->internal];
             }
         }

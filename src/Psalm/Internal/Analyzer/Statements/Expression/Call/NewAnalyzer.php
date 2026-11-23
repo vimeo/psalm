@@ -14,7 +14,6 @@ use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\ClassLikeNameOptions;
 use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\InheritedMethodTaints;
-use Psalm\Internal\Analyzer\NamespaceAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodCallReturnTypeFetcher;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodVisibilityAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
@@ -572,7 +571,12 @@ final class NewAnalyzer extends CallAnalyzer
         $caller_identifier = $statements_analyzer->getFullyQualifiedFunctionMethodOrNamespaceName() ?? '';
 
         if (!$context->collect_initializations
-            && !NamespaceAnalyzer::isWithinAny($caller_identifier, $storage->internal)
+            && !$statements_analyzer->getCodebase()->classlikes->mayUseInternal(
+                $caller_identifier,
+                $statements_analyzer->getFilePath(),
+                $storage->internal,
+                $storage->unshipped_internal,
+            )
         ) {
             IssueBuffer::maybeAdd(
                 new InternalClass(
@@ -732,7 +736,12 @@ final class NewAnalyzer extends CallAnalyzer
                 $method_storage = $codebase->methods->getStorage($declaring_method_id);
 
                 $caller_identifier = $statements_analyzer->getFullyQualifiedFunctionMethodOrNamespaceName() ?? '';
-                if (!NamespaceAnalyzer::isWithinAny($caller_identifier, $method_storage->internal)) {
+                if (!$codebase->classlikes->mayUseInternal(
+                    $caller_identifier,
+                    $statements_analyzer->getFilePath(),
+                    $method_storage->internal,
+                    $method_storage->unshipped_internal,
+                )) {
                     IssueBuffer::maybeAdd(
                         new InternalMethod(
                             'Constructor ' . $codebase->methods->getCasedMethodId($declaring_method_id)

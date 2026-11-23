@@ -81,6 +81,15 @@ final class ClassLikeStorage implements HasAttributesInterface
     public array $internal = [];
 
     /**
+     * Whether `internal` was set by Psalm only, because the project doesn't ship this code (see
+     * ClassLikes::markUnshippedCodeInternal()), and not by an `@internal` or `@psalm-internal` annotation. The code
+     * the project doesn't ship may use it, whatever its namespace.
+     *
+     * @internal
+     */
+    public bool $unshipped_internal = false;
+
+    /**
      * The `@mixin T` the class declares, and those plugins add. Those of its traits and parent classes are not
      * included.
      *

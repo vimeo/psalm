@@ -136,4 +136,29 @@ final class UnshippedCodeTest extends TestCase
         $this->assertFalse($code->contains('Anything', '/root/Stub.php.dist'));
         $this->assertFalse($code->contains('Lib\\Tests\\FooTest', '/elsewhere/tests/FooTest.php'));
     }
+
+    public function testContainsFile(): void
+    {
+        $code = UnshippedCode::fromContents(
+            '/root',
+            [
+                'autoload-dev' => [
+                    'psr-4' => ['Lib\\Tests\\' => 'tests/', 'Fallback\\' => ''],
+                    'classmap' => ['fixtures/'],
+                ],
+            ],
+            "/docs export-ignore\n",
+        );
+
+        // the code of any namespace, the global one included, of what autoload-dev or export-ignore leaves out
+        $this->assertTrue($code->containsFile('/root/tests/PestTest.php'));
+        $this->assertTrue($code->containsFile('\\root\\tests\\deep\\PestTest.php'));
+        $this->assertTrue($code->containsFile('/root/fixtures/Fixture.php'));
+        $this->assertTrue($code->containsFile('/root/docs/example.php'));
+
+        // the root directory a namespace maps to does not make the shipped code unshipped
+        $this->assertFalse($code->containsFile('/root/src/Foo.php'));
+        $this->assertFalse($code->containsFile('/root/tests-other/Foo.php'));
+        $this->assertFalse($code->containsFile('/elsewhere/tests/PestTest.php'));
+    }
 }

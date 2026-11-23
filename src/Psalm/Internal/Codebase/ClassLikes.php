@@ -15,6 +15,7 @@ use Psalm\Context;
 use Psalm\Exception\UnpopulatedClasslikeException;
 use Psalm\FileManipulation;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
+use Psalm\Internal\Analyzer\NamespaceAnalyzer;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ReturnAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
@@ -165,6 +166,11 @@ final class ClassLikes
     private array $trait_nodes = [];
 
     private ?UnshippedCode $unshipped_code = null;
+
+    /**
+     * @var array<string, bool>
+     */
+    private array $unshipped_files = [];
 
     public function __construct(
         private readonly Config $config,
@@ -2665,6 +2671,27 @@ final class ClassLikes
     }
 
     /**
+     * Whether code in the namespace or function-like $caller_identifier of the file $caller_file may use something
+     * that is internal to $internal. The code the project doesn't ship may use what Psalm alone marked internal
+     * because the project doesn't ship it, whatever its namespace: the global-namespace code of a test file, which
+     * the namespaces in $internal can't name, included.
+     *
+     * @psalm-assert-if-false !empty $internal
+     * @param list<non-empty-string> $internal
+     */
+    public function mayUseInternal(
+        string $caller_identifier,
+        string $caller_file,
+        array $internal,
+        bool $unshipped_internal,
+    ): bool {
+        return NamespaceAnalyzer::isWithinAny($caller_identifier, $internal)
+            || ($unshipped_internal
+                && ($this->unshipped_files[$caller_file]
+                    ??= $this->getUnshippedCode()->containsFile($caller_file)));
+    }
+
+    /**
      * Users of a project can't use the code it doesn't ship, so it is internal to the project's test code and tools.
      */
     public function markUnshippedCodeInternal(): void
@@ -2695,6 +2722,7 @@ final class ClassLikes
         $namespaces = array_values($namespaces);
         foreach ($unshipped_classes as $storage) {
             $storage->internal = $namespaces;
+            $storage->unshipped_internal = true;
         }
     }
 

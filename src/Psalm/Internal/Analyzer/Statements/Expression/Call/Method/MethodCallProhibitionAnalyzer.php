@@ -7,7 +7,6 @@ namespace Psalm\Internal\Analyzer\Statements\Expression\Call\Method;
 use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Context;
-use Psalm\Internal\Analyzer\NamespaceAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\CliOutput;
 use Psalm\Internal\Codebase\PhpDeprecations;
@@ -67,7 +66,12 @@ final class MethodCallProhibitionAnalyzer
 
         if (!$context->collect_initializations
         ) {
-            if (!NamespaceAnalyzer::isWithinAny($caller_identifier ?? "", $storage->internal)) {
+            if (!$codebase->classlikes->mayUseInternal(
+                $caller_identifier ?? '',
+                $statements_analyzer->getFilePath(),
+                $storage->internal,
+                $storage->unshipped_internal,
+            )) {
                 IssueBuffer::maybeAdd(
                     new InternalMethod(
                         'The method ' . $codebase_methods->getCasedMethodId($method_id)

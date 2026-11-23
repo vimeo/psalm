@@ -18,7 +18,6 @@ use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\InheritedMethodTaints;
 use Psalm\Internal\Analyzer\MethodAnalyzer;
-use Psalm\Internal\Analyzer\NamespaceAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\ClassTemplateParamCollector;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\MethodCallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
@@ -1747,7 +1746,12 @@ final class InstancePropertyAssignmentAnalyzer
 
             $caller_identifier = $statements_analyzer->getFullyQualifiedFunctionMethodOrNamespaceName() ?? '';
 
-            if (!NamespaceAnalyzer::isWithinAny($caller_identifier, $property_storage->internal)) {
+            if (!$codebase->classlikes->mayUseInternal(
+                $caller_identifier,
+                $statements_analyzer->getFilePath(),
+                $property_storage->internal,
+                $property_storage->unshipped_internal,
+            )) {
                 IssueBuffer::maybeAdd(
                     new InternalProperty(
                         $property_id . ' is internal to ' . InternalClass::listToPhrase($property_storage->internal)

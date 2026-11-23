@@ -78,6 +78,15 @@ abstract class FunctionLikeStorage implements HasAttributesInterface, Stringable
      */
     public array $internal = [];
 
+    /**
+     * Whether `internal` was copied from the class by Psalm only, because the project doesn't ship that class (see
+     * ClassLikes::markUnshippedCodeInternal()), and not by an `@internal` or `@psalm-internal` annotation. The code
+     * the project doesn't ship may use it, whatever its namespace.
+     *
+     * @internal
+     */
+    public bool $unshipped_internal = false;
+
     public bool $variadic = false;
 
     public bool $returns_by_ref = false;
