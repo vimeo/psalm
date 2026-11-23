@@ -1968,7 +1968,8 @@ final class NewAnalyzer extends CallAnalyzer
      * them: a template named anywhere in a public non-constructor method parameter
      * or a public writable property type is one that later code can still
      * constrain, anything else can only have been fixed at the construction site and
-     * so is pinned eagerly rather than minted as a type variable.
+     * so is pinned eagerly rather than minted as a type variable. A contravariant
+     * template is always in the set: what later code gives the object never narrows it.
      *
      * Any appearance in such a parameter constrains the variable, whichever way the
      * position points, so `getTemplateTypes()` finding it in *any* nested position is
@@ -2052,7 +2053,7 @@ final class NewAnalyzer extends CallAnalyzer
         }
 
         // a contravariant template only takes values: nothing later code gives the object narrows it, so it is
-        // what the constructor makes it, or else its constraint
+        // what the constructor makes it, or else its default or constraint
         $template_offset = 0;
 
         foreach ($storage->template_types ?? [] as $template_name => $_) {
@@ -2319,8 +2320,9 @@ final class NewAnalyzer extends CallAnalyzer
     /**
      * What a template the constructor arguments did not bind stands for. Later code may still constrain it (Hack's
      * `new Foo<_>()`), so it gets a type variable bounded above by its constraint and reconciled once the enclosing
-     * function-like is analyzed, unless only the constructor names it: then it is a type template's default, with
-     * the earlier templates bound as in the new object, or else its constraint.
+     * function-like is analyzed, unless nothing later can constrain it (only the constructor names it, or it is
+     * contravariant): then it is a type template's default, with the earlier templates bound as in the new object,
+     * or else `never` for a covariant template (a subtype of every instantiation), or else its constraint.
      *
      * @param non-empty-array<string, Union> $type_map the constraint of the template, by its class
      * @param list<Union> $generic_param_types those of the templates before it

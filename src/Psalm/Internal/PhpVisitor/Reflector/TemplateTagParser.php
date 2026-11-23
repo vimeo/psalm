@@ -29,9 +29,8 @@ use function trim;
 
 /**
  * Parses the `@template`, `@template-covariant` and `@template-contravariant` tags of a docblock, with their
- * `@psalm-` and `@phpstan-`
- * forms: `T`, `T of Bound`, `T = Default` or `T of Bound = Default` (`as` and `super` may stand for `of`),
- * each followed by an optional description.
+ * `@psalm-` and `@phpstan-` forms: `T`, `T of Bound`, `T = Default` or `T of Bound = Default` (`as` and `super`
+ * may stand for `of`), each followed by an optional description.
  *
  * @internal
  * @psalm-immutable
@@ -45,9 +44,8 @@ final class TemplateTagParser
      * scanner cuts the description off.
      *
      * @param array<string, TemplateVariance> $tags the tags to read, and the variance of their templates
-     * @param array<string, array<string, array{string, ?string, ?string, TemplateVariance, int}>> $templates the
-     *     purity
-     *     templates already read, by name and form
+     * @param array<string, array<string, array{string, ?string, ?string, TemplateVariance, int}>> $templates
+     *     the purity templates already read, by name and form
      * @return array{
      *     list<array{string, ?string, ?string, TemplateVariance, int}>,
      *     array<string, array{type: string, line_number: int}>

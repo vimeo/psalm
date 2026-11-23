@@ -295,7 +295,7 @@ Psalm uses the default when the type argument is left out:
 * in `@extends`, `@implements` and `@use` that leave out trailing templates, if each of them has a default;
 * when a class is extended, implemented or used without one of those tags (templates without a default get their bound);
 * in a generic type with only its first arguments given, such as `Result<string>` in a `@param`, `@return`, `@var` or property type;
-* in `new`, for templates the constructor arguments don't infer. If the class has a constructor and one of its own public methods or properties (not an inherited, trait, `@method` or `@property` one) takes the template, `new` leaves it to later code in the function instead, and it stands for its bound if that code never fixes it;
+* in `new`, for templates the constructor arguments don't infer. If the class has a constructor and one of its own public methods or properties (not an inherited, trait, `@method` or `@property` one) takes the template, `new` leaves it to later code in the function instead, and it stands for its bound if that code never fixes it. A contravariant template is never left to later code, as nothing that code gives the object narrows it;
 * in a function or method call, for templates the arguments don't infer.
 
 ```php
@@ -608,7 +608,7 @@ final class Channel {
 }
 ```
 
-With no argument to say otherwise, `new` gives a contravariant template its bound, which fits every other type argument:
+With no argument to say otherwise, `new` gives a contravariant template its default, or else its bound:
 
 ```php
 <?php
@@ -621,6 +621,17 @@ final class NullSink {
 /** @return NullSink<int> */
 function intSink(): NullSink {
     return new NullSink(); // no issue: NullSink<mixed>
+}
+
+/** @template-contravariant T = int */
+final class IntSink {
+    /** @param T $value */
+    public function put(mixed $value): void {}
+}
+
+function f(): void {
+    $sink = new IntSink(); // IntSink<int>
+    $sink->put("a"); // InvalidScalarArgument
 }
 ```
 

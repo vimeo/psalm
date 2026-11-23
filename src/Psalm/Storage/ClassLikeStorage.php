@@ -440,6 +440,9 @@ final class ClassLikeStorage implements HasAttributesInterface
     public ?array $template_types = null;
 
     /**
+     * Whether each template is declared with `@template-covariant`. `false` doesn't mean invariant: a contravariant
+     * template is `false` here too. Read the variance of a template with getTemplateVariance().
+     *
      * @var array<int, bool>|null
      */
     public ?array $template_covariants = null;
