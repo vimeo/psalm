@@ -4003,7 +4003,7 @@ final class Config
                 $composer_json = null;
             }
 
-            if (!$composer_json || !is_array($composer_json)) {
+            if (!is_array($composer_json)) {
                 throw new UnexpectedValueException('Invalid composer.json at ' . $composer_json_path);
             }
 

@@ -214,10 +214,6 @@ final class Creator
                     'Invalid composer.json at ' . $composer_json_location . ': ' . $e->getMessage(),
                 );
             }
-            if (!$composer_json) {
-                throw new ConfigCreationException('Invalid composer.json at ' . $composer_json_location);
-            }
-
             if (!is_array($composer_json)) {
                 throw new ConfigCreationException('Invalid composer.json at ' . $composer_json_location);
             }
