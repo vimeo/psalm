@@ -37,6 +37,22 @@ final class FunctionCallTest extends TestCase
                     takesShape(["id" => 1, "name" => maybeName()]);
                 ',
             ],
+            'ignoredFalsableReturnInAnExtraEntryOfAnUnsealedShape' => [
+                'code' => '<?php
+                    /** @psalm-ignore-falsable-return */
+                    function maybeName(): string|false {
+                        return rand(0, 1) ? "a" : false;
+                    }
+
+                    /** @param array{id: int, ...<string, string>} $a */
+                    function takesShape(array $a): void {}
+
+                    takesShape(["id" => 1, "name" => maybeName()]);
+                ',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'containedEntriesOfAnUnsealedShape' => [
                 'code' => '<?php
                     /** @param array{id: int, ...<string, int>} $a */
@@ -6007,6 +6023,43 @@ final class FunctionCallTest extends TestCase
                     takesShape(["id" => 1, "child" => ["name" => 1, "age" => 2]]);
                 ',
                 'error_message' => 'with additional array shape fields (age) was provided',
+            ],
+            'parentTypeOfAnEntryDoesNotHideAnInvalidEntry' => [
+                'code' => '<?php
+                    class P {}
+                    final class C extends P {}
+
+                    /** @param array{a: int, b: C} $a */
+                    function takesShape(array $a): void {}
+
+                    function passesParent(P $p): void {
+                        takesShape(["a" => "str", "b" => $p]);
+                    }
+                ',
+                'error_message' => 'InvalidArgument',
+            ],
+            'parentTypeOfAnExtraEntryDoesNotHideAnInvalidEntry' => [
+                'code' => '<?php
+                    class P {}
+                    final class C extends P {}
+
+                    /** @param array{a: int, ...<string, C>} $a */
+                    function takesShape(array $a): void {}
+
+                    function passesParent(P $p): void {
+                        takesShape(["a" => "str", "x" => $p]);
+                    }
+                ',
+                'error_message' => 'InvalidArgument',
+            ],
+            'extraKeyOutsideTheFallbackKeyType' => [
+                'code' => '<?php
+                    /** @param array{a: int, ...<non-empty-string, int>} $a */
+                    function takesShape(array $a): void {}
+
+                    takesShape(["a" => 1, "" => 2]);
+                ',
+                'error_message' => 'InvalidArgument',
             ],
             'extraEntryOfASealedShape' => [
                 'code' => '<?php

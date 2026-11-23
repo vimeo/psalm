@@ -112,6 +112,7 @@ final class KeyedArrayComparator
                     $key_type,
                     $allow_interface_equality,
                     $atomic_comparison_result,
+                    false,
                 )) {
                     $all_types_contain = false;
                 }
@@ -153,6 +154,8 @@ final class KeyedArrayComparator
     /**
      * Compares a key or a value of the input array with the container's, and records the outcome in
      * $atomic_comparison_result.
+     *
+     * @param bool $input_may_be_parent_type false for a part that is one exact value (a literal key)
      */
     private static function isPartContainedBy(
         Codebase $codebase,
@@ -160,6 +163,7 @@ final class KeyedArrayComparator
         Union $container_part,
         bool $allow_interface_equality,
         ?TypeComparisonResult $atomic_comparison_result,
+        bool $input_may_be_parent_type = true,
     ): bool {
         $part_comparison = new TypeComparisonResult();
 
@@ -181,9 +185,10 @@ final class KeyedArrayComparator
             $atomic_comparison_result->to_string_cast = $atomic_comparison_result->to_string_cast === true
                 || $part_comparison->to_string_cast === true;
         } else {
-            $atomic_comparison_result->mergeFailedPart($part_comparison);
-
-            if (!$part_comparison->type_coerced_from_scalar && !$atomic_comparison_result->type_coerced) {
+            if ($input_may_be_parent_type
+                && !$part_comparison->type_coerced_from_scalar
+                && !$part_comparison->type_coerced
+            ) {
                 // a parent type of the container's was given
                 $inverse_part_comparison = new TypeComparisonResult();
 
@@ -198,9 +203,11 @@ final class KeyedArrayComparator
                 )
                     || $inverse_part_comparison->type_coerced_from_scalar
                 ) {
-                    $atomic_comparison_result->type_coerced = true;
+                    $part_comparison->type_coerced = true;
                 }
             }
+
+            $atomic_comparison_result->mergeFailedPart($part_comparison);
 
             if ($part_comparison->missing_shape_fields) {
                 $atomic_comparison_result->missing_shape_fields = $part_comparison->missing_shape_fields;
