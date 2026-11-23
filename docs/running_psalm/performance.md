@@ -36,8 +36,6 @@ Times are integer microseconds (`_us`), sizes integer bytes (`_bytes`).
 |`parser`|Files parsed, and statements reused instead of parsed, in all processes|
 |`taint`|Size of the taint graph|
 
-The page at https://psalm.dev/perf/ can also export a trace for https://ui.perfetto.dev.
-
 `schema` changes when a key is removed or changes its meaning.
 
 The names of stages and steps and the keys `taint`, `parser`, `peak_growth_bytes` and `storage` may change between releases.
