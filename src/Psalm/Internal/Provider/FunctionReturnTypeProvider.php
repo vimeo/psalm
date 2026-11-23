@@ -147,7 +147,6 @@ final class FunctionReturnTypeProvider
         $this->registerClass(GetParentClassReturnTypeProvider::class);
         $this->registerClass(HrtimeReturnTypeProvider::class);
         $this->registerClass(MbStrtolowerReturnTypeProvider::class);
-        $this->registerClass(StrtolowerReturnTypeProvider::class);
     }
 
     /**
