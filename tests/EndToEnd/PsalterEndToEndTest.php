@@ -134,6 +134,30 @@ final class PsalterEndToEndTest extends PsalmEndToEndTestCase
         ];
     }
 
+    public function testRefactorPrintsNoProgressBarOnAPipedStderr(): void
+    {
+        $this->runPsalmInit();
+        $psalmXml = file_get_contents(self::$tmpDir . '/psalm.xml');
+        $psalmXml = str_replace('<psalm', '<psalm runTaintAnalysis="false"', (string)$psalmXml);
+        file_put_contents(self::$tmpDir . '/psalm.xml', $psalmXml);
+        file_put_contents(
+            self::$tmpDir . '/src/Moves.php',
+            "<?php\n\nnamespace Ns;\n\nclass A\n{\n    public static function foo(): void\n    {\n    }\n}\n\n"
+            . "class B\n{\n}\n",
+        );
+
+        $process = self::newProcess(
+            [PHP_BINARY, $this->psalmRefactor, '--no-cache', '--move', 'Ns\A::foo', '--into', 'Ns\B'],
+            self::$tmpDir,
+            self::agentEnvVarsToUnset(),
+        );
+        $process->run();
+
+        $this->assertSame(0, $process->getExitCode(), $process->getOutput() . $process->getErrorOutput());
+        $this->assertStringContainsString('Scanning files', $process->getErrorOutput());
+        $this->assertDoesNotMatchRegularExpression('/\r(?!\n)/', $process->getErrorOutput());
+    }
+
     /**
      * @param list<string> $args
      */
