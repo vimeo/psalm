@@ -35,6 +35,7 @@ use Psalm\Issue\PossiblyNullReference;
 use Psalm\Issue\PropertyIssue;
 use Psalm\Issue\TooManyArguments;
 use Psalm\Issue\UndefinedFunction;
+use Psalm\Issue\UnusedBaselineEntry;
 use Psalm\Issue\VariableIssue;
 use Psalm\Tests\Config\Plugin\FileTypeSelfRegisteringPlugin;
 use Psalm\Tests\Config\Plugin\TestPluginIssue;
@@ -1641,7 +1642,8 @@ final class ConfigTest extends DeferredAnalyzerTestCase
 
             $issue_class = 'Psalm\\Issue\\' . $element->getAttribute('name');
 
-            if (!class_exists($issue_class)) {
+            // never instantiated: IssueBuffer::finish() reports it without a class or the config's filters
+            if (!class_exists($issue_class) || $issue_class === UnusedBaselineEntry::class) {
                 continue;
             }
 
@@ -1662,27 +1664,56 @@ final class ConfigTest extends DeferredAnalyzerTestCase
         $this->assertSame([], $mismatches);
     }
 
-    public function testAClassOfAMissingDependencyIssueCanBeNamed(): void
+    public function testAMissingDependencyIsSuppressedByTheNameOfTheDependency(): void
     {
-        $config = TestConfig::loadFromXML(
-            dirname(__DIR__, 2),
-            '<?xml version="1.0"?>
-            <psalm>
-                <projectFiles>
-                    <directory name="src" />
-                </projectFiles>
-                <issueHandlers>
-                    <MissingDependency>
-                        <errorLevel type="suppress">
-                            <referencedClass name="Bc\\Layer" />
-                        </errorLevel>
-                    </MissingDependency>
-                </issueHandlers>
-            </psalm>',
+        $this->expectNotToPerformAssertions();
+
+        $this->analyzeClassWithAMissingDependency('Not\\Currently\\Installed');
+    }
+
+    public function testAMissingDependencyIsNotSuppressedByTheNameOfTheClassDependingOnIt(): void
+    {
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessage('MissingDependency');
+
+        $this->analyzeClassWithAMissingDependency('Layer');
+    }
+
+    private function analyzeClassWithAMissingDependency(string $referenced_class): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__, 2),
+                '<?xml version="1.0"?>
+                <psalm>
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+                    <issueHandlers>
+                        <MissingDependency>
+                            <errorLevel type="suppress">
+                                <referencedClass name="' . $referenced_class . '" />
+                            </errorLevel>
+                        </MissingDependency>
+                        <UndefinedClass errorLevel="suppress" />
+                    </issueHandlers>
+                </psalm>',
+            ),
         );
 
-        $this->assertSame(Config::REPORT_SUPPRESS, $config->getReportingLevelForClass('MissingDependency', 'Bc\\Layer'));
-        $this->assertNull($config->getReportingLevelForClass('MissingDependency', 'Other'));
+        $file_path = (string) getcwd() . '/src/somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                class Layer extends Not\Currently\Installed {}
+
+                function f(): void {
+                    new Layer();
+                }',
+        );
+
+        $this->analyzeFile($file_path, new Context());
     }
 
     public function testEveryExtensionOfTheSchemaCanBeEnabled(): void
