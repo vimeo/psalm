@@ -2838,6 +2838,84 @@ final class ConditionalTest extends TestCase
                     }
                     strlen($a);',
             ],
+            'isIterableOnNonFinalClassIntersectsTraversable' => [
+                'code' => '<?php
+                    interface I {}
+
+                    function getThrowable(): Throwable {
+                        return new Exception();
+                    }
+
+                    /** @return I|string */
+                    function getIOrString() {
+                        return "";
+                    }
+
+                    $e = getThrowable();
+                    $iterable = is_iterable($e) ? $e : null;
+
+                    $f = getThrowable();
+                    $not_iterable = !is_iterable($f) ? $f : null;
+
+                    $i = getIOrString();
+                    $iterable_i = is_iterable($i) ? $i : null;',
+                'assertions' => [
+                    '$iterable===' => 'Throwable&Traversable|null',
+                    '$not_iterable===' => 'Throwable|null',
+                    '$iterable_i===' => 'I&Traversable|null',
+                ],
+            ],
+            'issetOnArrayAccessEnumKeepsEnum' => [
+                'code' => '<?php
+                    /** @implements ArrayAccess<string, int> */
+                    enum E implements ArrayAccess {
+                        case A;
+                        public function offsetExists(mixed $offset): bool { return true; }
+                        public function offsetGet(mixed $offset): int { return 1; }
+                        public function offsetSet(mixed $offset, mixed $value): void {}
+                        public function offsetUnset(mixed $offset): void {}
+                    }
+
+                    function getE(): E {
+                        return E::A;
+                    }
+
+                    $e = getE();
+                    $x = isset($e["x"]) ? $e : null;',
+                'assertions' => [
+                    '$x===' => 'E|null',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'newObjectMergedWithParamCanBeCountable' => [
+                'code' => '<?php
+                    class Foo {}
+
+                    function f(Foo $p, bool $b): void {
+                        $a = [new Foo()];
+                        if ($b) {
+                            $a = [$p];
+                        }
+
+                        if (!is_countable($a[0])) {}
+                    }',
+            ],
+            'docblockFinalClassCanBeExtended' => [
+                'code' => '<?php
+                    /** @final */
+                    class X {}
+
+                    function getX(): X {
+                        return new X();
+                    }
+
+                    $x = getX();
+                    $t = $x instanceof Traversable ? $x : null;',
+                'assertions' => [
+                    '$t===' => 'X&Traversable|null',
+                ],
+            ],
             'removeCallableString' => [
                 'code' => '<?php
                     $s = rand(0,1) ? "strlen" : [1];
@@ -8495,6 +8573,164 @@ final class ConditionalTest extends TestCase
                     $r = (check() && ($data = getData()) !== null) ? 1 : $data;',
                 // assigned only when check() is true, so possibly undefined
                 'error_message' => 'PossiblyUndefinedGlobalVariable',
+            ],
+            'isIterableOnFinalClass' => [
+                'code' => '<?php
+                    final class F {}
+
+                    function f(F $f): void {
+                        if (is_iterable($f)) {}
+                    }',
+                'error_message' => 'TypeDoesNotContainType',
+            ],
+            'isIterableOnClosure' => [
+                'code' => '<?php
+                    function f(Closure $f): void {
+                        if (is_iterable($f)) {}
+                    }',
+                'error_message' => 'TypeDoesNotContainType',
+            ],
+            'instanceofTraversableOnFinalClass' => [
+                'code' => '<?php
+                    final class F {}
+
+                    function f(F $f): void {
+                        if ($f instanceof Traversable) {}
+                    }',
+                'error_message' => 'TypeDoesNotContainType',
+            ],
+            'isCountableOnFinalClass' => [
+                'code' => '<?php
+                    final class F {}
+
+                    function f(F $f): void {
+                        if (is_countable($f)) {}
+                    }',
+                'error_message' => 'TypeDoesNotContainType',
+            ],
+            'isIterableOnFinalIntersectionMember' => [
+                'code' => '<?php
+                    interface I {}
+                    final class F implements I {}
+
+                    /** @param I&F $x */
+                    function f($x): void {
+                        if (is_iterable($x)) {}
+                    }',
+                'error_message' => 'DocblockTypeContradiction',
+            ],
+            'isIterableOnAnonymousClassInstance' => [
+                'code' => '<?php
+                    $x = new class {};
+                    if (is_iterable($x)) {}',
+                'error_message' => 'TypeDoesNotContainType',
+            ],
+            'isCountableOnCountableEnum' => [
+                'code' => '<?php
+                    enum E implements Countable {
+                        case A;
+                        public function count(): int { return 1; }
+                    }
+
+                    function f(E $e): void {
+                        if (is_countable($e)) {}
+                    }',
+                'error_message' => 'RedundantCondition',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'isIterableOnIteratorAggregateEnum' => [
+                'code' => '<?php
+                    /** @implements IteratorAggregate<int, int> */
+                    enum E implements IteratorAggregate {
+                        case A;
+                        public function getIterator(): Iterator { return new ArrayIterator([1]); }
+                    }
+
+                    function f(E $e): void {
+                        if (is_iterable($e)) {}
+                    }',
+                'error_message' => 'RedundantCondition',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'negatedInstanceofTraversableOnFinalClass' => [
+                'code' => '<?php
+                    final class H {}
+
+                    function f(H $h): void {
+                        if (!$h instanceof Traversable) {
+                            return;
+                        }
+                    }',
+                'error_message' => 'RedundantCondition - src' . DIRECTORY_SEPARATOR
+                    . 'somefile.php:5:30 - Type H for $h is never Traversable',
+            ],
+            'negatedIsCountableOnFinalClass' => [
+                'code' => '<?php
+                    final class H {}
+
+                    function f(H $h): void {
+                        if (!is_countable($h)) {
+                            return;
+                        }
+                    }',
+                'error_message' => 'RedundantCondition - src' . DIRECTORY_SEPARATOR
+                    . 'somefile.php:5:30 - Type H for $h is never countable',
+            ],
+            'negatedIsIterableOnFinalClass' => [
+                'code' => '<?php
+                    final class H {}
+
+                    function f(H $h): void {
+                        if (!is_iterable($h)) {
+                            return;
+                        }
+                    }',
+                'error_message' => 'RedundantCondition - src' . DIRECTORY_SEPARATOR
+                    . 'somefile.php:5:30 - Type H for $h is never iterable',
+            ],
+            'instanceofCountableOnEnum' => [
+                'code' => '<?php
+                    enum E {
+                        case A;
+                    }
+
+                    function f(E $e): void {
+                        if ($e instanceof Countable) {}
+                    }',
+                'error_message' => 'TypeDoesNotContainType - src' . DIRECTORY_SEPARATOR
+                    . 'somefile.php:7:29 - Type E for $e is never Countable',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'instanceofTraversableOnEnum' => [
+                'code' => '<?php
+                    enum E {
+                        case A;
+                    }
+
+                    function f(E $e): void {
+                        if ($e instanceof Traversable) {}
+                    }',
+                'error_message' => 'TypeDoesNotContainType - src' . DIRECTORY_SEPARATOR
+                    . 'somefile.php:7:29 - Type E for $e is never Traversable',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'isCountableOnEnum' => [
+                'code' => '<?php
+                    enum E {
+                        case A;
+                    }
+
+                    function f(E $e): void {
+                        if (is_countable($e)) {}
+                    }',
+                'error_message' => 'TypeDoesNotContainType - src' . DIRECTORY_SEPARATOR
+                    . 'somefile.php:7:29 - Type E for $e is never countable',
+                'error_levels' => [],
+                'php_version' => '8.1',
             ],
             'orWhoseLeftSideIsAConjunctionAndRightSideReassignsAVariableKeepsTheLeftNullable' => [
                 'code' => '<?php

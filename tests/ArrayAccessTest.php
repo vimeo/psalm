@@ -2390,6 +2390,117 @@ final class ArrayAccessTest extends TestCase
                     '$second===' => 'string',
                 ],
             ],
+            'destructureTraversableArrayAccessObjectUsesOffsetGet' => [
+                'code' => '<?php
+                    /**
+                     * @implements ArrayAccess<int, int>
+                     * @implements IteratorAggregate<int, string>
+                     */
+                    final class Bag implements ArrayAccess, IteratorAggregate {
+                        /** @param int $offset */
+                        public function offsetExists($offset): bool { return true; }
+                        /** @param int $offset */
+                        public function offsetGet($offset): int { return 1; }
+                        /**
+                         * @param ?int $offset
+                         * @param int $value
+                         */
+                        public function offsetSet($offset, $value): void {}
+                        /** @param int $offset */
+                        public function offsetUnset($offset): void {}
+                        /** @return ArrayIterator<int, string> */
+                        public function getIterator(): ArrayIterator { return new ArrayIterator(["a"]); }
+                    }
+
+                    [$x] = new Bag();',
+                'assertions' => [
+                    '$x===' => 'int',
+                ],
+                'ignored_issues' => ['MissingOverrideAttribute'],
+            ],
+            'destructureTraversableArrayAccessEnumUsesOffsetGet' => [
+                'code' => '<?php
+                    /**
+                     * @implements ArrayAccess<int, int>
+                     * @implements IteratorAggregate<int, string>
+                     */
+                    enum E implements ArrayAccess, IteratorAggregate {
+                        case A;
+                        public function offsetExists(mixed $offset): bool { return true; }
+                        public function offsetGet(mixed $offset): int { return 1; }
+                        public function offsetSet(mixed $offset, mixed $value): void {}
+                        public function offsetUnset(mixed $offset): void {}
+                        /** @return ArrayIterator<int, string> */
+                        public function getIterator(): ArrayIterator { return new ArrayIterator(["a"]); }
+                    }
+
+                    [$x] = E::A;',
+                'assertions' => [
+                    '$x===' => 'int',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'destructureArrayAccessObjectUsesDeclaredOffsetGetType' => [
+                'code' => '<?php
+                    /** @implements IteratorAggregate<int, string> */
+                    final class Bag implements ArrayAccess, IteratorAggregate {
+                        /** @param int $offset */
+                        public function offsetExists($offset): bool { return true; }
+                        /** @param int $offset */
+                        public function offsetGet($offset): int { return 1; }
+                        /**
+                         * @param ?int $offset
+                         * @param int $value
+                         */
+                        public function offsetSet($offset, $value): void {}
+                        /** @param int $offset */
+                        public function offsetUnset($offset): void {}
+                        /** @return ArrayIterator<int, string> */
+                        public function getIterator(): ArrayIterator { return new ArrayIterator(["a"]); }
+                    }
+
+                    [$x] = new Bag();',
+                'assertions' => [
+                    '$x===' => 'int',
+                ],
+                'ignored_issues' => ['MissingOverrideAttribute', 'MissingTemplateParam'],
+            ],
+            'destructureArrayAccessIntersectionUsesOffsetGet' => [
+                'code' => '<?php
+                    /** @return IteratorAggregate<int, string>&ArrayAccess<int, int> */
+                    function getBag(): IteratorAggregate&ArrayAccess {
+                        throw new RuntimeException();
+                    }
+
+                    [$x] = getBag();',
+                'assertions' => [
+                    '$x===' => 'int|null',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'destructureArrayAccessExpandsOffsetGetType' => [
+                'code' => '<?php
+                    /** @implements ArrayAccess<int, int> */
+                    final class Bag implements ArrayAccess {
+                        const VALUE = 1;
+                        public function offsetExists(mixed $offset): bool { return true; }
+                        /** @return self::VALUE */
+                        public function offsetGet(mixed $offset): int { return self::VALUE; }
+                        public function offsetSet(mixed $offset, mixed $value): void {}
+                        public function offsetUnset(mixed $offset): void {}
+                    }
+
+                    [$x] = new Bag();
+                    $y = (new Bag())->offsetGet(0);',
+                'assertions' => [
+                    '$x===' => '1',
+                    '$y===' => '1',
+                ],
+                'ignored_issues' => ['MissingOverrideAttribute'],
+                'php_version' => '8.0',
+            ],
             'destructureArrayAccessObjectOfSelf' => [
                 'code' => '<?php
                     /** @implements ArrayAccess<int, self> */
