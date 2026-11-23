@@ -2654,18 +2654,14 @@ final class Config
             }
         }
 
-        if (!$this->report_info && $reporting_level === self::REPORT_INFO) {
-            $reporting_level = self::REPORT_SUPPRESS;
-        }
-
         $parent_issue_type = self::getParentIssueType($issue_type);
 
         if ($parent_issue_type && $reporting_level === self::REPORT_ERROR) {
-            $parent_reporting_level = $this->getReportingLevelForFile($parent_issue_type, $e->getFilePath());
+            $reporting_level = $this->getReportingLevelForFile($parent_issue_type, $e->getFilePath());
+        }
 
-            if ($parent_reporting_level !== $reporting_level) {
-                return $parent_reporting_level;
-            }
+        if (!$this->report_info && $reporting_level === self::REPORT_INFO) {
+            $reporting_level = self::REPORT_SUPPRESS;
         }
 
         return $reporting_level;
