@@ -325,62 +325,36 @@ final class ConcatAnalyzer
                     $codebase->analyzer->incrementMixedCount($statements_analyzer->getFilePath());
                 }
 
-                if ($left_type->hasMixed()) {
-                    $arg_location = new CodeLocation($statements_analyzer->getSource(), $left);
+                [$side, $operand, $operand_type] = $left_type->hasMixed()
+                    ? ['Left', $left, $left_type]
+                    : ['Right', $right, $right_type];
 
-                    $origin_locations = [];
+                $arg_location = new CodeLocation($statements_analyzer->getSource(), $operand);
+                $origin_locations = [];
 
-                    if ($statements_analyzer->variable_use_graph) {
-                        foreach ($left_type->parent_nodes as $parent_node) {
-                            $origin_locations = [
-                                ...$origin_locations,
-                                ...$statements_analyzer->variable_use_graph->getOriginLocations($parent_node),
-                            ];
-                        }
+                if ($statements_analyzer->variable_use_graph) {
+                    foreach ($operand_type->parent_nodes as $parent_node) {
+                        $origin_locations = [
+                            ...$origin_locations,
+                            ...$statements_analyzer->variable_use_graph->getOriginLocations($parent_node),
+                        ];
                     }
-
-                    $origin_location = count($origin_locations) === 1 ? reset($origin_locations) : null;
-
-                    if ($origin_location && $origin_location->getHash() === $arg_location->getHash()) {
-                        $origin_location = null;
-                    }
-
-                    IssueBuffer::maybeAdd(
-                        new MixedOperand(
-                            'Left operand cannot be mixed',
-                            $arg_location,
-                            $origin_location,
-                        ),
-                        $statements_analyzer->getSuppressedIssues(),
-                    );
-                } else {
-                    $arg_location = new CodeLocation($statements_analyzer->getSource(), $right);
-                    $origin_locations = [];
-
-                    if ($statements_analyzer->variable_use_graph) {
-                        foreach ($right_type->parent_nodes as $parent_node) {
-                            $origin_locations = [
-                                ...$origin_locations,
-                                ...$statements_analyzer->variable_use_graph->getOriginLocations($parent_node),
-                            ];
-                        }
-                    }
-
-                    $origin_location = count($origin_locations) === 1 ? reset($origin_locations) : null;
-
-                    if ($origin_location && $origin_location->getHash() === $arg_location->getHash()) {
-                        $origin_location = null;
-                    }
-
-                    IssueBuffer::maybeAdd(
-                        new MixedOperand(
-                            'Right operand cannot be mixed',
-                            $arg_location,
-                            $origin_location,
-                        ),
-                        $statements_analyzer->getSuppressedIssues(),
-                    );
                 }
+
+                $origin_location = count($origin_locations) === 1 ? reset($origin_locations) : null;
+
+                if ($origin_location && $origin_location->getHash() === $arg_location->getHash()) {
+                    $origin_location = null;
+                }
+
+                IssueBuffer::maybeAdd(
+                    new MixedOperand(
+                        $side . ' operand cannot be mixed',
+                        $arg_location,
+                        $origin_location,
+                    ),
+                    $statements_analyzer->getSuppressedIssues(),
+                );
 
                 $result_type = self::getResultTypeFromKnownOperand($left_type->hasMixed() ? $right_type : $left_type)
                     ?? $result_type;

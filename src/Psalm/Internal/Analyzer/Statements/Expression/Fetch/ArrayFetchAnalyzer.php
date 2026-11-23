@@ -1980,6 +1980,16 @@ final class ArrayFetchAnalyzer
         $offset_type_parts = array_values($offset_type->getAtomicTypes());
 
         foreach ($offset_type_parts as $offset_type_part) {
+            // `Foo::class` is the class-string of Foo
+            $is_literal = $offset_type_part instanceof TLiteralClassString;
+
+            if ($offset_type_part instanceof TLiteralClassString) {
+                $offset_type_part = new TClassString(
+                    $offset_type_part->value,
+                    new TNamedObject($offset_type_part->value),
+                );
+            }
+
             if ($offset_type_part instanceof TClassString) {
                 if ($offset_type_part instanceof TTemplateParamClass) {
                     $template_result_get = new TemplateResult(
@@ -2039,7 +2049,11 @@ final class ArrayFetchAnalyzer
                     $codebase,
                 );
 
-                if ($replacement_type) {
+                // what the map holds under `Foo::class` is a Foo: writing one leaves the map as it is
+                if ($replacement_type
+                    && !($is_literal
+                        && UnionTypeComparator::isContainedBy($codebase, $replacement_type, $expected_value_param_get))
+                ) {
                     $replacement_type = TemplateInferredTypeReplacer::replace(
                         $replacement_type,
                         $template_result_set,
