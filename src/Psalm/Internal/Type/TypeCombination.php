@@ -42,6 +42,20 @@ final class TypeCombination
     /** @var array<string, non-empty-list<Union>> */
     public array $object_type_params = [];
 
+    /** @var array<string, array<int, TypeArgumentProjection>> */
+    public array $object_projections = [];
+
+    /**
+     * How many generic objects were combined under a key, and for each offset how many of them left the argument out:
+     * an argument is left out in the union only when every one of them left it out
+     *
+     * @var array<string, int>
+     */
+    public array $object_member_counts = [];
+
+    /** @var array<string, array<int, int>> */
+    public array $object_omitted_counts = [];
+
     /** @var array<string, bool> */
     public array $object_static = [];
 
@@ -184,5 +198,27 @@ final class TypeCombination
             }
         }
         return false;
+    }
+
+    /**
+     * The projections of the generic object combined under a key: an argument left out stays so only when every
+     * object combined under the key left it out
+     *
+     * @return array<int, TypeArgumentProjection>
+     * @psalm-mutation-free
+     */
+    public function getProjections(string $key): array
+    {
+        $projections = $this->object_projections[$key] ?? [];
+
+        foreach ($projections as $offset => $projection) {
+            if ($projection === TypeArgumentProjection::Omitted
+                && ($this->object_omitted_counts[$key][$offset] ?? 0) !== ($this->object_member_counts[$key] ?? 0)
+            ) {
+                unset($projections[$offset]);
+            }
+        }
+
+        return $projections;
     }
 }
