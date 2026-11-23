@@ -55,14 +55,24 @@ const INCLUDES = [
 const EXCLUDES = [
     // php-zmq does not build on PHP 8.5 (it calls zend_exception_get_default(), removed in 8.5).
     '8.5' => ['zmq'],
-    // php-zmq still calls zend_exception_get_default(), and grpc 1.85.4 doesn't compile against 8.6
-    '8.6' => ['zmq', 'grpc'],
+    // these don't build on PHP 8.6 yet: it removed zval_dtor(), INI_STR(), zend_exception_get_default(), ...;
+    // swoole requires PHP 8.5 at most
+    '8.6' => ['zmq', 'amqp', 'apcu', 'ds', 'grpc', 'memcached', 'redis', 'swoole', 'zookeeper'],
 ];
 
 /** Extension versions pinned for specific versions, by base extension name. */
 const PINS = [
     // grpc 1.85.0 needs GCC 10, newer than that of the Alpine 3.10 base image
     '7.1' => ['grpc' => '1.84.0'],
+];
+
+/**
+ * Extensions installed from a GitHub commit for specific versions, until a release supports them: the
+ * install-php-extensions source of each, by base extension name.
+ */
+const GIT_INSTALLS = [
+    // igbinary 3.2.17RC1 still calls zval_dtor(), which PHP 8.6 removed
+    '8.6' => ['igbinary' => 'igbinary/igbinary@2b1f5d62e3037b07c2a46499ac32091cdb41fb40'],
 ];
 
 const PIE_VERSION = '1.5.3';
@@ -392,9 +402,12 @@ function resolveComponents(string $version, array $extensions, array $pieInstall
     ];
     $versions = [];
     foreach ($extensions as $extension) {
-        $versions[$extension] = isset($pieInstalls[$extension])
-            ? 'pie@' . PIE_PACKAGES[explode('-', $extension, 2)[0]]['package'] . ':' . $pieInstalls[$extension]
-            : extensionVersion($extension, $phpBaseDigest);
+        $gitInstall = GIT_INSTALLS[$version][explode('-', $extension, 2)[0]] ?? null;
+        $versions[$extension] = match (true) {
+            $gitInstall !== null => 'git@' . $gitInstall,
+            isset($pieInstalls[$extension]) => 'pie@' . PIE_PACKAGES[explode('-', $extension, 2)[0]]['package'] . ':' . $pieInstalls[$extension],
+            default => extensionVersion($extension, $phpBaseDigest),
+        };
     }
     ksort($versions);
     echo "Resolved versions for PHP $version:\n";
@@ -600,7 +613,10 @@ function generateDockerfile(string $version, array $extensions, array $pieInstal
     $installerUrl = INSTALLER_URL;
     $baseImage = phpBaseImage($version);
 
-    $extensionList = implode(' ', array_diff($extensions, array_keys($pieInstalls)));
+    $extensionList = implode(' ', array_map(
+        static fn(string $extension): string => GIT_INSTALLS[$version][explode('-', $extension, 2)[0]] ?? $extension,
+        array_diff($extensions, array_keys($pieInstalls)),
+    ));
     // The base images of a version with no release come without pecl, and install-php-extensions
     // refuses a version it doesn't know yet: install PEAR, and let it treat the version like the
     // ones it supports (else it falls back to pickle, which doesn't run on the new version either).
@@ -629,6 +645,8 @@ function generateDockerfile(string $version, array $extensions, array $pieInstal
     $ownLayerStep = pieStep($ownLayerInstalls, $cflags);
     // after install-php-extensions, which installs igbinary for the memcached and redis serializers
     $pieStep = pieStep(array_diff_key($pieInstalls, $ownLayerInstalls), $cflags);
+    // PHP 8.5 builds opcache in and always loads it
+    $opcacheStep = version_compare($version, '8.5', '<') ? "\nRUN echo 'zend_extension=opcache' > /usr/local/etc/php/php.ini" : '';
 
     return <<<DOCKERFILE
         # Generated on the fly by bin/stubs/build_docker.php - do not commit.
@@ -644,8 +662,7 @@ function generateDockerfile(string $version, array $extensions, array $pieInstal
         ARG CACHEBUST
         RUN echo "cache key: \${CACHEBUST:-none}" && \\
             {$packageStep}{$cflags}install-php-extensions $extensionList
-        {$pieStep}
-        RUN echo 'zend_extension=opcache' > /usr/local/etc/php/php.ini
+        {$pieStep}{$opcacheStep}
         DOCKERFILE;
 }
 
