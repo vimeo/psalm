@@ -33,7 +33,7 @@ Times are integer microseconds (`_us`), sizes integer bytes (`_bytes`).
 |`counts`|Class-likes, functions, methods, parsed files, parser cache hits and misses|
 |`taint`|Size of the taint graph|
 
-The file is also a Trace Event Format file (`traceEvents`: the stages and the files, in one lane per process): open it in https://ui.perfetto.dev or https://www.speedscope.app to see the stages, the steps, the phases of the pools, and what each worker did and when it waited.
+The file is also a Trace Event Format file (`traceEvents`: lanes for the stages, steps and pools of the main process, and the files and the work of each worker): open it in https://ui.perfetto.dev or https://www.speedscope.app to see the stages, the steps, the phases of the pools, and what each worker did and when it waited.
 
 `schema` changes when a key is removed or changes its meaning.
 
