@@ -484,6 +484,24 @@ final class MatchTest extends TestCase
                 'error_levels' => [],
                 'php_version' => '8.0',
             ],
+            'falseComparedToACallOutsideAConditionReportsTheCall' => [
+                'code' => '<?php
+                    function f(int $x): void {
+                        $ok = false === is_int($x);
+                    }',
+                'error_message' => 'RedundantCondition',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'falseComparedToAnImpossibleCallOutsideAConditionReportsTheCall' => [
+                'code' => '<?php
+                    function g(string $x): void {
+                        $ok = false === is_int($x);
+                    }',
+                'error_message' => 'TypeDoesNotContainType',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
             'matchFalseImpossibleArmIsReported' => [
                 'code' => '<?php
                     function f(int $x): int {

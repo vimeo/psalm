@@ -135,7 +135,8 @@ final class BinaryOpAnalyzer
             }
         } else {
             $was_inside_negation = $context->inside_negation;
-            $context->inside_negation = self::isCallComparedToFalse($stmt, $stmt->left, $stmt->right)
+            $context->inside_negation = $context->inside_conditional
+                && self::isCallComparedToFalse($stmt, $stmt->left, $stmt->right)
                 ? !$was_inside_negation
                 : $was_inside_negation;
 
@@ -154,7 +155,8 @@ final class BinaryOpAnalyzer
             }
         } else {
             $was_inside_negation = $context->inside_negation;
-            $context->inside_negation = self::isCallComparedToFalse($stmt, $stmt->right, $stmt->left)
+            $context->inside_negation = $context->inside_conditional
+                && self::isCallComparedToFalse($stmt, $stmt->right, $stmt->left)
                 ? !$was_inside_negation
                 : $was_inside_negation;
 
