@@ -129,7 +129,7 @@ final class ClassConstAnalyzer
     /**
      * @psalm-pure
      */
-    private static function hasDeclaredType(?ClassConstantStorage $constant): bool
+    public static function hasDeclaredType(?ClassConstantStorage $constant): bool
     {
         return $constant !== null
             && ($constant->signature_type !== null || $constant->type?->from_docblock === true);

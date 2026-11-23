@@ -340,6 +340,77 @@ final class ConstantTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.3',
             ],
+            'narrowedStaticConstantKeepsItsNativeTypeAfterAnEarlierCondition' => [
+                'code' => '<?php
+                    class Native {
+                        public const int SIZE = 10;
+
+                        public function b(): int {
+                            if (static::SIZE === 20) {
+                                return 1;
+                            }
+
+                            if (static::SIZE === 30) {
+                                return 3;
+                            }
+
+                            return 0;
+                        }
+                    }
+
+                    class NativeChild extends Native {
+                        public const int SIZE = 30;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
+            'narrowedStaticConstantKeepsItsDocblockTypeAfterAnEarlierCondition' => [
+                'code' => '<?php
+                    class Documented {
+                        /** @var int */
+                        public const SIZE = 10;
+
+                        public function b(): int {
+                            if (static::SIZE === 20) {
+                                return 1;
+                            }
+
+                            if (static::SIZE === 30) {
+                                return 3;
+                            }
+
+                            return 0;
+                        }
+                    }
+
+                    class DocumentedChild extends Documented {
+                        public const SIZE = 30;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.2',
+            ],
+            'narrowedStaticConstantHasItsDeclaredTypeAfterAnEarlierCondition' => [
+                'code' => '<?php
+                    class Native {
+                        public const int SIZE = 10;
+
+                        public function b(): int {
+                            if (static::SIZE === 20) {
+                                return 1;
+                            }
+
+                            $size = static::SIZE;
+                            /** @psalm-check-type-exact $size = int */;
+
+                            return $size;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
             'staticConstantInATraitAllowsTheValueOfASubclass' => [
                 'code' => '<?php
                     trait T {

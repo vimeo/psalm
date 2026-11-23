@@ -13,6 +13,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\Assignment\ArrayAssignmentAnal
 use Psalm\Internal\Analyzer\Statements\Expression\BinaryOp\CoalesceAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\ClassTemplateParamCollector;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodCallReturnTypeFetcher;
+use Psalm\Internal\Analyzer\Statements\Expression\ClassConstAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ConstFetchAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
@@ -1264,8 +1265,10 @@ class Reconciler
     ): ?Union {
         [$fq_class_name, $const_name] = explode('::', $key);
 
+        $is_static = strtolower($fq_class_name) === 'static';
+
         // the class of `static::NAME` is the one the code is in, as for a static property
-        if (strtolower($fq_class_name) === 'static') {
+        if ($is_static) {
             $fq_class_name = $statements_analyzer?->getFQCLN() ?? $fq_class_name;
         }
 
@@ -1273,12 +1276,30 @@ class Reconciler
             return null;
         }
 
-        return $codebase->classlikes->getClassConstantType(
+        $class_storage = $codebase->classlike_storage_provider->get($fq_class_name);
+        $constant_storage = $class_storage->constants[$const_name] ?? null;
+
+        // as for the fetch: a subclass may give `static::NAME` another value, of the type the constant declares
+        $late_static_binding = $is_static && !$class_storage->final && !$constant_storage?->final;
+
+        $type = $codebase->classlikes->getClassConstantType(
             $fq_class_name,
             $const_name,
             ReflectionProperty::IS_PRIVATE,
             null,
+            [],
+            $late_static_binding,
         );
+
+        if ($late_static_binding
+            && $type !== null
+            && !$type->from_docblock
+            && !ClassConstAnalyzer::hasDeclaredType($constant_storage)
+        ) {
+            return null;
+        }
+
+        return $type;
     }
 
     /**
