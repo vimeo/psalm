@@ -111,10 +111,11 @@ final class CastAnalyzer
                     }
                 }
 
-                $type = self::castIntAttempt(
+                $type = self::castNumericAttempt(
                     $statements_analyzer,
                     TypeExpander::expandTemplateKeyOfAndValueOf($statements_analyzer->getCodebase(), $maybe_type),
                     $stmt->expr,
+                    'int',
                     true,
                 );
             } else {
@@ -138,10 +139,11 @@ final class CastAnalyzer
                     self::handleRedundantCast($maybe_type, $statements_analyzer, $stmt);
                 }
 
-                $type = self::castFloatAttempt(
+                $type = self::castNumericAttempt(
                     $statements_analyzer,
                     TypeExpander::expandTemplateKeyOfAndValueOf($statements_analyzer->getCodebase(), $maybe_type),
                     $stmt->expr,
+                    'float',
                     true,
                 );
             } else {
@@ -363,17 +365,24 @@ final class CastAnalyzer
         );
     }
 
-    public static function castIntAttempt(
+    /**
+     * @param 'int'|'float' $target
+     */
+    public static function castNumericAttempt(
         StatementsAnalyzer $statements_analyzer,
         Union $stmt_type,
         PhpParser\Node\Expr $stmt,
+        string $target,
         bool $explicit_cast = false,
     ): Union {
         $codebase = $statements_analyzer->getCodebase();
 
+        $is_int = $target === 'int';
+        $numeric_type = $is_int ? new TInt() : new TFloat();
+
         $risky_cast = [];
         $invalid_casts = [];
-        $valid_ints = [];
+        $valid_numbers = [];
         $castable_types = [];
 
         // a bare class-template type variable stands for the shape inferred at
@@ -382,206 +391,24 @@ final class CastAnalyzer
 
         $atomic_types = $stmt_type->getAtomicTypes();
 
-        $parent_nodes = [];
-
-        if ($statements_analyzer->data_flow_graph) {
-            $parent_nodes = $stmt_type->parent_nodes;
-        }
-
         while ($atomic_types) {
             $atomic_type = array_pop($atomic_types);
 
-            if ($atomic_type instanceof TInt) {
-                $valid_ints[] = $atomic_type;
+            if ($is_int ? $atomic_type instanceof TInt : $atomic_type instanceof TFloat) {
+                $valid_numbers[] = $atomic_type;
 
                 continue;
             }
 
+            // from here on, a TFloat is cast to int and a TInt to float
             if ($atomic_type instanceof TFloat) {
                 $int = $atomic_type instanceof TLiteralFloat ? LiteralCast::toInt($atomic_type->value) : null;
 
                 if ($int === null) {
-                    $castable_types[] = new TInt();
+                    $castable_types[] = $numeric_type;
                 } else {
-                    $valid_ints[] = new TLiteralInt($int);
+                    $valid_numbers[] = new TLiteralInt($int);
                 }
-
-                continue;
-            }
-
-            if ($atomic_type instanceof TString) {
-                if ($atomic_type instanceof TLiteralString) {
-                    $valid_ints[] = new TLiteralInt((int) $atomic_type->value);
-                } elseif ($atomic_type instanceof TNumericString) {
-                    $castable_types[] = new TInt();
-                } else {
-                    // any normal string is technically $valid_int[] = new TLiteralInt(0);
-                    // however we cannot be certain that it's not inferred, therefore less strict
-                    $castable_types[] = new TInt();
-                }
-
-                continue;
-            }
-
-            if ($atomic_type instanceof TNull || $atomic_type instanceof TFalse) {
-                $valid_ints[] = new TLiteralInt(0);
-                continue;
-            }
-
-            if ($atomic_type instanceof TTrue) {
-                $valid_ints[] = new TLiteralInt(1);
-                continue;
-            }
-
-            if ($atomic_type instanceof TBool) {
-                // do NOT use TIntRange here, as it will cause invalid behavior, e.g. bitwiseAssignment
-                $valid_ints[] = new TLiteralInt(0);
-                $valid_ints[] = new TLiteralInt(1);
-                continue;
-            }
-
-            // could be invalid, but allow it, as it is allowed for TString below too
-            if ($atomic_type instanceof TMixed
-                || $atomic_type instanceof TClosedResource
-                || $atomic_type instanceof TResource
-                || $atomic_type instanceof Scalar
-            ) {
-                $castable_types[] = new TInt();
-
-                continue;
-            }
-
-            if ($atomic_type instanceof TNamedObject) {
-                $intersection_types = [$atomic_type];
-
-                if ($atomic_type->extra_types) {
-                    $intersection_types = [...$intersection_types, ...$atomic_type->extra_types];
-                }
-
-                foreach ($intersection_types as $intersection_type) {
-                    if (!$intersection_type instanceof TNamedObject) {
-                        continue;
-                    }
-
-                    // prevent "Could not get class storage for mixed"
-                    if (!$codebase->classExists($intersection_type->value)) {
-                        continue;
-                    }
-
-                    foreach (self::PSEUDO_CASTABLE_CLASSES as $pseudo_castable_class) {
-                        if (strtolower($intersection_type->value) === strtolower($pseudo_castable_class)
-                            || $codebase->classExtends(
-                                $intersection_type->value,
-                                $pseudo_castable_class,
-                            )
-                        ) {
-                            $castable_types[] = new TInt();
-                            continue 3;
-                        }
-                    }
-                }
-            }
-
-            if ($atomic_type instanceof TNonEmptyArray
-                || ($atomic_type instanceof TKeyedArray && $atomic_type->isNonEmpty())
-            ) {
-                $risky_cast[] = $atomic_type->getId();
-
-                $valid_ints[] = new TLiteralInt(1);
-
-                continue;
-            }
-
-            if ($atomic_type instanceof TArray
-                || $atomic_type instanceof TKeyedArray
-            ) {
-                // if type is not specific, it can be both 0 or 1, depending on whether the array has data or not
-                // welcome to off-by-one hell if that happens :-)
-                $risky_cast[] = $atomic_type->getId();
-
-                $valid_ints[] = new TLiteralInt(0);
-                $valid_ints[] = new TLiteralInt(1);
-
-                continue;
-            }
-
-            if ($atomic_type instanceof TTemplateParam) {
-                $atomic_types = array_merge($atomic_types, $atomic_type->as->getAtomicTypes());
-
-                continue;
-            }
-
-            // always 1 for "error" cases
-            $valid_ints[] = new TLiteralInt(1);
-
-            $invalid_casts[] = $atomic_type->getId();
-        }
-
-        if ($invalid_casts) {
-            IssueBuffer::maybeAdd(
-                new InvalidCast(
-                    $invalid_casts[0] . ' cannot be cast to int',
-                    new CodeLocation($statements_analyzer->getSource(), $stmt),
-                ),
-                $statements_analyzer->getSuppressedIssues(),
-            );
-        } elseif ($risky_cast) {
-            IssueBuffer::maybeAdd(
-                new RiskyCast(
-                    'Casting ' . $risky_cast[0] . ' to int has possibly unintended value of 0/1',
-                    new CodeLocation($statements_analyzer->getSource(), $stmt),
-                ),
-                $statements_analyzer->getSuppressedIssues(),
-            );
-        } elseif ($explicit_cast && !$castable_types) {
-            // todo: emit error here
-        }
-
-        $valid_types = [...$valid_ints, ...$castable_types];
-
-        if (!$valid_types) {
-            $int_type = Type::getInt();
-        } else {
-            $int_type = TypeCombiner::combine(
-                $valid_types,
-                $codebase,
-            );
-        }
-
-        return self::stripCastTaints(
-            $statements_analyzer,
-            $int_type,
-            $stmt,
-            $parent_nodes,
-            'int',
-            $stmt_type,
-        );
-    }
-
-    public static function castFloatAttempt(
-        StatementsAnalyzer $statements_analyzer,
-        Union $stmt_type,
-        PhpParser\Node\Expr $stmt,
-        bool $explicit_cast = false,
-    ): Union {
-        $codebase = $statements_analyzer->getCodebase();
-
-        $risky_cast = [];
-        $invalid_casts = [];
-        $valid_floats = [];
-        $castable_types = [];
-
-        // a bare class-template type variable stands for the shape inferred at
-        // its construction site; that shape is what is being cast
-        $stmt_type = TypeVariableResolver::resolveTopLevel($stmt_type, $codebase);
-
-        $atomic_types = $stmt_type->getAtomicTypes();
-
-        while ($atomic_types) {
-            $atomic_type = array_pop($atomic_types);
-
-            if ($atomic_type instanceof TFloat) {
-                $valid_floats[] = $atomic_type;
 
                 continue;
             }
@@ -592,7 +419,7 @@ final class CastAnalyzer
                 && ($atomic_type->max_bound - $atomic_type->min_bound) < 500
             ) {
                 foreach (range($atomic_type->min_bound, $atomic_type->max_bound) as $literal_int_value) {
-                    $valid_floats[] = new TLiteralFloat((float) $literal_int_value);
+                    $valid_numbers[] = new TLiteralFloat((float) $literal_int_value);
                 }
 
                 continue;
@@ -600,9 +427,9 @@ final class CastAnalyzer
 
             if ($atomic_type instanceof TInt) {
                 if ($atomic_type instanceof TLiteralInt) {
-                    $valid_floats[] = new TLiteralFloat((float) $atomic_type->value);
+                    $valid_numbers[] = new TLiteralFloat((float) $atomic_type->value);
                 } else {
-                    $castable_types[] = new TFloat();
+                    $castable_types[] = $numeric_type;
                 }
 
                 continue;
@@ -610,30 +437,30 @@ final class CastAnalyzer
 
             if ($atomic_type instanceof TString) {
                 if ($atomic_type instanceof TLiteralString) {
-                    $valid_floats[] = new TLiteralFloat((float) $atomic_type->value);
+                    $valid_numbers[] = self::getNumericLiteral($atomic_type->value, $is_int);
                 } else {
-                    // a numeric string can be any float, and any other string is technically
-                    // $valid_floats[] = new TLiteralFloat(0.0);
+                    // a numeric string can be any number, and any other string is technically 0,
                     // however we cannot be certain that it's not inferred, therefore less strict
-                    $castable_types[] = new TFloat();
+                    $castable_types[] = $numeric_type;
                 }
 
                 continue;
             }
 
             if ($atomic_type instanceof TNull || $atomic_type instanceof TFalse) {
-                $valid_floats[] = new TLiteralFloat(0.0);
+                $valid_numbers[] = self::getNumericLiteral(0, $is_int);
                 continue;
             }
 
             if ($atomic_type instanceof TTrue) {
-                $valid_floats[] = new TLiteralFloat(1.0);
+                $valid_numbers[] = self::getNumericLiteral(1, $is_int);
                 continue;
             }
 
             if ($atomic_type instanceof TBool) {
-                $valid_floats[] = new TLiteralFloat(0.0);
-                $valid_floats[] = new TLiteralFloat(1.0);
+                // do NOT use TIntRange here, as it will cause invalid behavior, e.g. bitwiseAssignment
+                $valid_numbers[] = self::getNumericLiteral(0, $is_int);
+                $valid_numbers[] = self::getNumericLiteral(1, $is_int);
                 continue;
             }
 
@@ -643,7 +470,7 @@ final class CastAnalyzer
                 || $atomic_type instanceof TResource
                 || $atomic_type instanceof Scalar
             ) {
-                $castable_types[] = new TFloat();
+                $castable_types[] = $numeric_type;
 
                 continue;
             }
@@ -666,7 +493,7 @@ final class CastAnalyzer
                                 $pseudo_castable_class,
                             )
                         ) {
-                            $castable_types[] = new TFloat();
+                            $castable_types[] = $numeric_type;
                             continue 3;
                         }
                     }
@@ -678,7 +505,7 @@ final class CastAnalyzer
             ) {
                 $risky_cast[] = $atomic_type->getId();
 
-                $valid_floats[] = new TLiteralFloat(1.0);
+                $valid_numbers[] = self::getNumericLiteral(1, $is_int);
 
                 continue;
             }
@@ -690,8 +517,8 @@ final class CastAnalyzer
                 // welcome to off-by-one hell if that happens :-)
                 $risky_cast[] = $atomic_type->getId();
 
-                $valid_floats[] = new TLiteralFloat(0.0);
-                $valid_floats[] = new TLiteralFloat(1.0);
+                $valid_numbers[] = self::getNumericLiteral(0, $is_int);
+                $valid_numbers[] = self::getNumericLiteral(1, $is_int);
 
                 continue;
             }
@@ -702,8 +529,8 @@ final class CastAnalyzer
                 continue;
             }
 
-            // always 1.0 for "error" cases
-            $valid_floats[] = new TLiteralFloat(1.0);
+            // always 1 for "error" cases
+            $valid_numbers[] = self::getNumericLiteral(1, $is_int);
 
             $invalid_casts[] = $atomic_type->getId();
         }
@@ -711,7 +538,7 @@ final class CastAnalyzer
         if ($invalid_casts) {
             IssueBuffer::maybeAdd(
                 new InvalidCast(
-                    $invalid_casts[0] . ' cannot be cast to float',
+                    $invalid_casts[0] . ' cannot be cast to ' . $target,
                     new CodeLocation($statements_analyzer->getSource(), $stmt),
                 ),
                 $statements_analyzer->getSuppressedIssues(),
@@ -719,7 +546,8 @@ final class CastAnalyzer
         } elseif ($risky_cast) {
             IssueBuffer::maybeAdd(
                 new RiskyCast(
-                    'Casting ' . $risky_cast[0] . ' to float has possibly unintended value of 0.0/1.0',
+                    'Casting ' . $risky_cast[0] . ' to ' . $target . ' has possibly unintended value of '
+                        . ($is_int ? '0/1' : '0.0/1.0'),
                     new CodeLocation($statements_analyzer->getSource(), $stmt),
                 ),
                 $statements_analyzer->getSuppressedIssues(),
@@ -728,25 +556,22 @@ final class CastAnalyzer
             // todo: emit error here
         }
 
-        $valid_types = [...$valid_floats, ...$castable_types];
-
-        if (!$valid_types) {
-            $float_type = Type::getFloat();
-        } else {
-            $float_type = TypeCombiner::combine(
-                $valid_types,
-                $codebase,
-            );
-        }
-
         return self::stripCastTaints(
             $statements_analyzer,
-            $float_type,
+            TypeCombiner::combine([...$valid_numbers, ...$castable_types] ?: [$numeric_type], $codebase),
             $stmt,
             $stmt_type->parent_nodes,
-            'float',
+            $target,
             $stmt_type,
         );
+    }
+
+    /**
+     * @psalm-pure
+     */
+    private static function getNumericLiteral(int|string $value, bool $is_int): TLiteralInt|TLiteralFloat
+    {
+        return $is_int ? new TLiteralInt((int) $value) : new TLiteralFloat((float) $value);
     }
 
     /**
