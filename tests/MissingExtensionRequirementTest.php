@@ -101,6 +101,15 @@ final class MissingExtensionRequirementTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.5',
             ],
+            'functionOfACoreExtensionBeforeItMovedToAnother' => [
+                'code' => '<?php
+                    function f(): int {
+                        return random_int(1, 2) + mt_rand();
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'declaredExtensions' => [
                 'code' => '<?php
                     function f(string $s): string {
@@ -250,6 +259,15 @@ final class MissingExtensionRequirementTest extends TestCase
                         return mb_strlen($s);
                     }',
                 'error_message' => 'MissingExtensionRequirement - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:32',
+            ],
+            'extensionTheStubImageOfTheVersionDoesntBuild' => [
+                'code' => '<?php
+                    function f(): Redis {
+                        return new Redis();
+                    }',
+                'error_message' => 'Redis is part of the ext-redis extension',
+                'error_levels' => [],
+                'php_version' => '8.6',
             ],
             'composerNameOfOpcache' => [
                 'code' => '<?php
