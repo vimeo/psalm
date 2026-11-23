@@ -24,6 +24,64 @@ final class FunctionCallTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'strtolowerOfStringLiteralsIsTheLoweredLiterals' => [
+                'code' => '<?php
+                    /** @return \'Interface\'|\'Trait\'|\'Enum\'|\'Class\' */
+                    function kind(): string {
+                        return \'Class\';
+                    }
+
+                    /** @param \'interface\'|\'trait\'|\'enum\'|\'class\' $kind */
+                    function check(string $kind): void {}
+
+                    check(strtolower(kind()));
+                    check(mb_strtolower(kind()));
+
+                    $literal = strtolower("ABC");
+                    $multibyte = mb_strtolower("ÄBC");
+                    $other = strtolower(rand() ? "ABC" : (string) rand());
+                    $encoding = mb_strtolower("ABC", "UTF-8");',
+                'assertions' => [
+                    '$literal===' => '\'abc\'',
+                    '$multibyte===' => '\'äbc\'',
+                    '$other===' => 'non-empty-lowercase-string',
+                    '$encoding===' => 'non-empty-string',
+                ],
+            ],
+            'pathinfoWithAllElementsReturnsTheArray' => [
+                'code' => '<?php
+                    /** @param non-empty-string $path */
+                    function f(string $path, int $flags): void {
+                        $all = pathinfo($path, PATHINFO_ALL);
+                        $default = pathinfo($path);
+                        $mask = pathinfo($path, 15);
+                        $extension = pathinfo($path, PATHINFO_EXTENSION);
+                        $unknown = pathinfo($path, $flags);
+
+                        /** @psalm-check-type-exact $all = array{dirname: string, basename: string, extension?: string, filename: string} */
+                        /** @psalm-check-type-exact $default = array{dirname: string, basename: string, extension?: string, filename: string} */
+                        /** @psalm-check-type-exact $mask = array{dirname: string, basename: string, extension?: string, filename: string} */
+                        /** @psalm-check-type-exact $extension = string */
+                        /** @psalm-check-type-exact $unknown = array{dirname: string, basename: string, extension?: string, filename: string}|string */
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.5',
+            ],
+            'aStubWithoutAReturnTypeKeepsTheCallMapOne' => [
+                'code' => '<?php
+                    function postgres(): PgSql\\Connection {
+                        throw new RuntimeException();
+                    }
+                    $mysql = mysqli_real_escape_string(new mysqli(), "a\'b");
+                    $postgres = pg_escape_literal(postgres(), "a\'b");',
+                'assertions' => [
+                    '$mysql===' => 'string',
+                    '$postgres===' => 'false|string',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'functionImportedWithAnAliasIsCalledWithoutAWrongCaseIssue' => [
                 'code' => '<?php
                     namespace App;
@@ -284,6 +342,8 @@ final class FunctionCallTest extends TestCase
                     /** @psalm-check-type-exact $sanitize_string = string */
                     /** @psalm-check-type-exact $forced_array = list{''} */
                     PHP,
+                'assertions' => [],
+                'ignored_issues' => ['DeprecatedConstant'],
             ],
             'filterVarSanitizesANullableInputWithoutFailing' => [
                 'code' => <<<'PHP'
@@ -328,6 +388,62 @@ final class FunctionCallTest extends TestCase
                     /** @psalm-check-type-exact $hostname = false */
                     /** @psalm-check-type-exact $regexp = ''|false */
                     PHP,
+            ],
+            'filterVarValidatesABoolAsAString' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function f(bool $b): void {
+                        $true_domain = filter_var(true, FILTER_VALIDATE_DOMAIN);
+                        $false_hostname = filter_var(false, FILTER_VALIDATE_DOMAIN, FILTER_FLAG_HOSTNAME);
+                        $domain = filter_var($b, FILTER_VALIDATE_DOMAIN);
+                        $hostname = filter_var($b, FILTER_VALIDATE_DOMAIN, FILTER_FLAG_HOSTNAME);
+                        $regexp = filter_var($b, FILTER_VALIDATE_REGEXP, ['options' => ['regexp' => '/^1?$/']]);
+
+                        /** @psalm-check-type-exact $true_domain = '1' */
+                        /** @psalm-check-type-exact $false_hostname = false */
+                        /** @psalm-check-type-exact $domain = ''|'1' */
+                        /** @psalm-check-type-exact $hostname = '1'|false */
+                        /** @psalm-check-type-exact $regexp = ''|'1'|false */
+                    }
+                    PHP,
+            ],
+            'filterVarSanitizesAnEmptyLiteralToTheEmptyString' => [
+                'code' => <<<'PHP'
+                    <?php
+                    $special = filter_var('', FILTER_SANITIZE_SPECIAL_CHARS);
+                    $full = filter_var('', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+                    $encoded = filter_var('', FILTER_SANITIZE_ENCODED);
+                    $slashes = filter_var('', FILTER_SANITIZE_ADD_SLASHES);
+                    $email = filter_var('', FILTER_SANITIZE_EMAIL);
+                    $url = filter_var('', FILTER_SANITIZE_URL);
+                    $stripped = filter_var('', FILTER_DEFAULT, FILTER_FLAG_STRIP_LOW);
+
+                    /** @psalm-check-type-exact $special = '' */
+                    /** @psalm-check-type-exact $full = '' */
+                    /** @psalm-check-type-exact $encoded = '' */
+                    /** @psalm-check-type-exact $slashes = '' */
+                    /** @psalm-check-type-exact $email = '' */
+                    /** @psalm-check-type-exact $url = '' */
+                    /** @psalm-check-type-exact $stripped = '' */
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'filterVarSanitizeStringWithEmptyStringNull' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function f(string $s): void {
+                        $empty = filter_var('', FILTER_SANITIZE_STRING, FILTER_FLAG_EMPTY_STRING_NULL);
+                        $string = filter_var($s, FILTER_SANITIZE_STRING, FILTER_FLAG_EMPTY_STRING_NULL);
+
+                        /** @psalm-check-type-exact $empty = null */
+                        /** @psalm-check-type-exact $string = null|string */
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => ['DeprecatedConstant'],
+                'php_version' => '8.0',
             ],
             'classExistsComparedWithTrueGuardsTheRightOperandOfAnd' => [
                 'code' => '<?php
@@ -1119,6 +1235,20 @@ final class FunctionCallTest extends TestCase
                      return preg_grep("/search/", $strings, PREG_GREP_INVERT);
                   }
                 ',
+            ],
+            'pregGrepCanReturnFalse' => [
+                'code' => '<?php
+                    $rc = preg_grep("/^foo/i", ["foobar", "toobar"]);
+
+                    if ($rc === false) {
+                        $r = null;
+                    } else {
+                        $r = $rc;
+                    }',
+                'assertions' => [
+                    '$rc===' => 'array<int<0, 1>, string>|false',
+                    '$r===' => 'array<int<0, 1>, string>|null',
+                ],
             ],
             'typedArrayWithDefault' => [
                 'code' => '<?php
@@ -2078,6 +2208,8 @@ final class FunctionCallTest extends TestCase
                             return "here";
                         }
                     }',
+                'assertions' => [],
+                'ignored_issues' => ['DeprecatedFunction'],
             ],
             'getParentClass' => [
                 'code' => '<?php
@@ -2529,6 +2661,7 @@ final class FunctionCallTest extends TestCase
                     '$f===' => 'Closure[time](true=):(false|float|int)',
                     '$g===' => 'Closure[pure](string, string=):lowercase-string',
                 ],
+                'ignored_issues' => ['DeprecatedFunction'],
             ],
             'hrtimePolyfillBeforePhp73KeepsItsDeclaredType' => [
                 'code' => '<?php
@@ -3044,6 +3177,8 @@ final class FunctionCallTest extends TestCase
                         throw new Exception("invalid headers");
                     }
                     print_r(array_map("strval", $headers));',
+                'assertions' => [],
+                'ignored_issues' => ['DeprecatedFunction'],
             ],
             'allowListEqualToRange' => [
                 'code' => '<?php
@@ -3132,7 +3267,7 @@ final class FunctionCallTest extends TestCase
                         }
                     }',
                 'assertions' => [],
-                'ignored_issues' => [],
+                'ignored_issues' => ['DeprecatedSyntax'],
                 'php_version' => '8.0',
             ],
             'getTypeDoubleThenInt' => [
@@ -3542,6 +3677,8 @@ final class FunctionCallTest extends TestCase
 
                     foo(...$arguments);
                     ',
+                'assertions' => [],
+                'ignored_issues' => ['DeprecatedSyntax'],
             ],
             'is_aWithStringableClass' => [
                 'code' => '<?php
@@ -3574,6 +3711,7 @@ final class FunctionCallTest extends TestCase
                     '$t===' => 'non-empty-string',
                     '$u===' => 'string',
                 ],
+                'ignored_issues' => ['DeprecatedFunction'],
             ],
             'mb_strtolowerProducesLowercaseStringWithNullOrAbsentEncoding' => [
                 'code' => '<?php
@@ -3595,10 +3733,10 @@ final class FunctionCallTest extends TestCase
                     '$b===' => 'non-empty-lowercase-string',
                     '$c===' => 'lowercase-string',
                     '$d===' => 'lowercase-string',
-                    '$e===' => 'non-empty-lowercase-string',
-                    '$f===' => 'non-empty-lowercase-string',
-                    '$g===' => 'lowercase-string',
-                    '$h===' => 'lowercase-string',
+                    '$e===' => '\'aaa\'',
+                    '$f===' => '\'aaa\'',
+                    '$g===' => "''",
+                    '$h===' => "''",
                 ],
                 'ignored_issues' => [],
                 'php_version' => '8.1',
@@ -4234,6 +4372,50 @@ final class FunctionCallTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'strtolowerOfDocblockLiteralsKeepsFromDocblock' => [
+                'code' => '<?php
+                    /** @param \'A\'|\'B\' $k */
+                    function f(string $k): void {
+                        $l = strtolower($k);
+                        if ($l === \'c\') {}
+                    }',
+                'error_message' => 'DocblockTypeContradiction',
+            ],
+            'mbStrtolowerOfDocblockLiteralsKeepsFromDocblock' => [
+                'code' => '<?php
+                    /** @param \'A\'|\'B\' $k */
+                    function f(string $k): void {
+                        $l = mb_strtolower($k);
+                        if ($l === \'c\') {}
+                    }',
+                'error_message' => 'DocblockTypeContradiction',
+            ],
+            'strtolowerOfNativeLiteralsIsStillATypeContradiction' => [
+                'code' => '<?php
+                    function f(): void {
+                        $l = strtolower(rand() ? \'A\' : \'B\');
+                        if ($l === \'c\') {}
+                    }',
+                'error_message' => 'TypeDoesNotContainType',
+            ],
+            'callUserFuncWithADifferentCase' => [
+                'code' => '<?php
+                    function takesInt(int $i): string {
+                        return (string) $i;
+                    }
+
+                    echo CALL_USER_FUNC(\'takesInt\', \'x\');',
+                'error_message' => 'InvalidScalarArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:53',
+            ],
+            'callUserFuncArrayWithADifferentCase' => [
+                'code' => '<?php
+                    function takesInt(int $i): string {
+                        return (string) $i;
+                    }
+
+                    echo Call_User_Func_Array(\'takesInt\', [\'x\']);',
+                'error_message' => 'InvalidScalarArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:59',
+            ],
             'aliasOfAUserFunctionImportedWithAnotherCasingIsReported' => [
                 'code' => '<?php
                     namespace Lib {
@@ -5720,48 +5902,56 @@ final class FunctionCallTest extends TestCase
                     is_a("Foo", Exception::class);
                 ',
                 'error_message' => 'RedundantFunctionCall',
+                'error_levels' => ['DeprecatedFunction'],
             ],
             'is_a_withAStringAndFalseThirdArg' => [
                 'code' => '<?php
                     is_a("Foo", Exception::class, false);
                 ',
                 'error_message' => 'RedundantFunctionCall',
+                'error_levels' => ['DeprecatedFunction'],
             ],
             'is_a_withAUnionOfStringsAndNoThirdArg' => [
                 'code' => '<?php
                     is_a(rand(0, 1) ? "Foo" : "Bar", Exception::class);
                 ',
                 'error_message' => 'RedundantFunctionCall',
+                'error_levels' => ['DeprecatedFunction'],
             ],
             'is_a_withAUnionOfStringsAndFalseThirdArg' => [
                 'code' => '<?php
                     is_a(rand(0, 1) ? "Foo" : "Bar", Exception::class, false);
                 ',
                 'error_message' => 'RedundantFunctionCall',
+                'error_levels' => ['DeprecatedFunction'],
             ],
             'is_a_withAClassStringAndNoThirdArg' => [
                 'code' => '<?php
                     is_a(InvalidArgumentException::class, Exception::class);
                 ',
                 'error_message' => 'RedundantFunctionCall',
+                'error_levels' => ['DeprecatedFunction'],
             ],
             'is_a_withAClassStringAndFalseThirdArg' => [
                 'code' => '<?php
                     is_a(InvalidArgumentException::class, Exception::class, false);
                 ',
                 'error_message' => 'RedundantFunctionCall',
+                'error_levels' => ['DeprecatedFunction'],
             ],
             'is_a_withAUnionOfClassStringsAndNoThirdArg' => [
                 'code' => '<?php
                     is_a(rand(0, 1) ? InvalidArgumentException::class : RuntimeException::class, Exception::class);
                 ',
                 'error_message' => 'RedundantFunctionCall',
+                'error_levels' => ['DeprecatedFunction'],
             ],
             'is_a_withAUnionOfClassStringsAndFalseThirdArg' => [
                 'code' => '<?php
                     is_a(rand(0, 1) ? InvalidArgumentException::class : RuntimeException::class, Exception::class, false);
                 ',
                 'error_message' => 'RedundantFunctionCall',
+                'error_levels' => ['DeprecatedFunction'],
             ],
             'incorrectCallableParamDefault' => [
                 'code' => '<?php
@@ -5964,6 +6154,9 @@ final class FunctionCallTest extends TestCase
         $config = Config::getInstance();
         $config->trigger_error_exits = 'default';
 
+        // E_USER_ERROR is deprecated, but still exits
+        $config->setCustomErrorLevel('DeprecatedFunction', Config::REPORT_SUPPRESS);
+
         $this->addFile(
             'somefile.php',
             '<?php
@@ -5995,6 +6188,9 @@ final class FunctionCallTest extends TestCase
         $config = Config::getInstance();
         $config->trigger_error_exits = 'always';
 
+        // E_USER_ERROR is deprecated, but still exits
+        $config->setCustomErrorLevel('DeprecatedFunction', Config::REPORT_SUPPRESS);
+
         $this->addFile(
             'somefile.php',
             '<?php
@@ -6018,6 +6214,9 @@ final class FunctionCallTest extends TestCase
     {
         $config = Config::getInstance();
         $config->trigger_error_exits = 'never';
+
+        // E_USER_ERROR is deprecated, but still exits
+        $config->setCustomErrorLevel('DeprecatedFunction', Config::REPORT_SUPPRESS);
 
         $this->addFile(
             'somefile.php',

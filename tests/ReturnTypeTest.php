@@ -97,6 +97,183 @@ final class ReturnTypeTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'returnTypeIsInheritedWhenTheImplementationDocumentsOnlyItsParams' => [
+                'code' => '<?php
+                    interface Node {}
+                    final class Leaf implements Node {}
+                    final class Message {}
+
+                    /** @template T of Node */
+                    interface Handler {
+                        /**
+                         * @param T $node
+                         * @return list<Message>
+                         */
+                        public function handle(Node $node): array;
+                    }
+
+                    /** @implements Handler<Leaf> */
+                    final class LeafHandler implements Handler {
+                        /** @param Leaf $node */
+                        #[Override]
+                        public function handle(Node $node): array {
+                            return [new Message()];
+                        }
+                    }
+
+                    $messages = (new LeafHandler())->handle(new Leaf());',
+                'assertions' => [
+                    '$messages===' => 'list<Message>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
+            'returnTypeWithATemplateOfTheOverriddenMethodIsNotInheritedByAMethodDocumentingItsParams' => [
+                'code' => '<?php
+                    class P {
+                        /**
+                         * @template T
+                         * @param T $x
+                         * @return list<T>
+                         */
+                        public function f($x): array {
+                            return [$x];
+                        }
+                    }
+
+                    final class C extends P {
+                        /** @param int $x */
+                        #[Override]
+                        public function f($x): array {
+                            return [$x];
+                        }
+                    }
+
+                    $d = (new C())->f(3);',
+                'assertions' => [
+                    '$d===' => 'array<array-key, mixed>',
+                ],
+                'ignored_issues' => ['LessSpecificImplementedReturnType', 'MoreSpecificImplementedParamType'],
+                'php_version' => '8.3',
+            ],
+            'returnTypeWithATemplateOfTheOverriddenMethodMeetsTheTemplateOfTheOverridingMethod' => [
+                'code' => '<?php
+                    class P {
+                        /**
+                         * @template T
+                         * @param T $x
+                         * @return list<T>
+                         */
+                        public function f($x): array {
+                            return [$x];
+                        }
+                    }
+
+                    final class C extends P {
+                        /**
+                         * @template U of int
+                         * @param U $x
+                         */
+                        #[Override]
+                        public function f($x): array {
+                            return [$x];
+                        }
+                    }
+
+                    $d = (new C())->f(3);',
+                'assertions' => [
+                    '$d===' => 'array<array-key, mixed>',
+                ],
+                'ignored_issues' => ['LessSpecificImplementedReturnType', 'MoreSpecificImplementedParamType'],
+                'php_version' => '8.3',
+            ],
+            'nativeReturnTypeOfTheMethodIsKeptWhenTheOverriddenOneDocumentsOnlyItsParams' => [
+                'code' => '<?php
+                    interface Console {
+                        /** @param positive-int $n */
+                        public function times(int $n): self;
+                        /** @param positive-int $n */
+                        public function twice(int $n): self;
+                    }
+
+                    trait HasTimes {
+                        /** @param positive-int $n */
+                        public function times(int $n): static {
+                            return $this;
+                        }
+
+                        /** @param positive-int $n */
+                        public function twice(int $n): static {
+                            return $this->times($n);
+                        }
+                    }
+
+                    final class GenericConsole implements Console {
+                        use HasTimes;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MissingOverrideAttribute'],
+                'php_version' => '8.3',
+            ],
+            'nativeReturnTypeOfTheMethodIsKeptWhenTheOverriddenClassMethodDocumentsOnlyItsParams' => [
+                'code' => '<?php
+                    class Console {
+                        /** @param positive-int $n */
+                        public function times(int $n): self {
+                            return $this;
+                        }
+
+                        /** @param positive-int $n */
+                        public function twice(int $n): self {
+                            return $this;
+                        }
+                    }
+
+                    trait HasTimes {
+                        /** @param positive-int $n */
+                        public function times(int $n): static {
+                            return $this;
+                        }
+
+                        /** @param positive-int $n */
+                        public function twice(int $n): static {
+                            return $this->times($n);
+                        }
+                    }
+
+                    final class GenericConsole extends Console {
+                        use HasTimes;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MissingOverrideAttribute'],
+                'php_version' => '8.3',
+            ],
+            'returnTypeIsInheritedFromTwoInterfacesThatDocumentTheSameOne' => [
+                'code' => '<?php
+                    interface InstanceHandler {
+                        /** @return class-string */
+                        public function getClass(): string;
+                    }
+
+                    interface StaticHandler {
+                        /** @return class-string */
+                        public function getClass(): string;
+                    }
+
+                    final class Handler implements InstanceHandler, StaticHandler {
+                        #[Override]
+                        public function getClass(): string {
+                            return Handler::class;
+                        }
+                    }
+
+                    $class = (new Handler())->getClass();',
+                'assertions' => [
+                    '$class===' => 'class-string',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
             'doWhileBodyAlwaysReturning' => [
                 'code' => '<?php
                     function f(int $i): string {
@@ -879,6 +1056,8 @@ final class ReturnTypeTest extends TestCase
                             return $a1;
                         }
                     }',
+                'assertions' => [],
+                'ignored_issues' => ['DeprecatedSyntax'],
             ],
             'returnTypeAfterIfElseIfWithThrow' => [
                 'code' => '<?php
@@ -900,6 +1079,8 @@ final class ReturnTypeTest extends TestCase
                             return $a1;
                         }
                     }',
+                'assertions' => [],
+                'ignored_issues' => ['DeprecatedSyntax'],
             ],
             'tryCatchReturnType' => [
                 'code' => '<?php
@@ -2718,6 +2899,51 @@ final class ReturnTypeTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'returnTypeDocumentedByTheImplementationIsStillCheckedAgainstTheParent' => [
+                'code' => '<?php
+                    final class Message {}
+
+                    interface Handler {
+                        /** @return list<Message> */
+                        public function handle(string $node): array;
+                    }
+
+                    final class LeafHandler implements Handler {
+                        /**
+                         * @param string $node
+                         * @return array<int, Message>
+                         */
+                        #[Override]
+                        public function handle(string $node): array {
+                            return [];
+                        }
+                    }',
+                'error_message' => 'LessSpecificImplementedReturnType',
+                'error_levels' => [],
+                'php_version' => '8.3',
+            ],
+            'returnTypeOfTwoInterfacesThatDocumentDifferentOnesIsNotInherited' => [
+                'code' => '<?php
+                    interface First {
+                        /** @return class-string<First> */
+                        public function getClass(): string;
+                    }
+
+                    interface Second {
+                        /** @return class-string */
+                        public function getClass(): string;
+                    }
+
+                    final class Handler implements First, Second {
+                        #[Override]
+                        public function getClass(): string {
+                            return First::class;
+                        }
+                    }',
+                'error_message' => 'LessSpecificImplementedReturnType',
+                'error_levels' => [],
+                'php_version' => '8.3',
+            ],
             'doWhileBodyContinuingToAFalseCondition' => [
                 'code' => '<?php
                     function f(int $i): string {
@@ -3702,6 +3928,7 @@ final class ReturnTypeTest extends TestCase
                     }
                     PHP,
                 'error_message' => 'InvalidReturnStatement',
+                'error_levels' => ['DeprecatedSyntax'],
             ],
             'finalMethodThatAlwaysThrowsAfterAnotherStatementIsNever' => [
                 'code' => '<?php

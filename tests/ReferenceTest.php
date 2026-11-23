@@ -2572,6 +2572,7 @@ final class ReferenceTest extends TestCase
                         return $h;
                     }',
                 'error_message' => 'NullableReturnStatement',
+                'error_levels' => ['DeprecatedSyntax'],
             ],
             'issueInTheKeyOfAnArrayItemPassedByReference' => [
                 'code' => '<?php

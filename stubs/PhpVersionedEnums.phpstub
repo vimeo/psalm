@@ -1,0 +1,107 @@
+<?php
+
+// The enums PHP 8.3 to 8.5 introduce. Like PhpVersionedClasses.phpstub, this file is loaded on every analysis
+// version that has enums, and the `@since` tag of each enum reports it as undefined on older versions.
+
+namespace {
+    /** @since 8.4 */
+    enum RoundingMode
+    {
+        case HalfAwayFromZero;
+        case HalfTowardsZero;
+        case HalfEven;
+        case HalfOdd;
+        case TowardsZero;
+        case AwayFromZero;
+        case NegativeInfinity;
+        case PositiveInfinity;
+    }
+}
+
+namespace {
+    /** @since 8.4 */
+    enum PropertyHookType: string
+    {
+        case Get = 'get';
+        case Set = 'set';
+    }
+}
+
+namespace Random {
+    /** @since 8.3 */
+    enum IntervalBoundary
+    {
+        case ClosedOpen;
+        case ClosedClosed;
+        case OpenClosed;
+        case OpenOpen;
+    }
+}
+
+namespace Pcntl {
+    /** @since 8.4 */
+    enum QosClass
+    {
+        case UserInteractive;
+        case UserInitiated;
+        case Default;
+        case Utility;
+        case Background;
+    }
+}
+
+namespace Dom {
+    /** @since 8.4 */
+    enum AdjacentPosition: string
+    {
+        case BeforeBegin = "beforebegin";
+        case AfterBegin = "afterbegin";
+        case BeforeEnd = "beforeend";
+        case AfterEnd = "afterend";
+    }
+}
+
+namespace Uri {
+    /** @since 8.5 */
+    enum UriComparisonMode
+    {
+        case IncludeFragment;
+        case ExcludeFragment;
+    }
+}
+
+namespace Uri\WhatWg {
+    /** @since 8.5 */
+    enum UrlValidationErrorType
+    {
+        case DomainToAscii;
+        case DomainToUnicode;
+        case DomainInvalidCodePoint;
+        case HostInvalidCodePoint;
+        case Ipv4EmptyPart;
+        case Ipv4TooManyParts;
+        case Ipv4NonNumericPart;
+        case Ipv4NonDecimalPart;
+        case Ipv4OutOfRangePart;
+        case Ipv6Unclosed;
+        case Ipv6InvalidCompression;
+        case Ipv6TooManyPieces;
+        case Ipv6MultipleCompression;
+        case Ipv6InvalidCodePoint;
+        case Ipv6TooFewPieces;
+        case Ipv4InIpv6TooManyPieces;
+        case Ipv4InIpv6InvalidCodePoint;
+        case Ipv4InIpv6OutOfRangePart;
+        case Ipv4InIpv6TooFewParts;
+        case InvalidUrlUnit;
+        case SpecialSchemeMissingFollowingSolidus;
+        case MissingSchemeNonRelativeUrl;
+        case InvalidReverseSoldius;
+        case InvalidCredentials;
+        case HostMissing;
+        case PortOutOfRange;
+        case PortInvalid;
+        case FileInvalidWindowsDriveLetter;
+        case FileInvalidWindowsDriveLetterHost;
+    }
+}

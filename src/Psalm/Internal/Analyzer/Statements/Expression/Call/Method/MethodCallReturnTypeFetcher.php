@@ -19,6 +19,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\CombinedFlowGraph;
 use Psalm\Internal\Codebase\ConditionalTaintSinks;
+use Psalm\Internal\Codebase\DatabaseTaints;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Internal\Codebase\ReceiverPropertyTaints;
 use Psalm\Internal\Codebase\TaintFlowGraph;
@@ -380,6 +381,21 @@ final class MethodCallReturnTypeFetcher
             $result_added_taints,
             $result_removed_taints,
         );
+
+        // a builtin method that only the call map describes, such as one the stub of its extension leaves out when
+        // the extension isn't loaded, has no storage for taintMethodCallResult() to read from
+        if ($declaring_method_id === null && $taint_flow_graph) {
+            $return_type_candidate = DatabaseTaints::taintCall(
+                $statements_analyzer,
+                $taint_flow_graph,
+                DatabaseTaints::getSpecs((string) $method_id, null),
+                null,
+                $args,
+                new CodeLocation($statements_analyzer, $stmt->name),
+                $return_type_candidate,
+                $statements_analyzer->node_data->getType($stmt->var),
+            );
+        }
 
         // what is sent to a generator becomes the value of its yield expressions (what it gives back, see
         // YieldAnalyzer::taintGenerator(), flows as dictionaries/InternalTaintObjectFlowMap.php says)
@@ -855,6 +871,17 @@ final class MethodCallReturnTypeFetcher
             $specialize_call ? $node_location : null,
         );
 
+        $return_type_candidate = DatabaseTaints::taintCall(
+            $statements_analyzer,
+            $taint_flow_graph,
+            DatabaseTaints::getSpecs((string) $declaring_method_id, $method_storage),
+            $method_storage,
+            $args,
+            $node_location,
+            $return_type_candidate,
+            $statements_analyzer->node_data->getType($var_expr),
+        );
+
         ConditionalTaintSinks::taintCall(
             $statements_analyzer,
             $taint_flow_graph,
@@ -1121,6 +1148,7 @@ final class MethodCallReturnTypeFetcher
             || $stmt?->getAttribute(self::CALL_ARGUMENT_ATTRIBUTE) === true;
         $bounds_result = new TemplateResult([], []);
         $bounds_result->lower_bounds = $template_result->lower_bounds;
+        $bounds_result->markStarBindings($template_result->star_bindings, $template_result->star_input_bounds);
 
         // in the order they are declared in, as a bound may be another template of the method (`@template B of A`)
         foreach ($method_template_types as $template_name => $bounds) {

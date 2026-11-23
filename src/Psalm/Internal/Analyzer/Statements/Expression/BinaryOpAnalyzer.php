@@ -16,6 +16,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\BinaryOp\PipeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\CombinedFlowGraph;
+use Psalm\Internal\Codebase\StringContext;
 use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\Codebase\VariableUseGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
@@ -559,72 +560,46 @@ final class BinaryOpAnalyzer
         Union $stmt_left_type,
         Union $stmt_right_type,
     ): void {
+        if ($stmt_left_type->hasString() && $stmt_right_type->hasObjectType()) {
+            [$object_expr, $object_type] = [$stmt->right, $stmt_right_type];
+        } elseif ($stmt_right_type->hasString() && $stmt_left_type->hasObjectType()) {
+            [$object_expr, $object_type] = [$stmt->left, $stmt_left_type];
+        } else {
+            return;
+        }
+
         $codebase = $statements_analyzer->getCodebase();
 
-        if ($stmt_left_type->hasString() && $stmt_right_type->hasObjectType()) {
-            foreach ($stmt_right_type->getAtomicTypes() as $atomic_type) {
-                if ($atomic_type instanceof TNamedObject) {
-                    try {
-                        $storage = $codebase->methods->getStorage(
-                            new MethodIdentifier(
-                                $atomic_type->value,
-                                '__tostring',
-                            ),
-                        );
-                    } catch (UnexpectedValueException) {
-                        continue;
-                    }
-                    $var_id = ExpressionIdentifier::getExtendedVarId(
-                        $stmt->right,
-                        $statements_analyzer->getFQCLN(),
-                        $statements_analyzer,
+        foreach ($object_type->getAtomicTypes() as $atomic_type) {
+            if ($atomic_type instanceof TNamedObject) {
+                try {
+                    $storage = $codebase->methods->getStorage(
+                        new MethodIdentifier(
+                            $atomic_type->value,
+                            '__tostring',
+                        ),
                     );
-
-                    $statements_analyzer->signalMutation(
-                        $storage->capabilities,
-                        $context,
-                        'possibly-mutating method '
-                                    . $atomic_type->value . '::__toString',
-                        ImpureMethodCall::class,
-                        $stmt,
-                        null,
-                        false,
-                        $var_id === '$this' ? $storage : null,
-                    );
+                } catch (UnexpectedValueException) {
+                    continue;
                 }
-            }
-        } elseif ($stmt_right_type->hasString() && $stmt_left_type->hasObjectType()) {
-            foreach ($stmt_left_type->getAtomicTypes() as $atomic_type) {
-                if ($atomic_type instanceof TNamedObject) {
-                    try {
-                        $storage = $codebase->methods->getStorage(
-                            new MethodIdentifier(
-                                $atomic_type->value,
-                                '__tostring',
-                            ),
-                        );
-                    } catch (UnexpectedValueException) {
-                        continue;
-                    }
 
-                    $var_id = ExpressionIdentifier::getExtendedVarId(
-                        $stmt->left,
-                        $statements_analyzer->getFQCLN(),
-                        $statements_analyzer,
-                    );
+                $var_id = ExpressionIdentifier::getExtendedVarId(
+                    $object_expr,
+                    $statements_analyzer->getFQCLN(),
+                    $statements_analyzer,
+                );
 
-                    $statements_analyzer->signalMutation(
-                        $storage->capabilities,
-                        $context,
-                        'possibly-mutating method '
-                                    . $atomic_type->value . '::__toString',
-                        ImpureMethodCall::class,
-                        $stmt,
-                        null,
-                        false,
-                        $var_id === '$this' ? $storage : null,
-                    );
-                }
+                $statements_analyzer->signalMutation(
+                    $storage->capabilities,
+                    $context,
+                    'possibly-mutating method '
+                                . $atomic_type->value . '::__toString',
+                    ImpureMethodCall::class,
+                    $stmt,
+                    null,
+                    false,
+                    $var_id === '$this' ? $storage : null,
+                );
             }
         }
     }
@@ -667,11 +642,25 @@ final class BinaryOpAnalyzer
         );
         $statements_analyzer->node_data->setLiteralPrefixes($stmt, $literal_prefixes);
 
+        // where the right operand is embedded: the escaping of a value only fits some positions
+        $left_context = $statements_analyzer->taint_flow_graph
+            ? StringContext::getForExpression($statements_analyzer, $stmt->left)
+            : StringContext::getUnknown();
+
+        if ($statements_analyzer->taint_flow_graph) {
+            $statements_analyzer->node_data->setStringContext(
+                $stmt,
+                $left_context->afterExpression($statements_analyzer, $stmt->right),
+            );
+        }
+
         // after the start of a URL fixing its server (the left operand's, and the right operand's own literal start
         // when the left operand is a literal), the right operand can't choose it
         $operand_removed_taints = [
             $removed_taints,
-            $removed_taints | ConcatAnalyzer::getTaintsRemovedAfterUrlOrigins($literal_prefixes),
+            $removed_taints
+                | ConcatAnalyzer::getTaintsRemovedAfterUrlOrigins($literal_prefixes)
+                | $left_context->getRemovedTaints(),
         ];
 
         // an object operand is concatenated as what its __toString returns
@@ -696,6 +685,16 @@ final class BinaryOpAnalyzer
                     'concat' . CastAnalyzer::getArrayConversionSuffix($operand_type),
                     $added_taints,
                     $operand_removed_taints[$offset],
+                );
+            }
+
+            if ($offset === 1) {
+                ConcatAnalyzer::addPositionSinks(
+                    $statements_analyzer,
+                    $left_context,
+                    $operand_parent_nodes,
+                    $operand_type->getTaintsToRemove($statements_analyzer->getCodebase()->getInputTaints()),
+                    new CodeLocation($statements_analyzer, $operand),
                 );
             }
         }

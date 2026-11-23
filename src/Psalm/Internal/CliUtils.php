@@ -42,6 +42,7 @@ use function is_scalar;
 use function is_string;
 use function json_decode;
 use function preg_last_error_msg;
+use function preg_match;
 use function preg_replace;
 use function preg_split;
 use function realpath;
@@ -86,7 +87,7 @@ final class CliUtils
 
         $psalm_dir = dirname(__DIR__, 3);
 
-        $in_phar = Phar::running() || strpos(__NAMESPACE__, 'HumbugBox');
+        $in_phar = (extension_loaded('phar') && Phar::running()) || strpos(__NAMESPACE__, 'HumbugBox');
 
         if ($in_phar) {
             require_once __DIR__ . '/../../../vendor/autoload.php';
@@ -178,6 +179,22 @@ final class CliUtils
     }
 
     /**
+     * The message of a -r/--root path that doesn't exist: a relative path is shown as it is resolved from the
+     * current directory, an absolute one as it was given
+     *
+     * @psalm-pure
+     */
+    public static function getRootDirectoryNotFoundMessage(string $current_dir, string $root): string
+    {
+        // runs before the autoloader is required, so symfony's Path isn't available
+        $is_absolute = str_starts_with($root, '/')
+            || str_starts_with($root, DIRECTORY_SEPARATOR)
+            || preg_match('/^[A-Za-z]:[\\\\\/]/', $root) === 1;
+
+        return 'Could not locate root directory ' . ($is_absolute ? $root : $current_dir . DIRECTORY_SEPARATOR . $root);
+    }
+
+    /**
      * @psalm-suppress MixedAssignment
      */
     public static function getVendorDir(string $current_dir): string
@@ -199,7 +216,7 @@ final class CliUtils
             exit(1);
         }
 
-        if (!$composer_json) {
+        if (!is_array($composer_json)) {
             fwrite(
                 STDERR,
                 'Invalid composer.json at ' . $composer_json_path . "\n",
@@ -207,8 +224,7 @@ final class CliUtils
             exit(1);
         }
 
-        if (is_array($composer_json)
-            && isset($composer_json['config'])
+        if (isset($composer_json['config'])
             && is_array($composer_json['config'])
             && isset($composer_json['config']['vendor-dir'])
             && is_string($composer_json['config']['vendor-dir'])
@@ -396,7 +412,8 @@ final class CliUtils
     }
 
     /**
-     * Marks the command-line arguments or options Psalm was run with as chosen by the person running it.
+     * Marks the command-line arguments or options Psalm was run with, or an environment variable it reads, as chosen by
+     * the person running it.
      *
      * They name the files and directories Psalm reads and writes, the code it scans and reflects on,
      * the config, plugins and autoloaders it loads, the Shepherd and language client addresses it
@@ -405,7 +422,7 @@ final class CliUtils
      * (see getPathsToCheckFromStdin()). The other kinds of taint stay, so that an argument still has
      * to be escaped for a shell, for example.
      *
-     * @template T of array|false
+     * @template T of array|string|false
      * @param T $arguments
      * @return T
      * @psalm-pure
@@ -418,12 +435,15 @@ final class CliUtils
      * @psalm-taint-escape url_component
      * @psalm-taint-escape url_path
      */
-    public static function chosenByOperator(array|false $arguments): array|false
+    public static function chosenByOperator(array|string|false $arguments): array|string|false
     {
         return $arguments;
     }
 
     /**
+     * The value of --move, --into, --rename or --to is kept even when realpath() accepts it,
+     * because a symbol name can also match an existing path, such as a directory named src.
+     *
      * @return list<string>
      */
     public static function getArguments(): array
@@ -433,12 +453,13 @@ final class CliUtils
 
         for ($i = 0, $iMax = count($argv); $i < $iMax; ++$i) {
             $input_path = $argv[$i];
+            $is_refactor_value = $i > 0 && in_array($argv[$i - 1], ['--move', '--into', '--rename', '--to'], true);
 
-            if (realpath($input_path) !== false) {
+            if (!$is_refactor_value && realpath($input_path) !== false) {
                 continue;
             }
 
-            if ($input_path[0] === '-' && strlen($input_path) === 2) {
+            if (strlen($input_path) === 2 && $input_path[0] === '-') {
                 if ($input_path[1] === 'c' || $input_path[1] === 'f' || $input_path[1] === 'r') {
                     ++$i;
                 }

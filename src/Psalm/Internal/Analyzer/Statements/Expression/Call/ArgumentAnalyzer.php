@@ -22,6 +22,7 @@ use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
 use Psalm\Internal\Codebase\CliOutput;
 use Psalm\Internal\Codebase\ConstantTypeResolver;
+use Psalm\Internal\Codebase\PhpDeprecations;
 use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\MethodIdentifier;
@@ -29,13 +30,15 @@ use Psalm\Internal\Type\Comparator\CallableTypeComparator;
 use Psalm\Internal\Type\Comparator\TypeComparisonResult;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\TemplateBound;
+use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
+use Psalm\Internal\Type\TypeArgumentProjection;
 use Psalm\Internal\Type\TypeExpander;
 use Psalm\Internal\TypeVisitor\TypeVariableResolver;
 use Psalm\Issue\ArgumentTypeCoercion;
 use Psalm\Issue\CallableByReferenceMismatch;
-use Psalm\Issue\DeprecatedConstant;
+use Psalm\Issue\DeprecatedSyntax;
 use Psalm\Issue\ImplicitToStringCast;
 use Psalm\Issue\InvalidArgument;
 use Psalm\Issue\InvalidLiteralArgument;
@@ -79,12 +82,16 @@ use Psalm\Type\Atomic\TTypeVariable;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
+use function array_all;
 use function array_filter;
+use function array_keys;
 use function array_shift;
+use function array_values;
 use function count;
 use function explode;
 use function implode;
 use function in_array;
+use function is_int;
 use function is_numeric;
 use function is_string;
 use function max;
@@ -437,11 +444,13 @@ final class ArgumentAnalyzer
             }
         }
 
+        // `static` is the object the method is called on, with its template arguments, as for the params of closures
+        $static_class_type = $template_result?->static_class_type;
         $param_type = TypeExpander::expandUnion(
             $codebase,
             $param_type,
             $classlike_storage->name ?? null,
-            $static_classlike_storage->name ?? null,
+            $static_class_type instanceof TNamedObject ? $static_class_type : ($static_classlike_storage->name ?? null),
             $parent_class,
             true,
             false,
@@ -452,44 +461,16 @@ final class ArgumentAnalyzer
         // what the argument says about each template is read from the declared type, before class templates are bound
         $declared_param_type = $param_type;
 
-        if ($class_generic_params) {
-            // here we're replacing the param types and arg types with the bound
-            // class template params.
-            //
-            // For example, if we're operating on a class Foo with params TKey and TValue,
-            // and we're calling a method "add(TKey $key, TValue $value)" on an instance
-            // of that class where we know that TKey is int and TValue is string, then we
-            // want to substitute the expected parameters so it's as if we were actually
-            // calling "add(int $key, string $value)"
-            $readonly_template_result = new TemplateResult($class_generic_params, []);
-
-            // This flag ensures that the template results will never be written to
-            // It also supersedes the `$add_lower_bounds` flag so that closure params
-            // don’t get overwritten
-            $readonly_template_result->readonly = true;
-
-            $param_type = TemplateStandinTypeReplacer::replace(
-                $param_type,
-                $readonly_template_result,
-                $codebase,
-                $statements_analyzer,
-                $arg_value_type,
-                $argument_offset,
-                $context->self,
-                $context->calling_function_id ?: $context->calling_method_id,
-            );
-
-            $arg_value_type = TemplateStandinTypeReplacer::replace(
-                $arg_value_type,
-                $readonly_template_result,
-                $codebase,
-                $statements_analyzer,
-                $arg_value_type,
-                $argument_offset,
-                $context->self,
-                $context->calling_function_id ?: $context->calling_method_id,
-            );
-        }
+        [$param_type, $arg_value_type] = self::bindClassTemplates(
+            $statements_analyzer,
+            $codebase,
+            $context,
+            $param_type,
+            $arg_value_type,
+            $argument_offset,
+            $class_generic_params,
+            $template_result,
+        );
 
         if ($template_result && $template_result->template_types) {
             $arg_type_param = $arg_value_type;
@@ -619,7 +600,7 @@ final class ArgumentAnalyzer
             }
 
             if ($arg_value_type->hasArray()) {
-                $unpacked_atomic_array = $arg_value_type->getArray();
+                $unpacked_atomic_array = self::getPositionalShape($arg_value_type->getArray());
                 $arg_key_allowed = true;
 
                 // a template param is as iterable as its bound
@@ -961,6 +942,27 @@ final class ArgumentAnalyzer
     }
 
     /**
+     * A sealed shape with integer keys that is not a list passes its values in the order of the shape, whatever the
+     * keys are, as the list of them. A shape with an optional item is left as it is.
+     *
+     * @psalm-pure
+     */
+    private static function getPositionalShape(
+        TKeyedArray|TArray|TClassStringMap $array,
+    ): TKeyedArray|TArray|TClassStringMap {
+        if (!$array instanceof TKeyedArray
+            || $array->is_list
+            || $array->fallback_params
+            || !array_all(array_keys($array->properties), static fn(int|string $key): bool => is_int($key))
+            || !array_all($array->properties, static fn(Union $property): bool => !$property->possibly_undefined)
+        ) {
+            return $array;
+        }
+
+        return TKeyedArray::make(array_values($array->properties), null, null, true);
+    }
+
+    /**
      * @param TKeyedArray|TArray|TClassStringMap|null $unpacked_atomic_array
      * @return  null|false
      */
@@ -997,13 +999,12 @@ final class ArgumentAnalyzer
                 $declaring_method_id = $codebase->methods->getDeclaringMethodId($method_id);
 
                 if ($declaring_method_id) {
-                    $id_lc = strtolower((string) $declaring_method_id);
-                    $codebase->analyzer->possible_method_param_types[$id_lc][$argument_offset]
-                        = Type::combineUnionTypes(
-                            $codebase->analyzer->possible_method_param_types[$id_lc][$argument_offset] ?? null,
-                            $input_type,
-                            $codebase,
-                        );
+                    $codebase->analyzer->addPossibleMethodParamType(
+                        $codebase,
+                        $declaring_method_id,
+                        $argument_offset,
+                        $input_type,
+                    );
                 }
             }
 
@@ -1164,6 +1165,10 @@ final class ArgumentAnalyzer
                     ? $container_callable_type
                     : null;
 
+                // only a closure is a Closure: an invokable object, a function name or an array is not
+                $replaces = !$param_type->getSingleAtomic() instanceof TClosure
+                    || ($atomic_type instanceof TNamedObject && $atomic_type->value === 'Closure');
+
                 $candidate_callable = CallableTypeComparator::getCallableFromAtomic(
                     $codebase,
                     $atomic_type,
@@ -1220,8 +1225,10 @@ final class ArgumentAnalyzer
                         }
                     }
 
-                    $input_type->removeType($key);
-                    $input_type->addType($candidate_callable);
+                    if ($replaces) {
+                        $input_type->removeType($key);
+                        $input_type->addType($candidate_callable);
+                    }
                 }
             }
             $input_type = $input_type->freeze();
@@ -1366,22 +1373,8 @@ final class ArgumentAnalyzer
                         continue;
                     }
 
-                    if ($potential_method_id === null && $codebase->analysis_php_version_id >= 8_02_00) {
-                        [$lhs,] = $input_type_part->properties;
-                        if ($lhs->isSingleStringLiteral()
-                            && in_array(
-                                strtolower($lhs->getSingleStringLiteral()->value),
-                                ['self', 'parent', 'static'],
-                                true,
-                            )) {
-                            IssueBuffer::maybeAdd(
-                                new DeprecatedConstant(
-                                    'Use of "' . $lhs->getSingleStringLiteral()->value . '" in callables is deprecated',
-                                    $arg_location,
-                                ),
-                                $statements_analyzer->getSuppressedIssues(),
-                            );
-                        }
+                    if (self::isRelativeCallableArray($input_type_part)) {
+                        self::reportRelativeCallable($statements_analyzer, $arg_location);
                     }
 
                     if ($potential_method_id && $potential_method_id !== 'not-callable') {
@@ -1420,19 +1413,8 @@ final class ArgumentAnalyzer
                         strtolower($parts[1]),
                     );
 
-                    if ($codebase->analysis_php_version_id >= 8_02_00
-                        && in_array(
-                            strtolower($potential_method_id->fq_class_name),
-                            ['self', 'parent', 'static'],
-                            true,
-                        )) {
-                        IssueBuffer::maybeAdd(
-                            new DeprecatedConstant(
-                                'Use of "' . $potential_method_id->fq_class_name . '" in callables is deprecated',
-                                $arg_location,
-                            ),
-                            $statements_analyzer->getSuppressedIssues(),
-                        );
+                    if (in_array(strtolower($potential_method_id->fq_class_name), ['self', 'parent', 'static'], true)) {
+                        self::reportRelativeCallable($statements_analyzer, $arg_location);
                     }
 
                     if (self::verifyCallableInContext(
@@ -1730,7 +1712,7 @@ final class ArgumentAnalyzer
         return $potential_method_id->fq_class_name !== $context->self
             || ($cased_method_id !== null
                 && !$method_id
-                && !in_array($cased_method_id, self::PHP_NATIVE_NON_PUBLIC_CB, true))
+                && !in_array(strtolower($cased_method_id), self::PHP_NATIVE_NON_PUBLIC_CB, true))
             || ($method_id
                 && $method_id->fq_class_name !== $context->self
                 && $method_id->fq_class_name !== 'Closure');
@@ -2125,20 +2107,24 @@ final class ArgumentAnalyzer
                         ) {
                             $new_type_params = [];
                             foreach ($input_atomic_type->type_params as $i => $type_param) {
-                                if ($type_param->isNever() && isset($param_atomic_type->type_params[$i])) {
+                                // a `*` param says nothing about what the value holds
+                                if ($type_param->isNever()
+                                    && isset($param_atomic_type->type_params[$i])
+                                    && $param_atomic_type->getProjection($i) !== TypeArgumentProjection::Star
+                                ) {
                                     $input_type_changed = true;
 
                                     $new_type_params[$i] = $param_atomic_type->type_params[$i];
                                 }
                             }
                             if ($new_type_params) {
-                                $input_atomic_type = new TGenericObject(
+                                $input_atomic_type = (new TGenericObject(
                                     $input_atomic_type->value,
                                     [...$input_atomic_type->type_params, ...$new_type_params],
                                     $input_atomic_type->remapped_params,
                                     false,
                                     $input_atomic_type->extra_types,
-                                );
+                                ))->setProjections($input_atomic_type->getProjections());
                             }
                         }
                     }
@@ -3045,5 +3031,118 @@ final class ArgumentAnalyzer
         }
 
         return $type;
+    }
+
+    /**
+     * Whether $array is a callable relative to the calling class, `["parent", "method"]` or
+     * `[$object, "Parent::method"]`
+     *
+     * @psalm-pure
+     */
+    private static function isRelativeCallableArray(TKeyedArray $array): bool
+    {
+        $class = $array->properties[0] ?? null;
+        $method = $array->properties[1] ?? null;
+
+        if ($class === null || $method === null || count($array->properties) !== 2) {
+            return false;
+        }
+
+        return ($class->isSingleStringLiteral()
+                && in_array(strtolower($class->getSingleStringLiteral()->value), ['self', 'parent', 'static'], true))
+            || ($method->isSingleStringLiteral() && str_contains($method->getSingleStringLiteral()->value, '::'));
+    }
+
+    /**
+     * Reports a callable relative to the calling class, which PHP deprecates whatever PHP version is analysed
+     */
+    private static function reportRelativeCallable(
+        StatementsAnalyzer $statements_analyzer,
+        CodeLocation $location,
+    ): void {
+        IssueBuffer::maybeAdd(
+            new DeprecatedSyntax(
+                PhpDeprecations::getDeprecatedSinceMessage(
+                    'A callable relative to the calling class',
+                    8_02_00,
+                    'self::method(...) or [self::class, "method"]',
+                ),
+                $location,
+            ),
+            $statements_analyzer->getSuppressedIssues(),
+        );
+    }
+
+    /**
+     * The type of the parameter, and of the argument, with the templates of the class the method is called on
+     * replaced by what the object binds them to, and those bound to a `*` by `never`: the argument is written to it
+     *
+     * @param array<string, array<string, Union>>|null $class_generic_params
+     * @return array{Union, Union}
+     */
+    private static function bindClassTemplates(
+        StatementsAnalyzer $statements_analyzer,
+        Codebase $codebase,
+        Context $context,
+        Union $param_type,
+        Union $arg_value_type,
+        int $argument_offset,
+        ?array $class_generic_params,
+        ?TemplateResult $template_result,
+    ): array {
+        if ($template_result && $template_result->star_bindings !== []) {
+            $param_type = TemplateInferredTypeReplacer::replace(
+                $param_type,
+                $template_result->getStarInputs(),
+                $codebase,
+            );
+        }
+
+        if ($class_generic_params === null || $class_generic_params === []) {
+            return [$param_type, $arg_value_type];
+        }
+
+        // here we're replacing the param types and arg types with the bound
+        // class template params.
+        //
+        // For example, if we're operating on a class Foo with params TKey and TValue,
+        // and we're calling a method "add(TKey $key, TValue $value)" on an instance
+        // of that class where we know that TKey is int and TValue is string, then we
+        // want to substitute the expected parameters so it's as if we were actually
+        // calling "add(int $key, string $value)"
+        $readonly_template_result = new TemplateResult($class_generic_params, []);
+
+        // This flag ensures that the template results will never be written to
+        // It also supersedes the `$add_lower_bounds` flag so that closure params
+        // don’t get overwritten
+        $readonly_template_result->readonly = true;
+
+        $receiver_template_result = new TemplateResult($class_generic_params, []);
+        $receiver_template_result->readonly = true;
+        $receiver_template_result->of_receiver = true;
+
+        $bound_param_type = TemplateStandinTypeReplacer::replace(
+            $param_type,
+            $receiver_template_result,
+            $codebase,
+            $statements_analyzer,
+            $arg_value_type,
+            $argument_offset,
+            $context->self,
+            $context->calling_function_id ?: $context->calling_method_id,
+        );
+
+        $bound_arg_value_type = TemplateStandinTypeReplacer::replace(
+            $arg_value_type,
+            $readonly_template_result,
+            $codebase,
+            $statements_analyzer,
+            $arg_value_type,
+            $argument_offset,
+            $context->self,
+            $context->calling_function_id ?: $context->calling_method_id,
+        );
+
+        return [$bound_param_type, $bound_arg_value_type];
     }
 }

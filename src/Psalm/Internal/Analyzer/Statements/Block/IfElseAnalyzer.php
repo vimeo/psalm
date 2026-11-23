@@ -673,8 +673,7 @@ final class IfElseAnalyzer
 
     /**
      * A class that doesn't exist is only known to be there in the block run when `class_exists()` (or the like)
-     * is true, and after the if where the condition is false; after an if whose other branches leave, it is
-     * known where the condition is true
+     * is true, and in the elseifs, the else and after the if where the condition is false
      *
      * @throws ScopeAnalysisException
      */
@@ -702,12 +701,8 @@ final class IfElseAnalyzer
             ...GuardedClasses::unknownWhenResult($stmt->cond, false, $codebase),
         ];
 
-        if ($stmt->else) {
-            $if_scope->phantom_classes_of_if_block = [
-                ...$phantom_classes_before_cond,
-                ...GuardedClasses::unknownWhenResult($stmt->cond, true, $codebase),
-            ];
-        }
+        // the elseifs and the else run where the condition is false too
+        $if_conditional_scope->post_if_context->phantom_classes = $context->phantom_classes;
 
         return $if_conditional_scope;
     }

@@ -11,9 +11,12 @@ use function abs;
 use function array_keys;
 use function array_sum;
 use function count;
+use function ctype_digit;
+use function ltrim;
 use function str_ends_with;
 use function str_starts_with;
 use function strlen;
+use function strtolower;
 use function substr;
 
 /**
@@ -33,6 +36,12 @@ abstract class DataFlowGraph
      */
     public const SERIALIZATION_PATH_TYPE = 'serialization';
     public const UNSERIALIZATION_PATH_TYPE = 'unserialization';
+
+    /**
+     * The key of an array value assigned under any integer key (see keysMayBeEqual()), as the columns of a row
+     * whose positions aren't known
+     */
+    public const INTEGER_KEY = '#';
 
     /** @var array<string, array<string, Path>> */
     protected array $forward_edges = [];
@@ -152,13 +161,33 @@ abstract class DataFlowGraph
      * $assigned_key and the one fetched by an edge of type $expression_type . '-fetch-' . $fetched_key can be
      * the same.
      *
-     * An array key known exactly is quoted ('k'), and one whose start only is known is quoted and followed by
-     * a star ('k'*: any key starting with k). A property name is bare. An array key fetch fetches the key ''.
+     * An array key known exactly is quoted ('k'), one whose start only is known is quoted and followed by a star
+     * ('k'*: any key starting with k), and one known but for its case is lowercase, quoted and followed by a tilde
+     * ('k'~: k, K, ...). INTEGER_KEY is any integer key. A property name is bare. An array key fetch fetches the
+     * key ''.
      *
      * @psalm-pure
      */
     public static function keysMayBeEqual(string $assigned_key, string $fetched_key): bool
     {
+        $assigned_caseless = self::getCaselessKey($assigned_key);
+        $fetched_caseless = self::getCaselessKey($fetched_key);
+
+        if ($assigned_caseless !== null || $fetched_caseless !== null) {
+            return self::keysMayBeEqual(
+                $assigned_caseless ?? strtolower($assigned_key),
+                $fetched_caseless ?? strtolower($fetched_key),
+            );
+        }
+
+        if ($assigned_key === self::INTEGER_KEY || $fetched_key === self::INTEGER_KEY) {
+            $other = $assigned_key === self::INTEGER_KEY ? $fetched_key : $assigned_key;
+            $prefix = self::getKeyPrefix($other);
+            $digits = ltrim($prefix ?? self::getKeyValue($other), '-');
+
+            return $other === self::INTEGER_KEY || ($prefix !== null && $digits === '') || ctype_digit($digits);
+        }
+
         $assigned_prefix = self::getKeyPrefix($assigned_key);
         $fetched_prefix = self::getKeyPrefix($fetched_key);
 
@@ -175,6 +204,26 @@ abstract class DataFlowGraph
         }
 
         return str_starts_with($assigned_prefix, $fetched_prefix) || str_starts_with($fetched_prefix, $assigned_prefix);
+    }
+
+    /**
+     * Whether the key of a path type is equal to that key only (see keysMayBeEqual())
+     *
+     * @psalm-pure
+     */
+    public static function isKnownExactly(string $key): bool
+    {
+        return $key !== self::INTEGER_KEY && self::getKeyPrefix($key) === null && self::getCaselessKey($key) === null;
+    }
+
+    /**
+     * The key, quoted, of a path type whose key is known but for its case (see keysMayBeEqual())
+     *
+     * @psalm-pure
+     */
+    private static function getCaselessKey(string $key): ?string
+    {
+        return strlen($key) > 2 && str_starts_with($key, "'") && str_ends_with($key, "'~") ? substr($key, 0, -1) : null;
     }
 
     /**
