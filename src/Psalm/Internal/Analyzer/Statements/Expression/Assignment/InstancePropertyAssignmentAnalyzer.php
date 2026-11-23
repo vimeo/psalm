@@ -1035,9 +1035,7 @@ final class InstancePropertyAssignmentAnalyzer
         }
 
         if ($lhs_type->hasMixed()) {
-            if ($statements_analyzer->shouldCountMixed($context)) {
-                $codebase->analyzer->incrementMixedCount($statements_analyzer->getFilePath());
-            }
+            $statements_analyzer->countMixed($context, true);
 
             if ($stmt->name instanceof PhpParser\Node\Identifier) {
                 $codebase->analyzer->addMixedMemberName(
@@ -1058,9 +1056,7 @@ final class InstancePropertyAssignmentAnalyzer
             return [];
         }
 
-        if ($statements_analyzer->shouldCountMixed($context)) {
-            $codebase->analyzer->incrementNonMixedCount($statements_analyzer->getFilePath());
-        }
+        $statements_analyzer->countMixed($context, false);
 
         if ($lhs_type->isNull()) {
             IssueBuffer::maybeAdd(

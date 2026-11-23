@@ -169,9 +169,7 @@ final class InstancePropertyFetchAnalyzer
         }
 
         if ($stmt_var_type->hasMixed()) {
-            if ($statements_analyzer->shouldCountMixed($context)) {
-                $codebase->analyzer->incrementMixedCount($statements_analyzer->getFilePath());
-            }
+            $statements_analyzer->countMixed($context, true);
 
             if ($stmt->name instanceof PhpParser\Node\Identifier) {
                 $codebase->analyzer->addMixedMemberName(
@@ -201,9 +199,7 @@ final class InstancePropertyFetchAnalyzer
             }
         }
 
-        if ($statements_analyzer->shouldCountMixed($context)) {
-            $codebase->analyzer->incrementNonMixedCount($statements_analyzer->getRootFilePath());
-        }
+        $statements_analyzer->countMixed($context, false);
 
         if ($stmt_var_type->isNullable() && !$stmt_var_type->ignore_nullable_issues) {
             // we can only be sure that the variable is possibly null if we know the var_id
@@ -498,9 +494,7 @@ final class InstancePropertyFetchAnalyzer
         // we don't need to check anything
         $statements_analyzer->node_data->setType($stmt, $stmt_type);
 
-        if ($statements_analyzer->shouldCountMixed($context)) {
-            $codebase->analyzer->incrementNonMixedCount($statements_analyzer->getFilePath());
-        }
+        $statements_analyzer->countMixed($context, false);
 
         if ($codebase->store_node_types
             && !$context->collect_initializations

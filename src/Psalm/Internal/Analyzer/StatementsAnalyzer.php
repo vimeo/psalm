@@ -1329,6 +1329,19 @@ final class StatementsAnalyzer extends SourceAnalyzer
                 || !$parent_source->getSource() instanceof TraitAnalyzer);
     }
 
+    public function countMixed(Context $context, bool $is_mixed): void
+    {
+        if (!$this->shouldCountMixed($context)) {
+            return;
+        }
+
+        if ($is_mixed) {
+            $this->codebase->analyzer->incrementMixedCount($this->getFilePath());
+        } else {
+            $this->codebase->analyzer->incrementNonMixedCount($this->getFilePath());
+        }
+    }
+
     /**
      * @psalm-external-mutation-free
      */

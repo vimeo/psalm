@@ -1127,9 +1127,7 @@ final class ArrayFetchAnalyzer
                 continue;
             }
 
-            if ($statements_analyzer->shouldCountMixed($context)) {
-                $codebase->analyzer->incrementNonMixedCount($statements_analyzer->getFilePath());
-            }
+            $statements_analyzer->countMixed($context, false);
 
             if ($type instanceof TFalse && $array_type->ignore_falsable_issues) {
                 continue;
@@ -1213,9 +1211,7 @@ final class ArrayFetchAnalyzer
         }
 
         if ($offset_type->hasMixed()) {
-            if ($statements_analyzer->shouldCountMixed($context)) {
-                $codebase->analyzer->incrementMixedCount($statements_analyzer->getFilePath());
-            }
+            $statements_analyzer->countMixed($context, true);
 
             IssueBuffer::maybeAdd(
                 new MixedArrayOffset(
@@ -1226,9 +1222,7 @@ final class ArrayFetchAnalyzer
                 $statements_analyzer->getSuppressedIssues(),
             );
         } else {
-            if ($statements_analyzer->shouldCountMixed($context)) {
-                $codebase->analyzer->incrementNonMixedCount($statements_analyzer->getFilePath());
-            }
+            $statements_analyzer->countMixed($context, false);
 
             if ($expected_offset_types) {
                 $statements_analyzer->node_data->markOffsetChecked($stmt);
@@ -1521,9 +1515,7 @@ final class ArrayFetchAnalyzer
         Atomic $type,
         bool $by_reference = false,
     ): Union {
-        if ($statements_analyzer->shouldCountMixed($context)) {
-            $codebase->analyzer->incrementMixedCount($statements_analyzer->getFilePath());
-        }
+        $statements_analyzer->countMixed($context, true);
 
         // an item passed by reference was reported as accessed when the argument was read
         if (!$context->inside_isset && !$by_reference) {
@@ -2746,9 +2738,7 @@ final class ArrayFetchAnalyzer
     ): void {
         if ($in_assignment && $replacement_type) {
             if ($replacement_type->hasMixed()) {
-                if ($statements_analyzer->shouldCountMixed($context)) {
-                    $codebase->analyzer->incrementMixedCount($statements_analyzer->getFilePath());
-                }
+                $statements_analyzer->countMixed($context, true);
 
                 IssueBuffer::maybeAdd(
                     new MixedStringOffsetAssignment(
@@ -2758,9 +2748,7 @@ final class ArrayFetchAnalyzer
                     $statements_analyzer->getSuppressedIssues(),
                 );
             } else {
-                if ($statements_analyzer->shouldCountMixed($context)) {
-                    $codebase->analyzer->incrementNonMixedCount($statements_analyzer->getFilePath());
-                }
+                $statements_analyzer->countMixed($context, false);
             }
         }
 

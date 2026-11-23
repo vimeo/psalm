@@ -499,12 +499,8 @@ final class ArithmeticOpAnalyzer
         }
 
         if ($left_type_part instanceof TMixed || $right_type_part instanceof TMixed) {
-            if ($statements_source instanceof StatementsAnalyzer
-                && $codebase
-                && $context
-                && $statements_source->shouldCountMixed($context)
-            ) {
-                $codebase->analyzer->incrementMixedCount($statements_source->getFilePath());
+            if ($statements_source instanceof StatementsAnalyzer && $context) {
+                $statements_source->countMixed($context, true);
             }
 
             if ($left_type_part instanceof TMixed) {
@@ -579,12 +575,8 @@ final class ArithmeticOpAnalyzer
             return null;
         }
 
-        if ($statements_source instanceof StatementsAnalyzer
-            && $codebase
-            && $context
-            && $statements_source->shouldCountMixed($context)
-        ) {
-            $codebase->analyzer->incrementNonMixedCount($statements_source->getFilePath());
+        if ($statements_source instanceof StatementsAnalyzer && $context) {
+            $statements_source->countMixed($context, false);
         }
 
         if ($left_type_part instanceof TArray

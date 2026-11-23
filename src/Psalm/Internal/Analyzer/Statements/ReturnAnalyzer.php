@@ -539,9 +539,7 @@ final class ReturnAnalyzer
                             }
                         }
 
-                        if ($statements_analyzer->shouldCountMixed($context)) {
-                            $codebase->analyzer->incrementMixedCount($statements_analyzer->getFilePath());
-                        }
+                        $statements_analyzer->countMixed($context, true);
 
                         if ($stmt_type->isMixed()) {
                             $origin_locations = [];
@@ -588,9 +586,7 @@ final class ReturnAnalyzer
                         return;
                     }
 
-                    if ($statements_analyzer->shouldCountMixed($context)) {
-                        $codebase->analyzer->incrementNonMixedCount($statements_analyzer->getFilePath());
-                    }
+                    $statements_analyzer->countMixed($context, false);
 
                     if ($local_return_type->isVoid()) {
                         IssueBuffer::maybeAdd(

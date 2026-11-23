@@ -643,13 +643,16 @@ final class IfElseAnalyzer
                 && $post_if_context->vars_in_scope[$var_id]->hasMixed()
                 && !$reconciled_type->hasMixed()
             ) {
-                if ($statements_analyzer->shouldCountMixed($post_if_context)
-                    && (!(($parent_source = $statements_analyzer->getSource()) instanceof FunctionLikeAnalyzer)
+                if ($statements_analyzer->shouldCountMixed($post_if_context)) {
+                    $parent_source = $statements_analyzer->getSource();
+
+                    if (!$parent_source instanceof FunctionLikeAnalyzer
                         || !isset($parent_source->getFunctionLikeStorage($statements_analyzer)
-                            ->param_lookup[substr($var_id, 1)]))
-                ) {
-                    $codebase = $statements_analyzer->getCodebase();
-                    $codebase->analyzer->decrementMixedCount($statements_analyzer->getFilePath());
+                            ->param_lookup[substr($var_id, 1)])
+                    ) {
+                        $codebase = $statements_analyzer->getCodebase();
+                        $codebase->analyzer->decrementMixedCount($statements_analyzer->getFilePath());
+                    }
                 }
 
                 IssueBuffer::remove(

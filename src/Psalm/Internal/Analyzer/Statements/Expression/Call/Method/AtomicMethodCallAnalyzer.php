@@ -176,9 +176,7 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
             return;
         }
 
-        if ($statements_analyzer->shouldCountMixed($context)) {
-            $codebase->analyzer->incrementNonMixedCount($statements_analyzer->getFilePath());
-        }
+        $statements_analyzer->countMixed($context, false);
 
         $result->has_valid_method_call_type = true;
 
@@ -746,9 +744,7 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
             case TNonEmptyMixed::class:
             case TObject::class:
             case TObjectWithProperties::class:
-                if ($statements_analyzer->shouldCountMixed($context)) {
-                    $codebase->analyzer->incrementMixedCount($statements_analyzer->getFilePath());
-                }
+                $statements_analyzer->countMixed($context, true);
 
                 $result->has_mixed_method_call = true;
 

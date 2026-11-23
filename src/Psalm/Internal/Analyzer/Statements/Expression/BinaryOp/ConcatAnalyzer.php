@@ -314,9 +314,7 @@ final class ConcatAnalyzer
             $result_type = Type::getString();
 
             if ($left_type->hasMixed() || $right_type->hasMixed()) {
-                if ($statements_analyzer->shouldCountMixed($context)) {
-                    $codebase->analyzer->incrementMixedCount($statements_analyzer->getFilePath());
-                }
+                $statements_analyzer->countMixed($context, true);
 
                 [$side, $operand, $operand_type] = $left_type->hasMixed()
                     ? ['Left', $left, $left_type]
@@ -355,9 +353,7 @@ final class ConcatAnalyzer
                 return;
             }
 
-            if ($statements_analyzer->shouldCountMixed($context)) {
-                $codebase->analyzer->incrementNonMixedCount($statements_analyzer->getFilePath());
-            }
+            $statements_analyzer->countMixed($context, false);
 
             self::analyzeOperand($statements_analyzer, $left, $left_type, 'Left', $context);
             self::analyzeOperand($statements_analyzer, $right, $right_type, 'Right', $context);
