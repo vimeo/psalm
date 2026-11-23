@@ -1057,12 +1057,8 @@
     <ImplicitToStringCast>
       <code><![CDATA[$stmt->name]]></code>
     </ImplicitToStringCast>
-    <ReferenceConstraintViolation>
-      <code><![CDATA[$stmt_type]]></code>
-    </ReferenceConstraintViolation>
     <RiskyTruthyFalsyComparison>
       <code><![CDATA[$context->self]]></code>
-      <code><![CDATA[$declaring_property_class]]></code>
       <code><![CDATA[$declaring_property_class]]></code>
       <code><![CDATA[$property_class_storage->template_types]]></code>
       <code><![CDATA[$property_class_storage->template_types]]></code>

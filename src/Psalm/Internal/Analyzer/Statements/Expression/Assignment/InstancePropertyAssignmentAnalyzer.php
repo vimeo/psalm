@@ -1419,6 +1419,7 @@ final class InstancePropertyAssignmentAnalyzer
                     $context,
                     $statements_analyzer,
                     $stmt,
+                    $lhs_type_part,
                     $prop_name,
                     $assignment_value,
                 );
@@ -1952,6 +1953,7 @@ final class InstancePropertyAssignmentAnalyzer
         Context $context,
         StatementsAnalyzer $statements_analyzer,
         PropertyFetch $stmt,
+        TNamedObject $lhs_type_part,
         string $prop_name,
         Expr $assignment_value,
     ): void {
@@ -1969,6 +1971,13 @@ final class InstancePropertyAssignmentAnalyzer
 
         $statements_analyzer->node_data = clone $statements_analyzer->node_data;
 
+        // `__set` is called on this part of the receiver's type only
+        $receiver_type = $old_data_provider->getType($stmt->var);
+        $statements_analyzer->node_data->setType(
+            $stmt->var,
+            $receiver_type?->setTypes([$lhs_type_part]) ?? new Union([$lhs_type_part]),
+        );
+
         $fake_method_call = new VirtualMethodCall(
             $stmt->var,
             new VirtualIdentifier('__set', $stmt->name->getAttributes()),
@@ -1985,22 +1994,12 @@ final class InstancePropertyAssignmentAnalyzer
             ],
         );
 
-        $suppressed_issues = $statements_analyzer->getSuppressedIssues();
-
-        if (!isset($suppressed_issues['PossiblyNullReference'])) {
-            $statements_analyzer->addSuppressedIssues(['PossiblyNullReference']);
-        }
-
         MethodCallAnalyzer::analyze(
             $statements_analyzer,
             $fake_method_call,
             $context,
             false,
         );
-
-        if (!isset($suppressed_issues['PossiblyNullReference'])) {
-            $statements_analyzer->removeSuppressedIssues(['PossiblyNullReference']);
-        }
 
         $statements_analyzer->node_data = $old_data_provider;
     }
