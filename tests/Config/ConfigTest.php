@@ -2308,32 +2308,39 @@ final class ConfigTest extends DeferredAnalyzerTestCase
     }
 
     /**
-     * @return array<string, array{string, string}>
+     * @return array<string, array{class-string, string, string}>
      * @psalm-pure
      */
     public static function providerSinksOfExtensionsWithoutTheirStubs(): array
     {
         return [
-            'PDO::query' => ['$pdo->query($input);', 'TaintedSql'],
-            'PDO::exec' => ['$pdo->exec($input);', 'TaintedSql'],
-            'PDO::prepare' => ['$pdo->prepare($input);', 'TaintedSql'],
-            'PDOStatement::fetchObject' => ['$statement->fetchObject($input);', 'TaintedCallable'],
-            'mysqli::execute_query' => ['$mysqli->execute_query($input);', 'TaintedSql'],
-            'mysqli_result::fetch_object' => ['$result->fetch_object($input);', 'TaintedCallable'],
-            'DOMXPath::query' => ['$xpath->query($input);', 'TaintedXpath'],
-            'DOMXPath::evaluate' => ['$xpath->evaluate($input);', 'TaintedXpath'],
-            'SimpleXMLElement::xpath' => ['$xml->xpath($input);', 'TaintedXpath'],
-            'SoapClient::__setLocation' => ['$soap->__setLocation($input);', 'TaintedSSRF'],
+            'PDO::query' => ['PDO', 'query', 'TaintedSql'],
+            'PDO::exec' => ['PDO', 'exec', 'TaintedSql'],
+            'PDO::prepare' => ['PDO', 'prepare', 'TaintedSql'],
+            'PDOStatement::fetchObject' => ['PDOStatement', 'fetchObject', 'TaintedCallable'],
+            'mysqli::execute_query' => ['mysqli', 'execute_query', 'TaintedSql'],
+            'mysqli_result::fetch_object' => ['mysqli_result', 'fetch_object', 'TaintedCallable'],
+            'DOMXPath::query' => ['DOMXPath', 'query', 'TaintedXpath'],
+            'DOMXPath::evaluate' => ['DOMXPath', 'evaluate', 'TaintedXpath'],
+            'SimpleXMLElement::xpath' => ['SimpleXMLElement', 'xpath', 'TaintedXpath'],
+            'SoapClient::__setLocation' => ['SoapClient', '__setLocation', 'TaintedSSRF'],
         ];
     }
 
     /**
      * The extension stubs are only loaded when composer.json requires their extension, which projects often leave
      * out for the bundled ones: the sinks of their functions still apply
+     *
+     * @param class-string $class
      */
     #[DataProvider('providerSinksOfExtensionsWithoutTheirStubs')]
-    public function testSinksOfExtensionsWithoutTheirStubs(string $call, string $error): void
+    public function testSinksOfExtensionsWithoutTheirStubs(string $class, string $method, string $error): void
     {
+        if (!class_exists($class)) {
+            // without its stub, Psalm only knows the class of an extension that PHP loads
+            $this->markTestSkipped('The extension of ' . $class . ' is not loaded');
+        }
+
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             TestConfig::loadFromXML(
                 dirname(__DIR__, 2),
@@ -2360,20 +2367,12 @@ final class ConfigTest extends DeferredAnalyzerTestCase
             $file_path,
             '<?php
                 /** @psalm-suppress ArgumentTypeCoercion, PossiblyUnusedReturnValue, UnusedFunctionCall */
-                function run(
-                    PDO $pdo,
-                    PDOStatement $statement,
-                    mysqli $mysqli,
-                    mysqli_result $result,
-                    DOMXPath $xpath,
-                    SimpleXMLElement $xml,
-                    SoapClient $soap,
-                ): void {
+                function run(' . $class . ' $object): void {
                     $input = $_GET["input"] ?? "";
                     if (!is_string($input)) {
                         return;
                     }
-                    ' . $call . '
+                    $object->' . $method . '($input);
                 }',
         );
 
