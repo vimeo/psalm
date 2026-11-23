@@ -334,8 +334,8 @@ final class MissingExtensionRequirementTest extends TestCase
             ],
             'bundledExtension' => [
                 'code' => '<?php
-                    function f(): Socket|false {
-                        return socket_create(AF_INET, SOCK_STREAM, SOL_TCP);
+                    function f(): bool {
+                        return socket_create(2, 1, 6) !== false;
                     }',
                 'error_message' => 'socket_create is part of the ext-sockets extension',
                 'error_levels' => [],
