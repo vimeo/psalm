@@ -6,6 +6,8 @@ namespace Psalm\Internal;
 
 use Psalm\Exception\ComplicatedExpressionException;
 use Psalm\Storage\Assertion;
+use Psalm\Storage\Assertion\IsType;
+use Psalm\Type;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TKeyedArray;
 use UnexpectedValueException;
@@ -430,20 +432,41 @@ final class Algebra
             }
 
             foreach ($anded_types as $key => $orred_types) {
-                // due to type collapsing, the negation of a specific array can't be applied, so the group says
-                // nothing: dropping only the negation would narrow to the other arrays of the group, and reading it as
-                // "not an array" would drop the arrays it allows (`!isList($x)` holds for `[1 => 'a']`). The negation
-                // of any array (`$a is list || $a is not array`) is applied.
-                foreach ($orred_types as $assertion) {
-                    if (isset($assertion->type)
-                        && ($assertion->type instanceof TArray || $assertion->type instanceof TKeyedArray)
-                        && $assertion->isNegation()
-                        && (count($orred_types) === 1 || !self::isAnyArray($assertion->type))
-                    ) {
-                        unset($truths[$var][$key]);
+                // due to type collapsing, the negation of a specific array can't be applied: next to an array type
+                // the variable is asserted to have, it stands for what is not an array at all (the arrays it allows
+                // can't be told apart from that type), and otherwise the group says nothing, as dropping only the
+                // negation would narrow more than the condition allows. The negation of any array
+                // (`$a is list || $a is not array`) is applied.
+                $has_array_type = false;
+                $negated_array_indexes = [];
 
-                        break;
+                foreach ($orred_types as $index => $assertion) {
+                    if (!isset($assertion->type)
+                        || !($assertion->type instanceof TArray || $assertion->type instanceof TKeyedArray)
+                    ) {
+                        continue;
                     }
+
+                    if (!$assertion->isNegation()) {
+                        $has_array_type = $has_array_type || $assertion instanceof IsType;
+                    } elseif (count($orred_types) === 1 || !self::isAnyArray($assertion->type)) {
+                        $negated_array_indexes[] = $index;
+                    }
+                }
+
+                if ($negated_array_indexes === []) {
+                    continue;
+                }
+
+                if (!$has_array_type) {
+                    unset($truths[$var][$key]);
+                    continue;
+                }
+
+                $not_an_array = (new IsType(new TArray([Type::getArrayKey(), Type::getMixed()])))->getNegation();
+
+                foreach ($negated_array_indexes as $index) {
+                    $truths[$var][$key][$index] = $not_an_array;
                 }
             }
         }
