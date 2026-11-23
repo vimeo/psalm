@@ -2366,6 +2366,15 @@ final class SimpleAssertionReconciler extends Reconciler
             if ($type->isArrayAccessibleWithIntOrStringKey($codebase)) {
                 if ($type::class === TArray::class) {
                     $array_types[] = new TNonEmptyArray($type->type_params);
+                } elseif ($type::class === TString::class) {
+                    // a string with a character at an offset has one
+                    $array_types[] = new TNonEmptyString();
+                } elseif ($type::class === TLowercaseString::class) {
+                    $array_types[] = new TNonEmptyLowercaseString();
+                } elseif ($type::class === TNonspecificLiteralString::class) {
+                    $array_types[] = new TNonEmptyNonspecificLiteralString();
+                } elseif ($type instanceof TLiteralString && $type->value === '') {
+                    continue;
                 } else {
                     $array_types[] = $type;
                 }
