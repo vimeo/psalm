@@ -198,6 +198,24 @@ final class PsalmShepherdEndToEndTest extends PsalmEndToEndTestCase
         $this->assertSame(1, $report['analysis']['file_count']);
     }
 
+    public function testPsalmSendsTaintAnalysisOnAndUnusedCodeDetectionOff(): void
+    {
+        $this->initProject();
+        // no CLI flag turns unused code detection off; --taint-analysis overrides runTaintAnalysis="false"
+        $psalmXml = (string) file_get_contents(self::$tmpDir . '/psalm.xml');
+        file_put_contents(
+            self::$tmpDir . '/psalm.xml',
+            str_replace('findUnusedCode="true"', 'findUnusedCode="false"', $psalmXml),
+        );
+
+        $report = $this->runPsalmAndReadTheRawReport(
+            ['--no-cache', '--taint-analysis', self::$tmpDir . '/src/Clean.php'],
+            self::githubActions(),
+        );
+
+        $this->assertStringContainsString('"find_unused_code":false,"taint_analysis":true', $report);
+    }
+
     public function testPsalmSendsAnEmptyBaselinedObjectWhenNoIssueIsBaselined(): void
     {
         $this->initProject();
