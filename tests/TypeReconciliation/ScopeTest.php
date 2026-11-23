@@ -30,6 +30,19 @@ final class ScopeTest extends TestCase
         $this->addToAssertionCount(1);
     }
 
+    public function testPsalmScopeThisWithAnEmptyClassNameInAFileThatIsOnlyScanned(): void
+    {
+        $this->addFile('scanned.php', '<?php
+            /** @psalm-scope-this \ */
+            echo 1;');
+        $this->addFile('somefile.php', '<?php
+            echo 1;');
+
+        $this->analyzeFile('somefile.php', new Context());
+
+        $this->addToAssertionCount(1);
+    }
+
     /**
      * @psalm-pure
      */

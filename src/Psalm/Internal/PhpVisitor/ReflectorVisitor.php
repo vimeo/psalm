@@ -501,9 +501,9 @@ final class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements Fi
                 }
 
                 $scope_class = $scope_this !== [] ? trim(reset($scope_this)) : '';
+                $scope_fqcn = $scope_class !== '' ? Type::getFQCLNFromString($scope_class, $this->aliases) : '';
 
-                if ($scope_class !== '') {
-                    $scope_fqcn = Type::getFQCLNFromString($scope_class, $this->aliases);
+                if ($scope_fqcn !== '') {
                     $this->codebase->scanner->queueClassLikeForScanning($scope_fqcn, false, false);
                     $this->file_storage->referenced_classlikes[strtolower($scope_fqcn)] = $scope_fqcn;
                 }
