@@ -1212,7 +1212,7 @@ final class FunctionLikeDocblockScanner
                         && $type->type_params[0]->hasArrayKey()
                     ) {
                         /** @psalm-suppress InaccessibleProperty We just created this type */
-                        $type->type_params[0]->from_docblock = false;
+                        $type->type_params[0] = $type->type_params[0]->setFromDocblock(false);
                     }
                 } else {
                     $all_typehint_types_match = false;

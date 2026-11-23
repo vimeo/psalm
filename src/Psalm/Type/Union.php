@@ -334,7 +334,7 @@ final class Union implements TypeNode
         if ($types === $this->types) {
             return $this;
         }
-        return $this->getBuilder()->setTypes($types)->freeze();
+        return new self($types, $this->getNonDefaultProperties());
     }
 
     /**

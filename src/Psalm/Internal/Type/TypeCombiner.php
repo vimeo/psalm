@@ -116,8 +116,14 @@ final class TypeCombiner
         $from_docblock = false;
 
         foreach ($types as $type) {
-            $from_docblock = $from_docblock || $type->from_docblock;
+            if ($type->from_docblock) {
+                $from_docblock = true;
 
+                break;
+            }
+        }
+
+        foreach ($types as $type) {
             /** @psalm-suppress ImpureMethodCall */
             $result = self::scrapeTypeProperties(
                 $type,
