@@ -194,8 +194,8 @@ final class PsalmShepherdEndToEndTest extends PsalmEndToEndTestCase
         $this->assertSame('master', $report['build']['CI_BRANCH']);
         $this->assertArrayNotHasKey('CI_PR_NUMBER', $report['build']);
         // a run on the path of Clean.php only
-        $this->assertFalse($report['run']['full']);
-        $this->assertSame(1, $report['run']['files']);
+        $this->assertFalse($report['analysis']['full']);
+        $this->assertSame(1, $report['analysis']['files']);
     }
 
     public function testPsalmSendsAnEmptyBaselinedObjectWhenNoIssueIsBaselined(): void
@@ -204,8 +204,9 @@ final class PsalmShepherdEndToEndTest extends PsalmEndToEndTestCase
 
         $report = $this->runPsalmAndReadTheRawReport(['--no-cache'], self::githubActions());
 
-        $this->assertStringContainsString('"baselined":{}', $report);
-        $this->assertStringContainsString('"baseline_entries":0', $report);
+        // objects even when empty, not the empty arrays PHP encodes by default
+        $this->assertStringContainsString('"issue_counts":{"baselined":{},"info":{}}', $report);
+        $this->assertStringContainsString('"baseline":{"entries":0}', $report);
 
         $this->runPsalm(['--set-baseline'], self::$tmpDir, true);
         $report = $this->runPsalmAndReadTheRawReport(
@@ -213,9 +214,9 @@ final class PsalmShepherdEndToEndTest extends PsalmEndToEndTestCase
             self::githubActions(),
         );
 
-        $this->assertStringContainsString('"config":{"php_version":"8.1",', $report);
-        $this->assertStringContainsString('"baselined":{}', $report);
-        $this->assertStringContainsString('"baseline_entries":0', $report);
+        $this->assertStringContainsString('"php_version":"8.1"', $report);
+        $this->assertStringContainsString('"issue_counts":{"baselined":{},"info":{}}', $report);
+        $this->assertStringContainsString('"baseline":{"entries":0}', $report);
         $this->assertSame(
             ['src/FileWithErrors.php InvalidReturnStatement', 'src/FileWithErrors.php InvalidReturnType'],
             self::sentIssues($report),
@@ -225,9 +226,8 @@ final class PsalmShepherdEndToEndTest extends PsalmEndToEndTestCase
         file_put_contents(self::$tmpDir . '/src/FileWithErrors.php', "<?php\nfunction e()\n{\n    return 1;\n}\n");
         $report = $this->runPsalmAndReadTheRawReport(['--no-cache'], self::githubActions());
 
-        $this->assertStringContainsString('"baselined":{}', $report);
-        $this->assertStringContainsString('"baseline_entries":2', $report);
-        $this->assertStringContainsString('"info":{}', $report);
+        $this->assertStringContainsString('"issue_counts":{"baselined":{},"info":{}}', $report);
+        $this->assertStringContainsString('"baseline":{"entries":2}', $report);
         $this->assertSame(
             [
                 'src/FileWithErrors.php MissingReturnType',
@@ -251,8 +251,11 @@ final class PsalmShepherdEndToEndTest extends PsalmEndToEndTestCase
         $report = $this->runPsalmAndReadTheRawReport(['--no-cache'], self::githubActions());
 
         // 7 entries: the 6 issues the baseline covers, and the one of c() that is now unused
-        $this->assertStringContainsString('"baselined":{"InvalidReturnStatement":3,"InvalidReturnType":3}', $report);
-        $this->assertStringContainsString('"baseline_entries":7', $report);
+        $this->assertStringContainsString(
+            '"issue_counts":{"baselined":{"InvalidReturnStatement":3,"InvalidReturnType":3},"info":{}}',
+            $report,
+        );
+        $this->assertStringContainsString('"baseline":{"entries":7}', $report);
         $this->assertSame(
             ['src/B.php UnusedBaselineEntry', 'src/C.php InvalidReturnStatement', 'src/C.php InvalidReturnType'],
             self::sentIssues($report),
@@ -277,32 +280,38 @@ final class PsalmShepherdEndToEndTest extends PsalmEndToEndTestCase
         $report = $this->runPsalmAndReadTheRawReport(['--no-cache'], self::githubActions());
 
         // the InvalidReturnType of a() and foo() are info now, but the baseline still covers them (it has no
-        // unused entry); those of b() and the MissingReturnType of c() are info, and not in the baseline
-        $this->assertStringContainsString('"baselined":{"InvalidReturnStatement":2,"InvalidReturnType":2}', $report);
-        $this->assertStringContainsString('"info":{"InvalidReturnType":1,"MissingReturnType":1}', $report);
+        // unused entry); those of b() and the MissingReturnType of c() are info, and not in the baseline; each issue
+        // is in one group only, and the InvalidReturnStatement of b() is an error, sent in `issues`
+        $this->assertStringContainsString(
+            '"issue_counts":{"baselined":{"InvalidReturnStatement":2,"InvalidReturnType":2},'
+                . '"info":{"InvalidReturnType":1,"MissingReturnType":1}}',
+            $report,
+        );
+        $this->assertStringContainsString('"baseline":{"entries":4}', $report);
         $this->assertSame(['src/B.php InvalidReturnStatement'], self::sentIssues($report));
-        // the whole payload, so that no key is added or removed unnoticed
+
+        // the key lists, so that no key is added or removed unnoticed
+        /** @var array{issue_counts: array<string, mixed>, analysis: array<string, mixed>} $decoded */
+        $decoded = self::decode($report);
         $this->assertSame(
             [
                 'build',
                 'git',
                 'issues',
-                'baselined',
-                'baseline_entries',
-                'info',
-                'run',
-                'config',
+                'issue_counts',
+                'baseline',
+                'analysis',
                 'coverage',
                 'level',
                 'versions',
             ],
-            array_keys(self::decode($report)),
+            array_keys($decoded),
         );
-        // composer.json requires PHP >= 7.1, and the generated psalm.xml has no phpVersion; the whole object, so
-        // that no key is added or removed unnoticed
+        $this->assertSame(['baselined', 'info'], array_keys($decoded['issue_counts']));
+        // composer.json requires PHP >= 7.1, and the generated psalm.xml has no phpVersion
         $this->assertSame(
-            ['php_version' => '7.1', 'find_unused_code' => true, 'taint_analysis' => false],
-            self::decode($report)['config'],
+            ['full' => true, 'files' => 4, 'php_version' => '7.1', 'find_unused_code' => true, 'taint_analysis' => false],
+            $decoded['analysis'],
         );
         $this->assertStringContainsString('"php":"' . PHP_VERSION . '"', $report);
     }
@@ -318,8 +327,11 @@ final class PsalmShepherdEndToEndTest extends PsalmEndToEndTestCase
             $this->runPsalmAndReadTheRawReport(['--no-cache', '--threads=1'], self::githubActions()),
         );
         $this->assertSame(
-            ['InvalidReturnStatement' => 3, 'InvalidReturnType' => 3, 'MissingReturnType' => 1],
-            $without_cache['baselined'],
+            [
+                'baselined' => ['InvalidReturnStatement' => 3, 'InvalidReturnType' => 3, 'MissingReturnType' => 1],
+                'info' => [],
+            ],
+            $without_cache['issue_counts'],
         );
 
         // the conditions under which Psalm::getThreads() allows more than one thread
@@ -333,15 +345,14 @@ final class PsalmShepherdEndToEndTest extends PsalmEndToEndTestCase
         foreach ([['--threads=1'], ['--threads=1'], ['--threads=2', '--debug']] as $args) {
             $report = self::decode($this->runPsalmAndReadTheRawReport($args, self::githubActions(), $error_output));
 
-            $this->assertSame($without_cache['baselined'], $report['baselined'], implode(' ', $args));
+            $this->assertSame($without_cache['issue_counts'], $report['issue_counts'], implode(' ', $args));
             $this->assertSame($without_cache['issues'], $report['issues'], implode(' ', $args));
-
-            /** @var array{full: mixed, files: mixed} $run */
-            $run = $report['run'];
-            $this->assertSame(['full', 'files'], array_keys($run), implode(' ', $args));
-            // Clean.php, FileWithErrors.php, A.php, B.php and C.php
-            $this->assertSame(5, $run['files'], implode(' ', $args));
-            $this->assertTrue($run['full'], implode(' ', $args));
+            $this->assertSame(
+                // Clean.php, FileWithErrors.php, A.php, B.php and C.php
+                ['full' => true, 'files' => 5, 'php_version' => '7.1', 'find_unused_code' => true, 'taint_analysis' => false],
+                $report['analysis'],
+                implode(' ', $args),
+            );
         }
 
         if ($can_fork) {
@@ -420,14 +431,14 @@ final class PsalmShepherdEndToEndTest extends PsalmEndToEndTestCase
      * @return array{
      *     build: array<string, string>,
      *     git: array{head: array{id: string}},
-     *     run: array{full: bool, files: int},
+     *     analysis: array{full: bool, files: int},
      * }
      */
     private function runPsalmAndReadTheReport(array $env): array
     {
         $this->initProject();
 
-        /** @var array{build: array<string, string>, git: array{head: array{id: string}}, run: array{full: bool, files: int}} */
+        /** @var array{build: array<string, string>, git: array{head: array{id: string}}, analysis: array{full: bool, files: int}} */
         return self::decode(
             $this->runPsalmAndReadTheRawReport(['--no-cache', self::$tmpDir . '/src/Clean.php'], $env),
         );

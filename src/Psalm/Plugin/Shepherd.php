@@ -98,11 +98,11 @@ final class Shepherd implements AfterAnalysisInterface
      *     build: array,
      *     git: array,
      *     issues: array,
-     *     baselined: object,
-     *     baseline_entries: int,
-     *     info: object,
-     *     run: array{full: bool, files: int},
-     *     config: array{
+     *     issue_counts: array{baselined: object, info: object},
+     *     baseline: array{entries: int},
+     *     analysis: array{
+     *         full: bool,
+     *         files: int,
      *         php_version: string,
      *         find_unused_code: bool,
      *         taint_analysis: bool
@@ -182,15 +182,15 @@ final class Shepherd implements AfterAnalysisInterface
             'build' => $build_info,
             'git' => $source_control_data,
             'issues' => $normalized_data,
-            // the counts by type are objects even when empty, which PHP would encode as lists
-            'baselined' => (object) $summary->baselined_issue_counts,
-            'baseline_entries' => $summary->baseline_entry_count,
-            'info' => (object) $info_issue_counts,
-            'run' => [
+            // objects even when empty, which PHP would encode as lists
+            'issue_counts' => [
+                'baselined' => (object) $summary->baselined_issue_counts,
+                'info' => (object) $info_issue_counts,
+            ],
+            'baseline' => ['entries' => $summary->baseline_entry_count],
+            'analysis' => [
                 'full' => $summary->is_full,
                 'files' => $codebase->analyzer->getFileCountWithAnalysisResults(),
-            ],
-            'config' => [
                 // the PHP version Psalm analyses for, not the one it runs on
                 'php_version' => Codebase::getPhpVersionString($codebase->analysis_php_version_id),
                 'find_unused_code' => $codebase->find_unused_code !== null,
