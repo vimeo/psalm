@@ -60,6 +60,22 @@ use const PHP_URL_HOST;
 use const PHP_VERSION;
 
 /**
+ * @psalm-type ShepherdPayload = array{
+ *     build: array{CI_NAME: mixed, ...<array-key, mixed>},
+ *     git: array<array-key, mixed>,
+ *     issues: list<IssueData>,
+ *     issue_counts: array{baselined: array<string, int<1, max>>, info: array<string, int<1, max>>},
+ *     analysis: array{
+ *         full: bool,
+ *         file_count: int<0, max>,
+ *         target_php_version: string,
+ *         find_unused_code: bool,
+ *         taint_analysis: bool
+ *     },
+ *     coverage: array{int, int},
+ *     level: int<1, 8>,
+ *     versions: array{psalm: string, parser: string, php: string}
+ * }
  * @api
  */
 final class Shepherd implements AfterAnalysisInterface
@@ -96,25 +112,9 @@ final class Shepherd implements AfterAnalysisInterface
 
     /**
      * build and git are as loosely typed as AfterAnalysisEvent and SourceControlInfo::toArray() give them. coverage
-     * is the mixed and the non-mixed expression counts, and each issue_counts group is sent as an object of issue
-     * type => positive count.
+     * is the mixed and the non-mixed expression counts.
      *
-     * @return array{
-     *     build: array{CI_NAME: mixed, ...<array-key, mixed>},
-     *     git: array<array-key, mixed>,
-     *     issues: list<IssueData>,
-     *     issue_counts: array{baselined: stdClass, info: stdClass},
-     *     analysis: array{
-     *         full: bool,
-     *         file_count: int<0, max>,
-     *         target_php_version: string,
-     *         find_unused_code: bool,
-     *         taint_analysis: bool
-     *     },
-     *     coverage: array{int, int},
-     *     level: int<1, 8>,
-     *     versions: array{psalm: string, parser: string, php: string}
-     * }|null
+     * @return ShepherdPayload|null
      */
     private static function collectPayloadToSend(AfterAnalysisEvent $event): ?array
     {
@@ -186,11 +186,7 @@ final class Shepherd implements AfterAnalysisInterface
             'build' => $build_info,
             'git' => $source_control_data,
             'issues' => $normalized_data,
-            // objects even when empty, which PHP would encode as lists
-            'issue_counts' => array_map(
-                static fn(array $counts): stdClass => (object) $counts,
-                ['baselined' => $summary->baselined_issue_counts, 'info' => $info_issue_counts],
-            ),
+            'issue_counts' => ['baselined' => $summary->baselined_issue_counts, 'info' => $info_issue_counts],
             'analysis' => [
                 'full' => $summary->is_full,
                 'file_count' => $codebase->analyzer->getFileCountWithAnalysisResults(),
@@ -209,8 +205,16 @@ final class Shepherd implements AfterAnalysisInterface
         ];
     }
 
+    /**
+     * @param ShepherdPayload $rawPayload
+     */
     private static function sendPayload(string $endpoint, array $rawPayload, Progress $progress): void
     {
+        // an empty group must encode as {}, not []
+        $rawPayload['issue_counts'] = array_map(
+            static fn(array $counts): stdClass => (object) $counts,
+            $rawPayload['issue_counts'],
+        );
         $payload = json_encode($rawPayload, JSON_THROW_ON_ERROR);
 
         // Prepare new cURL resource
