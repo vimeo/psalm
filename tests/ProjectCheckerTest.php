@@ -352,7 +352,7 @@ function checkDirRegression(): int
                 </projectFiles>
             </psalm>',
         );
-        $this->project_analyzer = $this->getProjectAnalyzerWithConfig($config, false);
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig($config);
 
         $passed_file = (string) realpath((string) getcwd() . '/tests/fixtures/DummyProject/Bar.php');
         $other_file = (string) realpath((string) getcwd() . '/tests/fixtures/DummyProject/Bat.php');
