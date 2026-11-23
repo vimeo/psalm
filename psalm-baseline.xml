@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<files psalm-version="dev-master@c433708e0d03e873650724f164c6fa508fec09fb">
+<files psalm-version="dev-master@d8f4386a53514d98a4523a37a7a0f4cc3ced0309">
   <file src="examples/TemplateChecker.php">
     <PossiblyUndefinedIntArrayOffset>
       <code><![CDATA[$comment_block->tags['variablesfrom'][0]]]></code>
@@ -127,6 +127,14 @@
       <code><![CDATA[!$directory_path]]></code>
       <code><![CDATA[!$glob_directory_path]]></code>
       <code><![CDATA[!$glob_file_path]]></code>
+      <code><![CDATA[$e->directory]]></code>
+      <code><![CDATA[$e->file]]></code>
+      <code><![CDATA[$e->referencedClass]]></code>
+      <code><![CDATA[$e->referencedConstant]]></code>
+      <code><![CDATA[$e->referencedFunction]]></code>
+      <code><![CDATA[$e->referencedMethod]]></code>
+      <code><![CDATA[$e->referencedProperty]]></code>
+      <code><![CDATA[$e->referencedVariable]]></code>
       <code><![CDATA[glob($parts[0], GLOB_NOSORT)]]></code>
       <code><![CDATA[glob($parts[0], GLOB_ONLYDIR | GLOB_NOSORT)]]></code>
     </RiskyTruthyFalsyComparison>

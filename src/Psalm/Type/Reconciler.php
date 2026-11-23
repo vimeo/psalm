@@ -1813,8 +1813,7 @@ class Reconciler
             if (!$atomic_type instanceof TNamedObject
                 || !$codebase->classlike_storage_provider->has($atomic_type->value)
                 || $codebase->propertyExists($atomic_type->value . '::$' . $property_name, true)
-                || !isset($codebase->classlike_storage_provider->get($atomic_type->value)
-                    ->declaring_method_ids['__get'])
+                || !$codebase->methods->methodExists($codebase, new MethodIdentifier($atomic_type->value, '__get'))
             ) {
                 return false;
             }

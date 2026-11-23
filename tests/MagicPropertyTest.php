@@ -22,6 +22,27 @@ final class MagicPropertyTest extends TestCase
     use InvalidCodeAnalysisTestTrait;
     use ValidCodeAnalysisTestTrait;
 
+    public function testNotSetChildOfASimpleXmlElementWithoutItsStubIsStillReadThroughGet(): void
+    {
+        $config = Config::getInstance();
+        self::assertInstanceOf(TestConfig::class, $config);
+        $config->disableExtension('simplexml');
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                function f(SimpleXMLElement $xml): string {
+                    if (!isset($xml->title)) {
+                        return $xml->title->getName();
+                    }
+
+                    return "";
+                }',
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
     public function testPhpDocPropertyWithoutGet(): void
     {
         Config::getInstance()->use_phpdoc_property_without_magic_or_parent = true;
@@ -415,19 +436,6 @@ final class MagicPropertyTest extends TestCase
 
                         return $bag->known;
                     }',
-            ],
-            'notSetChildOfASimpleXmlElementIsStillReadThroughGet' => [
-                'code' => '<?php
-                    function f(SimpleXMLElement $xml): string {
-                        if (!isset($xml->title)) {
-                            return $xml->title->getName();
-                        }
-
-                        return "";
-                    }',
-                'assertions' => [],
-                'ignored_issues' => [],
-                'php_version' => '8.0',
             ],
             'magicPropertyThatIsNotSetIsStillReadThroughGet' => [
                 'code' => '<?php
