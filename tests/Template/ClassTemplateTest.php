@@ -99,6 +99,103 @@ final class ClassTemplateTest extends TestCase
                         return $c->rebuild("x", 1.5);
                     }',
             ],
+            'staticWithOtherTypeArgumentsOfATemplateReceiverKeepsTheIntersectionOfTheBound' => [
+                'code' => '<?php
+                    /**
+                     * @template K
+                     * @template V
+                     */
+                    class Base {
+                        /**
+                         * @template NewK
+                         * @template NewV
+                         * @param NewK $k
+                         * @param NewV $v
+                         * @return static<NewK, NewV>
+                         */
+                        public function rebuild($k, $v) {
+                            throw new Exception();
+                        }
+                    }
+
+                    interface Marker {}
+
+                    function needsMarker(Marker $m): void {}
+
+                    /**
+                     * @template C of Base<int, string>&Marker
+                     * @param C $c
+                     */
+                    function templated(Base $c): void {
+                        needsMarker($c->rebuild("x", 1.5));
+                    }',
+            ],
+            'staticWithOtherTypeArgumentsOfAnIntersectionReceiverKeepsTheIntersection' => [
+                'code' => '<?php
+                    /**
+                     * @template K
+                     * @template V
+                     */
+                    class Base {
+                        /**
+                         * @template NewK
+                         * @template NewV
+                         * @param NewK $k
+                         * @param NewV $v
+                         * @return static<NewK, NewV>
+                         */
+                        public function rebuild($k, $v) {
+                            throw new Exception();
+                        }
+                    }
+
+                    interface Marker {}
+
+                    function needsMarker(Marker $m): void {}
+
+                    /**
+                     * @param Base<int, string>&Marker $c
+                     */
+                    function concrete(Base $c): void {
+                        needsMarker($c->rebuild("x", 1.5));
+                    }',
+            ],
+            'staticWithOtherTypeArgumentsOfATemplateReceiverTrimsThePurityArgument' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @psalm-purity-template P
+                     */
+                    abstract class XIt {
+                        /**
+                         * @template U
+                         * @param U $u
+                         * @return static[P]<U>
+                         * @psalm-purity-from-template P
+                         * @psalm-mutation-free
+                         */
+                        public function with($u): static {
+                            throw new Exception();
+                        }
+                    }
+
+                    /**
+                     * @template T
+                     * @extends XIt[pure]<T>
+                     */
+                    final class XItOnArray extends XIt {}
+
+                    /**
+                     * @template C of XItOnArray<int>
+                     * @param C $c
+                     * @return XItOnArray<"s">
+                     */
+                    function templated(XItOnArray $c): XItOnArray {
+                        $r = $c->with("s");
+                        /** @psalm-check-type-exact $r = XItOnArray<"s"> */
+                        return $r;
+                    }',
+            ],
             'listParamInheritedFromATemplatedParentAcceptsAList' => [
                 'code' => '<?php
                     /** @template T */
