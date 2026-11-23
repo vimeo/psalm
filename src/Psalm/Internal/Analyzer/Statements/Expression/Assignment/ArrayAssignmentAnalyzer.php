@@ -358,6 +358,24 @@ final class ArrayAssignmentAnalyzer
                     : $root_type;
             $context->writeToReferencesPossiblyBound($root_var_id, $root_type, $codebase);
 
+            if ($context->references_possibly_bound_to) {
+                foreach ($child_stmts as $child_stmt) {
+                    $child_var_id = ExpressionIdentifier::getExtendedVarId(
+                        $child_stmt,
+                        $statements_analyzer->getFQCLN(),
+                        $statements_analyzer,
+                    );
+
+                    if ($child_var_id !== null && isset($context->vars_in_scope[$child_var_id])) {
+                        $context->writeToReferencesPossiblyBound(
+                            $child_var_id,
+                            $context->vars_in_scope[$child_var_id],
+                            $codebase,
+                        );
+                    }
+                }
+            }
+
             if ($context->references_in_scope) {
                 $location = new CodeLocation($statements_analyzer->getSource(), $stmt);
 
@@ -496,7 +514,7 @@ final class ArrayAssignmentAnalyzer
                         $key_type = $key_type->addType(Type::getAtomicStringFromLiteral(''))->freeze();
                     }
 
-                    $key_type = ArrayFetchAnalyzer::castInvalidOffsetTypes(
+                    $key_type = ArrayFetchAnalyzer::castOffsetTypeOfAWrite(
                         ArrayFetchAnalyzer::replaceOffsetTypeWithInts($key_type),
                     );
                 }
@@ -543,6 +561,106 @@ final class ArrayAssignmentAnalyzer
             $context->vars_in_scope[$array_id] = $array_type;
             $item_type = $array_type;
         }
+    }
+
+    /**
+     * The key an offset of a var id stands for, or null when it is a variable or an expression
+     *
+     * @psalm-pure
+     */
+    public static function getLiteralKeyOfOffset(string $offset): int|string|null
+    {
+        if (preg_match('/^-?[0-9]+$/', $offset) === 1) {
+            return (int) $offset;
+        }
+
+        if ($offset[0] !== '\'' && $offset[0] !== '"') {
+            return null;
+        }
+
+        $key = ExpressionIdentifier::unquoteOffset($offset);
+
+        // PHP takes a decimal integer string key as that integer
+        return preg_match('/^(0|-?[1-9][0-9]*)$/', $key) === 1 ? (int) $key : $key;
+    }
+
+    /**
+     * The type of the array with $type added to the items under the keys (null: any key), or null when it holds no
+     * such item
+     *
+     * @param non-empty-list<int|string|null> $keys
+     * @psalm-external-mutation-free
+     */
+    public static function addToItemsUnderKeys(
+        Union $array_type,
+        array $keys,
+        Union $type,
+        Codebase $codebase,
+    ): ?Union {
+        $key = array_shift($keys);
+        $atomic_types = [];
+        $holds_item = false;
+
+        foreach ($array_type->getAtomicTypes() as $atomic_type) {
+            if ($atomic_type instanceof TKeyedArray) {
+                $properties = $atomic_type->properties;
+
+                foreach ($properties as $property_key => $property_type) {
+                    if (($key === null || $property_key === $key)
+                        && ($new_property_type = self::addToItem($property_type, $keys, $type, $codebase))
+                    ) {
+                        $properties[$property_key] = $new_property_type;
+                        $holds_item = true;
+                    }
+                }
+
+                $fallback_params = $atomic_type->fallback_params;
+
+                if ($fallback_params !== null
+                    && ($key === null || !isset($properties[$key]))
+                    && ($new_value_type = self::addToItem($fallback_params[1], $keys, $type, $codebase))
+                ) {
+                    $fallback_params[1] = $new_value_type;
+                    $holds_item = true;
+                }
+
+                $atomic_type = TKeyedArray::make(
+                    $properties,
+                    $atomic_type->class_strings,
+                    $fallback_params,
+                    $atomic_type->is_list,
+                    $atomic_type->from_docblock,
+                );
+            } elseif ($atomic_type instanceof TArray
+                && !$atomic_type->isEmptyArray()
+                && ($new_value_type = self::addToItem($atomic_type->type_params[1], $keys, $type, $codebase))
+            ) {
+                $atomic_type = $atomic_type->setTypeParams([$atomic_type->type_params[0], $new_value_type]);
+                $holds_item = true;
+            }
+
+            $atomic_types[] = $atomic_type;
+        }
+
+        if (!$holds_item) {
+            return null;
+        }
+
+        // what is written through the item is used where the array is
+        return $array_type->setTypes($atomic_types)->addParentNodes($type->parent_nodes);
+    }
+
+    /**
+     * @param list<int|string|null> $keys the keys of the item under this one
+     * @psalm-external-mutation-free
+     */
+    private static function addToItem(Union $item_type, array $keys, Union $type, Codebase $codebase): ?Union
+    {
+        $new_item_type = $keys
+            ? self::addToItemsUnderKeys($item_type, $keys, $type, $codebase)
+            : Type::combineUnionTypes($item_type, $type, $codebase);
+
+        return $new_item_type?->setPossiblyUndefined($item_type->possibly_undefined);
     }
 
     /**
@@ -1075,6 +1193,17 @@ final class ArrayAssignmentAnalyzer
                 }
             }
 
+            if ($expr->var instanceof Variable
+                && $expr->var->name === '_SESSION'
+                && ($taint_flow_graph = $statements_analyzer->getTaintFlowGraphWithSuppressed())
+            ) {
+                $session_node = GlobalAnalyzer::getSessionNode($taint_flow_graph);
+
+                foreach ($stmt_type->parent_nodes as $parent_node) {
+                    $taint_flow_graph->addPath($parent_node, $session_node, '=');
+                }
+            }
+
             if ($value_graph === null) {
                 return;
             }
@@ -1256,7 +1385,7 @@ final class ArrayAssignmentAnalyzer
                     }
                 }
 
-                $array_atomic_key_type = ArrayFetchAnalyzer::castInvalidOffsetTypes(
+                $array_atomic_key_type = ArrayFetchAnalyzer::castOffsetTypeOfAWrite(
                     ArrayFetchAnalyzer::replaceOffsetTypeWithInts($key_type),
                 );
             } else {
@@ -1596,6 +1725,18 @@ final class ArrayAssignmentAnalyzer
 
             $is_last = $i === count($child_stmts) - 1;
 
+            // an item that is an object (an ArrayAccess) is written through its offsetSet(), which reads the array
+            // holding it
+            if ($i > 0 && $array_type->hasObjectType() && $statements_analyzer->data_flow_graph) {
+                foreach ($root_type->parent_nodes as $parent_node) {
+                    $statements_analyzer->data_flow_graph->addPath(
+                        $parent_node,
+                        DataFlowNode::getForVariableUse(),
+                        'use-inside-call',
+                    );
+                }
+            }
+
             $child_stmt_dim_type_or_int = $child_stmt_dim_type ?? Type::getInt();
             $child_stmt_type = ArrayFetchAnalyzer::getArrayAccessTypeGivenOffset(
                 $statements_analyzer,
@@ -1886,7 +2027,8 @@ final class ArrayAssignmentAnalyzer
     /**
      * Forgets what is known about the offsets of an array that the write may overwrite. A known offset at some
      * depth may be overwritten when, at every depth down to it, its key and the written one may be the same:
-     * they are equal, or either isn't a literal. An appended offset is a new one, so no known offset is under it.
+     * they are equal, or either isn't a literal. What is under the written offset is overwritten with it. An appended
+     * offset is a new one, so no known offset is under it.
      *
      * @param list<array{string, bool}|null> $written_offsets each written key with whether it's a literal,
      *     null for an appended one
@@ -1900,6 +2042,7 @@ final class ArrayAssignmentAnalyzer
 
             $position = strlen($root_var_id);
             $is_written_path = true;
+            $is_under_written_offset = true;
 
             foreach ($written_offsets as $written_offset) {
                 if ($written_offset === null) {
@@ -1910,6 +2053,7 @@ final class ArrayAssignmentAnalyzer
                 $key = self::getKeyAt($var_id, $position);
 
                 if ($key === null) {
+                    $is_under_written_offset = false;
                     break;
                 }
 
@@ -1924,7 +2068,7 @@ final class ArrayAssignmentAnalyzer
                 $position += strlen($key);
             }
 
-            if (!$is_written_path) {
+            if (!$is_written_path || ($is_under_written_offset && $position < strlen($var_id))) {
                 $context->remove($var_id, false);
                 $context->removeVarFromConflictingClauses($var_id);
             }

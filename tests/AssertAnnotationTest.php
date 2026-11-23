@@ -294,6 +294,92 @@ final class AssertAnnotationTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'parentCallKeepsTemplatedAssertIfTrueOfAnUndocumentedOverride' => [
+                'code' => '<?php
+                    interface Item { public function name(): string; }
+
+                    /** @template T */
+                    abstract class Coll {
+                        /** @psalm-assert-if-true T $item */
+                        abstract protected function isValid(mixed $item): bool;
+                    }
+
+                    /** @extends Coll<Item> */
+                    class ItemColl extends Coll {
+                        protected function isValid(mixed $item): bool {
+                            return $item instanceof Item;
+                        }
+                    }
+
+                    final class NamedItemColl extends ItemColl {
+                        protected function isValid(mixed $item): bool {
+                            if (!parent::isValid($item)) {
+                                return false;
+                            }
+
+                            return $item->name() === "x";
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'staticCallKeepsAssertIfTrueOfAnUndocumentedOverride' => [
+                'code' => '<?php
+                    abstract class Coll {
+                        /** @psalm-assert-if-true \DateTime $item */
+                        public static function isDate(mixed $item): bool {
+                            return $item instanceof \DateTime;
+                        }
+                    }
+
+                    final class DColl extends Coll {
+                        public static function isDate(mixed $item): bool {
+                            return $item instanceof \DateTime;
+                        }
+                    }
+
+                    function year(mixed $x): string {
+                        if (DColl::isDate($x)) {
+                            return $x->format("Y");
+                        }
+
+                        return "";
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'parentCallKeepsTemplatedAssertIfFalseOfAnUndocumentedOverride' => [
+                'code' => '<?php
+                    interface Item { public function name(): string; }
+
+                    /** @template T */
+                    abstract class Coll {
+                        /** @psalm-assert-if-false T $item */
+                        abstract protected function isInvalid(mixed $item): bool;
+                    }
+
+                    /** @extends Coll<Item> */
+                    class ItemColl extends Coll {
+                        protected function isInvalid(mixed $item): bool {
+                            return !$item instanceof Item;
+                        }
+                    }
+
+                    final class NamedItemColl extends ItemColl {
+                        protected function isInvalid(mixed $item): bool {
+                            if (parent::isInvalid($item)) {
+                                return true;
+                            }
+
+                            return $item->name() !== "x";
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'assertionOnAStringParameterOfABuiltinKeepsAMixedArgument' => [
                 'code' => <<<'PHP'
                     <?php
@@ -2822,6 +2908,8 @@ final class AssertAnnotationTest extends TestCase
                             $parameter->getType()->__toString();
                         }
                     }',
+                'assertions' => [],
+                'ignored_issues' => ['DeprecatedMethod'],
             ],
             'reflectionNameTypeClassStringIfNotBuiltin' => [
                 'code' => '<?php
@@ -4628,6 +4716,62 @@ final class AssertAnnotationTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'assertOfAMethodCalledInTheArgumentOfASelfCall' => [
+                'code' => '<?php
+                    class Entity {
+                        public ?int $id = null;
+
+                        /**
+                         * @psalm-mutation-free
+                         * @psalm-assert !null $this->id
+                         */
+                        public function getIdAssert(): int {
+                            return 1;
+                        }
+
+                        public function viaSelf(): void {
+                            self::consume($this->getIdAssert());
+                        }
+
+                        public function viaStatic(): void {
+                            static::consume($this->getIdAssert());
+                        }
+
+                        public function consume(int $id): void {}
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'assertOfAMethodCalledInTheArgumentOfAParentOrNamedClassCall' => [
+                'code' => '<?php
+                    class Base {
+                        public function consume(int $id): void {}
+                    }
+
+                    class Entity extends Base {
+                        public ?int $id = null;
+
+                        /**
+                         * @psalm-mutation-free
+                         * @psalm-assert !null $this->id
+                         */
+                        public function getIdAssert(): int {
+                            return 1;
+                        }
+
+                        public function viaParent(): void {
+                            parent::consume($this->getIdAssert());
+                        }
+
+                        public function viaName(): void {
+                            Entity::consume($this->getIdAssert());
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'assertNonEmptyArrayOnAPossiblyEmptyArray' => [
                 'code' => '<?php
                     /**
@@ -4673,6 +4817,72 @@ final class AssertAnnotationTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.2',
             ],
+            'callAssertingThreePropertiesIsNotRedundantIfOnlyTheThirdChangesAType' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class Triple {
+                        public ?int $a = null;
+                        public ?int $b = null;
+                        public ?int $c = null;
+
+                        /**
+                         * @psalm-mutation-free
+                         * @psalm-assert !null $this->a
+                         * @psalm-assert !null $this->b
+                         * @psalm-assert !null $this->c
+                         */
+                        public function assertAll(): void {
+                            if ($this->a === null || $this->b === null || $this->c === null) {
+                                throw new Exception();
+                            }
+                        }
+
+                        public function test(): void {
+                            if ($this->a === null || $this->b === null) {
+                                return;
+                            }
+
+                            $this->assertAll();
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'callAssertingSeveralPropertiesIsNotRedundantIfOneOfThemChangesAType' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class Pair {
+                        public ?int $a = null;
+                        public ?int $b = null;
+
+                        /**
+                         * @psalm-mutation-free
+                         * @psalm-assert !null $this->a
+                         * @psalm-assert !null $this->b
+                         */
+                        public function assertBoth(): void {
+                            if ($this->a === null || $this->b === null) {
+                                throw new Exception();
+                            }
+                        }
+
+                        public function test(): int {
+                            if ($this->a === null) {
+                                return 0;
+                            }
+
+                            $this->assertBoth();
+
+                            return $this->b;
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'assertedPropertyNamedLikeTheArgumentIndexIsKept' => [
                 'code' => '<?php
                     final class A {
@@ -4707,6 +4917,22 @@ final class AssertAnnotationTest extends TestCase
                     function always(A $a): void { assert($a->p0 !== null); }
 
                     function i(A $x): int { always($x); return $x->p0; }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'callAssertingSeveralArgumentsIsNotRedundantIfOneOfThemChangesAType' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-assert string $a
+                     * @psalm-assert int $b
+                     */
+                    function assertBoth(mixed $a, mixed $b): void {}
+
+                    function f(string $a, mixed $b): void {
+                        assertBoth($a, $b);
+                        /** @psalm-check-type-exact $b = int */
+                    }',
                 'assertions' => [],
                 'ignored_issues' => [],
                 'php_version' => '8.1',
@@ -4838,6 +5064,278 @@ final class AssertAnnotationTest extends TestCase
                 'assertions' => [],
                 'ignored_issues' => ['InvalidDocblock'],
             ],
+            'assertOnThisPropertyOfAConstructorIsNotReportedOnNew' => [
+                'code' => '<?php
+                    class Holder {
+                        public ?int $v = null;
+
+                        /** @psalm-assert int $this->v */
+                        public function __construct(int $v) {
+                            $this->v = $v;
+                        }
+                    }
+
+                    $holder = new Holder(1);',
+            ],
+            'newDoesNotAssertTheCallersThisProperty' => [
+                'code' => '<?php
+                    class Holder {
+                        public ?int $v = null;
+
+                        /** @psalm-assert int $this->v */
+                        public function __construct(int $v) {
+                            $this->v = $v;
+                        }
+                    }
+
+                    class Caller {
+                        public ?int $v = null;
+
+                        public function test(): ?int {
+                            $this->v = null;
+                            new Holder(1);
+                            $v = $this->v;
+                            return $v;
+                        }
+                    }',
+            ],
+            'staticCallOfAnotherClassDoesNotAssertTheCallersThisProperty' => [
+                'code' => '<?php
+                    class Holder {
+                        /** @psalm-assert int $this->v */
+                        public static function assertSet(): void {}
+
+                        /** @psalm-assert-if-true int $this->v */
+                        public static function isSet(): bool {
+                            return true;
+                        }
+                    }
+
+                    class Caller {
+                        public ?int $v = null;
+
+                        public function test(): void {
+                            $this->v = null;
+                            Holder::assertSet();
+                            /** @psalm-check-type-exact $this->v = null */;
+                            if (Holder::isSet()) {
+                                /** @psalm-check-type-exact $this->v = null */;
+                            }
+                        }
+                    }',
+            ],
+            'callOnAnObjectWithoutIdDoesNotAssertTheCallersThisProperty' => [
+                'code' => '<?php
+                    class Holder {
+                        public ?int $v = null;
+
+                        /** @psalm-assert int $this->v */
+                        public function set(int $v): void {
+                            $this->v = $v;
+                        }
+                    }
+
+                    class Caller {
+                        public ?int $v = null;
+
+                        public function test(): ?int {
+                            $this->v = null;
+                            self::holder()->set(1);
+                            $v = $this->v;
+                            return $v;
+                        }
+
+                        public static function holder(): Holder {
+                            return new Holder();
+                        }
+                    }',
+            ],
+            'parentCallAssertsThis' => [
+                'code' => '<?php
+                    interface Marker {}
+
+                    class Holder {
+                        public ?int $v = null;
+
+                        /** @psalm-assert int $this->v */
+                        public function set(int $v): void {
+                            $this->v = $v;
+                        }
+
+                        /** @psalm-assert-if-true Marker $this */
+                        public function isMarker(): bool {
+                            return $this instanceof Marker;
+                        }
+                    }
+
+                    class Child extends Holder {
+                        public function test(): void {
+                            parent::set(1);
+                            /** @psalm-check-type-exact $this->v = int */;
+                            if (!parent::isMarker()) {
+                                return;
+                            }
+                            /** @psalm-check-type $this = Child&Marker */;
+                        }
+                    }',
+            ],
+            'selfCallAssertsThisInAConditional' => [
+                'code' => '<?php
+                    interface Marker {}
+
+                    class Holder {
+                        public ?int $v = null;
+
+                        /** @psalm-assert-if-true Marker $this */
+                        public function isMarker(): bool {
+                            return $this instanceof Marker;
+                        }
+
+                        /** @psalm-assert-if-false null $this->v */
+                        public function hasNoValue(): bool {
+                            return $this->v === null;
+                        }
+                    }
+
+                    class Child extends Holder {
+                        public function test(): void {
+                            if (self::isMarker()) {
+                                /** @psalm-check-type $this = Child&Marker */;
+                            }
+                            if (!self::hasNoValue()) {
+                                /** @psalm-check-type-exact $this->v = null */;
+                            }
+                        }
+                    }',
+            ],
+            'invalidAssertionOfAFunctionIsSuppressedAtTheCall' => [
+                'code' => '<?php
+                    class Foo {
+                        public ?int $v = null;
+                    }
+
+                    /** @psalm-assert-if-true int $nope */
+                    function isTrue(mixed $_m): bool {
+                        return true;
+                    }
+
+                    /** @psalm-assert-if-false int $nope */
+                    function isFalse(mixed $_m): bool {
+                        return false;
+                    }
+
+                    /** @psalm-assert-if-true Foo $this */
+                    function isThis(): bool {
+                        return true;
+                    }
+
+                    /** @psalm-assert int $nope->v */
+                    function assertNotAnArgument(object $_o): void {}
+
+                    /** @psalm-assert int $o->v */
+                    function assertProperty(mixed $o): void {}
+
+                    function test(mixed $m): void {
+                        /** @psalm-suppress InvalidDocblock */
+                        if (isTrue($m)) {}
+                        /** @psalm-suppress InvalidDocblock */
+                        if (isFalse($m)) {}
+                        /** @psalm-suppress InvalidDocblock */
+                        if (isThis()) {}
+                        /** @psalm-suppress InvalidDocblock */
+                        assertNotAnArgument(new Foo());
+                        /** @psalm-suppress InvalidDocblock */
+                        assertProperty(new Foo());
+                        $i = 1;
+                        /** @psalm-suppress InvalidDocblock */
+                        assertProperty($i);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'instanceMethodOfAnotherClassCalledStaticallyDoesNotAssertTheCallersThis' => [
+                'code' => '<?php
+                    interface Marker {}
+
+                    class Other {
+                        public ?int $v = null;
+
+                        /** @psalm-assert int $this->v */
+                        public function set(): void {}
+
+                        /** @psalm-assert-if-true Marker $this */
+                        public function isMarker(): bool {
+                            return true;
+                        }
+                    }
+
+                    class Caller {
+                        public ?int $v = null;
+
+                        public function test(): void {
+                            $this->v = null;
+                            Other::set();
+                            /** @psalm-check-type-exact $this->v = null */;
+                            if (Other::isMarker()) {
+                                /** @psalm-check-type-exact $this = Caller&static */;
+                            }
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['NonStaticSelfCall', 'InvalidStaticInvocation'],
+            ],
+            'staticCallOnSeveralClassesAssertsWhatEachOfThemAsserts' => [
+                'code' => '<?php
+                    class Other {
+                        public static function isString(mixed $_x): bool {
+                            return true;
+                        }
+
+                        /** @psalm-assert-if-true int $x */
+                        public static function isInt(mixed $x): bool {
+                            return is_int($x);
+                        }
+                    }
+
+                    class Other2 {
+                        public static function isInt(mixed $_x): bool {
+                            return true;
+                        }
+                    }
+
+                    class Other3 {
+                        /** @psalm-assert-if-true int $x */
+                        public static function isInt(mixed $x): bool {
+                            return is_int($x);
+                        }
+                    }
+
+                    class Caller {
+                        /** @psalm-assert-if-true string $x */
+                        public function isString(mixed $x): bool {
+                            return is_string($x);
+                        }
+
+                        public function test(bool $flag, mixed $x): void {
+                            $class = $flag ? self::class : Other::class;
+                            if ($class::isString($x)) {
+                                /** @psalm-check-type-exact $x = mixed */;
+                            }
+                            $static = $flag ? Other2::class : Other::class;
+                            if ($static::isInt($x)) {
+                                /** @psalm-check-type-exact $x = mixed */;
+                            }
+                            $asserting = $flag ? Other3::class : Other::class;
+                            if ($asserting::isInt($x)) {
+                                /** @psalm-check-type-exact $x = int */;
+                            }
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
         ];
     }
 
@@ -4848,6 +5346,27 @@ final class AssertAnnotationTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'assertOfAMethodCalledTwiceInTheArgumentsOfASelfCall' => [
+                'code' => '<?php
+                    class Entity {
+                        public ?int $id = null;
+
+                        /**
+                         * @psalm-mutation-free
+                         * @psalm-assert !null $this->id
+                         */
+                        public function getIdAssert(): int {
+                            return 1;
+                        }
+
+                        public function viaSelf(): void {
+                            self::consume($this->getIdAssert(), $this->getIdAssert());
+                        }
+
+                        public function consume(int $id, int $other): void {}
+                    }',
+                'error_message' => 'RedundantConditionGivenDocblockType',
+            ],
             'assertAnOffsetOfAnArgumentIsIgnoredForANamedArgument' => [
                 'code' => <<<'PHP'
                     <?php
@@ -5276,6 +5795,7 @@ final class AssertAnnotationTest extends TestCase
                         $parameter->getType()->__toString();
                     }',
                 'error_message' => 'PossiblyNullReference',
+                'error_levels' => ['DeprecatedMethod'],
             ],
             'forgetAssertionAfterRelevantNonMutationFreeCall' => [
                 'code' => '<?php
@@ -5473,6 +5993,37 @@ final class AssertAnnotationTest extends TestCase
                 'error_message' => 'TypeDoesNotContainType',
                 'error_levels' => [],
                 'php_version' => '8.2',
+            ],
+            'callAssertingSeveralPropertiesIsRedundantIfAllOfThemAre' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class Pair {
+                        public ?int $a = null;
+                        public ?int $b = null;
+
+                        /**
+                         * @psalm-mutation-free
+                         * @psalm-assert !null $this->a
+                         * @psalm-assert !null $this->b
+                         */
+                        public function assertBoth(): void {
+                            if ($this->a === null || $this->b === null) {
+                                throw new Exception();
+                            }
+                        }
+
+                        public function test(): void {
+                            if ($this->a === null || $this->b === null) {
+                                return;
+                            }
+
+                            $this->assertBoth();
+                        }
+                    }
+                    PHP,
+                'error_message' => 'RedundantCondition',
+                'error_levels' => [],
+                'php_version' => '8.1',
             ],
             'assertAnOffsetOfAnArgumentDoesNotAssertAnotherOffset' => [
                 'code' => '<?php

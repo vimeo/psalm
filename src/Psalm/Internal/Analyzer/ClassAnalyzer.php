@@ -16,6 +16,7 @@ use Psalm\Codebase;
 use Psalm\Config;
 use Psalm\Context;
 use Psalm\DocComment;
+use Psalm\Exception\CircularReferenceException;
 use Psalm\Exception\DocblockParseException;
 use Psalm\FileManipulation;
 use Psalm\Internal\Analyzer\FunctionLike\ReturnTypeAnalyzer;
@@ -23,6 +24,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\Call\ClassTemplateParamCollect
 use Psalm\Internal\Analyzer\Statements\Expression\ClassConstAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\AtomicPropertyFetchAnalyzer;
 use Psalm\Internal\Codebase\CliOutput;
+use Psalm\Internal\Codebase\PhpDeprecations;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Internal\FileManipulation\PropertyDocblockManipulator;
 use Psalm\Internal\MethodIdentifier;
@@ -36,6 +38,7 @@ use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Internal\Type\TypeExpander;
+use Psalm\Issue\CircularReference;
 use Psalm\Issue\DeprecatedClass;
 use Psalm\Issue\DeprecatedInterface;
 use Psalm\Issue\DeprecatedTrait;
@@ -50,6 +53,7 @@ use Psalm\Issue\InternalClass;
 use Psalm\Issue\InvalidEnumCaseValue;
 use Psalm\Issue\InvalidExtendClass;
 use Psalm\Issue\InvalidInterfaceImplementation;
+use Psalm\Issue\InvalidOverride;
 use Psalm\Issue\InvalidTraversableImplementation;
 use Psalm\Issue\MethodSignatureMismatch;
 use Psalm\Issue\MismatchingDocblockPropertyType;
@@ -114,10 +118,10 @@ use function explode;
 use function implode;
 use function in_array;
 use function is_string;
-use function preg_match;
 use function preg_replace;
 use function reset;
 use function str_replace;
+use function strpos;
 use function strtolower;
 use function substr;
 
@@ -128,6 +132,37 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
 {
     /** @var array<string, true> */
     private static array $anonymous_classes_in_analysis = [];
+    /**
+     * @psalm-capabilities read-props
+     */
+    private static function overridesAParentProperty(
+        ClassLikeStorage $storage,
+        string $property_name,
+        Codebase $codebase,
+    ): bool {
+        foreach ($storage->overridden_property_ids[$property_name] ?? [] as $overridden_property_id) {
+            [$guide_class_name] = explode('::$', $overridden_property_id);
+            $guide_property_storage = $codebase->classlike_storage_provider->get($guide_class_name)
+                ->properties[$property_name] ?? null;
+
+            if ($guide_property_storage !== null
+                && $guide_property_storage->visibility !== ClassLikeAnalyzer::VISIBILITY_PRIVATE
+            ) {
+                return true;
+            }
+        }
+
+        foreach ([...$storage->parent_classes, ...$storage->class_implements] as $ancestor) {
+            $inherited = $codebase->classlikes->getStorageFor($ancestor)?->properties[$property_name] ?? null;
+
+            if ($inherited !== null && $inherited->visibility !== ClassLikeAnalyzer::VISIBILITY_PRIVATE) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     /** Set on the call of the constructor that stands for it when the initialization of properties is checked */
     public const FAKE_CONSTRUCTOR_CALL_ATTRIBUTE = 'fake_constructor_call';
 
@@ -210,6 +245,39 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
         }
     }
 
+    /**
+     * Reports a class or an enum named after a type or a keyword, and returns false if it can't be analysed
+     */
+    private function checkClassName(
+        PhpParser\Node\Stmt\Class_|PhpParser\Node\Stmt\Enum_ $class,
+        PhpParser\Node\Identifier $name,
+        string $fq_class_name,
+    ): bool {
+        $suppressed_issues = $this->storage->suppressed_issues + $this->getSuppressedIssues();
+
+        if (self::isReservedClassName($fq_class_name)) {
+            IssueBuffer::maybeAdd(
+                new ReservedWord(
+                    $name->name . ' is a reserved word',
+                    new CodeLocation($this, $name, null, true),
+                    $name->name,
+                ),
+                $suppressed_issues,
+            );
+
+            return false;
+        }
+
+        self::checkDeprecatedName(
+            $this,
+            $class instanceof PhpParser\Node\Stmt\Enum_ ? 'an enum' : 'a class',
+            $name,
+            $suppressed_issues,
+        );
+
+        return true;
+    }
+
     private function analyzeClass(
         ?Context $class_context,
         ?Context $global_context,
@@ -228,29 +296,7 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
             return;
         }
 
-        if ($class->name
-            && (preg_match(
-                '/(^|\\\)(int|float|bool|string|void|null|false|true|object|mixed)$/i',
-                $fq_class_name,
-            ) || strtolower($fq_class_name) === 'resource')
-        ) {
-            $class_name_parts = explode('\\', $fq_class_name);
-            $class_name = array_pop($class_name_parts);
-
-            IssueBuffer::maybeAdd(
-                new ReservedWord(
-                    $class_name . ' is a reserved word',
-                    new CodeLocation(
-                        $this,
-                        $class->name,
-                        null,
-                        true,
-                    ),
-                    $class_name,
-                ),
-                $storage->suppressed_issues + $this->getSuppressedIssues(),
-            );
-
+        if ($class->name && !$this->checkClassName($class, $class->name, $fq_class_name)) {
             return;
         }
 
@@ -557,6 +603,12 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                 $member_stmts[] = $stmt;
                 AttributesAnalyzer::reportPlaceholders($this, $stmt->attrGroups, $this->getSuppressedIssues());
 
+                self::checkDeprecatedConstantNames(
+                    $this,
+                    $stmt,
+                    $storage->suppressed_issues + $this->getSuppressedIssues(),
+                );
+
                 foreach ($stmt->consts as $const) {
                     if ($const->name->toLowerString() === 'class') {
                         IssueBuffer::maybeAdd(
@@ -740,6 +792,25 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                     ),
                     $property_storage->suppressed_issues,
                 );
+            }
+
+            // PHP 8.5: #[\Override] on a property needs a property of the same name that isn't private in a parent
+            // class or an interface; a property of a trait is checked in the class using it
+            if (explode('::$', $appearing_property_id)[0] === $fq_class_name
+                && $codebase->analysis_php_version_id >= 8_05_00
+                && !self::overridesAParentProperty($storage, $property_name, $codebase)
+            ) {
+                foreach ($property_storage->attributes as $attribute) {
+                    if ($attribute->fq_class_name === 'Override') {
+                        IssueBuffer::maybeAdd(
+                            new InvalidOverride(
+                                'Property $' . $property_name . ' does not match any parent property',
+                                $attribute->name_location,
+                            ),
+                            [...$property_storage->suppressed_issues, ...$storage->suppressed_issues],
+                        );
+                    }
+                }
             }
 
             if (isset($storage->overridden_property_ids[$property_name])) {
@@ -1029,6 +1100,7 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                     $this_object_type,
                     $storage,
                     $property_class_storage,
+                    null,
                 );
             }
 
@@ -2246,6 +2318,84 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
         return new TNamedObject($original_fq_classlike_name);
     }
 
+    /**
+     * Replaces the templates of the class-like that declares a method (or a closure within it) with what
+     * the analyzed class gives them
+     *
+     * @param lowercase-string $method_name
+     */
+    public static function localizeReturnType(
+        Codebase $codebase,
+        Union $return_type,
+        ClassLikeStorage $declaring_class_storage,
+        string $original_fq_classlike_name,
+        string $method_name,
+    ): Union {
+        $this_object_type = self::getThisObjectType(
+            $declaring_class_storage,
+            $original_fq_classlike_name,
+        );
+
+        $class_template_params = ClassTemplateParamCollector::collect(
+            $codebase,
+            $declaring_class_storage,
+            $codebase->classlike_storage_provider->get($original_fq_classlike_name),
+            $method_name,
+            $this_object_type,
+        ) ?? [];
+
+        return TemplateStandinTypeReplacer::replace(
+            $return_type,
+            new TemplateResult($class_template_params, []),
+            $codebase,
+            null,
+            null,
+            null,
+            $original_fq_classlike_name,
+        );
+    }
+
+    /**
+     * A closure's return type names the templates of the class-like that declares the method around it: the
+     * declared type, and what the analysed class gives those templates
+     */
+    public static function localizeClosureReturnType(
+        Codebase $codebase,
+        ?Union $return_type,
+        Context $context,
+    ): ?Union {
+        if ($return_type === null
+            || $context->self === null
+            || $context->calling_method_id === null
+            || strpos($context->calling_method_id, '::') === false
+            || ($codebase->classlike_storage_provider->get($context->self)->template_extended_params ?? []) === []
+        ) {
+            return $return_type;
+        }
+
+        $enclosing_method_id = $codebase->methods->getDeclaringMethodId(
+            MethodIdentifier::wrap($context->calling_method_id),
+        );
+
+        if (!$enclosing_method_id) {
+            return $return_type;
+        }
+
+        $localized_return_type = self::localizeReturnType(
+            $codebase,
+            $return_type,
+            $codebase->classlike_storage_provider->get($enclosing_method_id->fq_class_name),
+            $context->self,
+            $enclosing_method_id->method_name,
+        );
+
+        // what the closure returns can be in either terms: `$this->get()` in those of the analysed class, a captured
+        // `@param T` value in those of the declaring class-like
+        return $localized_return_type->getId() === $return_type->getId()
+            ? $return_type
+            : Type::combineUnionTypes($return_type, $localized_return_type, $codebase);
+    }
+
     public static function analyzeClassMethodReturnType(
         PhpParser\Node\Stmt\ClassMethod $stmt,
         MethodAnalyzer $method_analyzer,
@@ -2286,32 +2436,12 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                 $class_storage = $codebase->classlike_storage_provider->get($declaring_class_name);
             }
 
-            $this_object_type = self::getThisObjectType(
-                $class_storage,
-                $original_fq_classlike_name,
-            );
-
-            $class_template_params = ClassTemplateParamCollector::collect(
+            $return_type = self::localizeReturnType(
                 $codebase,
-                $class_storage,
-                $codebase->classlike_storage_provider->get($original_fq_classlike_name),
-                strtolower($stmt->name->name),
-                $this_object_type,
-            ) ?: [];
-
-            $template_result = new TemplateResult(
-                $class_template_params ?: [],
-                [],
-            );
-
-            $return_type = TemplateStandinTypeReplacer::replace(
                 $return_type,
-                $template_result,
-                $codebase,
-                null,
-                null,
-                null,
+                $class_storage,
                 $original_fq_classlike_name,
+                strtolower($stmt->name->name),
             );
         }
 
@@ -2540,6 +2670,24 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                 IssueBuffer::maybeAdd(
                     new DeprecatedInterface(
                         $fq_interface_name . ' is marked deprecated',
+                        $code_location,
+                        $fq_interface_name,
+                    ),
+                    $storage->suppressed_issues + $this->getSuppressedIssues(),
+                );
+            }
+
+            if ($fq_interface_name_lc === 'serializable'
+                && (!$codebase->methodExists($fq_class_name . '::__serialize')
+                    || !$codebase->methodExists($fq_class_name . '::__unserialize'))
+            ) {
+                IssueBuffer::maybeAdd(
+                    new DeprecatedInterface(
+                        PhpDeprecations::getDeprecatedSinceMessage(
+                            'Implementing Serializable without __serialize() and __unserialize()',
+                            8_01_00,
+                            null,
+                        ) . ', add them',
                         $code_location,
                         $fq_interface_name,
                     ),
@@ -2859,7 +3007,7 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                 $storage,
                 $parent_class_storage,
                 $code_location,
-                $storage->template_type_extends_count[$parent_fq_class_name] ?? 0,
+                $storage->template_type_extends_count[strtolower($parent_fq_class_name)] ?? 0,
             );
         } catch (InvalidArgumentException) {
             // do nothing
@@ -2871,8 +3019,20 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
         $storage = $this->storage;
 
         $seen_values = [];
-        foreach ($storage->enum_cases as $case_storage) {
-            $case_value = $case_storage->getValue($this->getCodebase()->classlikes);
+        foreach ($storage->enum_cases as $case_name => $case_storage) {
+            try {
+                $case_value = $case_storage->resolveValue($this->getCodebase()->classlikes);
+            } catch (CircularReferenceException) {
+                IssueBuffer::maybeAdd(
+                    new CircularReference(
+                        'Enum case ' . $storage->name . '::' . $case_name . ' contains a circular reference',
+                        $case_storage->stmt_location,
+                    ),
+                );
+
+                continue;
+            }
+
             if ($case_value !== null && $storage->enum_type === null) {
                 IssueBuffer::maybeAdd(
                     new InvalidEnumCaseValue(

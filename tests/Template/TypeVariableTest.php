@@ -333,6 +333,66 @@ final class TypeVariableTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'magicPropertyOfObjectsBuiltEmptyOnEachBranch' => [
+                'code' => '<?php
+                    /**
+                     * @template K as string
+                     * @template V
+                     */
+                    final class Bag {
+                        /** @var array<K, V> */
+                        private array $properties;
+
+                        /**
+                         * @param array<K, V> $properties
+                         * @psalm-mutation-free
+                         */
+                        public function __construct(array $properties) {
+                            $this->properties = $properties;
+                        }
+
+                        /**
+                         * @param K $name
+                         * @return V
+                         * @psalm-mutation-free
+                         */
+                        public function __get(string $name): mixed {
+                            return $this->properties[$name];
+                        }
+
+                        /**
+                         * @param K $name
+                         * @param V $value
+                         * @psalm-external-mutation-free
+                         */
+                        public function __set(string $name, mixed $value): void {
+                            $this->properties[$name] = $value;
+                        }
+                    }
+
+                    /**
+                     * @param list<string> $keys
+                     * @return array<string, Bag>
+                     */
+                    function count_keys(array $keys, bool $fresh): array {
+                        $bags = [];
+                        foreach ($keys as $key) {
+                            if ($fresh || !isset($bags[$key])) {
+                                $bag = new Bag([]);
+                                $bag->count = 0;
+                                $bags[$key] = $bag;
+                            } else {
+                                $bag = $bags[$key];
+                            }
+                            $bag->count = 1;
+                        }
+                        return $bags;
+                    }',
+                // __set() doesn't bind the variables of an object built empty
+                'assertions' => [],
+                'ignored_issues' => ['UndefinedMagicPropertyAssignment'],
+                'php_version' => '8.0',
+            ],
             'possiblyEmptyArray' => [
                 'code' => '<?php
                     /**
@@ -1338,6 +1398,150 @@ final class TypeVariableTest extends TestCase
                         }
                     }',
             ],
+            'constructorlessConstructionReturnedAsTypedGeneric' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class NoCtor {
+                        /** @param T $x */
+                        public function add($x): void {}
+                    }
+
+                    /** @return NoCtor<int> */
+                    function make(): NoCtor {
+                        return new NoCtor();
+                    }',
+            ],
+            'constructorlessConstructionWidenedPastTemplateDefault' => [
+                // as with an empty constructor, the default only stands for a
+                // template nothing can constrain after construction
+                'code' => '<?php
+                    /** @template T = int */
+                    final class NoCtor {
+                        /** @param T $x */
+                        public function add($x): void {}
+                    }
+
+                    /** @return NoCtor<string> */
+                    function make(): NoCtor {
+                        $n = new NoCtor();
+                        $n->add("a");
+                        return $n;
+                    }',
+            ],
+            'constructionOfACovariantTemplateNothingCanConstrain' => [
+                'code' => '<?php
+                    /** @template-covariant T */
+                    final class Coll {
+                        public function __construct() {}
+
+                        /** @return list<T> */
+                        public function all(): array {
+                            return [];
+                        }
+                    }
+
+                    /** @template-covariant T */
+                    final class ConstructorlessColl {
+                        /** @return list<T> */
+                        public function all(): array {
+                            return [];
+                        }
+                    }
+
+                    /** @return Coll<int> */
+                    function ints(): Coll {
+                        return new Coll();
+                    }
+
+                    /** @return ConstructorlessColl<string> */
+                    function strings(): ConstructorlessColl {
+                        return new ConstructorlessColl();
+                    }
+
+                    $c = new Coll();',
+                'assertions' => [
+                    '$c===' => 'Coll<never>',
+                ],
+            ],
+            'constructorlessConstructionOfUnconstrainableTemplate' => [
+                'code' => '<?php
+                    /** @template T = int */
+                    final class WithDefault {}
+
+                    /** @template T of string */
+                    final class WithConstraint {}
+
+                    $a = new WithDefault();
+                    $b = new WithConstraint();',
+                'assertions' => [
+                    '$a===' => 'WithDefault<int>',
+                    '$b===' => 'WithConstraint<string>',
+                ],
+            ],
+            'constructorlessWeakMapReturnedAsTypedGeneric' => [
+                'code' => '<?php
+                    /** @return WeakMap<stdClass, int> */
+                    function make(): WeakMap {
+                        return new WeakMap();
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'constructorlessWeakMapSatisfiesTypedProperty' => [
+                'code' => '<?php
+                    final class Foo {}
+
+                    final class Cache {
+                        /** @var WeakMap<Foo, int> */
+                        private WeakMap $map;
+
+                        public function __construct() {
+                            $this->map = new WeakMap();
+                        }
+
+                        public function get(Foo $key): int {
+                            return $this->map[$key] ??= 1;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'constructorlessCovariantConstructionSatisfiesTwoInstantiations' => [
+                'code' => '<?php
+                    /** @template-covariant T */
+                    final class Coll {
+                        /**
+                         * @template U
+                         * @param callable(T): U $f
+                         * @return Coll<U>
+                         */
+                        public function map(callable $f): Coll {
+                            return new Coll();
+                        }
+                    }
+
+                    /** @param Coll<int> $c */
+                    function takesInts(Coll $c): void {}
+
+                    /** @param Coll<string> $c */
+                    function takesStrings(Coll $c): void {}
+
+                    function both(): void {
+                        $c = new Coll();
+                        takesInts($c);
+                        takesStrings($c);
+                    }',
+            ],
+            'constructorlessConstructionAsParamDefault' => [
+                'code' => '<?php
+                    /** @param WeakMap<stdClass, int> $m */
+                    function f(WeakMap $m = new WeakMap()): void {}',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'readSitesResolveTypeVariableFromForeach' => [
                 'code' => '<?php
                     /** @template T */
@@ -1790,6 +1994,153 @@ final class TypeVariableTest extends TestCase
                         }
                     }',
             ],
+            'constructionCoalesceAssignedToStaticPropertyTakesItsType' => [
+                'code' => '<?php
+                    final class H {}
+
+                    final class C {
+                        /** @var SplObjectStorage<H, array<int, string>>|null */
+                        private static ?SplObjectStorage $m = null;
+
+                        /** @return array<int, string> */
+                        public static function f(H $h): array {
+                            return (self::$m ??= new SplObjectStorage())[$h] ?? [];
+                        }
+                    }',
+            ],
+            'constructionAssignedToStaticPropertyTakesItsType' => [
+                'code' => '<?php
+                    final class H {}
+
+                    final class C {
+                        /** @var SplObjectStorage<H, array<int, string>>|null */
+                        private static ?SplObjectStorage $m = null;
+
+                        /** @return array<int, string> */
+                        public static function f(H $h): array {
+                            self::$m = new SplObjectStorage();
+                            return self::$m[$h] ?? [];
+                        }
+                    }',
+            ],
+            'constructionCoalesceAssignedToPropertyItemTakesItsType' => [
+                'code' => '<?php
+                    final class D {
+                        /** @var array<string, SplObjectStorage<object, array<string, bool>>> */
+                        private array $r = [];
+
+                        /** @return array<string, bool> */
+                        public function f(string $e, object $o): array {
+                            $w = $this->r[$e] ??= new SplObjectStorage();
+                            $m = $w[$o] ?? [];
+                            $m["x"] = true;
+                            $w[$o] = $m;
+                            return $m;
+                        }
+                    }',
+            ],
+            'constructionCoalesceAssignedToItemOfAnotherObjectPropertyTakesItsType' => [
+                'code' => '<?php
+                    final class D {
+                        /** @var array<string, SplObjectStorage<object, array<string, bool>>> */
+                        public array $r = [];
+                    }
+
+                    $d = new D();
+                    $w = $d->r["e"] ??= new SplObjectStorage();
+                    $m = $w[new stdClass()] ?? [];',
+                'assertions' => [
+                    '$m===' => 'array<string, bool>',
+                ],
+            ],
+            'constructionCoalesceAssignedToStaticPropertyItemTakesItsType' => [
+                'code' => '<?php
+                    final class H {}
+
+                    final class S {
+                        /** @var array<string, SplObjectStorage<H, array<int, string>>> */
+                        private static array $r = [];
+
+                        /** @return array<int, string> */
+                        public static function f(H $h, string $e): array {
+                            return (self::$r[$e] ??= new SplObjectStorage())[$h] ?? [];
+                        }
+                    }',
+            ],
+            'constructionAssignedToADocumentedStaticVariableTakesItsType' => [
+                'code' => '<?php
+                    final class H {}
+
+                    function f(H $h): int {
+                        /** @var SplObjectStorage<H, int>|null */
+                        static $st = null;
+                        $st = new SplObjectStorage();
+                        return $st[$h];
+                    }',
+            ],
+            'constructionAssignedThroughAPropertyReferenceTakesItsType' => [
+                'code' => '<?php
+                    final class H {}
+
+                    final class R {
+                        /** @var SplObjectStorage<H, array<int, string>>|null */
+                        private ?SplObjectStorage $m = null;
+
+                        /** @return array<int, string> */
+                        public function f(H $h): array {
+                            $ref = &$this->m;
+                            $ref = new SplObjectStorage();
+                            return $ref[$h] ?? [];
+                        }
+                    }',
+            ],
+            'constructionAssignedToPropertyItemTakesItsType' => [
+                'code' => '<?php
+                    final class H {}
+
+                    final class D {
+                        /** @var array<string, SplObjectStorage<H, array<int, string>>> */
+                        private array $r = [];
+
+                        /** @return array<int, string> */
+                        public function f(H $h, string $e): array {
+                            $this->r[$e] = new SplObjectStorage();
+                            return $this->r[$e][$h] ?? [];
+                        }
+                    }',
+            ],
+            'constructionAssignedToPropertyShapeItemTakesItsType' => [
+                'code' => '<?php
+                    final class H {}
+
+                    final class D {
+                        /** @var array{a?: SplObjectStorage<H, array<int, string>>} */
+                        private array $s = [];
+
+                        /** @return array<int, string> */
+                        public function f(H $h): array {
+                            $w = new SplObjectStorage();
+                            $this->s["a"] = $w;
+                            return $w[$h];
+                        }
+                    }',
+            ],
+            'constructionAppendedToListPropertyTakesItsType' => [
+                'code' => '<?php
+                    final class H {}
+
+                    final class D {
+                        /** @var list<SplObjectStorage<H, array<int, string>>> */
+                        private array $l = [];
+
+                        /** @return array<int, string> */
+                        public function f(H $h): array {
+                            $w = new SplObjectStorage();
+                            $this->l[] = $w;
+                            return $w[$h];
+                        }
+                    }',
+            ],
         ];
     }
 
@@ -1800,6 +2151,22 @@ final class TypeVariableTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'constructionOfAnInvariantTemplateNothingCanConstrain' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class Coll {
+                        /** @return list<T> */
+                        public function all(): array {
+                            return [];
+                        }
+                    }
+
+                    /** @return Coll<int> */
+                    function ints(): Coll {
+                        return new Coll();
+                    }',
+                'error_message' => 'MixedReturnTypeCoercion',
+            ],
             'mixedConstructionCallableParamRequirement' => [
                 // a value that entered the variable as mixed is then required to
                 // be a Foo by the callable's parameter: reported at the call, as
@@ -1857,6 +2224,58 @@ final class TypeVariableTest extends TestCase
                     }',
                 'error_message' => 'MixedReturnTypeCoercion - src' . DIRECTORY_SEPARATOR
                     . "somefile.php:20:32 - The type 'Box<mixed>' is more general than the declared return type 'Box<Foo>' for boxMixed",
+            ],
+            'constructorlessConstructionSeesValuesAddedAfterward' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class NoCtor {
+                        /** @param T $x */
+                        public function add($x): void {}
+                    }
+
+                    /** @return NoCtor<int> */
+                    function make(): NoCtor {
+                        $n = new NoCtor();
+                        $n->add("a");
+                        return $n;
+                    }',
+                'error_message' => 'IncompatibleTypeParameters - src' . DIRECTORY_SEPARATOR
+                    . "somefile.php:11:33 - Type 'a' should be a subtype of int",
+            ],
+            'constructorlessInvariantConstructionRejectsTwoInstantiations' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class Coll {
+                        /** @param T $x */
+                        public function add($x): void {}
+                    }
+
+                    /** @param Coll<int> $c */
+                    function takesInts(Coll $c): void {}
+
+                    /** @param Coll<string> $c */
+                    function takesStrings(Coll $c): void {}
+
+                    function both(): void {
+                        $c = new Coll();
+                        takesInts($c);
+                        takesStrings($c);
+                    }',
+                'error_message' => 'IncompatibleTypeParameters - src' . DIRECTORY_SEPARATOR
+                    . 'somefile.php:17:38 - Type int should be a subtype of string',
+            ],
+            'constructorlessConstructionKeepsTemplateConstraint' => [
+                'code' => '<?php
+                    /** @template T of int */
+                    final class NoCtor {
+                        /** @param T $x */
+                        public function add($x): void {}
+                    }
+
+                    $n = new NoCtor();
+                    $n->add("a");',
+                'error_message' => 'IncompatibleTypeParameters - src' . DIRECTORY_SEPARATOR
+                    . "somefile.php:9:29 - Type 'a' should be a subtype of int",
             ],
             'mixedConstructionAssignedToTypedProperty' => [
                 'code' => '<?php
@@ -2457,6 +2876,156 @@ final class TypeVariableTest extends TestCase
                 'error_message' => 'IncompatibleTypeParameters - src' . DIRECTORY_SEPARATOR . 'somefile.php:17:39',
                 'error_levels' => [],
                 'php_version' => '8.1',
+            ],
+            'constructionAssignedToStaticPropertyRejectsOtherValues' => [
+                'code' => '<?php
+                    final class H {}
+
+                    final class C {
+                        /** @var SplObjectStorage<H, array<int, string>>|null */
+                        private static ?SplObjectStorage $m = null;
+
+                        public static function f(H $h): void {
+                            $w = new SplObjectStorage();
+                            self::$m = $w;
+                            $w[$h] = 5;
+                        }
+                    }',
+                'error_message' => 'IncompatibleTypeParameters - src' . DIRECTORY_SEPARATOR
+                    . "somefile.php:11:38 - Type 5 should be a subtype of array",
+            ],
+            'constructionAssignedToADocumentedStaticVariableRejectsOtherValues' => [
+                'code' => '<?php
+                    final class H {}
+
+                    function f(H $h): void {
+                        /** @var SplObjectStorage<H, int>|null */
+                        static $st = null;
+                        $st = new SplObjectStorage();
+                        $st[$h] = "bad";
+                    }',
+                'error_message' => 'IncompatibleTypeParameters - src' . DIRECTORY_SEPARATOR
+                    . "somefile.php:8:35 - Type 'bad' should be a subtype of int",
+            ],
+            'constructionAssignedToADocumentedGlobalRejectsOtherValues' => [
+                'code' => '<?php
+                    final class H {}
+
+                    function f(H $h): void {
+                        /** @var SplObjectStorage<H, int>|null */
+                        global $g;
+                        $g = new SplObjectStorage();
+                        $g[$h] = "bad";
+                    }',
+                'error_message' => 'IncompatibleTypeParameters - src' . DIRECTORY_SEPARATOR
+                    . "somefile.php:8:34 - Type 'bad' should be a subtype of int",
+            ],
+            'constructionAssignedThroughAPropertyReferenceRejectsOtherValues' => [
+                'code' => '<?php
+                    final class H {}
+
+                    final class R {
+                        /** @var SplObjectStorage<H, array<int, string>>|null */
+                        private ?SplObjectStorage $m = null;
+
+                        public function f(H $h): void {
+                            $ref = &$this->m;
+                            $ref = new SplObjectStorage();
+                            $ref[$h] = 5;
+                        }
+                    }',
+                'error_message' => 'IncompatibleTypeParameters - src' . DIRECTORY_SEPARATOR
+                    . "somefile.php:11:40 - Type 5 should be a subtype of array",
+            ],
+            'constructionAssignedToPropertyItemRejectsOtherValues' => [
+                'code' => '<?php
+                    final class H {}
+
+                    final class D {
+                        /** @var array<string, SplObjectStorage<H, array<int, string>>> */
+                        private array $r = [];
+
+                        public function f(H $h, string $e): void {
+                            $w = new SplObjectStorage();
+                            $this->r[$e] = $w;
+                            $w[$h] = 5;
+                        }
+                    }',
+                'error_message' => 'IncompatibleTypeParameters - src' . DIRECTORY_SEPARATOR
+                    . "somefile.php:11:38 - Type 5 should be a subtype of array",
+            ],
+            'constructionAssignedToPropertyShapeItemRejectsOtherValues' => [
+                'code' => '<?php
+                    final class H {}
+
+                    final class D {
+                        /** @var array{a?: SplObjectStorage<H, array<int, string>>} */
+                        private array $s = [];
+
+                        public function f(H $h): void {
+                            $w = new SplObjectStorage();
+                            $this->s["a"] = $w;
+                            $w[$h] = 5;
+                        }
+                    }',
+                'error_message' => 'IncompatibleTypeParameters - src' . DIRECTORY_SEPARATOR
+                    . "somefile.php:11:38 - Type 5 should be a subtype of array",
+            ],
+            'constructionTakesTheTypeOfAListArgument' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class Box {
+                        /** @param list<T> $xs */
+                        public function addAll(array $xs): void {}
+
+                        /** @return list<T> */
+                        public function all(): array {
+                            return [];
+                        }
+                    }
+
+                    /** @param list<string> $s */
+                    function takesStrings(array $s): void {}
+
+                    function f(): void {
+                        $b = new Box();
+                        $b->addAll([1, 2]);
+                        takesStrings($b->all());
+                    }',
+                'error_message' => 'IncompatibleTypeParameters - src' . DIRECTORY_SEPARATOR
+                    . "somefile.php:19:38 - Type 1 should be a subtype of string",
+            ],
+            'constructionPassedInAListArgumentRejectsOtherValues' => [
+                'code' => '<?php
+                    final class H {}
+
+                    /** @param list<SplObjectStorage<H, int>> $l */
+                    function takesList(array $l): void {}
+
+                    function f(H $h): void {
+                        $w = new SplObjectStorage();
+                        takesList([$w]);
+                        $w[$h] = "bad";
+                    }',
+                'error_message' => 'IncompatibleTypeParameters - src' . DIRECTORY_SEPARATOR
+                    . "somefile.php:10:34 - Type 'bad' should be a subtype of int",
+            ],
+            'constructionAppendedToListPropertyRejectsOtherValues' => [
+                'code' => '<?php
+                    final class H {}
+
+                    final class D {
+                        /** @var list<SplObjectStorage<H, array<int, string>>> */
+                        private array $l = [];
+
+                        public function f(H $h): void {
+                            $w = new SplObjectStorage();
+                            $this->l[] = $w;
+                            $w[$h] = 5;
+                        }
+                    }',
+                'error_message' => 'IncompatibleTypeParameters - src' . DIRECTORY_SEPARATOR
+                    . "somefile.php:11:38 - Type 5 should be a subtype of array",
             ],
         ];
     }

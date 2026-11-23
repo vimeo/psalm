@@ -14,7 +14,6 @@ use Symfony\Component\Filesystem\Path;
 use function array_filter;
 use function array_keys;
 use function array_merge;
-use function array_shift;
 use function array_sum;
 use function array_unique;
 use function array_values;
@@ -30,6 +29,7 @@ use function is_dir;
 use function is_string;
 use function json_decode;
 use function ksort;
+use function ltrim;
 use function max;
 use function preg_match;
 use function preg_replace;
@@ -304,11 +304,7 @@ final class Creator
         foreach ($php_files as $php_file) {
             $php_file = str_replace($current_dir . DIRECTORY_SEPARATOR, '', $php_file);
 
-            $parts = explode(DIRECTORY_SEPARATOR, $php_file);
-
-            if (!$parts[0]) {
-                array_shift($parts);
-            }
+            $parts = explode(DIRECTORY_SEPARATOR, ltrim($php_file, DIRECTORY_SEPARATOR));
 
             if ($parts[0] === 'vendor' || $parts[0] === 'tests') {
                 continue;

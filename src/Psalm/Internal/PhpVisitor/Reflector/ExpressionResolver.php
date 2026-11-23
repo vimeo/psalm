@@ -70,6 +70,14 @@ use const T_WHITESPACE;
  */
 final class ExpressionResolver
 {
+    /**
+     * The kind of symbol each existence check guards
+     */
+    private const EXISTS_FUNCTION_KINDS = [
+        'class_exists' => 'class',
+        'interface_exists' => 'interface',
+        'enum_exists' => 'enum',
+    ];
     public static function getUnresolvedClassConstExpr(
         PhpParser\Node\Expr $stmt,
         Aliases $aliases,
@@ -187,6 +195,11 @@ final class ExpressionResolver
 
             if ($part0_lc === '__namespace__') {
                 return new ScalarValue($aliases->namespace);
+            }
+
+            // `use const A\SOME;` makes the unqualified `SOME` the constant of A, whatever PHP constant it shadows
+            if ($stmt->name->isUnqualified() && isset($aliases->constants[$stmt->name->getFirst()])) {
+                return new Constant($aliases->constants[$stmt->name->getFirst()], true, $aliases->namespace ?? '');
             }
 
             return new Constant(
@@ -467,9 +480,9 @@ final class ExpressionResolver
             return false;
         }
 
-        if ($function->name->getParts() === ['class_exists']
-            && isset($function->getArgs()[0])
-        ) {
+        $kind = self::EXISTS_FUNCTION_KINDS[$function->name->toString()] ?? null;
+
+        if ($kind !== null && isset($function->getArgs()[0])) {
             $string_value = null;
 
             if ($function->getArgs()[0]->value instanceof PhpParser\Node\Scalar\String_) {
@@ -482,43 +495,7 @@ final class ExpressionResolver
                 $string_value = (string) $function->getArgs()[0]->value->class->getAttribute('resolvedName');
             }
 
-            return self::isDefinedElsewhere($codebase, $string_value, $file_path, 'class');
-        }
-
-        if ($function->name->getParts() === ['interface_exists']
-            && isset($function->getArgs()[0])
-        ) {
-            $string_value = null;
-
-            if ($function->getArgs()[0]->value instanceof PhpParser\Node\Scalar\String_) {
-                $string_value = $function->getArgs()[0]->value->value;
-            } elseif ($function->getArgs()[0]->value instanceof PhpParser\Node\Expr\ClassConstFetch
-                && $function->getArgs()[0]->value->class instanceof PhpParser\Node\Name
-                && $function->getArgs()[0]->value->name instanceof PhpParser\Node\Identifier
-                && strtolower($function->getArgs()[0]->value->name->name) === 'class'
-            ) {
-                $string_value = (string) $function->getArgs()[0]->value->class->getAttribute('resolvedName');
-            }
-
-            return self::isDefinedElsewhere($codebase, $string_value, $file_path, 'interface');
-        }
-
-        if ($function->name->getParts() === ['enum_exists']
-            && isset($function->getArgs()[0])
-        ) {
-            $string_value = null;
-
-            if ($function->getArgs()[0]->value instanceof PhpParser\Node\Scalar\String_) {
-                $string_value = $function->getArgs()[0]->value->value;
-            } elseif ($function->getArgs()[0]->value instanceof PhpParser\Node\Expr\ClassConstFetch
-                && $function->getArgs()[0]->value->class instanceof PhpParser\Node\Name
-                && $function->getArgs()[0]->value->name instanceof PhpParser\Node\Identifier
-                && strtolower($function->getArgs()[0]->value->name->name) === 'class'
-            ) {
-                $string_value = (string) $function->getArgs()[0]->value->class->getAttribute('resolvedName');
-            }
-
-            return self::isDefinedElsewhere($codebase, $string_value, $file_path, 'enum');
+            return self::isDefinedElsewhere($codebase, $string_value, $file_path, $kind);
         }
 
         if ($function->name->getParts() === ['defined']

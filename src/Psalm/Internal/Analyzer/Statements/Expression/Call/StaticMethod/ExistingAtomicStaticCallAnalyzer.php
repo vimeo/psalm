@@ -41,6 +41,7 @@ use Psalm\IssueBuffer;
 use Psalm\Plugin\EventHandler\Event\AfterMethodCallAnalysisEvent;
 use Psalm\Storage\Capabilities;
 use Psalm\Storage\ClassLikeStorage;
+use Psalm\Storage\MethodStorage;
 use Psalm\Storage\Possibilities;
 use Psalm\Type;
 use Psalm\Type\Atomic;
@@ -48,6 +49,7 @@ use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTemplateParamClass;
 use Psalm\Type\Union;
+use UnexpectedValueException;
 
 use function array_map;
 use function count;
@@ -93,6 +95,12 @@ final class ExistingAtomicStaticCallAnalyzer
             $statements_analyzer->getFullyQualifiedFunctionMethodOrNamespaceName(),
             new CodeLocation($statements_analyzer->getSource(), $stmt),
             $statements_analyzer->getSuppressedIssues(),
+        );
+
+        MethodCallProhibitionAnalyzer::checkDeprecatedStaticCall(
+            $statements_analyzer,
+            $method_id,
+            new CodeLocation($statements_analyzer->getSource(), $stmt),
         );
 
         if ($class_storage->user_defined
@@ -169,10 +177,8 @@ final class ExistingAtomicStaticCallAnalyzer
         // a static call naming a class does not forward the late static binding: `static` is that class
         $static_is_called_class = $stmt->class instanceof PhpParser\Node\Name
             && !in_array(strtolower($stmt->class->getFirst()), ['self', 'static', 'parent'], true)
-            && $codebase->methods->getStorage(
-                $codebase->methods->getDeclaringMethodId($method_id) ?? $method_id,
-                true,
-            )->is_static;
+            && self::getMethodStorage($codebase, $codebase->methods->getDeclaringMethodId($method_id) ?? $method_id)
+                ?->is_static;
 
         // the arguments, the hints of closure params and the conditionals of the return type are read with `static` of
         // the call only when it is that class: forwarding calls and template classes keep `static` as declared, and so
@@ -194,9 +200,18 @@ final class ExistingAtomicStaticCallAnalyzer
             return;
         }
 
+        // what is read from a `*` receiver is as unknown as the receiver (`$any::make()` of a `Box<*>`)
+        ClassTemplateParamCollector::markStarBindings(
+            $template_result,
+            $codebase,
+            $class_storage,
+            $lhs_type_part,
+            $found_generic_params,
+        );
+
         $declaring_method_id = $codebase->methods->getDeclaringMethodId($method_id) ?? $method_id;
-        $static_property_mutations = $codebase->methods->getStorage($declaring_method_id, true)
-            ->static_property_mutations;
+        $static_property_mutations = self::getMethodStorage($codebase, $declaring_method_id)
+            ?->static_property_mutations;
 
         if ($static_property_mutations !== null
             && !$context->collect_initializations
@@ -387,10 +402,8 @@ final class ExistingAtomicStaticCallAnalyzer
                 && ($signature_return_type === null
                     || !($signature_return_type->isVoid() || $signature_return_type->isNever()))
                 && Capabilities::allowsAnyOf(Capabilities::MUTATION_FREE, $call_capabilities)
-                && !$method_storage->assertions
-                && !$method_storage->if_true_assertions
-                && !$method_storage->if_false_assertions
                 && !$method_storage->throws
+                && !(new AssertionsFromInheritanceResolver($codebase))->hasAny($method_storage, $class_storage)
                 && !MethodCallPurityAnalyzer::isCalledForItsTemplatesEffects($method_storage)
             ) {
                 IssueBuffer::maybeAdd(
@@ -437,10 +450,20 @@ final class ExistingAtomicStaticCallAnalyzer
                     ? 'static'
                     : null);
 
+            // an instance method of the caller's class or of an ancestor, called statically from an instance method,
+            // is called on `$this`
+            $assertion_this_var_id = !$method_storage->is_static
+                && isset($context->vars_in_scope['$this'])
+                && $context->self !== null
+                && (strtolower($context->self) === strtolower($fq_class_name)
+                    || $codebase->classExtendsOrImplements($context->self, $fq_class_name))
+                ? '$this'
+                : null;
+
             if ($assertions) {
                 CallAnalyzer::applyAssertionsToContext(
                     $stmt_name,
-                    null,
+                    $assertion_this_var_id,
                     CallAnalyzer::resolveStaticPropertyAssertionClasses(
                         CallAnalyzer::getAssertionsOnArgs(
                             $assertions,
@@ -464,7 +487,13 @@ final class ExistingAtomicStaticCallAnalyzer
                 );
             }
 
-            if ($method_storage->if_true_assertions) {
+            $if_true_assertions = $assertionsResolver->resolveIfTrue($method_storage, $class_storage);
+
+            if ($assertion_this_var_id === null) {
+                $if_true_assertions = CallAnalyzer::removeThisAssertions($if_true_assertions);
+            }
+
+            if ($if_true_assertions) {
                 $statements_analyzer->node_data->setIfTrueAssertions(
                     $stmt,
                     array_map(
@@ -474,7 +503,7 @@ final class ExistingAtomicStaticCallAnalyzer
                         ),
                         CallAnalyzer::resolveStaticPropertyAssertionClasses(
                             CallAnalyzer::getAssertionsOnArgs(
-                                $method_storage->if_true_assertions,
+                                $if_true_assertions,
                                 $method_storage,
                                 $stmt->getArgs(),
                                 $statements_analyzer->node_data,
@@ -490,7 +519,13 @@ final class ExistingAtomicStaticCallAnalyzer
                 );
             }
 
-            if ($method_storage->if_false_assertions) {
+            $if_false_assertions = $assertionsResolver->resolveIfFalse($method_storage, $class_storage);
+
+            if ($assertion_this_var_id === null) {
+                $if_false_assertions = CallAnalyzer::removeThisAssertions($if_false_assertions);
+            }
+
+            if ($if_false_assertions) {
                 $statements_analyzer->node_data->setIfFalseAssertions(
                     $stmt,
                     array_map(
@@ -500,7 +535,7 @@ final class ExistingAtomicStaticCallAnalyzer
                         ),
                         CallAnalyzer::resolveStaticPropertyAssertionClasses(
                             CallAnalyzer::getAssertionsOnArgs(
-                                $method_storage->if_false_assertions,
+                                $if_false_assertions,
                                 $method_storage,
                                 $stmt->getArgs(),
                                 $statements_analyzer->node_data,
@@ -618,7 +653,7 @@ final class ExistingAtomicStaticCallAnalyzer
 
         $return_type_candidate ??= Type::getMixed();
 
-        $method_storage ??= $declaring_method_id ? $codebase->methods->getStorage($declaring_method_id) : null;
+        $method_storage ??= self::getMethodStorage($codebase, $declaring_method_id);
 
         // the storage of a builtin method holds the flows of its declaration (see InternalCallMapHandler)
         StaticCallAnalyzer::taintReturnType(
@@ -984,5 +1019,23 @@ final class ExistingAtomicStaticCallAnalyzer
                 new TemplateBound(Type::getNever()),
             ],
         ];
+    }
+
+    /**
+     * Null for a native method only the callmap of the analysed version has, newer than the runtime
+     *
+     * @psalm-capabilities read-props
+     */
+    private static function getMethodStorage(Codebase $codebase, ?MethodIdentifier $method_id): ?MethodStorage
+    {
+        if ($method_id === null) {
+            return null;
+        }
+
+        try {
+            return $codebase->methods->getStorage($method_id, true);
+        } catch (UnexpectedValueException) {
+            return null;
+        }
     }
 }

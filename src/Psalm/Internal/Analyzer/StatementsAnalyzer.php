@@ -674,35 +674,7 @@ final class StatementsAnalyzer extends SourceAnalyzer
             if (isset($statements_analyzer->parsed_docblock->tags['psalm-suppress'])) {
                 $suppressed = $statements_analyzer->parsed_docblock->tags['psalm-suppress'];
                 if ($suppressed) {
-                    $new_issues = [];
-
-                    foreach ($suppressed as $offset => $suppress_entry) {
-                        foreach (DocComment::parseSuppressList($suppress_entry) as $issue_offset => $issue_type) {
-                            $new_issues[$issue_offset + $offset] = $issue_type;
-                        }
-                    }
-
-                    if ($codebase->track_unused_suppressions
-                        && (
-                            (count($new_issues) === 1) // UnusedPsalmSuppress by itself should be marked as unused
-                            || !$codebase->config->suppressesIssueType($new_issues, 'UnusedPsalmSuppress')
-                        )
-                    ) {
-                        foreach ($new_issues as $offset => $issue_type) {
-                            if ($issue_type === 'InaccessibleMethod') {
-                                continue;
-                            }
-
-                            IssueBuffer::addUnusedSuppression(
-                                $statements_analyzer->getFilePath(),
-                                $offset,
-                                $issue_type,
-                                $codebase->taint_flow_graph !== null,
-                            );
-                        }
-                    }
-
-                    $statements_analyzer->addSuppressedIssues($new_issues);
+                    $new_issues = ExpressionAnalyzer::addSuppressions($statements_analyzer, $suppressed);
                 }
             }
 
@@ -742,6 +714,7 @@ final class StatementsAnalyzer extends SourceAnalyzer
                             $e->getMessage(),
                             new CodeLocation($statements_analyzer->getSource(), $stmt),
                         ),
+                        $statements_analyzer->getSuppressedIssues(),
                     );
                 } catch (DocblockParseException $e) {
                     IssueBuffer::maybeAdd(
@@ -749,6 +722,7 @@ final class StatementsAnalyzer extends SourceAnalyzer
                             $e->getMessage(),
                             new CodeLocation($statements_analyzer->getSource(), $stmt),
                         ),
+                        $statements_analyzer->getSuppressedIssues(),
                     );
                 }
 
@@ -1000,6 +974,7 @@ final class StatementsAnalyzer extends SourceAnalyzer
                     $e->getMessage(),
                     new CodeLocation($this->getSource(), $stmt, null, true),
                 ),
+                $this->getSuppressedIssues(),
             );
 
             $this->parsed_docblock = null;

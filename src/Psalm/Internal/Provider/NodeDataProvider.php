@@ -15,6 +15,7 @@ use PhpParser\Node\Name;
 use PhpParser\Node\Stmt\If_;
 use PhpParser\Node\Stmt\Return_;
 use PhpParser\NodeAbstract;
+use Psalm\Internal\Codebase\StringContext;
 use Psalm\NodeTypeProvider;
 use Psalm\Storage\Assertion;
 use Psalm\Storage\Possibilities;
@@ -43,8 +44,14 @@ final class NodeDataProvider implements NodeTypeProvider
     /** @var SplObjectStorage<Expr, list<string>> */
     private SplObjectStorage $node_literal_prefixes;
 
+    /** @var SplObjectStorage<Expr, StringContext> */
+    private SplObjectStorage $node_string_contexts;
+
     /** @var SplObjectStorage<Expr, true> */
     private SplObjectStorage $written_by_reference;
+
+    /** @var SplObjectStorage<Expr, non-empty-array<string, true>> */
+    private SplObjectStorage $vars_written_by_call;
 
     /**
      * Expressions analysed already, whose analysis is not repeated (see markEvaluated()), with how many times
@@ -77,7 +84,9 @@ final class NodeDataProvider implements NodeTypeProvider
         $this->node_if_true_assertions = new SplObjectStorage();
         $this->node_if_false_assertions = new SplObjectStorage();
         $this->node_literal_prefixes = new SplObjectStorage();
+        $this->node_string_contexts = new SplObjectStorage();
         $this->written_by_reference = new SplObjectStorage();
+        $this->vars_written_by_call = new SplObjectStorage();
         $this->evaluated = new SplObjectStorage();
         $this->offset_checked = new SplObjectStorage();
         $this->impossible_implicit_elses = new SplObjectStorage();
@@ -207,6 +216,22 @@ final class NodeDataProvider implements NodeTypeProvider
     }
 
     /**
+     * Where the text of a string concatenation or interpolation ends (see StringContext)
+     */
+    public function setStringContext(Expr $node, StringContext $context): void
+    {
+        $this->node_string_contexts[$node] = $context;
+    }
+
+    /**
+     * @psalm-capabilities read-props
+     */
+    public function getStringContext(Expr $node): ?StringContext
+    {
+        return $this->node_string_contexts[$node] ?? null;
+    }
+
+    /**
      * Records an argument passed to a by-reference parameter, which the call may assign
      */
     public function markWrittenByReference(Expr $node): void
@@ -220,6 +245,30 @@ final class NodeDataProvider implements NodeTypeProvider
     public function isWrittenByReference(Expr $node): bool
     {
         return isset($this->written_by_reference[$node]);
+    }
+
+    /**
+     * Records the variables of the scope that calling the callable may write through what a closure captured by
+     * reference
+     *
+     * @param array<string, true> $var_ids
+     */
+    public function setVarIdsWrittenByCall(Expr $callable, array $var_ids): void
+    {
+        if ($var_ids) {
+            $this->vars_written_by_call[$callable] = $var_ids;
+        } else {
+            unset($this->vars_written_by_call[$callable]);
+        }
+    }
+
+    /**
+     * @return array<string, true>
+     * @psalm-capabilities read-props
+     */
+    public function getVarIdsWrittenByCall(Expr $callable): array
+    {
+        return $this->vars_written_by_call[$callable] ?? [];
     }
 
     /**
@@ -273,6 +322,7 @@ final class NodeDataProvider implements NodeTypeProvider
             $this->node_types[$node],
             $this->node_assertions[$node],
             $this->node_literal_prefixes[$node],
+            $this->node_string_contexts[$node],
             $this->offset_checked[$node],
         );
     }

@@ -15,11 +15,13 @@ use Psalm\Internal\Analyzer\ClosureAnalyzer;
 use Psalm\Internal\Analyzer\ExtensionRequirementAnalyzer;
 use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\PurityWildcardInference;
+use Psalm\Internal\Analyzer\Statements\Expression\ArrayAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodCallPurityAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodCallReturnTypeFetcher;
 use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\CastAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\CloneAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\Statements\Expression\GlobalStateAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\IntMaskComparisonAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
@@ -28,6 +30,7 @@ use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
 use Psalm\Internal\Codebase\CliOutput;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
+use Psalm\Internal\Codebase\PhpDeprecations;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\Comparator\CallableTypeComparator;
@@ -44,6 +47,7 @@ use Psalm\Internal\TypeVisitor\TypeVariableResolver;
 use Psalm\Issue\DeprecatedFunction;
 use Psalm\Issue\ImpureFunctionCall;
 use Psalm\Issue\ImpureMethodCall;
+use Psalm\Issue\InvalidArrayOffset;
 use Psalm\Issue\InvalidFunctionCall;
 use Psalm\Issue\MixedFunctionCall;
 use Psalm\Issue\NullFunctionCall;
@@ -197,10 +201,10 @@ final class FunctionCallAnalyzer extends CallAnalyzer
             && isset($args[0])
             && !$args[0]->unpack
         ) {
-            $original_function_id = implode('\\', $function_name->getParts());
+            $original_function_id = strtolower(implode('\\', $function_name->getParts()));
 
             // PHP 8.5 clone(...) form: parsed as a FuncCall, not Clone_, so route it in.
-            if (strtolower($original_function_id) === 'clone') {
+            if ($original_function_id === 'clone') {
                 return CloneAnalyzer::analyzeFuncCall($statements_analyzer, $stmt, $context);
             }
 
@@ -302,6 +306,21 @@ final class FunctionCallAnalyzer extends CallAnalyzer
 
         $function_storage = $function_call_info->function_storage;
 
+        // record the call sites of user functions, as Methods::methodExists() does for methods
+        if ($codebase->collect_locations
+            && $function_storage !== null
+            && $function_storage->location !== null
+            && $function_call_info->function_id !== null
+        ) {
+            $codebase->addReferenceToFunctionLike(
+                strtolower($function_call_info->function_id),
+                new CodeLocation($statements_analyzer->getSource(), $stmt->name),
+                $context,
+                $context->insideUse(),
+                $statements_analyzer->getFilePath(),
+            );
+        }
+
         // a function requiring an instance of a class with @psalm-cli-only-instances is called with one: from the
         // command line
         if ($function_storage !== null
@@ -318,13 +337,17 @@ final class FunctionCallAnalyzer extends CallAnalyzer
         }
 
         $set_inside_conditional = false;
+        $was_inside_assert = $context->inside_assert;
 
         if ($function_name instanceof PhpParser\Node\Name
             && $function_name->getParts() === ['assert']
-            && !$context->inside_conditional
         ) {
-            $context->inside_conditional = true;
-            $set_inside_conditional = true;
+            $context->inside_assert = true;
+
+            if (!$context->inside_conditional) {
+                $context->inside_conditional = true;
+                $set_inside_conditional = true;
+            }
         }
 
         if (!$template_result) {
@@ -348,6 +371,8 @@ final class FunctionCallAnalyzer extends CallAnalyzer
             );
         }
 
+        $context->inside_assert = $was_inside_assert;
+
         if ($set_inside_conditional) {
             $context->inside_conditional = false;
         }
@@ -358,7 +383,10 @@ final class FunctionCallAnalyzer extends CallAnalyzer
             && $function_name instanceof PhpParser\Node\Name
             && $function_call_info->function_id
         ) {
-            if (!$function_call_info->is_stubbed && $function_call_info->in_call_map) {
+            // a stub that declares no return type keeps the callmap's
+            if ($function_call_info->in_call_map
+                && (!$function_call_info->is_stubbed || !$function_call_info->function_storage?->return_type)
+            ) {
                 $function_callable = InternalCallMapHandler::getCallableFromCallMapById(
                     $codebase,
                     $function_call_info->function_id,
@@ -366,7 +394,9 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                     $statements_analyzer->node_data,
                 );
 
-                if (!$codebase->functions->params_provider->has($function_call_info->function_id)) {
+                if (!$function_call_info->is_stubbed
+                    && !$codebase->functions->params_provider->has($function_call_info->function_id)
+                ) {
                     $function_call_info->function_params = $function_callable->params;
                 }
             }
@@ -410,6 +440,13 @@ final class FunctionCallAnalyzer extends CallAnalyzer
             );
         }
 
+        if (!$is_first_class_callable
+            && ($function_call_info->function_id === 'array_key_exists'
+                || $function_call_info->function_id === 'key_exists')
+        ) {
+            self::checkArrayKeyExistsKey($statements_analyzer, $stmt);
+        }
+
         CallAnalyzer::checkTemplateResult(
             $statements_analyzer,
             $template_result,
@@ -449,6 +486,24 @@ final class FunctionCallAnalyzer extends CallAnalyzer
             if ($function_call_info->function_storage?->has_yield) {
                 // a generator function always returns a new generator: nothing else holds it
                 $stmt_type = $stmt_type->setProperties(['reference_free' => true]);
+            }
+
+            // the result of a pure function called with literals is the same every time (the capabilities of a
+            // function of the call map are only worked out at the call): what is known about it
+            // (`if (lookup('a') !== null)`) holds for the next call
+            if (!$is_first_class_callable
+                && !$function_call_info->in_call_map
+                && $function_call_info->function_storage?->isPure()
+                && ($call_var_id = ExpressionIdentifier::getFunctionCallId($stmt)) !== null
+            ) {
+                if (isset($context->vars_in_scope[$call_var_id])) {
+                    // the call itself is made here, whatever happened to the id in a loop or a branch
+                    $stmt_type = $context->vars_in_scope[$call_var_id]->setPossiblyUndefined(false);
+                } else {
+                    $context->vars_in_scope[$call_var_id] = $stmt_type;
+                }
+
+                $stmt->setAttribute('memoizable', true);
             }
 
             $statements_analyzer->node_data->setType($real_stmt, $stmt_type);
@@ -534,12 +589,10 @@ final class FunctionCallAnalyzer extends CallAnalyzer
         }
 
         // a called closure may write what it captured by reference
-        foreach ($function_call_info->byref_uses as $use_name => $_) {
-            $use_var_id = '$' . $use_name;
-
+        foreach ($function_call_info->closure_written_var_ids as $var_id => $_) {
             $context->removeVarFromConflictingClauses(
-                $use_var_id,
-                $context->vars_in_scope[$use_var_id] ?? null,
+                $var_id,
+                $context->vars_in_scope[$var_id] ?? null,
                 $statements_analyzer,
             );
         }
@@ -679,6 +732,20 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                     $statements_analyzer->getSuppressedIssues(),
                 );
             }
+        }
+
+        // a builtin a PHP version deprecates, whether or not a stub declares it
+        $deprecation_message = $function_call_info->function_id !== null
+            && $function_call_info->in_call_map
+            && !$function_call_info->function_storage?->deprecated
+                ? PhpDeprecations::getFunctionMessage($function_call_info->function_id)
+                : null;
+
+        if ($deprecation_message !== null && $function_call_info->function_id !== null) {
+            IssueBuffer::maybeAdd(
+                new DeprecatedFunction($deprecation_message, $code_location, $function_call_info->function_id),
+                $statements_analyzer->getSuppressedIssues(),
+            );
         }
 
         if ($function_name instanceof PhpParser\Node\Name && $function_call_info->function_id) {
@@ -1011,6 +1078,22 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                 );
 
                 $function_call_info->function_params = $function_call_info->function_storage->params;
+
+                if ($function_call_info->in_call_map && $function_storage->cased_name !== null) {
+                    // a function imported with an alias is called by the alias: its name is the imported one
+                    $imported_name = count($function_name->getParts()) === 1
+                        ? $statements_analyzer->getAliases()->functions[strtolower($function_name->getFirst())]
+                            ?? null
+                        : null;
+
+                    CallAnalyzer::checkFunctionNameCase(
+                        $statements_analyzer,
+                        $function_storage,
+                        $imported_name ?? $function_name->getLast(),
+                        $code_location,
+                        $function_call_info->function_id,
+                    );
+                }
 
                 if (!$is_predefined) {
                     $function_call_info->defined_constants = $function_storage->defined_constants;
@@ -1542,7 +1625,11 @@ final class FunctionCallAnalyzer extends CallAnalyzer
 
         $context->inside_call = $was_in_call;
 
-        $function_call_info->byref_uses = [];
+        $function_call_info->closure_written_var_ids = ClosureAnalyzer::analyzeVarIdsWrittenByCall(
+            $statements_analyzer,
+            $context,
+            $function_name,
+        );
 
         if ($stmt_name_type = $statements_analyzer->node_data->getType($function_name)) {
             if ($stmt_name_type->isNull()) {
@@ -1674,10 +1761,6 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                         );
                     }
 
-                    if ($var_type_part instanceof TClosure) {
-                        $function_call_info->byref_uses += $var_type_part->byref_uses;
-                    }
-
                     if ($var_type_part->callable_id !== null) {
                         // Collect every known underlying id. When the call target is a union of
                         // distinct callables, any of them may run, so the taint behavior of all
@@ -1794,13 +1877,8 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                 } elseif ($var_type_part instanceof TNull) {
                     // handled above
                 } elseif (!$var_type_part instanceof TNamedObject
-                    || !$codebase->classlikes->classOrInterfaceExists($var_type_part->value, null, $context)
-                    || !$codebase->methodExists(
-                        new MethodIdentifier(
-                            $var_type_part->value,
-                            '__invoke',
-                        ),
-                    )
+                    || ($invoke_member = CallableTypeComparator::getInvokeMember($codebase, $var_type_part)) === null
+                    || !$codebase->classlikes->classOrInterfaceExists($invoke_member->value, null, $context)
                 ) {
                     $invalid_function_call_types[] = (string)$var_type_part;
                 } else {
@@ -1898,6 +1976,12 @@ final class FunctionCallAnalyzer extends CallAnalyzer
         Context $context,
         Atomic $atomic_type,
     ): void {
+        // a first-class callable of a method is looked up in the first member of an intersection only
+        if ($stmt->isFirstClassCallable() && $atomic_type instanceof TNamedObject) {
+            $atomic_type = CallableTypeComparator::getInvokeMember($statements_analyzer->getCodebase(), $atomic_type)
+                ?? $atomic_type;
+        }
+
         $old_data_provider = $statements_analyzer->node_data;
 
         $statements_analyzer->node_data = clone $statements_analyzer->node_data;
@@ -2534,6 +2618,69 @@ final class FunctionCallAnalyzer extends CallAnalyzer
     {
         foreach ($type->getAtomicTypes() as $atomic) {
             if (!$atomic instanceof TNamedObject && !$atomic instanceof TObject) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * `array_key_exists()` of a key that the array, whose keys are all ints, can't have
+     */
+    private static function checkArrayKeyExistsKey(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr\FuncCall $stmt,
+    ): void {
+        $args = $stmt->getArgs();
+
+        if (!isset($args[0], $args[1])) {
+            return;
+        }
+
+        $key_type = $statements_analyzer->node_data->getType($args[0]->value);
+        $array_type = $statements_analyzer->node_data->getType($args[1]->value);
+
+        if ($key_type === null
+            || $array_type === null
+            || !self::isNonNumericStringKeyOfIntKeyedArray($key_type, $array_type)
+        ) {
+            return;
+        }
+
+        IssueBuffer::maybeAdd(
+            new InvalidArrayOffset(
+                'Cannot check offset ' . $key_type->getId() . ' in ' . $array_type->getId()
+                    . ', which only has int keys',
+                new CodeLocation($statements_analyzer, $args[0]->value),
+            ),
+            $statements_analyzer->getSuppressedIssues(),
+        );
+    }
+
+    /**
+     * A non-numeric string literal is never a key of a list or of an array whose keys are all ints
+     *
+     * @psalm-pure
+     */
+    private static function isNonNumericStringKeyOfIntKeyedArray(Union $key_type, Union $array_type): bool
+    {
+        if (!$key_type->allStringLiterals()) {
+            return false;
+        }
+
+        foreach ($key_type->getLiteralStrings() as $literal_string) {
+            if (ArrayAnalyzer::getLiteralArrayKeyInt($literal_string->value) !== false) {
+                return false;
+            }
+        }
+
+        foreach ($array_type->getAtomicTypes() as $atomic_type) {
+            if ($atomic_type instanceof TKeyedArray && $atomic_type->is_list) {
+                continue;
+            }
+
+            if (!$atomic_type instanceof TArray || !$atomic_type->type_params[0]->isInt()) {
                 return false;
             }
         }

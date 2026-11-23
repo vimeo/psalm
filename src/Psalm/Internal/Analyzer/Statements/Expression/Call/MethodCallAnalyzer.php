@@ -8,6 +8,7 @@ use AssertionError;
 use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Context;
+use Psalm\Internal\Analyzer\ClosureAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\AtomicMethodCallAnalysisResult;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\AtomicMethodCallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodCallPurityAnalyzer;
@@ -16,6 +17,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\Statements\Expression\NullsafeChainState;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TypeExpander;
 use Psalm\Internal\TypeVisitor\TypeVariableResolver;
@@ -53,12 +55,17 @@ use function strtolower;
  */
 final class MethodCallAnalyzer extends CallAnalyzer
 {
+    /**
+     * @param bool $receiver_analyzed the receiver was analysed already (offsetGet() for `$a[0]`): it is not
+     *      evaluated again
+     */
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\MethodCall $stmt,
         Context $context,
         bool $real_method_call = true,
         ?TemplateResult $template_result = null,
+        bool $receiver_analyzed = false,
     ): bool {
         $was_inside_call = $context->inside_call;
 
@@ -68,12 +75,24 @@ final class MethodCallAnalyzer extends CallAnalyzer
 
         $existing_stmt_var_type = null;
 
-        if (!$real_method_call) {
+        if (!$real_method_call || $receiver_analyzed) {
             $existing_stmt_var_type = $statements_analyzer->node_data->getType($stmt->var);
         }
 
         if ($existing_stmt_var_type) {
             $statements_analyzer->node_data->setType($stmt->var, $existing_stmt_var_type);
+
+            // the call uses its receiver, which may have been analysed only as the target of an assignment
+            // (offsetSet() for `$a[] = $v`)
+            if ($receiver_analyzed && $statements_analyzer->data_flow_graph) {
+                foreach ($existing_stmt_var_type->parent_nodes as $parent_node) {
+                    $statements_analyzer->data_flow_graph->addPath(
+                        $parent_node,
+                        DataFlowNode::getForVariableUse(),
+                        'use-inside-call',
+                    );
+                }
+            }
         } elseif (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->var, $context) === false) {
             $context->inside_call = $was_inside_call;
 
@@ -105,8 +124,12 @@ final class MethodCallAnalyzer extends CallAnalyzer
                 }
             }
 
+            $source = $statements_analyzer->getSource();
+
             if ($stmt->name instanceof PhpParser\Node\Identifier
                 && strtolower($stmt->name->name) === '__construct'
+                // a lazy ghost initializer constructs the object it is given
+                && !($source instanceof ClosureAnalyzer && $source->getInitializedObjectParam() === $stmt->var->name)
             ) {
                 IssueBuffer::maybeAdd(
                     new DirectConstructorCall(
@@ -501,7 +524,13 @@ final class MethodCallAnalyzer extends CallAnalyzer
             }
 
             // narrowed, not written: the enclosing scopes keep their clauses about it
-            $context->clauses = Context::filterClauses($lhs_var_id, $context->clauses, null, $statements_analyzer);
+            $context->clauses = Context::filterClauses(
+                $lhs_var_id,
+                $context->clauses,
+                null,
+                $statements_analyzer,
+                value_changed: false,
+            );
 
             $class_type = $class_type->getBuilder()->setTypes($types);
             $class_type->from_docblock = false;

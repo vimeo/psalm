@@ -37,6 +37,43 @@ final class CapabilitiesTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'decodingAWaitStatusIsPure' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function exitCode(int $status): int|false {
+                        return pcntl_wifexited($status) ? pcntl_wexitstatus($status) : false;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'aSodiumKeyPairFromASeedIsPure' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function keyPair(string $seed): string {
+                        return sodium_crypto_sign_seed_keypair($seed);
+                    }',
+            ],
+            'externalMutationFreeCalleesCostWriteRefsOnlyThroughTheirByReferenceArguments' => [
+                'code' => '<?php
+                    final class Box {
+                        public int $n = 0;
+
+                        /** @psalm-capabilities read-props|write-this-props|write-refs */
+                        public function bump(): void {
+                            $this->n++;
+                        }
+
+                        /** @psalm-capabilities read-props|write-this-props|write-refs */
+                        public function __construct() {}
+                    }
+
+                    /** @psalm-capabilities read-props|write-this-props|write-props */
+                    function caller(Box $b): void {
+                        $b->bump();
+                        new Box();
+                    }',
+            ],
             'parentCallOfATraitMethodReturnsThisInEveryClassUsingTheTrait' => [
                 'code' => <<<'PHP'
                     <?php
@@ -332,6 +369,8 @@ final class CapabilitiesTest extends TestCase
                         $storage[$key] = 2;
                         return $storage[$key] + (int) $storage->contains($key);
                     }',
+                'assertions' => [],
+                'ignored_issues' => ['DeprecatedMethod'],
             ],
             'mutatingAnSplContainerForgetsWhatItsReadersReturned' => [
                 'code' => '<?php
@@ -1000,6 +1039,8 @@ final class CapabilitiesTest extends TestCase
                         $storage[$key] = 1;
                         $storage->attach(new stdClass(), 2);
                     }',
+                'assertions' => [],
+                'ignored_issues' => ['DeprecatedMethod'],
             ],
             'fillingAFreshSplObjectStorageWithoutATypeIsPure' => [
                 'code' => '<?php
@@ -1040,6 +1081,8 @@ final class CapabilitiesTest extends TestCase
                             echo "detached";
                         }
                     }',
+                'assertions' => [],
+                'ignored_issues' => ['DeprecatedMethod'],
             ],
             'traversableWithPurityCombinesWithIterable' => [
                 'code' => '<?php
@@ -3214,6 +3257,202 @@ final class CapabilitiesTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.3',
             ],
+            'closureCallingAnImpureInstanceMethodIsInferredWithWriteRefs' => [
+                'code' => '<?php
+                    final class Impure {
+                        public function run(): void {}
+                    }
+
+                    function f(Impure $i): void {
+                        $c = function () use ($i): void {
+                            $i->run();
+                        };
+                        /** @psalm-check-type-exact $c = Closure[write-props|read-globals|write-globals|write-refs|io|time]():void */
+                        $c();
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'psalmCapabilitiesWinOverPure' => [
+                'code' => '<?php
+                    interface Message {
+                        /**
+                         * @pure
+                         * @psalm-capabilities read-props
+                         */
+                        public function body(): string;
+                    }
+
+                    final class MyMessage implements Message {
+                        public function __construct(private string $body) {}
+
+                        public function body(): string {
+                            return $this->body;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'psalmCapabilitiesWinOverPhpstanPure' => [
+                'code' => '<?php
+                    interface Message {
+                        /**
+                         * @psalm-capabilities read-props
+                         * @phpstan-pure
+                         */
+                        public function body(): string;
+                    }
+
+                    final class MyMessage implements Message {
+                        public function __construct(private string $body) {}
+
+                        public function body(): string {
+                            return $this->body;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'psalmMutationFreeWinsOverPure' => [
+                'code' => '<?php
+                    interface Message {
+                        /**
+                         * @psalm-mutation-free
+                         * @pure
+                         */
+                        public function body(): string;
+                    }
+
+                    final class MyMessage implements Message {
+                        public function __construct(private string $body) {}
+
+                        public function body(): string {
+                            return $this->body;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'psalmMutationFreeWinsOverPhpstanPure' => [
+                'code' => '<?php
+                    interface Message {
+                        /**
+                         * @phpstan-pure
+                         * @psalm-mutation-free
+                         */
+                        public function body(): string;
+                    }
+
+                    final class MyMessage implements Message {
+                        public function __construct(private string $body) {}
+
+                        public function body(): string {
+                            return $this->body;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'psalmCapabilitiesWinOverPureInTheBody' => [
+                'code' => '<?php
+                    /**
+                     * @pure
+                     * @psalm-capabilities io
+                     */
+                    function greet(string $name): void {
+                        echo $name;
+                    }',
+            ],
+            'psalmImpureWinsOverPure' => [
+                'code' => '<?php
+                    /**
+                     * @pure
+                     * @psalm-impure
+                     */
+                    function now(): int {
+                        return time();
+                    }',
+            ],
+            'psalmCapabilitiesWinOverPhpStormPure' => [
+                'code' => '<?php
+                    namespace JetBrains\\PhpStorm {
+                        #[\\Attribute]
+                        final class Pure {}
+
+                        #[\\Attribute]
+                        final class Immutable {}
+                    }
+
+                    namespace {
+                        interface Message {
+                            /** @psalm-capabilities read-props */
+                            #[\\JetBrains\\PhpStorm\\Pure]
+                            public function body(): string;
+                        }
+
+                        final class MyMessage implements Message {
+                            public function __construct(private string $body) {}
+
+                            public function body(): string {
+                                return $this->body;
+                            }
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'psalmImpureWinsOverPhpStormPure' => [
+                'code' => '<?php
+                    namespace JetBrains\\PhpStorm {
+                        #[\\Attribute]
+                        final class Pure {}
+
+                        #[\\Attribute]
+                        final class Immutable {}
+                    }
+
+                    namespace {
+                        /** @psalm-impure */
+                        #[\\JetBrains\\PhpStorm\\Pure]
+                        function now(): int {
+                            return time();
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'psalmCapabilitiesWinOverPhpStormImmutable' => [
+                'code' => '<?php
+                    namespace JetBrains\\PhpStorm {
+                        #[\\Attribute]
+                        final class Pure {}
+
+                        #[\\Attribute]
+                        final class Immutable {}
+                    }
+
+                    namespace {
+                        /** @psalm-capabilities read-props|write-this-props */
+                        #[\\JetBrains\\PhpStorm\\Immutable]
+                        final class Counter {
+                            private int $n = 0;
+
+                            public function next(): int {
+                                return ++$this->n;
+                            }
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
         ];
     }
 
@@ -3224,6 +3463,174 @@ final class CapabilitiesTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'parsingTheRequestBodyIsImpure' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function body(): array {
+                        return request_parse_body();
+                    }',
+                'error_message' => 'function call on request_parse_body requires io',
+                'error_levels' => [],
+                'php_version' => '8.4',
+            ],
+            'copyingIntoPostgresIsImpure' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function copyRow(PgSql\\Connection $db, string $row): int {
+                        return pg_put_copy_data($db, $row);
+                    }',
+                'error_message' => 'ImpureFunctionCall',
+                'error_levels' => [],
+                'php_version' => '8.4',
+            ],
+            'runningAPostgresQueryIsImpure' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function run(PgSql\\Connection $db): PgSql\\Result|false {
+                        return pg_query($db, "SELECT 1");
+                    }',
+                'error_message' => 'function call on pg_query requires io',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'escapingForPostgresIsImpure' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function quote(PgSql\\Connection $db, string $value): string {
+                        return pg_escape_literal($db, $value);
+                    }',
+                'error_message' => 'function call on pg_escape_literal requires io',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'lookingUpAUserIsImpure' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function home(string $name): array|false {
+                        return posix_getpwnam($name);
+                    }',
+                'error_message' => 'function call on posix_getpwnam requires io',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'waitingForAChildIsImpure' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function reap(int $pid): int {
+                        return pcntl_waitpid($pid, $status);
+                    }',
+                'error_message' => 'function call on pcntl_waitpid requires io',
+                'error_levels' => [],
+            ],
+            'runningAMysqliQueryIsImpure' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function run(mysqli $db): mysqli_result|bool {
+                        return mysqli_execute_query($db, "SELECT 1");
+                    }',
+                'error_message' => 'ImpureFunctionCall',
+                'error_levels' => [],
+                'php_version' => '8.2',
+            ],
+            'readingTheErrorHandlerIsImpure' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function handler(): ?callable {
+                        return get_error_handler();
+                    }',
+                'error_message' => 'function call on get_error_handler requires read-globals',
+                'error_levels' => [],
+                'php_version' => '8.5',
+            ],
+            'generatingASodiumKeyIsImpure' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function newKey(): string {
+                        return sodium_crypto_secretbox_keygen();
+                    }',
+                'error_message' => 'function call on sodium_crypto_secretbox_keygen requires io',
+                'error_levels' => [],
+            ],
+            'generatingASodiumKeyPairIsImpure' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function newKeyPair(): string {
+                        return sodium_crypto_sign_keypair();
+                    }',
+                'error_message' => 'function call on sodium_crypto_sign_keypair requires io',
+                'error_levels' => [],
+            ],
+            'sealingASodiumBoxIsImpure' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function seal(string $message, string $publicKey): string {
+                        return sodium_crypto_box_seal($message, $publicKey);
+                    }',
+                'error_message' => 'ImpureFunctionCall',
+                'error_levels' => [],
+            ],
+            'hashingAPasswordWithSodiumIsImpure' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function hashPassword(string $password): string {
+                        return sodium_crypto_pwhash_str($password, 2, 67108864);
+                    }',
+                'error_message' => 'ImpureFunctionCall',
+                'error_levels' => [],
+            ],
+            'hashingAPasswordIsImpure' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function hashPassword(string $password): string {
+                        return password_hash($password, PASSWORD_DEFAULT);
+                    }',
+                'error_message' => 'ImpureFunctionCall',
+                'error_levels' => [],
+            ],
+            'opensslRandomBytesAreImpure' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function bytes(): string {
+                        return openssl_random_pseudo_bytes(16);
+                    }',
+                'error_message' => 'ImpureFunctionCall',
+                'error_levels' => [],
+            ],
+            'gmpRandomNumbersAreImpure' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function number(): GMP {
+                        return gmp_random_bits(16);
+                    }',
+                'error_message' => 'ImpureFunctionCall',
+                'error_levels' => [],
+            ],
+            'impureInstanceMethodCostsWriteRefsLikeAnImpureFunction' => [
+                'code' => '<?php
+                    final class Impure {
+                        public function run(): void {}
+                    }
+
+                    /** @psalm-capabilities read-props|write-this-props|write-props|read-globals|write-globals|io|time */
+                    function caller(Impure $i): void {
+                        $i->run();
+                    }',
+                'error_message' => 'ImpureMethodCall',
+            ],
+            'impureConstructorCostsWriteRefsLikeAnImpureFunction' => [
+                'code' => '<?php
+                    final class Impure {
+                        public function __construct() {
+                            echo "created";
+                        }
+                    }
+
+                    /** @psalm-capabilities read-props|write-this-props|write-props|read-globals|write-globals|io|time */
+                    function caller(): void {
+                        new Impure();
+                    }',
+                'error_message' => 'ImpureMethodCall',
+            ],
             'impureToStringCalledImplicitlyByAnArgument' => [
                 'code' => '<?php
                     final class Imp {
@@ -3935,7 +4342,7 @@ final class CapabilitiesTest extends TestCase
                         return $h->getX();
                     }',
                 'error_message' => 'NullableReturnStatement - src' . DIRECTORY_SEPARATOR . 'somefile.php:19:32',
-                'error_levels' => [],
+                'error_levels' => ['DeprecatedMethod'],
                 'php_version' => '8.0',
             ],
             'itemOfAnObjectWithoutOffsetSetPassedByReference' => [
@@ -3955,7 +4362,7 @@ final class CapabilitiesTest extends TestCase
                     function sortFirst(ReadOnlyBox $o): bool {
                         return sort($o[0]);
                     }',
-                'error_message' => 'UndefinedMethod - src' . DIRECTORY_SEPARATOR . 'somefile.php:15:37 - Method ReadOnlyBox::offsetSet does not exist',
+                'error_message' => 'InvalidArrayAccess - src' . DIRECTORY_SEPARATOR . 'somefile.php:15:37 - Cannot access array value on non-array variable $o of type ReadOnlyBox',
             ],
             'itemOfAnIntersectionWithArrayObjectPassedByReferenceWritesIt' => [
                 'code' => '<?php
@@ -3982,7 +4389,7 @@ final class CapabilitiesTest extends TestCase
                     function sortFirst(ReadOnlyBox $o): bool {
                         return sort($o[0]);
                     }',
-                'error_message' => 'InaccessibleMethod - src' . DIRECTORY_SEPARATOR . 'somefile.php:12:37',
+                'error_message' => 'InvalidArrayAccess - src' . DIRECTORY_SEPARATOR . 'somefile.php:12:37 - Cannot access array value on non-array variable $o of type ReadOnlyBox',
             ],
             'itemOfAnObjectWithMagicMethodsPassedByReference' => [
                 'code' => '<?php
@@ -4000,7 +4407,7 @@ final class CapabilitiesTest extends TestCase
                     function sortFirst(MagicBox $o): bool {
                         return sort($o[0]);
                     }',
-                'error_message' => 'UndefinedMagicMethod - src' . DIRECTORY_SEPARATOR . 'somefile.php:14:37 - Magic method MagicBox::offsetset does not exist',
+                'error_message' => 'InvalidArrayAccess - src' . DIRECTORY_SEPARATOR . 'somefile.php:14:37 - Cannot access array value on non-array variable $o of type MagicBox',
                 'error_levels' => [],
                 'php_version' => '8.0',
             ],
@@ -4027,6 +4434,7 @@ final class CapabilitiesTest extends TestCase
                         return count($object);
                     }',
                 'error_message' => 'ImpureMethodCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:33 - The context is pure but method ArrayObject::offsetSet requires write-props',
+                'error_levels' => ['DeprecatedMethod'],
             ],
             'conditionalCapabilitiesOfAFunctionCalledWithoutTheArgument' => [
                 'code' => '<?php
@@ -4355,6 +4763,7 @@ final class CapabilitiesTest extends TestCase
                         return count($object);
                     }',
                 'error_message' => 'ImpureMethodCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:25 - The context is pure but method ArrayObject::offsetSet requires write-props',
+                'error_levels' => ['DeprecatedMethod'],
             ],
             'arrayIteratorBackedByAnObjectWritesIt' => [
                 'code' => '<?php
@@ -4365,6 +4774,7 @@ final class CapabilitiesTest extends TestCase
                         return count($iterator);
                     }',
                 'error_message' => 'ImpureMethodCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:25 - The context is pure but method ArrayIterator::offsetSet requires write-props',
+                'error_levels' => ['DeprecatedMethod'],
             ],
             'arrayObjectExchangingItsStorageWritesProps' => [
                 'code' => '<?php
@@ -4376,6 +4786,7 @@ final class CapabilitiesTest extends TestCase
                         return count($object);
                     }',
                 'error_message' => 'ImpureMethodCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:25 - The context is pure but method ArrayObject::exchangeArray requires write-props',
+                'error_levels' => ['DeprecatedMethod'],
             ],
             'arrayObjectOfUnknownStorageWritesProps' => [
                 'code' => '<?php
@@ -5475,6 +5886,7 @@ final class CapabilitiesTest extends TestCase
                         return \Implode(",", $names);
                     }',
                 'error_message' => 'possibly-mutating method App\Name::__toString',
+                'error_levels' => ['WrongCaseFunction'],
             ],
             'impureToStringInLooseInArrayCalledInAnotherCase' => [
                 'code' => '<?php
@@ -7838,6 +8250,256 @@ final class CapabilitiesTest extends TestCase
                         }
                     }',
                 'error_message' => 'ImpurePropertyAssignment',
+            ],
+            'pureAloneStillForbidsReadingProps' => [
+                'code' => '<?php
+                    interface Message {
+                        /**
+                         * @pure
+                         */
+                        public function body(): string;
+                    }
+
+                    final class MyMessage implements Message {
+                        public function __construct(private string $body) {}
+
+                        public function body(): string {
+                            return $this->body;
+                        }
+                    }',
+                'error_message' => 'ImmutableDependency - src' . DIRECTORY_SEPARATOR . 'somefile.php:9:33 - Message::body is pure, but MyMessage::body additionally requires read-props',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'psalmCapabilitiesWithPureIsTheContract' => [
+                'code' => '<?php
+                    interface Counter {
+                        /**
+                         * @pure
+                         * @psalm-capabilities read-props
+                         */
+                        public function next(): int;
+                    }
+
+                    final class MyCounter implements Counter {
+                        private int $n = 0;
+
+                        public function next(): int {
+                            return ++$this->n;
+                        }
+                    }',
+                'error_message' => 'ImmutableDependency - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:33 - Counter::next is read-props, but MyCounter::next additionally requires write-this-props',
+            ],
+            'conditionalPsalmCapabilitiesWinOverPure' => [
+                'code' => '<?php
+                    /**
+                     * @pure
+                     * @psalm-capabilities ($p is null ? io : pure)
+                     */
+                    function show(?int $p): int {
+                        if ($p === null) {
+                            echo "none";
+                        }
+                        return 0;
+                    }
+
+                    /** @psalm-pure */
+                    function quiet(): int {
+                        return show(1);
+                    }
+
+                    /** @psalm-pure */
+                    function loud(): int {
+                        return show(null);
+                    }',
+                'error_message' => 'ImpureFunctionCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:20:32 - The context is pure but function call on show requires io',
+            ],
+            'psalmCapabilitiesWithPureChecksTheBody' => [
+                'code' => '<?php
+                    /**
+                     * @pure
+                     * @psalm-capabilities read-props
+                     */
+                    function greet(string $name): void {
+                        echo $name;
+                    }',
+                'error_message' => 'ImpureFunctionCall',
+            ],
+            'phpStormPureAloneStillForbidsReadingProps' => [
+                'code' => '<?php
+                    namespace JetBrains\\PhpStorm {
+                        #[\\Attribute]
+                        final class Pure {}
+
+                        #[\\Attribute]
+                        final class Immutable {}
+                    }
+
+                    namespace {
+                        interface Message {
+                            #[\\JetBrains\\PhpStorm\\Pure]
+                            public function body(): string;
+                        }
+
+                        final class MyMessage implements Message {
+                            public function __construct(private string $body) {}
+
+                            public function body(): string {
+                                return $this->body;
+                            }
+                        }
+                    }',
+                'error_message' => 'ImmutableDependency - src' . DIRECTORY_SEPARATOR . 'somefile.php:16:37 - Message::body is pure, but MyMessage::body additionally requires read-props',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'psalmPureAttributeStillWinsOverPsalmCapabilities' => [
+                'code' => '<?php
+                    namespace JetBrains\\PhpStorm {
+                        #[\\Attribute]
+                        final class Pure {}
+
+                        #[\\Attribute]
+                        final class Immutable {}
+                    }
+
+                    namespace Psalm {
+                        #[\\Attribute]
+                        final class Pure {}
+                    }
+
+                    namespace {
+                        interface Message {
+                            /** @psalm-capabilities read-props */
+                            #[\\Psalm\\Pure]
+                            public function body(): string;
+                        }
+
+                        final class MyMessage implements Message {
+                            public function __construct(private string $body) {}
+
+                            public function body(): string {
+                                return $this->body;
+                            }
+                        }
+                    }',
+                'error_message' => 'ImmutableDependency - src' . DIRECTORY_SEPARATOR . 'somefile.php:22:37 - Message::body is pure, but MyMessage::body additionally requires read-props',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'phpStormImmutableAloneIsStillReadProps' => [
+                'code' => '<?php
+                    namespace JetBrains\\PhpStorm {
+                        #[\\Attribute]
+                        final class Pure {}
+
+                        #[\\Attribute]
+                        final class Immutable {}
+                    }
+
+                    namespace {
+                        #[\\JetBrains\\PhpStorm\\Immutable]
+                        final class Counter {
+                            private int $n = 0;
+
+                            public function next(): int {
+                                return ++$this->n;
+                            }
+                        }
+                    }',
+                'error_message' => 'ImpurePropertyAssignment',
+                'error_levels' => ['InaccessibleProperty'],
+                'php_version' => '8.0',
+            ],
+            'psalmAttributeBeforePhpStormImmutableStillNarrows' => [
+                'code' => '<?php
+                    namespace JetBrains\\PhpStorm {
+                        #[\\Attribute]
+                        final class Pure {}
+
+                        #[\\Attribute]
+                        final class Immutable {}
+                    }
+
+                    namespace Psalm {
+                        #[\\Attribute]
+                        final class ExternalMutationFree {}
+                    }
+
+                    namespace {
+                        #[\\Psalm\\ExternalMutationFree]
+                        #[\\JetBrains\\PhpStorm\\Immutable]
+                        final class Counter {
+                            private int $n = 0;
+
+                            public function next(): int {
+                                return ++$this->n;
+                            }
+                        }
+                    }',
+                'error_message' => 'ImpurePropertyAssignment',
+                'error_levels' => ['InaccessibleProperty'],
+                'php_version' => '8.0',
+            ],
+            'psalmAttributeAfterPhpStormImmutableStillNarrows' => [
+                'code' => '<?php
+                    namespace JetBrains\\PhpStorm {
+                        #[\\Attribute]
+                        final class Pure {}
+
+                        #[\\Attribute]
+                        final class Immutable {}
+                    }
+
+                    namespace Psalm {
+                        #[\\Attribute]
+                        final class ExternalMutationFree {}
+                    }
+
+                    namespace {
+                        #[\\JetBrains\\PhpStorm\\Immutable]
+                        #[\\Psalm\\ExternalMutationFree]
+                        final class Counter {
+                            private int $n = 0;
+
+                            public function next(): int {
+                                return ++$this->n;
+                            }
+                        }
+                    }',
+                'error_message' => 'ImpurePropertyAssignment',
+                'error_levels' => ['InaccessibleProperty'],
+                'php_version' => '8.0',
+            ],
+            'psalmAttributeBeforePhpStormPureStillNarrows' => [
+                'code' => '<?php
+                    namespace JetBrains\\PhpStorm {
+                        #[\\Attribute]
+                        final class Pure {}
+
+                        #[\\Attribute]
+                        final class Immutable {}
+                    }
+
+                    namespace Psalm {
+                        #[\\Attribute]
+                        final class ExternalMutationFree {}
+                    }
+
+                    namespace {
+                        final class Counter {
+                            private int $n = 0;
+
+                            #[\\Psalm\\ExternalMutationFree]
+                            #[\\JetBrains\\PhpStorm\\Pure]
+                            public function next(): int {
+                                return ++$this->n;
+                            }
+                        }
+                    }',
+                'error_message' => 'ImpureVariable - src' . DIRECTORY_SEPARATOR . 'somefile.php:22:42 - The context is pure but $this requires read-props',
+                'error_levels' => [],
+                'php_version' => '8.0',
             ],
         ];
     }
