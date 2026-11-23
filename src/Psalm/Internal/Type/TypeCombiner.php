@@ -87,6 +87,26 @@ use const ARRAY_FILTER_USE_BOTH;
 final class TypeCombiner
 {
     /**
+     * Combines the parts of a declared type. A type variable that stands for `never` until bound adds no value to a
+     * union, but what is passed for a param of that type (`T|null`) still binds it.
+     *
+     * @psalm-external-mutation-free
+     * @param non-empty-list<Atomic> $types
+     */
+    public static function combineKeepingNeverBoundVariables(array $types, ?Codebase $codebase = null): Union
+    {
+        $combined = self::combine($types, $codebase);
+
+        foreach ($types as $type) {
+            if ($type instanceof TTypeVariable && $type->isNeverBound() && !$combined->hasType($type->getKey())) {
+                $combined = $combined->getBuilder()->addType($type)->freeze();
+            }
+        }
+
+        return $combined;
+    }
+
+    /**
      * Combines types together
      *  - so `int + string = int|string`
      *  - so `array<int> + array<string> = array<int|string>`

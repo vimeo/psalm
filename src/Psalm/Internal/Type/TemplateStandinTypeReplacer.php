@@ -241,10 +241,7 @@ final class TemplateStandinTypeReplacer
             }
 
             if (count($atomic_types) > 1) {
-                return TypeCombiner::combine(
-                    $atomic_types,
-                    $codebase,
-                )->setProperties([
+                return TypeCombiner::combineKeepingNeverBoundVariables($atomic_types, $codebase)->setProperties([
                     'ignore_nullable_issues' => $union_type->ignore_nullable_issues,
                     'ignore_falsable_issues' => $union_type->ignore_falsable_issues,
                     'possibly_undefined' => $union_type->possibly_undefined,
