@@ -2480,10 +2480,7 @@ final class SimpleAssertionReconciler extends Reconciler
             ) {
                 $callable_types[] = $type;
                 $redundant = false;
-            } elseif ($type instanceof TArray
-                || ($type instanceof TKeyedArray
-                    && (count($type->properties) === 2 || $type->fallback_params !== null))
-            ) {
+            } elseif ($type instanceof TArray || $type instanceof TKeyedArray) {
                 $callable_array = self::getCallableArray($codebase, $type);
 
                 if ($callable_array !== null) {
@@ -2618,28 +2615,32 @@ final class SimpleAssertionReconciler extends Reconciler
             return self::getCallableArrayOfValues($codebase, [$type->type_params[1], $type->type_params[1]]);
         }
 
-        if (count($type->properties) === 2) {
+        if (count($type->properties) === 2 && isset($type->properties[0], $type->properties[1])) {
             return TKeyedArray::makeCallable($type->properties);
         }
 
-        // a list or an array with a fallback is callable when it holds two elements, the first naming a class or
-        // being an object and the second a method
-        if ($type->fallback_params === null
-            || Type::intersectUnionTypes($type->fallback_params[0], Type::getInt(), $codebase) === null
-        ) {
-            return null;
-        }
-
+        // an array is callable when it holds two elements, the first naming a class or being an object and the second
+        // a method: any other element has to be optional, and the offsets the shape lacks have to come from the
+        // fallback
         foreach ($type->properties as $offset => $property) {
             if ($offset !== 0 && $offset !== 1 && !$property->possibly_undefined) {
                 return null;
             }
         }
 
-        return self::getCallableArrayOfValues(
-            $codebase,
-            [$type->properties[0] ?? $type->fallback_params[1], $type->properties[1] ?? $type->fallback_params[1]],
-        );
+        $fallback_value = $type->fallback_params !== null
+            && Type::intersectUnionTypes($type->fallback_params[0], Type::getInt(), $codebase) !== null
+            ? $type->fallback_params[1]
+            : null;
+
+        $first = $type->properties[0] ?? $fallback_value;
+        $second = $type->properties[1] ?? $fallback_value;
+
+        if ($first === null || $second === null) {
+            return null;
+        }
+
+        return self::getCallableArrayOfValues($codebase, [$first, $second]);
     }
 
     /**

@@ -155,6 +155,22 @@ final class CallableTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'isCallableOnAShapeWhoseOtherElementsAreOptionalKeepsTheCallableArray' => [
+                'code' => '<?php
+                    /**
+                     * @param list{0: string, 1: string, 2?: string} $sealed
+                     * @param array{a?: string, ...<int, string>} $unsealed
+                     */
+                    function f(array $sealed, array $unsealed): void {
+                        if (is_callable($sealed)) {
+                            /** @psalm-check-type-exact $sealed = callable-array{0: class-string, 1: non-empty-string} */
+                        }
+
+                        if (is_callable($unsealed)) {
+                            /** @psalm-check-type-exact $unsealed = callable-array{0: class-string, 1: non-empty-string} */
+                        }
+                    }',
+            ],
             'isCallableOnAListOfStringsKeepsTheCallableArray' => [
                 'code' => '<?php
                     /**
@@ -4253,6 +4269,36 @@ final class CallableTest extends TestCase
                     /** @param list<int> $list */
                     function f(array $list): void {
                         if (is_callable($list)) {
+                            echo "callable";
+                        }
+                    }',
+                'error_message' => 'TypeDoesNotContainType - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:29',
+            ],
+            'isCallableOnAListOfThreeElementsIsNeverTrue' => [
+                'code' => '<?php
+                    /** @param list{string, string, string} $a */
+                    function f(array $a): void {
+                        if (is_callable($a)) {
+                            echo "callable";
+                        }
+                    }',
+                'error_message' => 'TypeDoesNotContainType - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:29',
+            ],
+            'isCallableOnAListWhoseFirstElementIsAnIntIsNeverTrue' => [
+                'code' => '<?php
+                    /** @param list{int, ...<string>} $a */
+                    function f(array $a): void {
+                        if (is_callable($a)) {
+                            echo "callable";
+                        }
+                    }',
+                'error_message' => 'TypeDoesNotContainType - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:29',
+            ],
+            'isCallableOnAShapeWithAnotherRequiredKeyIsNeverTrue' => [
+                'code' => '<?php
+                    /** @param array{0: string, a: string, ...<int, string>} $a */
+                    function f(array $a): void {
+                        if (is_callable($a)) {
                             echo "callable";
                         }
                     }',
