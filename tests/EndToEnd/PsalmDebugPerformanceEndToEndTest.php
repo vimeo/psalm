@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Psalm\Tests\EndToEnd;
 
 use PHPUnit\Framework\Attributes\RequiresPhpExtension;
+use Symfony\Component\Process\Process;
 
 use function array_column;
 use function array_filter;
@@ -486,6 +487,49 @@ final class PsalmDebugPerformanceEndToEndTest extends PsalmEndToEndTestCase
         $this->assertStringNotContainsString('Slow-to-analyze functions', $result['STDOUT']);
         $this->assertStringNotContainsString('Performance dump written', $result['STDERR']);
         $this->assertSame($files_before, glob(self::$tmpDir . '/*'));
+    }
+
+    public function testStatisticsOfANonConsoleFormatGoToStderr(): void
+    {
+        $this->setUpProject(2);
+        $psalm_args = ['--no-cache', '--output-format=json', '--threads=1'];
+
+        $plain = $this->runPsalmWithoutTheDefaultFormat($psalm_args);
+        $with = $this->runPsalmWithoutTheDefaultFormat([...$psalm_args, '--stats', '--debug-performance']);
+
+        $this->assertJson($with->getOutput());
+        $this->assertSame($plain->getOutput(), $with->getOutput());
+        $this->assertStringContainsString('Checks took', $with->getErrorOutput());
+        $this->assertStringContainsString('Psalm was able to infer types for', $with->getErrorOutput());
+        $this->assertStringContainsString("-----------------\n", $with->getErrorOutput());
+        $this->assertStringContainsString("\nPerformance\n", $with->getErrorOutput());
+        $this->assertStringContainsString("\nSlowest files by CPU\n", $with->getErrorOutput());
+        $this->assertStringNotContainsString("\e[", $with->getErrorOutput());
+
+        // any run prints the lines, with or without the options
+        $this->assertStringContainsString('Checks took', $plain->getErrorOutput());
+        $this->assertStringNotContainsString('Slowest files by CPU', $plain->getErrorOutput());
+
+        $quiet = $this->runPsalmWithoutTheDefaultFormat([...$psalm_args, '--no-progress', '--stats', '--debug-performance']);
+
+        $this->assertSame($plain->getOutput(), $quiet->getOutput());
+        $this->assertSame('', $quiet->getErrorOutput());
+    }
+
+    /**
+     * @param list<string> $args
+     */
+    private function runPsalmWithoutTheDefaultFormat(array $args): Process
+    {
+        $process = self::newProcess(
+            [PHP_BINARY, $this->psalm, '-c=' . self::$tmpDir . '/psalm.xml', ...$args],
+            null,
+            self::agentEnvVarsToUnset(),
+        );
+        $process->run();
+        $this->assertSame(2, $process->getExitCode(), $process->getErrorOutput());
+
+        return $process;
     }
 
     public function testNoProgressKeepsStderrEmpty(): void

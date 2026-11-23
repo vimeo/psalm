@@ -68,9 +68,14 @@ final class DumpWriter
 
     /**
      * @param Measurements $measurements
+     * @param bool $summary_to_stderr whether the summary goes to stderr, through the progress, not to stdout
      */
-    public static function emit(array $measurements, ProjectAnalyzer $project_analyzer, bool $print_summary): void
-    {
+    public static function emit(
+        array $measurements,
+        ProjectAnalyzer $project_analyzer,
+        bool $print_summary,
+        bool $summary_to_stderr,
+    ): void {
         $path = Collector::dumpPath();
 
         $counts = self::counts($measurements['counts']);
@@ -84,7 +89,13 @@ final class DumpWriter
             );
 
         if ($print_summary) {
-            echo self::summary($measurements, $counts, $path, $path !== null && $failure === null);
+            $summary = self::summary($measurements, $counts, $path, $path !== null && $failure === null);
+
+            if ($summary_to_stderr) {
+                $project_analyzer->progress->write($summary);
+            } else {
+                echo $summary;
+            }
         }
 
         if ($path === null) {
