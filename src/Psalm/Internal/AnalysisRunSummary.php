@@ -22,8 +22,6 @@ final class AnalysisRunSummary
          * @var array<string, int<1, max>>
          */
         public readonly array $baselined_issue_counts,
-        /** How many entries the baseline held before it covered any issue */
-        public readonly int $baseline_entry_count,
         /** Whether the run was for the whole project, not for given paths */
         public readonly bool $is_full,
     ) {

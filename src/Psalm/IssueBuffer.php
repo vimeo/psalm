@@ -806,8 +806,6 @@ final class IssueBuffer
             $issues_data = self::$issues_data;
         }
 
-        // counted before the baseline covers any issue, which uses up its entries
-        $baseline_entry_count = ErrorBaseline::countTotalIssues($issue_baseline);
         $baselined_issue_counts = [];
 
         if (!empty($issue_baseline)) {
@@ -927,7 +925,6 @@ final class IssueBuffer
         ksort($baselined_issue_counts);
         self::$run_summary = new AnalysisRunSummary(
             $baselined_issue_counts,
-            $baseline_entry_count,
             $is_full,
         );
 

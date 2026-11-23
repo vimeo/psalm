@@ -95,18 +95,19 @@ final class Shepherd implements AfterAnalysisInterface
     }
 
     /**
-     * build and git are as loosely typed as AfterAnalysisEvent and SourceControlInfo::toArray() give them
+     * build and git are as loosely typed as AfterAnalysisEvent and SourceControlInfo::toArray() give them. coverage
+     * is the mixed and the non-mixed expression counts, and each issue_counts group is sent as an object of issue
+     * type => positive count.
      *
      * @return array{
      *     build: array{CI_NAME: mixed, ...<array-key, mixed>},
      *     git: array<array-key, mixed>,
      *     issues: list<IssueData>,
      *     issue_counts: array{baselined: stdClass, info: stdClass},
-     *     baseline: array{entries: int},
      *     analysis: array{
      *         full: bool,
-     *         files: int<0, max>,
-     *         php_version: string,
+     *         file_count: int<0, max>,
+     *         target_php_version: string,
      *         find_unused_code: bool,
      *         taint_analysis: bool
      *     },
@@ -186,16 +187,14 @@ final class Shepherd implements AfterAnalysisInterface
             'git' => $source_control_data,
             'issues' => $normalized_data,
             // objects even when empty, which PHP would encode as lists
-            'issue_counts' => [
-                'baselined' => (object) $summary->baselined_issue_counts,
-                'info' => (object) $info_issue_counts,
-            ],
-            'baseline' => ['entries' => $summary->baseline_entry_count],
+            'issue_counts' => array_map(
+                static fn(array $counts): stdClass => (object) $counts,
+                ['baselined' => $summary->baselined_issue_counts, 'info' => $info_issue_counts],
+            ),
             'analysis' => [
                 'full' => $summary->is_full,
-                'files' => $codebase->analyzer->getFileCountWithAnalysisResults(),
-                // the PHP version Psalm analyses for, not the one it runs on
-                'php_version' => Codebase::getPhpVersionString($codebase->analysis_php_version_id),
+                'file_count' => $codebase->analyzer->getFileCountWithAnalysisResults(),
+                'target_php_version' => Codebase::getPhpVersionString($codebase->analysis_php_version_id),
                 'find_unused_code' => $codebase->find_unused_code !== null,
                 // set exactly when the config or a CLI flag turns taint analysis on
                 'taint_analysis' => $codebase->taint_flow_graph !== null,
