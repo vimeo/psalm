@@ -285,6 +285,16 @@ final class DeprecatedAnnotationTest extends TestCase
                     $a->foo = 5;',
                 'error_message' => 'DeprecatedProperty',
             ],
+            'deprecatedInheritedPropertySetIsNamedAfterItsDeclaringClass' => [
+                'code' => '<?php
+                    class P {
+                        /** @deprecated */
+                        public ?int $d = null;
+                    }
+                    class C extends P {}
+                    (new C)->d = 5;',
+                'error_message' => 'DeprecatedProperty - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:21 - P::$d is marked deprecated',
+            ],
             'deprecatedPropertyGetFromInsideTheClass' => [
                 'code' => '<?php
                     class A{

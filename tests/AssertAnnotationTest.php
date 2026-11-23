@@ -294,6 +294,63 @@ final class AssertAnnotationTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'assertIfTrueOnThisOfANullsafeMethodCallLeavesTheNullCheckOfTheReceiverUseful' => [
+                'code' => '<?php
+                    interface Stamp {}
+
+                    /** @return ReflectionClass<Stamp>|null */
+                    function inIf(?ReflectionClass $r): ?ReflectionClass {
+                        if ($r?->implementsInterface(Stamp::class)) {
+                            return $r;
+                        }
+                        return null;
+                    }
+
+                    function inOr(?ReflectionClass $r): ReflectionClass {
+                        if (!$r?->implementsInterface(Stamp::class) || !$r->isInstantiable()) {
+                            throw new RuntimeException();
+                        }
+                        return $r;
+                    }
+
+                    $a = inIf(null);
+                    $b = inOr(null);',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'assertIfTrueOfANullsafeMethodCallHoldsWhereItIsTruthy' => [
+                'code' => '<?php
+                    final class M {
+                        /** @psalm-assert-if-true non-falsy-string $a */
+                        public function isText(string $a): bool {
+                            return $a !== "" && $a !== "0";
+                        }
+                        /** @psalm-assert-if-false non-falsy-string $a */
+                        public function isNotText(string $a): bool {
+                            return $a === "" || $a === "0";
+                        }
+                    }
+
+                    /** @param non-falsy-string $s */
+                    function useText(string $s): void {}
+
+                    function inTheIf(string $s, ?M $m): void {
+                        if ($m?->isText($s)) {
+                            useText($s);
+                        }
+                    }
+
+                    function afterAnEarlyReturn(string $s, ?M $m): void {
+                        if (!$m?->isText($s)) {
+                            return;
+                        }
+                        useText($s);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'parentCallKeepsTemplatedAssertIfTrueOfAnUndocumentedOverride' => [
                 'code' => '<?php
                     interface Item { public function name(): string; }
@@ -1131,6 +1188,267 @@ final class AssertAnnotationTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'staticInAnAssertionOfAStaticCallIsTheClassItNames' => [
+                'code' => '<?php
+                    abstract class Model {
+                        /** @psalm-assert-if-true static $x */
+                        public static function is(object $x): bool {
+                            return $x instanceof static;
+                        }
+
+                        /** @psalm-assert-if-false static $x */
+                        public static function isNot(object $x): bool {
+                            return !$x instanceof static;
+                        }
+
+                        /** @psalm-assert static $x */
+                        public static function mustBe(object $x): void {
+                            if (!$x instanceof static) {
+                                throw new Exception();
+                            }
+                        }
+                    }
+
+                    final class User extends Model {
+                        public string $name = "";
+                    }
+
+                    function ifTrue(object $o): string {
+                        if (User::is($o)) {
+                            /** @psalm-check-type-exact $o = User */;
+                            return $o->name;
+                        }
+
+                        return "";
+                    }
+
+                    function ifFalse(object $o): string {
+                        if (User::isNot($o)) {
+                            return "";
+                        }
+
+                        /** @psalm-check-type-exact $o = User */;
+                        return $o->name;
+                    }
+
+                    function always(object $o): string {
+                        User::mustBe($o);
+                        /** @psalm-check-type-exact $o = User */;
+                        return $o->name;
+                    }',
+            ],
+            'staticInAnAssertionOfAForwardingStaticCallIsTheCallersStatic' => [
+                'code' => '<?php
+                    abstract class Model {
+                        /** @psalm-assert-if-true static $x */
+                        public static function is(object $x): bool {
+                            return $x instanceof static;
+                        }
+
+                        /** @psalm-assert static $x */
+                        public static function mustBe(object $x): void {
+                            if (!$x instanceof static) {
+                                throw new Exception();
+                            }
+                        }
+
+                        /** @return static|null */
+                        public static function fromSelf(object $o): ?Model {
+                            if (self::is($o)) {
+                                return $o;
+                            }
+
+                            return null;
+                        }
+
+                        /** @return static|null */
+                        public static function fromStatic(object $o): ?Model {
+                            if (static::is($o)) {
+                                return $o;
+                            }
+
+                            return null;
+                        }
+
+                        /** @return static */
+                        public static function always(object $o): Model {
+                            static::mustBe($o);
+                            return $o;
+                        }
+                    }
+
+                    class User extends Model {
+                        /** @return static|null */
+                        public static function fromParent(object $o): ?User {
+                            if (parent::is($o)) {
+                                return $o;
+                            }
+
+                            return null;
+                        }
+                    }
+
+                    final class Admin extends User {
+                        public static function fromParentOfAFinalClass(object $o): ?Admin {
+                            if (parent::is($o)) {
+                                /** @psalm-check-type-exact $o = Admin */;
+                                return $o;
+                            }
+
+                            return null;
+                        }
+                    }',
+            ],
+            'staticInAnAssertOfAnInstanceCallIsTheTypeOfTheObject' => [
+                'code' => '<?php
+                    abstract class Model {
+                        /** @psalm-assert static $x */
+                        public function mustBe(object $x): void {
+                            if (!$x instanceof static) {
+                                throw new Exception();
+                            }
+                        }
+
+                        public function onThis(object $o): void {
+                            $this->mustBe($o);
+                            /** @psalm-check-type-exact $o = Model&static */;
+                        }
+                    }
+
+                    final class User extends Model {}
+
+                    function onAFinalClass(User $u, object $o): void {
+                        $u->mustBe($o);
+                        /** @psalm-check-type-exact $o = User */;
+                    }
+
+                    function onAnAbstractClass(Model $m, object $o): void {
+                        $m->mustBe($o);
+                        /** @psalm-check-type-exact $o = Model&static */;
+                    }',
+            ],
+            'staticInAnAssertionOnAnObjectThatMayBeOfASubclassIsNotNegated' => [
+                'code' => '<?php
+                    class User {
+                        /** @psalm-assert-if-true static $x */
+                        public static function is(object $x): bool {
+                            return $x instanceof static;
+                        }
+
+                        /** @psalm-assert-if-true static $x */
+                        public function same(object $x): bool {
+                            return $x instanceof static;
+                        }
+                    }
+
+                    final class Admin extends User {}
+
+                    final class Other {}
+
+                    function onTheClassOfAnObject(User $u, User|Other $o): void {
+                        if ($u::is($o)) {
+                            /** @psalm-check-type-exact $o = User&static */;
+                        } else {
+                            /** @psalm-check-type-exact $o = Other|User */;
+                        }
+                    }
+
+                    /** @param class-string<User> $class */
+                    function onAClassString(string $class, User|Other $o): void {
+                        if ($class::is($o)) {
+                            /** @psalm-check-type-exact $o = User&static */;
+                        } else {
+                            /** @psalm-check-type-exact $o = Other|User */;
+                        }
+                    }
+
+                    function onAnObject(User $u, User|Other $o): void {
+                        if ($u->same($o)) {
+                            /** @psalm-check-type-exact $o = User&static */;
+                        } else {
+                            /** @psalm-check-type-exact $o = Other|User */;
+                        }
+                    }
+
+                    function onAnObjectOfAFinalClass(Admin $a, Admin|Other $o): void {
+                        if ($a->same($o)) {
+                            /** @psalm-check-type-exact $o = Admin */;
+                        } else {
+                            /** @psalm-check-type-exact $o = Other */;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'staticInAnAssertionOfAStaticCallOnAClassStringOfATemplateIsTheTemplate' => [
+                'code' => '<?php
+                    class Model {
+                        /** @psalm-assert-if-true static $x */
+                        public static function is(object $x): bool {
+                            return $x instanceof static;
+                        }
+
+                        /** @psalm-assert static $x */
+                        public static function mustBe(object $x): void {
+                            if (!$x instanceof static) {
+                                throw new Exception();
+                            }
+                        }
+                    }
+
+                    /**
+                     * @template T of Model
+                     * @param class-string<T> $class
+                     * @return T
+                     */
+                    function ifTrue(string $class, object $o): Model {
+                        if ($class::is($o)) {
+                            return $o;
+                        }
+
+                        throw new Exception();
+                    }
+
+                    /**
+                     * @template T of Model
+                     * @param class-string<T> $class
+                     * @return T
+                     */
+                    function always(string $class, object $o): Model {
+                        $class::mustBe($o);
+                        return $o;
+                    }',
+            ],
+            'staticInAnAssertOfAConstructorIsTheClassInstantiated' => [
+                'code' => '<?php
+                    /** @psalm-consistent-constructor */
+                    class Box {
+                        /** @psalm-assert static $x */
+                        public function __construct(object $x) {
+                            if (!$x instanceof static) {
+                                throw new Exception();
+                            }
+                        }
+
+                        public static function make(object $o): void {
+                            new static($o);
+                            /** @psalm-check-type-exact $o = Box&static */;
+                        }
+                    }
+
+                    final class SubBox extends Box {}
+
+                    function onAFinalClass(object $o): void {
+                        new SubBox($o);
+                        /** @psalm-check-type-exact $o = SubBox */;
+                    }
+
+                    function onAClass(object $o): void {
+                        new Box($o);
+                        /** @psalm-check-type-exact $o = Box */;
+                    }',
+            ],
             'negatedAssertIfTrueOfALiteralStringKeepsTheString' => [
                 'code' => '<?php
                     /** @psalm-assert-if-true literal-string $s */
@@ -1149,6 +1467,155 @@ final class AssertAnnotationTest extends TestCase
                 'assertions' => [],
                 'ignored_issues' => [],
                 'php_version' => '8.1',
+            ],
+            'staticInAnAssertionOfAStaticMethodOfAGenericClassKeepsTheTypeArguments' => [
+                'code' => '<?php
+                    /** @template T */
+                    class Box {
+                        /** @psalm-assert-if-true static $value */
+                        public static function is(mixed $value): bool {
+                            return $value instanceof static;
+                        }
+                    }
+
+                    /**
+                     * @param Box<int>|string $value
+                     * @return Box<int>|null
+                     */
+                    function boxOrNull($value): ?Box {
+                        if (Box::is($value)) {
+                            return $value;
+                        }
+
+                        return null;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'staticWithTypeArgumentsInAnAssertionTakesThemOnlyOnAClassWithTemplates' => [
+                'code' => '<?php
+                    /** @template T */
+                    class Box {
+                        /** @psalm-assert-if-true static<int> $value */
+                        public function isIntBox(mixed $value): bool {
+                            return $value instanceof static;
+                        }
+
+                        /** @psalm-assert-if-true static<int> $value */
+                        public static function isAnIntBox(mixed $value): bool {
+                            return $value instanceof static;
+                        }
+                    }
+
+                    /** @return Box<int>|null */
+                    function intBox(mixed $value): ?Box {
+                        if (Box::isAnIntBox($value)) {
+                            return $value;
+                        }
+
+                        return null;
+                    }
+
+                    /** @extends Box<int> */
+                    class IntBox extends Box {
+                        public function same(mixed $value): static {
+                            if ($this->isIntBox($value)) {
+                                return $value;
+                            }
+
+                            throw new Exception();
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'staticATemplateOfAnAssertionIsBoundToIsTheCallers' => [
+                'code' => '<?php
+                    final class Guard {
+                        /**
+                         * @template T of object
+                         * @param class-string<T> $class
+                         * @psalm-assert-if-true T $value
+                         */
+                        public static function isInstanceOf(string $class, mixed $value): bool {
+                            return $value instanceof $class;
+                        }
+
+                        /**
+                         * @template T of object
+                         * @param class-string<T> $class
+                         * @psalm-assert-if-true T $value
+                         */
+                        public function isAnInstanceOf(string $class, mixed $value): bool {
+                            return $value instanceof $class;
+                        }
+                    }
+
+                    class Caller {
+                        public function viaStatic(mixed $value): ?static {
+                            if (Guard::isInstanceOf(static::class, $value)) {
+                                return $value;
+                            }
+
+                            return null;
+                        }
+
+                        public function viaInstance(Guard $guard, mixed $value): ?static {
+                            if ($guard->isAnInstanceOf(static::class, $value)) {
+                                return $value;
+                            }
+
+                            return null;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'staticInAnAssertionKeepsWhatItIsIntersectedWith' => [
+                'code' => '<?php
+                    interface Marker {
+                        public function mark(): void;
+                    }
+
+                    class Shape {
+                        /** @psalm-assert-if-true static&Marker $value */
+                        public static function isMarked(mixed $value): bool {
+                            return $value instanceof static && $value instanceof Marker;
+                        }
+
+                        /** @psalm-assert-if-true static&Marker $value */
+                        public function isAlsoMarked(mixed $value): bool {
+                            return $value instanceof static && $value instanceof Marker;
+                        }
+                    }
+
+                    function viaStatic(mixed $value): void {
+                        if (Shape::isMarked($value)) {
+                            $value->mark();
+                        }
+                    }
+
+                    function viaInstance(Shape $shape, mixed $value): void {
+                        if ($shape->isAlsoMarked($value)) {
+                            $value->mark();
+                        }
+                    }
+
+                    /**
+                     * @template T of Shape
+                     * @param T $shape
+                     */
+                    function viaTemplate(Shape $shape, mixed $value): void {
+                        if ($shape->isAlsoMarked($value)) {
+                            $value->mark();
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'staticInAnAssertionOfAnInheritedMethodIsTheCalledClass' => [
                 'code' => '<?php
@@ -5064,6 +5531,278 @@ final class AssertAnnotationTest extends TestCase
                 'assertions' => [],
                 'ignored_issues' => ['InvalidDocblock'],
             ],
+            'assertOnThisPropertyOfAConstructorIsNotReportedOnNew' => [
+                'code' => '<?php
+                    class Holder {
+                        public ?int $v = null;
+
+                        /** @psalm-assert int $this->v */
+                        public function __construct(int $v) {
+                            $this->v = $v;
+                        }
+                    }
+
+                    $holder = new Holder(1);',
+            ],
+            'newDoesNotAssertTheCallersThisProperty' => [
+                'code' => '<?php
+                    class Holder {
+                        public ?int $v = null;
+
+                        /** @psalm-assert int $this->v */
+                        public function __construct(int $v) {
+                            $this->v = $v;
+                        }
+                    }
+
+                    class Caller {
+                        public ?int $v = null;
+
+                        public function test(): ?int {
+                            $this->v = null;
+                            new Holder(1);
+                            $v = $this->v;
+                            return $v;
+                        }
+                    }',
+            ],
+            'staticCallOfAnotherClassDoesNotAssertTheCallersThisProperty' => [
+                'code' => '<?php
+                    class Holder {
+                        /** @psalm-assert int $this->v */
+                        public static function assertSet(): void {}
+
+                        /** @psalm-assert-if-true int $this->v */
+                        public static function isSet(): bool {
+                            return true;
+                        }
+                    }
+
+                    class Caller {
+                        public ?int $v = null;
+
+                        public function test(): void {
+                            $this->v = null;
+                            Holder::assertSet();
+                            /** @psalm-check-type-exact $this->v = null */;
+                            if (Holder::isSet()) {
+                                /** @psalm-check-type-exact $this->v = null */;
+                            }
+                        }
+                    }',
+            ],
+            'callOnAnObjectWithoutIdDoesNotAssertTheCallersThisProperty' => [
+                'code' => '<?php
+                    class Holder {
+                        public ?int $v = null;
+
+                        /** @psalm-assert int $this->v */
+                        public function set(int $v): void {
+                            $this->v = $v;
+                        }
+                    }
+
+                    class Caller {
+                        public ?int $v = null;
+
+                        public function test(): ?int {
+                            $this->v = null;
+                            self::holder()->set(1);
+                            $v = $this->v;
+                            return $v;
+                        }
+
+                        public static function holder(): Holder {
+                            return new Holder();
+                        }
+                    }',
+            ],
+            'parentCallAssertsThis' => [
+                'code' => '<?php
+                    interface Marker {}
+
+                    class Holder {
+                        public ?int $v = null;
+
+                        /** @psalm-assert int $this->v */
+                        public function set(int $v): void {
+                            $this->v = $v;
+                        }
+
+                        /** @psalm-assert-if-true Marker $this */
+                        public function isMarker(): bool {
+                            return $this instanceof Marker;
+                        }
+                    }
+
+                    class Child extends Holder {
+                        public function test(): void {
+                            parent::set(1);
+                            /** @psalm-check-type-exact $this->v = int */;
+                            if (!parent::isMarker()) {
+                                return;
+                            }
+                            /** @psalm-check-type $this = Child&Marker */;
+                        }
+                    }',
+            ],
+            'selfCallAssertsThisInAConditional' => [
+                'code' => '<?php
+                    interface Marker {}
+
+                    class Holder {
+                        public ?int $v = null;
+
+                        /** @psalm-assert-if-true Marker $this */
+                        public function isMarker(): bool {
+                            return $this instanceof Marker;
+                        }
+
+                        /** @psalm-assert-if-false null $this->v */
+                        public function hasNoValue(): bool {
+                            return $this->v === null;
+                        }
+                    }
+
+                    class Child extends Holder {
+                        public function test(): void {
+                            if (self::isMarker()) {
+                                /** @psalm-check-type $this = Child&Marker */;
+                            }
+                            if (!self::hasNoValue()) {
+                                /** @psalm-check-type-exact $this->v = null */;
+                            }
+                        }
+                    }',
+            ],
+            'invalidAssertionOfAFunctionIsSuppressedAtTheCall' => [
+                'code' => '<?php
+                    class Foo {
+                        public ?int $v = null;
+                    }
+
+                    /** @psalm-assert-if-true int $nope */
+                    function isTrue(mixed $_m): bool {
+                        return true;
+                    }
+
+                    /** @psalm-assert-if-false int $nope */
+                    function isFalse(mixed $_m): bool {
+                        return false;
+                    }
+
+                    /** @psalm-assert-if-true Foo $this */
+                    function isThis(): bool {
+                        return true;
+                    }
+
+                    /** @psalm-assert int $nope->v */
+                    function assertNotAnArgument(object $_o): void {}
+
+                    /** @psalm-assert int $o->v */
+                    function assertProperty(mixed $o): void {}
+
+                    function test(mixed $m): void {
+                        /** @psalm-suppress InvalidDocblock */
+                        if (isTrue($m)) {}
+                        /** @psalm-suppress InvalidDocblock */
+                        if (isFalse($m)) {}
+                        /** @psalm-suppress InvalidDocblock */
+                        if (isThis()) {}
+                        /** @psalm-suppress InvalidDocblock */
+                        assertNotAnArgument(new Foo());
+                        /** @psalm-suppress InvalidDocblock */
+                        assertProperty(new Foo());
+                        $i = 1;
+                        /** @psalm-suppress InvalidDocblock */
+                        assertProperty($i);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'instanceMethodOfAnotherClassCalledStaticallyDoesNotAssertTheCallersThis' => [
+                'code' => '<?php
+                    interface Marker {}
+
+                    class Other {
+                        public ?int $v = null;
+
+                        /** @psalm-assert int $this->v */
+                        public function set(): void {}
+
+                        /** @psalm-assert-if-true Marker $this */
+                        public function isMarker(): bool {
+                            return true;
+                        }
+                    }
+
+                    class Caller {
+                        public ?int $v = null;
+
+                        public function test(): void {
+                            $this->v = null;
+                            Other::set();
+                            /** @psalm-check-type-exact $this->v = null */;
+                            if (Other::isMarker()) {
+                                /** @psalm-check-type-exact $this = Caller&static */;
+                            }
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['NonStaticSelfCall', 'InvalidStaticInvocation'],
+            ],
+            'staticCallOnSeveralClassesAssertsWhatEachOfThemAsserts' => [
+                'code' => '<?php
+                    class Other {
+                        public static function isString(mixed $_x): bool {
+                            return true;
+                        }
+
+                        /** @psalm-assert-if-true int $x */
+                        public static function isInt(mixed $x): bool {
+                            return is_int($x);
+                        }
+                    }
+
+                    class Other2 {
+                        public static function isInt(mixed $_x): bool {
+                            return true;
+                        }
+                    }
+
+                    class Other3 {
+                        /** @psalm-assert-if-true int $x */
+                        public static function isInt(mixed $x): bool {
+                            return is_int($x);
+                        }
+                    }
+
+                    class Caller {
+                        /** @psalm-assert-if-true string $x */
+                        public function isString(mixed $x): bool {
+                            return is_string($x);
+                        }
+
+                        public function test(bool $flag, mixed $x): void {
+                            $class = $flag ? self::class : Other::class;
+                            if ($class::isString($x)) {
+                                /** @psalm-check-type-exact $x = mixed */;
+                            }
+                            $static = $flag ? Other2::class : Other::class;
+                            if ($static::isInt($x)) {
+                                /** @psalm-check-type-exact $x = mixed */;
+                            }
+                            $asserting = $flag ? Other3::class : Other::class;
+                            if ($asserting::isInt($x)) {
+                                /** @psalm-check-type-exact $x = int */;
+                            }
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
         ];
     }
 
@@ -5074,6 +5813,31 @@ final class AssertAnnotationTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'assertIfFalseOfANullsafeMethodCallDoesNotHoldWhereItIsFalsy' => [
+                'code' => '<?php
+                    final class M {
+                        /** @psalm-assert-if-true non-falsy-string $a */
+                        public function isText(string $a): bool {
+                            return $a !== "" && $a !== "0";
+                        }
+                        /** @psalm-assert-if-false non-falsy-string $a */
+                        public function isNotText(string $a): bool {
+                            return $a === "" || $a === "0";
+                        }
+                    }
+
+                    /** @param non-falsy-string $s */
+                    function useText(string $s): void {}
+
+                    function f(string $s, ?M $m): void {
+                        if (!$m?->isNotText($s)) {
+                            useText($s);
+                        }
+                    }',
+                'error_message' => 'ArgumentTypeCoercion',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
             'assertOfAMethodCalledTwiceInTheArgumentsOfASelfCall' => [
                 'code' => '<?php
                     class Entity {
