@@ -2666,11 +2666,6 @@
       <code><![CDATA[Report]]></code>
     </ImmutableDependency>
   </file>
-  <file src="src/Psalm/Report/PhpStormReport.php">
-    <RiskyTruthyFalsyComparison>
-      <code><![CDATA[$issue_data->taint_trace]]></code>
-    </RiskyTruthyFalsyComparison>
-  </file>
   <file src="src/Psalm/Report/SarifReport.php">
     <ImmutableDependency>
       <code><![CDATA[#[Override]]]></code>
