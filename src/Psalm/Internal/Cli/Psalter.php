@@ -39,7 +39,6 @@ use function filter_var;
 use function fwrite;
 use function gc_collect_cycles;
 use function gc_disable;
-use function getcwd;
 use function implode;
 use function in_array;
 use function is_array;
@@ -228,21 +227,7 @@ final class Psalter
             exit(1);
         }
 
-        $current_dir = (string) getcwd();
-
-        if (isset($options['r']) && is_string($options['r'])) {
-            $root_path = realpath($options['r']);
-
-            if ($root_path === false) {
-                fwrite(
-                    STDERR,
-                    CliUtils::getRootDirectoryNotFoundMessage($current_dir, $options['r']) . PHP_EOL,
-                );
-                exit(1);
-            }
-
-            $current_dir = $root_path;
-        }
+        $current_dir = CliUtils::getCurrentDir($options);
 
         $vendor_dir = CliUtils::getVendorDir($current_dir);
 

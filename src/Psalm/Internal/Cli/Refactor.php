@@ -30,15 +30,12 @@ use function explode;
 use function fwrite;
 use function gc_collect_cycles;
 use function gc_disable;
-use function getcwd;
 use function in_array;
 use function is_array;
-use function is_string;
 use function microtime;
 use function preg_last_error_msg;
 use function preg_match;
 use function preg_split;
-use function realpath;
 use function str_contains;
 use function str_ends_with;
 use function str_starts_with;
@@ -170,21 +167,7 @@ final class Refactor
 
         CliUtils::setMemoryLimit($options);
 
-        $current_dir = (string) getcwd();
-
-        if (isset($options['r']) && is_string($options['r'])) {
-            $root_path = realpath($options['r']);
-
-            if ($root_path === false) {
-                fwrite(
-                    STDERR,
-                    CliUtils::getRootDirectoryNotFoundMessage($current_dir, $options['r']) . PHP_EOL,
-                );
-                exit(1);
-            }
-
-            $current_dir = $root_path;
-        }
+        $current_dir = CliUtils::getCurrentDir($options);
 
         $vendor_dir = CliUtils::getVendorDir($current_dir);
 
