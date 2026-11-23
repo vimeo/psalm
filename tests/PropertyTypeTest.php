@@ -4963,6 +4963,21 @@ final class PropertyTypeTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'writingAPropertyOfAnUndefinedDocblockClassIsADocblockIssue' => [
+                'code' => '<?php
+                    /** @return mixed */
+                    function k() {
+                        return null;
+                    }
+
+                    /**
+                     * @psalm-suppress UndefinedDocblockClass
+                     * @var Foobar $o
+                     */
+                    $o = k();
+                    $o->a = 1;',
+                'error_message' => 'UndefinedDocblockClass - src' . DIRECTORY_SEPARATOR . 'somefile.php:12:21 - Cannot set properties of undefined docblock class Foobar',
+            ],
             'offsetWriteToAnUninitializedReadonlyArrayProperty' => [
                 'code' => '<?php
                     final class Bag
