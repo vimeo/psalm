@@ -23,10 +23,7 @@ final class WhileAnalyzer
         PhpParser\Node\Stmt\While_ $stmt,
         Context $context,
     ): ?bool {
-        $while_true = ($stmt->cond instanceof PhpParser\Node\Expr\ConstFetch
-                && $stmt->cond->name->getParts() === ['true'])
-            || (($t = $statements_analyzer->node_data->getType($stmt->cond))
-                && $t->isAlwaysTruthy());
+        $while_true = LoopAnalyzer::isAlwaysTruthyCondition($statements_analyzer, $stmt->cond);
 
         // the variable a condition like `++$i < 10` starts from, if it is a literal before the loop
         $init_var_types = [];

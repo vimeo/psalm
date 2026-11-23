@@ -14,11 +14,13 @@ use Psalm\Internal\Algebra\FormulaGenerator;
 use Psalm\Internal\Analyzer\ScopeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\VariableFetchAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\SimpleTypeInferer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Clause;
 use Psalm\Internal\PhpVisitor\AssignmentMapVisitor;
 use Psalm\Internal\PhpVisitor\NodeCleanerVisitor;
+use Psalm\Internal\Provider\NodeDataProvider;
 use Psalm\Internal\Scope\LoopScope;
 use Psalm\IssueBuffer;
 use Psalm\Node\Expr\BinaryOp\VirtualBooleanAnd;
@@ -943,6 +945,22 @@ final class LoopAnalyzer
     }
 
     /**
+     * Whether a loop condition is a literal that is always truthy (`true`, `1`): the loop is then only left by a break
+     */
+    public static function isAlwaysTruthyCondition(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr $condition,
+    ): bool {
+        return SimpleTypeInferer::infer(
+            $statements_analyzer->getCodebase(),
+            new NodeDataProvider(),
+            $condition,
+            $statements_analyzer->getAliases(),
+            $statements_analyzer,
+        )?->isAlwaysTruthy() ?? false;
+    }
+
+    /**
      * @param array<string, Union> $init_var_types
      * @param array<string, int> $assigned_var_ids
      * @param list<PhpParser\Node\Expr> $pre_conditions
@@ -1079,9 +1097,27 @@ final class LoopAnalyzer
         }
 
         foreach ($loop_scope->condition_written_vars as $var_id => $type) {
-            if (isset($context->vars_in_scope[$var_id])) {
-                $context->vars_in_scope[$var_id] = Type::combineUnionTypes($context->vars_in_scope[$var_id], $type);
+            if (!isset($context->vars_in_scope[$var_id])) {
+                continue;
             }
+
+            $type_at_breaks = $loop_scope->vars_at_breaks[$var_id] ?? null;
+
+            // a variable every evaluation of the condition writes holds what the breaks leave or what the condition
+            // wrote, not what it held before the loop or where an iteration ended
+            if ($type_at_breaks !== null
+                && isset($loop_scope->condition_always_written_var_ids[$var_id])
+                && !$loop_scope->breaks_through_finally
+                && !$type_at_breaks->isNever()
+                && !$type_at_breaks->possibly_undefined
+            ) {
+                $context->vars_in_scope[$var_id] = Type::combineUnionTypes($type_at_breaks, $type)
+                    ->addParentNodes($context->vars_in_scope[$var_id]->parent_nodes);
+
+                continue;
+            }
+
+            $context->vars_in_scope[$var_id] = Type::combineUnionTypes($context->vars_in_scope[$var_id], $type);
         }
     }
 

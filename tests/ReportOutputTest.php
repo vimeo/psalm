@@ -520,6 +520,52 @@ final class ReportOutputTest extends TestCase
         );
     }
 
+    public function testPhpStormReportShowsWhereTheMixedTypeComesFrom(): void
+    {
+        $this->project_analyzer->getCodebase()->reportUnusedVariables();
+
+        $this->addFile(
+            'somefile.php',
+            '<?php function g($m): void { $a = $m; echo $a; }',
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+
+        $report_options = new ReportOptions();
+        $report_options->format = Report::TYPE_PHP_STORM;
+        $report_options->use_color = false;
+
+        $this->assertSame(
+            <<<'EOF'
+            ERROR: MixedAssignment
+            at somefile.php:1:30
+            Unable to determine the type that $a is being assigned to (see https://psalm.dev/032)
+            <?php function g($m): void { $a
+              The type of $a is sourced from here - somefile.php:1:18
+            <?php function g($m
+
+
+
+            ERROR: MixedArgument
+            at somefile.php:1:44
+            Argument 1 of echo cannot be mixed, expecting string (see https://psalm.dev/030)
+            <?php function g($m): void { $a = $m; echo $a
+              The type of $a is sourced from here - somefile.php:1:18
+            <?php function g($m
+
+
+
+            ERROR: MissingParamType
+            at somefile.php:1:18
+            Parameter $m has no provided type (see https://psalm.dev/154)
+            <?php function g($m
+
+
+            EOF,
+            IssueBuffer::getOutput(IssueBuffer::getIssuesData(), $report_options),
+        );
+    }
+
     public function testByIssueLevelAndTypeReport(): void
     {
         $this->analyzeFileForReport();
@@ -539,17 +585,18 @@ final class ReportOutputTest extends TestCase
             |                                                                                        |
             |    The level at which issue is reported as an error is given in brackets - e.g.        |
             |    `ERROR (2): MissingReturnType` indicates that MissingReturnType is only reported    |
-            |    as an error when Psalm's level is set to 2 or below.                                |
+            |    as an error when Psalm's level is set to 2 or below. `(always)` marks the issues    |
+            |    reported as errors at every level, `(feature)` those of an enabled feature.         |
             |                                                                                        |
             |    Issues are shown or hidden in this report according to current settings. For        |
             |    the most complete report set Psalm's error level to 1 or use --show-info=true       |
             |    See https://psalm.dev/docs/running_psalm/error_levels/                              |
             |----------------------------------------------------------------------------------------|
 
-            ERROR: UndefinedConstant - somefile.php:9:6 - Const CHANGE_ME is not defined, consider enabling the allConstantsGlobal config option if scanning legacy codebases (see https://psalm.dev/020)
+            ERROR (always): UndefinedConstant - somefile.php:9:6 - Const CHANGE_ME is not defined, consider enabling the allConstantsGlobal config option if scanning legacy codebases (see https://psalm.dev/020)
             echo CHANGE_ME;
 
-            ERROR: UndefinedVariable - somefile.php:4:10 - Cannot find referenced variable $as_you_____type (see https://psalm.dev/024)
+            ERROR (always): UndefinedVariable - somefile.php:4:10 - Cannot find referenced variable $as_you_____type (see https://psalm.dev/024)
               return $as_you_____type;
 
             INFO (3): PossiblyUndefinedGlobalVariable - somefile.php:18:6 - Possibly undefined global variable $a, first seen on line 12 (see https://psalm.dev/126)

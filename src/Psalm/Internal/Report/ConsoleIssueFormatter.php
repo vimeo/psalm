@@ -15,7 +15,8 @@ use function strlen;
 use function substr;
 
 /**
- * Issue formatting shared by the console-style reports.
+ * Issue formatting shared by the console-style reports. A report can override
+ * formatIssueHeader() and getFileReference() to change the header and the locations.
  *
  * @internal
  * @psalm-external-mutation-free
@@ -29,17 +30,15 @@ trait ConsoleIssueFormatter
      */
     private function formatIssue(IssueData $issue_data, string $level_label = ''): string
     {
-        $issue_string = '';
-
         $is_error = $issue_data->severity === Config::REPORT_ERROR;
-
-        $issue_string .= $this->getSeverityLabel($issue_data);
 
         $issue_reference = $issue_data->link ? ' (see ' . $issue_data->link . ')' : '';
 
-        $issue_string .= $level_label . ': ' . $issue_data->type
-            . ' - ' . $this->getFileReference($issue_data)
-            . ' - ' . $this->escapeControlCharacters(self::getMessageWithCwe($issue_data)) . $issue_reference . "\n";
+        $issue_string = $this->formatIssueHeader(
+            $issue_data,
+            $level_label,
+            $this->escapeControlCharacters(self::getMessageWithCwe($issue_data)) . $issue_reference,
+        );
 
         if ($issue_data->taint_trace !== null && $issue_data->taint_trace !== []) {
             $issue_string .= $this->getTaintSnippets($issue_data->taint_trace);
@@ -69,6 +68,17 @@ trait ConsoleIssueFormatter
         }
 
         return $issue_string;
+    }
+
+    /**
+     * @param string $message escaped message, followed by the issue link
+     * @psalm-external-mutation-free
+     */
+    private function formatIssueHeader(IssueData $issue_data, string $level_label, string $message): string
+    {
+        return $this->getSeverityLabel($issue_data) . $level_label . ': ' . $issue_data->type
+            . ' - ' . $this->getFileReference($issue_data)
+            . ' - ' . $message . "\n";
     }
 
     /**

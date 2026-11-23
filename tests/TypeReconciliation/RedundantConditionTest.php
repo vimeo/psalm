@@ -247,6 +247,19 @@ final class RedundantConditionTest extends TestCase
                         return $new;
                     }',
             ],
+            'assertionOfStaticOnAnInterfaceReceiverIsNotImplied' => [
+                'code' => '<?php
+                    interface Comparable {
+                        /** @psalm-assert-if-true static $object */
+                        public function equals(Comparable $object): bool;
+                    }
+
+                    function f(Comparable $left, Comparable $right): void {
+                        if ($left->equals($right)) {
+                            echo "yes";
+                        }
+                    }',
+            ],
             'notIdenticalToABoolLiteralOfATemplateBoundedByMixed' => [
                 'code' => '<?php
                     /**
@@ -2832,19 +2845,25 @@ final class RedundantConditionTest extends TestCase
                     }',
                 'error_message' => 'RedundantCondition',
             ],
-            'assertionOfAnInterfaceAlreadyImplied' => [
+            'assertionOfAFinalClassAlreadyImplied' => [
                 'code' => '<?php
                     interface Comparable {
                         /** @psalm-assert-if-true static $object */
                         public function equals(Comparable $object): bool;
                     }
 
-                    function f(Comparable $left, Comparable $right): void {
+                    final class Money implements Comparable {
+                        public function equals(Comparable $object): bool {
+                            return $object instanceof self;
+                        }
+                    }
+
+                    function f(Money $left, Money $right): void {
                         if ($left->equals($right)) {
                             echo "yes";
                         }
                     }',
-                'error_message' => 'RedundantCondition - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:29 - Type Comparable for $right is always Comparable',
+                'error_message' => 'RedundantCondition - src' . DIRECTORY_SEPARATOR . 'somefile.php:14:29 - Type Money for $right is always Money',
             ],
             'assignedArrayOffsetCheckedTwice' => [
                 'code' => '<?php
