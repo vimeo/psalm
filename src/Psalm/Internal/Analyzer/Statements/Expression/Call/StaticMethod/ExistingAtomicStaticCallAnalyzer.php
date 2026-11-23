@@ -433,6 +433,22 @@ final class ExistingAtomicStaticCallAnalyzer
                     ? 'static'
                     : null);
 
+            // what `static` is in the types of the assertions: late static when it may be a subclass of the class
+            if ($lhs_type_part instanceof TTemplateParam) {
+                $assertion_static_type = $lhs_type_part;
+            } elseif ($lhs_type_part instanceof TTemplateParamClass) {
+                $assertion_static_type = self::getTemplateParamOfClass($lhs_type_part);
+            } elseif ($assertion_static_class === 'static' && $context->self !== null) {
+                $self_storage = $codebase->classlike_storage_provider->get($context->self);
+                $assertion_static_type = ClassAnalyzer::getThisObjectType($self_storage, $context->self)
+                    ->setIsStatic(!$self_storage->final);
+            } else {
+                $assertion_static_type = new TNamedObject(
+                    $fq_class_name,
+                    !$static_is_called_class && !$class_storage->final,
+                );
+            }
+
             // an instance method of the caller's class or of an ancestor, called statically from an instance method,
             // is called on `$this`
             $assertion_this_var_id = !$method_storage->is_static
@@ -457,8 +473,8 @@ final class ExistingAtomicStaticCallAnalyzer
                 $assertion_this_var_id,
                 $assertion_this_var_id,
                 $assertion_static_class,
-                $static_is_called_class ? new TNamedObject($fq_class_name) : null,
-                $static_is_called_class ? $fq_class_name : null,
+                $assertion_static_type,
+                $assertion_static_type,
             );
         } elseif (!$stmt->isFirstClassCallable()) {
             // a builtin method known from reflection only: it may do what its reflected storage says,
@@ -664,6 +680,20 @@ final class ExistingAtomicStaticCallAnalyzer
     }
 
     /**
+     * The template a `class-string<T>` names
+     *
+     * @psalm-pure
+     */
+    private static function getTemplateParamOfClass(TTemplateParamClass $class_string): TTemplateParam
+    {
+        return new TTemplateParam(
+            $class_string->param_name,
+            $class_string->as_type ? new Union([$class_string->as_type]) : Type::getObject(),
+            $class_string->defining_class,
+        );
+    }
+
+    /**
      * What `static` stands for in the signature of the method $stmt calls on $fq_class_name, and whether it is that
      * class exactly
      *
@@ -683,13 +713,7 @@ final class ExistingAtomicStaticCallAnalyzer
         if ($lhs_type_part instanceof TTemplateParam) {
             $static_type = $lhs_type_part;
         } elseif ($lhs_type_part instanceof TTemplateParamClass) {
-            $static_type = new TTemplateParam(
-                $lhs_type_part->param_name,
-                $lhs_type_part->as_type
-                    ? new Union([$lhs_type_part->as_type])
-                    : Type::getObject(),
-                $lhs_type_part->defining_class,
-            );
+            $static_type = self::getTemplateParamOfClass($lhs_type_part);
         } elseif ($stmt->class instanceof PhpParser\Node\Name
             && count($stmt->class->getParts()) === 1
             && in_array(strtolower($stmt->class->getFirst()), ['self', 'static', 'parent'], true)

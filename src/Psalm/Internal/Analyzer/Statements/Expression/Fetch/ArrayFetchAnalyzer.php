@@ -9,7 +9,6 @@ use PhpParser\Node\Expr;
 use Psalm\CodeLocation;
 use Psalm\Codebase;
 use Psalm\Context;
-use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ArrayAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\ArgumentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\ClassTemplateParamCollector;
@@ -20,7 +19,6 @@ use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\Statements\GlobalAnalyzer;
 use Psalm\Internal\Analyzer\Statements\UnsetAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
-use Psalm\Internal\Analyzer\TraitAnalyzer;
 use Psalm\Internal\Codebase\CombinedFlowGraph;
 use Psalm\Internal\Codebase\PropertyBagTaints;
 use Psalm\Internal\Codebase\ServerVariableTaints;
@@ -1018,7 +1016,6 @@ final class ArrayFetchAnalyzer
                     $array_access_type = self::handleMixedArrayAccess(
                         $context,
                         $statements_analyzer,
-                        $codebase,
                         $in_assignment,
                         $extended_var_id,
                         $stmt,
@@ -1129,14 +1126,7 @@ final class ArrayFetchAnalyzer
                 continue;
             }
 
-            if (!$context->collect_initializations
-                && $statements_analyzer->getFilePath() === $statements_analyzer->getRootFilePath()
-                && (!(($parent_source = $statements_analyzer->getSource())
-                        instanceof FunctionLikeAnalyzer)
-                    || !$parent_source->getSource() instanceof TraitAnalyzer)
-            ) {
-                $codebase->analyzer->incrementNonMixedCount($statements_analyzer->getFilePath());
-            }
+            $statements_analyzer->countMixed($context, false);
 
             if ($type instanceof TFalse && $array_type->ignore_falsable_issues) {
                 continue;
@@ -1220,14 +1210,7 @@ final class ArrayFetchAnalyzer
         }
 
         if ($offset_type->hasMixed()) {
-            if (!$context->collect_initializations
-                && $statements_analyzer->getFilePath() === $statements_analyzer->getRootFilePath()
-                && (!(($parent_source = $statements_analyzer->getSource())
-                        instanceof FunctionLikeAnalyzer)
-                    || !$parent_source->getSource() instanceof TraitAnalyzer)
-            ) {
-                $codebase->analyzer->incrementMixedCount($statements_analyzer->getFilePath());
-            }
+            $statements_analyzer->countMixed($context, true);
 
             IssueBuffer::maybeAdd(
                 new MixedArrayOffset(
@@ -1238,14 +1221,7 @@ final class ArrayFetchAnalyzer
                 $statements_analyzer->getSuppressedIssues(),
             );
         } else {
-            if (!$context->collect_initializations
-                && $statements_analyzer->getFilePath() === $statements_analyzer->getRootFilePath()
-                && (!(($parent_source = $statements_analyzer->getSource())
-                        instanceof FunctionLikeAnalyzer)
-                    || !$parent_source->getSource() instanceof TraitAnalyzer)
-            ) {
-                $codebase->analyzer->incrementNonMixedCount($statements_analyzer->getFilePath());
-            }
+            $statements_analyzer->countMixed($context, false);
 
             if ($expected_offset_types) {
                 $statements_analyzer->node_data->markOffsetChecked($stmt);
@@ -1530,7 +1506,6 @@ final class ArrayFetchAnalyzer
     public static function handleMixedArrayAccess(
         Context $context,
         StatementsAnalyzer $statements_analyzer,
-        Codebase $codebase,
         bool $in_assignment,
         ?string $extended_var_id,
         PhpParser\Node\Expr\ArrayDimFetch $stmt,
@@ -1538,14 +1513,7 @@ final class ArrayFetchAnalyzer
         Atomic $type,
         bool $by_reference = false,
     ): Union {
-        if (!$context->collect_initializations
-            && $statements_analyzer->getFilePath() === $statements_analyzer->getRootFilePath()
-            && (!(($parent_source = $statements_analyzer->getSource())
-                    instanceof FunctionLikeAnalyzer)
-                || !$parent_source->getSource() instanceof TraitAnalyzer)
-        ) {
-            $codebase->analyzer->incrementMixedCount($statements_analyzer->getFilePath());
-        }
+        $statements_analyzer->countMixed($context, true);
 
         // an item passed by reference was reported as accessed when the argument was read
         if (!$context->inside_isset && !$by_reference) {
@@ -2768,14 +2736,7 @@ final class ArrayFetchAnalyzer
     ): void {
         if ($in_assignment && $replacement_type) {
             if ($replacement_type->hasMixed()) {
-                if (!$context->collect_initializations
-                    && $statements_analyzer->getFilePath() === $statements_analyzer->getRootFilePath()
-                    && (!(($parent_source = $statements_analyzer->getSource())
-                            instanceof FunctionLikeAnalyzer)
-                        || !$parent_source->getSource() instanceof TraitAnalyzer)
-                ) {
-                    $codebase->analyzer->incrementMixedCount($statements_analyzer->getFilePath());
-                }
+                $statements_analyzer->countMixed($context, true);
 
                 IssueBuffer::maybeAdd(
                     new MixedStringOffsetAssignment(
@@ -2785,14 +2746,7 @@ final class ArrayFetchAnalyzer
                     $statements_analyzer->getSuppressedIssues(),
                 );
             } else {
-                if (!$context->collect_initializations
-                    && $statements_analyzer->getFilePath() === $statements_analyzer->getRootFilePath()
-                    && (!(($parent_source = $statements_analyzer->getSource())
-                            instanceof FunctionLikeAnalyzer)
-                        || !$parent_source->getSource() instanceof TraitAnalyzer)
-                ) {
-                    $codebase->analyzer->incrementNonMixedCount($statements_analyzer->getFilePath());
-                }
+                $statements_analyzer->countMixed($context, false);
             }
         }
 

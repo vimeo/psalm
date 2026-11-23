@@ -1184,7 +1184,9 @@ abstract class CallAnalyzer
      * @param ?string $context_this_var_id the same, for the assertions applied to the context
      * @param ?string $static_class the class `static` is in the called method, `static` when the call forwards the
      *                              caller's, null when unknown
-     * @param ?string $context_static_class the class `static` expands to in the assertions applied to the context
+     * @param TNamedObject|TTemplateParam|null $static_type what `static` is in the types of the assertions
+     * @param string|TNamedObject|TTemplateParam|null $context_static_type the same, for the assertions applied to the
+     *                                                                     context, any subclass of it for a class name
      */
     public static function applyMethodAssertions(
         StatementsAnalyzer $statements_analyzer,
@@ -1200,8 +1202,8 @@ abstract class CallAnalyzer
         ?string $this_var_id,
         ?string $context_this_var_id,
         ?string $static_class,
-        ?Atomic $static_type,
-        ?string $context_static_class,
+        TNamedObject|TTemplateParam|null $static_type,
+        string|TNamedObject|TTemplateParam|null $context_static_type,
     ): void {
         $codebase = $statements_analyzer->getCodebase();
         $assertions_resolver = new AssertionsFromInheritanceResolver($codebase);
@@ -1210,67 +1212,116 @@ abstract class CallAnalyzer
         $trait_self_class = $codebase->methods->getAppearingMethodId($method_id)?->fq_class_name
             ?? $class_storage->name;
 
-        /**
-         * @param array<Possibilities> $assertions
-         * @return list<Possibilities>
-         */
-        $resolve = static fn(array $assertions): array => self::resolveStaticPropertyAssertionClasses(
-            self::getAssertionsOnArgs(
-                $assertions,
-                $method_storage,
-                $args,
-                $statements_analyzer->node_data,
-                $context->strict_types,
-            ),
-            $codebase,
-            $context,
-            $trait_self_class,
-            $static_class,
-            $fq_class_name,
-        );
-
         $assertions = $assertions_resolver->resolve($method_storage, $class_storage);
 
         if ($assertions) {
             self::applyAssertionsToContext(
                 $stmt_name,
                 $context_this_var_id,
-                $resolve($assertions),
+                self::resolveStaticPropertyAssertionClasses(
+                    self::getAssertionsOnArgs(
+                        $assertions,
+                        $method_storage,
+                        $args,
+                        $statements_analyzer->node_data,
+                        $context->strict_types,
+                    ),
+                    $codebase,
+                    $context,
+                    $trait_self_class,
+                    $static_class,
+                    $fq_class_name,
+                ),
                 $args,
                 $template_result,
                 $context,
                 $statements_analyzer,
-                $context_static_class,
+                $context_static_type,
                 $trait_self_class,
             );
         }
 
-        $untemplate = static fn(Possibilities $assertion): Possibilities => self::resolveTraitSelf(
-            $assertion->getUntemplatedCopy($template_result, $this_var_id, $codebase, $static_type),
+        self::setConditionalAssertions(
+            $stmt,
+            $assertions_resolver,
+            $method_storage,
+            $class_storage,
+            $args,
+            $template_result,
+            $this_var_id,
+            $static_type,
             $trait_self_class,
+            $static_class,
+            $fq_class_name,
+            $context,
+            $statements_analyzer,
         );
+    }
 
-        $if_true_assertions = $assertions_resolver->resolveIfTrue($method_storage, $class_storage);
-        $if_false_assertions = $assertions_resolver->resolveIfFalse($method_storage, $class_storage);
+    /**
+     * Records what a method call asserts when it returns true and when it returns false
+     *
+     * @param list<PhpParser\Node\Arg> $args
+     * @param ?string $this_var_id the object the method is called on, null when the call has none
+     * @param ?string $static_class the class `static` is in the called method, as for
+     *                              resolveStaticPropertyAssertionClasses()
+     */
+    public static function setConditionalAssertions(
+        PhpParser\Node\Expr\MethodCall|PhpParser\Node\Expr\StaticCall $stmt,
+        AssertionsFromInheritanceResolver $assertions_resolver,
+        MethodStorage $method_storage,
+        ClassLikeStorage $class_storage,
+        array $args,
+        TemplateResult $template_result,
+        ?string $this_var_id,
+        TNamedObject|TTemplateParam|null $static_type,
+        string $self_class,
+        ?string $static_class,
+        string $called_class,
+        Context $context,
+        StatementsAnalyzer $statements_analyzer,
+    ): void {
+        $codebase = $statements_analyzer->getCodebase();
 
-        // `$this` is the object the method is called on: without a variable for it, there's nothing to assert
-        if ($this_var_id === null) {
-            $if_true_assertions = self::removeThisAssertions($if_true_assertions);
-            $if_false_assertions = self::removeThisAssertions($if_false_assertions);
-        }
+        foreach ([true, false] as $if_true) {
+            $assertions = $if_true
+                ? $assertions_resolver->resolveIfTrue($method_storage, $class_storage)
+                : $assertions_resolver->resolveIfFalse($method_storage, $class_storage);
 
-        if ($if_true_assertions) {
-            $statements_analyzer->node_data->setIfTrueAssertions(
-                $stmt,
-                array_map($untemplate, $resolve($if_true_assertions)),
+            if ($this_var_id === null) {
+                $assertions = self::removeThisAssertions($assertions);
+            }
+
+            if (!$assertions) {
+                continue;
+            }
+
+            $assertions = array_map(
+                static fn(Possibilities $assertion): Possibilities => self::resolveTraitSelf(
+                    $assertion->getUntemplatedCopy($template_result, $this_var_id, $codebase, $static_type),
+                    $self_class,
+                ),
+                self::resolveStaticPropertyAssertionClasses(
+                    self::getAssertionsOnArgs(
+                        $assertions,
+                        $method_storage,
+                        $args,
+                        $statements_analyzer->node_data,
+                        $context->strict_types,
+                    ),
+                    $codebase,
+                    $context,
+                    $self_class,
+                    $static_class,
+                    $called_class,
+                ),
             );
-        }
 
-        if ($if_false_assertions) {
-            $statements_analyzer->node_data->setIfFalseAssertions(
-                $stmt,
-                array_map($untemplate, $resolve($if_false_assertions)),
-            );
+            if ($if_true) {
+                $statements_analyzer->node_data->setIfTrueAssertions($stmt, $assertions);
+            } else {
+                $statements_analyzer->node_data->setIfFalseAssertions($stmt, $assertions);
+            }
         }
     }
 
@@ -1278,6 +1329,9 @@ abstract class CallAnalyzer
      * @param Identifier|Name $expr
      * @param  Possibilities[] $var_assertions
      * @param  list<PhpParser\Node\Arg> $args
+     * @param string|TNamedObject|TTemplateParam|null $static_class_type what `static` is in the types of the
+     *                                                                   assertions, any subclass of it for a
+     *                                                                   class name
      */
     public static function applyAssertionsToContext(
         PhpParser\NodeAbstract $expr,
@@ -1287,7 +1341,7 @@ abstract class CallAnalyzer
         TemplateResult $template_result,
         Context $context,
         StatementsAnalyzer $statements_analyzer,
-        ?string $static_class = null,
+        string|TNamedObject|TTemplateParam|null $static_class_type = null,
         ?string $self_class = null,
     ): void {
         $type_assertions = [];
@@ -1373,8 +1427,12 @@ abstract class CallAnalyzer
                                 $codebase,
                             ),
                             $self_class,
-                            $static_class !== null ? new TNamedObject($static_class) : null,
+                            is_string($static_class_type) ? new TNamedObject($static_class_type) : $static_class_type,
                             null,
+                            true,
+                            false,
+                            // a given type is `static` as is: late static only when it already is
+                            $static_class_type instanceof TNamedObject && !$static_class_type->is_static,
                         );
 
                         if (count($assertion_type->getAtomicTypes()) === 1) {
@@ -1597,12 +1655,7 @@ abstract class CallAnalyzer
                         && isset($context->vars_in_scope[$var_id])
                         && $context->vars_in_scope[$var_id]->hasMixed()
                     ) {
-                        if (!$context->collect_initializations
-                            && $statements_analyzer->getFilePath() === $statements_analyzer->getRootFilePath()
-                            && (!(($parent_source = $statements_analyzer->getSource())
-                                        instanceof FunctionLikeAnalyzer)
-                                    || !$parent_source->getSource() instanceof TraitAnalyzer)
-                        ) {
+                        if ($statements_analyzer->shouldCountMixed($context)) {
                             $codebase->analyzer->decrementMixedCount($statements_analyzer->getFilePath());
                         }
 
