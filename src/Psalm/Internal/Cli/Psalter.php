@@ -20,10 +20,6 @@ use Psalm\Internal\Provider\ProjectCacheProvider;
 use Psalm\Internal\Provider\Providers;
 use Psalm\Internal\Scanner\ParsedDocblock;
 use Psalm\IssueBuffer;
-use Psalm\Progress\DebugProgress;
-use Psalm\Progress\DefaultProgress;
-use Psalm\Progress\LongProgress;
-use Psalm\Progress\VoidProgress;
 use Psalm\Report;
 use Psalm\Report\ReportOptions;
 
@@ -304,22 +300,7 @@ final class Psalter
             );
         }
 
-        $debug = array_key_exists('debug', $options) || array_key_exists('debug-by-line', $options);
-        // CI takes precedence over AI detection: persistent CI logs still want
-        // per-phase breadcrumbs for humans reviewing the build.
-        $no_progress = isset($options['no-progress'])
-            || (!$in_ci && CliUtils::runningUnderAiAgent());
-        if ($debug) {
-            $progress = new DebugProgress();
-        } elseif ($no_progress) {
-            $progress = new VoidProgress();
-        } elseif ($in_ci || !CliUtils::streamIsInteractive(STDERR)) {
-            // Same rationale as in Psalm.php: a `\r`-based progress bar on a
-            // piped stderr just floods the log with every intermediate update.
-            $progress = new LongProgress(true, false, true);
-        } else {
-            $progress = new DefaultProgress();
-        }
+        $progress = CliUtils::getAlterProgress($options, $in_ci);
 
         $stdout_report_options = new ReportOptions();
         $stdout_report_options->use_color = CliUtils::useColor($options, true);

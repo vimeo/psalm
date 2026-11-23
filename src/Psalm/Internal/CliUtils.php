@@ -17,6 +17,11 @@ use Psalm\Internal\Cli\Psalm;
 use Psalm\Internal\Cli\Psalter;
 use Psalm\Internal\Cli\Refactor;
 use Psalm\Internal\Fork\PsalmRestarter;
+use Psalm\Progress\DebugProgress;
+use Psalm\Progress\DefaultProgress;
+use Psalm\Progress\LongProgress;
+use Psalm\Progress\Progress;
+use Psalm\Progress\VoidProgress;
 use Psalm\Report;
 use RuntimeException;
 use UnexpectedValueException;
@@ -900,6 +905,30 @@ final class CliUtils
                 exit(1);
             }
         }
+    }
+
+    /**
+     * The progress of the commands that alter code: psalter and psalm-refactor
+     */
+    public static function getAlterProgress(array $options, bool $in_ci): Progress
+    {
+        if (array_key_exists('debug', $options) || array_key_exists('debug-by-line', $options)) {
+            return new DebugProgress();
+        }
+
+        // CI takes precedence over AI detection: persistent CI logs still want
+        // per-phase breadcrumbs for humans reviewing the build.
+        if (isset($options['no-progress']) || (!$in_ci && self::runningUnderAiAgent())) {
+            return new VoidProgress();
+        }
+
+        if ($in_ci || !self::streamIsInteractive(STDERR)) {
+            // Same rationale as in Psalm.php: a `\r`-based progress bar on a
+            // piped stderr just floods the log with every intermediate update.
+            return new LongProgress(true, false, true);
+        }
+
+        return new DefaultProgress();
     }
 
     public static function runningInCI(): bool
