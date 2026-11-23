@@ -1388,7 +1388,7 @@ final class ClassLikeNodeScanner
             $implemented_class_name,
             '@template-implements',
             'Implemented class',
-            'an implemented class',
+            'an implemented interface',
             $storage->class_implements,
         );
 
@@ -1408,7 +1408,7 @@ final class ClassLikeNodeScanner
             $used_class_name,
             '@template-use',
             'Used class',
-            'an used class',
+            'a used trait',
             $storage->used_traits,
         );
 
@@ -1482,6 +1482,17 @@ final class ClassLikeNodeScanner
         $counts = [];
 
         foreach ($union_type->getAtomicTypes() as $atomic_type) {
+            if ($atomic_type instanceof TNamedObject
+                && !isset($related_classes[strtolower($atomic_type->value)])
+            ) {
+                $storage->docblock_issues[] = new InvalidDocblock(
+                    $tag . ' must include the name of ' . $related_name . ', got ' . $atomic_type->getId(),
+                    new CodeLocation($this->file_scanner, $node, null, true),
+                );
+
+                continue;
+            }
+
             if (!$atomic_type instanceof TGenericObject) {
                 $storage->docblock_issues[] = new InvalidDocblock(
                     $tag . ' has invalid class ' . $atomic_type->getId(),
@@ -1492,15 +1503,6 @@ final class ClassLikeNodeScanner
             }
 
             $generic_class_lc = strtolower($atomic_type->value);
-
-            if (!isset($related_classes[$generic_class_lc])) {
-                $storage->docblock_issues[] = new InvalidDocblock(
-                    $tag . ' must include the name of ' . $related_name . ', got ' . $atomic_type->getId(),
-                    new CodeLocation($this->file_scanner, $node, null, true),
-                );
-
-                continue;
-            }
 
             if ($this->reportStarArgument($storage, $node, $atomic_type, $tag)) {
                 continue;

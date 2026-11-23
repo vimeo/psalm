@@ -815,6 +815,41 @@ final class ArrayAssignmentAnalyzer
     }
 
     /**
+     * The shape with an item for a key it lists none of, which is one its rest type has: the items it has stay, and a
+     * list stays one when the key is the next one
+     *
+     * @psalm-pure
+     */
+    private static function writeKeyOfTheRestOfAShape(
+        TKeyedArray $type,
+        TLiteralInt|TLiteralString $key_value,
+        Union $value_type,
+    ): TKeyedArray {
+        $properties = $type->properties;
+        $properties[$key_value->value] = $value_type->setPossiblyUndefined(false);
+
+        $class_strings = $type->class_strings ?? [];
+
+        if ($key_value instanceof TLiteralClassString) {
+            $class_strings[$key_value->value] = true;
+        }
+
+        $is_list = $type->is_list
+            && $key_value instanceof TLiteralInt
+            && $key_value->value === count($type->properties);
+
+        $written = TKeyedArray::make(
+            $properties,
+            $class_strings ?: null,
+            $type->fallback_params,
+            $is_list,
+            $type->from_docblock,
+        );
+
+        return $written instanceof TKeyedArray ? $written : $type;
+    }
+
+    /**
      * @param non-empty-list<TLiteralInt|TLiteralString> $key_values
      */
     private static function updateTypeWithKeyValues(
@@ -847,7 +882,17 @@ final class ArrayAssignmentAnalyzer
                         $properties[$key_value->value] = $current_type;
                     }
                 }
-                $type = $type->setProperties($properties);
+
+                // a key the shape doesn't list is one of its rest keys: it is written there, the items stay
+                if (!$has_matching_objectlike_property
+                    && $type->fallback_params !== null
+                    && count($key_values) === 1
+                ) {
+                    $type = self::writeKeyOfTheRestOfAShape($type, $key_values[0], $current_type);
+                    $has_matching_objectlike_property = true;
+                } else {
+                    $type = $type->setProperties($properties);
+                }
             } elseif ($type instanceof TClassStringMap
                 && self::isItemOfClassStringMap($codebase, $type, $key_values, $current_type)
             ) {

@@ -9,10 +9,8 @@ use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Config;
 use Psalm\Context;
-use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
-use Psalm\Internal\Analyzer\TraitAnalyzer;
 use Psalm\Internal\Codebase\StringContext;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\MethodIdentifier;
@@ -316,14 +314,7 @@ final class ConcatAnalyzer
             $result_type = Type::getString();
 
             if ($left_type->hasMixed() || $right_type->hasMixed()) {
-                if (!$context->collect_initializations
-                    && $statements_analyzer->getFilePath() === $statements_analyzer->getRootFilePath()
-                    && (!(($parent_source = $statements_analyzer->getSource())
-                            instanceof FunctionLikeAnalyzer)
-                        || !$parent_source->getSource() instanceof TraitAnalyzer)
-                ) {
-                    $codebase->analyzer->incrementMixedCount($statements_analyzer->getFilePath());
-                }
+                $statements_analyzer->countMixed($context, true);
 
                 [$side, $operand, $operand_type] = $left_type->hasMixed()
                     ? ['Left', $left, $left_type]
@@ -362,14 +353,7 @@ final class ConcatAnalyzer
                 return;
             }
 
-            if (!$context->collect_initializations
-                && $statements_analyzer->getFilePath() === $statements_analyzer->getRootFilePath()
-                && (!(($parent_source = $statements_analyzer->getSource())
-                        instanceof FunctionLikeAnalyzer)
-                    || !$parent_source->getSource() instanceof TraitAnalyzer)
-            ) {
-                $codebase->analyzer->incrementNonMixedCount($statements_analyzer->getFilePath());
-            }
+            $statements_analyzer->countMixed($context, false);
 
             self::analyzeOperand($statements_analyzer, $left, $left_type, 'Left', $context);
             self::analyzeOperand($statements_analyzer, $right, $right_type, 'Right', $context);
