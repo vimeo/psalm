@@ -132,6 +132,30 @@ final class ArrayAssignmentTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'namedSpreadOfAShapeWrittenUnderAnUnknownKeyMayPassAnyParameter' => [
+                'code' => '<?php
+                    /** @param Closure(int $mapper, mixed $from): mixed $c */
+                    function call(Closure $c, mixed $from, string $name): mixed {
+                        $data = ["from" => $from];
+                        $data[$name] = 1;
+                        return $c(...$data);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'namedSpreadOfAnUnsealedShapeMayPassAnyParameter' => [
+                'code' => '<?php
+                    /** @param array{from: mixed, ...<string, mixed>} $data */
+                    function declared(array $data): void {
+                        named(...$data);
+                    }
+
+                    function named(int $mapper, mixed $from): void {}',
+                'assertions' => [],
+                'ignored_issues' => ['MixedArgument'],
+                'php_version' => '8.1',
+            ],
             'writeUnderATemplateKeyMayReachEveryItemOfItsBound' => [
                 'code' => '<?php
                     /**
