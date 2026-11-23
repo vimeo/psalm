@@ -42,7 +42,6 @@ use Psalm\IssueBuffer;
 use Psalm\Node\Expr\VirtualFuncCall;
 use Psalm\Plugin\EventHandler\Event\AfterMethodCallAnalysisEvent;
 use Psalm\Storage\Capabilities;
-use Psalm\Storage\Possibilities;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TClosure;
@@ -51,7 +50,6 @@ use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
-use function array_map;
 use function array_slice;
 use function count;
 use function explode;
@@ -528,84 +526,26 @@ final class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
                     $template_result,
                     $context,
                     $statements_analyzer,
-                    $fq_class_name,
+                    $static_type ?? $fq_class_name,
                     $trait_self_class,
                 );
             }
 
-            $if_true_assertions = $assertionsResolver->resolveIfTrue($method_storage, $class_storage);
-
-            if ($if_true_assertions) {
-                $possibilities = array_map(
-                    static fn(Possibilities $assertion): Possibilities => self::resolveTraitSelf(
-                        $assertion->getUntemplatedCopy(
-                            $template_result,
-                            $lhs_var_id,
-                            $codebase,
-                            $static_type,
-                        ),
-                        $trait_self_class,
-                    ),
-                    self::resolveStaticPropertyAssertionClasses(
-                        self::getAssertionsOnArgs(
-                            $if_true_assertions,
-                            $method_storage,
-                            $args,
-                            $statements_analyzer->node_data,
-                            $context->strict_types,
-                        ),
-                        $codebase,
-                        $context,
-                        $trait_self_class,
-                        $assertion_static_class,
-                        $fq_class_name,
-                    ),
-                );
-                if ($lhs_var_id === null) {
-                    $possibilities = self::removeThisAssertions($possibilities);
-                }
-                $statements_analyzer->node_data->setIfTrueAssertions(
-                    $stmt,
-                    $possibilities,
-                );
-            }
-
-            $if_false_assertions = $assertionsResolver->resolveIfFalse($method_storage, $class_storage);
-
-            if ($if_false_assertions) {
-                $possibilities = array_map(
-                    static fn(Possibilities $assertion): Possibilities => self::resolveTraitSelf(
-                        $assertion->getUntemplatedCopy(
-                            $template_result,
-                            $lhs_var_id,
-                            $codebase,
-                            $static_type,
-                        ),
-                        $trait_self_class,
-                    ),
-                    self::resolveStaticPropertyAssertionClasses(
-                        self::getAssertionsOnArgs(
-                            $if_false_assertions,
-                            $method_storage,
-                            $args,
-                            $statements_analyzer->node_data,
-                            $context->strict_types,
-                        ),
-                        $codebase,
-                        $context,
-                        $trait_self_class,
-                        $assertion_static_class,
-                        $fq_class_name,
-                    ),
-                );
-                if ($lhs_var_id === null) {
-                    $possibilities = self::removeThisAssertions($possibilities);
-                }
-                $statements_analyzer->node_data->setIfFalseAssertions(
-                    $stmt,
-                    $possibilities,
-                );
-            }
+            self::setConditionalAssertions(
+                $stmt,
+                $assertionsResolver,
+                $method_storage,
+                $class_storage,
+                $args,
+                $template_result,
+                $lhs_var_id,
+                $static_type,
+                $trait_self_class,
+                $assertion_static_class,
+                $fq_class_name,
+                $context,
+                $statements_analyzer,
+            );
         }
 
         if ($codebase->methods_to_rename) {

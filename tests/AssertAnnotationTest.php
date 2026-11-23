@@ -1131,6 +1131,145 @@ final class AssertAnnotationTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'staticInAnAssertionOfAStaticCallIsTheClassItNames' => [
+                'code' => '<?php
+                    abstract class Model {
+                        /** @psalm-assert-if-true static $x */
+                        public static function is(object $x): bool {
+                            return $x instanceof static;
+                        }
+
+                        /** @psalm-assert-if-false static $x */
+                        public static function isNot(object $x): bool {
+                            return !$x instanceof static;
+                        }
+
+                        /** @psalm-assert static $x */
+                        public static function mustBe(object $x): void {
+                            if (!$x instanceof static) {
+                                throw new Exception();
+                            }
+                        }
+                    }
+
+                    final class User extends Model {
+                        public string $name = "";
+                    }
+
+                    function ifTrue(object $o): string {
+                        if (User::is($o)) {
+                            /** @psalm-check-type-exact $o = User */;
+                            return $o->name;
+                        }
+
+                        return "";
+                    }
+
+                    function ifFalse(object $o): string {
+                        if (User::isNot($o)) {
+                            return "";
+                        }
+
+                        /** @psalm-check-type-exact $o = User */;
+                        return $o->name;
+                    }
+
+                    function always(object $o): string {
+                        User::mustBe($o);
+                        /** @psalm-check-type-exact $o = User */;
+                        return $o->name;
+                    }',
+            ],
+            'staticInAnAssertionOfAForwardingStaticCallIsTheCallersStatic' => [
+                'code' => '<?php
+                    abstract class Model {
+                        /** @psalm-assert-if-true static $x */
+                        public static function is(object $x): bool {
+                            return $x instanceof static;
+                        }
+
+                        /** @psalm-assert static $x */
+                        public static function mustBe(object $x): void {
+                            if (!$x instanceof static) {
+                                throw new Exception();
+                            }
+                        }
+
+                        /** @return static|null */
+                        public static function fromSelf(object $o): ?Model {
+                            if (self::is($o)) {
+                                return $o;
+                            }
+
+                            return null;
+                        }
+
+                        /** @return static|null */
+                        public static function fromStatic(object $o): ?Model {
+                            if (static::is($o)) {
+                                return $o;
+                            }
+
+                            return null;
+                        }
+
+                        /** @return static */
+                        public static function always(object $o): Model {
+                            static::mustBe($o);
+                            return $o;
+                        }
+                    }
+
+                    class User extends Model {
+                        /** @return static|null */
+                        public static function fromParent(object $o): ?User {
+                            if (parent::is($o)) {
+                                return $o;
+                            }
+
+                            return null;
+                        }
+                    }
+
+                    final class Admin extends User {
+                        public static function fromParentOfAFinalClass(object $o): ?Admin {
+                            if (parent::is($o)) {
+                                /** @psalm-check-type-exact $o = Admin */;
+                                return $o;
+                            }
+
+                            return null;
+                        }
+                    }',
+            ],
+            'staticInAnAssertOfAnInstanceCallIsTheTypeOfTheObject' => [
+                'code' => '<?php
+                    abstract class Model {
+                        /** @psalm-assert static $x */
+                        public function mustBe(object $x): void {
+                            if (!$x instanceof static) {
+                                throw new Exception();
+                            }
+                        }
+
+                        public function onThis(object $o): void {
+                            $this->mustBe($o);
+                            /** @psalm-check-type-exact $o = Model&static */;
+                        }
+                    }
+
+                    final class User extends Model {}
+
+                    function onAFinalClass(User $u, object $o): void {
+                        $u->mustBe($o);
+                        /** @psalm-check-type-exact $o = User */;
+                    }
+
+                    function onAnAbstractClass(Model $m, object $o): void {
+                        $m->mustBe($o);
+                        /** @psalm-check-type-exact $o = Model */;
+                    }',
+            ],
             'negatedAssertIfTrueOfALiteralStringKeepsTheString' => [
                 'code' => '<?php
                     /** @psalm-assert-if-true literal-string $s */
