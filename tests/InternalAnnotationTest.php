@@ -28,6 +28,25 @@ final class InternalAnnotationTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'instancePropertyReadAsStaticIsOnlyUndefined' => [
+                'code' => '<?php
+                    namespace A\B {
+                        class Foo {
+                            /** @psalm-internal A\B */
+                            public ?int $foo = null;
+                        }
+                    }
+
+                    namespace A\C {
+                        function f(): void {
+                            if (\A\B\Foo::$foo !== null) {
+                                echo \A\B\Foo::$foo;
+                            }
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['UndefinedPropertyFetch'],
+            ],
             'psalmInternalMethodCalledFromFunctionInSameNamespace' => [
                 'code' => '<?php
                     namespace A\B {
@@ -1384,6 +1403,70 @@ final class InternalAnnotationTest extends TestCase
                         }
                     }',
                 'error_message' => 'A\B\Foo::$foo is internal to A\B',
+            ],
+            'psalmInternalStaticPropertyGet' => [
+                'code' => '<?php
+                    namespace A\B {
+                        class Foo {
+                            /** @psalm-internal A\B */
+                            public static ?int $foo = null;
+                        }
+                    }
+
+                    namespace A\C {
+                        echo \A\B\Foo::$foo;
+                    }',
+                'error_message' => 'InternalProperty - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:30 - A\B\Foo::$foo is internal to A\B',
+            ],
+            'psalmInternalStaticPropertySet' => [
+                'code' => '<?php
+                    namespace A\B {
+                        class Foo {
+                            /** @psalm-internal A\B */
+                            public static ?int $foo = null;
+                        }
+                    }
+
+                    namespace A\C {
+                        \A\B\Foo::$foo = 5;
+                    }',
+                'error_message' => 'InternalProperty - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:25 - A\B\Foo::$foo is internal to A\B',
+            ],
+            'psalmInternalPropertyGetAfterNarrowing' => [
+                'code' => '<?php
+                    namespace A\B {
+                        class Foo {
+                            /** @psalm-internal A\B */
+                            public ?int $foo = null;
+                        }
+                    }
+
+                    namespace A\C {
+                        function f(\A\B\Foo $o): void {
+                            /** @psalm-suppress InternalProperty */
+                            assert($o->foo !== null);
+                            echo $o->foo;
+                        }
+                    }',
+                'error_message' => 'InternalProperty - src' . DIRECTORY_SEPARATOR . 'somefile.php:13:34 - A\B\Foo::$foo is internal to A\B',
+            ],
+            'psalmInternalStaticPropertyGetAfterNarrowing' => [
+                'code' => '<?php
+                    namespace A\B {
+                        class Foo {
+                            /** @psalm-internal A\B */
+                            public static ?int $foo = null;
+                        }
+                    }
+
+                    namespace A\C {
+                        function f(): void {
+                            /** @psalm-suppress InternalProperty */
+                            assert(\A\B\Foo::$foo !== null);
+                            echo \A\B\Foo::$foo;
+                        }
+                    }',
+                'error_message' => 'InternalProperty - src' . DIRECTORY_SEPARATOR . 'somefile.php:13:34 - A\B\Foo::$foo is internal to A\B',
             ],
             'psalmInternalClassMissingNamespace' => [
                     'code' => '<?php

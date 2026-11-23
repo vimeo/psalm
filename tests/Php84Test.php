@@ -22,6 +22,89 @@ final class Php84Test extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'writeOutsideTheHooksTakesTheTypeOfTheSetHookParameter' => [
+                'code' => '<?php
+                    final class Tags {
+                        public string $value = "" {
+                            set(string|array $value) {
+                                $this->value = is_array($value) ? implode(",", array_map("strval", $value)) : $value;
+                            }
+                        }
+
+                        public function reset(): void {
+                            $this->value = ["none"];
+                        }
+                    }
+
+                    function fill(Tags $tags): void {
+                        $tags->value = ["a", "b"];
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedArgument'],
+                'php_version' => '8.4',
+            ],
+            'writeInTheConstructorGoesThroughTheSetHook' => [
+                'code' => '<?php
+                    final class Foo {
+                        public string $bar {
+                            set(string|int|null $value) {
+                                $this->bar = (string) $value;
+                            }
+                        }
+
+                        public function __construct() {
+                            $this->bar = null;
+                        }
+                    }
+
+                    $foo = new Foo();
+                    $foo->bar = 5;
+                    $foo->bar = "five";',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.4',
+            ],
+            'readAfterAWriteThroughTheSetHookHasTheTypeOfTheProperty' => [
+                'code' => '<?php
+                    final class Tags {
+                        public string $value = "" {
+                            set(string|array $value) {
+                                $this->value = is_array($value) ? implode(",", array_map("strval", $value)) : $value;
+                            }
+                        }
+                    }
+
+                    final class Upper {
+                        public string $value = "" {
+                            set(string $value) {
+                                $this->value = strtoupper($value);
+                            }
+                        }
+                    }
+
+                    final class Plain {
+                        public string $value = "";
+                    }
+
+                    $tags = new Tags();
+                    $tags->value = ["a", "b"];
+                    $tags_value = $tags->value;
+
+                    $upper = new Upper();
+                    $upper->value = "a";
+                    $upper_value = $upper->value;
+
+                    $plain = new Plain();
+                    $plain->value = "a";
+                    $plain_value = $plain->value;',
+                'assertions' => [
+                    '$tags_value===' => 'string',
+                    '$upper_value===' => 'string',
+                    '$plain_value===' => '\'a\'',
+                ],
+                'ignored_issues' => ['MixedArgument'],
+                'php_version' => '8.4',
+            ],
             'initializeLazyObject' => [
                 'code' => '<?php
                     class Foo {}
@@ -84,7 +167,7 @@ final class Php84Test extends TestCase
                     $property_hook->test = 5;
                     ',
                 'assertions' => [
-                    '$property_hook->test' => 'int',
+                    '$property_hook->test' => 'int|null',
                 ],
                 'ignored_issues' => [],
                 'php_version' => '8.4',
@@ -303,6 +386,89 @@ final class Php84Test extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'writeInsideTheSetHookTakesTheTypeOfTheProperty' => [
+                'code' => '<?php
+                    final class Tags {
+                        public string $value = "" {
+                            set(string|array $value) {
+                                $this->value = $value;
+                            }
+                        }
+                    }',
+                'error_message' => 'PossiblyInvalidPropertyAssignmentValue',
+                'error_levels' => [],
+                'php_version' => '8.4',
+            ],
+            'writeInsideTheSetHookIsRemembered' => [
+                'code' => '<?php
+                    final class Upper {
+                        public string $value = "" {
+                            set(string $value) {
+                                $this->value = "X";
+                                if ($this->value === "Y") {
+                                    echo "never";
+                                }
+                            }
+                        }
+                    }',
+                'error_message' => 'TypeDoesNotContainType',
+                'error_levels' => [],
+                'php_version' => '8.4',
+            ],
+            'writeInsideTheSetHookOfATraitPropertyIsCheckedAgainstTheProperty' => [
+                'code' => '<?php
+                    trait T {
+                        public string $v = "" {
+                            set(string|array $value) {
+                                $this->v = $value;
+                            }
+                        }
+                    }
+
+                    final class UsesT {
+                        use T;
+                    }',
+                'error_message' => 'PossiblyInvalidPropertyAssignmentValue',
+                'error_levels' => [],
+                'php_version' => '8.4',
+            ],
+            'writeInsideTheSetHookOfATraitPropertyIsRemembered' => [
+                'code' => '<?php
+                    trait T {
+                        public string $value = "" {
+                            set(string $value) {
+                                $this->value = "X";
+                                if ($this->value === "Y") {
+                                    echo "never";
+                                }
+                            }
+                        }
+                    }
+
+                    final class UsesT {
+                        use T;
+                    }',
+                'error_message' => 'TypeDoesNotContainType',
+                'error_levels' => [],
+                'php_version' => '8.4',
+            ],
+            'writeOutsideTheHooksIsCheckedAgainstTheSetHookParameter' => [
+                'code' => '<?php
+                    final class Tags {
+                        public string $value = "" {
+                            set(string|array $value) {
+                                $this->value = is_string($value) ? $value : "";
+                            }
+                        }
+                    }
+
+                    function fill(Tags $tags): void {
+                        $tags->value = 5;
+                    }',
+                'error_message' => 'InvalidPropertyAssignmentValue',
+                'error_levels' => [],
+                'php_version' => '8.4',
+            ],
             'getLazyInitializerWithBadType' => [
                 'code' => '<?php
                     class Foo {}
@@ -650,6 +816,24 @@ final class Php84Test extends TestCase
                         }
                     }',
                 'error_message' => 'UndefinedPropertyFetch',
+                'error_levels' => [],
+                'php_version' => '8.4',
+            ],
+            'readingANativePropertyNewerThanTheAnalysedVersion' => [
+                'code' => '<?php
+                    function f(Dom\Element $e): string {
+                        return $e->outerHTML;
+                    }',
+                'error_message' => 'UndefinedPropertyFetch - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:32 - Dom\Element::$outerHTML is not defined for the analysed PHP version 8.4',
+                'error_levels' => [],
+                'php_version' => '8.4',
+            ],
+            'writingANativePropertyNewerThanTheAnalysedVersion' => [
+                'code' => '<?php
+                    function f(Dom\Element $e): void {
+                        $e->outerHTML = "<p></p>";
+                    }',
+                'error_message' => 'UndefinedPropertyAssignment - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:25 - Dom\Element::$outerHTML is not defined for the analysed PHP version 8.4',
                 'error_levels' => [],
                 'php_version' => '8.4',
             ],

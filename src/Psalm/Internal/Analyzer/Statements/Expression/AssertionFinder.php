@@ -262,6 +262,23 @@ final class AssertionFinder
             return $if_types ? [$if_types] : [];
         }
 
+        // `$a--` and `$a++` are the value `$a` had before, truthy where it wasn't 0: where `$a` isn't -1 or 1 now
+        if (($conditional instanceof PhpParser\Node\Expr\PostDec
+                || $conditional instanceof PhpParser\Node\Expr\PostInc)
+            && $source instanceof StatementsAnalyzer
+            && ($old_type = $source->node_data->getType($conditional))
+            && $old_type->isInt()
+            && ($incremented_var_name = ExpressionIdentifier::getExtendedVarId(
+                $conditional->var,
+                $this_class_name,
+                $source,
+            )) !== null
+        ) {
+            return [[$incremented_var_name => [[new IsNotIdentical(
+                new TLiteralInt($conditional instanceof PhpParser\Node\Expr\PostInc ? 1 : -1),
+            )]]]];
+        }
+
         $var_name = ExpressionIdentifier::getExtendedVarId(
             $conditional,
             $this_class_name,
@@ -1254,6 +1271,19 @@ final class AssertionFinder
     }
 
     /**
+     * The assertions a call declares for where it returns true or false, as recorded on its node
+     *
+     * @return list<non-empty-array<string, non-empty-list<non-empty-list<Assertion>>>>
+     */
+    public static function getCustomAssertions(
+        PhpParser\Node\Expr\NullsafeMethodCall $expr,
+        ?string $this_class_name,
+        FileSource $source,
+    ): array {
+        return self::processCustomAssertion($expr, $this_class_name, $source);
+    }
+
+    /**
      * What a destructuring a condition assigns says of the variables when it is truthy. A null or false value, which
      * gives each variable null, is not truthy, so a variable whose item each array the value may be surely has, and
      * not as null, is then not null.
@@ -1313,11 +1343,10 @@ final class AssertionFinder
     }
 
     /**
-     * @param  PhpParser\Node\Expr\FuncCall|PhpParser\Node\Expr\MethodCall|PhpParser\Node\Expr\StaticCall $expr
      * @return list<non-empty-array<string, non-empty-list<non-empty-list<Assertion>>>>
      */
     private static function processCustomAssertion(
-        PhpParser\Node\Expr $expr,
+        PhpParser\Node\Expr\CallLike $expr,
         ?string $this_class_name,
         FileSource $source,
     ): array {
@@ -1376,6 +1405,7 @@ final class AssertionFinder
 
                     // a static call keeps its assertions on `$this` only when it is called on `$this`
                     $var_id = $expr instanceof PhpParser\Node\Expr\MethodCall
+                        || $expr instanceof PhpParser\Node\Expr\NullsafeMethodCall
                         ? ExpressionIdentifier::getExtendedVarId($expr->var, $this_class_name, $source)
                         : '$this';
 
@@ -1710,6 +1740,12 @@ final class AssertionFinder
                 }
 
                 return [new IsType($named_object)];
+            }
+
+            if (strtolower($stmt->class->getFirst()) === 'parent'
+                && ($parent_class_name = self::getParentClassName($this_class_name, $source)) !== null
+            ) {
+                return [new IsType(new TNamedObject($parent_class_name))];
             }
         } elseif ($stmt->class instanceof PhpParser\Node\Expr\Variable && $stmt->class->name === 'this') {
             if ($this_class_name !== null) {
@@ -2171,6 +2207,20 @@ final class AssertionFinder
         }
 
         return false;
+    }
+
+    /**
+     * The parent of the class `parent` stands for: the class using a trait for the code of the trait too
+     *
+     * @psalm-capabilities read-props
+     */
+    private static function getParentClassName(?string $this_class_name, FileSource $source): ?string
+    {
+        if ($this_class_name === null || !$source instanceof StatementsAnalyzer) {
+            return null;
+        }
+
+        return $source->getCodebase()->classlike_storage_provider->get($this_class_name)->parent_class;
     }
 
     /**
@@ -3006,7 +3056,7 @@ final class AssertionFinder
             if ($var_type === 'self' || $var_type === 'static') {
                 $var_type = $this_class_name;
             } elseif ($var_type === 'parent') {
-                $var_type = null;
+                $var_type = self::getParentClassName($this_class_name, $source);
             }
 
             if ($var_type
@@ -3226,7 +3276,12 @@ final class AssertionFinder
                             $if_types[$first_var_name] = [[new IsAClass($object, $third_arg_value === 'true')]];
                         }
                     } elseif ($class_node->getParts() === ['parent']) {
-                        // do nothing
+                        $parent_class_name = self::getParentClassName($this_class_name, $source);
+
+                        if ($parent_class_name !== null) {
+                            $object = new TNamedObject($parent_class_name);
+                            $if_types[$first_var_name] = [[new IsAClass($object, $third_arg_value === 'true')]];
+                        }
                     } else {
                         $object = new TNamedObject(
                             ClassLikeAnalyzer::getFQCLNFromNameObject(
@@ -3358,8 +3413,14 @@ final class AssertionFinder
     {
         $assertions = [];
 
+        // of several values, the operand is only one: not being identical to it, the value may be any other one
+        $has_several_values = count($type->getAtomicTypes()) > 1;
+
         foreach ($type->getAtomicTypes() as $atomic_type) {
-            $assertions[] = new IsIdentical($atomic_type, self::getComparand($atomic_type, $operand_id));
+            $assertions[] = new IsIdentical(
+                $atomic_type,
+                $has_several_values ? $operand_id : self::getComparand($atomic_type, $operand_id),
+            );
         }
 
         return $assertions;

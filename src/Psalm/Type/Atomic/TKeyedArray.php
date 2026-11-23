@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Psalm\Type\Atomic;
 
+use Closure;
 use Override;
 use Psalm\Codebase;
 use Psalm\Internal\Analyzer\Statements\Expression\ArrayAnalyzer;
@@ -18,7 +19,6 @@ use Psalm\Type\Atomic;
 use Psalm\Type\Union;
 use Throwable;
 
-use function addslashes;
 use function array_key_first;
 use function assert;
 use function count;
@@ -26,9 +26,12 @@ use function implode;
 use function is_int;
 use function is_string;
 use function ksort;
+use function ord;
 use function preg_match;
+use function preg_replace_callback;
 use function sort;
-use function str_replace;
+use function sprintf;
+use function strtr;
 
 /**
  * Represents an 'object-like array' - an array with known keys.
@@ -210,57 +213,10 @@ final class TKeyedArray extends Atomic
     #[Override]
     public function getId(bool $exact = true, bool $nested = false): string
     {
-        $property_strings = [];
-
-        if ($this->is_list) {
-            if ($this->isGenericList()) {
-                $t = $this->properties[0]->possibly_undefined ? 'list' : 'non-empty-list';
-                return "$t<".$this->fallback_params[1]->getId($exact).'>';
-            }
-            $use_list_syntax = true;
-            foreach ($this->properties as $property) {
-                if ($property->possibly_undefined) {
-                    $use_list_syntax = false;
-                    break;
-                }
-            }
-        } else {
-            $use_list_syntax = false;
-        }
-
-        foreach ($this->properties as $name => $type) {
-            if ($use_list_syntax) {
-                $property_strings[$name] = $type->getId($exact);
-                continue;
-            }
-
-            $class_string_suffix = '';
-            if (isset($this->class_strings[$name])) {
-                $class_string_suffix = '::class';
-            }
-
-            $name = $this->escapeAndQuote($name);
-
-            $property_strings[$name] = $name . $class_string_suffix . ($type->possibly_undefined ? '?' : '')
-                . ': ' . $type->getId($exact);
-        }
-
-        if ($this->is_list) {
-            $key = $this->is_callable ? 'callable-list' : 'list';
-        } else {
-            $key = $this->is_callable ? 'callable-array' : 'array';
-            sort($property_strings);
-        }
-
-        $params_part = $this->fallback_params !== null
-            ? ', ...<' . ($this->is_list
-                ? $this->fallback_params[1]->getId($exact)
-                : $this->fallback_params[0]->getId($exact) . ', '
-                    . $this->fallback_params[1]->getId($exact)
-            ) . '>'
-            : '';
-
-        return $key . '{' . implode(', ', $property_strings) . $params_part . '}';
+        return $this->format(
+            static fn(Union $type): string => $type->getId($exact),
+            true,
+        );
     }
 
     /**
@@ -282,40 +238,42 @@ final class TKeyedArray extends Atomic
             );
         }
 
-        $suffixed_properties = [];
+        return $this->format(
+            static fn(Union $type): string => $type->toNamespacedString(
+                $namespace,
+                $aliased_classes,
+                $this_class,
+                false,
+            ),
+            false,
+        );
+    }
 
-        if ($this->is_list) {
-            if (count($this->properties) === 1
-                && $this->fallback_params
-                && $this->properties[0]->equals($this->fallback_params[1], true, true, false)
-            ) {
-                $t = $this->properties[0]->possibly_undefined ? 'list' : 'non-empty-list';
-                return "$t<" . $this->fallback_params[1]->toNamespacedString(
-                    $namespace,
-                    $aliased_classes,
-                    $this_class,
-                    false,
-                ) . '>';
-            }
-            $use_list_syntax = true;
+    /**
+     * @param Closure[read-props](Union): string $to_string
+     */
+    private function format(Closure $to_string, bool $sort_keys): string
+    {
+        if ($this->isGenericList()) {
+            $t = $this->properties[0]->possibly_undefined ? 'list' : 'non-empty-list';
+            return "$t<" . $to_string($this->fallback_params[1]) . '>';
+        }
+
+        $use_list_syntax = $this->is_list;
+        if ($use_list_syntax) {
             foreach ($this->properties as $property) {
                 if ($property->possibly_undefined) {
                     $use_list_syntax = false;
                     break;
                 }
             }
-        } else {
-            $use_list_syntax = false;
         }
+
+        $property_strings = [];
 
         foreach ($this->properties as $name => $type) {
             if ($use_list_syntax) {
-                $suffixed_properties[$name] = $type->toNamespacedString(
-                    $namespace,
-                    $aliased_classes,
-                    $this_class,
-                    false,
-                );
+                $property_strings[$name] = $to_string($type);
                 continue;
             }
 
@@ -326,26 +284,23 @@ final class TKeyedArray extends Atomic
 
             $name = $this->escapeAndQuote($name);
 
-            $suffixed_properties[$name] = $name . $class_string_suffix . ($type->possibly_undefined ? '?' : '') . ': ' .
-                $type->toNamespacedString(
-                    $namespace,
-                    $aliased_classes,
-                    $this_class,
-                    false,
-                );
+            $property_strings[$name] = $name . $class_string_suffix . ($type->possibly_undefined ? '?' : '')
+                . ': ' . $to_string($type);
         }
 
-        $params_part = $this->fallback_params !== null ? ',...' : '';
-
-        $callablePrefix = '';
-        if ($this->is_callable) {
-            $callablePrefix = 'callable-';
+        if (!$this->is_list && $sort_keys) {
+            sort($property_strings);
         }
 
-        return ($this->is_list
-            ? ($callablePrefix . 'list')
-            : ($callablePrefix . 'array')
-        ) . '{' . implode(', ', $suffixed_properties) . $params_part . '}';
+        $params_part = $this->fallback_params !== null
+            ? ', ...<' . ($this->is_list
+                ? $to_string($this->fallback_params[1])
+                : $to_string($this->fallback_params[0]) . ', ' . $to_string($this->fallback_params[1])
+            ) . '>'
+            : '';
+
+        return ($this->is_callable ? 'callable-' : '') . ($this->is_list ? 'list' : 'array')
+            . '{' . implode(', ', $property_strings) . $params_part . '}';
     }
 
     /**
@@ -828,7 +783,27 @@ final class TKeyedArray extends Atomic
             }
 
             if ($quote) {
-                $name = '\'' . str_replace("\n", '\n', addslashes($name)) . '\'';
+                // a literal that reads back as the same key: only a double-quoted one can hold control characters
+                $name = preg_match('/[\x00-\x1f\x7f]/', $name)
+                    ? '"' . (string) preg_replace_callback(
+                        '/[\x00-\x1f\x7f\\\\"$]/',
+                        static function (array $match): string {
+                            $char = $match[0] ?? '';
+
+                            return match ($char) {
+                                "\n" => '\n',
+                                "\r" => '\r',
+                                "\t" => '\t',
+                                "\v" => '\v',
+                                "\e" => '\e',
+                                "\f" => '\f',
+                                '\\', '"', '$' => '\\' . $char,
+                                default => sprintf('\\%03o', ord($char)),
+                            };
+                        },
+                        $name,
+                    ) . '"'
+                    : '\'' . strtr($name, ['\\' => '\\\\', '\'' => '\\\'']) . '\'';
             }
         }
 
