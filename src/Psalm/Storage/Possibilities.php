@@ -103,7 +103,7 @@ final class Possibilities
             && !$static_type instanceof TGenericObject
             && $codebase !== null
             && $codebase->classlike_storage_provider->has($static_type->value)
-            && $codebase->classlike_storage_provider->get($static_type->value)->template_types
+            && $codebase->classlike_storage_provider->get($static_type->value)->template_types !== null
         ) {
             $static_type = new TGenericObject(
                 $static_type->value,
