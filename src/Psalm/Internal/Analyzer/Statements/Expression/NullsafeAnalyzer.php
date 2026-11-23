@@ -17,6 +17,8 @@ use Psalm\Node\Expr\VirtualVariable;
 use Psalm\Node\VirtualName;
 use Psalm\Type;
 
+use function is_string;
+
 /**
  * @internal
  */
@@ -40,6 +42,7 @@ final class NullsafeAnalyzer
             $tmp_name = '__tmp_nullsafe__' . (int) $stmt->var->getAttribute('startFilePos');
 
             $condition_type = $statements_analyzer->node_data->getType($stmt->var);
+            $var_type = $condition_type;
 
             if ($condition_type) {
                 $context->vars_in_scope['$' . $tmp_name] = $condition_type;
@@ -50,6 +53,7 @@ final class NullsafeAnalyzer
             }
         } else {
             $tmp_var = $stmt->var;
+            $var_type = is_string($stmt->var->name) ? $context->vars_in_scope['$' . $stmt->var->name] ?? null : null;
         }
 
         $old_node_data = $statements_analyzer->node_data;
@@ -91,7 +95,34 @@ final class NullsafeAnalyzer
 
         $ternary_type = $statements_analyzer->node_data->getType($ternary);
 
+        $call_type = $statements_analyzer->node_data->getType($ternary->else);
+
         $statements_analyzer->node_data = $old_node_data;
+
+        // a non-null receiver never short-circuits: the null branch is dead
+        if ($call_type
+            && $var_type
+            && $var_type->isObjectType()
+            && !$var_type->isNullable()
+            && !$var_type->possibly_undefined
+            && !$var_type->possibly_undefined_from_try
+        ) {
+            NullsafeChainState::None->markOn($stmt);
+            $statements_analyzer->node_data->setType($stmt, $call_type);
+
+            return true;
+        }
+
+        // the null branch is the short-circuit, so any null the call/fetch on the non-null receiver adds is a real one
+        $chain_state = NullsafeChainState::None;
+
+        if ($ternary_type && $ternary_type->isNullable()) {
+            $chain_state = $call_type && $call_type->isNullable()
+                ? NullsafeChainState::ShortCircuitAndNull
+                : NullsafeChainState::ShortCircuit;
+        }
+
+        $chain_state->markOn($stmt);
 
         $statements_analyzer->node_data->setType($stmt, $ternary_type ?? Type::getMixed());
 

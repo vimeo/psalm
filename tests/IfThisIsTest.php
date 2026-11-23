@@ -297,6 +297,18 @@ final class IfThisIsTest extends TestCase
     public function providerInvalidCodeParse(): iterable
     {
         return [
+            'parameterConditionalTypeIsReportedInsteadOfCrashing' => [
+                'code' => '<?php
+                    class A {
+                        /** @psalm-if-this-is ($key is null ? int : string) */
+                        public function s(?int $key): void {}
+                    }
+
+                    $a = new A();
+                    $a->s(null);
+                    ',
+                'error_message' => 'InvalidDocblock',
+            ],
             'failsWithWrongTemplate1' => [
                 'code' => '<?php
 
@@ -400,6 +412,14 @@ final class IfThisIsTest extends TestCase
                     $list = new ArrayList();
                     $numbers = $list->compact();',
                 'error_message' => 'IfThisIsMismatch',
+            ],
+            'unparseableTypeIsReportedInsteadOfCrashing' => [
+                'code' => '<?php
+                    class A {
+                        /** @psalm-if-this-is garbage<<< */
+                        public function t(): void {}
+                    }',
+                'error_message' => 'InvalidDocblock',
             ],
         ];
     }

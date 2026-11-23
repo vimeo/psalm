@@ -8,6 +8,8 @@ use Override;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
+use const DIRECTORY_SEPARATOR;
+
 final class ExtensionRequirementTest extends TestCase
 {
     use ValidCodeAnalysisTestTrait;
@@ -38,6 +40,18 @@ final class ExtensionRequirementTest extends TestCase
                 trait ImposesExtensionRequirements { }
             ',
         );
+
+        $this->addFile(
+            'phpstan_trait.php',
+            '<?php
+                namespace ExtensionRequirements\Trait;
+
+                use ExtensionRequirements\Base\MyBaseClass as MyAliasedBaseClass;
+
+                /** @phpstan-require-extends MyAliasedBaseClass */
+                trait ImposesPhpstanExtensionRequirements { }
+            ',
+        );
     }
 
     #[Override]
@@ -51,6 +65,16 @@ final class ExtensionRequirementTest extends TestCase
 
                     class Valid extends MyBaseClass {
                         use ImposesExtensionRequirements;
+                    }
+                ',
+            ],
+            'extendsBaseClassWithPhpstanTag' => [
+                'code' => '<?php
+                    use ExtensionRequirements\Base\MyBaseClass;
+                    use ExtensionRequirements\Trait\ImposesPhpstanExtensionRequirements;
+
+                    class Valid extends MyBaseClass {
+                        use ImposesPhpstanExtensionRequirements;
                     }
                 ',
             ],
@@ -70,6 +94,23 @@ final class ExtensionRequirementTest extends TestCase
                     }
                 ',
                 'error_message' => 'requires using class to extend',
+            ],
+            'extendsBaseClassWithPhpstanTag' => [
+                'code' => '<?php
+                    use ExtensionRequirements\Trait\ImposesPhpstanExtensionRequirements;
+
+                    class Invalid {
+                        use ImposesPhpstanExtensionRequirements;
+                    }
+                ',
+                'error_message' => 'requires using class to extend',
+            ],
+            'unparseableExtensionRequirementIsAnIssue' => [
+                'code' => '<?php
+                    /** @psalm-require-extends SomeBase< */
+                    trait T {}',
+                'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:27 -'
+                    . ' No generic params provided for type in docblock for T',
             ],
         ];
     }

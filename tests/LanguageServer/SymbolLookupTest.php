@@ -11,6 +11,7 @@ use Psalm\Codebase;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\FileAnalyzer;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
+use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Internal\LanguageServer\Reference;
 use Psalm\Internal\Provider\FakeFileProvider;
 use Psalm\Internal\Provider\FileReferenceCacheProvider;
@@ -19,6 +20,11 @@ use Psalm\Internal\Provider\Providers;
 use Psalm\Tests\Internal\Provider\ProjectCacheProvider;
 use Psalm\Tests\TestCase;
 use Psalm\Tests\TestConfig;
+use ReflectionProperty;
+
+use function getcwd;
+
+use const DIRECTORY_SEPARATOR;
 
 final class SymbolLookupTest extends TestCase
 {
@@ -320,6 +326,121 @@ final class SymbolLookupTest extends TestCase
         $this->assertNotNull($function_symbol_location);
         $this->assertSame(11, $function_symbol_location->getLineNumber());
         $this->assertSame(25, $function_symbol_location->getColumn());
+    }
+
+    public function testSymbolLookupOfBuiltinFunctionInUnanalyzedFile(): void
+    {
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                ctype_digit("1");',
+        );
+
+        // the file is not analyzed in this process, e.g. because its results are cached
+        $this->codebase->scanFiles();
+
+        $information = $this->codebase->getMarkupContentForSymbolByReference(
+            new Reference(
+                'somefile.php',
+                'ctype_digit()',
+                new Range(new Position(1, 16), new Position(1, 27)),
+            ),
+        );
+        $this->assertNotNull($information);
+        $this->assertSame('ctype_digit', $information->title);
+        $this->assertStringContainsString('function ctype_digit(', $information->code);
+    }
+
+    public function testSymbolLookupOfCallMapFunctionNotLoaded(): void
+    {
+        // a function only known from the callmap, e.g. of an extension not loaded in the Psalm process
+        $call_map_property = new ReflectionProperty(InternalCallMapHandler::class, 'call_map');
+        $call_map = InternalCallMapHandler::getCallMap();
+        $call_map_property->setValue(
+            null,
+            $call_map + ['psalm_not_loaded_function' => ['bool', 'value' => 'string', 'flags=' => 'int']],
+        );
+
+        try {
+            $this->addFile(
+                'somefile.php',
+                '<?php
+                    psalm_not_loaded_function("1");',
+            );
+
+            $this->codebase->scanFiles();
+            $this->analyzeFile('somefile.php', new Context());
+
+            $information = $this->codebase->getMarkupContentForSymbolByReference(
+                new Reference(
+                    'somefile.php',
+                    'psalm_not_loaded_function()',
+                    new Range(new Position(1, 20), new Position(1, 45)),
+                ),
+            );
+        } finally {
+            $call_map_property->setValue(null, $call_map);
+        }
+
+        $this->assertNotNull($information);
+        $this->assertSame('psalm_not_loaded_function', $information->title);
+        $this->assertSame(
+            "function psalm_not_loaded_function(\n    string \$value,\n    int \$flags\n): bool",
+            $information->code,
+        );
+    }
+
+    public function testSymbolLookupOfFunctionFromIncludedFile(): void
+    {
+        $included_file_path = (string) getcwd() . DIRECTORY_SEPARATOR . 'included.php';
+        $file_path = (string) getcwd() . DIRECTORY_SEPARATOR . 'somefile.php';
+
+        $this->addFile(
+            $included_file_path,
+            '<?php
+                namespace B;
+
+                /**
+                 * Some description
+                 */
+                function bar(int $a) : int {
+                    return $a;
+                }',
+        );
+        $this->addFile(
+            $file_path,
+            '<?php
+                namespace B;
+
+                require_once __DIR__ . "/included.php";
+
+                bar(1);',
+        );
+
+        $this->codebase->scanFiles();
+        $this->analyzeFile($file_path, new Context());
+
+        $reference = new Reference(
+            $file_path,
+            'B\bar()',
+            new Range(new Position(5, 16), new Position(5, 19)),
+        );
+
+        $information = $this->codebase->getMarkupContentForSymbolByReference($reference);
+        $this->assertNotNull($information);
+        $this->assertSame("function B\bar(\n    int \$a\n): int", $information->code);
+        $this->assertSame('b\bar', $information->title);
+        $this->assertSame('Some description', $information->description);
+
+        $location = $this->codebase->getSymbolLocationByReference($reference);
+        $this->assertNotNull($location);
+        $this->assertSame($included_file_path, $location->file_path);
+        $this->assertSame(7, $location->getLineNumber());
+
+        $signature_information = $this->codebase->getSignatureInformation('B\bar', $file_path);
+        $this->assertNotNull($signature_information);
+        $this->assertNotNull($signature_information->parameters);
+        $this->assertCount(1, $signature_information->parameters);
     }
 
     public function testSymbolLookupAfterAlteration(): void

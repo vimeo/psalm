@@ -60,7 +60,10 @@ final class ClassLikeStorageProvider
         return isset(self::$storage[$fq_classlike_name_lc]);
     }
 
-    public function exhume(string $fq_classlike_name, string $file_path, string $file_contents): ClassLikeStorage
+    /**
+     * @return ClassLikeStorage|null null if the cache has no storage for the class-like in the file
+     */
+    public function exhume(string $fq_classlike_name, string $file_path, string $file_contents): ?ClassLikeStorage
     {
         $fq_classlike_name_lc = strtolower($fq_classlike_name);
 
@@ -73,6 +76,10 @@ final class ClassLikeStorageProvider
         }
 
         $cached_value = $this->cache->getLatestFromCache($fq_classlike_name_lc, $file_path, $file_contents);
+
+        if ($cached_value === null) {
+            return null;
+        }
 
         self::$storage[$fq_classlike_name_lc] = $cached_value;
         self::$new_storage[$fq_classlike_name_lc] = $cached_value;
@@ -106,7 +113,14 @@ final class ClassLikeStorageProvider
                 $duplicate_storage = self::$storage[$k];
                 $duplicate_location = $duplicate_storage->location ?? $duplicate_storage->stmt_location;
                 $location = $storage->location ?? $storage->stmt_location;
-                if ($duplicate_location !== null
+                // a project polyfill of a native class stubbed with a newer `@since` replaces the
+                // stub (the scanner only lets it through below that version)
+                $is_polyfill = $duplicate_storage->stubbed
+                    && $duplicate_storage->since_php_version_id !== null
+                    && $storage->user_defined;
+
+                if (!$is_polyfill
+                    && $duplicate_location !== null
                     && $location !== null
                     && $duplicate_location->getHash() !== $location->getHash()
                 ) {

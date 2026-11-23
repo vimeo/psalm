@@ -379,8 +379,12 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             );
 
             foreach ($byref_uses as $var_id => $_) {
-                $byref_vars[$var_id] = $ref_context->vars_in_scope[$var_id];
-                $context->vars_in_scope[$var_id] = $ref_context->vars_in_scope[$var_id];
+                // unsetting the variable only drops the closure's own reference to it: what the
+                // closure wrote through the reference before is not known anymore
+                $byref_type = $ref_context->vars_in_scope[$var_id] ?? Type::getMixed();
+
+                $byref_vars[$var_id] = $byref_type;
+                $context->vars_in_scope[$var_id] = $byref_type;
             }
         }
 
@@ -507,6 +511,14 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
         }
 
         $statements_analyzer->analyze($function_stmts, $context, $global_context, true);
+
+        if ($statements_analyzer->owns_type_variable_tracker) {
+            $statements_analyzer->type_variable_tracker->reconcile(
+                $codebase,
+                $storage->location ?? new CodeLocation($this, $this->function),
+                $statements_analyzer->getSuppressedIssues(),
+            );
+        }
 
         if ($codebase->alter_code
             && isset($project_analyzer->getIssuesToFix()['MissingPureAnnotation'])
@@ -754,7 +766,9 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             }
         }
 
-        $missingThrowsDocblockErrors = [];
+        $fix_missing_throws = $codebase->alter_code
+            && isset($project_analyzer->getIssuesToFix()['MissingThrowsDocblock']);
+        $missing_throws_docblock_errors = [];
         foreach ($statements_analyzer->getUncaughtThrows($context) as $possibly_thrown_exception => $codelocations) {
             $is_expected = false;
 
@@ -774,37 +788,49 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             }
 
             if (!$is_expected) {
-                $missing_docblock_exception = new TNamedObject($possibly_thrown_exception);
-                $missingThrowsDocblockErrors[] = $missing_docblock_exception->toNamespacedString(
-                    $this->source->getNamespace(),
-                    $this->source->getAliasedClassesFlipped(),
-                    $this->source->getFQCLN(),
-                    true,
-                );
-
+                $add_to_docblock = false;
                 foreach ($codelocations as $codelocation) {
                     // issues are suppressed in ThrowAnalyzer, CallAnalyzer, etc.
+                    $issue = new MissingThrowsDocblock(
+                        $possibly_thrown_exception . ' is thrown but not caught - please either catch'
+                        . ' or add a @throws annotation',
+                        $codelocation,
+                        $possibly_thrown_exception,
+                    );
+
                     IssueBuffer::maybeAdd(
-                        new MissingThrowsDocblock(
-                            $possibly_thrown_exception . ' is thrown but not caught - please either catch'
-                                . ' or add a @throws annotation',
-                            $codelocation,
-                            $possibly_thrown_exception,
-                        ),
+                        $issue,
+                        $this->getSuppressedIssues(),
+                        true,
+                    );
+
+                    if ($fix_missing_throws
+                        && !$add_to_docblock
+                        && !IssueBuffer::isSuppressed($issue, $this->getSuppressedIssues())
+                    ) {
+                        $add_to_docblock = true;
+                    }
+                }
+
+                if ($add_to_docblock) {
+                    $missing_docblock_exception = new TNamedObject($possibly_thrown_exception);
+                    $missing_throws_docblock_errors[] = $missing_docblock_exception->toNamespacedString(
+                        $this->source->getNamespace(),
+                        $this->source->getAliasedClassesFlipped(),
+                        $this->source->getFQCLN(),
+                        true,
                     );
                 }
             }
         }
 
-        if ($codebase->alter_code
-            && isset($project_analyzer->getIssuesToFix()['MissingThrowsDocblock'])
-        ) {
+        if ($missing_throws_docblock_errors !== []) {
             $manipulator = FunctionDocblockManipulator::getForFunction(
                 $project_analyzer,
                 $this->source->getFilePath(),
                 $this->function,
             );
-            $manipulator->addThrowsDocblock($missingThrowsDocblockErrors);
+            $manipulator->addThrowsDocblock($missing_throws_docblock_errors);
         }
 
         if ($codebase->taint_flow_graph
@@ -2035,7 +2061,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                     $this->getSuppressedIssues(),
                     true,
                 );
-                    
+
                 if ($codebase->alter_code
                     && $storage->stmt_location !== null
                     && isset($this->getProjectAnalyzer()->getIssuesToFix()['MissingOverrideAttribute'])

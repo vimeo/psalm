@@ -32,15 +32,20 @@ use function array_filter;
 use function array_merge;
 use function array_pop;
 use function ceil;
+use function class_exists;
 use function count;
+use function enum_exists;
 use function error_reporting;
 use function explode;
 use function file_exists;
+use function interface_exists;
+use function ltrim;
 use function min;
 use function realpath;
 use function str_ends_with;
 use function strtolower;
 use function substr;
+use function trait_exists;
 
 use const DIRECTORY_SEPARATOR;
 use const PHP_EOL;
@@ -68,6 +73,8 @@ use const PHP_EOL;
  *         array<string, bool>,
  *         array<lowercase-string, bool>,
  *         array<string, bool>,
+ *         array<string, bool>,
+ *         array<lowercase-string, string>,
  *         array<string, bool>
  *     },
  *     scanner_data: ThreadData,
@@ -101,6 +108,11 @@ final class Scanner
      * @var array<string, bool>
      */
     private array $deep_scanned_classlike_files = [];
+
+    /**
+     * @var array<string, true>
+     */
+    private array $stub_files = [];
 
     /**
      * @var array<string, string>
@@ -150,6 +162,32 @@ final class Scanner
     ) {
     }
 
+    public function registerReflectedClassLikeStorage(string $fq_classlike_name): void
+    {
+        $fq_classlike_name = ltrim($fq_classlike_name, '\\');
+        $fq_classlike_name_lc = strtolower($fq_classlike_name);
+
+        if ($this->codebase->classlike_storage_provider->has($fq_classlike_name)
+            || !$this->codebase->classlikes->doesClassLikeExist($fq_classlike_name_lc)
+            || (!class_exists($fq_classlike_name, false)
+                && !interface_exists($fq_classlike_name, false)
+                && !enum_exists($fq_classlike_name, false)
+                && !trait_exists($fq_classlike_name, false))
+        ) {
+            return;
+        }
+
+        $reflected_class = new ReflectionClass($fq_classlike_name);
+
+        // Only built-in classlikes; a user-defined one loaded in Psalm's own process may differ from the analyzed code
+        if (!$reflected_class->isInternal()) {
+            return;
+        }
+
+        $this->reflection->registerClass($reflected_class);
+        $this->reflected_classlikes_lc[$fq_classlike_name_lc] = true;
+    }
+
     /**
      * @param array<string, string> $files_to_scan
      */
@@ -176,6 +214,17 @@ final class Scanner
     {
         $this->files_to_scan[$file_path] = $file_path;
         $this->files_to_deep_scan[$file_path] = $file_path;
+    }
+
+    public function addStubFileToDeepScan(string $file_path): void
+    {
+        $this->stub_files[strtolower($file_path)] = true;
+        $this->addFileToDeepScan($file_path);
+    }
+
+    public function isStubFile(string $file_path): bool
+    {
+        return isset($this->stub_files[strtolower($file_path)]);
     }
 
     public function removeFile(string $file_path): void
@@ -464,6 +513,37 @@ final class Scanner
             $this->progress,
         );
 
+        if ($from_cache) {
+            $exhumed_classlike_names = [];
+
+            foreach ($file_storage->classlikes_in_file as $fq_classlike_name) {
+                $already_in_memory = $this->codebase->classlike_storage_provider->has($fq_classlike_name);
+
+                if (!$this->codebase->tryExhumeClassLikeStorage($fq_classlike_name, $file_path)) {
+                    // the cache has the storage of the file, but not that of a class-like it declares: scan again
+                    foreach ($exhumed_classlike_names as $exhumed_classlike_name) {
+                        $this->codebase->classlike_storage_provider->remove($exhumed_classlike_name);
+                    }
+
+                    $from_cache = false;
+                    $file_storage = $this->file_storage_provider->create($file_path);
+
+                    $file_scanner->scan(
+                        $this->codebase,
+                        $file_storage,
+                        false,
+                        $this->progress,
+                    );
+
+                    break;
+                }
+
+                if (!$already_in_memory) {
+                    $exhumed_classlike_names[] = $fq_classlike_name;
+                }
+            }
+        }
+
         if (!$from_cache) {
             if (!$file_storage->has_visitor_issues && $this->file_storage_provider->cache) {
                 $this->file_storage_provider->cache->writeToCache($file_storage, $file_contents);
@@ -477,10 +557,6 @@ final class Scanner
                 } else {
                     $this->addFileToShallowScan($required_file_path);
                 }
-            }
-
-            foreach ($file_storage->classlikes_in_file as $fq_classlike_name) {
-                $this->codebase->exhumeClassLikeStorage($fq_classlike_name, $file_path);
             }
 
             foreach ($file_storage->required_classes as $fq_classlike_name) {
@@ -499,8 +575,11 @@ final class Scanner
                 || $this->codebase->all_functions_global
             ) {
                 foreach ($file_storage->functions as $function_storage) {
+                    // like on a fresh scan (see FunctionLikeNodeScanner), a polyfill of a native
+                    // function the analysed version predates doesn't replace the native signature
                     if ($function_storage->cased_name
                         && !$this->codebase->functions->hasStubbedFunction($function_storage->cased_name)
+                        && InternalCallMapHandler::getIntroducingPhpVersionId($function_storage->cased_name) === null
                     ) {
                         $this->codebase->functions->addGlobalFunction(
                             $function_storage->cased_name,

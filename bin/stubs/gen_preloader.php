@@ -86,7 +86,11 @@ declare(strict_types=1);
 
 namespace Psalm\Internal;
 
-/** @internal */
+/** 
+ * @psalm-pure
+ * 
+ * @internal 
+ */
 final class PreloaderList {
     public const CLASSES = [
 ";

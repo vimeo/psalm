@@ -24,11 +24,13 @@ use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\DataFlow\TaintSink;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Stubs\Generator\StubsGenerator;
+use Psalm\Internal\Type\Comparator\TypeComparisonResult;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Internal\Type\TypeExpander;
+use Psalm\Internal\TypeVisitor\TypeVariableResolver;
 use Psalm\Issue\InvalidNamedArgument;
 use Psalm\Issue\InvalidPassByReference;
 use Psalm\Issue\PossiblyUndefinedVariable;
@@ -130,6 +132,13 @@ final class ArgumentsAnalyzer
         }
 
         foreach ($args as $argument_offset => $arg) {
+            if ($arg->value instanceof PhpParser\Node\Expr\Closure
+                || $arg->value instanceof PhpParser\Node\Expr\ArrowFunction
+            ) {
+                // The node may be re-analyzed for another callable target.
+                $arg->value->setAttribute('psalm-closure-this-type', null);
+            }
+
             if ($function_params === null) {
                 if (self::evaluateArbitraryParam(
                     $statements_analyzer,
@@ -152,7 +161,7 @@ final class ArgumentsAnalyzer
                     }
                 }
 
-                if ($last_param && $last_param->is_variadic) {
+                if ($param === null && $last_param && $last_param->is_variadic) {
                     $param = $last_param;
                 }
             } elseif ($argument_offset < count($function_params)) {
@@ -234,6 +243,21 @@ final class ArgumentsAnalyzer
                     $arg,
                     $param,
                 );
+            }
+
+            if ($arg->value instanceof PhpParser\Node\Expr\Closure
+                || $arg->value instanceof PhpParser\Node\Expr\ArrowFunction
+            ) {
+                if ($param && $param->closure_this_type) {
+                    self::applyParamClosureThisHint(
+                        $statements_analyzer,
+                        $method_id,
+                        $context,
+                        $template_result ?? new TemplateResult([], []),
+                        $arg,
+                        $param,
+                    );
+                }
             }
 
             $was_inside_call = $context->inside_call;
@@ -335,6 +359,19 @@ final class ArgumentsAnalyzer
 
         $template_types = ['ArrayValue' . $argument_offset => [$method_id => Type::getMixed()]];
 
+        // array_find(), array_find_key(), array_any() and array_all() also pass the key to the callback
+        $key_type = Type::getArrayKey();
+        if ($method_id !== 'array_map' && $method_id !== 'array_filter') {
+            $template_types['ArrayKey' . $argument_offset] = [$method_id => Type::getArrayKey()];
+            $key_type = new Union([
+                new TTemplateParam(
+                    'ArrayKey' . $argument_offset,
+                    Type::getArrayKey(),
+                    $method_id,
+                ),
+            ]);
+        }
+
         $replace_template_result = new TemplateResult(
             $template_types,
             [],
@@ -345,7 +382,7 @@ final class ArgumentsAnalyzer
         TemplateStandinTypeReplacer::fillTemplateResult(
             new Union([
                 new TArray([
-                    Type::getArrayKey(),
+                    $key_type,
                     new Union([
                         new TTemplateParam(
                             'ArrayValue' . $argument_offset,
@@ -373,6 +410,19 @@ final class ArgumentsAnalyzer
         }
     }
 
+    private static function getTemplatedCallableParam(string $template_name, string $method_id): FunctionLikeParameter
+    {
+        $type = new Union([
+            new TTemplateParam(
+                $template_name,
+                Type::getMixed(),
+                $method_id,
+            ),
+        ]);
+
+        return new FunctionLikeParameter('function', false, $type, $type);
+    }
+
     /**
      * @param   array<int, PhpParser\Node\Arg>  $args
      */
@@ -397,26 +447,27 @@ final class ArgumentsAnalyzer
         ) {
             $function_like_params = [];
 
-            foreach ($template_result->lower_bounds as $template_name => $_) {
-                $t = new Union([
-                    new TTemplateParam(
-                        $template_name,
-                        Type::getMixed(),
-                        $method_id,
-                    ),
-                ]);
-                $function_like_params[] = new FunctionLikeParameter(
-                    'function',
-                    false,
-                    $t,
-                    $t,
-                );
+            if ($method_id === 'array_map') {
+                foreach ($template_result->lower_bounds as $template_name => $_) {
+                    $function_like_params[] = self::getTemplatedCallableParam($template_name, $method_id);
+                }
+
+                $function_like_params = array_reverse($function_like_params);
+            } else {
+                // the callback receives the value, then the key (except for array_filter without a mode)
+                foreach (['ArrayValue0', 'ArrayKey0'] as $template_name) {
+                    if (!isset($template_result->lower_bounds[$template_name])) {
+                        break;
+                    }
+
+                    $function_like_params[] = self::getTemplatedCallableParam($template_name, $method_id);
+                }
             }
 
             $replaced_type = new Union([
                 new TCallable(
                     'callable',
-                    array_reverse($function_like_params),
+                    $function_like_params,
                 ),
             ]);
         } else {
@@ -490,6 +541,13 @@ final class ArgumentsAnalyzer
                         if (isset($replaced_type_part->params[$closure_param_offset]->type)) {
                             $replaced_param_type = $replaced_type_part->params[$closure_param_offset]->type;
 
+                            // an untyped closure param inferred from the expected callable
+                            // must receive a concrete type: resolve any type variables
+                            // through their construction-site bounds (`_0 >: Item` -> `Item`)
+                            // so the param is usable as its bound (e.g. property fetches).
+                            $type_variable_resolver = new TypeVariableResolver($codebase);
+                            $type_variable_resolver->traverse($replaced_param_type);
+
                             if ($replaced_param_type->hasTemplate()) {
                                 $replaced_param_type = TypeExpander::expandUnion(
                                     $codebase,
@@ -506,13 +564,26 @@ final class ArgumentsAnalyzer
                             }
 
                             if ($param_storage->type && !$param_type_inferred) {
+                                $param_comparison_result = new TypeComparisonResult();
+
                                 $type_match_found = UnionTypeComparator::isContainedBy(
                                     $codebase,
                                     $replaced_param_type,
                                     $param_storage->type,
+                                    false,
+                                    false,
+                                    $param_comparison_result,
                                 );
 
                                 if (!$type_match_found) {
+                                    continue;
+                                }
+
+                                if ($param_comparison_result->type_variable_lower_bounds
+                                    || $param_comparison_result->type_variable_upper_bounds
+                                ) {
+                                    // a containment that recorded type-variable bounds is
+                                    // provisional, not definitive: keep the declared type
                                     continue;
                                 }
                             }
@@ -545,6 +616,104 @@ final class ArgumentsAnalyzer
                 );
             }
         }
+    }
+
+    /**
+     * Resolves `@param-closure-this` against the call site and stamps the resolved type as
+     * a PHP-Parser node attribute on the Closure/ArrowFunction so ClosureAnalyzer can bind
+     * `$this` inside the closure body.
+     */
+    private static function applyParamClosureThisHint(
+        StatementsAnalyzer $statements_analyzer,
+        ?string $method_id,
+        Context $context,
+        TemplateResult $template_result,
+        PhpParser\Node\Arg $arg,
+        FunctionLikeParameter $param,
+    ): void {
+        if (!$param->closure_this_type) {
+            return;
+        }
+
+        $codebase = $statements_analyzer->getCodebase();
+
+        $self_fq_class_name = $context->self;
+        $static_fq_class_name = null;
+        $parent_fq_class_name = null;
+        $static_class_is_final = false;
+
+        if ($method_id !== null && MethodIdentifier::isValidMethodIdReference($method_id)) {
+            $called_method_id = MethodIdentifier::fromMethodIdReference($method_id);
+            $called_class = $called_method_id->fq_class_name;
+
+            $static_fq_class_name = $called_class;
+            $self_fq_class_name = $called_class;
+
+            if ($codebase->classlike_storage_provider->has($called_class)) {
+                $called_class_storage = $codebase->classlike_storage_provider->get($called_class);
+                $static_class_is_final = $called_class_storage->final;
+
+                // `self` is the class where the method appears. For a trait, that is
+                // its consuming class; for normal inheritance, it is the declaring class.
+                $declaring_method_id = $codebase->methods->getDeclaringMethodId($called_method_id);
+
+                if ($declaring_method_id !== null) {
+                    $self_fq_class_name = $declaring_method_id->fq_class_name;
+
+                    $appearing_method_id = $codebase->methods->getAppearingMethodId($called_method_id);
+
+                    if ($appearing_method_id !== null && $declaring_method_id !== $appearing_method_id) {
+                        $self_fq_class_name = $appearing_method_id->fq_class_name;
+                    }
+                }
+            }
+        }
+
+        if ($self_fq_class_name !== null
+            && $codebase->classlike_storage_provider->has($self_fq_class_name)
+        ) {
+            $parent_fq_class_name = $codebase->classlike_storage_provider->get($self_fq_class_name)
+                ->parent_class;
+        }
+
+        $closure_this_type = $param->closure_this_type;
+
+        if ($template_result->lower_bounds || $template_result->template_types) {
+            $closure_this_type = TemplateStandinTypeReplacer::replace(
+                $closure_this_type,
+                $template_result,
+                $codebase,
+                $statements_analyzer,
+                null,
+                null,
+                $context->self,
+                $context->calling_method_id ?? $context->calling_function_id,
+            );
+
+            $closure_this_type = TemplateInferredTypeReplacer::replace(
+                $closure_this_type,
+                $template_result,
+                $codebase,
+            );
+        }
+
+        $static_type = $static_fq_class_name !== null
+            ? new TNamedObject($static_fq_class_name, true, $static_class_is_final)
+            : null;
+
+        $closure_this_type = TypeExpander::expandUnion(
+            $codebase,
+            $closure_this_type,
+            $self_fq_class_name,
+            $static_type,
+            $parent_fq_class_name,
+            true,
+            false,
+            $static_class_is_final,
+            true,
+        );
+
+        $arg->value->setAttribute('psalm-closure-this-type', $closure_this_type);
     }
 
     /**
@@ -645,6 +814,8 @@ final class ArgumentsAnalyzer
                 }
             }
         }
+
+        $template_result->conditional_return_context = $function_storage->return_type ?? null;
 
         if ($function_storage) {
             $template_result = self::getProvisionalTemplateResultForFunctionLike(
@@ -1630,8 +1801,7 @@ final class ArgumentsAnalyzer
                         }
 
                         if ($arg_value_type->isSingle()
-                            && ($atomic_arg_type = $arg_value_type->getSingleAtomic())
-                            && $atomic_arg_type instanceof TKeyedArray
+                            && ($atomic_arg_type = $arg_value_type->getSingleAtomic()) instanceof TKeyedArray
                             && !$atomic_arg_type->is_list
                         ) {
                             //if we have a single shape, we'll check param names

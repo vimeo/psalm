@@ -4,7 +4,11 @@ declare(strict_types=1);
 
 namespace Psalm\Internal;
 
-/** @internal */
+/** 
+ * @psalm-pure
+ * 
+ * @internal 
+ */
 final class PreloaderList {
     public const CLASSES = [
         \AdvancedJsonRpc\Dispatcher::class,
@@ -99,6 +103,8 @@ final class PreloaderList {
         \Amp\Parallel\Context\ContextFactory::class,
         \Amp\Parallel\Context\ContextPanicError::class,
         \Amp\Parallel\Context\DefaultContextFactory::class,
+        \Amp\Parallel\Context\ForkContext::class,
+        \Amp\Parallel\Context\ForkContextFactory::class,
         \Amp\Parallel\Context\Internal\AbstractContext::class,
         \Amp\Parallel\Context\Internal\ContextChannel::class,
         \Amp\Parallel\Context\Internal\ContextException::class,
@@ -346,6 +352,7 @@ final class PreloaderList {
         \PhpParser\Lexer\TokenEmulator\AttributeEmulator::class,
         \PhpParser\Lexer\TokenEmulator\EnumTokenEmulator::class,
         \PhpParser\Lexer\TokenEmulator\ExplicitOctalEmulator::class,
+        \PhpParser\Lexer\TokenEmulator\FnTokenEmulator::class,
         \PhpParser\Lexer\TokenEmulator\KeywordEmulator::class,
         \PhpParser\Lexer\TokenEmulator\MatchTokenEmulator::class,
         \PhpParser\Lexer\TokenEmulator\NullsafeTokenEmulator::class,
@@ -374,6 +381,7 @@ final class PreloaderList {
         \PhpParser\NodeVisitor\NodeConnectingVisitor::class,
         \PhpParser\NodeVisitor\ParentConnectingVisitor::class,
         \PhpParser\Node\Arg::class,
+        \PhpParser\Node\ArgPlaceholder::class,
         \PhpParser\Node\ArrayItem::class,
         \PhpParser\Node\Attribute::class,
         \PhpParser\Node\AttributeGroup::class,
@@ -696,6 +704,7 @@ final class PreloaderList {
         \Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MissingMethodCallHandler::class,
         \Psalm\Internal\Analyzer\Statements\Expression\Call\NamedFunctionCallHandler::class,
         \Psalm\Internal\Analyzer\Statements\Expression\Call\NewAnalyzer::class,
+        \Psalm\Internal\Analyzer\Statements\Expression\Call\NoDiscardAnalyzer::class,
         \Psalm\Internal\Analyzer\Statements\Expression\Call\StaticCallAnalyzer::class,
         \Psalm\Internal\Analyzer\Statements\Expression\Call\StaticMethod\AtomicStaticCallAnalyzer::class,
         \Psalm\Internal\Analyzer\Statements\Expression\Call\StaticMethod\ExistingAtomicStaticCallAnalyzer::class,
@@ -720,6 +729,7 @@ final class PreloaderList {
         \Psalm\Internal\Analyzer\Statements\Expression\MagicConstAnalyzer::class,
         \Psalm\Internal\Analyzer\Statements\Expression\MatchAnalyzer::class,
         \Psalm\Internal\Analyzer\Statements\Expression\NullsafeAnalyzer::class,
+        \Psalm\Internal\Analyzer\Statements\Expression\NullsafeChainState::class,
         \Psalm\Internal\Analyzer\Statements\Expression\PrintAnalyzer::class,
         \Psalm\Internal\Analyzer\Statements\Expression\SimpleTypeInferer::class,
         \Psalm\Internal\Analyzer\Statements\Expression\TernaryAnalyzer::class,
@@ -737,6 +747,7 @@ final class PreloaderList {
         \Psalm\Internal\Cache::class,
         \Psalm\Internal\Clause::class,
         \Psalm\Internal\CliUtils::class,
+        \Psalm\Internal\Cli\IdeDetector::class,
         \Psalm\Internal\Cli\LanguageServer::class,
         \Psalm\Internal\Cli\Plugin::class,
         \Psalm\Internal\Cli\Psalm::class,
@@ -841,6 +852,7 @@ final class PreloaderList {
         \Psalm\Internal\PhpVisitor\Reflector\FunctionLikeDocblockParser::class,
         \Psalm\Internal\PhpVisitor\Reflector\FunctionLikeDocblockScanner::class,
         \Psalm\Internal\PhpVisitor\Reflector\FunctionLikeNodeScanner::class,
+        \Psalm\Internal\PhpVisitor\Reflector\PropertyVisibilityResolver::class,
         \Psalm\Internal\PhpVisitor\Reflector\TypeHintResolver::class,
         \Psalm\Internal\PhpVisitor\ShortClosureVisitor::class,
         \Psalm\Internal\PhpVisitor\SimpleNameResolver::class,
@@ -890,6 +902,7 @@ final class PreloaderList {
         \Psalm\Internal\Provider\ReturnTypeProvider\ArrayFillKeysReturnTypeProvider::class,
         \Psalm\Internal\Provider\ReturnTypeProvider\ArrayFillReturnTypeProvider::class,
         \Psalm\Internal\Provider\ReturnTypeProvider\ArrayFilterReturnTypeProvider::class,
+        \Psalm\Internal\Provider\ReturnTypeProvider\ArrayFirstLastReturnTypeProvider::class,
         \Psalm\Internal\Provider\ReturnTypeProvider\ArrayMapReturnTypeProvider::class,
         \Psalm\Internal\Provider\ReturnTypeProvider\ArrayMergeReturnTypeProvider::class,
         \Psalm\Internal\Provider\ReturnTypeProvider\ArrayPadReturnTypeProvider::class,
@@ -971,6 +984,7 @@ final class PreloaderList {
         \Psalm\Internal\Stubs\Generator\StubsGenerator::class,
         \Psalm\Internal\TypeVisitor\CanContainObjectTypeVisitor::class,
         \Psalm\Internal\TypeVisitor\ClasslikeReplacer::class,
+        \Psalm\Internal\TypeVisitor\ConditionalTemplateVisitor::class,
         \Psalm\Internal\TypeVisitor\ContainsClassLikeVisitor::class,
         \Psalm\Internal\TypeVisitor\ContainsLiteralVisitor::class,
         \Psalm\Internal\TypeVisitor\ContainsStaticVisitor::class,
@@ -979,6 +993,7 @@ final class PreloaderList {
         \Psalm\Internal\TypeVisitor\TypeChecker::class,
         \Psalm\Internal\TypeVisitor\TypeLocalizer::class,
         \Psalm\Internal\TypeVisitor\TypeScanner::class,
+        \Psalm\Internal\TypeVisitor\TypeVariableResolver::class,
         \Psalm\Internal\Type\ArrayType::class,
         \Psalm\Internal\Type\AssertionReconciler::class,
         \Psalm\Internal\Type\ClosedInheritanceToUnion::class,
@@ -993,6 +1008,7 @@ final class PreloaderList {
         \Psalm\Internal\Type\Comparator\ScalarTypeComparator::class,
         \Psalm\Internal\Type\Comparator\TypeComparisonResult::class,
         \Psalm\Internal\Type\Comparator\UnionTypeComparator::class,
+        \Psalm\Internal\Type\LiteralCast::class,
         \Psalm\Internal\Type\NegatedAssertionReconciler::class,
         \Psalm\Internal\Type\ParseTree::class,
         \Psalm\Internal\Type\ParseTreeCreator::class,
@@ -1031,6 +1047,8 @@ final class PreloaderList {
         \Psalm\Internal\Type\TypeExpander::class,
         \Psalm\Internal\Type\TypeParser::class,
         \Psalm\Internal\Type\TypeTokenizer::class,
+        \Psalm\Internal\Type\TypeVariableBounds::class,
+        \Psalm\Internal\Type\TypeVariableTracker::class,
         \Psalm\Internal\VersionUtils::class,
         \Psalm\IssueBuffer::class,
         \Psalm\Issue\AbstractInstantiation::class,
@@ -1092,6 +1110,7 @@ final class PreloaderList {
         \Psalm\Issue\InaccessibleClassConstant::class,
         \Psalm\Issue\InaccessibleMethod::class,
         \Psalm\Issue\InaccessibleProperty::class,
+        \Psalm\Issue\IncompatibleTypeParameters::class,
         \Psalm\Issue\InheritorViolation::class,
         \Psalm\Issue\InterfaceInstantiation::class,
         \Psalm\Issue\InternalClass::class,
@@ -1210,6 +1229,7 @@ final class PreloaderList {
         \Psalm\Issue\NullReference::class,
         \Psalm\Issue\NullableReturnStatement::class,
         \Psalm\Issue\OverriddenFinalConstant::class,
+        \Psalm\Issue\OverriddenFinalProperty::class,
         \Psalm\Issue\OverriddenInterfaceConstant::class,
         \Psalm\Issue\OverriddenMethodAccess::class,
         \Psalm\Issue\OverriddenPropertyAccess::class,
@@ -1676,6 +1696,7 @@ final class PreloaderList {
         \Psalm\Storage\ImmutableNonCloneableTrait::class,
         \Psalm\Storage\MethodStorage::class,
         \Psalm\Storage\Possibilities::class,
+        \Psalm\Storage\PropertyHookStorage::class,
         \Psalm\Storage\PropertyStorage::class,
         \Psalm\Storage\UnserializeMemoryUsageSuppressionTrait::class,
         \Psalm\Type::class,
@@ -1753,6 +1774,7 @@ final class PreloaderList {
         \Psalm\Type\Atomic\TTraitString::class,
         \Psalm\Type\Atomic\TTrue::class,
         \Psalm\Type\Atomic\TTypeAlias::class,
+        \Psalm\Type\Atomic\TTypeVariable::class,
         \Psalm\Type\Atomic\TUnknownClassString::class,
         \Psalm\Type\Atomic\TValueOf::class,
         \Psalm\Type\Atomic\TVoid::class,

@@ -90,6 +90,42 @@ final class ConstantTest extends TestCase
     public function providerValidCodeParse(): iterable
     {
         return [
+            'bitwiseOperationsOnFloatConstantsOutsideTheRangeOfAnIntAreNotFolded' => [
+                'code' => '<?php
+                    class A {
+                        public const BIG = 1e30;
+                        public const NOT_A_NUMBER = NAN;
+                        public const WHOLE = 5.0;
+                    }
+
+                    class B {
+                        public const OR = A::BIG | 1;
+                        public const AND = A::NOT_A_NUMBER & 1;
+                        public const XOR = A::WHOLE ^ 1;
+                        public const NESTED = (A::BIG | 1) | 2;
+                    }
+
+                    class C {
+                        public const FROM_INTERMEDIATE = B::OR ^ 2;
+                        public const FROM_NOT_A_NUMBER = B::AND & A::WHOLE;
+                    }
+
+                    $or = B::OR;
+                    $and = B::AND;
+                    $xor = B::XOR;
+                    $nested = B::NESTED;
+                    $fromIntermediate = C::FROM_INTERMEDIATE;
+                    $fromNotANumber = C::FROM_NOT_A_NUMBER;',
+                'assertions' => [
+                    '$or===' => 'int',
+                    '$and===' => 'int',
+                    '$xor===' => '4',
+                    '$nested===' => 'int',
+                    '$fromIntermediate===' => 'int',
+                    '$fromNotANumber===' => 'int',
+                ],
+            ],
+
             'constantInFunction' => [
                 'code' => '<?php
                     useTest();
@@ -2161,6 +2197,22 @@ final class ConstantTest extends TestCase
                     class FooBar implements FooInterface, BarInterface {}
                     PHP,
             ],
+            'constantInheritedThroughParentClassAndInterfaceIsNotAmbiguous' => [
+                'code' => <<<'PHP'
+                    <?php
+                    interface NodeInterface {
+                        public const KEY = 'key';
+                    }
+
+                    interface FieldInterface extends NodeInterface {}
+                    interface RootInterface extends NodeInterface {}
+                    interface PaginationInterface extends RootInterface {}
+
+                    abstract class Field implements FieldInterface {}
+
+                    abstract class Pagination extends Field implements PaginationInterface {}
+                    PHP,
+            ],
         ];
     }
 
@@ -2168,6 +2220,34 @@ final class ConstantTest extends TestCase
     public function providerInvalidCodeParse(): iterable
     {
         return [
+            'classConstantDividingByAZeroIntConstantOfAnotherClass' => [
+                'code' => '<?php
+                    final class A {
+                        const ZERO = 0;
+                    }
+
+                    final class B {
+                        const X = 1 / A::ZERO;
+                    }
+
+                    $x = B::X;
+                    echo $x;',
+                'error_message' => 'NoValue',
+            ],
+            'classConstantDividingByAZeroFloatConstantOfAnotherClass' => [
+                'code' => '<?php
+                    final class A {
+                        const ZERO = 0.0;
+                    }
+
+                    final class B {
+                        const X = 1 / A::ZERO;
+                    }
+
+                    $x = B::X;
+                    echo $x;',
+                'error_message' => 'NoValue',
+            ],
             'constantDefinedInFunctionButNotCalled' => [
                 'code' => '<?php
                     /**
@@ -2568,6 +2648,23 @@ final class ConstantTest extends TestCase
                     {
                     }
                 ',
+                'error_message' => 'AmbiguousConstantInheritance',
+            ],
+            'constantInheritedThroughParentClassFromAnotherInterfaceIsAmbiguous' => [
+                'code' => <<<'PHP'
+                    <?php
+                    interface FieldInterface {
+                        public const KEY = 'field';
+                    }
+
+                    interface PaginationInterface {
+                        public const KEY = 'pagination';
+                    }
+
+                    abstract class Field implements FieldInterface {}
+
+                    abstract class Pagination extends Field implements PaginationInterface {}
+                    PHP,
                 'error_message' => 'AmbiguousConstantInheritance',
             ],
             'overrideClassConstFromInterface' => [

@@ -49,6 +49,7 @@
 
     <rule ref="PSR1.Files.SideEffects.FoundWithSymbols">
         <exclude-pattern>bin/update-property-map.php</exclude-pattern>
+        <exclude-pattern>bin/hack-conformance/track-upstream.php</exclude-pattern>
     </rule>
 
     <!-- **************************************************************************************************************

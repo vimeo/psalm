@@ -14,7 +14,9 @@ use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\VariableUseGraph;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Internal\MethodIdentifier;
+use Psalm\Internal\Type\LiteralCast;
 use Psalm\Internal\Type\TypeCombiner;
+use Psalm\Internal\Type\TypeVariableTracker;
 use Psalm\Issue\InvalidCast;
 use Psalm\Issue\PossiblyInvalidCast;
 use Psalm\Issue\RedundantCast;
@@ -49,6 +51,7 @@ use Psalm\Type\Atomic\TResource;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTrue;
+use Psalm\Type\Atomic\TTypeVariable;
 use Psalm\Type\Union;
 
 use function array_merge;
@@ -298,6 +301,31 @@ final class CastAnalyzer
             return true;
         }
 
+        if ($stmt instanceof PhpParser\Node\Expr\Cast\Void_) {
+            // PHP 8.5's (void) cast evaluates its operand and explicitly discards the result.
+            // It is only valid as a statement; consuming its result is a compile error in PHP
+            // (the parser nikic/php-parser accepts more leniently), so reject it in any
+            // value-consuming position. Otherwise it is the documented escape hatch for
+            // #[\NoDiscard]: analysing the operand under inside_general_use marks it as used, so
+            // no discarded-return-value issue is raised. The parser only produces this node when
+            // targeting PHP 8.5+, so no version guard is needed here.
+            if ($context->insideUse()) {
+                IssueBuffer::maybeAdd(
+                    new InvalidCast(
+                        'The (void) cast can only be used as a statement, not as an expression',
+                        new CodeLocation($statements_analyzer->getSource(), $stmt),
+                    ),
+                    $statements_analyzer->getSuppressedIssues(),
+                );
+            }
+
+            $expression_result = self::checkExprGeneralUse($statements_analyzer, $stmt, $context);
+
+            $statements_analyzer->node_data->setType($stmt, Type::getVoid());
+
+            return $expression_result;
+        }
+
         IssueBuffer::maybeAdd(
             new UnrecognizedExpression(
                 'Psalm does not understand the cast ' . $stmt::class,
@@ -340,10 +368,12 @@ final class CastAnalyzer
             }
 
             if ($atomic_type instanceof TFloat) {
-                if ($atomic_type instanceof TLiteralFloat) {
-                    $valid_ints[] = new TLiteralInt((int) $atomic_type->value);
-                } else {
+                $int = $atomic_type instanceof TLiteralFloat ? LiteralCast::toInt($atomic_type->value) : null;
+
+                if ($int === null) {
                     $castable_types[] = new TInt();
+                } else {
+                    $valid_ints[] = new TLiteralInt($int);
                 }
 
                 continue;
@@ -721,7 +751,7 @@ final class CastAnalyzer
                 || $atomic_type instanceof TNumeric
             ) {
                 if ($atomic_type instanceof TLiteralInt || $atomic_type instanceof TLiteralFloat) {
-                    $valid_strings[] = Type::getAtomicStringFromLiteral((string) $atomic_type->value);
+                    $valid_strings[] = Type::getAtomicStringFromLiteral(LiteralCast::toString($atomic_type->value));
                 } elseif ($atomic_type instanceof TNonspecificLiteralInt) {
                     $castable_types[] = new TNonspecificLiteralString();
                 } elseif ($atomic_type instanceof TIntRange
@@ -845,6 +875,20 @@ final class CastAnalyzer
                 $atomic_types = array_merge($atomic_types, $atomic_type->as->getAtomicTypes());
 
                 continue;
+            }
+
+            if ($atomic_type instanceof TTypeVariable) {
+                // A class-template type variable is castable through the bound
+                // its construction inferred — as the TTemplateParam branch reads
+                // through `as`. Resolve it so `(string) $var` sees that bound
+                // instead of rejecting the bare variable as uncastable.
+                $resolved = TypeVariableTracker::resolveTypeVariables(new Union([$atomic_type]), $codebase);
+
+                if ($resolved->getId() !== $atomic_type->getId()) {
+                    $atomic_types = array_merge($atomic_types, $resolved->getAtomicTypes());
+
+                    continue;
+                }
             }
 
             $invalid_casts[] = $atomic_type->getId();

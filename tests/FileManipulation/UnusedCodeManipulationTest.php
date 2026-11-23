@@ -12,6 +12,83 @@ final class UnusedCodeManipulationTest extends FileManipulationTestCase
     public function providerValidCodeParse(): array
     {
         return [
+            'addFinalToUnusedClassAfterUseStatements' => [
+                'input' => '<?php
+                    namespace Foo;
+
+                    use DateTimeImmutable;
+                    use RuntimeException;
+
+                    class A {
+                        public function foo(DateTimeImmutable $date) : void {
+                            throw new RuntimeException($date->format("c"));
+                        }
+                    }',
+                'output' => '<?php
+                    namespace Foo;
+
+                    use DateTimeImmutable;
+                    use RuntimeException;
+
+                    final class A {
+                        public function foo(DateTimeImmutable $date) : void {
+                            throw new RuntimeException($date->format("c"));
+                        }
+                    }',
+                'php_version' => '8.1',
+                'issues_to_fix' => ['ClassMustBeFinal'],
+                'safe_types' => true,
+            ],
+            'addFinalToReadonlyUnusedClass' => [
+                'input' => '<?php
+                    readonly class A {
+                        public function __construct(public string $name) {}
+                    }',
+                'output' => '<?php
+                    final readonly class A {
+                        public function __construct(public string $name) {}
+                    }',
+                'php_version' => '8.2',
+                'issues_to_fix' => ['ClassMustBeFinal'],
+                'safe_types' => true,
+            ],
+            'addFinalAfterAttributeOnUnusedClass' => [
+                'input' => '<?php
+                    #[Attribute]
+                    class A {}',
+                'output' => '<?php
+                    #[Attribute]
+                    final class A {}',
+                'php_version' => '8.1',
+                'issues_to_fix' => ['ClassMustBeFinal'],
+                'safe_types' => true,
+            ],
+            'dontAddFinalToSuppressedUnusedClass' => [
+                'input' => '<?php
+                    /** @psalm-suppress ClassMustBeFinal */
+                    class A {}',
+                'output' => '<?php
+                    /** @psalm-suppress ClassMustBeFinal */
+                    class A {}',
+                'php_version' => '8.1',
+                'issues_to_fix' => ['ClassMustBeFinal'],
+                'safe_types' => true,
+            ],
+            'addFinalAfterDocblockThatMentionsClass' => [
+                'input' => '<?php
+                    /**
+                     * Example: class A is documented here.
+                     */
+                    class A {}',
+                'output' => '<?php
+                    /**
+                     * Example: class A is documented here.
+                     */
+                    final class A {}',
+                'php_version' => '8.1',
+                'issues_to_fix' => ['ClassMustBeFinal'],
+                'safe_types' => true,
+            ],
             'removePossiblyUnusedMethod' => [
                 'input' => '<?php
                     class A {

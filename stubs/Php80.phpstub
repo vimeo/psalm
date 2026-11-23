@@ -1,62 +1,9 @@
 <?php
 
-interface Stringable
-{
-    /** @return string */
-    function __toString();
-}
-
-/**
- * @template TClass as object
- */
-class ReflectionAttribute
-{
-    const IS_INSTANCEOF = 2;
-
-    private function __construct()
-    {
-    }
-
-    /**
-     * @return non-empty-string
-     *
-     * @psalm-pure
-     */
-    public function getName() : string
-    {
-    }
-
-    /**
-     * @psalm-pure
-     * @return Attribute::TARGET_*
-     */
-    public function getTarget() : int
-    {
-    }
-
-    /** @psalm-pure */
-    public function isRepeated() : bool
-    {
-    }
-
-    public function getArguments() : array
-    {
-    }
-
-    /**
-     * @return TClass
-     */
-    public function newInstance() : object
-    {
-    }
-
-    /**
-     * @return never-return
-     */
-    private function __clone()
-    {
-    }
-}
+// Reopens of pre-existing classes to refine their types for PHP 8.0. These stay version gated
+// (loaded only when analysing >= 8.0). Genuinely-new 8.0 classes live in PhpVersionedClasses.phpstub
+// (always loaded, `@since` tagged); the #[Attribute] meta-class and refined pre-existing functions
+// live in Php80Attribute.phpstub / Php80Functions.phpstub.
 
 /**
  * @template-covariant T as object
@@ -168,28 +115,6 @@ abstract class ReflectionFunctionAbstract implements Reflector
     public function getExtensionName(): string|false {}
 }
 
-/** @psalm-immutable */
-class Attribute
-{
-    public int $flags;
-
-    public const TARGET_CLASS = 1;
-    public const TARGET_FUNCTION = 2;
-    public const TARGET_METHOD = 4;
-    public const TARGET_PROPERTY = 8;
-    public const TARGET_CLASS_CONSTANT = 16;
-    public const TARGET_PARAMETER = 32;
-    public const TARGET_ALL = 63;
-    public const IS_REPEATABLE = 64;
-
-    /**
-     * @param int-mask-of<self::*> $flags
-     */
-    public function __construct(int $flags = self::TARGET_ALL)
-    {
-    }
-}
-
 class ReflectionProperty implements Reflector
 {
     /**
@@ -199,14 +124,6 @@ class ReflectionProperty implements Reflector
      */
     public function getDocComment(): string|false {}
 }
-
-/** @psalm-immutable */
-class ReflectionUnionType extends ReflectionType {
-    /** @return non-empty-list<ReflectionNamedType> */
-    public function getTypes(): array {}
-}
-
-class UnhandledMatchError extends Error {}
 
 /**
  * @psalm-immutable
@@ -227,43 +144,4 @@ class DatePeriod implements IteratorAggregate
 
     /** @psalm-return (Start is string ? Iterator<int, DateTime> : Iterator<int, Start>) */
     public function getIterator(): Iterator {}
-}
-
-/**
- * @psalm-pure
- *
- * @param resource|null $context
- *
- * @return ($associative is false|0 ? list<string> : array<string, string|list<string>>)|false
- *
- * @psalm-taint-sink ssrf $url
- */
-function get_headers(string $url, bool $associative = false, $context = null) : array|false {}
-
-/**
- * @psalm-pure
- *
- * @psalm-flow ($values) -> return
- */
-function pack(string $format, mixed ...$values): string {}
-
-final class CurlHandle
-{
-    private function __construct()
-    {
-    }
-}
-
-final class CurlMultiHandle
-{
-    private function __construct()
-    {
-    }
-}
-
-final class CurlShareHandle
-{
-    private function __construct()
-    {
-    }
 }

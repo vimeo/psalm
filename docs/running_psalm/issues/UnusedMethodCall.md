@@ -20,3 +20,5 @@ final class A {
 $a = new A("hello");
 $a->getFoo();
 ```
+
+It is also emitted, regardless of `--find-dead-code`, when the return value of a method annotated with PHP 8.5's `#[\NoDiscard]` attribute is discarded. Casting the call to `(void)` intentionally discards the value without triggering the issue.

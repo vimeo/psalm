@@ -10,7 +10,10 @@ use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\Methods;
 use Psalm\Internal\Type\Comparator\CallableTypeComparator;
 use Psalm\Internal\Type\Comparator\KeyedArrayComparator;
+use Psalm\Internal\Type\Comparator\TypeComparisonResult;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
+use Psalm\Internal\TypeVisitor\ConditionalTemplateVisitor;
+use Psalm\Internal\TypeVisitor\TypeVariableResolver;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArray;
@@ -34,6 +37,7 @@ use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTemplateParamClass;
 use Psalm\Type\Atomic\TTemplatePropertiesOf;
 use Psalm\Type\Atomic\TTemplateValueOf;
+use Psalm\Type\Atomic\TTypeVariable;
 use Psalm\Type\Union;
 
 use function array_fill;
@@ -632,6 +636,47 @@ final class TemplateStandinTypeReplacer
         return array_values($matching_atomic_types);
     }
 
+    private static function normalizeStringInput(
+        Union $input_type,
+        Union $as,
+        Codebase $codebase,
+    ): Union {
+        $non_string_types = [];
+        foreach ($as->getAtomicTypes() as $bound_type) {
+            if (!$bound_type instanceof Atomic\TString) {
+                $non_string_types[] = $bound_type;
+            }
+        }
+        $non_string_bound = $non_string_types ? new Union($non_string_types) : null;
+
+        // A nested cast does not convert the argument itself. Check conversion to
+        // string directly, and keep inputs accepted by a non-string alternative.
+        $converted_input = null;
+        foreach ($input_type->getAtomicTypes() as $input_key => $input_atomic) {
+            $candidate = new Union([$input_atomic]);
+            $comparison = new TypeComparisonResult();
+            if (!UnionTypeComparator::isContainedBy(
+                $codebase,
+                $candidate,
+                Type::getString(),
+                false,
+                false,
+                $comparison,
+            ) || !$comparison->to_string_cast) {
+                continue;
+            }
+            if ($non_string_bound
+                && UnionTypeComparator::isContainedBy($codebase, $candidate, $non_string_bound)
+            ) {
+                continue;
+            }
+            $converted_input ??= $input_type->getBuilder();
+            $converted_input->removeType($input_key);
+            $converted_input->addType(new Atomic\TString());
+        }
+        return $converted_input?->freeze() ?? $input_type;
+    }
+
     /**
      * @return list<Atomic>
      */
@@ -819,7 +864,27 @@ final class TemplateStandinTypeReplacer
                 $depth + 1,
             );
 
+            // a type variable in the template's bound resolves to its
+            // construction-site inference: whether an input can bind the
+            // template is a structural question this gate has to answer now,
+            // not a constraint that can wait for reconciliation
+            $as_resolver = new TypeVariableResolver($codebase);
+            $as_resolver->traverse($as);
+
             $atomic_type = $atomic_type->replaceAs($as);
+
+            // Use the converted argument only for the template tested by the return condition.
+            if ($input_type !== null
+                && $input_arg_offset !== null
+                && $depth === 1
+                && !$add_lower_bound
+                && !$template_result->readonly
+                && $as->hasString()
+                && $template_result->conditional_return_context !== null
+                && ConditionalTemplateVisitor::contains($template_result->conditional_return_context, $atomic_type)
+            ) {
+                $input_type = self::normalizeStringInput($input_type, $as, $codebase);
+            }
 
             if ($input_type
                 && !$template_result->readonly
@@ -898,6 +963,28 @@ final class TemplateStandinTypeReplacer
                     ];
                 }
             }
+
+            // a type variable standing in for the template itself keeps
+            // recording bounds, but one nested inside the replacement is
+            // structural: it resolves to its construction-site inference
+            $resolved_atomic_types = [];
+
+            foreach ($atomic_types as $candidate_atomic_type) {
+                if ($candidate_atomic_type instanceof TTypeVariable) {
+                    $resolved_atomic_types[] = $candidate_atomic_type;
+                    continue;
+                }
+
+                $candidate_union = new Union([$candidate_atomic_type]);
+                $candidate_resolver = new TypeVariableResolver($codebase);
+                $candidate_resolver->traverse($candidate_union);
+
+                foreach ($candidate_union->getAtomicTypes() as $resolved_atomic_type) {
+                    $resolved_atomic_types[] = $resolved_atomic_type;
+                }
+            }
+
+            $atomic_types = $resolved_atomic_types;
 
             foreach ($atomic_types as &$t) {
                 if ($t instanceof TNamedObject

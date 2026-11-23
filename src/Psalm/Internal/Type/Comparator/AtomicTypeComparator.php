@@ -37,6 +37,7 @@ use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateKeyOf;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTemplateValueOf;
+use Psalm\Type\Atomic\TTypeVariable;
 use Psalm\Type\Atomic\TValueOf;
 use Psalm\Type\Union;
 
@@ -580,6 +581,8 @@ final class AtomicTypeComparator
                 }
 
                 $all_types_contain = true;
+                $all_failures_coercible = true;
+                $some_failure_from_mixed = false;
 
                 foreach ($input_type_part->type_params as $i => $input_param) {
                     $container_param_offset = $i - (2 - count($container_type_part->type_params));
@@ -608,9 +611,10 @@ final class AtomicTypeComparator
                         )
                             && !$array_comparison_result->type_coerced_from_scalar
                         ) {
-                            if ($atomic_comparison_result && $array_comparison_result->type_coerced_from_mixed) {
-                                $atomic_comparison_result->type_coerced_from_mixed = true;
-                            }
+                            $all_failures_coercible = $all_failures_coercible
+                                && $array_comparison_result->type_coerced === true;
+                            $some_failure_from_mixed = $some_failure_from_mixed
+                                || $array_comparison_result->type_coerced_from_mixed === true;
                             $all_types_contain = false;
                         } else {
                             if ($atomic_comparison_result) {
@@ -620,6 +624,13 @@ final class AtomicTypeComparator
                             }
                         }
                     }
+                }
+                if ($atomic_comparison_result && !$all_types_contain) {
+                    // A mixed parameter must not hide a hard mismatch in another parameter.
+                    $mixed_coercion = $all_failures_coercible && $some_failure_from_mixed;
+                    $atomic_comparison_result->type_coerced = $mixed_coercion;
+                    // Keep the mixed-parameter detail even when another parameter rules out coercion.
+                    $atomic_comparison_result->type_coerced_from_mixed = $some_failure_from_mixed;
                 }
                 return $all_types_contain;
             }
@@ -804,6 +815,11 @@ final class AtomicTypeComparator
         Atomic $type2_part,
         bool $allow_interface_equality = true,
     ): bool {
+        if ($type1_part instanceof TTypeVariable || $type2_part instanceof TTypeVariable) {
+            // A type variable can be identical to anything; its constraints
+            // are reconciled at the end of the surrounding function-like.
+            return true;
+        }
 
 
         if ((self::isLegacyTListLike($type1_part)

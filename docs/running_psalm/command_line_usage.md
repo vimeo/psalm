@@ -51,16 +51,18 @@ Running them together (e.g. `--threads=8 --diff`) will result in the fastest pos
 Psalm now offers a `psalm-review` tool which allows you to manually review issues one by one in your favorite IDE.  
 
 ```bash
-./vendor/bin/psalm-review report.json code|phpstorm|code-server [ inv|rev|[~-]IssueType1 ] [ [~-]IssueType2 ] ...
+./vendor/bin/psalm-review report.json [code|phpstorm|code-server] [ inv|rev|[~-]IssueType1 ] [ [~-]IssueType2 ] ...
 ```
 
 The tool may also be run using the main `psalm` entry point, useful for example when working with the phar:
 
 ```bash
-./vendor/bin/psalm.phar --review report.json code|phpstorm|code-server [ inv|rev|[~-]IssueType1 ] [ [~-]IssueType2 ] ...
+./vendor/bin/psalm.phar --review report.json [code|phpstorm|code-server] [ inv|rev|[~-]IssueType1 ] [ [~-]IssueType2 ] ...
 ```
 
-`psalm-review` parses the Psalm JSON report in report.json (generated using `vendor/bin/psalm --report=report.json`) and open the specified IDE at the line and column of the issue, one by one for all issues; press enter to go to the next issue, `q` to quit.  
+`psalm-review` parses the Psalm JSON report in report.json (generated using `vendor/bin/psalm --report=report.json`) and opens the specified IDE at the line and column of the issue, one by one for all issues; press enter to go to the next issue, `q` to quit.
+
+The IDE argument is optional when running inside a supported IDE's integrated terminal — PhpStorm, VS Code, and code-server are auto-detected via environment variables. When running from an external terminal, the IDE must be specified explicitly.
 
 The extra arguments may be used to filter only for issues of the specified types, or for all issues except the specified types (with the `~` or `-` inversion).  
 

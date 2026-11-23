@@ -221,3 +221,5 @@ $i->setData("test");
 // IfThisIsMismatch - Class is not a<int> as required by psalm-if-this-is
 $i->test();
 ```
+
+`@psalm-this-out` (and its aliases `@psalm-self-out`, `@phpstan-self-out` and `@phpstan-this-out`) also accepts a conditional type keyed off one of the method's parameters, e.g. `@phpstan-this-out ($key is null ? static<TKey|int, TValue> : $this)`. The branch is resolved from the argument passed at each call site, so a call that omits `$key` (or passes `null`) infers a different resulting type than one that passes a concrete value. `@psalm-if-this-is` does not support this form, since its condition must be known before the call's arguments are analyzed.

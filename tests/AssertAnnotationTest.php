@@ -1637,6 +1637,93 @@ final class AssertAnnotationTest extends TestCase
                         }
                     }',
             ],
+            'assertOnGenericMethodResolvesClassTemplate' => [
+                'code' => '<?php
+                    final class Item {}
+
+                    /**
+                     * @psalm-immutable
+                     * @template T
+                     */
+                    final class Box {
+                        /** @return T|null */
+                        public function first() { throw new LogicException(); }
+
+                        /** @psalm-assert-if-false null $this->first() */
+                        public function isNotEmpty(): bool { return true; }
+                    }
+
+                    /** @param Box<Item> $box */
+                    function check(Box $box): void {
+                        if ($box->isNotEmpty()) {
+                            $x = $box->first();
+                            /** @psalm-check-type-exact $x = Item */;
+                        }
+                    }',
+            ],
+            'assertOnConditionalReturnResolvesLikeCallWithoutArguments' => [
+                'code' => '<?php
+                    final class Item {}
+
+                    /**
+                     * @psalm-immutable
+                     * @template T
+                     */
+                    final class Box {
+                        /**
+                         * @template D
+                         * @param D|(Closure(): D)|null $default
+                         * @return ($default is Closure ? D : (D|T))
+                         */
+                        public function first($default = null) { throw new LogicException(); }
+
+                        /** @psalm-assert-if-false null $this->first() */
+                        public function isNotEmpty(): bool { return true; }
+                    }
+
+                    /** @param Box<Item> $box */
+                    function check(Box $box): void {
+                        if ($box->isNotEmpty()) {
+                            $x = $box->first();
+                            /** @psalm-check-type-exact $x = Item */;
+                        } else {
+                            $y = $box->first();
+                            /** @psalm-check-type-exact $y = null */;
+                        }
+                    }',
+            ],
+            'assertOnIfThisIsMethodKeepsDeclaredReturnType' => [
+                'code' => '<?php
+                    final class Item {}
+
+                    /**
+                     * @psalm-immutable
+                     * @template T
+                     */
+                    final class Box {
+                        /**
+                         * @template U
+                         * @psalm-if-this-is Box<U>
+                         * @param (Closure(): U)|null $default
+                         * @return U|null
+                         */
+                        public function first($default = null) { throw new LogicException(); }
+
+                        /** @psalm-assert-if-false null $this->first() */
+                        public function isNotEmpty(): bool { return true; }
+                    }
+
+                    /** @param Box<Item> $box */
+                    function check(Box $box): string {
+                        if ($box->isNotEmpty()) {
+                            $x = $box->first();
+                            // must stay possibly null: the declared type is kept, not resolved to never
+                            return $x === null ? "empty" : "item";
+                        }
+
+                        return "empty";
+                    }',
+            ],
             'assertTemplatedIterable' => [
                 'code' => '<?php
                     class Foo{}
@@ -3059,6 +3146,48 @@ final class AssertAnnotationTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'assertionAboutAPropertyOfAPropertyArgument' => [
+                'code' => '<?php
+                    final class HasP {
+                        public ?string $p = null;
+                    }
+
+                    final class Holder {
+                        public function __construct(public HasP $h) {}
+                    }
+
+                    /**
+                     * @psalm-assert-if-true !null $h->p
+                     */
+                    function hasP(HasP $h): bool { return $h->p !== null; }
+
+                    /**
+                     * @psalm-assert-if-false !null $h->p
+                     */
+                    function lacksP(HasP $h): bool { return $h->p === null; }
+
+                    /**
+                     * @psalm-assert !null $h->p
+                     */
+                    function assertHasP(HasP $h): void { if ($h->p === null) { throw new Exception(); } }
+
+                    function ifTrue(Holder $hd): string {
+                        return hasP($hd->h) ? $hd->h->p : "";
+                    }
+
+                    function ifFalse(Holder $hd): string {
+                        return lacksP($hd->h) ? "" : $hd->h->p;
+                    }
+
+                    function asserted(Holder $hd): string {
+                        assertHasP($hd->h);
+
+                        return $hd->h->p;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
         ];
     }
 
@@ -3474,6 +3603,38 @@ final class AssertAnnotationTest extends TestCase
                     function takesOne(int $_arg): void {}
                 ',
                 'error_message' => 'ImpureFunctionCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:40',
+            ],
+            'assertionAboutAPropertyOfANonVariableArgument' => [
+                'code' => '<?php
+                    final class HasP {
+                        public ?string $p = null;
+                    }
+
+                    /**
+                     * @psalm-assert-if-true !null $h->p
+                     */
+                    function hasP(HasP $h): bool { return $h->p !== null; }
+
+                    if (hasP(new HasP())) {}',
+                'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR . 'somefile.php:11:25 - Variable being asserted',
+            ],
+            'assertionAboutAPropertyOfANullableStaticPropertyArgument' => [
+                'code' => '<?php
+                    final class HasP {
+                        public ?string $p = null;
+                    }
+
+                    final class Holder {
+                        public static ?HasP $sh = null;
+                    }
+
+                    /**
+                     * @psalm-assert-if-true !null $h->p
+                     */
+                    function hasP(?HasP $h): bool { return $h !== null && $h->p !== null; }
+
+                    if (hasP(Holder::$sh)) {}',
+                'error_message' => 'Variable Holder::$sh is not an object so the assertion cannot be applied',
             ],
         ];
     }

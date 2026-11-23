@@ -21,6 +21,63 @@ final class FunctionCallTest extends TestCase
     public function providerValidCodeParse(): iterable
     {
         return [
+            'filterVarIntWithFloatLiteralsOutsideTheRangeOfAnInt' => [
+                'code' => '<?php
+                    $big = filter_var(1e30, FILTER_VALIDATE_INT);
+                    $notANumber = filter_var(NAN, FILTER_VALIDATE_INT);
+                    $whole = filter_var(5.0, FILTER_VALIDATE_INT);
+                    $bigMin = filter_var(5, FILTER_VALIDATE_INT, ["options" => ["min_range" => 1e30]]);
+                    $notANumberMax = filter_var(5, FILTER_VALIDATE_INT, ["options" => ["max_range" => NAN]]);
+                    $knownMinAndNotANumberMax = filter_var(
+                        5,
+                        FILTER_VALIDATE_INT,
+                        ["options" => ["min_range" => 0, "max_range" => NAN]],
+                    );
+                    $bigMinAndKnownMax = filter_var(
+                        5,
+                        FILTER_VALIDATE_INT,
+                        ["options" => ["min_range" => 1e30, "max_range" => 10]],
+                    );
+                    $knownRange = filter_var(5, FILTER_VALIDATE_INT, ["options" => ["min_range" => 0, "max_range" => 10]]);',
+                'assertions' => [
+                    '$big===' => 'false',
+                    '$notANumber===' => 'false',
+                    '$whole===' => '5',
+                    '$bigMin===' => 'false|int',
+                    '$notANumberMax===' => 'false|int',
+                    '$knownMinAndNotANumberMax===' => 'false|int',
+                    '$bigMinAndKnownMax===' => 'false|int',
+                    '$knownRange===' => '5',
+                ],
+            ],
+
+            'multibyteLiteralArgument' => [
+                'code' => '<?php
+                    function startsWithGreeting(string $s): bool {
+                        return str_starts_with($s, "здравствуй");
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'errorGetLastHasBacktraceSincePhp85' => [
+                'code' => '<?php
+                    $error = error_get_last();',
+                'assertions' => [
+                    '$error===' => 'array{file: string, line: int, message: string, trace?: list<array{args?: list<mixed>, class?: class-string, file?: string, function: string, line?: int, object?: object, type?: string}>, type: int}|null',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.5',
+            ],
+            'errorGetLastHasNoBacktraceBeforePhp85' => [
+                'code' => '<?php
+                    $error = error_get_last();',
+                'assertions' => [
+                    '$error===' => 'array{file: string, line: int, message: string, type: int}|null',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.4',
+            ],
             'callTemplatedFunctionWithUnionArgument' => [
                 'code' => '<?php
                     /** @template T */
@@ -2473,6 +2530,17 @@ final class FunctionCallTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '7.4',
             ],
+            'nativeConditionalUsesStringableArgument' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function test(Throwable $error): void {
+                        $result = mb_convert_encoding($error, 'UTF-8');
+                        /** @psalm-check-type-exact $result = false|string */
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => ['ImplicitToStringCast'],
+            ],
         ];
     }
 
@@ -2984,6 +3052,13 @@ final class FunctionCallTest extends TestCase
                 'code' => '<?php
                     function sayHello(string $format): void {
                         if (strpos("u", $format)) {}
+                    }',
+                'error_message' => 'InvalidLiteralArgument',
+            ],
+            'strposMultibyteLiteralFirstParam' => [
+                'code' => '<?php
+                    function sayHello(string $format): void {
+                        if (strpos("здравствуй мир", $format)) {}
                     }',
                 'error_message' => 'InvalidLiteralArgument',
             ],

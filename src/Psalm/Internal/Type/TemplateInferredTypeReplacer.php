@@ -6,6 +6,7 @@ namespace Psalm\Internal\Type;
 
 use InvalidArgumentException;
 use Psalm\Codebase;
+use Psalm\Internal\Type\Comparator\TypeComparisonResult;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Type;
 use Psalm\Type\Atomic;
@@ -28,6 +29,7 @@ use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTemplateParamClass;
 use Psalm\Type\Atomic\TTemplatePropertiesOf;
 use Psalm\Type\Atomic\TTemplateValueOf;
+use Psalm\Type\Atomic\TTypeVariable;
 use Psalm\Type\Atomic\TValueOf;
 use Psalm\Type\Union;
 use UnexpectedValueException;
@@ -269,6 +271,36 @@ final class TemplateInferredTypeReplacer
             }
 
             if ($atomic_type->extra_types) {
+                // a type variable cannot carry intersection types: resolve it
+                // through its accumulated bounds so the intersection lands on
+                // the concrete types behind it
+                $resolved_template_types = [];
+
+                foreach ($template_type->getAtomicTypes() as $atomic_template_type) {
+                    $resolved = null;
+
+                    if ($atomic_template_type instanceof TTypeVariable && $atomic_template_type->bounds) {
+                        if ($atomic_template_type->bounds->lower_bounds) {
+                            $resolved = TemplateStandinTypeReplacer::getMostSpecificTypeFromBounds(
+                                $atomic_template_type->bounds->lower_bounds,
+                                $codebase,
+                            );
+                        } elseif ($atomic_template_type->bounds->upper_bounds) {
+                            $resolved = $atomic_template_type->bounds->upper_bounds[0]->type;
+                        }
+                    }
+
+                    if ($resolved) {
+                        foreach ($resolved->getAtomicTypes() as $resolved_atomic_type) {
+                            $resolved_template_types[] = $resolved_atomic_type;
+                        }
+                    } else {
+                        $resolved_template_types[] = $atomic_template_type;
+                    }
+                }
+
+                $template_type = $template_type->getBuilder()->setTypes($resolved_template_types)->freeze();
+
                 $types = [];
                 foreach ($template_type->getAtomicTypes() as $atomic_template_type) {
                     if ($atomic_template_type instanceof TNamedObject
@@ -411,6 +443,8 @@ final class TemplateInferredTypeReplacer
 
         $if_template_type = null;
         $else_template_type = null;
+        $has_overlapping_candidate = false;
+        $has_unresolved_branch = false;
 
         $as_type = $atomic_type->as_type;
         $conditional_type = $atomic_type->conditional_type;
@@ -448,31 +482,49 @@ final class TemplateInferredTypeReplacer
                         || $conditional_type->getId() !== 'float')
                 ) {
                     $matching_if_types[] = $candidate_atomic_type;
-                } elseif (null === Type::intersectUnionTypes(
-                    $candidate,
-                    $conditional_type,
-                    $codebase,
-                    false,
-                    false,
-                )) {
-                    $matching_else_types[] = $candidate_atomic_type;
+                } else {
+                    $intersection = Type::intersectUnionTypes(
+                        $candidate,
+                        $conditional_type,
+                        $codebase,
+                        false,
+                        false,
+                    );
+                    if ($intersection !== null) {
+                        $has_overlapping_candidate = true;
+                        foreach ($intersection->getAtomicTypes() as $intersection_type) {
+                            $matching_if_types[] = $intersection_type;
+                        }
+                    }
+                    // Refine against the declared bound, not the condition's complement.
+                    // For example, mixed must become array before resolving key-of/value-of.
+                    // Keep candidates already within the bound to preserve template information.
+                    $else_candidate = UnionTypeComparator::isContainedBy($codebase, $candidate, $as_type)
+                        ? $candidate
+                        : Type::intersectUnionTypes($candidate, $as_type, $codebase);
+                    foreach (($else_candidate ?? $candidate)->getAtomicTypes() as $else_candidate_atomic) {
+                        $matching_else_types[] = $else_candidate_atomic;
+                    }
                 }
             }
 
             $if_candidate_type = $matching_if_types ? new Union($matching_if_types) : null;
             $else_candidate_type = $matching_else_types ? new Union($matching_else_types) : null;
 
+            $if_comparison_result = new TypeComparisonResult();
             if ($if_candidate_type
-                && UnionTypeComparator::isContainedBy(
+                && (UnionTypeComparator::isContainedBy(
                     $codebase,
                     $if_candidate_type,
                     $conditional_type,
                     false,
                     false,
-                    null,
+                    $if_comparison_result,
                     false,
                     false,
                 )
+                    // Unknown generic parameters cannot rule out the true branch.
+                    || $if_comparison_result->type_coerced_from_mixed)
             ) {
                 $if_template_type = $if_type;
 
@@ -490,8 +542,11 @@ final class TemplateInferredTypeReplacer
                     $refined_template_result,
                     $codebase,
                 );
+            } elseif ($if_candidate_type && $if_candidate_type->hasTemplateOrStatic()) {
+                $has_unresolved_branch = true;
             }
 
+            $else_comparison_result = new TypeComparisonResult();
             if ($else_candidate_type
                 && UnionTypeComparator::isContainedBy(
                     $codebase,
@@ -499,7 +554,7 @@ final class TemplateInferredTypeReplacer
                     $as_type,
                     false,
                     false,
-                    null,
+                    $else_comparison_result,
                     false,
                     false,
                 )
@@ -520,10 +575,17 @@ final class TemplateInferredTypeReplacer
                     $refined_template_result,
                     $codebase,
                 );
+            } elseif ($else_candidate_type
+                && ($else_candidate_type->hasTemplateOrStatic() || $else_comparison_result->type_coerced_from_mixed)
+            ) {
+                $has_unresolved_branch = true;
             }
         }
 
-        if (!$if_template_type && !$else_template_type) {
+        if ((!$if_template_type && !$else_template_type)
+            // Failure to refine an unresolved generic is not proof that its branch is impossible.
+            || ($has_overlapping_candidate && $has_unresolved_branch)
+        ) {
             $if_type = self::replace(
                 $if_type,
                 $template_result,

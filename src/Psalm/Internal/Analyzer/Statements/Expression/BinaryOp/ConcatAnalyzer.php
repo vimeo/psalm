@@ -17,6 +17,8 @@ use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\Comparator\AtomicTypeComparator;
 use Psalm\Internal\Type\Comparator\TypeComparisonResult;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
+use Psalm\Internal\Type\LiteralCast;
+use Psalm\Internal\Type\TemplateBound;
 use Psalm\Issue\FalseOperand;
 use Psalm\Issue\ImplicitToStringCast;
 use Psalm\Issue\ImpureMethodCall;
@@ -42,6 +44,7 @@ use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TNumericString;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateParam;
+use Psalm\Type\Atomic\TTypeVariable;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
@@ -169,7 +172,8 @@ final class ConcatAnalyzer
 
                     foreach ($left_type->getAtomicTypes() as $left_type_part) {
                         foreach ($right_type->getAtomicTypes() as $right_type_part) {
-                            $literal = $left_type_part->value . $right_type_part->value;
+                            $literal = LiteralCast::toString($left_type_part->value)
+                                . LiteralCast::toString($right_type_part->value);
                             if (strlen($literal) >= $config->max_string_length) {
                                 // Literal too long, use non-literal type instead
                                 $literal_concat = false;
@@ -379,6 +383,19 @@ final class ConcatAnalyzer
         $comparison_result = new TypeComparisonResult();
 
         foreach ($operand_type->getAtomicTypes() as $operand_type_part) {
+            if ($operand_type_part instanceof TTypeVariable) {
+                // a type variable concatenates, constrained from above to array-key
+                $statements_analyzer->type_variable_tracker->addBounds(
+                    [],
+                    [[$operand_type_part->name, new TemplateBound(Type::getArrayKey())]],
+                    new CodeLocation($statements_analyzer->getSource(), $operand),
+                );
+
+                $has_valid_operand = true;
+
+                continue;
+            }
+
             if ($operand_type_part instanceof TTemplateParam && !$operand_type_part->as->isString()) {
                 IssueBuffer::maybeAdd(
                     new MixedOperand(

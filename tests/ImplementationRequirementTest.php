@@ -8,6 +8,8 @@ use Override;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
+use const DIRECTORY_SEPARATOR;
+
 final class ImplementationRequirementTest extends TestCase
 {
     use ValidCodeAnalysisTestTrait;
@@ -43,6 +45,22 @@ final class ImplementationRequirementTest extends TestCase
                 trait ImposesImplementationRequirements { }
             ',
         );
+
+        $this->addFile(
+            'phpstan_trait.php',
+            '<?php
+                namespace ImplementationRequirements\Trait;
+
+                use ImplementationRequirements\Base\A as MyAliasedInterfaceA;
+                use ImplementationRequirements\Base\B as MyAliasedInterfaceB;
+
+                /**
+                 * @phpstan-require-implements MyAliasedInterfaceA
+                 * @phpstan-require-implements MyAliasedInterfaceB
+                 */
+                trait ImposesPhpstanImplementationRequirements { }
+            ',
+        );
     }
 
     #[Override]
@@ -57,6 +75,17 @@ final class ImplementationRequirementTest extends TestCase
 
                     class Valid implements A, B {
                         use ImposesImplementationRequirements;
+                    }
+                ',
+            ],
+            'implementsAllRequirementsWithPhpstanTags' => [
+                'code' => '<?php
+                    use ImplementationRequirements\Base\A;
+                    use ImplementationRequirements\Base\B;
+                    use ImplementationRequirements\Trait\ImposesPhpstanImplementationRequirements;
+
+                    class Valid implements A, B {
+                        use ImposesPhpstanImplementationRequirements;
                     }
                 ',
             ],
@@ -87,6 +116,24 @@ final class ImplementationRequirementTest extends TestCase
                     }
                 ',
                 'error_message' => 'requires using class to implement',
+            ],
+            'onlyImplementsOneRequirementWithPhpstanTags' => [
+                'code' => '<?php
+                    use ImplementationRequirements\Trait\ImposesPhpstanImplementationRequirements;
+                    use ImplementationRequirements\Base\A;
+
+                    class Invalid implements A {
+                        use ImposesPhpstanImplementationRequirements;
+                    }
+                ',
+                'error_message' => 'requires using class to implement',
+            ],
+            'unparseableImplementationRequirementIsAnIssue' => [
+                'code' => '<?php
+                    /** @psalm-require-implements SomeInterface< */
+                    trait T {}',
+                'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:27 -'
+                    . ' No generic params provided for type in docblock for T',
             ],
         ];
     }

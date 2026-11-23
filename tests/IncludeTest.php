@@ -7,6 +7,9 @@ namespace Psalm\Tests;
 use Psalm\Config;
 use Psalm\Exception\CodeException;
 use Psalm\Internal\Analyzer\FileAnalyzer;
+use Psalm\Internal\Provider\ClassLikeStorageProvider;
+use Psalm\Storage\ClassLikeStorage;
+use ReflectionProperty;
 
 use function getcwd;
 use function preg_quote;
@@ -27,7 +30,10 @@ final class IncludeTest extends TestCase
         array $files_to_check,
         bool $hoist_constants = false,
         array $ignored_issues = [],
+        string $php_version = '7.4',
     ): void {
+        $this->project_analyzer->setPhpVersion($php_version, 'tests');
+
         $codebase = $this->project_analyzer->getCodebase();
 
         foreach ($files as $file_path => $contents) {
@@ -102,7 +108,7 @@ final class IncludeTest extends TestCase
     }
 
     /**
-     * @return array<string,array{files:array<string,string>,files_to_check:array<int,string>,hoist_constants?:bool,ignored_issues?:list<string>}>
+     * @return array<string,array{files:array<string,string>,files_to_check:array<int,string>,hoist_constants?:bool,ignored_issues?:list<string>,php_version?:string}>
      */
     public function providerTestValidIncludes(): array
     {
@@ -458,6 +464,18 @@ final class IncludeTest extends TestCase
                     (string) getcwd() . DIRECTORY_SEPARATOR . 'file2.php',
                 ],
                 'hoist_constants' => true,
+            ],
+            'hoistConstantsSkipsFirstClassCallableDefine' => [
+                'files' => [
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'file1.php' => '<?php
+                        define(...);',
+                ],
+                'files_to_check' => [
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'file1.php',
+                ],
+                'hoist_constants' => true,
+                'ignored_issues' => [],
+                'php_version' => '8.1',
             ],
             'duplicateClasses' => [
                 'files' => [
@@ -936,5 +954,53 @@ final class IncludeTest extends TestCase
                 'directories' => [(string) getcwd() . DIRECTORY_SEPARATOR],
             ],
         ];
+    }
+
+    /**
+     * Regression test: InterfaceAnalyzer must not crash when storage was
+     * overwritten by a class with the same FQCN (e.g. loaded via reflection
+     * from vendor). The interface's methods are absent from the overwritten
+     * storage, so InterfaceAnalyzer must skip them gracefully.
+     */
+    public function testInterfaceAnalysisDoesNotCrashWhenStorageOverwritten(): void
+    {
+        $codebase = $this->project_analyzer->getCodebase();
+        $config = $codebase->config;
+
+        $config->setCustomErrorLevel('DuplicateClass', Config::REPORT_SUPPRESS);
+        $config->throw_exception = false;
+
+        $file_path = (string) getcwd() . DIRECTORY_SEPARATOR . 'file1.php';
+        $this->addFile($file_path, '<?php
+            namespace Foo;
+            interface Bar {
+                public function someMethod(): void;
+            }
+        ');
+
+        $codebase->addFilesToAnalyze([$file_path => $file_path]);
+        $codebase->scanFiles();
+
+        // Simulate reflection overwriting the interface storage with a class
+        // that lacks the interface's methods (this is what happens when a
+        // vendor class with the same FQCN is loaded via reflection).
+        $overwritten = new ClassLikeStorage('Foo\\Bar');
+        $overwritten->is_interface = false;
+        $overwritten->populated = true;
+
+        $ref = new ReflectionProperty(ClassLikeStorageProvider::class, 'storage');
+        /** @var array<string, ClassLikeStorage> $all */
+        $all = $ref->getValue();
+        $all['foo\\bar'] = $overwritten;
+        $ref->setValue(null, $all);
+
+        $file_analyzer = new FileAnalyzer(
+            $this->project_analyzer,
+            $file_path,
+            $config->shortenFileName($file_path),
+        );
+        // This must not crash — previously threw UnexpectedValueException
+        // from MethodAnalyzer when the method was missing from storage.
+        $file_analyzer->analyze();
     }
 }

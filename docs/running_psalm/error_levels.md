@@ -106,6 +106,7 @@ Level 5 and above allows a more non-verifiable code, and higher levels are even 
  - [UnusedMethodCall](issues/UnusedMethodCall.md)
 ## Errors that only appear at level 1
 
+ - [IncompatibleTypeParameters](issues/IncompatibleTypeParameters.md)
  - [InvalidClassConstantType](issues/InvalidClassConstantType.md)
  - [LessSpecificClassConstantType](issues/LessSpecificClassConstantType.md)
  - [LessSpecificReturnType](issues/LessSpecificReturnType.md)
@@ -293,6 +294,7 @@ These issues are treated as errors at level 6 and below.
  - [NullArgument](issues/NullArgument.md)
  - [NullArrayOffset](issues/NullArrayOffset.md)
  - [OverriddenFinalConstant](issues/OverriddenFinalConstant.md)
+ - [OverriddenFinalProperty](issues/OverriddenFinalProperty.md)
  - [OverriddenInterfaceConstant](issues/OverriddenInterfaceConstant.md)
  - [TooManyTemplateParams](issues/TooManyTemplateParams.md)
  - [TraitMethodSignatureMismatch](issues/TraitMethodSignatureMismatch.md)

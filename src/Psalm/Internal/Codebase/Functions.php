@@ -29,12 +29,15 @@ use function explode;
 use function implode;
 use function in_array;
 use function is_bool;
+use function pathinfo;
 use function rtrim;
 use function str_contains;
 use function str_ends_with;
 use function str_starts_with;
 use function strtolower;
 use function substr;
+
+use const PATHINFO_EXTENSION;
 
 /**
  * @internal
@@ -105,6 +108,8 @@ final class Functions
             if (isset($file_storage->functions[$function_id])) {
                 return $file_storage->functions[$function_id];
             }
+        } elseif ($root_file_path !== null) {
+            $file_storage = $this->file_storage_provider->get($root_file_path);
         }
 
         if (!$root_file_path || !$checked_file_path) {
@@ -148,9 +153,50 @@ final class Functions
         return $declaring_file_storage->functions[$function_id];
     }
 
+    /**
+     * Like getStorage(), for looking up a function referenced in a file outside of analysis (e.g. by the language
+     * server). Storage of builtin functions is only registered lazily during analysis, which may not have happened
+     * in this process, and never for functions only known from the callmap (e.g. of extensions not loaded here).
+     *
+     * @param non-empty-lowercase-string $function_id
+     */
+    public function getStorageForSymbolLookup(string $function_id, string $file_path): FunctionStorage
+    {
+        try {
+            return $this->getStorage(null, $function_id, $file_path, $file_path);
+        } catch (UnexpectedValueException $e) {
+            // a function declared for the file whose storage is missing is broken, not just unregistered
+            if (isset($this->file_storage_provider->get($file_path)->declaring_function_ids[$function_id])) {
+                throw $e;
+            }
+
+            return $this->reflection->createFunctionStorage($function_id) ?? throw $e;
+        }
+    }
+
     public function addGlobalFunction(string $function_id, FunctionStorage $storage): void
     {
         self::$stubbed_functions[strtolower($function_id)] = $storage;
+    }
+
+    /**
+     * Whether scanned PHP code (a project or autoloaded file, not a stub) declares the function, as
+     * a polyfill of a native function does. The native storage (a stub or the runtime's reflection)
+     * usually takes precedence over such a declaration, so the scanned files are asked directly.
+     */
+    public function isDeclaredInCode(string $function_id): bool
+    {
+        $function_id = strtolower($function_id);
+
+        foreach (FileStorageProvider::getAll() as $file_path => $file_storage) {
+            if (isset($file_storage->functions[$function_id])
+                && pathinfo($file_path, PATHINFO_EXTENSION) !== 'phpstub'
+            ) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**

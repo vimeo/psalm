@@ -61,6 +61,7 @@ use Psalm\Storage\MethodStorage;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TBool;
 use Psalm\Type\Atomic\TClassConstant;
+use Psalm\Type\Atomic\TIntRange;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
@@ -77,7 +78,6 @@ use function array_pop;
 use function array_reverse;
 use function array_values;
 use function count;
-use function dirname;
 use function error_log;
 use function explode;
 use function implode;
@@ -87,6 +87,7 @@ use function is_numeric;
 use function is_string;
 use function krsort;
 use function ksort;
+use function min;
 use function preg_match;
 use function preg_replace;
 use function str_contains;
@@ -353,10 +354,10 @@ final class Codebase
             $parser_cache_provider = $this->statements_provider->parser_cache_provider;
 
             foreach ($candidate_files as $candidate_file_path) {
-                $hash = $parser_cache_provider->getHash($candidate_file_path);
-                if ($hash !== null &&
-                    $hash !== $this->file_provider->getContents($candidate_file_path)
-                ) {
+                if ($parser_cache_provider->hasChanged(
+                    $candidate_file_path,
+                    $this->file_provider->getContents($candidate_file_path),
+                )) {
                     $diff_files[] = $candidate_file_path;
                 }
             }
@@ -461,10 +462,7 @@ final class Codebase
         return $this->statements_provider->getStatementsForFile(
             $file_path,
             $this->analysis_php_version_id,
-            $this->diff_methods
-                || $this->diff_run
-                || $this->language_server
-                || $this->file_reference_provider->cache?->persistent,
+            $this->diff_methods || $this->diff_run || $this->language_server,
             $progress ?? $this->progress,
         );
     }
@@ -486,12 +484,25 @@ final class Codebase
 
     public function exhumeClassLikeStorage(string $fq_classlike_name, string $file_path): void
     {
+        $this->tryExhumeClassLikeStorage($fq_classlike_name, $file_path);
+    }
+
+    /**
+     * @internal
+     * @return bool false if the cache has no storage for the class-like in the file
+     */
+    public function tryExhumeClassLikeStorage(string $fq_classlike_name, string $file_path): bool
+    {
         $file_contents = $this->file_provider->getContents($file_path);
         $storage = $this->classlike_storage_provider->exhume(
             $fq_classlike_name,
             $file_path,
             $file_contents,
         );
+
+        if ($storage === null) {
+            return false;
+        }
 
         if ($storage->is_trait) {
             $this->classlikes->addFullyQualifiedTraitName($storage->name, $file_path);
@@ -502,6 +513,8 @@ final class Codebase
         } else {
             $this->classlikes->addFullyQualifiedClassName($storage->name, $file_path);
         }
+
+        return true;
     }
 
     public static function getPsalmTypeFromReflection(?ReflectionType $type): Union
@@ -912,7 +925,7 @@ final class Codebase
             return null;
         }
 
-        return $this->functions->getStorage(null, $function_id);
+        return $this->functions->getStorageForSymbolLookup($function_id, $file_path);
     }
 
     /**
@@ -1048,7 +1061,7 @@ final class Codebase
                 return null;
             }
 
-            $function = $this->functions->getStorage(null, $function_id);
+            $function = $this->functions->getStorageForSymbolLookup($function_id, $reference->file_path);
 
             return new PHPMarkdownContent(
                 $function->getHoverMarkdown(),
@@ -1217,8 +1230,7 @@ final class Codebase
                     return null;
                 }
 
-                return $this->functions->getStorage(null, $function_id)
-                    ->location;
+                return $this->functions->getStorageForSymbolLookup($function_id, $reference->file_path)->location;
             }
 
             return $this->classlike_storage_provider->get(
@@ -1328,9 +1340,6 @@ final class Codebase
             return null;
         }
 
-        $start_pos = null;
-        $end_pos = null;
-
         ksort($argument_map);
 
         foreach ($argument_map as $start_pos => [$end_pos, $possible_reference, $possible_argument_number]) {
@@ -1346,7 +1355,7 @@ final class Codebase
             $argument_number = $possible_argument_number;
         }
 
-        if ($reference === null || $start_pos === null || $end_pos === null || $argument_number === null) {
+        if ($reference === null || $argument_number === null) {
             return null;
         }
 
@@ -1387,7 +1396,7 @@ final class Codebase
                     $function_storage = $this->functions->getStorage(
                         null,
                         strtolower($function_symbol),
-                        dirname($file_path),
+                        $file_path,
                         $file_path,
                     );
                 } else {
@@ -2210,5 +2219,70 @@ final class Codebase
     public static function transformPhpVersionId(int $php_version_id, int $div): int
     {
         return intdiv($php_version_id, $div);
+    }
+
+    /**
+     * Renders a php_version_id (e.g. 8_05_00) as a `major.minor` string for messages.
+     */
+    public static function getPhpVersionString(int $php_version_id): string
+    {
+        return self::transformPhpVersionId($php_version_id, 10_000)
+            . '.' . self::transformPhpVersionId($php_version_id % 10_000, 100);
+    }
+
+    /**
+     * Whether a native class-like stubbed with a newer `@since` than the analysed PHP version is
+     * provided by a polyfill the project's composer autoloader can load (e.g. `Stringable` from
+     * symfony/polyfill-php80). Such polyfills are usually never scanned, since the stub already
+     * defines the class, so the autoloader is asked directly.
+     */
+    public function isClassLikePolyfilled(string $fq_classlike_name): bool
+    {
+        return $this->config->getComposerFilePathForClassLike($fq_classlike_name) !== false;
+    }
+
+    /**
+     * The lowest PHP version the code at this point runs on, when a guard raised it above the
+     * analysed one: a PHP_VERSION_ID comparison, or a `*_exists()` check of a newer native symbol.
+     * Null otherwise.
+     */
+    public function getGuardedPhpVersionId(?Context $context): ?int
+    {
+        $type = $context?->vars_in_scope[Context::PHP_VERSION_ID_VAR_ID] ?? null;
+
+        if ($type === null) {
+            return null;
+        }
+
+        $min = null;
+        foreach ($type->getAtomicTypes() as $atomic) {
+            if ($atomic instanceof TLiteralInt) {
+                $atomic_min = $atomic->value;
+            } elseif ($atomic instanceof TIntRange && $atomic->min_bound !== null) {
+                $atomic_min = $atomic->min_bound;
+            } else {
+                return null;
+            }
+
+            $min = $min === null ? $atomic_min : min($min, $atomic_min);
+        }
+
+        return $min > $this->analysis_php_version_id ? $min : null;
+    }
+
+    /**
+     * The tail shared by the Undefined* messages reported when a native symbol (introduced in
+     * `$since_php_version_id`) is used on an older analysed PHP version without a polyfill. Prefix
+     * it with the symbol, e.g. "Function foo ". `symfony/polyfill-php<major><minor>` is the polyfill
+     * package for that version (e.g. symfony/polyfill-php81).
+     */
+    public function getUnavailableSymbolMessageSuffix(int $since_php_version_id): string
+    {
+        $since = self::getPhpVersionString($since_php_version_id);
+
+        return 'is not defined for the analysed PHP version '
+            . self::getPhpVersionString($this->analysis_php_version_id)
+            . ' (it was introduced in PHP ' . $since . '); install symfony/polyfill-php'
+            . str_replace('.', '', $since) . ', define a polyfill, or raise the analysed PHP version';
     }
 }

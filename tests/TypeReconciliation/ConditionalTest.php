@@ -3187,6 +3187,180 @@ final class ConditionalTest extends TestCase
                 'assertions' => [],
                 'ignored_issues' => ['InvalidReturnType'],
             ],
+            'mixedVarNotNarrowedAfterAndConditionWithInstanceof' => [
+                'code' => '<?php
+                    /** @var mixed $u */
+                    $u = $_GET["u"];
+
+                    if ($u instanceof \Countable && !$u->count()) {
+                        $inside = $u;
+                    } else {
+                        $inside = null;
+                    }
+
+                    $after = $u;',
+                'assertions' => [
+                    '$inside' => 'Countable|null',
+                    '$after' => 'mixed',
+                ],
+                'ignored_issues' => ['MixedAssignment'],
+            ],
+            'mixedVarNotNarrowedAfterAndConditionWithComparison' => [
+                'code' => '<?php
+                    /** @var mixed $u */
+                    $u = $_GET["u"];
+
+                    if ($u instanceof \Countable && $u->count() > 0) {
+                        echo 1;
+                    }
+
+                    $after = $u;',
+                'assertions' => [
+                    '$after' => 'mixed',
+                ],
+                'ignored_issues' => ['MixedAssignment'],
+            ],
+            'mixedVarWrittenByReferenceInIfStaysUnioned' => [
+                'code' => '<?php
+                    /** @var mixed $u */
+                    $u = $_GET["u"];
+
+                    if (rand(0, 1)) {
+                        preg_match("/a/", "a", $u);
+                    }
+
+                    $after = $u;',
+                'assertions' => [
+                    '$after' => 'array<array-key, string>|mixed',
+                ],
+                'ignored_issues' => ['MixedAssignment'],
+            ],
+            'mixedVarAssignedInAndConditionStaysUnioned' => [
+                'code' => '<?php
+                    function accept(array $a): bool {
+                        return (bool) $a;
+                    }
+
+                    /** @var mixed $u */
+                    $u = $_GET["u"];
+
+                    if (rand(0, 1) && accept($u = [])) {
+                        echo 1;
+                    }
+
+                    $after = $u;',
+                'assertions' => [
+                    '$after' => 'array<never, never>|mixed',
+                ],
+                'ignored_issues' => ['MixedAssignment'],
+            ],
+            'mixedVarNotNarrowedAfterAndConditionInElseif' => [
+                'code' => '<?php
+                    /** @var mixed $u */
+                    $u = $_GET["u"];
+
+                    if (rand(0, 1)) {
+                        echo 0;
+                    } elseif ($u instanceof \Countable && $u->count() > 0) {
+                        echo 1;
+                    }
+
+                    $after = $u;',
+                'assertions' => [
+                    '$after' => 'mixed',
+                ],
+                'ignored_issues' => ['MixedAssignment'],
+            ],
+            'mixedVarAssignedInElseifBodyStaysUnioned' => [
+                'code' => '<?php
+                    /** @var mixed $u */
+                    $u = $_GET["u"];
+
+                    if (rand(0, 1)) {
+                        echo 0;
+                    } elseif ($u instanceof \Countable && rand(0, 1)) {
+                        $u = 5;
+                    }
+
+                    $after = $u;',
+                'assertions' => [
+                    '$after' => 'int|mixed',
+                ],
+                'ignored_issues' => ['MixedAssignment'],
+            ],
+            'unionVarStillNarrowedAfterAndConditionWithInstanceof' => [
+                'code' => '<?php
+                    /** @var \Countable|string $u */
+                    $u = $_GET["u"];
+
+                    if ($u instanceof \Countable && !$u->count()) {
+                        $inside = $u;
+                    } else {
+                        $inside = null;
+                    }
+
+                    $after = $u;',
+                'assertions' => [
+                    '$inside' => 'Countable|null',
+                    '$after' => 'Countable|string',
+                ],
+            ],
+            'firstClassCallableInCountComparison' => [
+                'code' => '<?php
+                    while (count(...) > 1) {}
+                    while (sizeof(...) <= 1) {}
+                    if (count(...) === 1) {}
+                    if (1 !== sizeof(...)) {}
+                    if (2 <= count(...)) {}
+                    if (3 > count(...)) {}
+                    if (count(...) == 1) {}
+                    if (1 != sizeof(...)) {}',
+                'assertions' => [],
+                'ignored_issues' => ['RedundantCondition', 'TypeDoesNotContainType'],
+                'php_version' => '8.1',
+            ],
+            'firstClassCallableInGettypeComparison' => [
+                'code' => '<?php
+                    if (gettype(...) === "x") {}
+                    if ("x" !== gettype(...)) {}
+                    if (get_debug_type(...) === "x") {}
+                    if ("x" != get_debug_type(...)) {}',
+                'assertions' => [],
+                'ignored_issues' => [
+                    'TypeDoesNotContainType',
+                    'RedundantCondition',
+                ],
+                'php_version' => '8.1',
+            ],
+            'firstClassCallableInGetClassComparison' => [
+                'code' => '<?php
+                    class A {
+                        public function f(): void {
+                            if (get_class(...) === A::class) {}
+                            if (A::class !== get_class(...)) {}
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [
+                    'TypeDoesNotContainType',
+                    'RedundantCondition',
+                ],
+                'php_version' => '8.1',
+            ],
+            'getClassInequalityWithoutArgumentsNarrowsThis' => [
+                'code' => '<?php
+                    class A {
+                        public function f(): void {
+                            if (get_class() !== B::class) {
+                                return;
+                            }
+                            $this->onlyB();
+                        }
+                    }
+                    final class B extends A {
+                        public function onlyB(): void {}
+                    }',
+            ],
         ];
     }
 

@@ -54942,36 +54942,69 @@ return array (
   array (
     0 => 'array<string, array<string, mixed>>|false',
   ),
+  'newrelic_accept_distributed_trace_headers' => 
+  array (
+    0 => 'bool',
+    'headers' => 'array<array-key, mixed>',
+    'transport_type=' => 'string',
+  ),
+  'newrelic_accept_distributed_trace_payload' => 
+  array (
+    0 => 'bool',
+    'payload' => 'string',
+    'transport_type=' => 'string',
+  ),
+  'newrelic_accept_distributed_trace_payload_httpsafe' => 
+  array (
+    0 => 'bool',
+    'payload' => 'string',
+    'transport_type=' => 'string',
+  ),
   'newrelic_add_custom_parameter' => 
   array (
     0 => 'bool',
+    'parameter' => 'string',
+    'value' => 'null|scalar',
+  ),
+  'newrelic_add_custom_span_parameter' => 
+  array (
+    0 => 'bool',
     'key' => 'string',
-    'value' => 'scalar',
+    'value' => 'null|scalar',
   ),
   'newrelic_add_custom_tracer' => 
   array (
     0 => 'bool',
-    'function_name' => 'string',
+    'functionname' => 'string',
   ),
   'newrelic_background_job' => 
   array (
     0 => 'void',
-    'flag=' => 'bool',
+    'background=' => 'bool',
   ),
   'newrelic_capture_params' => 
   array (
     0 => 'void',
     'enable=' => 'bool',
   ),
+  'newrelic_create_distributed_trace_payload' => 
+  array (
+    0 => 'object',
+  ),
   'newrelic_custom_metric' => 
   array (
     0 => 'bool',
-    'metric_name' => 'string',
+    'metric' => 'string',
     'value' => 'float',
   ),
   'newrelic_disable_autorum' => 
   array (
-    0 => 'true',
+    0 => 'null|true',
+  ),
+  'newrelic_enable_params' => 
+  array (
+    0 => 'void',
+    'enable=' => 'bool',
   ),
   'newrelic_end_of_transaction' => 
   array (
@@ -54985,12 +55018,20 @@ return array (
   'newrelic_get_browser_timing_footer' => 
   array (
     0 => 'string',
-    'include_tags=' => 'bool',
+    'with_tags=' => 'bool',
   ),
   'newrelic_get_browser_timing_header' => 
   array (
     0 => 'string',
-    'include_tags=' => 'bool',
+    'with_tags=' => 'bool',
+  ),
+  'newrelic_get_linking_metadata' => 
+  array (
+    0 => 'array<string, string>',
+  ),
+  'newrelic_get_trace_metadata' => 
+  array (
+    0 => 'array{span_id?: string, trace_id?: string}',
   ),
   'newrelic_ignore_apdex' => 
   array (
@@ -55000,6 +55041,15 @@ return array (
   array (
     0 => 'void',
   ),
+  'newrelic_insert_distributed_trace_headers' => 
+  array (
+    0 => 'bool',
+    '&rw headers' => 'array<array-key, mixed>',
+  ),
+  'newrelic_is_sampled' => 
+  array (
+    0 => 'bool',
+  ),
   'newrelic_name_transaction' => 
   array (
     0 => 'bool',
@@ -55008,36 +55058,41 @@ return array (
   'newrelic_notice_error' => 
   array (
     0 => 'void',
-    'message' => 'string',
-    'exception=' => 'Exception|Throwable',
+    'exception' => 'Throwable|string',
+    'errstr=' => 'Throwable|null',
   ),
   'newrelic_notice_error\'1' => 
   array (
     0 => 'void',
-    'unused_1' => 'string',
-    'message' => 'string',
-    'unused_2' => 'string',
-    'unused_3' => 'int',
-    'unused_4=' => 'mixed',
+    'exception' => 'int',
+    'errstr' => 'string',
+    'fname' => 'string',
+    'line_nr' => 'int',
+    'ctx=' => 'mixed',
   ),
   'newrelic_record_custom_event' => 
   array (
     0 => 'void',
-    'name' => 'string',
-    'attributes' => 'array<array-key, mixed>',
+    'event_type' => 'string',
+    'parameters' => 'array<string, null|scalar>',
   ),
   'newrelic_record_datastore_segment' => 
   array (
     0 => 'mixed',
-    'func' => 'callable',
-    'parameters' => 'array<array-key, mixed>',
+    'callback' => 'callable',
+    'parameters' => 'array{collection?: null|scalar, databaseName?: null|scalar, host?: null|scalar, inputQuery?: null|scalar, inputQueryLabel?: null|scalar, operation?: null|scalar, portPathOrId?: null|scalar, product: string, query?: null|scalar, ...<array-key, mixed>}',
   ),
   'newrelic_set_appname' => 
   array (
     0 => 'bool',
-    'name' => 'string',
-    'license=' => 'string',
+    'appname' => 'string',
+    'license_key=' => 'string',
     'xmit=' => 'bool',
+  ),
+  'newrelic_set_error_group_callback' => 
+  array (
+    0 => 'bool',
+    'callback' => 'callable(array<string, mixed>, array<string, mixed>):string',
   ),
   'newrelic_set_user_attributes' => 
   array (
@@ -55046,11 +55101,16 @@ return array (
     'account' => 'string',
     'product' => 'string',
   ),
+  'newrelic_set_user_id' => 
+  array (
+    0 => 'bool',
+    'uuid' => 'string',
+  ),
   'newrelic_start_transaction' => 
   array (
     0 => 'bool',
     'appname' => 'string',
-    'license=' => 'string',
+    'license_key=' => 'string',
   ),
   'next' => 
   array (
@@ -81776,232 +81836,11 @@ return array (
     0 => 'string',
     'file_name' => 'string',
   ),
-  'ssh2_auth_agent' => 
-  array (
-    0 => 'bool',
-    'session' => 'resource',
-    'username' => 'string',
-  ),
-  'ssh2_auth_hostbased_file' => 
-  array (
-    0 => 'bool',
-    'session' => 'resource',
-    'username' => 'string',
-    'hostname' => 'string',
-    'pubkeyfile' => 'string',
-    'privkeyfile' => 'string',
-    'passphrase=' => 'string',
-    'local_username=' => 'string',
-  ),
-  'ssh2_auth_none' => 
-  array (
-    0 => 'array<array-key, string>|bool',
-    'session' => 'resource',
-    'username' => 'string',
-  ),
-  'ssh2_auth_password' => 
-  array (
-    0 => 'bool',
-    'session' => 'resource',
-    'username' => 'string',
-    'password' => 'string',
-  ),
-  'ssh2_auth_pubkey_file' => 
-  array (
-    0 => 'bool',
-    'session' => 'resource',
-    'username' => 'string',
-    'pubkeyfile' => 'string',
-    'privkeyfile' => 'string',
-    'passphrase=' => 'string',
-  ),
-  'ssh2_connect' => 
-  array (
-    0 => 'false|resource',
-    'host' => 'string',
-    'port=' => 'int',
-    'methods=' => 'array<array-key, mixed>',
-    'callbacks=' => 'array<array-key, mixed>',
-  ),
-  'ssh2_disconnect' => 
-  array (
-    0 => 'bool',
-    'session' => 'resource',
-  ),
-  'ssh2_exec' => 
-  array (
-    0 => 'false|resource',
-    'session' => 'resource',
-    'command' => 'string',
-    'pty=' => 'string',
-    'env=' => 'array<array-key, mixed>',
-    'width=' => 'int',
-    'height=' => 'int',
-    'width_height_type=' => 'int',
-  ),
-  'ssh2_fetch_stream' => 
-  array (
-    0 => 'false|resource',
-    'channel' => 'resource',
-    'streamid' => 'int',
-  ),
-  'ssh2_fingerprint' => 
-  array (
-    0 => 'false|string',
-    'session' => 'resource',
-    'flags=' => 'int',
-  ),
-  'ssh2_forward_accept' => 
-  array (
-    0 => 'false|resource',
-    'listener' => 'resource',
-  ),
-  'ssh2_forward_listen' => 
-  array (
-    0 => 'false|resource',
-    'session' => 'resource',
-    'port' => 'int',
-    'host=' => 'string',
-    'max_connections=' => 'string',
-  ),
-  'ssh2_methods_negotiated' => 
-  array (
-    0 => 'array<array-key, mixed>|false',
-    'session' => 'resource',
-  ),
   'ssh2_poll' => 
   array (
     0 => 'int',
     '&polldes' => 'array<array-key, mixed>',
     'timeout=' => 'int',
-  ),
-  'ssh2_publickey_add' => 
-  array (
-    0 => 'bool',
-    'pkey' => 'resource',
-    'algoname' => 'string',
-    'blob' => 'string',
-    'overwrite=' => 'bool',
-    'attributes=' => 'array<array-key, mixed>',
-  ),
-  'ssh2_publickey_init' => 
-  array (
-    0 => 'false|resource',
-    'session' => 'resource',
-  ),
-  'ssh2_publickey_list' => 
-  array (
-    0 => 'array<array-key, mixed>|false',
-    'pkey' => 'resource',
-  ),
-  'ssh2_publickey_remove' => 
-  array (
-    0 => 'bool',
-    'pkey' => 'resource',
-    'algoname' => 'string',
-    'blob' => 'string',
-  ),
-  'ssh2_scp_recv' => 
-  array (
-    0 => 'bool',
-    'session' => 'resource',
-    'remote_file' => 'string',
-    'local_file' => 'string',
-  ),
-  'ssh2_scp_send' => 
-  array (
-    0 => 'bool',
-    'session' => 'resource',
-    'local_file' => 'string',
-    'remote_file' => 'string',
-    'create_mode=' => 'int',
-  ),
-  'ssh2_sftp' => 
-  array (
-    0 => 'false|resource',
-    'session' => 'resource',
-  ),
-  'ssh2_sftp_chmod' => 
-  array (
-    0 => 'bool',
-    'sftp' => 'resource',
-    'filename' => 'string',
-    'mode' => 'int',
-  ),
-  'ssh2_sftp_lstat' => 
-  array (
-    0 => 'array{0: int, 10: int, 11: int, 12: int, 1: int, 2: int, 3: int, 4: int, 5: int, 6: int, 7: int, 8: int, 9: int, atime: int, blksize: int, blocks: int, ctime: int, dev: int, gid: int, ino: int, mode: int, mtime: int, nlink: int, rdev: int, size: int, uid: int}|false',
-    'sftp' => 'resource',
-    'path' => 'string',
-  ),
-  'ssh2_sftp_mkdir' => 
-  array (
-    0 => 'bool',
-    'sftp' => 'resource',
-    'dirname' => 'string',
-    'mode=' => 'int',
-    'recursive=' => 'bool',
-  ),
-  'ssh2_sftp_readlink' => 
-  array (
-    0 => 'false|non-falsy-string',
-    'sftp' => 'resource',
-    'link' => 'string',
-  ),
-  'ssh2_sftp_realpath' => 
-  array (
-    0 => 'false|non-falsy-string',
-    'sftp' => 'resource',
-    'filename' => 'string',
-  ),
-  'ssh2_sftp_rename' => 
-  array (
-    0 => 'bool',
-    'sftp' => 'resource',
-    'from' => 'string',
-    'to' => 'string',
-  ),
-  'ssh2_sftp_rmdir' => 
-  array (
-    0 => 'bool',
-    'sftp' => 'resource',
-    'dirname' => 'string',
-  ),
-  'ssh2_sftp_stat' => 
-  array (
-    0 => 'array{0: int, 10: int, 11: int, 12: int, 1: int, 2: int, 3: int, 4: int, 5: int, 6: int, 7: int, 8: int, 9: int, atime: int, blksize: int, blocks: int, ctime: int, dev: int, gid: int, ino: int, mode: int, mtime: int, nlink: int, rdev: int, size: int, uid: int}|false',
-    'sftp' => 'resource',
-    'path' => 'string',
-  ),
-  'ssh2_sftp_symlink' => 
-  array (
-    0 => 'bool',
-    'sftp' => 'resource',
-    'target' => 'string',
-    'link' => 'string',
-  ),
-  'ssh2_sftp_unlink' => 
-  array (
-    0 => 'bool',
-    'sftp' => 'resource',
-    'filename' => 'string',
-  ),
-  'ssh2_shell' => 
-  array (
-    0 => 'false|resource',
-    'session' => 'resource',
-    'termtype=' => 'string',
-    'env=' => 'array<array-key, mixed>',
-    'width=' => 'int',
-    'height=' => 'int',
-    'width_height_type=' => 'int',
-  ),
-  'ssh2_tunnel' => 
-  array (
-    0 => 'false|resource',
-    'session' => 'resource',
-    'host' => 'string',
-    'port' => 'int',
   ),
   'stat' => 
   array (

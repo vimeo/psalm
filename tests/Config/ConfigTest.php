@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Psalm\Tests\Config;
 
 use Composer\Autoload\ClassLoader;
+use DOMDocument;
+use DOMXPath;
 use ErrorException;
 use Override;
 use Psalm\CodeLocation\Raw;
@@ -23,6 +25,8 @@ use Psalm\Internal\Scanner\FileScanner;
 use Psalm\Issue\TooManyArguments;
 use Psalm\Issue\UndefinedFunction;
 use Psalm\Tests\Config\Plugin\FileTypeSelfRegisteringPlugin;
+use Psalm\Tests\Config\Plugin\TestPluginIssue;
+use Psalm\Tests\Config\Plugin\TestPluginIssueDefaultLevel;
 use Psalm\Tests\Internal\Provider\FakeParserCacheProvider;
 use Psalm\Tests\TestCase;
 use Psalm\Tests\TestConfig;
@@ -47,8 +51,6 @@ use const DIRECTORY_SEPARATOR;
 
 final class ConfigTest extends TestCase
 {
-    protected static TestConfig $config;
-
     protected ProjectAnalyzer $project_analyzer;
 
     /** @var callable(int, string, string=, int=, array=):bool|null */
@@ -63,7 +65,7 @@ final class ConfigTest extends TestCase
         global $argv;
         $argv = [];
 
-        self::$config = new TestConfig();
+        new TestConfig();
     }
 
     #[Override]
@@ -1185,6 +1187,53 @@ final class ConfigTest extends TestCase
         $this->analyzeFile($file_path, new Context());
     }
 
+    public function testEveryExtensionOfTheSchemaCanBeEnabled(): void
+    {
+        $schema = new DOMDocument();
+        $schema->load(dirname(__DIR__, 2) . '/config.xsd');
+        $xpath = new DOMXPath($schema);
+        $xpath->registerNamespace('xs', 'http://www.w3.org/2001/XMLSchema');
+        $names = [];
+        foreach ($xpath->query('//xs:simpleType[@name="ExtensionType"]//xs:enumeration/@value') ?: [] as $name) {
+            if ($name->nodeValue !== null) {
+                $names[] = $name->nodeValue;
+            }
+        }
+
+        $this->assertContains('memcached', $names);
+
+        $default_config = TestConfig::loadFromXML(
+            dirname(__DIR__, 2),
+            '<?xml version="1.0"?>
+            <psalm>
+                <projectFiles>
+                    <directory name="src" />
+                </projectFiles>
+            </psalm>',
+        );
+
+        $extensions = '';
+        foreach ($names as $name) {
+            $this->assertArrayHasKey($name, $default_config->php_extensions);
+            $extensions .= '<extension name="' . $name . '"/>';
+        }
+
+        $config = TestConfig::loadFromXML(
+            dirname(__DIR__, 2),
+            '<?xml version="1.0"?>
+            <psalm>
+                <projectFiles>
+                    <directory name="src" />
+                </projectFiles>
+                <enableExtensions>' . $extensions . '</enableExtensions>
+            </psalm>',
+        );
+
+        foreach ($names as $name) {
+            $this->assertTrue($config->php_extensions[$name], $name);
+        }
+    }
+
     public function testValidThrowInvalidCatch(): void
     {
         $this->expectExceptionMessage('InvalidCatch');
@@ -2006,6 +2055,72 @@ final class ConfigTest extends TestCase
                     'Function Foo\Bar\baz does not exist',
                     new Raw('aaa', 'aaa.php', 'aaa.php', 1, 2),
                     'foo\bar\baz',
+                ),
+            ),
+        );
+    }
+
+    public function testPluginIssueErrorLevelReportedAsInfoWhenBelowConfigLevel(): void
+    {
+        $config = Config::loadFromXML(
+            (string) getcwd(),
+            <<<XML
+            <?xml version="1.0"?>
+            <psalm errorLevel="3">
+            </psalm>
+            XML,
+        );
+
+        $this->assertSame(
+            Config::REPORT_INFO,
+            $config->getReportingLevelForIssue(
+                new TestPluginIssue(
+                    'test message',
+                    new Raw('aaa', 'aaa.php', 'aaa.php', 1, 2),
+                ),
+            ),
+        );
+    }
+
+    public function testPluginIssueErrorLevelReportedAsErrorWhenAtConfigLevel(): void
+    {
+        $config = Config::loadFromXML(
+            (string) getcwd(),
+            <<<XML
+            <?xml version="1.0"?>
+            <psalm errorLevel="2">
+            </psalm>
+            XML,
+        );
+
+        $this->assertSame(
+            Config::REPORT_ERROR,
+            $config->getReportingLevelForIssue(
+                new TestPluginIssue(
+                    'test message',
+                    new Raw('aaa', 'aaa.php', 'aaa.php', 1, 2),
+                ),
+            ),
+        );
+    }
+
+    public function testPluginIssueDefaultErrorLevelRemainsError(): void
+    {
+        $config = Config::loadFromXML(
+            (string) getcwd(),
+            <<<XML
+            <?xml version="1.0"?>
+            <psalm errorLevel="3">
+            </psalm>
+            XML,
+        );
+
+        $this->assertSame(
+            Config::REPORT_ERROR,
+            $config->getReportingLevelForIssue(
+                new TestPluginIssueDefaultLevel(
+                    'test message',
+                    new Raw('aaa', 'aaa.php', 'aaa.php', 1, 2),
                 ),
             ),
         );

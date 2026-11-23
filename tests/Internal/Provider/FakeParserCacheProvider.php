@@ -29,4 +29,13 @@ final class FakeParserCacheProvider extends ParserCacheProvider
     {
         return null;
     }
+
+    /**
+     * @psalm-pure
+     */
+    #[Override]
+    public function hasChanged(string $file_path, string $file_contents): bool
+    {
+        return false;
+    }
 }

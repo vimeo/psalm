@@ -273,6 +273,7 @@ final class BinaryOpAnalyzer
                 && $stmt->left instanceof PhpParser\Node\Expr\FuncCall
                 && $stmt->left->name instanceof PhpParser\Node\Name
                 && $stmt->left->name->getParts() === ['substr']
+                && !CallAnalyzer::isPartialFunctionApplication($stmt->left)
                 && isset($stmt->left->getArgs()[1])
                 && $stmt_right_type
                 && $stmt_right_type->hasLiteralString()

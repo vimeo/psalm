@@ -117,7 +117,7 @@ final class ClassConstAnalyzer
                             $context->self,
                             $context->calling_method_id,
                             $statements_analyzer->getSuppressedIssues(),
-                            new ClassLikeNameOptions(false, true),
+                            new ClassLikeNameOptions(false, true, context: $context),
                         ) === false) {
                             return true;
                         }
@@ -143,13 +143,11 @@ final class ClassConstAnalyzer
                 );
             }
 
-            if ($codebase->classlikes->classExists($fq_class_name)) {
-                $fq_class_name = $codebase->classlikes->getUnAliasedName($fq_class_name);
-            }
-
             if ($stmt->name instanceof PhpParser\Node\Identifier && $stmt->name->name === 'class') {
                 if ($codebase->classlikes->classExists($fq_class_name)) {
-                    $const_class_storage = $codebase->classlike_storage_provider->get($fq_class_name);
+                    $const_class_storage = $codebase->classlike_storage_provider->get(
+                        $codebase->classlikes->getUnAliasedName($fq_class_name),
+                    );
                     $fq_class_name = $const_class_storage->name;
 
                     if ($const_class_storage->deprecated && $fq_class_name !== $context->self) {
@@ -190,6 +188,8 @@ final class ClassConstAnalyzer
 
                 return true;
             }
+
+            $fq_class_name = $codebase->classlikes->getUnAliasedName($fq_class_name);
 
             // if we're ignoring that the class doesn't exist, exit anyway
             if (!$codebase->classlikes->classOrInterfaceOrEnumExists($fq_class_name)) {
@@ -511,9 +511,7 @@ final class ClassConstAnalyzer
                 return true;
             }
 
-            if ($codebase->classlikes->classExists($fq_class_name)) {
-                $fq_class_name = $codebase->classlikes->getUnAliasedName($fq_class_name);
-            }
+            $fq_class_name = $codebase->classlikes->getUnAliasedName($fq_class_name);
 
             $moved_class = false;
 
@@ -904,7 +902,9 @@ final class ClassConstAnalyzer
             if ($parent_const_storage !== null) {
                 if ($const_storage->location !== null && $interface_const_storage !== null) {
                     assert($parent_classlike_storage !== null);
-                    if (!isset($parent_class_storage->class_implements[strtolower($parent_classlike_storage->name)])) {
+                    if (!isset($parent_class_storage->class_implements[strtolower($parent_classlike_storage->name)])
+                        && $interface_const_storage !== $parent_const_storage
+                    ) {
                         IssueBuffer::maybeAdd(
                             new AmbiguousConstantInheritance(
                                 "Ambiguous inheritance of {$class_storage->name}::{$const_name} from "

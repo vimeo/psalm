@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<roave-bc-check xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:noNamespaceSchemaLocation="vendor-bin/bcc/vendor/roave/backward-compatibility-check/Resources/schema.xsd">
+    <baseline>
+        <!-- The list of the extensions Psalm has stubs for grows with each new stub (memcached). -->
+        <ignored-regex>#^\[BC\] CHANGED: Property Psalm\\Config\#\$php_extensions changed default value from #</ignored-regex>
+    </baseline>
+</roave-bc-check>

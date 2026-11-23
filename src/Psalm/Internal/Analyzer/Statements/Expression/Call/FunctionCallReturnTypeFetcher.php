@@ -624,11 +624,19 @@ final class FunctionCallReturnTypeFetcher
         }
 
         if ($function_storage->return_source_params) {
+            // A first-class callable has no argument list yet, and CallLike::getArgs() asserts
+            // against being called on one. Nothing downstream can propagate taint through arguments
+            // that do not exist, so stop here rather than crash under zend.assertions=1.
+            if ($stmt->isFirstClassCallable()) {
+                return $function_call_node;
+            }
+
             $removed_taints = $function_storage->removed_taints;
 
-            if ($function_id === 'preg_replace' && count($stmt->getArgs()) > 2) {
-                $first_stmt_type = $statements_analyzer->node_data->getType($stmt->getArgs()[0]->value);
-                $second_stmt_type = $statements_analyzer->node_data->getType($stmt->getArgs()[1]->value);
+            $args = $stmt->getArgs();
+            if ($function_id === 'preg_replace' && count($args) > 2) {
+                $first_stmt_type = $statements_analyzer->node_data->getType($args[0]->value);
+                $second_stmt_type = $statements_analyzer->node_data->getType($args[1]->value);
 
                 if ($first_stmt_type
                     && $second_stmt_type

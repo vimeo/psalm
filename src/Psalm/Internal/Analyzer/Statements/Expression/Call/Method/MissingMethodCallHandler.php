@@ -14,7 +14,6 @@ use Psalm\Internal\Analyzer\Statements\Expression\Call\ClassTemplateParamCollect
 use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\MethodIdentifier;
-use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TypeExpander;
 use Psalm\Node\Expr\VirtualArray;
@@ -30,6 +29,8 @@ use Psalm\Type\Union;
 
 use function array_map;
 use function array_merge;
+use function array_reverse;
+use function count;
 
 /**
  * @internal
@@ -64,6 +65,20 @@ final class MissingMethodCallHandler
             }
 
             return null;
+        }
+
+        $found_method_and_class_storage = self::findPseudoMethodAndClassStorages(
+            $codebase,
+            $class_storage,
+            $method_name_lc,
+        );
+
+        // Merged before the return type provider short-circuit, which would skip it otherwise
+        if ($found_method_and_class_storage && !$context->isSuppressingExceptions($statements_analyzer)) {
+            $context->mergeFunctionExceptions(
+                $found_method_and_class_storage[0],
+                new CodeLocation($statements_analyzer->getSource(), $stmt->name),
+            );
         }
 
         if ($codebase->methods->return_type_provider->has($fq_class_name)) {
@@ -104,12 +119,6 @@ final class MissingMethodCallHandler
             }
         }
 
-        $found_method_and_class_storage = self::findPseudoMethodAndClassStorages(
-            $codebase,
-            $class_storage,
-            $method_name_lc,
-        );
-
         if ($found_method_and_class_storage) {
             $result->has_valid_method_call_type = true;
             $result->existent_method_ids[$method_id->__toString()] = true;
@@ -125,6 +134,11 @@ final class MissingMethodCallHandler
                 !$statements_analyzer->isStatic() && $method_id->fq_class_name === $context->self,
             );
 
+            $template_result = new TemplateResult(
+                $pseudo_method_storage->template_types ?? [],
+                $found_generic_params ?? [],
+            );
+
             ArgumentsAnalyzer::analyze(
                 $statements_analyzer,
                 $stmt->getArgs(),
@@ -132,7 +146,7 @@ final class MissingMethodCallHandler
                 (string) $method_id,
                 true,
                 $context,
-                $found_generic_params ? new TemplateResult([], $found_generic_params) : null,
+                $template_result,
             );
 
             ArgumentsAnalyzer::checkArgumentsMatch(
@@ -142,21 +156,19 @@ final class MissingMethodCallHandler
                 $pseudo_method_storage->params,
                 $pseudo_method_storage,
                 null,
-                new TemplateResult([], $found_generic_params ?: []),
+                $template_result,
                 new CodeLocation($statements_analyzer, $stmt),
                 $context,
             );
 
             if ($pseudo_method_storage->return_type) {
-                $return_type_candidate = $pseudo_method_storage->return_type;
-
-                if ($found_generic_params) {
-                    $return_type_candidate = TemplateInferredTypeReplacer::replace(
-                        $return_type_candidate,
-                        new TemplateResult([], $found_generic_params),
-                        $codebase,
-                    );
-                }
+                $return_type_candidate = MethodCallReturnTypeFetcher::replaceTemplateTypes(
+                    $pseudo_method_storage->return_type,
+                    $template_result,
+                    $method_id,
+                    count($stmt->getArgs()),
+                    $codebase,
+                );
 
                 $return_type_candidate = TypeExpander::expandUnion(
                     $codebase,
@@ -278,6 +290,13 @@ final class MissingMethodCallHandler
                 return;
             }
 
+            if (!$context->isSuppressingExceptions($statements_analyzer)) {
+                $context->mergeFunctionExceptions(
+                    $pseudo_method_storage,
+                    new CodeLocation($statements_analyzer, $stmt->name),
+                );
+            }
+
             $found_generic_params = ClassTemplateParamCollector::collect(
                 $codebase,
                 $defining_class_storage,
@@ -287,6 +306,11 @@ final class MissingMethodCallHandler
                 !$statements_analyzer->isStatic() && $method_id->fq_class_name === $context->self,
             );
 
+            $template_result = new TemplateResult(
+                $pseudo_method_storage->template_types ?? [],
+                $found_generic_params ?? [],
+            );
+
             if (ArgumentsAnalyzer::analyze(
                 $statements_analyzer,
                 $stmt->getArgs(),
@@ -294,7 +318,7 @@ final class MissingMethodCallHandler
                 (string) $method_id,
                 true,
                 $context,
-                $found_generic_params ? new TemplateResult([], $found_generic_params) : null,
+                $template_result,
             ) === false) {
                 return;
             }
@@ -306,7 +330,7 @@ final class MissingMethodCallHandler
                 $pseudo_method_storage->params,
                 $pseudo_method_storage,
                 null,
-                new TemplateResult([], $found_generic_params ?: []),
+                $template_result,
                 new CodeLocation($statements_analyzer, $stmt->name),
                 $context,
             ) === false) {
@@ -314,15 +338,13 @@ final class MissingMethodCallHandler
             }
 
             if ($pseudo_method_storage->return_type) {
-                $return_type_candidate = $pseudo_method_storage->return_type;
-
-                if ($found_generic_params) {
-                    $return_type_candidate = TemplateInferredTypeReplacer::replace(
-                        $return_type_candidate,
-                        new TemplateResult([], $found_generic_params),
-                        $codebase,
-                    );
-                }
+                $return_type_candidate = MethodCallReturnTypeFetcher::replaceTemplateTypes(
+                    $pseudo_method_storage->return_type,
+                    $template_result,
+                    $method_id,
+                    count($stmt->getArgs()),
+                    $codebase,
+                );
 
                 if ($all_intersection_return_type) {
                     $return_type_candidate = Type::intersectUnionTypes(
@@ -435,7 +457,12 @@ final class MissingMethodCallHandler
         }
 
         $ancestors = $static_class_storage->class_implements;
-        foreach ($static_class_storage->namedMixins as $namedObject) {
+        // First match wins here, so the nearest mixins come first.
+        $named_mixins = [
+            ...$static_class_storage->namedMixins,
+            ...array_reverse($static_class_storage->transitiveNamedMixins),
+        ];
+        foreach ($named_mixins as $namedObject) {
             $type = $namedObject->value;
             if ($type) {
                 $ancestors[$type] = true;

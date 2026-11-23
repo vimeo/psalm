@@ -47,6 +47,12 @@ final class ClassConstantStorage
         public readonly array $attributes = [],
         public readonly array $suppressed_issues = [],
         public readonly ?string $description = null,
+        /**
+         * The `analysis_php_version_id` at which this constant became available (from its own
+         * `@since` tag). Null unless explicitly versioned; the owning class's
+         * {@see ClassLikeStorage::$since_php_version_id} applies otherwise.
+         */
+        public readonly ?int $since_php_version_id = null,
     ) {
     }
 

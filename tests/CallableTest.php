@@ -17,6 +17,15 @@ final class CallableTest extends TestCase
     public function providerValidCodeParse(): iterable
     {
         return [
+            'namedOptionalCallableParam' => [
+                'code' => '<?php
+                    /** @param callable(int $i=): void $closure */
+                    function takesOptional(callable $closure): void {
+                        $closure();
+                    }
+                    takesOptional(function (int $i = 0): void {});',
+                'assertions' => [],
+            ],
             'byRefUseVar' => [
                 'code' => '<?php
                     /** @return void */
@@ -1154,6 +1163,87 @@ final class CallableTest extends TestCase
                     foo([A::class, "bar"]);
                     $a = new A();
                     foo([$a, "bar"]);',
+            ],
+            'polymorphicStaticMethodArrayCallable' => [
+                'code' => '<?php
+                    class Id {
+                        /**
+                         * @template B
+                         * @param B $b
+                         * @return B
+                         */
+                        public static function id($b) {
+                            return $b;
+                        }
+                    }
+
+                    /**
+                     * @param callable(int): int $f
+                     */
+                    function bar(callable $f): void {}
+
+                    bar([Id::class, "id"]);',
+            ],
+            'polymorphicInstanceMethodArrayCallable' => [
+                'code' => '<?php
+                    class Identity {
+                        /**
+                         * @template B
+                         * @param B $b
+                         * @return B
+                         */
+                        public function id($b) {
+                            return $b;
+                        }
+                    }
+
+                    /**
+                     * @param callable(string): string $f
+                     */
+                    function bar(callable $f): void {}
+
+                    $id = new Identity();
+                    bar([$id, "id"]);',
+            ],
+            'polymorphicMultiTemplateArrayCallable' => [
+                'code' => '<?php
+                    class Pair {
+                        /**
+                         * @template A
+                         * @template B
+                         * @param A $a
+                         * @param B $b
+                         * @return array{A, B}
+                         */
+                        public static function make($a, $b) {
+                            return [$a, $b];
+                        }
+                    }
+
+                    /**
+                     * @param callable(int, string): array{int, string} $f
+                     */
+                    function bar(callable $f): void {}
+
+                    bar([Pair::class, "make"]);',
+            ],
+            'polymorphicArrayCallableWithArrayMap' => [
+                'code' => '<?php
+                    class Id {
+                        /**
+                         * @template B
+                         * @param B $b
+                         * @return B
+                         */
+                        public static function id($b) {
+                            return $b;
+                        }
+                    }
+
+                    $result = array_map([Id::class, "id"], [1, 2, 3]);',
+                'assertions' => [
+                    '$result' => 'list{int, int, int}',
+                ],
             ],
             'callableMethodArrayCallableMissingTypes' => [
                 'code' => '<?php
@@ -2485,6 +2575,27 @@ final class CallableTest extends TestCase
                     function foo(callable $c): void {}
 
                     foo([A::class, "::barr"]);',
+                'error_message' => 'InvalidArgument',
+            ],
+            'polymorphicArrayCallableMismatchedReturn' => [
+                'code' => '<?php
+                    class Id {
+                        /**
+                         * @template B
+                         * @param B $b
+                         * @return B
+                         */
+                        public static function id($b) {
+                            return $b;
+                        }
+                    }
+
+                    /**
+                     * @param callable(int): string $f
+                     */
+                    function bar(callable $f): void {}
+
+                    bar([Id::class, "id"]);',
                 'error_message' => 'InvalidArgument',
             ],
             'undefinedCallableMethodArrayWithoutClass' => [

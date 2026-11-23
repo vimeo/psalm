@@ -5,9 +5,13 @@ declare(strict_types=1);
 namespace Psalm\Tests;
 
 use Override;
+use Psalm\Context;
+use Psalm\IssueBuffer;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\InvalidCodeAnalysisWithIssuesTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
+
+use const DIRECTORY_SEPARATOR;
 
 final class MixinAnnotationTest extends TestCase
 {
@@ -622,6 +626,411 @@ final class MixinAnnotationTest extends TestCase
                     '$c' => 'B',
                 ],
             ],
+            'nestedMixinResolvesTransitiveMethod' => [
+                'code' => '<?php
+                    namespace T;
+
+                    class QueryB {
+                        public function whereNull(string $c): static { return $this; }
+                    }
+
+                    /** @mixin \T\QueryB */
+                    class EloquentB {}
+
+                    /** @mixin \T\EloquentB */
+                    class ClassHost {}
+
+                    /** @mixin \T\EloquentB */
+                    interface IfaceContract {}
+
+                    function direct(EloquentB $q): void   { $q->whereNull("x"); }
+                    function viaClass(ClassHost $q): void { $q->whereNull("x"); }
+                    function viaIface(IfaceContract $q): void { $q->whereNull("x"); }',
+            ],
+            'nestedMixinResolvesReturnType' => [
+                'code' => '<?php
+                    namespace T;
+
+                    class Base {
+                        public function value(): int { return 1; }
+                    }
+
+                    /** @mixin \T\Base */
+                    class Middle {}
+
+                    /** @mixin \T\Middle */
+                    class Top {}
+
+                    $top = new Top();
+                    $result = $top->value();',
+                'assertions' => [
+                    '$result' => 'int',
+                ],
+            ],
+            'nestedMixinDirectShadowsTransitive' => [
+                'code' => '<?php
+                    namespace T;
+
+                    class Deep {
+                        public function foo(): int { return 1; }
+                    }
+
+                    /** @mixin \T\Deep */
+                    class Near {
+                        public function foo(): string { return ""; }
+                    }
+
+                    /** @mixin \T\Near */
+                    class Host {}
+
+                    $host = new Host();
+                    $result = $host->foo();',
+                'assertions' => [
+                    '$result' => 'string',
+                ],
+            ],
+            'mutualMixinsDoNotRecurseInfinitely' => [
+                'code' => '<?php
+                    namespace T;
+
+                    /** @mixin \T\Pong */
+                    class Ping {
+                        public function ping(): void {}
+                    }
+
+                    /** @mixin \T\Ping */
+                    class Pong {
+                        public function pong(): void {}
+                    }
+
+                    function test(Ping $p): void {
+                        $p->ping();
+                        $p->pong();
+                    }',
+            ],
+            'nestedMixinStaticCall' => [
+                'code' => '<?php
+                    namespace T;
+
+                    class StaticBase {
+                        public static function make(): int { return 1; }
+                    }
+
+                    /** @mixin \T\StaticBase */
+                    class StaticMiddle {}
+
+                    /** @mixin \T\StaticMiddle */
+                    class StaticTop {}
+
+                    $result = StaticTop::make();',
+                'assertions' => [
+                    '$result' => 'int',
+                ],
+            ],
+            'nestedMixinPropertyFetch' => [
+                'code' => '<?php
+                    namespace T;
+
+                    class PropBase {
+                        public int $count = 0;
+                    }
+
+                    /** @mixin \T\PropBase */
+                    class PropMiddle {}
+
+                    /** @mixin \T\PropMiddle */
+                    class PropTop {}
+
+                    $top = new PropTop();
+                    $result = $top->count;',
+                'assertions' => [
+                    '$result' => 'int',
+                ],
+            ],
+            'templatedMixinPropertyFetchViaThisInSubclass' => [
+                'code' => '<?php
+                    namespace T;
+
+                    /** @property string $headline */
+                    class Post {
+                        public function __get(string $name): string { return ""; }
+                    }
+
+                    /**
+                     * @template T of object
+                     * @mixin T
+                     */
+                    abstract class Wrapper {
+                        public function __get(string $name): int { return 0; }
+                    }
+
+                    /** @extends Wrapper<Post> */
+                    final class PostWrapper extends Wrapper {
+                        public function title(): string {
+                            $result = $this->headline;
+                            /** @psalm-check-type-exact $result = string */
+                            return $result;
+                        }
+                    }',
+            ],
+            'templatedMixinPropertyFetchViaGenericReceiver' => [
+                'code' => '<?php
+                    namespace T;
+
+                    /** @property string $headline */
+                    class Post {
+                        public function __get(string $name): string { return ""; }
+                    }
+
+                    /**
+                     * @template T of object
+                     * @mixin T
+                     */
+                    abstract class Wrapper {
+                        public function __get(string $name): int { return 0; }
+                    }
+
+                    /** @param Wrapper<Post> $w */
+                    function test(Wrapper $w): string {
+                        $result = $w->headline;
+                        /** @psalm-check-type-exact $result = string */
+                        return $result;
+                    }',
+            ],
+            'templatedMixinPropertyFetchViaSubclassReceiver' => [
+                'code' => '<?php
+                    namespace T;
+
+                    /** @property string $headline */
+                    class Post {
+                        public function __get(string $name): string { return ""; }
+                    }
+
+                    /**
+                     * @template T of object
+                     * @mixin T
+                     */
+                    abstract class Wrapper {
+                        public function __get(string $name): int { return 0; }
+                    }
+
+                    /** @extends Wrapper<Post> */
+                    final class PostWrapper extends Wrapper {}
+
+                    function test(PostWrapper $w): string {
+                        $result = $w->headline;
+                        /** @psalm-check-type-exact $result = string */
+                        return $result;
+                    }',
+            ],
+            'templatedMixinUnresolvedKeepsIntersectionFallback' => [
+                'code' => '<?php
+                    namespace T;
+
+                    /**
+                     * @template T of object
+                     * @mixin T
+                     */
+                    class Host {}
+
+                    class HasProp {
+                        public int $views = 0;
+                    }
+
+                    /** @param Host&HasProp $x */
+                    function test(Host $x): int {
+                        return $x->views;
+                    }',
+            ],
+            'templatedMixinResolvedWithoutMatchKeepsIntersectionFallback' => [
+                'code' => '<?php
+                    namespace T;
+
+                    /**
+                     * @template T of object
+                     * @mixin T
+                     */
+                    class Host {}
+
+                    class EmptyTarget {}
+
+                    class HasProp {
+                        public int $views = 0;
+                    }
+
+                    /** @param Host<EmptyTarget>&HasProp $x */
+                    function test(Host $x): int {
+                        return $x->views;
+                    }',
+            ],
+            'templatedMixinNamedMixinKeepsPrecedenceForProperties' => [
+                'code' => '<?php
+                    namespace T;
+
+                    class ParentTarget {
+                        public int $views = 0;
+                    }
+
+                    class LocalTarget {
+                        public string $views = "";
+                    }
+
+                    /**
+                     * @template T of object
+                     * @mixin T
+                     */
+                    class Host {}
+
+                    /**
+                     * @extends Host<ParentTarget>
+                     * @mixin LocalTarget
+                     */
+                    class Child extends Host {}
+
+                    $child = new Child();
+                    $result = $child->views;',
+                'assertions' => [
+                    '$result' => 'string',
+                ],
+            ],
+            'templatedMixinPropertyFetchRealProperty' => [
+                'code' => '<?php
+                    namespace T;
+
+                    class Post {
+                        public int $views = 0;
+                    }
+
+                    /**
+                     * @template T of object
+                     * @mixin T
+                     */
+                    abstract class Wrapper {}
+
+                    /** @extends Wrapper<Post> */
+                    final class PostWrapper extends Wrapper {}
+
+                    $w = new PostWrapper();
+                    $result = $w->views;',
+                'assertions' => [
+                    '$result' => 'int',
+                ],
+            ],
+            'nestedMixinDiamondResolvesSharedTarget' => [
+                'code' => '<?php
+                    namespace T;
+
+                    class Shared {
+                        public function shared(): int { return 1; }
+                    }
+
+                    /** @mixin \T\Shared */
+                    class LeftArm {}
+
+                    /** @mixin \T\Shared */
+                    class RightArm {}
+
+                    /**
+                     * @mixin \T\LeftArm
+                     * @mixin \T\RightArm
+                     */
+                    class Diamond {}
+
+                    $d = new Diamond();
+                    $result = $d->shared();',
+                'assertions' => [
+                    '$result' => 'int',
+                ],
+            ],
+            'nestedMixinTargetInheritsMixinFromParent' => [
+                'code' => '<?php
+                    namespace T;
+
+                    class GrandChildMethods {
+                        public function deep(): int { return 1; }
+                    }
+
+                    /** @mixin \T\GrandChildMethods */
+                    class MixinParent {}
+
+                    class MixinChild extends MixinParent {}
+
+                    /** @mixin \T\MixinChild */
+                    class HostDeclaredFirst {}
+
+                    $host = new HostDeclaredFirst();
+                    $result = $host->deep();',
+                'assertions' => [
+                    '$result' => 'int',
+                ],
+            ],
+            'nestedMixinLaterSiblingWinsAtSameDepth' => [
+                'code' => '<?php
+                    namespace T;
+
+                    class SibTargetA { public function val(): int { return 1; } }
+                    class SibTargetB { public function val(): string { return ""; } }
+
+                    /** @mixin \T\SibTargetA */
+                    class SibLeft {}
+
+                    /** @mixin \T\SibTargetB */
+                    class SibRight {}
+
+                    /**
+                     * @mixin \T\SibLeft
+                     * @mixin \T\SibRight
+                     */
+                    class SibHost {}
+
+                    $host = new SibHost();
+                    $result = $host->val();',
+                'assertions' => [
+                    // SibRight is declared after SibLeft, so its transitively mixed-in val() wins, matching
+                    // the analyzers last-match-wins precedence for same-depth mixins.
+                    '$result' => 'string',
+                ],
+            ],
+            'nestedMixinPseudoMethodViaMagicCall' => [
+                'code' => '<?php
+                    namespace T;
+
+                    /** @method string pseudo() */
+                    class PseudoBase {
+                        public function __call(string $n, array $a) {}
+                    }
+
+                    /** @mixin \T\PseudoBase */
+                    class PseudoMiddle {}
+
+                    /** @mixin \T\PseudoMiddle */
+                    class PseudoTop {
+                        public function __call(string $n, array $a) {}
+                    }
+
+                    $result = (new PseudoTop())->pseudo();',
+                'assertions' => [
+                    '$result' => 'string',
+                ],
+            ],
+            'PHP81-firstClassCallableStaticCallForwardedThroughMixin' => [
+                'code' => '<?php
+                    class Builder {
+                        public function has(string $relation): self { return $this; }
+                    }
+
+                    /** @mixin Builder */
+                    class Model {
+                        public static function __callStatic(string $name, array $args): mixed {
+                            return (new Builder())->$name(...$args);
+                        }
+                    }
+
+                    $has = Model::has(...);',
+                'assertions' => [
+                    '$has' => 'impure-Closure(string):Builder',
+                ],
+            ],
         ];
     }
 
@@ -656,6 +1065,80 @@ final class MixinAnnotationTest extends TestCase
                     }
 
                     (new A)->foo;',
+                'error_message' => 'UndefinedMagicPropertyFetch',
+            ],
+            'templatedMixinPropertyFetchMissingOnResolvedMixin' => [
+                'code' => '<?php
+                    namespace T;
+
+                    /** @property string $headline */
+                    class Post {
+                        public function __get(string $name): string { return ""; }
+                    }
+
+                    /**
+                     * @template T of object
+                     * @mixin T
+                     */
+                    abstract class Wrapper {
+                        public function __get(string $name): int { return 0; }
+                    }
+
+                    /** @extends Wrapper<Post> */
+                    final class PostWrapper extends Wrapper {}
+
+                    function test(PostWrapper $w): void {
+                        echo $w->missing;
+                    }',
+                'error_message' => 'UndefinedMagicPropertyFetch',
+            ],
+            'templatedMixinPropertyFetchMissingOnResolvedMixinViaThis' => [
+                'code' => '<?php
+                    namespace T;
+
+                    class Post {
+                        public int $views = 0;
+                    }
+
+                    /**
+                     * @template T of object
+                     * @mixin T
+                     */
+                    abstract class Wrapper {}
+
+                    /** @extends Wrapper<Post> */
+                    final class PostWrapper extends Wrapper {
+                        public function test(): void {
+                            echo $this->missing;
+                        }
+                    }',
+                'error_message' => 'UndefinedThisPropertyFetch',
+            ],
+            'templatedMixinPropertyFetchUnionIsNotPicked' => [
+                'code' => '<?php
+                    namespace T;
+
+                    /** @property string $headline */
+                    class A {
+                        public function __get(string $name): string { return ""; }
+                    }
+
+                    class B {}
+
+                    /**
+                     * @template T of object
+                     * @mixin T
+                     */
+                    abstract class Wrapper {
+                        public function __get(string $name): int { return 0; }
+                    }
+
+                    /** @extends Wrapper<A|B> */
+                    final class AorBWrapper extends Wrapper {}
+
+                    function test(AorBWrapper $w): void {
+                        echo $w->headline;
+                    }',
                 'error_message' => 'UndefinedMagicPropertyFetch',
             ],
             'undefinedMixinClassWithPropertyAssignment' => [
@@ -799,6 +1282,112 @@ final class MixinAnnotationTest extends TestCase
                     }',
                 'error_message' => 'UndefinedVariable',
             ],
+            'unparseableMixinTypeIsAnIssue' => [
+                'code' => '<?php
+                    /** @mixin Foo< */
+                    class A {}',
+                'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:27 -'
+                    . ' No generic params provided for type in docblock for A',
+            ],
         ];
+    }
+
+    public function testTransitiveMixinIsNotCheckedAtHostDeclaration(): void
+    {
+        $this->project_analyzer->getConfig()->throw_exception = false;
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                namespace T;
+
+                /** @mixin \T\Mid */
+                class Host {}
+
+                /** @mixin \T\Deep */
+                class Mid {}
+
+                /** @deprecated */
+                class Deep {
+                    public function deep(): void {}
+                }',
+        );
+        $this->analyzeFile($file_path, new Context());
+
+        $deprecated_class_lines = [];
+        foreach (IssueBuffer::getIssuesDataForFile($file_path) as $issue) {
+            if ($issue->type === 'DeprecatedClass') {
+                $deprecated_class_lines[] = $issue->line_from;
+            }
+        }
+
+        // Only Mid names the deprecated class; Host merely reaches it through Mid.
+        $this->assertSame([8], $deprecated_class_lines);
+    }
+
+    public function testInvalidMixinTypeDoesNotDiscardTheNextMixin(): void
+    {
+        $this->project_analyzer->getConfig()->throw_exception = false;
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                final class Provider
+                {
+                    public function hello(): string
+                    {
+                        return "hello";
+                    }
+                }
+
+                /**
+                 * @mixin Foo<
+                 * @mixin Provider
+                 */
+                final class Host {}
+
+                function greet(Host $host): string
+                {
+                    return $host->hello();
+                }',
+        );
+        $this->analyzeFile($file_path, new Context());
+
+        $issue_types = [];
+        foreach (IssueBuffer::getIssuesDataForFile($file_path) as $issue) {
+            $issue_types[] = $issue->type;
+        }
+
+        $this->assertSame(['InvalidDocblock'], $issue_types);
+        $this->assertSame(
+            'Host',
+            $this->project_analyzer->getCodebase()->classlike_storage_provider->get('Host')->mixin_declaring_fqcln,
+        );
+    }
+
+    public function testUnparseableMixinAloneBehavesLikeNoMixin(): void
+    {
+        $this->project_analyzer->getConfig()->throw_exception = false;
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                /** @mixin Foo< */
+                final class A {}',
+        );
+        $this->analyzeFile($file_path, new Context());
+
+        $issue_types = [];
+        foreach (IssueBuffer::getIssuesDataForFile($file_path) as $issue) {
+            $issue_types[] = $issue->type;
+        }
+
+        $this->assertSame(['InvalidDocblock'], $issue_types);
+        $this->assertNull(
+            $this->project_analyzer->getCodebase()->classlike_storage_provider->get('A')->mixin_declaring_fqcln,
+        );
     }
 }

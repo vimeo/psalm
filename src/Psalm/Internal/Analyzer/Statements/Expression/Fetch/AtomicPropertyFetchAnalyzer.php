@@ -17,6 +17,7 @@ use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\NamespaceAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Assignment\InstancePropertyAssignmentAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Call\ClassTemplateParamCollector;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\MethodCallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
@@ -30,6 +31,7 @@ use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TypeExpander;
+use Psalm\Internal\Type\TypeVariableTracker;
 use Psalm\Issue\DeprecatedProperty;
 use Psalm\Issue\ImpurePropertyFetch;
 use Psalm\Issue\InternalClass;
@@ -265,8 +267,48 @@ final class AtomicPropertyFetchAnalyzer
         $get_method_id = new MethodIdentifier($fq_class_name, '__get');
 
         if (!$naive_property_exists) {
-            if ($class_storage->namedMixins) {
-                foreach ($class_storage->namedMixins as $mixin) {
+            // Resolve explicit shape properties before consulting other class-like types.
+            // Keep final classes closed unless they provide a magic getter.
+            if ($intersection_types !== []
+                && (!$class_storage->final || $codebase->methods->methodExists($get_method_id))
+            ) {
+                foreach ($intersection_types as $intersection_type) {
+                    if (!$intersection_type instanceof TObjectWithProperties
+                        || !isset($intersection_type->properties[$prop_name])
+                    ) {
+                        continue;
+                    }
+
+                    self::analyze(
+                        $statements_analyzer,
+                        $stmt,
+                        $context,
+                        $in_assignment,
+                        $var_id,
+                        $stmt_var_id,
+                        $stmt_var_type,
+                        $intersection_type,
+                        $prop_name,
+                        $has_valid_fetch_type,
+                        $invalid_fetch_types,
+                        $is_static_access,
+                    );
+
+                    return;
+                }
+            }
+
+            $has_named_mixins = (bool) $class_storage->namedMixins;
+            $matched_mixin = false;
+            $templated_mixins = $class_storage->templatedMixins
+                ? self::resolveTemplatedMixins($codebase, $class_storage, $lhs_type_part)
+                : [];
+
+            if ($has_named_mixins || $templated_mixins) {
+                // named mixins come last so they keep precedence (last match wins)
+                $mixins = [...$templated_mixins, ...$class_storage->getNamedMixinsForLookup()];
+
+                foreach ($mixins as $mixin) {
                     $new_property_id = $mixin->value . '::$' . $prop_name;
 
                     try {
@@ -287,6 +329,7 @@ final class AtomicPropertyFetchAnalyzer
                         )
                             || isset($new_class_storage->pseudo_property_get_types['$' . $prop_name]))
                     ) {
+                        $matched_mixin = true;
                         $fq_class_name = $mixin->value;
                         $lhs_type_part = $mixin;
                         $class_storage = $new_class_storage;
@@ -298,7 +341,9 @@ final class AtomicPropertyFetchAnalyzer
                         $property_id = $new_property_id;
                     }
                 }
-            } elseif ($intersection_types !== [] && !$class_storage->final) {
+            }
+
+            if (!$has_named_mixins && !$matched_mixin && $intersection_types !== [] && !$class_storage->final) {
                 foreach ($intersection_types as $intersection_type) {
                     self::analyze(
                         $statements_analyzer,
@@ -414,6 +459,21 @@ final class AtomicPropertyFetchAnalyzer
             ) === false) {
                 return;
             }
+
+            // unsetting a property is a write, so the set visibility applies
+            if ($context->inside_unset
+                && ClassLikeAnalyzer::checkPropertyVisibility(
+                    $property_id,
+                    $context,
+                    $statements_analyzer,
+                    new CodeLocation($statements_analyzer->getSource(), $stmt),
+                    $statements_analyzer->getSuppressedIssues(),
+                    true,
+                    true,
+                ) === false
+            ) {
+                return;
+            }
         }
 
         // FIXME: the following line look superfluous, but removing it makes
@@ -459,6 +519,29 @@ final class AtomicPropertyFetchAnalyzer
 
             $property_storage = $declaring_class_storage->properties[$prop_name];
 
+            // A property inherits the availability of its (native) declaring class unless it
+            // carries a later `@since` of its own, which then takes priority. Reported when the
+            // owning value came from e.g. a native factory return, so the class is never named in
+            // the analysed code and would otherwise go unchecked.
+            $property_since_id = $property_storage->since_php_version_id
+                ?? $declaring_class_storage->since_php_version_id;
+
+            if (!$declaring_class_storage->user_defined
+                && $property_since_id !== null
+                && ($codebase->getGuardedPhpVersionId($context) ?? $codebase->analysis_php_version_id)
+                    < $property_since_id
+                && !$codebase->isClassLikePolyfilled($declaring_class_storage->name)
+            ) {
+                IssueBuffer::maybeAdd(
+                    new UndefinedPropertyFetch(
+                        $property_id . ' ' . $codebase->getUnavailableSymbolMessageSuffix($property_since_id),
+                        new CodeLocation($statements_analyzer->getSource(), $stmt),
+                        $property_id,
+                    ),
+                    $statements_analyzer->getSuppressedIssues(),
+                );
+            }
+
             if ($context->self && !NamespaceAnalyzer::isWithinAny($context->self, $property_storage->internal)) {
                 IssueBuffer::maybeAdd(
                     new InternalProperty(
@@ -496,6 +579,13 @@ final class AtomicPropertyFetchAnalyzer
             $prop_name,
             $lhs_type_part,
         );
+
+        if (!$in_assignment) {
+            // reading a property through a type variable resolves it via its
+            // accumulated bounds (a concrete shape is required here); writes
+            // keep the variable so they record bounds instead
+            $class_property_type = TypeVariableTracker::resolveTypeVariables($class_property_type, $codebase);
+        }
 
         if (!$context->collect_mutations
             && !$context->collect_initializations
@@ -643,6 +733,11 @@ final class AtomicPropertyFetchAnalyzer
                                 $declaring_property_class,
                             ) : $class_storage,
                     );
+
+                    // reading a property through a type variable resolves it
+                    // via its accumulated bounds (a concrete shape is required
+                    // here)
+                    $stmt_type = TypeVariableTracker::resolveTypeVariables($stmt_type, $codebase);
                 }
 
                 self::processTaints(
@@ -1221,6 +1316,55 @@ final class AtomicPropertyFetchAnalyzer
         }
     }
 
+    /**
+     * Resolves `@mixin T` declarations to concrete classes for this receiver, using its
+     * generic arguments or the `@extends` arguments of the class it is an instance of.
+     * Mixins that resolve to a union (e.g. `Wrapper<A|B>`) are skipped: no single class owns the property.
+     *
+     * @return list<TNamedObject>
+     */
+    private static function resolveTemplatedMixins(
+        Codebase $codebase,
+        ClassLikeStorage $class_storage,
+        Atomic $lhs_type_part,
+    ): array {
+        $resolved_mixins = [];
+
+        foreach ($class_storage->templatedMixins as $mixin) {
+            try {
+                $defining_storage = $codebase->classlike_storage_provider->get($mixin->defining_class);
+            } catch (InvalidArgumentException) {
+                continue;
+            }
+
+            $template_params = ClassTemplateParamCollector::collect(
+                $codebase,
+                $defining_storage,
+                $class_storage,
+                null,
+                $lhs_type_part,
+            );
+
+            if ($template_params === null) {
+                continue;
+            }
+
+            $resolved = TemplateInferredTypeReplacer::replace(
+                new Union([$mixin]),
+                new TemplateResult([], $template_params),
+                $codebase,
+            );
+
+            $resolved_atomic = $resolved->isSingle() ? $resolved->getSingleAtomic() : null;
+
+            if ($resolved_atomic instanceof TNamedObject) {
+                $resolved_mixins[] = $resolved_atomic;
+            }
+        }
+
+        return $resolved_mixins;
+    }
+
     private static function handleNonExistentProperty(
         StatementsAnalyzer $statements_analyzer,
         Codebase $codebase,
@@ -1259,6 +1403,8 @@ final class AtomicPropertyFetchAnalyzer
                             $declaring_property_class,
                         ) : $class_storage,
                 );
+
+                $stmt_type = TypeVariableTracker::resolveTypeVariables($stmt_type, $codebase);
             }
 
             self::processTaints(

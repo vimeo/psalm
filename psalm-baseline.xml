@@ -230,7 +230,6 @@
     <RiskyTruthyFalsyComparison>
       <code><![CDATA[$context->self]]></code>
       <code><![CDATA[$context->self]]></code>
-      <code><![CDATA[$context->self]]></code>
     </RiskyTruthyFalsyComparison>
   </file>
   <file src="src/Psalm/Internal/Analyzer/CommentAnalyzer.php">
@@ -564,7 +563,6 @@
       <code><![CDATA[$expr->getArgs()[1]]]></code>
       <code><![CDATA[$get_debug_type_expr->getArgs()[0]]]></code>
       <code><![CDATA[$get_debug_type_expr->getArgs()[0]]]></code>
-      <code><![CDATA[$getclass_expr->getArgs()[0]]]></code>
       <code><![CDATA[$gettype_expr->getArgs()[0]]]></code>
       <code><![CDATA[$gettype_expr->getArgs()[0]]]></code>
     </PossiblyUndefinedIntArrayOffset>
@@ -789,17 +787,11 @@
       <code><![CDATA[$right_type_part]]></code>
     </ImplicitToStringCast>
     <InvalidOperand>
-      <code><![CDATA[$operand1 % $operand2]]></code>
-      <code><![CDATA[$operand1 & $operand2]]></code>
       <code><![CDATA[$operand1 * $operand2]]></code>
       <code><![CDATA[$operand1 ** $operand2]]></code>
       <code><![CDATA[$operand1 + $operand2]]></code>
       <code><![CDATA[$operand1 - $operand2]]></code>
       <code><![CDATA[$operand1 / $operand2]]></code>
-      <code><![CDATA[$operand1 << $operand2]]></code>
-      <code><![CDATA[$operand1 >> $operand2]]></code>
-      <code><![CDATA[$operand1 ^ $operand2]]></code>
-      <code><![CDATA[$operand1 | $operand2]]></code>
     </InvalidOperand>
     <PossiblyUndefinedIntArrayOffset>
       <code><![CDATA[$invalid_left_messages[0]]]></code>
@@ -815,10 +807,6 @@
       <code><![CDATA[$operand_type]]></code>
       <code><![CDATA[$operand_type]]></code>
     </ImplicitToStringCast>
-    <InvalidOperand>
-      <code><![CDATA[$left_type_part->value]]></code>
-      <code><![CDATA[$right_type_part->value]]></code>
-    </InvalidOperand>
   </file>
   <file src="src/Psalm/Internal/Analyzer/Statements/Expression/BinaryOp/OrAnalyzer.php">
     <RiskyTruthyFalsyComparison>
@@ -1039,12 +1027,6 @@
   </file>
   <file src="src/Psalm/Internal/Analyzer/Statements/Expression/Call/Method/MissingMethodCallHandler.php">
     <RiskyTruthyFalsyComparison>
-      <code><![CDATA[$found_generic_params]]></code>
-      <code><![CDATA[$found_generic_params]]></code>
-      <code><![CDATA[$found_generic_params]]></code>
-      <code><![CDATA[$found_generic_params]]></code>
-      <code><![CDATA[$found_generic_params]]></code>
-      <code><![CDATA[$found_generic_params]]></code>
       <code><![CDATA[$intersection_method_id]]></code>
       <code><![CDATA[$intersection_method_id]]></code>
     </RiskyTruthyFalsyComparison>
@@ -1268,7 +1250,6 @@
       <code><![CDATA[$context->calling_method_id]]></code>
       <code><![CDATA[$context->calling_method_id]]></code>
       <code><![CDATA[$context->self]]></code>
-      <code><![CDATA[$string_type]]></code>
       <code><![CDATA[$var_id]]></code>
       <code><![CDATA[$var_id]]></code>
     </RiskyTruthyFalsyComparison>
@@ -1397,19 +1378,6 @@
     <MixedAssignment>
       <code><![CDATA[$dep]]></code>
     </MixedAssignment>
-    <PossiblyFalseArgument>
-      <code><![CDATA[$fileHash]]></code>
-      <code><![CDATA[$fileHash]]></code>
-      <code><![CDATA[$fileHash]]></code>
-    </PossiblyFalseArgument>
-    <PossiblyInvalidArrayAccess>
-      <code><![CDATA[unpack('V', $fileHash)[1]]]></code>
-      <code><![CDATA[unpack('V', $key)[1]]]></code>
-    </PossiblyInvalidArrayAccess>
-    <PossiblyUndefinedIntArrayOffset>
-      <code><![CDATA[unpack('V', $fileHash)[1]]]></code>
-      <code><![CDATA[unpack('V', $key)[1]]]></code>
-    </PossiblyUndefinedIntArrayOffset>
   </file>
   <file src="src/Psalm/Internal/Cli/LanguageServer.php">
     <RiskyTruthyFalsyComparison>
@@ -1511,18 +1479,11 @@
   </file>
   <file src="src/Psalm/Internal/Codebase/ConstantTypeResolver.php">
     <InvalidOperand>
-      <code><![CDATA[$left->value & $right->value]]></code>
       <code><![CDATA[$left->value * $right->value]]></code>
       <code><![CDATA[$left->value + $right->value]]></code>
       <code><![CDATA[$left->value - $right->value]]></code>
       <code><![CDATA[$left->value / $right->value]]></code>
-      <code><![CDATA[$left->value ^ $right->value]]></code>
-      <code><![CDATA[$left->value | $right->value]]></code>
     </InvalidOperand>
-    <PossiblyInvalidOperand>
-      <code><![CDATA[$left->value]]></code>
-      <code><![CDATA[$right->value]]></code>
-    </PossiblyInvalidOperand>
   </file>
   <file src="src/Psalm/Internal/Codebase/Functions.php">
     <PossiblyUndefinedIntArrayOffset>
@@ -1676,7 +1637,6 @@
   </file>
   <file src="src/Psalm/Internal/ExecutionEnvironment/GitInfoCollector.php">
     <PossiblyUndefinedArrayOffset>
-      <code><![CDATA[$exploded[1]]]></code>
       <code><![CDATA[$url]]></code>
     </PossiblyUndefinedArrayOffset>
   </file>
@@ -1847,7 +1807,6 @@
       <code><![CDATA[$e]]></code>
     </ImplicitToStringCast>
     <PossiblyUndefinedIntArrayOffset>
-      <code><![CDATA[$matches[0]]]></code>
       <code><![CDATA[$method_tree->children[0]]]></code>
       <code><![CDATA[$method_tree->children[1]]]></code>
     </PossiblyUndefinedIntArrayOffset>
@@ -1938,7 +1897,6 @@
       <code><![CDATA[$storage->template_types]]></code>
       <code><![CDATA[$storage->template_types]]></code>
       <code><![CDATA[$storage->template_types]]></code>
-      <code><![CDATA[$storage->template_types]]></code>
       <code><![CDATA[$template_types]]></code>
       <code><![CDATA[$template_types]]></code>
       <code><![CDATA[$template_types]]></code>
@@ -2023,16 +1981,6 @@
       <code><![CDATA[\PhpParser\Node\Stmt\UseUse::class]]></code>
     </DeprecatedClass>
   </file>
-  <file src="src/Psalm/Internal/Provider/ClassLikeStorageCacheProvider.php">
-    <InvalidPropertyAssignmentValue>
-      <code><![CDATA[new Cache($config, 'classlike_cache', $dependencies, $persistent)]]></code>
-    </InvalidPropertyAssignmentValue>
-  </file>
-  <file src="src/Psalm/Internal/Provider/FileReferenceCacheProvider.php">
-    <InvalidPropertyAssignmentValue>
-      <code><![CDATA[new Cache($config, 'file_reference', [$composerLock], $persistent)]]></code>
-    </InvalidPropertyAssignmentValue>
-  </file>
   <file src="src/Psalm/Internal/Provider/FileReferenceProvider.php">
     <RiskyTruthyFalsyComparison>
       <code><![CDATA[$this->cache->getFileMapCache()]]></code>
@@ -2053,11 +2001,6 @@
       <code><![CDATA[?FileStorage]]></code>
     </InvalidReturnType>
   </file>
-  <file src="src/Psalm/Internal/Provider/FunctionParamsProvider.php">
-    <RiskyTruthyFalsyComparison>
-      <code><![CDATA[$result]]></code>
-    </RiskyTruthyFalsyComparison>
-  </file>
   <file src="src/Psalm/Internal/Provider/MethodReturnTypeProvider.php">
     <RiskyTruthyFalsyComparison>
       <code><![CDATA[$called_method_name]]></code>
@@ -2067,11 +2010,6 @@
     <RiskyTruthyFalsyComparison>
       <code><![CDATA[$extended_var_id]]></code>
     </RiskyTruthyFalsyComparison>
-  </file>
-  <file src="src/Psalm/Internal/Provider/ParserCacheProvider.php">
-    <PropertyTypeCoercion>
-      <code><![CDATA[new Cache($config, self::PARSER_CACHE_DIRECTORY, $deps, $persistent)]]></code>
-    </PropertyTypeCoercion>
   </file>
   <file src="src/Psalm/Internal/Provider/Providers.php">
     <FalsableReturnStatement>
@@ -2386,7 +2324,6 @@
       <code><![CDATA[$const_name]]></code>
       <code><![CDATA[$const_name]]></code>
       <code><![CDATA[$parse_tree->children[0]]]></code>
-      <code><![CDATA[$parse_tree->condition->children[0]]]></code>
       <code><![CDATA[array_keys($offset_template_data)[0]]]></code>
       <code><![CDATA[array_keys($template_type_map[$array_param_name])[0]]]></code>
       <code><![CDATA[array_keys($template_type_map[$class_name])[0]]]></code>
@@ -2528,6 +2465,7 @@
   </file>
   <file src="src/Psalm/Storage/FunctionLikeParameter.php">
     <ImpureMethodCall>
+      <code><![CDATA[traverse]]></code>
       <code><![CDATA[traverse]]></code>
       <code><![CDATA[traverse]]></code>
       <code><![CDATA[traverse]]></code>
@@ -2899,6 +2837,7 @@
       <code><![CDATA[ParserCacheProvider]]></code>
     </InvalidExtendClass>
     <MethodSignatureMismatch>
+      <code><![CDATA[#[Override]]]></code>
       <code><![CDATA[#[Override]]]></code>
       <code><![CDATA[#[Override]]]></code>
       <code><![CDATA[#[Override]]]></code>

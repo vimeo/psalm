@@ -84,43 +84,33 @@ final class ScopeAnalyzer
                 continue;
             }
 
-            if ($stmt instanceof PhpParser\Node\Stmt\Continue_) {
-                $count = !$stmt->num
-                    ? 1
-                    : ($stmt->num instanceof PhpParser\Node\Scalar\Int_ ? $stmt->num->value : null);
+            if ($stmt instanceof PhpParser\Node\Stmt\Break_
+                || $stmt instanceof PhpParser\Node\Stmt\Continue_
+            ) {
+                $is_break = $stmt instanceof PhpParser\Node\Stmt\Break_;
 
-                if ($break_types && $count !== null && count($break_types) >= $count) {
-                    /** @psalm-suppress InvalidArrayOffset Some int-range improvements are needed */
-                    if ($break_types[count($break_types) - $count] === 'switch') {
+                $index = !$stmt->num
+                    ? count($break_types) - 1
+                    : ($stmt->num instanceof PhpParser\Node\Scalar\Int_
+                        ? count($break_types) - $stmt->num->value
+                        : null);
+
+                if ($break_types && $index !== null && $index >= 0) {
+                    if ($break_types[$index] === 'switch') {
                         return [...$control_actions, self::ACTION_LEAVE_SWITCH];
                     }
 
-                    return array_values($control_actions);
-                }
-
-                return array_values(array_unique([...$control_actions, self::ACTION_CONTINUE]));
-            }
-
-            if ($stmt instanceof PhpParser\Node\Stmt\Break_) {
-                $count = !$stmt->num
-                    ? 1
-                    : ($stmt->num instanceof PhpParser\Node\Scalar\Int_ ? $stmt->num->value : null);
-
-                if ($break_types && $count !== null && count($break_types) >= $count) {
-                    /** @psalm-suppress InvalidArrayOffset Some int-range improvements are needed */
-                    if ($break_types[count($break_types) - $count] === 'switch') {
-                        return [...$control_actions, self::ACTION_LEAVE_SWITCH];
-                    }
-
-                    /** @psalm-suppress InvalidArrayOffset Some int-range improvements are needed */
-                    if ($break_types[count($break_types) - $count] === 'loop') {
+                    if ($is_break && $break_types[$index] === 'loop') {
                         return [...$control_actions, self::ACTION_LEAVE_LOOP];
                     }
 
                     return array_values($control_actions);
                 }
 
-                return array_values(array_unique([...$control_actions, self::ACTION_BREAK]));
+                return array_values(array_unique([
+                    ...$control_actions,
+                    $is_break ? self::ACTION_BREAK : self::ACTION_CONTINUE,
+                ]));
             }
 
             if ($stmt instanceof PhpParser\Node\Stmt\If_) {

@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace Psalm\Internal\Type\Comparator;
 
 use Psalm\Codebase;
+use Psalm\Internal\Type\TemplateBound;
 use Psalm\Internal\Type\TypeExpander;
+use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArrayKey;
 use Psalm\Type\Atomic\TCallable;
@@ -17,6 +19,7 @@ use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TNumeric;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTypeAlias;
+use Psalm\Type\Atomic\TTypeVariable;
 use Psalm\Type\Union;
 
 use function array_merge;
@@ -67,6 +70,19 @@ final class UnionTypeComparator
 
 
         $container_has_template = $container_type->hasTemplateOrStatic();
+        $container_parts = self::getTypeParts($codebase, $container_type);
+        // Compare iterable and symbolic containers directly; symbolic comparisons
+        // must record constraints on the original input.
+        $compare_iterable_directly = false;
+        foreach ($container_parts as $container_part) {
+            if ($container_part instanceof Atomic\TIterable
+                || $container_part instanceof TTemplateParam
+                || $container_part instanceof TTypeVariable
+            ) {
+                $compare_iterable_directly = true;
+                break;
+            }
+        }
 
         $input_atomic_types = array_reverse(self::getTypeParts($codebase, $input_type));
 
@@ -87,6 +103,46 @@ final class UnionTypeComparator
                 continue;
             }
 
+            if ($input_type_part instanceof TTypeVariable) {
+                // A type variable in input position is constrained from above
+                // by the container: record `name <: container` and treat it
+                // as contained.
+                $container_single = $container_type->isSingle()
+                    ? $container_type->getSingleAtomic()
+                    : null;
+
+                if ($container_single instanceof TTypeVariable
+                    && $container_single->name === $input_type_part->name
+                ) {
+                    continue;
+                }
+
+                if ($union_comparison_result) {
+                    $union_comparison_result->type_variable_upper_bounds[] = [
+                        $input_type_part->name,
+                        new TemplateBound($container_type),
+                    ];
+                }
+
+                continue;
+            }
+
+
+            if ($input_type_part instanceof Atomic\TIterable && !$compare_iterable_directly) {
+                if (!self::isIterableContainedBy(
+                    $codebase,
+                    $input_type_part,
+                    $container_type,
+                    $ignore_null,
+                    $ignore_false,
+                    $union_comparison_result,
+                    $allow_interface_equality,
+                    $allow_float_int_equality,
+                )) {
+                    return false;
+                }
+                continue;
+            }
 
             $type_match_found = false;
             $scalar_type_match_found = false;
@@ -124,7 +180,7 @@ final class UnionTypeComparator
                 }
             }
 
-            foreach (self::getTypeParts($codebase, $container_type) as $container_type_part) {
+            foreach ($container_parts as $container_type_part) {
                 if ($ignore_null
                     && $container_type_part instanceof TNull
                     && !$input_type_part instanceof TNull
@@ -137,6 +193,25 @@ final class UnionTypeComparator
                     && !$input_type_part instanceof TFalse
                 ) {
                     continue;
+                }
+
+                if ($container_type_part instanceof TTypeVariable) {
+                    // A type variable in container position is constrained
+                    // from below by the input: record `name >: input` and
+                    // treat it as a match.
+                    if ($union_comparison_result) {
+                        $union_comparison_result->type_variable_lower_bounds[] = [
+                            $container_type_part->name,
+                            new TemplateBound($input_type),
+                        ];
+                    }
+
+                    $type_match_found = true;
+                    $all_to_string_cast = false;
+                    $all_type_coerced = false;
+                    $all_type_coerced_from_mixed = false;
+                    $all_type_coerced_from_as_mixed = false;
+                    break;
                 }
 
                 // if params are specified
@@ -246,13 +321,6 @@ final class UnionTypeComparator
                     $is_atomic_contained_by = true;
                 }
 
-                if ($input_type_part instanceof Atomic\TIterable
-                    && ($container_type->hasArray() || $container_type->containsClassLike('traversable'))
-                ) {
-                    $scalar_type_match_found = false;
-                    $is_atomic_contained_by = true;
-                }
-
                 if ($atomic_comparison_result) {
                     if ($atomic_comparison_result->type_coerced) {
                         $some_type_coerced = true;
@@ -295,6 +363,18 @@ final class UnionTypeComparator
                     if ($atomic_comparison_result) {
                         if ($atomic_comparison_result->to_string_cast !== true) {
                             $all_to_string_cast = false;
+                        }
+
+                        if ($union_comparison_result) {
+                            $union_comparison_result->type_variable_lower_bounds = array_merge(
+                                $union_comparison_result->type_variable_lower_bounds,
+                                $atomic_comparison_result->type_variable_lower_bounds,
+                            );
+
+                            $union_comparison_result->type_variable_upper_bounds = array_merge(
+                                $union_comparison_result->type_variable_upper_bounds,
+                                $atomic_comparison_result->type_variable_upper_bounds,
+                            );
                         }
                     }
 
@@ -357,6 +437,82 @@ final class UnionTypeComparator
         }
 
         return true;
+    }
+
+    /**
+     * Compare the Traversable form and, unless an object intersection excludes it,
+     * the array form with keys restricted to array-key. Merge diagnostics only after
+     * both comparisons: a coercion cannot hide a hard mismatch in the other half.
+     */
+    private static function isIterableContainedBy(
+        Codebase $codebase,
+        Atomic\TIterable $input,
+        Union $container,
+        bool $ignore_null,
+        bool $ignore_false,
+        ?TypeComparisonResult $comparison_result,
+        bool $allow_interface_equality,
+        bool $allow_float_int_equality,
+    ): bool {
+        $parts = [new Atomic\TGenericObject('Traversable', $input->type_params, extra_types: $input->extra_types)];
+        $has_array_part = true;
+        foreach ($input->extra_types as $extra_type) {
+            if ($extra_type->isObjectType()) {
+                $has_array_part = false;
+                break;
+            }
+        }
+        if ($has_array_part) {
+            $key = Type::intersectUnionTypes($input->type_params[0], Type::getArrayKey(), $codebase)
+                ?? Type::getNever();
+            // Impossible keys or values permit only the empty array, not arbitrary array keys.
+            $parts[] = $key->isNever() || $input->type_params[1]->isNever()
+                ? Type::getEmptyArray()->getSingleAtomic()
+                : new Atomic\TArray([$key, $input->type_params[1]]);
+        }
+
+        $all_contained = true;
+        $all_coercible = true;
+        $some_coerced = false;
+        $some_mixed = false;
+        $some_as_mixed = false;
+        foreach ($parts as $part) {
+            $part_result = new TypeComparisonResult();
+            $contained = self::isContainedBy(
+                $codebase,
+                new Union([$part]),
+                $container,
+                $ignore_null,
+                $ignore_false,
+                $part_result,
+                $allow_interface_equality,
+                $allow_float_int_equality,
+            );
+            $all_contained = $all_contained && $contained;
+            $all_coercible = $all_coercible && ($contained || $part_result->type_coerced);
+            $some_coerced = $some_coerced || $part_result->type_coerced;
+            $some_mixed = $some_mixed || $part_result->type_coerced_from_mixed;
+            $some_as_mixed = $some_as_mixed || $part_result->type_coerced_from_as_mixed;
+
+            if ($comparison_result && $contained) {
+                $comparison_result->type_variable_lower_bounds = array_merge(
+                    $comparison_result->type_variable_lower_bounds,
+                    $part_result->type_variable_lower_bounds,
+                );
+                $comparison_result->type_variable_upper_bounds = array_merge(
+                    $comparison_result->type_variable_upper_bounds,
+                    $part_result->type_variable_upper_bounds,
+                );
+            }
+        }
+        if ($comparison_result && !$all_contained) {
+            $comparison_result->scalar_type_match_found = false;
+            $comparison_result->type_coerced = $all_coercible && $some_coerced;
+            $comparison_result->type_coerced_from_mixed = $all_coercible && $some_mixed;
+            // Preserve whether the component coercion came from a template default.
+            $comparison_result->type_coerced_from_as_mixed = $all_coercible && $some_as_mixed;
+        }
+        return $all_contained;
     }
 
     /**
@@ -436,6 +592,16 @@ final class UnionTypeComparator
             }
 
             foreach (self::getTypeParts($codebase, $input_type) as $input_type_part) {
+                if ($input_type_part instanceof TTypeVariable) {
+                    // an unresolved type variable can still become anything
+                    // its bounds allow, so it can be contained here; the
+                    // constraint is reconciled when the surrounding
+                    // function-like has been analyzed, exactly as
+                    // self::isContainedBy() treats it
+                    $matching_input_keys[$input_type_part->getKey()] = true;
+                    continue;
+                }
+
                 $atomic_comparison_result = new TypeComparisonResult();
                 $is_atomic_contained_by = AtomicTypeComparator::isContainedBy(
                     $codebase,
@@ -446,7 +612,11 @@ final class UnionTypeComparator
                     $atomic_comparison_result,
                 );
 
-                if (($is_atomic_contained_by && !$atomic_comparison_result->to_string_cast)
+                // Element conversions do not change the outer array or object type.
+                $outer_string_cast = $atomic_comparison_result->to_string_cast
+                    && ($container_type_part instanceof Atomic\TString
+                        || $container_type_part instanceof Atomic\TScalar);
+                if (($is_atomic_contained_by && !$outer_string_cast)
                     || $atomic_comparison_result->type_coerced_from_mixed
                 ) {
                     $matching_input_keys[$input_type_part->getKey()] = true;
