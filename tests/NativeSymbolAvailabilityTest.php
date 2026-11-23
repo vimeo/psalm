@@ -309,6 +309,50 @@ final class NativeSymbolAvailabilityTest extends TestCase
             'php_version' => '8.0',
         ];
 
+        yield 'methodExistsOfInheritedMethodBelowItsVersion' => [
+            'code' => '<?php
+                /** @extends ReflectionClass<object> */
+                final class R extends ReflectionClass {}
+
+                function a(R $r): bool {
+                    return method_exists($r, "isEnum") && $r->isEnum();
+                }
+
+                function b(ReflectionObject $r): bool {
+                    return method_exists($r, "isEnum") && $r->isEnum();
+                }
+            ',
+            'assertions' => [],
+            'ignored_issues' => [],
+            'php_version' => '8.0',
+        ];
+
+        yield 'foreachOverNativeTraversableBelowItsIteratorMethodsVersion' => [
+            'code' => '<?php
+                function f(DOMNodeList $l, DOMNamedNodeMap $m, SimpleXMLElement $x): void {
+                    foreach ($l as $_node) {}
+                    foreach ($m as $_attr) {}
+                    foreach ($x as $_child) {}
+                }
+            ',
+            'assertions' => [],
+            'ignored_issues' => [],
+            'php_version' => '7.4',
+        ];
+
+        yield 'oldStyleConstructorOfNativeClassBelowPhp80' => [
+            'code' => '<?php
+                final class H extends SoapHeader {
+                    public function __construct() {
+                        parent::__construct("ns", "n");
+                    }
+                }
+            ',
+            'assertions' => [],
+            'ignored_issues' => [],
+            'php_version' => '7.4',
+        ];
+
         yield 'methodExistsOfStubbedMethodBelowItsVersion' => [
             'code' => '<?php
                 function f(mysqli $m): string {
@@ -1026,6 +1070,42 @@ final class NativeSymbolAvailabilityTest extends TestCase
                 . ' (it was introduced in PHP 8.1',
             'error_levels' => [],
             'php_version' => '8.0',
+        ];
+
+        yield 'inheritedMethodBelowItsVersion' => [
+            'code' => '<?php
+                function f(ReflectionObject $r): bool {
+                    return $r->isEnum();
+                }
+            ',
+            'error_message' => 'Method ReflectionObject::isEnum is not defined for the analysed PHP version 8.0'
+                . ' (it was introduced in PHP 8.1',
+            'error_levels' => [],
+            'php_version' => '8.0',
+        ];
+
+        yield 'domMethodBelowItsVersion' => [
+            'code' => '<?php
+                function f(DOMElement $e): void {
+                    $e->remove();
+                }
+            ',
+            'error_message' => 'Method DOMElement::remove is not defined for the analysed PHP version 7.4'
+                . ' (it was introduced in PHP 8.0',
+            'error_levels' => [],
+            'php_version' => '7.4',
+        ];
+
+        yield 'explicitIteratorMethodBelowItsVersion' => [
+            'code' => '<?php
+                function f(DOMNodeList $l): Iterator {
+                    return $l->getIterator();
+                }
+            ',
+            'error_message' => 'Method DOMNodeList::getIterator is not defined for the analysed PHP version 7.4'
+                . ' (it was introduced in PHP 8.0',
+            'error_levels' => [],
+            'php_version' => '7.4',
         ];
 
         yield 'stubbedMethodBelowItsVersion' => [

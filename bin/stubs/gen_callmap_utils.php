@@ -266,7 +266,13 @@ function writeCallMapIntroductions(string $file, array $callMaps): void
             continue;
         }
         foreach ($callMap as $key => $_) {
-            if (!isset($callMaps[$oldest][$key])) {
+            // the oldest callmaps list some constructors under their PHP 4 name (`finfo::finfo`)
+            $old_style_constructor = preg_match('/^([^:]+)::__construct$/', $key, $matches) === 1
+                ? $matches[1] . '::' . $matches[1]
+                : null;
+            if (!isset($callMaps[$oldest][$key])
+                && ($old_style_constructor === null || !isset($callMaps[$oldest][$old_style_constructor]))
+            ) {
                 $introductions[$key] ??= $version;
             }
         }

@@ -570,14 +570,17 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
             return;
         }
 
-        MethodAnalyzer::checkMethodAvailability(
-            $codebase,
-            $method_id,
-            new CodeLocation($source, $stmt->name),
-            $statements_analyzer->getSuppressedIssues(),
-            false,
-            $context,
-        );
+        // PHP iterates a native Traversable without the methods foreach is analysed as calling
+        if (!$context->inside_type_only_call) {
+            MethodAnalyzer::checkMethodAvailability(
+                $codebase,
+                $method_id,
+                new CodeLocation($source, $stmt->name),
+                $statements_analyzer->getSuppressedIssues(),
+                false,
+                $context,
+            );
+        }
 
         $old_node_data = $statements_analyzer->node_data;
 
