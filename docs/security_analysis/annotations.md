@@ -128,9 +128,40 @@ The last word says what the method returns of the rows the query selects:
 | `column`           | a list of the first column of each row                              | `fetchAll(PDO::FETCH_COLUMN)` |
 | `none`             | nothing read from the database                                      | `PDO::exec()`                 |
 
-With `readonly`, the method can only run queries that read, as the server refuses the others (like ClickHouse's
-`readonly` setting): its queries store nothing, and one the analysis can't parse (SQL it doesn't know the text of)
-only reads any column, instead of also copying any column into any other.
+With `readonly`, the method runs only queries that read, like ClickHouse with its `readonly` setting: a query Psalm
+can't parse reads any column, but stores nothing.
+
+```php
+<?php // --taint-analysis
+final class ClickHouse
+{
+    /**
+     * @psalm-database-query $sql $params none
+     */
+    public function write(string $sql, array $params = []): void {}
+
+    /**
+     * @return list<array<string, mixed>>
+     * @psalm-database-query $sql $params rows readonly
+     */
+    public function select(string $sql, array $params = []): array {}
+}
+
+function run(ClickHouse $db, string $sql): void {
+    $db->write(
+        'INSERT INTO users (name, bio) VALUES ({name:String}, {bio:String})',
+        ['name' => 'admin', 'bio' => $_GET['bio'] ?? ''],
+    );
+
+    foreach ($db->select($sql) as $row) {
+        echo (string) $row['bio']; // TaintedHtml
+    }
+
+    foreach ($db->select('SELECT name FROM users') as $user) {
+        echo (string) $user['name']; // no issue (TaintedHtml without readonly)
+    }
+}
+```
 
 ### `@psalm-database-prepare $sql`, `@psalm-database-execute [$params] [result]` and `@psalm-database-bind $key $value`
 
@@ -217,9 +248,7 @@ on (a statement, a result). The last word says how, as in the table of `@psalm-d
 ### `@psalm-database-insert $table $data`, `@psalm-database-update $table $data` and `@psalm-database-select $table`
 
 `insert` and `update` store each value of the array given to `$data` in the column its key names, in the table given
-to `$table`. Integer keys name no column: an array under them is a row, so `$data` can also be a list of rows, each
-storing its values in the columns its keys name, and a value under them in a row (`[$id, $name]`) can be in any
-column. `select` returns the rows of that table, as `SELECT *` gives them.
+to `$table`, or a list of rows. `select` returns the rows of that table, as `SELECT *` gives them.
 
 ```php
 <?php // --taint-analysis
@@ -245,6 +274,8 @@ final class Table
 function run(Table $db): void {
     $db->insert('users', ['name' => 'admin', 'bio' => '']);
     $db->update('users', ['bio' => $_GET['bio'] ?? ''], ['id' => 1]);
+    $db->insert('posts', [['title' => 'Hello', 'body' => $_GET['body'] ?? '']]);
+    $db->insert('tags', [[1, $_GET['tag'] ?? '']]);
 
     foreach ($db->select('users') as $user) {
         echo (string) $user['bio'];  // TaintedHtml
@@ -252,7 +283,12 @@ function run(Table $db): void {
     }
 
     foreach ($db->select('posts') as $post) {
+        echo (string) $post['body'];  // TaintedHtml
         echo (string) $post['title']; // no issue
+    }
+
+    foreach ($db->select('tags') as $tag) {
+        echo (string) $tag['label']; // TaintedHtml: a value without a column name can be in any column
     }
 }
 ```

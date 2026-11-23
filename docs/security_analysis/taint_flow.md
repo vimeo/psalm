@@ -241,9 +241,8 @@ A value stored in the database comes back out of it: what a query stores in a co
 queries selecting that column read, wherever they are. Psalm reads the SQL of the queries run with `PDO`, `mysqli`,
 `pgsql` and `SQLite3`:
 
-- an `INSERT`, `REPLACE`, `UPDATE` or `ALTER TABLE ... UPDATE` (ClickHouse) stores in each column the value of its
-  placeholder, or the part of the SQL the analysis doesn't know the text of (a variable concatenated into it, or given
-  to `sprintf()` with a literal format);
+- an `INSERT`, `REPLACE` or `UPDATE` stores in each column the value of its placeholder, or the part of the SQL the
+  analysis doesn't know the text of (a variable concatenated into it);
 - a `SELECT` reads each column it names into the key of that name of the rows fetched. `SELECT *` reads each
   column of the table under its name, and any of them by position, as the order of the columns isn't known.
 
@@ -283,18 +282,50 @@ function show(PDO $pdo, string $table): void {
 ```
 
 - A query it can't parse, a table name that isn't a literal and `INSERT INTO t VALUES (...)` without the column
-  list read or write any column. A table name that isn't a literal can be any table. A query it can't parse also reads
-  the rows of any table, as `SELECT *` gives them.
-- A part of the SQL the analysis doesn't know the text of is a value only when known text follows it. A statement that
-  ends with such a part can't be parsed, because the part can continue the statement (more assignments, `ON DUPLICATE
-  KEY UPDATE`, `ON CONFLICT`, `RETURNING`, a `UNION`, another statement): `"UPDATE t SET a = " . $a`, a `sprintf()`
-  format ending with a conversion, or a variable the analysis knows only the start of (`$sql` assigned `'SELECT a FROM t
-  WHERE b = ' . $b` or `'INSERT INTO t (a) VALUES ' . implode(',', $rows)`). A part that is a number (an `int`, a
-  `float`, a `bool` or `null`) can't continue it. A query with such a part in a comment can't be parsed either, as the
-  part can end the comment. The data of a ClickHouse `INSERT ... FORMAT` runs to the end of the query and holds no SQL.
+  list read or write any column. A table name that isn't a literal can be any table.
 - A column a `UNION` of `SELECT *` gives can be any column of their tables.
 - The values given to a prepared statement it can't follow back to the query that prepared it (a statement passed
   to another function) are stored in every column of every table.
+
+Psalm reads a part of the SQL it doesn't know the text of as a value when known SQL follows it, or when it is a number:
+
+```php
+<?php // --taint-analysis
+function store(PDO $pdo, int $id): void {
+    $bio = $pdo->quote($_GET['bio'] ?? '');
+    $pdo->exec("UPDATE users SET bio = $bio WHERE id = 1");
+    $pdo->exec("UPDATE users SET bio = $bio WHERE id = $id");
+    $pdo->exec(sprintf('UPDATE users SET bio = %s WHERE id = %d', $bio, $id));
+    $sql = "UPDATE users SET bio = $bio";
+    $pdo->exec("$sql WHERE id = 1");
+    $pdo->exec("ALTER TABLE users UPDATE bio = $bio WHERE id = 1"); // ClickHouse
+    $pdo->exec("INSERT INTO users (bio) FORMAT JSONEachRow $bio");  // ClickHouse
+}
+
+function show(PDO $pdo): void {
+    echo (string) $pdo->query('SELECT bio FROM users')->fetchColumn();  // TaintedHtml
+    echo (string) $pdo->query('SELECT name FROM users')->fetchColumn(); // no issue
+}
+```
+
+A statement that ends with such a part can't be parsed, because the part can go on with it (`'', name = '...'`,
+`ON DUPLICATE KEY UPDATE ...`, another statement). Neither can a statement with such a part in a comment:
+
+```php
+<?php // --taint-analysis
+function store(PDO $pdo): void {
+    $bio = $pdo->quote($_GET['bio'] ?? '');
+    $pdo->exec("UPDATE users SET bio = $bio");                           // can't be parsed
+    $pdo->exec(sprintf('UPDATE users SET bio = %s', $bio));              // can't be parsed
+    $sql = "UPDATE users SET bio = $bio";
+    $pdo->exec($sql);                                                    // can't be parsed
+    $pdo->exec("UPDATE users SET bio = 'none' /* $bio */ WHERE id = 1"); // can't be parsed
+}
+
+function show(PDO $pdo): void {
+    echo (string) $pdo->query('SELECT name FROM users')->fetchColumn(); // TaintedHtml
+}
+```
 
 #### Your own database layer
 
