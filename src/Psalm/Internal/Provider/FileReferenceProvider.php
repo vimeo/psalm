@@ -151,43 +151,74 @@ final class FileReferenceProvider
      */
     private function calculateFilesReferencingFile(Codebase $codebase, string $file): array
     {
-        $file_classes = ClassLikeAnalyzer::getClassesForFile($codebase, $file);
+        $referencing_nodes = [];
 
-        if (!$file_classes) {
-            return [];
+        foreach (ClassLikeAnalyzer::getClassesForFile($codebase, $file) as $fq_class_name_lc => $_) {
+            $referencing_nodes += $this->code_use_graph->getNodesReferencingClass(strtolower($fq_class_name_lc));
         }
 
-        $referenced_files = [];
+        $referenced_files = $this->getFilesOfNodes($codebase, $referencing_nodes);
+        unset($referenced_files[$file]);
 
-        foreach ($file_classes as $fq_class_name_lc => $_) {
-            foreach ($this->code_use_graph->getNodesReferencingClass(strtolower($fq_class_name_lc)) as $node_id => $_) {
-                $node_file = $this->code_use_graph->getNodeFile($node_id);
+        return array_keys($referenced_files);
+    }
 
-                if ($node_file === null) {
-                    $owner_class = CodeUseGraph::getOwnerClass($node_id);
+    /**
+     * @return array<string, list<string>> code use graph node of a class member => the files referencing it
+     * @psalm-capabilities read-props|write-this-props|write-props|write-refs
+     */
+    public function getFilesReferencingMembers(Codebase $codebase): array
+    {
+        $members = [];
 
-                    if ($owner_class === null) {
-                        continue;
-                    }
+        foreach ($this->code_use_graph->getReferencesToMembers() as $member_node => $sources) {
+            $members[$member_node] = array_keys($this->getFilesOfNodes($codebase, $sources));
+        }
 
-                    try {
-                        $node_file = $codebase->scanner->getClassLikeFilePath($owner_class);
-                    } catch (UnexpectedValueException) {
-                        $node_file = self::$classlike_files[$owner_class] ?? null;
-                    }
+        return $members;
+    }
 
-                    if ($node_file === null) {
-                        continue;
-                    }
-                }
+    /**
+     * The files whose analysis records the references of the nodes: the file a node was seen in, and the file of
+     * the class owning it, as the method body of a trait is seen in the trait file and analysed with the class
+     * using the trait
+     *
+     * @param array<string, mixed> $nodes node id => anything
+     * @return array<string, true>
+     * @psalm-capabilities read-props|write-this-props|write-props|write-refs
+     */
+    private function getFilesOfNodes(Codebase $codebase, array $nodes): array
+    {
+        $files = [];
+        $owner_classes = [];
 
-                if ($node_file !== $file) {
-                    $referenced_files[$node_file] = true;
-                }
+        foreach ($nodes as $node_id => $_) {
+            $node_file = $this->code_use_graph->getNodeFile($node_id);
+
+            if ($node_file !== null) {
+                $files[$node_file] = true;
+            }
+
+            $owner_class = CodeUseGraph::getOwnerClass($node_id);
+
+            if ($owner_class !== null) {
+                $owner_classes[$owner_class] = true;
             }
         }
 
-        return array_keys($referenced_files);
+        foreach ($owner_classes as $owner_class => $_) {
+            try {
+                $owner_file = $codebase->scanner->getClassLikeFilePath($owner_class);
+            } catch (UnexpectedValueException) {
+                $owner_file = self::$classlike_files[$owner_class] ?? null;
+            }
+
+            if ($owner_file !== null) {
+                $files[$owner_file] = true;
+            }
+        }
+
+        return $files;
     }
 
     /**

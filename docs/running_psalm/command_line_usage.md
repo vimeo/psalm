@@ -36,6 +36,12 @@ Type coverage is the number in Psalm's summary line and on [Shepherd](#shepherd)
 
 Only full runs are checked: the option can't be combined with file paths, `--set-baseline` or `--update-baseline`, and the config attribute is skipped on such runs.
 
+With `--overlay` or `--overlays-from` the exit statuses differ: `0` no new error, `2` new errors, `255` no answer.
+
+## Overlay analysis
+
+`--overlay=ORIGINAL=REPLACEMENT` (repeatable) and `--overlays-from=FILE|-` report the issues that would be new if files had other contents, without changing anything on disk or in the cache. They need a reference index, written by a normal run with `--record-references`. `--overlay-timeout=SECONDS` limits the run from its start. See [Overlay analysis](overlays.md). `--record-references` is experimental: the option and the index may change in any release.
+
 ## Shepherd
 
 [Shepherd](https://shepherd.dev) is a free service for public GitHub projects that stores the results of your CI Psalm runs and shows your type coverage over time, with README badges.

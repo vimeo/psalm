@@ -1622,6 +1622,8 @@ final class Populator
             $this->populateGeneratorPurity($function_storage, null);
         }
 
+        $this->registerDeclarationDependencies($storage);
+
         $file_path_lc = strtolower($storage->file_path);
 
         if (isset($dependent_file_paths[$file_path_lc])) {
@@ -1743,6 +1745,19 @@ final class Populator
         }
 
         $storage->populated = true;
+    }
+
+    /**
+     * @see FileStorage::$classlikes_used_in_declarations
+     */
+    private function registerDeclarationDependencies(FileStorage $storage): void
+    {
+        foreach ($storage->classlikes_used_in_declarations as $fq_class_name) {
+            $this->file_reference_provider->addFileInheritanceToClass(
+                $storage->file_path,
+                strtolower($this->classlikes->getUnAliasedName($fq_class_name)),
+            );
+        }
     }
 
     private function inheritConstantsFromTrait(

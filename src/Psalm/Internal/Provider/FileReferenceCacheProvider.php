@@ -9,6 +9,7 @@ use Psalm\Internal\Cache;
 use Psalm\Internal\CacheMode;
 use Psalm\Internal\Codebase\Analyzer;
 use Psalm\Internal\Codebase\MutationLevelResolver;
+use Psalm\Internal\Overlay\ReferenceIndex;
 
 /**
  * Used to determine which files reference other files, necessary for using the --diff
@@ -16,6 +17,7 @@ use Psalm\Internal\Codebase\MutationLevelResolver;
  *
  * @psalm-import-type FileMapType from Analyzer
  * @psalm-import-type MutationInfo from MutationLevelResolver
+ * @psalm-import-type Data from ReferenceIndex as ReferenceIndexData
  * @internal
  */
 final class FileReferenceCacheProvider
@@ -30,6 +32,7 @@ final class FileReferenceCacheProvider
     private const UNKNOWN_MEMBER_CACHE_NAME = 'unknown_member_references';
     private const METHOD_PARAM_USE_CACHE_NAME = 'method_param_uses';
     private const CODE_USE_GRAPH_CACHE_NAME = 'code_use_graph';
+    private const REFERENCE_INDEX_CACHE_NAME = 'reference_index';
     /** @var Cache<array> */
     private readonly Cache $cache;
 
@@ -41,6 +44,12 @@ final class FileReferenceCacheProvider
     public function consolidate(): void
     {
         $this->cache->consolidate();
+    }
+
+    /** @see Cache::isCold() */
+    public function isCold(): bool
+    {
+        return $this->cache->isCold();
     }
 
     public function getCachedFileReferences(): ?array
@@ -135,6 +144,31 @@ final class FileReferenceCacheProvider
     public function setCachedCodeUseGraph(array $data): void
     {
         $this->cache->saveItem(self::CODE_USE_GRAPH_CACHE_NAME, $data);
+    }
+
+    /**
+     * @return ReferenceIndexData|null
+     */
+    public function getReferenceIndex(): ?array
+    {
+        /** @var ReferenceIndexData|null */
+        return $this->cache->getItem(self::REFERENCE_INDEX_CACHE_NAME);
+    }
+
+    /**
+     * @param ReferenceIndexData $index
+     */
+    public function setReferenceIndex(array $index): void
+    {
+        $this->cache->saveItem(self::REFERENCE_INDEX_CACHE_NAME, $index);
+    }
+
+    /**
+     * @psalm-capabilities read-props
+     */
+    public function writesToDisk(): bool
+    {
+        return $this->cache->writesToDisk();
     }
 
     /**

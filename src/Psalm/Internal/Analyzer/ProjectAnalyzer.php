@@ -16,6 +16,7 @@ use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Internal\LanguageServer\LanguageServer;
 use Psalm\Internal\MethodIdentifier;
+use Psalm\Internal\Overlay\ReferenceIndex;
 use Psalm\Internal\Provider\ClassLikeStorageProvider;
 use Psalm\Internal\Provider\FileProvider;
 use Psalm\Internal\Provider\FileReferenceProvider;
@@ -134,6 +135,16 @@ final class ProjectAnalyzer
     public bool $show_diff = false;
 
     public bool $full_run = false;
+
+    /** Whether a full run records the code use edges and writes the reference index of overlay analysis */
+    public bool $record_references = false;
+
+    /**
+     * The stamps of the files a run recording references reads, taken before it reads them
+     *
+     * @var array<string, ?string>|null
+     */
+    private ?array $reference_stamps = null;
 
     public bool $only_replace_php_types_with_non_docblock_types = false;
 
@@ -482,15 +493,25 @@ final class ProjectAnalyzer
         $project_files = $this->initProjectFiles();
         $this->initExtraFiles();
 
+        if ($this->record_references) {
+            // a file saved during the run then makes the index stale
+            $this->reference_stamps = ReferenceIndex::stampFiles([
+                ...array_values($project_files),
+                ...array_values($this->extra_files),
+                ...ReferenceIndex::getInputFiles($this->config),
+            ]);
+        }
+
         $diff_files = null;
         $deleted_files = null;
 
         $this->full_run = true;
 
-        // only `--diff`, unused code detection and reference lookups read the code use graph edges
+        // `--diff`, unused code detection, reference lookups and the reference index read the code use graph edges
         $this->codebase->code_use_graph->record_edges = $is_diff
             || $this->codebase->find_unused_code !== null
-            || $this->codebase->collect_locations;
+            || $this->codebase->collect_locations
+            || $this->record_references;
 
         $reference_cache = $this->file_reference_provider->loadReferenceCache(true);
 
@@ -567,6 +588,29 @@ final class ProjectAnalyzer
             $this->codebase->alter_code,
             true,
         );
+    }
+
+    /**
+     * What check() scans, without populating: overlay analysis replaces the scan results of overlaid files and
+     * populates in each pass
+     *
+     * @return array<string, string> the project files
+     */
+    public function scanWithoutPopulating(): array
+    {
+        $project_files = $this->initProjectFiles();
+        $this->initExtraFiles();
+        $this->full_run = true;
+
+        $this->config->visitPreloadedStubFiles($this->codebase, $this->progress, false);
+        $this->config->initializePlugins($this);
+        $this->visitAutoloadFiles();
+
+        $this->codebase->scanner->addFilesToShallowScan($this->extra_files);
+        $this->codebase->scanner->addFilesToDeepScan($project_files);
+        $this->codebase->scanFilesWithoutPopulating($this->scanThreads);
+
+        return $project_files;
     }
 
     public function consolidateAnalyzedData(): void
@@ -1072,6 +1116,11 @@ final class ProjectAnalyzer
 
         if ($this->project_cache_provider) {
             $this->project_cache_provider->processSuccessfulRun($start_time, $psalm_version);
+        }
+
+        if ($this->reference_stamps !== null && $this->file_reference_provider->cache) {
+            ReferenceIndex::build($this->codebase, array_values($this->initProjectFiles()), $this->reference_stamps)
+                ->save($this->file_reference_provider->cache);
         }
     }
 
