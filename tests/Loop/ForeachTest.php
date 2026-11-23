@@ -210,6 +210,42 @@ final class ForeachTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'varUnsetAndRedefinedBeforeAJumpStaysDefined' => [
+                'code' => '<?php
+                    /** @param list<int> $items */
+                    function f(array $items): int {
+                        $x = 0;
+                        foreach ($items as $i) {
+                            if ($i > 1) {
+                                unset($x);
+                                $x = 4;
+                                break;
+                            }
+                            if ($i) {
+                                unset($x);
+                                $x = 2;
+                                continue;
+                            }
+                        }
+                        return $x;
+                    }',
+            ],
+            'varUnsetBeforeAContinueThroughFinallyAssigningItStaysDefined' => [
+                'code' => '<?php
+                    /** @param list<int> $items */
+                    function f(array $items): int {
+                        $x = 0;
+                        foreach ($items as $_) {
+                            try {
+                                unset($x);
+                                continue;
+                            } finally {
+                                $x = 3;
+                            }
+                        }
+                        return $x;
+                    }',
+            ],
             'foreachOverAnIteratorAggregateGivenByACoalesceAssignment' => [
                 'code' => '<?php
                     /** @implements IteratorAggregate<int, string> */
@@ -1123,6 +1159,36 @@ final class ForeachTest extends TestCase
 
                     function iterate(AttributeReader $reader): void {
                         foreach ($reader->read() as $class => $attribute) {
+                            /** @psalm-check-type-exact $class = class-string<MappingAttribute> */
+                            /** @psalm-check-type-exact $attribute = MappingAttribute|RepeatableAttributeCollection<MappingAttribute> */
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'foreachOverAClassStringMapReturnedByAStaticMethodWithATemplateOfTheSameName' => [
+                'code' => <<<'PHP'
+                    <?php
+                    interface MappingAttribute {}
+
+                    /** @template T of MappingAttribute */
+                    final class RepeatableAttributeCollection {}
+
+                    final class AttributeReader {
+                        /**
+                         * @return class-string-map<T, T|RepeatableAttributeCollection<T>>
+                         *
+                         * @template T of MappingAttribute
+                         */
+                        public static function read(): array {
+                            return [];
+                        }
+                    }
+
+                    function iterate(): void {
+                        foreach (AttributeReader::read() as $class => $attribute) {
                             /** @psalm-check-type-exact $class = class-string<MappingAttribute> */
                             /** @psalm-check-type-exact $attribute = MappingAttribute|RepeatableAttributeCollection<MappingAttribute> */
                         }
@@ -3315,6 +3381,109 @@ final class ForeachTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'varUnsetBeforeContinueIsPossiblyUndefinedAfterTheLoop' => [
+                'code' => '<?php
+                    /** @param non-empty-list<int> $items */
+                    function f(array $items): void {
+                        $x = 0;
+                        foreach ($items as $i) {
+                            if ($i) {
+                                unset($x);
+                                continue;
+                            }
+                            $x = 5;
+                        }
+                        echo $x;
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable',
+            ],
+            'varConditionallyUnsetInTheBodyIsPossiblyUndefinedAfterTheLoop' => [
+                'code' => '<?php
+                    /** @param list<int> $items */
+                    function f(array $items): void {
+                        $x = 0;
+                        foreach ($items as $i) {
+                            if ($i) {
+                                unset($x);
+                            }
+                            echo $i;
+                        }
+                        echo $x;
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable',
+            ],
+            'varUnsetBeforeBreakIsPossiblyUndefinedAfterTheLoop' => [
+                'code' => '<?php
+                    /** @param list<int> $items */
+                    function f(array $items): void {
+                        $x = 0;
+                        foreach ($items as $i) {
+                            if ($i) {
+                                unset($x);
+                                break;
+                            }
+                        }
+                        echo $x;
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable',
+            ],
+            'varUnsetBeforeOneOfSeveralBreaksIsPossiblyUndefinedAfterTheLoop' => [
+                'code' => '<?php
+                    /** @param list<int> $items */
+                    function f(array $items, bool $other): void {
+                        $x = 0;
+                        foreach ($items as $i) {
+                            if ($i) {
+                                unset($x);
+                                break;
+                            }
+                            if ($other) {
+                                break;
+                            }
+                        }
+                        echo $x;
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable',
+            ],
+            'varUnsetBeforeOneOfSeveralContinuesIsPossiblyUndefinedAfterTheLoop' => [
+                'code' => '<?php
+                    /** @param list<int> $items */
+                    function f(array $items, bool $other): void {
+                        $x = 0;
+                        foreach ($items as $i) {
+                            if ($i) {
+                                unset($x);
+                                continue;
+                            }
+                            if ($other) {
+                                continue;
+                            }
+                        }
+                        echo $x;
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable',
+            ],
+            'varUnsetBeforeContinueOfTheOuterLoopIsPossiblyUndefinedAfterIt' => [
+                'code' => '<?php
+                    /**
+                     * @param list<int> $a
+                     * @param list<int> $b
+                     */
+                    function f(array $a, array $b): void {
+                        $x = 0;
+                        foreach ($a as $v) {
+                            foreach ($b as $w) {
+                                if ($w) {
+                                    unset($x);
+                                    continue 2;
+                                }
+                            }
+                            $x = 1;
+                        }
+                        echo $x;
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable',
+            ],
             'foreachIteratedExpressionAssertedTwiceInTheLoop' => [
                 'code' => '<?php
                     class Entity {
