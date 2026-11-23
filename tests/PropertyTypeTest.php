@@ -704,30 +704,36 @@ final class PropertyTypeTest extends TestCase
         self::assertSame(['UndefinedDocblockClass src' . DIRECTORY_SEPARATOR . 'parent.php:7'], $issues);
     }
 
-    public function testStaticPropertyOfSeveralClassesIsCheckedOnceAndAnalysisGoesOn(): void
+    public function testCodeAfterAnInvalidStaticPropertyAssignmentIsAnalyzed(): void
     {
         $this->testConfig->throw_exception = false;
 
         $file_path = self::$src_dir_path . 'somefile.php';
 
         $this->addFile($file_path, '<?php
-            final class P {
-                public static string $s = "";
+            final class S {
+                public static int $x = 0;
+                /** @var list<int> */
+                public static array $l = [];
             }
 
-            final class Q {
-                public static string $s = "";
+            function possiblyInvalid(int|float $v): void {
+                S::$x = $v;
+                undefinedFunction1();
             }
 
-            /** @param class-string<P>|class-string<Q> $c */
-            function set(string $c): void {
-                $c::$s = 1.0;
-                undefinedAfterSeveral();
-                P::$s = 1.0;
-                undefinedAfterInvalid();
+            function invalid(float $v): void {
+                S::$x = $v;
+                undefinedFunction2();
+            }
+
+            function invalidOffset(): void {
+                S::$l[] = "x";
+                undefinedFunction3();
             }
         ');
 
+        $this->project_analyzer->setPhpVersion('8.0', 'tests');
         $this->analyzeFile($file_path, new Context());
 
         $issues = [];
@@ -738,10 +744,12 @@ final class PropertyTypeTest extends TestCase
 
         self::assertSame(
             [
-                'InvalidPropertyAssignmentValue:12',
-                'UndefinedFunction:13',
+                'PossiblyInvalidPropertyAssignmentValue:9',
+                'UndefinedFunction:10',
                 'InvalidPropertyAssignmentValue:14',
                 'UndefinedFunction:15',
+                'InvalidPropertyAssignmentValue:19',
+                'UndefinedFunction:20',
             ],
             $issues,
         );
