@@ -1606,16 +1606,21 @@ final class ArithmeticOpAnalyzer
         $min_value = min($products);
         $max_value = max($products);
 
-        // a float is an infinite bound or an overflow, so the result is unbounded on that side
-        $new_result_type = is_int($min_value) || is_int($max_value)
-            ? Type::getIntRange(is_int($min_value) ? $min_value : null, is_int($max_value) ? $max_value : null)
-            : Type::getInt(true);
+        $min_bound = is_int($min_value) ? $min_value : null;
+        $max_bound = is_int($max_value) ? $max_value : null;
+
+        // an unbounded side may overflow to a float
+        $new_result_type = new Union(
+            [$min_bound === null && $max_bound === null ? new TInt() : new TIntRange($min_bound, $max_bound)],
+            ['from_calculation' => $min_bound === null || $max_bound === null],
+        );
 
         $result_type = Type::combineUnionTypes($new_result_type, $result_type);
     }
 
     /**
-     * Multiplies two range bounds, a null bound being the infinity of the given sign
+     * Multiplies two range bounds, a null bound being the infinity of the given sign.
+     * Returns INF or -INF for an infinite or overflowing product.
      *
      * @param -1|1 $infinity_sign1
      * @param -1|1 $infinity_sign2
@@ -1632,7 +1637,15 @@ final class ArithmeticOpAnalyzer
             return 0;
         }
 
-        return ($bound1 ?? $infinity_sign1 * INF) * ($bound2 ?? $infinity_sign2 * INF);
+        if ($bound1 !== null && $bound2 !== null) {
+            $product = $bound1 * $bound2;
+
+            if (is_int($product)) {
+                return $product;
+            }
+        }
+
+        return (($bound1 ?? $infinity_sign1) > 0) === (($bound2 ?? $infinity_sign2) > 0) ? INF : -INF;
     }
 
     /**

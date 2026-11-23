@@ -595,14 +595,43 @@ final class IntRangeTest extends TestCase
                     function getUpToHuge(): int { return 0; }
                     /** @return int<2, 3> */
                     function getSmall(): int { return 2; }
+                    /** @return int<3074457345618258602, 3074457345618258603> */
+                    function getThirdOfMax(): int { return 3074457345618258602; }
 
                     $a = getHuge() * getSmall();
                     $b = getUpToHuge() * getSmall();
+                    $c = getThirdOfMax() * 3;
                     ',
                 'assertions' => [
                     '$a===' => 'int',
                     '$b===' => 'int<-15, max>',
+                    '$c===' => 'int<9223372036854775806, max>',
                 ],
+            ],
+            'multiplicationWithAnUnboundedSideMayOverflowToFloat' => [
+                'code' => '<?php
+                    /** @return int<min, 1> */
+                    function getUpToOne(): int { return 1; }
+                    /** @return int<-2, 0> */
+                    function getSmallNonPositive(): int { return 0; }
+                    /** @return positive-int */
+                    function getPositive(): int { return 1; }
+
+                    function f(): int {
+                        $p = getUpToOne() * getSmallNonPositive();
+                        if (is_float($p)) {
+                            return 0;
+                        }
+                        return $p;
+                    }
+
+                    function g(): int {
+                        $p = getPositive() * getPositive();
+                        if (is_float($p)) {
+                            return 0;
+                        }
+                        return $p;
+                    }',
             ],
             'multiplicationSignMatrix' => [
                 'code' => '<?php
