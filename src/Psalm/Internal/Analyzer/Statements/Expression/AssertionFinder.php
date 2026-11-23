@@ -124,6 +124,7 @@ use Psalm\Type\Union;
 use UnexpectedValueException;
 
 use function array_all;
+use function array_keys;
 use function array_map;
 use function array_push;
 use function assert;
@@ -917,6 +918,8 @@ final class AssertionFinder
             if ($first_var_name) {
                 $if_types[$first_var_name] = [[new IsType(new TCallableString())]];
             }
+        } elseif ($function_id === 'extension_loaded') {
+            // see getCheckedExtensions()
         } elseif ($function_id === 'method_exists'
             && isset($expr->getArgs()[1])
             && $expr->getArgs()[1]->value instanceof PhpParser\Node\Scalar\String_
@@ -973,6 +976,25 @@ final class AssertionFinder
             return self::processCustomAssertion($expr, $this_class_name, $source);
         }
 
+        $if_types += self::getGuardAssertions($expr, $function_id, $source, $codebase, $first_var_type);
+
+        return $if_types ? [$if_types] : [];
+    }
+
+    /**
+     * The assertions on the pseudo-variables of a check that a native symbol or an extension is available
+     *
+     * @return array<string, non-empty-list<non-empty-list<Assertion>>>
+     */
+    private static function getGuardAssertions(
+        PhpParser\Node\Expr\FuncCall $expr,
+        ?string $function_id,
+        FileSource $source,
+        ?Codebase $codebase,
+        ?Union $first_var_type,
+    ): array {
+        $if_types = [];
+
         $native_symbol_guard = self::getNativeSymbolGuardAssertion(
             $expr,
             $function_id,
@@ -984,7 +1006,45 @@ final class AssertionFinder
             $if_types[Context::PHP_SYMBOL_GUARD_VAR_ID] = [[$native_symbol_guard]];
         }
 
-        return $if_types ? [$if_types] : [];
+        foreach (self::getCheckedExtensions($expr, $function_id) as $checked_extension) {
+            $if_types[Context::getExtensionVarId($checked_extension)] = [[new IsType(new TTrue())]];
+        }
+
+        return $if_types;
+    }
+
+    /**
+     * The extension an `extension_loaded()` call checks, or the extensions of the builtin function or class a
+     * `function_exists()`, `class_exists()`, `interface_exists()` or `enum_exists()` call checks
+     *
+     * @return list<string>
+     */
+    private static function getCheckedExtensions(
+        PhpParser\Node\Expr\FuncCall $expr,
+        ?string $function_id,
+    ): array {
+        $first_arg = $expr->isFirstClassCallable() ? null : ($expr->getArgs()[0] ?? null);
+        if ($first_arg === null) {
+            return [];
+        }
+
+        if ($function_id === 'extension_loaded') {
+            return $first_arg->value instanceof PhpParser\Node\Scalar\String_ ? [$first_arg->value->value] : [];
+        }
+
+        if ($function_id === 'function_exists') {
+            return $first_arg->value instanceof PhpParser\Node\Scalar\String_
+                ? array_keys(InternalCallMapHandler::getExtensions($first_arg->value->value, false))
+                : [];
+        }
+
+        if (in_array($function_id, ['class_exists', 'interface_exists', 'enum_exists'], true)) {
+            $class = self::getLiteralClassName($first_arg->value);
+
+            return $class !== null ? array_keys(InternalCallMapHandler::getExtensions($class, true)) : [];
+        }
+
+        return [];
     }
 
     /**
@@ -1232,21 +1292,21 @@ final class AssertionFinder
                         $if_types[$var_name] = self::getAlternatives($assertion->rule);
                     }
                 } elseif ($assertion->var_id === '$this') {
-                    if (!$expr instanceof PhpParser\Node\Expr\MethodCall) {
+                    if ($expr instanceof PhpParser\Node\Expr\FuncCall) {
                         IssueBuffer::maybeAdd(
                             new InvalidDocblock(
                                 'Assertion of $this can be done only on method of a class',
                                 new CodeLocation($source, $expr),
                             ),
+                            $source->getSuppressedIssues(),
                         );
                         continue;
                     }
 
-                    $var_id = ExpressionIdentifier::getExtendedVarId(
-                        $expr->var,
-                        $this_class_name,
-                        $source,
-                    );
+                    // a static call keeps its assertions on `$this` only when it is called on `$this`
+                    $var_id = $expr instanceof PhpParser\Node\Expr\MethodCall
+                        ? ExpressionIdentifier::getExtendedVarId($expr->var, $this_class_name, $source)
+                        : '$this';
 
                     if ($var_id) {
                         $if_types[$var_id] = self::getAlternatives($assertion->rule);
@@ -1295,6 +1355,7 @@ final class AssertionFinder
                                 sprintf('Assertion of variable "%s" cannot be recognized', $assertion->var_id),
                                 new CodeLocation($source, $expr),
                             ),
+                            $source->getSuppressedIssues(),
                         );
                         continue;
                     }
@@ -1388,6 +1449,7 @@ final class AssertionFinder
                                 sprintf('Assertion of variable "%s" cannot be recognized', $assertion->var_id),
                                 new CodeLocation($source, $expr),
                             ),
+                            $source->getSuppressedIssues(),
                         );
                     }
                 }
@@ -1423,6 +1485,7 @@ final class AssertionFinder
                     'Variable '.$var_id.' is not an argument so cannot be asserted',
                     new CodeLocation($source, $expr),
                 ),
+                $source->getSuppressedIssues(),
             );
 
             return null;
@@ -1438,6 +1501,7 @@ final class AssertionFinder
                     'Variable being asserted as argument ' . ((int) $var_id + 1) . ' cannot be found in local scope',
                     new CodeLocation($source, $expr),
                 ),
+                $source->getSuppressedIssues(),
             );
 
             return null;
@@ -1454,6 +1518,7 @@ final class AssertionFinder
             if (null !== $failedMessage) {
                 IssueBuffer::maybeAdd(
                     new InvalidDocblock($failedMessage, new CodeLocation($source, $expr)),
+                    $source->getSuppressedIssues(),
                 );
 
                 return null;
