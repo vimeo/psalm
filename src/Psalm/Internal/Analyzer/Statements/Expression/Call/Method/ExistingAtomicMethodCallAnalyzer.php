@@ -298,12 +298,13 @@ final class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
         $overload = null;
 
         if ($method_storage && $method_storage->overloads !== [] && !$is_first_class_callable) {
-            $overload = OverloadSelector::select(
+            $overload = OverloadSelector::selectOrReal(
                 $statements_analyzer,
                 $codebase,
                 $args,
                 $context,
                 $method_storage->overloads,
+                $method_storage,
             );
         }
 

@@ -476,8 +476,8 @@ final class MethodCallTest extends TestCase
                 'code' => '<?php
                     class Base {
                         /**
-                         * @psalm-overload (string $name): self
-                         * @psalm-overload (int $id): static
+                         * @psalm-overload (string $argument): self
+                         * @psalm-overload (int $argument): static
                          */
                         public function with(string|int $argument): static {
                             return $this;
@@ -496,6 +496,68 @@ final class MethodCallTest extends TestCase
                 ],
                 'ignored_issues' => [],
                 'php_version' => '8.1',
+            ],
+            'psalmOverloadOfAMethodWithAUnionArgumentFallsBackToTheRealSignature' => [
+                'code' => '<?php
+                    final class Picker {
+                        /**
+                         * @psalm-overload (int $x): int
+                         * @psalm-overload (string $x): string
+                         */
+                        public function pick(int|string $x): int|string {
+                            return $x;
+                        }
+                    }
+
+                    /** @var int|string $v */
+                    $either = (new Picker())->pick($v);
+                    $int = (new Picker())->pick(1);',
+                'assertions' => [
+                    '$either===' => 'int|string',
+                    '$int===' => 'int',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'psalmOverloadOfAStaticMethodWithAUnionArgumentFallsBackToTheRealSignature' => [
+                'code' => '<?php
+                    final class Picker {
+                        /**
+                         * @psalm-overload (int $x): int
+                         * @psalm-overload (string $x): string
+                         */
+                        public static function pick(int|string $x): int|string {
+                            return $x;
+                        }
+                    }
+
+                    /** @var int|string $v */
+                    $either = Picker::pick($v);
+                    $int = Picker::pick(1);',
+                'assertions' => [
+                    '$either===' => 'int|string',
+                    '$int===' => 'int',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'psalmOverloadOfAMethodKeepsTheByReferenceOfTheRealParameter' => [
+                'code' => '<?php
+                    final class Filler {
+                        /**
+                         * @param-out list<int> $a
+                         * @psalm-overload (array $a): void
+                         */
+                        public function fill(array &$a): void {
+                            $a = [1];
+                        }
+                    }
+
+                    $arr = ["x"];
+                    (new Filler())->fill($arr);',
+                'assertions' => [
+                    '$arr===' => 'list<int>',
+                ],
             ],
             'methodWithOverloadsAsAFirstClassCallableKeepsItsOwnSignature' => [
                 'code' => '<?php
@@ -3640,8 +3702,8 @@ final class MethodCallTest extends TestCase
 
                     final class Repository {
                         /**
-                         * @psalm-overload (int $page): PagedResult
-                         * @psalm-overload (string $query): PlainResult
+                         * @psalm-overload (int $argument): PagedResult
+                         * @psalm-overload (string $argument): PlainResult
                          */
                         public function search(int|string $argument): object {
                             return new PlainResult();

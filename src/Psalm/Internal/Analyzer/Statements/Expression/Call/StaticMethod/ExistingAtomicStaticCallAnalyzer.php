@@ -181,12 +181,13 @@ final class ExistingAtomicStaticCallAnalyzer
         $overload = null;
 
         if ($method_storage && $method_storage->overloads !== [] && !$stmt->isFirstClassCallable()) {
-            $overload = OverloadSelector::select(
+            $overload = OverloadSelector::selectOrReal(
                 $statements_analyzer,
                 $codebase,
                 $args,
                 $context,
                 $method_storage->overloads,
+                $method_storage,
             );
         }
 
