@@ -6,7 +6,6 @@ namespace Psalm\Tests\Internal\Fork;
 
 use Amp\Parallel\Worker\TaskFailureException;
 use Override;
-use PHPUnit\Framework\AssertionFailedError;
 use PHPUnit\Framework\TestCase;
 use Psalm\Internal\Fork\Pool;
 use Psalm\Progress\VoidProgress;
@@ -49,7 +48,7 @@ final class PoolTest extends TestCase
     {
         // a lost result leaves run() waiting forever
         $guard = EventLoop::delay(30, static function (): never {
-            throw new AssertionFailedError('Pool::run() was still waiting for a result after 30s');
+            throw new RuntimeException('Pool::run() was still waiting for a result after 30s');
         });
         EventLoop::unreference($guard);
 
