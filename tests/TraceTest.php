@@ -51,20 +51,21 @@ final class TraceTest extends TestCase
                     }',
                 'error_message' => 'Trace - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:60 - self::$name: string',
             ],
-            'traceStaticPropertyNarrowedByAnAssignment' => [
+            'traceStaticPropertyOfParentExpandsSelfInItsDeclaredType' => [
                 'code' => '<?php
-                    final class Registry {
-                        /** @var list<int> */
-                        public static array $ids = [];
+                    class Box {
+                        /** @var array<self> */
+                        public static array $items = [];
+                    }
 
-                        public static function reset(): void {
-                            self::$ids = [1];
-                            /** @psalm-trace Registry::$ids */;
+                    final class Child extends Box {
+                        public static function show(): void {
+                            /** @psalm-trace parent::$items */;
                         }
                     }',
-                'error_message' => 'Registry::$ids: list{1',
+                'error_message' => 'parent::$items: array<array-key, Box',
             ],
-            'traceStaticPropertyNarrowedThroughStatic' => [
+            'traceSelfPropertyIgnoresWhatWasWrittenThroughStatic' => [
                 'code' => '<?php
                     class Registry {
                         /** @var list<int> */
@@ -75,7 +76,18 @@ final class TraceTest extends TestCase
                             /** @psalm-trace self::$ids */;
                         }
                     }',
-                'error_message' => 'self::$ids: list{1',
+                'error_message' => 'self::$ids: list<int',
+            ],
+            'traceInstancePropertyNamedStaticallyIsUndefined' => [
+                'code' => '<?php
+                    final class Config {
+                        public string $name = "app";
+
+                        public static function show(): void {
+                            /** @psalm-trace self::$name */;
+                        }
+                    }',
+                'error_message' => 'UndefinedTrace',
             ],
             'traceUndefinedStaticProperty' => [
                 'code' => '<?php

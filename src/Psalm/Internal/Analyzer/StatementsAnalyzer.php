@@ -51,6 +51,7 @@ use Psalm\Internal\Provider\TypeVariableResolvingNodeTypeProvider;
 use Psalm\Internal\ReferenceConstraint;
 use Psalm\Internal\Scanner\ParsedDocblock;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
+use Psalm\Internal\Type\TypeExpander;
 use Psalm\Internal\Type\TypeParser;
 use Psalm\Internal\Type\TypeTokenizer;
 use Psalm\Internal\Type\TypeVariableTracker;
@@ -472,20 +473,32 @@ final class StatementsAnalyzer extends SourceAnalyzer
             return $context->vars_in_scope[$property_id];
         }
 
-        // what is written through `static::` is known under that name
-        if ($context->self !== null
-            && strtolower($fq_class_name) === strtolower($context->self)
-            && isset($context->vars_in_scope['static::$' . $property_name])
-        ) {
-            return $context->vars_in_scope['static::$' . $property_name];
-        }
+        $declaring_class = $codebase->properties->getDeclaringClassForProperty(
+            $property_id,
+            true,
+            $statements_analyzer,
+        );
 
-        if (!$codebase->properties->propertyExists($codebase, $property_id, true)) {
+        if ($declaring_class === null) {
             return null;
         }
 
-        return $codebase->properties->getPropertyType($property_id, false, $statements_analyzer, $context)
-            ?? Type::getMixed();
+        $class_storage = $codebase->classlike_storage_provider->get($declaring_class);
+        $property = $class_storage->properties[$property_name];
+
+        if (!$property->is_static) {
+            return null;
+        }
+
+        return $property->type
+            ? TypeExpander::expandUnion(
+                $codebase,
+                $property->type,
+                $class_storage->name,
+                $class_storage->name,
+                $class_storage->parent_class,
+            )
+            : Type::getMixed();
     }
 
     /**
