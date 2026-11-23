@@ -53,6 +53,24 @@ final class ReferenceConstraintTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'foreachByReferenceOverAPropertyMayWriteItsItemType' => [
+                'code' => '<?php
+                    final class A {
+                        /** @var list<int> */
+                        public array $ints = [];
+
+                        /** @param list<string> $strings */
+                        public function f(array $strings): array {
+                            foreach ($this->ints as &$v) {
+                                $v = $v + 1;
+                            }
+                            foreach ($strings as &$v) {
+                                $v = "s";
+                            }
+                            return $strings;
+                        }
+                    }',
+            ],
             'paramOutOfAByRefParamWhoseTemplateItsOwnArgumentBindsIsNotHandledAgain' => [
                 'code' => '<?php
                     function run(string $command): string {
@@ -896,6 +914,34 @@ final class ReferenceConstraintTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'foreachByReferenceOverAPropertyChecksItsItemType' => [
+                'code' => '<?php
+                    final class A {
+                        /** @var list<int> */
+                        public array $ints = [];
+
+                        public function f(): void {
+                            foreach ($this->ints as &$v) {
+                                $v = "s";
+                            }
+                        }
+                    }',
+                'error_message' => 'ReferenceConstraintViolation',
+            ],
+            'foreachByReferenceOverAnItemOfAStaticPropertyChecksItsItemType' => [
+                'code' => '<?php
+                    final class A {
+                        /** @var array<string, list<int>> */
+                        public static array $nested = ["k" => []];
+
+                        public static function f(): void {
+                            foreach (self::$nested["k"] as &$v) {
+                                $v = "s";
+                            }
+                        }
+                    }',
+                'error_message' => 'ReferenceConstraintViolation',
+            ],
             'paramOutOfAByRefPropertyBeforeTheArgumentThatBindsItsTemplateIsCheckedAgainstItsDeclaredType' => [
                 'code' => '<?php
                     /**

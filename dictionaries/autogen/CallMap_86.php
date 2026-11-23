@@ -20555,6 +20555,18 @@ return array (
     'variant=' => 'int',
     '&idna_info=' => 'mixed',
   ),
+  'igbinary_serialize' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'value' => 'mixed',
+  ),
+  'igbinary_unserialize' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'str' => 'mixed',
+  ),
   'ignore_user_abort' => 
   array (
     -1 => 'int',
