@@ -10,6 +10,7 @@ use Amp\Sync\Channel;
 use Override;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Codebase\Scanner;
+use Psalm\Internal\Perf;
 use Psalm\IssueBuffer;
 
 use const PHP_EOL;
@@ -33,6 +34,7 @@ final class ShutdownScannerTask implements Task
         $project_analyzer = ProjectAnalyzer::getInstance();
         $codebase = $project_analyzer->getCodebase();
         $statements_provider = $codebase->statements_provider;
+        $perf = Perf\Collector::workerData();
 
         return [
             'classlikes_data' => $codebase->classlikes->getThreadData(),
@@ -55,6 +57,6 @@ final class ShutdownScannerTask implements Task
                 'functions',
                 $codebase->functions->getAllStubbedFunctions(),
             ),
-        ];
+        ] + ($perf !== null ? ['perf' => $perf] : []);
     }
 }
