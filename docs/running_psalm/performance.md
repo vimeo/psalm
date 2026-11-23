@@ -14,7 +14,7 @@
 
 The path needs the `=`: after a space it is a file to analyse. Use `--no-cache` to measure a cold run, and leave out `--debug`, which distorts the timings. Times per file are most reliable with `--threads=1`.
 
-Measuring costs some CPU itself, from 0 to about 10 %, mostly for timing each call of a plugin or Psalm handler. Without the option Psalm measures nothing and runs as fast as before.
+Measuring costs some CPU itself, from 0 to about 10 %; the upper end is reached with plugins. Without the option Psalm measures nothing and runs as fast as before.
 
 ## The dump
 
