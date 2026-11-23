@@ -146,6 +146,63 @@ final class NamedFunctionCallHandler
     private const CSV_ESCAPE_POSITIONS = ['fgetcsv' => 4, 'fputcsv' => 4, 'str_getcsv' => 3];
 
     /**
+     * the functions deprecated when called with more than ('>') or exactly ('===') this number of arguments,
+     * by what is deprecated, since when, its replacement and what to append to the message
+     */
+    private const DEPRECATED_CALL_SHAPES = [
+        'mb_check_encoding' => ['===', 0, 'Calling mb_check_encoding() without arguments', 8_01_00, null, ''],
+        'mysqli_get_client_info' => [
+            '>', 0, 'Passing a connection to mysqli_get_client_info()', 8_01_00, null, ', leave it out',
+        ],
+        'imagepolygon' => ['>', 3, 'The num_points argument of imagepolygon()', 8_01_00, null, ', leave it out'],
+        'imageopenpolygon' => [
+            '>', 3, 'The num_points argument of imageopenpolygon()', 8_01_00, null, ', leave it out',
+        ],
+        'imagefilledpolygon' => [
+            '>', 3, 'The num_points argument of imagefilledpolygon()', 8_01_00, null, ', leave it out',
+        ],
+        'get_class' => [
+            '===', 0, 'Calling get_class() without arguments', 8_03_00, 'self::class or static::class', '',
+        ],
+        'get_parent_class' => [
+            '===', 0, 'Calling get_parent_class() without arguments', 8_03_00, 'get_parent_class($this)', '',
+        ],
+        'ldap_connect' => [
+            '>', 1, 'Calling ldap_connect() with more than one argument', 8_03_00, null, ', pass an LDAP URI',
+        ],
+        'pg_fetch_result' => [
+            '===', 2, 'Calling pg_fetch_result() with two arguments', 8_04_00, null, ', pass null as the row',
+        ],
+        'pg_field_prtlen' => [
+            '===', 2, 'Calling pg_field_prtlen() with two arguments', 8_04_00, null, ', pass null as the row',
+        ],
+        'pg_field_is_null' => [
+            '===', 2, 'Calling pg_field_is_null() with two arguments', 8_04_00, null, ', pass null as the row',
+        ],
+        'intlcal_set' => [
+            '>', 3, 'Calling intlcal_set() with more than three arguments', 8_04_00,
+            'IntlCalendar::setDate() or IntlCalendar::setDateTime()', '',
+        ],
+        'intlgregcal_create_instance' => [
+            '>', 2, 'Calling intlgregcal_create_instance() with more than two arguments', 8_04_00,
+            'IntlGregorianCalendar::createFromDate() or IntlGregorianCalendar::createFromDateTime()', '',
+        ],
+        'ldap_exop' => ['>', 4, 'Calling ldap_exop() with more than four arguments', 8_04_00, 'ldap_exop_sync()', ''],
+        'mysqli_store_result' => [
+            '>', 1, 'The mode argument of mysqli_store_result()', 8_04_00, null, ', leave it out',
+        ],
+        'stream_context_set_option' => [
+            '===', 2, 'Calling stream_context_set_option() with an array of options', 8_04_00,
+            'stream_context_set_options()', '',
+        ],
+        'openssl_pkey_derive' => [
+            '>', 2, 'The key_length argument of openssl_pkey_derive()', 8_05_00, null, ', leave it out',
+        ],
+        'finfo_buffer' => ['>', 3, 'The context argument of finfo_buffer()', 8_05_00, null, ', leave it out'],
+        'define' => ['>', 2, 'The case_insensitive argument of define()', 8_06_00, null, ', leave it out'],
+    ];
+
+    /**
      * @param lowercase-string $function_id
      */
     public static function handle(
@@ -1051,65 +1108,17 @@ final class NamedFunctionCallHandler
         string $function_id,
         array $types,
     ): ?string {
+        if (isset(self::DEPRECATED_CALL_SHAPES[$function_id])) {
+            [$operator, $count, $subject, $since, $replacement, $suffix] = self::DEPRECATED_CALL_SHAPES[$function_id];
+
+            if ($operator === '>' ? count($types) > $count : count($types) === $count) {
+                return PhpDeprecations::getDeprecatedSinceMessage($subject, $since, $replacement) . $suffix;
+            }
+
+            return null;
+        }
+
         switch ($function_id) {
-            case 'mb_check_encoding':
-                if ($types === []) {
-                    return PhpDeprecations::getDeprecatedSinceMessage(
-                        'Calling mb_check_encoding() without arguments',
-                        8_01_00,
-                        null,
-                    );
-                }
-
-                return null;
-
-            case 'mysqli_get_client_info':
-                if ($types !== []) {
-                    return PhpDeprecations::getDeprecatedSinceMessage(
-                        'Passing a connection to mysqli_get_client_info()',
-                        8_01_00,
-                        null,
-                    ) . ', leave it out';
-                }
-
-                return null;
-
-            case 'imagepolygon':
-            case 'imageopenpolygon':
-            case 'imagefilledpolygon':
-                if (count($types) > 3) {
-                    return PhpDeprecations::getDeprecatedSinceMessage(
-                        'The num_points argument of ' . $function_id . '()',
-                        8_01_00,
-                        null,
-                    ) . ', leave it out';
-                }
-
-                return null;
-
-            case 'get_class':
-            case 'get_parent_class':
-                if ($types === []) {
-                    return PhpDeprecations::getDeprecatedSinceMessage(
-                        'Calling ' . $function_id . '() without arguments',
-                        8_03_00,
-                        $function_id === 'get_class' ? 'self::class or static::class' : 'get_parent_class($this)',
-                    );
-                }
-
-                return null;
-
-            case 'ldap_connect':
-                if (count($types) > 1) {
-                    return PhpDeprecations::getDeprecatedSinceMessage(
-                        'Calling ldap_connect() with more than one argument',
-                        8_03_00,
-                        null,
-                    ) . ', pass an LDAP URI';
-                }
-
-                return null;
-
             case 'dba_fetch':
                 if (count($types) === 3 && ($types[1] ?? null)?->isInt()) {
                     return PhpDeprecations::getDeprecatedSinceMessage(
@@ -1117,96 +1126,6 @@ final class NamedFunctionCallHandler
                         8_03_00,
                         null,
                     ) . ', pass it second and skip third';
-                }
-
-                return null;
-
-            case 'pg_fetch_result':
-            case 'pg_field_prtlen':
-            case 'pg_field_is_null':
-                if (count($types) === 2) {
-                    return PhpDeprecations::getDeprecatedSinceMessage(
-                        'Calling ' . $function_id . '() with two arguments',
-                        8_04_00,
-                        null,
-                    ) . ', pass null as the row';
-                }
-
-                return null;
-
-            case 'intlcal_set':
-                if (count($types) > 3) {
-                    return PhpDeprecations::getDeprecatedSinceMessage(
-                        'Calling intlcal_set() with more than three arguments',
-                        8_04_00,
-                        'IntlCalendar::setDate() or IntlCalendar::setDateTime()',
-                    );
-                }
-
-                return null;
-
-            case 'intlgregcal_create_instance':
-                if (count($types) > 2) {
-                    return PhpDeprecations::getDeprecatedSinceMessage(
-                        'Calling intlgregcal_create_instance() with more than two arguments',
-                        8_04_00,
-                        'IntlGregorianCalendar::createFromDate() or IntlGregorianCalendar::createFromDateTime()',
-                    );
-                }
-
-                return null;
-
-            case 'ldap_exop':
-                if (count($types) > 4) {
-                    return PhpDeprecations::getDeprecatedSinceMessage(
-                        'Calling ldap_exop() with more than four arguments',
-                        8_04_00,
-                        'ldap_exop_sync()',
-                    );
-                }
-
-                return null;
-
-            case 'mysqli_store_result':
-                if (count($types) > 1) {
-                    return PhpDeprecations::getDeprecatedSinceMessage(
-                        'The mode argument of mysqli_store_result()',
-                        8_04_00,
-                        null,
-                    ) . ', leave it out';
-                }
-
-                return null;
-
-            case 'stream_context_set_option':
-                if (count($types) === 2) {
-                    return PhpDeprecations::getDeprecatedSinceMessage(
-                        'Calling stream_context_set_option() with an array of options',
-                        8_04_00,
-                        'stream_context_set_options()',
-                    );
-                }
-
-                return null;
-
-            case 'openssl_pkey_derive':
-                if (count($types) > 2) {
-                    return PhpDeprecations::getDeprecatedSinceMessage(
-                        'The key_length argument of openssl_pkey_derive()',
-                        8_05_00,
-                        null,
-                    ) . ', leave it out';
-                }
-
-                return null;
-
-            case 'finfo_buffer':
-                if (count($types) > 3) {
-                    return PhpDeprecations::getDeprecatedSinceMessage(
-                        'The context argument of finfo_buffer()',
-                        8_05_00,
-                        null,
-                    ) . ', leave it out';
                 }
 
                 return null;
@@ -1220,17 +1139,6 @@ final class NamedFunctionCallHandler
                         8_05_00,
                         null,
                     ) . ', pass the handle opendir() returned';
-                }
-
-                return null;
-
-            case 'define':
-                if (count($types) > 2) {
-                    return PhpDeprecations::getDeprecatedSinceMessage(
-                        'The case_insensitive argument of define()',
-                        8_06_00,
-                        null,
-                    ) . ', leave it out';
                 }
 
                 return null;
