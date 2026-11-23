@@ -38,6 +38,7 @@ use function getcwd;
 use function json_decode;
 use function json_encode;
 use function rand;
+use function sort;
 use function sys_get_temp_dir;
 use function tempnam;
 use function unlink;
@@ -228,6 +229,87 @@ final class DiagnosticTest extends AsyncTestCase
         $file_path = (string) getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'Baselined\\file.php';
 
         $this->assertSame([['UndefinedFunction', DiagnosticSeverity::WARNING]], $this->publishBaselined($file_path));
+    }
+
+    /**
+     * The server keeps the issues of the methods it doesn't analyse again, and applies the baseline to them anew
+     */
+    public function testAnIssueTheBaselineNoLongerCoversIsPublishedAsAnError(): void
+    {
+        $file_path = (string) getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'Baselined'
+            . DIRECTORY_SEPARATOR . 'file.php';
+        $baseline = (string) tempnam(sys_get_temp_dir(), 'psalm-baseline');
+        file_put_contents($baseline, '<?xml version="1.0" encoding="UTF-8"?>
+            <files psalm-version="dev">
+              <file src="src/Baselined/file.php">
+                <UndefinedFunction>
+                  <code><![CDATA[undefined_function()]]></code>
+                </UndefinedFunction>
+              </file>
+            </files>');
+        $this->codebase->config->throw_exception = false;
+        $class = static fn(string $first_body): string => '<?php
+            class Baselined
+            {
+                public function first(): void
+                {
+                    ' . $first_body . '
+                }
+
+                public function second(): void
+                {
+                    undefined_function();
+                }
+            }';
+        $this->file_provider->registerFile($file_path, $class(''));
+
+        $client_configuration = new ClientConfiguration();
+        $client_configuration->provideDiagnostics = true;
+        $client_configuration->hideWarnings = false;
+        $client_configuration->baseline = $baseline;
+        $write = new MockProtocolStream();
+        $server = new LanguageServer(
+            new MockProtocolStream(),
+            $write,
+            $this->project_analyzer,
+            $this->codebase,
+            $client_configuration,
+            new Progress,
+            new PathMapper((string) getcwd(), (string) getcwd()),
+        );
+
+        /** @var list<list<int>> $published the severities of the UndefinedFunction issues of each publication */
+        $published = [];
+        $write->on('message', static function (Message $message) use (&$published): void {
+            if ($message->body instanceof Notification && $message->body->method === 'textDocument/publishDiagnostics') {
+                /** @var array{params: array{diagnostics: list<array{severity: int, data: array{type: string}}>}} $body */
+                $body = json_decode((string) $message->body, true, 512, JSON_THROW_ON_ERROR);
+                $severities = [];
+                foreach ($body['params']['diagnostics'] as $diagnostic) {
+                    if ($diagnostic['data']['type'] === 'UndefinedFunction') {
+                        $severities[] = $diagnostic['severity'];
+                    }
+                }
+                sort($severities);
+                $published[] = $severities;
+            }
+        });
+
+        try {
+            $server->initialize(new ClientCapabilities());
+            $server->doVersionedAnalysis([$file_path => 'file://' . $file_path], 1);
+            // the first method takes the one baseline entry; the second is not analysed again
+            $this->codebase->addTemporaryFileChanges($file_path, $class('undefined_function();'), 2);
+            $server->doVersionedAnalysis([$file_path => 'file://' . $file_path], 2);
+            delay(0.5);
+        } finally {
+            unlink($baseline);
+        }
+
+        $this->assertSame(
+            [[DiagnosticSeverity::WARNING], [DiagnosticSeverity::ERROR, DiagnosticSeverity::WARNING]],
+            $published,
+        );
     }
 
     /**
