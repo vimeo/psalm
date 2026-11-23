@@ -143,6 +143,7 @@ final class ForeachAnalyzer
                         $e->getMessage(),
                         new CodeLocation($statements_analyzer, $stmt),
                     ),
+                    $statements_analyzer->getSuppressedIssues(),
                 );
             }
         }
