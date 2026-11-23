@@ -102,7 +102,7 @@ Psalm doesn't analyse. More forms: `docs/security_analysis/taint_flow.md`.
 - One helper mixes the taints of all its callers: `@psalm-taint-specialize` on it tracks each call
   separately.
 - Paths through test code: `<taintAnalysis><ignoreFiles><directory name="tests"/></ignoreFiles></taintAnalysis>`.
-- Details and the remaining cases: `docs/security_analysis/avoiding_false_positives.md`.
+- Details and the remaining cases: `docs/security_analysis/index.md`.
 
 Missing findings (a sink you expected is not reported): check that the extension is enabled (`ext-pdo`,
 `ext-mysqli` in `composer.json`, see [config.md](config.md)), then `--dump-taint-graph=taints.dot`.
