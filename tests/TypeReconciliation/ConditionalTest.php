@@ -6694,6 +6694,35 @@ final class ConditionalTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'classNotEqualToAFinalClassExcludesIt' => [
+                'code' => '<?php
+                    final class A {}
+                    class B {}
+
+                    /** @var A|stdClass $final */;
+                    if ($final::class === A::class) {
+                        $final_if = $final;
+                    } else {
+                        $final_else = $final;
+                    }
+
+                    /** @var A|stdClass $by_get_class */;
+                    if (get_class($by_get_class) !== A::class) {
+                        $get_class_if = $by_get_class;
+                    }
+
+                    /** @var B|stdClass $not_final */;
+                    if ($not_final::class === B::class) {
+                        $not_final_if = $not_final;
+                    } else {
+                        $not_final_else = $not_final;
+                    }',
+                'assertions' => [
+                    '$final_else===' => 'stdClass',
+                    '$get_class_if===' => 'stdClass',
+                    '$not_final_else===' => 'B|stdClass',
+                ],
+            ],
             'classEqualToTheClassOfAnotherClassStillNarrows' => [
                 'code' => '<?php
                     class Bar {}

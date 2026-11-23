@@ -200,6 +200,13 @@ final class Reflection
             (ReflectionMethod::IS_PUBLIC | ReflectionMethod::IS_PROTECTED),
         );
 
+        // a private constructor (Closure, HashContext) makes `new` fail
+        $reflection_constructor = $reflected_class->getConstructor();
+
+        if ($reflection_constructor && $reflection_constructor->isPrivate()) {
+            $reflection_methods[] = $reflection_constructor;
+        }
+
         if ($class_name_lower === 'generator') {
             $storage->template_types = [
                 'TKey' => ['Generator' => Type::getMixed()],

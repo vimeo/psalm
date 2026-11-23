@@ -42,7 +42,6 @@ use Psalm\Plugin\EventHandler\Event\AfterMethodCallAnalysisEvent;
 use Psalm\Storage\Capabilities;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\MethodStorage;
-use Psalm\Storage\Possibilities;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TNamedObject;
@@ -51,7 +50,6 @@ use Psalm\Type\Atomic\TTemplateParamClass;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
-use function array_map;
 use function count;
 use function explode;
 use function in_array;
@@ -450,6 +448,22 @@ final class ExistingAtomicStaticCallAnalyzer
                     ? 'static'
                     : null);
 
+            // what `static` is in the types of the assertions: late static when it may be a subclass of the class
+            if ($lhs_type_part instanceof TTemplateParam) {
+                $assertion_static_type = $lhs_type_part;
+            } elseif ($lhs_type_part instanceof TTemplateParamClass) {
+                $assertion_static_type = self::getTemplateParamOfClass($lhs_type_part);
+            } elseif ($assertion_static_class === 'static' && $context->self !== null) {
+                $self_storage = $codebase->classlike_storage_provider->get($context->self);
+                $assertion_static_type = ClassAnalyzer::getThisObjectType($self_storage, $context->self)
+                    ->setIsStatic(!$self_storage->final);
+            } else {
+                $assertion_static_type = new TNamedObject(
+                    $fq_class_name,
+                    !$static_is_called_class && !$class_storage->final,
+                );
+            }
+
             // an instance method of the caller's class or of an ancestor, called statically from an instance method,
             // is called on `$this`
             $assertion_this_var_id = !$method_storage->is_static
@@ -482,74 +496,26 @@ final class ExistingAtomicStaticCallAnalyzer
                     $template_result,
                     $context,
                     $statements_analyzer,
-                    null,
+                    $assertion_static_type,
                     $trait_self_class,
                 );
             }
 
-            $if_true_assertions = $assertionsResolver->resolveIfTrue($method_storage, $class_storage);
-
-            if ($assertion_this_var_id === null) {
-                $if_true_assertions = CallAnalyzer::removeThisAssertions($if_true_assertions);
-            }
-
-            if ($if_true_assertions) {
-                $statements_analyzer->node_data->setIfTrueAssertions(
-                    $stmt,
-                    array_map(
-                        static fn(Possibilities $assertion): Possibilities => CallAnalyzer::resolveTraitSelf(
-                            $assertion->getUntemplatedCopy($template_result, null, $codebase),
-                            $trait_self_class,
-                        ),
-                        CallAnalyzer::resolveStaticPropertyAssertionClasses(
-                            CallAnalyzer::getAssertionsOnArgs(
-                                $if_true_assertions,
-                                $method_storage,
-                                $stmt->getArgs(),
-                                $statements_analyzer->node_data,
-                                $context->strict_types,
-                            ),
-                            $codebase,
-                            $context,
-                            $trait_self_class,
-                            $assertion_static_class,
-                            $fq_class_name,
-                        ),
-                    ),
-                );
-            }
-
-            $if_false_assertions = $assertionsResolver->resolveIfFalse($method_storage, $class_storage);
-
-            if ($assertion_this_var_id === null) {
-                $if_false_assertions = CallAnalyzer::removeThisAssertions($if_false_assertions);
-            }
-
-            if ($if_false_assertions) {
-                $statements_analyzer->node_data->setIfFalseAssertions(
-                    $stmt,
-                    array_map(
-                        static fn(Possibilities $assertion): Possibilities => CallAnalyzer::resolveTraitSelf(
-                            $assertion->getUntemplatedCopy($template_result, null, $codebase),
-                            $trait_self_class,
-                        ),
-                        CallAnalyzer::resolveStaticPropertyAssertionClasses(
-                            CallAnalyzer::getAssertionsOnArgs(
-                                $if_false_assertions,
-                                $method_storage,
-                                $stmt->getArgs(),
-                                $statements_analyzer->node_data,
-                                $context->strict_types,
-                            ),
-                            $codebase,
-                            $context,
-                            $trait_self_class,
-                            $assertion_static_class,
-                            $fq_class_name,
-                        ),
-                    ),
-                );
-            }
+            CallAnalyzer::setConditionalAssertions(
+                $stmt,
+                $assertionsResolver,
+                $method_storage,
+                $class_storage,
+                $stmt->getArgs(),
+                $template_result,
+                $assertion_this_var_id,
+                $assertion_static_type,
+                $trait_self_class,
+                $assertion_static_class,
+                $fq_class_name,
+                $context,
+                $statements_analyzer,
+            );
         } elseif (!$stmt->isFirstClassCallable()) {
             // a builtin method known from reflection only: it may do what its reflected storage says,
             // which is anything but for the few known to be pure, as for instance calls
@@ -828,6 +794,20 @@ final class ExistingAtomicStaticCallAnalyzer
     }
 
     /**
+     * The template a `class-string<T>` names
+     *
+     * @psalm-pure
+     */
+    private static function getTemplateParamOfClass(TTemplateParamClass $class_string): TTemplateParam
+    {
+        return new TTemplateParam(
+            $class_string->param_name,
+            $class_string->as_type ? new Union([$class_string->as_type]) : Type::getObject(),
+            $class_string->defining_class,
+        );
+    }
+
+    /**
      * What `static` stands for in the signature of the method $stmt calls on $fq_class_name, and whether it is that
      * class exactly
      *
@@ -847,13 +827,7 @@ final class ExistingAtomicStaticCallAnalyzer
         if ($lhs_type_part instanceof TTemplateParam) {
             $static_type = $lhs_type_part;
         } elseif ($lhs_type_part instanceof TTemplateParamClass) {
-            $static_type = new TTemplateParam(
-                $lhs_type_part->param_name,
-                $lhs_type_part->as_type
-                    ? new Union([$lhs_type_part->as_type])
-                    : Type::getObject(),
-                $lhs_type_part->defining_class,
-            );
+            $static_type = self::getTemplateParamOfClass($lhs_type_part);
         } elseif ($stmt->class instanceof PhpParser\Node\Name
             && count($stmt->class->getParts()) === 1
             && in_array(strtolower($stmt->class->getFirst()), ['self', 'static', 'parent'], true)

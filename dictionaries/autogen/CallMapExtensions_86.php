@@ -2745,6 +2745,8 @@ return array (
   'idate' => 'date',
   'idn_to_ascii' => 'intl',
   'idn_to_utf8' => 'intl',
+  'igbinary_serialize' => 'igbinary',
+  'igbinary_unserialize' => 'igbinary',
   'ignore_user_abort' => 'standard',
   'image_type_to_extension' => 'standard',
   'image_type_to_mime_type' => 'standard',

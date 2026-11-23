@@ -19,7 +19,6 @@ use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Internal\Codebase\ReferenceMapGenerator;
 use Psalm\Internal\Composer;
 use Psalm\Internal\ErrorHandler;
-use Psalm\Internal\Fork\PsalmRestarter;
 use Psalm\Internal\IncludeCollector;
 use Psalm\Internal\Preloader;
 use Psalm\Internal\Provider\ClassLikeStorageCacheProvider;
@@ -62,7 +61,6 @@ use function function_exists;
 use function fwrite;
 use function gc_collect_cycles;
 use function gc_disable;
-use function getcwd;
 use function getenv;
 use function implode;
 use function ini_get;
@@ -79,7 +77,6 @@ use function opcache_get_status;
 use function parse_url;
 use function preg_match;
 use function preg_replace;
-use function realpath;
 use function setlocale;
 use function sort;
 use function str_starts_with;
@@ -219,7 +216,14 @@ final class Psalm
 
         CliUtils::setMemoryLimit($options);
 
-        self::syncShortOptions($options);
+        CliUtils::syncShortOptions($options, [
+            'help' => 'h',
+            'version' => 'v',
+            'init' => 'i',
+            'monochrome' => 'm',
+            'config' => 'c',
+            'root' => 'r',
+        ]);
 
         if (isset($options['c']) && is_array($options['c'])) {
             fwrite(STDERR, 'Too many config files provided' . PHP_EOL);
@@ -237,7 +241,7 @@ final class Psalm
             exit;
         }
 
-        $current_dir = self::getCurrentDir($options);
+        $current_dir = CliUtils::getCurrentDir($options);
 
         if (array_key_exists('init-ci', $options)) {
             self::generateCiConfig($current_dir);
@@ -252,17 +256,12 @@ final class Psalm
         IssueBuffer::captureServer($_SERVER);
 
         $include_collector = new IncludeCollector();
-        $autoloaders = $include_collector->runAndCollect(
-            // we ignore the FQN because of a hack in scoper.inc that needs full path
-            // phpcs:ignore SlevomatCodingStandard.Namespaces.ReferenceUsedNamesOnly.ReferenceViaFullyQualifiedName
-            /** @return list<ClassLoader> */
-            static fn(): array =>
-                CliUtils::requireAutoloaders(
-                    $current_dir,
-                    isset($options['r']),
-                    $vendor_dir,
-                    !array_key_exists('v', $options),
-                ),
+        $autoloaders = CliUtils::loadAutoloaders(
+            $include_collector,
+            $current_dir,
+            isset($options['r']),
+            $vendor_dir,
+            !array_key_exists('v', $options),
         );
 
         $run_taint_analysis = ProjectBootstrap::shouldRunTaintAnalysis($options);
@@ -965,33 +964,6 @@ final class Psalm
         exit;
     }
 
-    private static function getCurrentDir(array $options): string
-    {
-        $cwd = getcwd();
-        if (false === $cwd) {
-            fwrite(STDERR, 'Cannot get current working directory' . PHP_EOL);
-            exit(1);
-        }
-
-        $current_dir = $cwd;
-
-        if (isset($options['r']) && is_string($options['r'])) {
-            $root_path = realpath($options['r']);
-
-            if ($root_path === false) {
-                fwrite(
-                    STDERR,
-                    CliUtils::getRootDirectoryNotFoundMessage($current_dir, $options['r']) . PHP_EOL,
-                );
-                exit(1);
-            }
-
-            $current_dir = $root_path;
-        }
-
-        return $current_dir;
-    }
-
     private static function restart(
         array $options,
         bool $force_jit,
@@ -999,7 +971,8 @@ final class Psalm
         int $scanThreads,
         Progress $progress,
     ): void {
-        $ini_handler = new PsalmRestarter('PSALM');
+        // grpc is only disabled below when it would break forked workers
+        $ini_handler = CliUtils::createRestarter('PSALM', false);
         $ini_handler->enableJit = $force_jit;
 
         if (isset($options['disable-extension'])) {
@@ -1027,15 +1000,6 @@ final class Psalm
                 . ' (https://github.com/grpc/grpc/issues/20250#issuecomment-531321945)',
             );
         }
-
-        $ini_handler->disableExtensions([
-            'uopz',
-            // extensions that are incompatible with JIT (they are also usually make Psalm slow)
-            'pcov',
-            'blackfire',
-            // Issues w/ parallel forking
-            'uv',
-        ]);
 
         // If Xdebug is enabled, restart without it
         $ini_handler->check();
@@ -1116,38 +1080,6 @@ final class Psalm
             require_once __DIR__ . '/Refactor.php';
             Refactor::run($argv);
             exit;
-        }
-    }
-
-    /**
-     * @param array<string, false|list<mixed>|string> $options
-     * @param-out array<string, false|list<mixed>|string> $options
-     * @psalm-capabilities write-refs|read-props
-     */
-    private static function syncShortOptions(array &$options): void
-    {
-        if (array_key_exists('help', $options)) {
-            $options['h'] = false;
-        }
-
-        if (array_key_exists('version', $options)) {
-            $options['v'] = false;
-        }
-
-        if (array_key_exists('init', $options)) {
-            $options['i'] = false;
-        }
-
-        if (array_key_exists('monochrome', $options)) {
-            $options['m'] = false;
-        }
-
-        if (isset($options['config'])) {
-            $options['c'] = $options['config'];
-        }
-
-        if (isset($options['root'])) {
-            $options['r'] = $options['root'];
         }
     }
 
