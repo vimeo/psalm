@@ -484,7 +484,10 @@ final class InternalCallMapHandler
             $codebase->analysis_php_version_id,
             $codebase->config->lowest_composer_php_version_id ?? $codebase->analysis_php_version_id,
         );
-        $lowest_version = self::getCallMapVersion(intdiv($lowest_version_id, 10_000), intdiv($lowest_version_id, 100) % 100);
+        $lowest_version = self::getCallMapVersion(
+            intdiv($lowest_version_id, 10_000),
+            intdiv($lowest_version_id, 100) % 100,
+        );
 
         $key = strtolower(ltrim($function_or_class, '\\'));
         $map = $is_class ? 1 : 0;
