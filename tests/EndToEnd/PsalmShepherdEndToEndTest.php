@@ -19,6 +19,7 @@ use function preg_match;
 use function sort;
 use function str_contains;
 use function str_replace;
+use function str_starts_with;
 use function stream_socket_accept;
 use function stream_socket_get_name;
 use function stream_socket_server;
@@ -145,17 +146,12 @@ final class PsalmShepherdEndToEndTest extends PsalmEndToEndTestCase
 
     public function testPsalmSendsTheReportOnlyToAnHttpUrl(): void
     {
-        $secret_file = self::$tmpDir . '/src/secret.txt';
-        file_put_contents($secret_file, 'local-secret-value');
-
-        $process = $this->runPsalmWithShepherd(['--debug', '--shepherd=file://' . $secret_file], self::githubActions());
+        $process = $this->runPsalmWithShepherd(['--shepherd=ftp://127.0.0.1:1/report'], self::githubActions());
 
         $this->assertStringContainsString(
             'Warning: Results not sent to Shepherd: the URL must use http or https',
             $process->getErrorOutput(),
         );
-        // curl would read a local file and show it as the response
-        $this->assertStringNotContainsString('local-secret-value', $process->getErrorOutput());
         $this->assertSame(0, $process->getExitCode());
     }
 
@@ -290,6 +286,30 @@ final class PsalmShepherdEndToEndTest extends PsalmEndToEndTestCase
             $decoded['analysis'],
         );
         $this->assertStringContainsString('"php":"' . PHP_VERSION . '"', $report);
+    }
+
+    public function testPsalmWritesTheReportToAFile(): void
+    {
+        $report_file = str_replace('\\', '/', self::$tmpDir) . '/src/report.json';
+        // file:///C:/... on Windows
+        $path = str_starts_with($report_file, '/') ? $report_file : '/' . $report_file;
+
+        // curl would read the file and show it as the response
+        file_put_contents($report_file, 'local-secret-value');
+
+        $process = $this->runPsalmWithShepherd(['--debug', '--shepherd=file://' . $path], self::githubActions());
+
+        $this->assertStringContainsString('Results written to ' . $path, $process->getErrorOutput());
+        $this->assertStringNotContainsString('local-secret-value', $process->getErrorOutput());
+        $this->assertFileExists($report_file);
+        $report = (string) file_get_contents($report_file);
+        $this->assertSame(
+            ['build', 'git', 'issues', 'issue_counts', 'analysis', 'coverage', 'level', 'versions'],
+            array_keys(self::decode($report)),
+        );
+        // encoded as it is sent
+        $this->assertStringContainsString('"issue_counts":{"baselined":{},"info":{}}', $report);
+        $this->assertSame(0, $process->getExitCode());
     }
 
     /**

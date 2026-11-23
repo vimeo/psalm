@@ -46,3 +46,11 @@ Pass a URL instead, and Psalm posts the same JSON there. The URL must use `http`
 ```
 
 Psalm posts to exactly that URL, and adds `https://` when the value has no scheme.
+
+To check what Psalm would send, for example to test your own endpoint, write the report to a file instead:
+
+```bash
+./vendor/bin/psalm --shepherd=file://$PWD/build/psalm-shepherd.json
+```
+
+The file holds exactly the JSON Psalm would post, and Psalm prints `Results written to` with its path. Psalm replaces an existing file. As with a URL, Psalm writes it only in CI with a GitHub repository. The path must be absolute.
