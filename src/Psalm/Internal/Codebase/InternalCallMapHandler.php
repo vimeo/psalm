@@ -19,25 +19,18 @@ use Psalm\Type\Atomic\TCallable;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\TaintKind;
 use Psalm\Type\Union;
-use ReflectionClass;
-use ReflectionException;
-use ReflectionFunction;
 use UnexpectedValueException;
 
 use function array_key_first;
 use function array_search;
 use function arsort;
 use function assert;
-use function class_exists;
 use function count;
 use function dirname;
-use function explode;
 use function fclose;
 use function fgets;
 use function fopen;
-use function function_exists;
 use function intdiv;
-use function interface_exists;
 use function is_int;
 use function is_string;
 use function ltrim;
@@ -45,15 +38,12 @@ use function max;
 use function min;
 use function preg_match;
 use function rtrim;
-use function str_contains;
 use function str_ends_with;
 use function str_starts_with;
 use function stripslashes;
 use function strpos;
 use function strtolower;
 use function substr;
-
-use const PHP_VERSION;
 
 /**
  * @internal
@@ -67,6 +57,22 @@ final class InternalCallMapHandler
 
     /** The versions of the callmap, from MIN_CALLMAP_VERSION to MAX_CALLMAP_VERSION */
     private const CALLMAP_VERSIONS = [70, 71, 72, 73, 74, 80, 81, 82, 83, 84, 85, 86];
+
+    /**
+     * The extensions of the callmaps that are part of php-src, so their symbols appear in the callmap of the PHP
+     * version that introduced them (not opcache: PHP has it since 5.5, the callmaps since 7.2)
+     */
+    private const PHP_SRC_EXTENSIONS = [
+        'bcmath' => true, 'core' => true, 'ctype' => true, 'curl' => true, 'date' => true, 'dom' => true,
+        'ffi' => true, 'fileinfo' => true, 'filter' => true, 'ftp' => true, 'gd' => true, 'gmp' => true,
+        'hash' => true, 'iconv' => true, 'intl' => true, 'json' => true, 'libxml' => true, 'mbstring' => true,
+        'mysqli' => true, 'openssl' => true, 'pcntl' => true, 'pcre' => true, 'pdo' => true, 'pdo_mysql' => true,
+        'pdo_pgsql' => true, 'pdo_sqlite' => true, 'pgsql' => true, 'phar' => true, 'posix' => true,
+        'random' => true, 'readline' => true, 'reflection' => true, 'session' => true, 'simplexml' => true,
+        'snmp' => true, 'soap' => true, 'sodium' => true, 'spl' => true, 'sqlite3' => true, 'standard' => true,
+        'tidy' => true, 'tokenizer' => true, 'uri' => true, 'xml' => true, 'xmlreader' => true,
+        'xmlwriter' => true, 'xsl' => true, 'zlib' => true,
+    ];
 
     /** see keepsStateBetweenCalls() */
     private const STATEFUL_FUNCTIONS = ['strtok' => true, 'inflate_add' => true];
@@ -787,16 +793,14 @@ final class InternalCallMapHandler
      * or its introduction cannot be dated.
      *
      * The version is the first callmap the key appears in (dictionaries/CallMapIntroductions.php). Only
-     * symbols of extensions bundled with PHP are dated: the callmaps are generated with PECL
-     * extensions (swoole, redis, mongodb, ...) whose versions are unrelated to the PHP version.
-     * Such symbols are only reachable through the runtime's reflection, which tells a bundled
-     * extension apart by its version matching PHP's own.
+     * symbols of the extensions of PHP_SRC_EXTENSIONS are dated: the callmaps are also generated with
+     * PECL extensions (swoole, redis, mongodb, ...) whose versions are unrelated to the PHP version.
      */
     public static function getIntroducingPhpVersionId(string $key): ?int
     {
         $key = strtolower($key);
 
-        if (isset(self::getCallMap()[$key]) || !self::isBundledWithPhp($key)) {
+        if (isset(self::getCallMap()[$key])) {
             return null;
         }
 
@@ -808,7 +812,9 @@ final class InternalCallMapHandler
 
         // a key already in the oldest callmap predates the callmaps and cannot be dated
         $version = self::$callmap_introductions[$key] ?? null;
-        if ($version === null) {
+        if ($version === null
+            || !isset(self::PHP_SRC_EXTENSIONS[self::getVersionExtensions($version)[0][$key] ?? ''])
+        ) {
             return null;
         }
 
@@ -825,28 +831,5 @@ final class InternalCallMapHandler
     public static function isNativeFunction(string $function_id): bool
     {
         return self::inCallMap($function_id) || self::getIntroducingPhpVersionId($function_id) !== null;
-    }
-
-    private static function isBundledWithPhp(string $key): bool
-    {
-        try {
-            if (str_contains($key, '::')) {
-                $class = explode('::', $key)[0];
-                // don't autoload (and so run) project code
-                if (!class_exists($class, false) && !interface_exists($class, false)) {
-                    return false;
-                }
-                $extension = (new ReflectionClass($class))->getExtension();
-            } else {
-                if (!function_exists($key)) {
-                    return false;
-                }
-                $extension = (new ReflectionFunction($key))->getExtension();
-            }
-        } catch (ReflectionException) {
-            return false;
-        }
-
-        return $extension !== null && $extension->getVersion() === PHP_VERSION;
     }
 }

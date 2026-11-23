@@ -286,6 +286,44 @@ final class NativeSymbolAvailabilityTest extends TestCase
             'php_version' => '8.0',
         ];
 
+        yield 'methodExistsOfMethodBelowItsVersion' => [
+            'code' => '<?php
+                function a(ReflectionClass $r): bool {
+                    if (method_exists($r, "isEnum") && $r->isEnum()) {
+                        return true;
+                    }
+
+                    return false;
+                }
+
+                function b(ReflectionClass $r): bool {
+                    if (!method_exists($r, "isEnum")) {
+                        return false;
+                    }
+
+                    return $r->isEnum() === true;
+                }
+            ',
+            'assertions' => [],
+            'ignored_issues' => [],
+            'php_version' => '8.0',
+        ];
+
+        yield 'methodExistsOfStubbedMethodBelowItsVersion' => [
+            'code' => '<?php
+                function f(mysqli $m): string {
+                    if (method_exists($m, "quote_string")) {
+                        return $m->quote_string("a");
+                    }
+
+                    return "";
+                }
+            ',
+            'assertions' => [],
+            'ignored_issues' => [],
+            'php_version' => '8.2',
+        ];
+
         // PhpVersionedClasses.phpstub is parsed with the target version's grammar, so it must stay free of
         // syntax (enums) that older targets cannot parse, or all its stubs would be lost.
         yield 'versionedClassStubsLoadOnPhp74' => [
@@ -988,6 +1026,33 @@ final class NativeSymbolAvailabilityTest extends TestCase
                 . ' (it was introduced in PHP 8.1',
             'error_levels' => [],
             'php_version' => '8.0',
+        ];
+
+        yield 'stubbedMethodBelowItsVersion' => [
+            'code' => '<?php
+                function f(mysqli $m): string {
+                    return $m->quote_string("a");
+                }
+            ',
+            'error_message' => 'Method mysqli::quote_string is not defined for the analysed PHP version 8.2'
+                . ' (it was introduced in PHP 8.6',
+            'error_levels' => [],
+            'php_version' => '8.2',
+        ];
+
+        yield 'methodExistsOfStubbedMethodInItsVersion' => [
+            'code' => '<?php
+                function f(mysqli $m): string {
+                    if (method_exists($m, "quote_string")) {
+                        return $m->quote_string("a");
+                    }
+
+                    return "";
+                }
+            ',
+            'error_message' => 'RedundantCondition',
+            'error_levels' => [],
+            'php_version' => '8.6',
         ];
 
         yield 'php86DurationBelowItsVersion' => [

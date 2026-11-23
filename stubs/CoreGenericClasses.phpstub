@@ -667,7 +667,7 @@ class mysqli
      * @psalm-taint-escape sql
      * @psalm-flow ($string) -> return
      */
-    function quote_string($string) {}
+    function quote_string(string $string): string {}
 }
 
 class SQLite3
