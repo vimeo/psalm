@@ -44,7 +44,7 @@ jobs:
 
       - name: Check all classes are autoloadable
         run: |
-          composer dump-autoload -o --strict-psr
+          composer dump-autoload -o --strict-psr --dev
         env:
           COMPOSER_ROOT_VERSION: dev-master
 

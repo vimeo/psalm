@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Psalm\Example\Plugin;
+namespace Psalm\Tests\Config\Plugin\EventHandler\TaintedCall;
 
 use Override;
 use Psalm\Plugin\EventHandler\AddCallTaintsInterface;
