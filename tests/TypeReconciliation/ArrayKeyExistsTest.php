@@ -1015,7 +1015,7 @@ final class ArrayKeyExistsTest extends TestCase
                      */
                     function f($a): void {
                         if (array_key_exists("k", $a)) {
-                            /** @psalm-check-type-exact $a = ArrayAccess<string, int>|array{k: mixed, ...<string, int>} */;
+                            /** @psalm-check-type-exact $a = ArrayAccess<string, int>|array{k: int, ...<string, int>} */;
                         }
                     }',
                 'assertions' => [],
@@ -1090,7 +1090,7 @@ final class ArrayKeyExistsTest extends TestCase
                             takesInt($key);
                         }
                     }',
-                'error_message' => 'expects int, but \'971\'|\'972\' provided',
+                'error_message' => 'expects int, but T:fn-oftemplate as \'971\'|\'972\' provided',
             ],
             'negatedIssetKeepsAnOptionalKeyThatMayBeNull' => [
                 'code' => '<?php

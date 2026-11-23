@@ -33,6 +33,7 @@
 - Psalm requires `psalm/plugin-phpunit` `^0.21 || ^0.22 || ^1.0` (0.21 is the first release built on `psalm/psalm-plugin-api` 0.4): a project requiring an older version (`^0.19`, `^0.20`) must raise it.
 - [BC] The refined return types of `count`, `sizeof`, `fgetcsv`, `get_called_class`, `get_parent_class`, `hrtime` and `mb_strtolower` now come from built-in return type providers, which, like those of other builtins, take precedence over plugin return type providers and over the return type of a stub declaring the function. A plugin or stub redefining the return type of one of these few functions is no longer used when Psalm infers one; Psalm's own types for them are usually more precise.
 - `Psalm\Context#$collect_mutations` is deprecated and has no effect: setting it no longer makes Psalm follow every method called on `$this`. Psalm itself has not set it since 3.1. It will be removed in a future version.
+- [BC] `Psalm\Plugin\EventHandler\Event\AfterAnalysisEvent#getBuildInfo()` holds the keys of one CI service, the first one Psalm recognises, instead of a merge of every matching one. Values that are not known are left out instead of being `null`, `''` or, for a Travis CI build without a pull request, `'false'`: read its keys with `??`.
 
 - Backwards compatibility for the plugin API is now covered by a separate metapackage, [psalm/psalm-plugin-api](https://packagist.org/packages/psalm/psalm-plugin-api).  
 
@@ -115,6 +116,7 @@
 
 - [BC] Class Psalm\Type\Atomic\TKeyedArray became final
 
+- [BC] The keys of `Psalm\Storage\ClassLikeStorage::$template_type_extends_count` and of the internal `$template_extended_offsets` are the lowercase name of the parent class, interface or trait, as the keys of `$template_type_implements_count` and `$template_type_uses_count` already were, instead of its name as written in the `@extends`, `@implements` or `@use` tag.
 - [BC] Class Psalm\Type\Atomic\TKeyedArray can only be created using the new `make` or `makeCallable` factory methods, the constructor was rendered private.  
 
 - [BC] Class Psalm\Type\Atomic\TCallableKeyedArray has been deleted, and replaced with a new `is_callable` flag in Psalm\Type\Atomic\TKeyedArray

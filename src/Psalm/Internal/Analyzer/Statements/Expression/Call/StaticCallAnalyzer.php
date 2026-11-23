@@ -21,6 +21,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\NullsafeChainState;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\ConditionalTaintSinks;
+use Psalm\Internal\Codebase\DatabaseTaints;
 use Psalm\Internal\Codebase\ReceiverPropertyTaints;
 use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\Codebase\TaintStore;
@@ -241,9 +242,17 @@ final class StaticCallAnalyzer extends CallAnalyzer
                     $self_storage = $codebase->classlike_storage_provider->get($context->self);
 
                     if (isset($self_storage->used_traits[strtolower($fq_class_name)])) {
+                        ClassLikeAnalyzer::checkTraitMemberAccess($statements_analyzer, $fq_class_name, $stmt->class);
+
                         $fq_class_name = $context->self;
                         $does_class_exist = true;
                     }
+                }
+
+                if (!$does_class_exist
+                    && ClassLikeAnalyzer::checkTraitMemberAccess($statements_analyzer, $fq_class_name, $stmt->class)
+                ) {
+                    $does_class_exist = true;
                 }
 
                 if (!isset($context->phantom_classes[strtolower($fq_class_name)])
@@ -257,7 +266,7 @@ final class StaticCallAnalyzer extends CallAnalyzer
                             ? $context
                             : null,
                         $statements_analyzer->getSuppressedIssues(),
-                        new ClassLikeNameOptions(false, false, false, true, context: $context),
+                        new ClassLikeNameOptions(false, false, false, true, context: $context, required_at_runtime: true),
                         $context->check_classes,
                     );
                 }
@@ -348,7 +357,13 @@ final class StaticCallAnalyzer extends CallAnalyzer
             ? NullsafeChainState::of($stmt->class)
             : NullsafeChainState::None;
 
-        foreach ($lhs_type->getAtomicTypes() as $lhs_type_part) {
+        $lhs_type_parts = $lhs_type->getAtomicTypes();
+
+        // a call to one of several classes asserts only what each of them asserts
+        $targets_if_true_assertions = [];
+        $targets_if_false_assertions = [];
+
+        foreach ($lhs_type_parts as $lhs_type_part) {
             AtomicStaticCallAnalyzer::analyze(
                 $statements_analyzer,
                 $stmt,
@@ -360,6 +375,25 @@ final class StaticCallAnalyzer extends CallAnalyzer
                 $has_existing_method,
                 $args_analyzed,
                 $template_result,
+            );
+
+            if (count($lhs_type_parts) > 1) {
+                $targets_if_true_assertions[] = $statements_analyzer->node_data->getIfTrueAssertions($stmt) ?? [];
+                $targets_if_false_assertions[] = $statements_analyzer->node_data->getIfFalseAssertions($stmt) ?? [];
+
+                $statements_analyzer->node_data->setIfTrueAssertions($stmt, []);
+                $statements_analyzer->node_data->setIfFalseAssertions($stmt, []);
+            }
+        }
+
+        if ($targets_if_true_assertions && $targets_if_false_assertions) {
+            $statements_analyzer->node_data->setIfTrueAssertions(
+                $stmt,
+                self::getCommonAssertions($targets_if_true_assertions),
+            );
+            $statements_analyzer->node_data->setIfFalseAssertions(
+                $stmt,
+                self::getCommonAssertions($targets_if_false_assertions),
             );
         }
 
@@ -671,6 +705,19 @@ final class StaticCallAnalyzer extends CallAnalyzer
                 $cased_method_id,
                 $method_id,
                 $specialization_location,
+            );
+
+            $return_type_candidate = DatabaseTaints::taintCall(
+                $statements_analyzer,
+                $taint_flow_graph,
+                DatabaseTaints::getSpecs(
+                    (string) ($codebase->methods->getDeclaringMethodId($method_id) ?? $method_id),
+                    $method_storage,
+                ),
+                $method_storage,
+                $stmt->getArgs(),
+                $node_location,
+                $return_type_candidate,
             );
 
             ConditionalTaintSinks::taintCall(

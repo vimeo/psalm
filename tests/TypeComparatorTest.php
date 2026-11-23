@@ -223,6 +223,14 @@ final class TypeComparatorTest extends TestCase
             "'a'|'b'|Foo::class",
             "'Foo'",
         ];
+        yield 'starArgumentIntoInvariantArgument' => [
+            'ArrayObject<int, string>',
+            'ArrayObject<int, *>',
+        ];
+        yield 'starArgumentIntoInvariantMixedArgument' => [
+            'ArrayObject<int, mixed>',
+            'ArrayObject<int, *>',
+        ];
     }
 
     /**
@@ -379,6 +387,14 @@ final class TypeComparatorTest extends TestCase
             'literalIntsAndStringsAcceptBoth' => [
                 "1|'1'|2",
                 "'1'|1",
+            ],
+            'starArgumentAcceptsAnyArgument' => [
+                'ArrayObject<int, *>',
+                'ArrayObject<int, string>',
+            ],
+            'starArgumentAcceptsStarArgument' => [
+                'ArrayObject<int, *>',
+                'ArrayObject<int, *>',
             ],
         ];
     }

@@ -51,14 +51,11 @@ use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
-use function array_filter;
 use function array_map;
 use function array_slice;
 use function count;
 use function explode;
 use function in_array;
-use function is_string;
-use function str_starts_with;
 use function strtolower;
 
 /**
@@ -283,6 +280,15 @@ final class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
             );
         }
 
+        // what is read from a `*` receiver is as unknown as the receiver, and what is written to it is never
+        ClassTemplateParamCollector::markStarBindings(
+            $template_result,
+            $codebase,
+            $class_storage,
+            $lhs_type_part,
+            $class_template_params,
+        );
+
         $is_first_class_callable = $stmt->isFirstClassCallable();
 
         if (!$is_first_class_callable && self::checkMethodArgs(
@@ -327,7 +333,15 @@ final class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
 
         $in_call_map = InternalCallMapHandler::inCallMap((string) ($declaring_method_id ?? $method_id));
 
-        if (!$in_call_map) {
+        if ($in_call_map) {
+            MethodCallProhibitionAnalyzer::checkBuiltinDeprecation(
+                $statements_analyzer,
+                $method_id,
+                new CodeLocation($statements_analyzer, $stmt_name),
+                $statements_analyzer->getSuppressedIssues(),
+                $stmt_name->name,
+            );
+        } else {
             $name_code_location = new CodeLocation($statements_analyzer, $stmt_name);
 
             MethodCallProhibitionAnalyzer::analyze(
@@ -548,12 +562,7 @@ final class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
                     ),
                 );
                 if ($lhs_var_id === null) {
-                    $possibilities = array_filter(
-                        $possibilities,
-                        static fn(Possibilities $assertion): bool => !(is_string($assertion->var_id)
-                            && str_starts_with($assertion->var_id, '$this->')
-                        ),
-                    );
+                    $possibilities = self::removeThisAssertions($possibilities);
                 }
                 $statements_analyzer->node_data->setIfTrueAssertions(
                     $stmt,
@@ -590,12 +599,7 @@ final class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
                     ),
                 );
                 if ($lhs_var_id === null) {
-                    $possibilities = array_filter(
-                        $possibilities,
-                        static fn(Possibilities $assertion): bool => !(is_string($assertion->var_id)
-                            && str_starts_with($assertion->var_id, '$this->')
-                        ),
-                    );
+                    $possibilities = self::removeThisAssertions($possibilities);
                 }
                 $statements_analyzer->node_data->setIfFalseAssertions(
                     $stmt,

@@ -94,6 +94,8 @@ final class FunctionLikeDocblockParser
                 $code_location,
                 $cased_function_id,
             );
+
+            self::checkDuplicatedParams($parsed_docblock, $info);
         }
 
         foreach (['param-out', 'param-closure-this'] as $tag) {
@@ -145,6 +147,12 @@ final class FunctionLikeDocblockParser
         if (isset($parsed_docblock->tags['psalm-flow'])) {
             foreach ($parsed_docblock->tags['psalm-flow'] as $param) {
                 $info->flows[] = trim($param);
+            }
+        }
+
+        foreach (['query', 'prepare', 'execute', 'bind', 'insert', 'update', 'select', 'fetch'] as $kind) {
+            foreach ($parsed_docblock->tags['psalm-database-' . $kind] ?? [] as $text) {
+                $info->database_calls[] = [$kind, trim($text)];
             }
         }
 
@@ -853,44 +861,30 @@ final class FunctionLikeDocblockParser
         ) {
             throw new DocblockParseException('Found duplicated @return or prefixed @return tag');
         }
-
-        self::checkDuplicatedParams($parsed_docblock->tags['param'] ?? []);
-        self::checkDuplicatedParams($parsed_docblock->tags['psalm-param'] ?? []);
-        self::checkDuplicatedParams($parsed_docblock->tags['phpstan-param'] ?? []);
     }
 
     /**
-     * @param array<int, string> $param
-     * @throws DocblockParseException  if a duplicate is found
-     * @psalm-pure
+     * The same name may be documented once per tag kind (`@param` and `@psalm-param`)
+     *
+     * @throws DocblockParseException if a duplicate is found
+     * @psalm-mutation-free
      */
-    private static function checkDuplicatedParams(array $param): void
+    private static function checkDuplicatedParams(ParsedDocblock $parsed_docblock, FunctionDocblockComment $info): void
     {
-        $list_names = self::extractAllParamNames($param);
+        foreach (['param', 'psalm-param', 'phpstan-param'] as $tag) {
+            $offsets = $parsed_docblock->tags[$tag] ?? [];
+            $names = [];
 
-        if (count($list_names) !== count(array_unique($list_names))) {
-            throw new DocblockParseException('Found duplicated @param or prefixed @param tag');
-        }
-    }
+            foreach ($info->params as $param) {
+                if (isset($offsets[$param['start']])) {
+                    $names[] = str_starts_with($param['name'], '...') ? substr($param['name'], 3) : $param['name'];
+                }
+            }
 
-    /**
-     * @param array<int, string> $lines
-     * @return list<string>
-     * @psalm-pure
-     */
-    private static function extractAllParamNames(array $lines): array
-    {
-        $names = [];
-
-        foreach ($lines as $line) {
-            $split_by_dollar = explode('$', $line, 2);
-            if (count($split_by_dollar) > 1) {
-                $split_by_space = explode(' ', $split_by_dollar[1], 2);
-                $names[] = $split_by_space[0];
+            if (count($names) !== count(array_unique($names))) {
+                throw new DocblockParseException('Found duplicated @param or prefixed @param tag');
             }
         }
-
-        return $names;
     }
 
     private static function checkUnexpectedTags(
