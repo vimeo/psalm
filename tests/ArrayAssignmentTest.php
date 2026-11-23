@@ -4573,6 +4573,32 @@ final class ArrayAssignmentTest extends TestCase
                 'error_levels' => [],
                 'php_version' => '8.0',
             ],
+            'itemUnderAKeyNarrowedToAnIntLikeStringTheArrayCantHave' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param array<string, int|string> $a */
+                    function f(array $a, string $k): void {
+                        $x = $a[$k];
+                        if ($k === '1') {
+                            echo $a[$k];
+                        }
+                    }
+                PHP,
+                'error_message' => "InvalidArrayOffset - src" . DIRECTORY_SEPARATOR . "somefile.php:6:18 - Cannot access value on variable \$a using offset value of '1', expecting string",
+            ],
+            'itemUnderAKeyNarrowedToANumericStringTheArrayMayNotHave' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param array<string, int|string> $a */
+                    function f(array $a, string $k): void {
+                        $x = $a[$k];
+                        if (is_numeric($k)) {
+                            echo $a[$k];
+                        }
+                    }
+                PHP,
+                'error_message' => 'PossiblyInvalidArrayOffset',
+            ],
         ];
     }
 }

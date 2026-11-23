@@ -11,6 +11,7 @@ use Psalm\Context;
 use Psalm\Exception\ComplicatedExpressionException;
 use Psalm\Internal\Algebra;
 use Psalm\Internal\Algebra\FormulaGenerator;
+use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ArrayFetchAnalyzer;
 use Psalm\Internal\Clause;
 use Psalm\Internal\Type\AssertionReconciler;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
@@ -256,9 +257,12 @@ final class AlgebraAnalyzer
                 return true;
             }
 
+            // the key PHP uses: '1' is 1
+            $key_type = ArrayFetchAnalyzer::replaceOffsetTypeWithInts($narrowed_type);
+
             foreach ($array_type->getAtomicTypes() as $atomic_type) {
                 if (!$atomic_type instanceof TArray
-                    || !UnionTypeComparator::isContainedBy($codebase, $narrowed_type, $atomic_type->type_params[0])
+                    || !UnionTypeComparator::isContainedBy($codebase, $key_type, $atomic_type->type_params[0])
                 ) {
                     return true;
                 }
