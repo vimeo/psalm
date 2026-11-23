@@ -1448,6 +1448,24 @@ final class WhileTest extends TestCase
                     '$k===' => 'int<-1, 4>',
                 ],
             ],
+            'loopLeftOnlyByABreakOfAnOuterLoopHasNoBreaksOfItsOwn' => [
+                'code' => '<?php
+                    /** @param list<int> $items */
+                    function f(array $items): int {
+                        $n = 3;
+                        while ($n-- > 0) {
+                            foreach ($items as $item) {
+                                if ($item) {
+                                    break 2;
+                                }
+                            }
+                        }
+                        return $n;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'counterReassignedBeforeABreakOfALoopDecrementingItInTheConditionKeepsThatValue' => [
                 'code' => '<?php
                     $i = 5;
