@@ -2194,6 +2194,27 @@ final class ArrayFunctionCallTest extends TestCase
                     '$foo' => 'float',
                 ],
             ],
+            'arrayProductOfBools' => [
+                'code' => '<?php
+                    /** @param array<bool> $a */
+                    function allTrue(array $a): int {
+                        return array_product($a);
+                    }
+                    /** @param list<true> $a */
+                    function product(array $a): int {
+                        return array_product($a);
+                    }
+                    /** @var array<bool> $bools */
+                    $all = array_product($bools);
+                    /** @var list<true> $trues */
+                    $one = array_product($trues);
+                    $empty = array_product([]);',
+                'assertions' => [
+                    '$all===' => '0|1',
+                    '$one===' => '1',
+                    '$empty===' => '1',
+                ],
+            ],
             'arrayMapWithArrayAndCallable' => [
                 'code' => '<?php
                     /**

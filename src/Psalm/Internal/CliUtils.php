@@ -87,7 +87,7 @@ final class CliUtils
 
         $psalm_dir = dirname(__DIR__, 3);
 
-        $in_phar = Phar::running() || strpos(__NAMESPACE__, 'HumbugBox');
+        $in_phar = (extension_loaded('phar') && Phar::running()) || strpos(__NAMESPACE__, 'HumbugBox');
 
         if ($in_phar) {
             require_once __DIR__ . '/../../../vendor/autoload.php';
@@ -216,7 +216,7 @@ final class CliUtils
             exit(1);
         }
 
-        if (!$composer_json) {
+        if (!is_array($composer_json)) {
             fwrite(
                 STDERR,
                 'Invalid composer.json at ' . $composer_json_path . "\n",
@@ -224,8 +224,7 @@ final class CliUtils
             exit(1);
         }
 
-        if (is_array($composer_json)
-            && isset($composer_json['config'])
+        if (isset($composer_json['config'])
             && is_array($composer_json['config'])
             && isset($composer_json['config']['vendor-dir'])
             && is_string($composer_json['config']['vendor-dir'])

@@ -34,7 +34,8 @@ final class ByIssueLevelAndTypeReport extends Report
 |                                                                                        |
 |    The level at which issue is reported as an error is given in brackets - e.g.        |
 |    `ERROR (2): MissingReturnType` indicates that MissingReturnType is only reported    |
-|    as an error when Psalm's level is set to 2 or below.                                |
+|    as an error when Psalm's level is set to 2 or below. `(always)` marks the issues    |
+|    reported as errors at every level, `(feature)` those of an enabled feature.         |
 |                                                                                        |
 |    Issues are shown or hidden in this report according to current settings. For        |
 |    the most complete report set Psalm's error level to 1 or use --show-info=true       |
@@ -46,7 +47,12 @@ HEADING;
 
         foreach ($this->issues_data as $issue_data) {
             $level = $issue_data->error_level;
-            $output .= $this->formatIssue($issue_data, $level > 0 ? " ($level)" : '') . "\n" . "\n";
+            $output .= $this->formatIssue($issue_data, match (true) {
+                $level > 0 => " ($level)",
+                $level === -1 => ' (always)',
+                $level === -2 => ' (feature)',
+                default => '',
+            }) . "\n" . "\n";
         }
 
         return $output;

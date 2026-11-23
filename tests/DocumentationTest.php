@@ -292,6 +292,11 @@ final class DocumentationTest extends TestCase
 
         $this->project_analyzer->getConfig()->ensure_override_attribute = $error_message === 'MissingOverrideAttribute';
 
+        // reported only for a project with a composer.json
+        if ($error_message === 'MissingExtensionRequirement') {
+            $this->project_analyzer->getConfig()->declared_extensions = [];
+        }
+
         $this->project_analyzer->getCodebase()->literal_array_key_check = $error_message === 'LiteralKeyUnshapedArray';
 
         foreach ($ignored_issues as $error_level) {
