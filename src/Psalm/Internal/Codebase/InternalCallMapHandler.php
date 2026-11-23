@@ -30,6 +30,7 @@ use function dirname;
 use function fclose;
 use function fgets;
 use function fopen;
+use function function_exists;
 use function intdiv;
 use function is_int;
 use function is_string;
@@ -38,6 +39,7 @@ use function max;
 use function min;
 use function preg_match;
 use function rtrim;
+use function str_contains;
 use function str_ends_with;
 use function str_starts_with;
 use function stripslashes;
@@ -60,7 +62,7 @@ final class InternalCallMapHandler
 
     /**
      * The extensions of the callmaps that are part of php-src, so their symbols appear in the callmap of the PHP
-     * version that introduced them (not opcache: PHP has it since 5.5, the callmaps since 7.2)
+     * version that introduced them
      */
     private const PHP_SRC_EXTENSIONS = [
         'bcmath' => true, 'core' => true, 'ctype' => true, 'curl' => true, 'date' => true, 'dom' => true,
@@ -71,8 +73,11 @@ final class InternalCallMapHandler
         'random' => true, 'readline' => true, 'reflection' => true, 'session' => true, 'simplexml' => true,
         'snmp' => true, 'soap' => true, 'sodium' => true, 'spl' => true, 'sqlite3' => true, 'standard' => true,
         'tidy' => true, 'tokenizer' => true, 'uri' => true, 'xml' => true, 'xmlreader' => true,
-        'xmlwriter' => true, 'xsl' => true, 'zlib' => true,
+        'xmlwriter' => true, 'xsl' => true, 'zend opcache' => true, 'zlib' => true,
     ];
+
+    /** The first callmap of the extensions PHP had before the callmaps did: opcache is in PHP since 5.5 */
+    private const LATE_CALLMAP_EXTENSIONS = ['zend opcache' => 72];
 
     /** see keepsStateBetweenCalls() */
     private const STATEFUL_FUNCTIONS = ['strtok' => true, 'inflate_add' => true];
@@ -812,15 +817,30 @@ final class InternalCallMapHandler
 
         // a key already in the oldest callmap predates the callmaps and cannot be dated
         $version = self::$callmap_introductions[$key] ?? null;
-        if ($version === null
-            || !isset(self::PHP_SRC_EXTENSIONS[self::getVersionExtensions($version)[0][$key] ?? ''])
+        if ($version === null) {
+            return null;
+        }
+
+        $extension = self::getVersionExtensions($version)[0][$key] ?? '';
+        if (!isset(self::PHP_SRC_EXTENSIONS[$extension])
+            || $version <= (self::LATE_CALLMAP_EXTENSIONS[$extension] ?? 0)
+        ) {
+            return null;
+        }
+
+        $codebase = ProjectAnalyzer::getInstance()->getCodebase();
+
+        // without the runtime's reflection or a stub, Psalm only knows the function by its polyfills
+        if (!str_contains($key, '::')
+            && !function_exists($key)
+            && !$codebase->functions->hasStubbedFunction($key)
         ) {
             return null;
         }
 
         $php_version_id = intdiv($version, 10) * 10_000 + ($version % 10) * 100;
 
-        return ProjectAnalyzer::getInstance()->getCodebase()->analysis_php_version_id < $php_version_id
+        return $codebase->analysis_php_version_id < $php_version_id
             ? $php_version_id
             : null;
     }

@@ -13,6 +13,7 @@ use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 use function array_filter;
 use function array_map;
 use function explode;
+use function function_exists;
 use function implode;
 use function str_replace;
 
@@ -56,6 +57,43 @@ final class NativeSymbolAvailabilityTest extends TestCase
         );
 
         $this->assertCount(2, $unused_calls);
+    }
+
+    /**
+     * A polyfill of a native function Psalm has no signature of (the extension isn't loaded, and no stub declares it)
+     * stays known with allFunctionsGlobal.
+     */
+    public function testPolyfillOfFunctionWithoutNativeSignatureIsGlobal(): void
+    {
+        if (function_exists('imageavif')) {
+            $this->markTestSkipped('imageavif() is defined in this process');
+        }
+
+        $this->project_analyzer->setPhpVersion('8.0', 'tests');
+        $codebase = $this->project_analyzer->getCodebase();
+        $codebase->all_functions_global = true;
+
+        $this->addFile(
+            'polyfill.php',
+            '<?php
+                if (!function_exists("imageavif")) {
+                    function imageavif(string $s): bool {
+                        return $s !== "";
+                    }
+                }
+            ',
+        );
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                function f(): bool {
+                    return imageavif("x");
+                }
+            ',
+        );
+        $codebase->addFilesToAnalyze(['polyfill.php' => 'polyfill.php']);
+
+        $this->analyzeFile('somefile.php', new Context());
     }
 
     /**
@@ -351,6 +389,20 @@ final class NativeSymbolAvailabilityTest extends TestCase
             'assertions' => [],
             'ignored_issues' => [],
             'php_version' => '7.4',
+        ];
+
+        yield 'subclassDeclaresMethodOfLaterVersion' => [
+            'code' => '<?php
+                final class M extends mysqli {
+                    /** @return string */
+                    public function quote_string($string) {
+                        return "\'" . $this->real_escape_string($string) . "\'";
+                    }
+                }
+            ',
+            'assertions' => [],
+            'ignored_issues' => [],
+            'php_version' => '8.2',
         ];
 
         yield 'methodExistsOfStubbedMethodBelowItsVersion' => [
@@ -1106,6 +1158,30 @@ final class NativeSymbolAvailabilityTest extends TestCase
                 . ' (it was introduced in PHP 8.0',
             'error_levels' => [],
             'php_version' => '7.4',
+        ];
+
+        yield 'subclassDeclaresMethodInItsVersion' => [
+            'code' => '<?php
+                final class M extends mysqli {
+                    /** @return string */
+                    public function quote_string($string) {
+                        return "\'" . $this->real_escape_string($string) . "\'";
+                    }
+                }
+            ',
+            'error_message' => 'ImmutableDependency',
+            'error_levels' => [],
+            'php_version' => '8.6',
+        ];
+
+        yield 'opcacheFunctionBelowItsVersion' => [
+            'code' => '<?php
+                opcache_jit_blacklist(function (): void {});
+            ',
+            'error_message' => 'Function opcache_jit_blacklist is not defined for the analysed PHP version 8.3'
+                . ' (it was introduced in PHP 8.4',
+            'error_levels' => [],
+            'php_version' => '8.3',
         ];
 
         yield 'stubbedMethodBelowItsVersion' => [

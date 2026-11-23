@@ -101,6 +101,17 @@ final class MethodComparator
             strtolower($guide_classlike_storage->name . '::' . $guide_method_storage->cased_name),
         );
 
+        // a native method a later PHP version introduces sets no contract for the analysed one
+        $guide_since_php_version_id = MethodAnalyzer::getMethodSincePhpVersionId(
+            $codebase,
+            new MethodIdentifier($guide_classlike_storage->name, strtolower($guide_method_storage->cased_name ?: '')),
+        );
+        if ($guide_since_php_version_id !== null
+            && $guide_since_php_version_id > $codebase->analysis_php_version_id
+        ) {
+            return null;
+        }
+
         self::checkForObviousMethodMismatches(
             $codebase,
             $guide_classlike_storage,

@@ -662,12 +662,14 @@ class mysqli
     /**
      * Escapes the string and puts it in quotes
      *
+     * @param string $string
+     * @return string
      * @psalm-pure
      *
      * @psalm-taint-escape sql
      * @psalm-flow ($string) -> return
      */
-    function quote_string(string $string): string {}
+    function quote_string($string) {}
 }
 
 class SQLite3
