@@ -8,6 +8,7 @@ use Closure;
 use PhpParser\Node\Arg;
 use Psalm\CodeLocation;
 use Psalm\Context;
+use Psalm\Internal\Perf\Collector;
 use Psalm\Internal\Provider\ParamsProvider\ArrayFilterParamsProvider;
 use Psalm\Internal\Provider\ParamsProvider\ArrayMultisortParamsProvider;
 use Psalm\Internal\Provider\ParamsProvider\ArrayUArrayParamsProvider;
@@ -90,7 +91,9 @@ final class FunctionParamsProvider
                 $context,
                 $code_location,
             );
-            $result = $class_handler($event);
+            $result = Collector::$enabled
+                ? Collector::call($class_handler, $event, 'FunctionParams')
+                : $class_handler($event);
 
             if ($result) {
                 return $result;

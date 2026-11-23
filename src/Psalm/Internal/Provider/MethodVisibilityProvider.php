@@ -7,6 +7,7 @@ namespace Psalm\Internal\Provider;
 use Closure;
 use Psalm\CodeLocation;
 use Psalm\Context;
+use Psalm\Internal\Perf\Collector;
 use Psalm\Plugin\EventHandler\Event\MethodVisibilityProviderEvent;
 use Psalm\Plugin\EventHandler\MethodVisibilityProviderInterface;
 use Psalm\StatementsSource;
@@ -81,7 +82,9 @@ final class MethodVisibilityProvider
                 $context,
                 $code_location,
             );
-            $method_visible = $method_handler($event);
+            $method_visible = Collector::$enabled
+                ? Collector::call($method_handler, $event, 'MethodVisibility')
+                : $method_handler($event);
 
             if ($method_visible !== null) {
                 return $method_visible;

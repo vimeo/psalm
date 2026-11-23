@@ -8,6 +8,7 @@ use Closure;
 use PhpParser\Node\Arg;
 use Psalm\CodeLocation;
 use Psalm\Context;
+use Psalm\Internal\Perf\Collector;
 use Psalm\Internal\Provider\ParamsProvider\FfiMemcmpParamsProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\PdoStatementSetFetchMode;
 use Psalm\Plugin\EventHandler\Event\MethodParamsProviderEvent;
@@ -92,7 +93,9 @@ final class MethodParamsProvider
                 $context,
                 $code_location,
             );
-            $result = $class_handler($event);
+            $result = Collector::$enabled
+                ? Collector::call($class_handler, $event, 'MethodParams')
+                : $class_handler($event);
 
             if ($result !== null) {
                 return array_values($result);

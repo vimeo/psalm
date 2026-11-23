@@ -16,6 +16,7 @@ use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Internal\LanguageServer\LanguageServer;
 use Psalm\Internal\MethodIdentifier;
+use Psalm\Internal\Perf\Collector;
 use Psalm\Internal\Provider\ClassLikeStorageProvider;
 use Psalm\Internal\Provider\FileProvider;
 use Psalm\Internal\Provider\FileReferenceProvider;
@@ -126,8 +127,6 @@ final class ProjectAnalyzer
     public Progress $progress;
 
     public bool $debug_lines = false;
-
-    public bool $debug_performance = false;
 
     public bool $show_issues = true;
 
@@ -480,6 +479,7 @@ final class ProjectAnalyzer
         }
         $this->progress->write($this->generateAnalysisSetupMessage());
         $this->progress->startPhase(Phase::SCAN, $this->scanThreads);
+        Collector::stage('scan.setup');
 
         $project_files = $this->initProjectFiles();
         $this->initExtraFiles();
@@ -909,6 +909,7 @@ final class ProjectAnalyzer
     {
         $this->progress->write($this->generateAnalysisSetupMessage());
         $this->progress->startPhase(Phase::SCAN, $this->scanThreads);
+        Collector::stage('scan.setup');
 
         if (!$this->project_files_initialized) {
             // issues raised while scanning need to know which files are being checked
@@ -1017,6 +1018,7 @@ final class ProjectAnalyzer
     {
         $this->progress->write($this->generateAnalysisSetupMessage());
         $this->progress->startPhase(Phase::SCAN, $this->scanThreads);
+        Collector::stage('scan.setup');
 
         $this->progress->debug('Checking ' . $file_path . PHP_EOL);
 
@@ -1060,6 +1062,7 @@ final class ProjectAnalyzer
     {
         $this->progress->write($this->generateAnalysisSetupMessage());
         $this->progress->startPhase(Phase::SCAN, $this->scanThreads);
+        Collector::stage('scan.setup');
 
         if (!$this->project_files_initialized) {
             $file_extensions = $this->config->getFileExtensions();

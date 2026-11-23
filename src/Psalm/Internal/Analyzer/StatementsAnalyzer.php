@@ -46,6 +46,7 @@ use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\Codebase\VariableUseGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
+use Psalm\Internal\Perf\Collector;
 use Psalm\Internal\Provider\NodeDataProvider;
 use Psalm\Internal\Provider\TypeVariableResolvingNodeTypeProvider;
 use Psalm\Internal\ReferenceConstraint;
@@ -86,6 +87,7 @@ use function assert;
 use function count;
 use function explode;
 use function fwrite;
+use function hrtime;
 use function is_string;
 use function preg_replace;
 use function preg_split;
@@ -294,7 +296,17 @@ final class StatementsAnalyzer extends SourceAnalyzer
             }
 
             foreach ($stmts as $stmt) {
-                if (self::analyzeStatement($this, $stmt, $context, $global_context) === false) {
+                if (Collector::$enabled) {
+                    $perf_outer_child_ns = Collector::$child_ns;
+                    Collector::$child_ns = 0;
+                    $perf_start_ns = (int) hrtime(true);
+                    $analysis_result = self::analyzeStatement($this, $stmt, $context, $global_context);
+                    Collector::statementEnd($this, $stmt, $perf_start_ns, $perf_outer_child_ns);
+
+                    if ($analysis_result === false) {
+                        return false;
+                    }
+                } elseif (self::analyzeStatement($this, $stmt, $context, $global_context) === false) {
                     return false;
                 }
 

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Psalm\Internal\Provider;
 
 use Closure;
+use Psalm\Internal\Perf\Collector;
 use Psalm\Plugin\EventHandler\Event\FunctionExistenceProviderEvent;
 use Psalm\Plugin\EventHandler\FunctionExistenceProviderInterface;
 use Psalm\StatementsSource;
@@ -74,7 +75,9 @@ final class FunctionExistenceProvider
                 $statements_source,
                 $function_id,
             );
-            $function_exists = $function_handler($event);
+            $function_exists = Collector::$enabled
+                ? Collector::call($function_handler, $event, 'FunctionExistence')
+                : $function_handler($event);
 
             if ($function_exists !== null) {
                 return $function_exists;

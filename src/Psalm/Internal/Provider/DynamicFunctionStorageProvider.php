@@ -9,6 +9,7 @@ use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Perf\Collector;
 use Psalm\Plugin\ArgTypeInferer;
 use Psalm\Plugin\DynamicFunctionStorage;
 use Psalm\Plugin\DynamicTemplateProvider;
@@ -93,7 +94,9 @@ final class DynamicFunctionStorageProvider
                 $code_location,
             );
 
-            $result = $class_handler($event);
+            $result = Collector::$enabled
+                ? Collector::call($class_handler, $event, 'DynamicFunctionStorage')
+                : $class_handler($event);
 
             return self::$dynamic_storages[$dynamic_storage_id] = $result
                 ? $result->toFunctionStorage($function_id)

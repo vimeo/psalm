@@ -6,6 +6,7 @@ namespace Psalm\Internal\Provider;
 
 use Closure;
 use Psalm\CodeLocation;
+use Psalm\Internal\Perf\Collector;
 use Psalm\Plugin\EventHandler\Event\MethodExistenceProviderEvent;
 use Psalm\Plugin\EventHandler\MethodExistenceProviderInterface;
 use Psalm\StatementsSource;
@@ -75,7 +76,9 @@ final class MethodExistenceProvider
                 $source,
                 $code_location,
             );
-            $method_exists = $method_handler($event);
+            $method_exists = Collector::$enabled
+                ? Collector::call($method_handler, $event, 'MethodExistence')
+                : $method_handler($event);
 
             if ($method_exists !== null) {
                 return $method_exists;

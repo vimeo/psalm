@@ -284,9 +284,6 @@
     <ImpureStaticProperty>
       <code><![CDATA[self::$no_effects_hashes]]></code>
     </ImpureStaticProperty>
-    <InvalidOperand>
-      <code><![CDATA[$time_taken / $node_counter->count]]></code>
-    </InvalidOperand>
     <PossiblyNullArgument>
       <code><![CDATA[$storage->location]]></code>
     </PossiblyNullArgument>
@@ -296,7 +293,6 @@
       <code><![CDATA[!$storage->cased_name]]></code>
       <code><![CDATA[$appearing_class_storage->template_types]]></code>
       <code><![CDATA[$appearing_class_storage->template_types]]></code>
-      <code><![CDATA[$cased_method_id]]></code>
       <code><![CDATA[$cased_method_id]]></code>
       <code><![CDATA[$cased_method_id]]></code>
       <code><![CDATA[$cased_method_id]]></code>
@@ -2491,10 +2487,6 @@
       <code><![CDATA[self::$used_suppressions]]></code>
       <code><![CDATA[self::$used_suppressions]]></code>
     </ImpureStaticProperty>
-    <InvalidOperand>
-      <code><![CDATA[1_000 * $time]]></code>
-      <code><![CDATA[round(1_000 * $time, 2)]]></code>
-    </InvalidOperand>
     <RiskyTruthyFalsyComparison>
       <code><![CDATA[!$report_options->output_path]]></code>
       <code><![CDATA[$parent_issue_type]]></code>

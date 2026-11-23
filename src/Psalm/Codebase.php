@@ -51,6 +51,7 @@ use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\LanguageServer\PHPMarkdownContent;
 use Psalm\Internal\LanguageServer\Reference;
 use Psalm\Internal\MethodIdentifier;
+use Psalm\Internal\Perf\Collector;
 use Psalm\Internal\Provider\ClassLikeStorageProvider;
 use Psalm\Internal\Provider\FileProvider;
 use Psalm\Internal\Provider\FileReferenceProvider;
@@ -1060,6 +1061,7 @@ final class Codebase
             );
         }
 
+        $previous_stage = Collector::stage('scan.files');
         $has_changes = $this->scanner->scanFiles($this->classlikes, $threads);
 
         // a taint analysis analyzes the bodies of inherited methods again, for the classes inheriting them (see
@@ -1070,6 +1072,8 @@ final class Codebase
             }
         }
 
+        Collector::stage('scan.populate');
+
         if ($has_changes) {
             // the classes scanned again may make other `new`
             $this->constructor_argument_starts = null;
@@ -1077,6 +1081,8 @@ final class Codebase
             // the files scanned again may declare other constants
             $this->global_constant_types_by_wildcard = [];
         }
+
+        Collector::stage($previous_stage);
     }
 
     /**

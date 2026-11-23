@@ -8,6 +8,7 @@ use Closure;
 use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Context;
+use Psalm\Internal\Perf\Collector;
 use Psalm\Internal\Provider\ReturnTypeProvider\ArrayChunkReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\ArrayColumnReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\ArrayCombineReturnTypeProvider;
@@ -199,7 +200,9 @@ final class FunctionReturnTypeProvider
                 $context,
                 $code_location,
             );
-            $return_type = $function_handler($event);
+            $return_type = Collector::$enabled
+                ? Collector::call($function_handler, $event, 'FunctionReturnType')
+                : $function_handler($event);
 
             if ($return_type) {
                 return $return_type;

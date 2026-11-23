@@ -7,6 +7,7 @@ namespace Psalm\Internal\Provider;
 use Closure;
 use Psalm\CodeLocation;
 use Psalm\Context;
+use Psalm\Internal\Perf\Collector;
 use Psalm\Plugin\EventHandler\Event\PropertyVisibilityProviderEvent;
 use Psalm\Plugin\EventHandler\PropertyVisibilityProviderInterface;
 use Psalm\StatementsSource;
@@ -80,7 +81,9 @@ final class PropertyVisibilityProvider
                 $context,
                 $code_location,
             );
-            $property_visible = $property_handler($event);
+            $property_visible = Collector::$enabled
+                ? Collector::call($property_handler, $event, 'PropertyVisibility')
+                : $property_handler($event);
 
             if ($property_visible !== null) {
                 return $property_visible;

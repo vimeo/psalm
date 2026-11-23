@@ -12,6 +12,7 @@ use PhpParser\Node\Stmt\Class_;
 use PhpParser\Node\Stmt\Return_;
 use Psalm\Config;
 use Psalm\Internal\CacheMode;
+use Psalm\Internal\Perf\Collector;
 use Psalm\Internal\Provider\FakeFileProvider;
 use Psalm\Internal\Provider\FileProvider;
 use Psalm\Internal\Provider\ParserCacheProvider;
@@ -79,6 +80,28 @@ final class StatementsProviderTest extends TestCase
 
         $this->assertNotSame($third[0], $fourth[0]);
         $this->assertEquals($this->parse(), $fourth);
+    }
+
+    public function testEveryRequestIsAParseOrAHitOfTheParserCache(): void
+    {
+        Collector::start(null, []);
+
+        try {
+            $this->getStatements();
+            $this->getStatements();
+            $this->getStatements();
+            $this->getStatements();
+
+            $counts = Collector::finish(0, 0)['counts'] ?? null;
+        } finally {
+            Collector::reset();
+        }
+
+        // a vendor file is kept from its second request on, and answered from what is kept after that
+        $this->assertSame(
+            ['files_parsed' => 2, 'parser_cache_hits' => 2, 'parser_cache_misses' => 0],
+            $counts,
+        );
     }
 
     public function testRequestAfterAChangeGetsTheNewStatements(): void

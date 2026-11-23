@@ -8,6 +8,7 @@ use Closure;
 use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Context;
+use Psalm\Internal\Perf\Collector;
 use Psalm\Internal\Provider\ReturnTypeProvider\ClosureReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\DateTimeModifyReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\DomNodeAppendChild;
@@ -104,7 +105,9 @@ final class MethodReturnTypeProvider
                 $called_fq_classlike_name,
                 $called_method_name ? strtolower($called_method_name) : null,
             );
-            $result = $class_handler($event);
+            $result = Collector::$enabled
+                ? Collector::call($class_handler, $event, 'MethodReturnType')
+                : $class_handler($event);
 
             if ($result) {
                 return $result;

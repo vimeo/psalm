@@ -6,6 +6,7 @@ namespace Psalm\Internal\Provider;
 
 use Closure;
 use Psalm\Context;
+use Psalm\Internal\Perf\Collector;
 use Psalm\Internal\Provider\PropertyTypeProvider\DomDocumentPropertyTypeProvider;
 use Psalm\Plugin\EventHandler\Event\PropertyTypeProviderEvent;
 use Psalm\Plugin\EventHandler\PropertyTypeProviderInterface;
@@ -86,7 +87,9 @@ final class PropertyTypeProvider
                 $source,
                 $context,
             );
-            $property_type = $property_handler($event);
+            $property_type = Collector::$enabled
+                ? Collector::call($property_handler, $event, 'PropertyType')
+                : $property_handler($event);
 
             if ($property_type !== null) {
                 return $property_type;

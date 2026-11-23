@@ -21,6 +21,7 @@ use Psalm\Internal\Composer;
 use Psalm\Internal\ErrorHandler;
 use Psalm\Internal\Fork\PsalmRestarter;
 use Psalm\Internal\IncludeCollector;
+use Psalm\Internal\Perf\Collector;
 use Psalm\Internal\Preloader;
 use Psalm\Internal\Provider\ClassLikeStorageCacheProvider;
 use Psalm\Internal\Provider\FileProvider;
@@ -84,6 +85,7 @@ use function setlocale;
 use function sort;
 use function str_starts_with;
 use function strlen;
+use function strval;
 use function substr;
 use function trim;
 use function wordwrap;
@@ -105,6 +107,7 @@ require_once __DIR__ . '/../IncludeCollector.php';
 require_once __DIR__ . '/../../IssueBuffer.php';
 require_once __DIR__ . '/../../Report.php';
 require_once __DIR__ . '/IdeDetector.php';
+require_once __DIR__ . '/../Perf/Collector.php';
 
 /**
  * @internal
@@ -128,7 +131,7 @@ final class Psalm
         'config:',
         'debug',
         'debug-by-line',
-        'debug-performance',
+        'debug-performance::',
         'debug-emitted-issues',
         'diff',
         'disable-extension:',
@@ -202,6 +205,7 @@ final class Psalm
 
         // get options from command line
         $options = CliUtils::getOptions($args, self::SHORT_OPTIONS, self::LONG_OPTIONS);
+        $given_option_names = array_map(strval(...), array_keys($options));
 
         // debug CI environment
         if (!array_key_exists('debug', $options)
@@ -214,6 +218,8 @@ final class Psalm
         self::forwardCliCall($options, $argv);
 
         CliUtils::rejectUnrecognisedOptions($args, self::SHORT_OPTIONS, self::LONG_OPTIONS);
+
+        self::startPerformanceCollector($options, $given_option_names);
 
         $min_type_coverage = self::parseMinTypeCoverageOption($options);
 
@@ -395,6 +401,8 @@ final class Psalm
             $report_file_paths = [$report_file_paths];
         }
 
+        self::rejectPerformanceDumpCollision($options, $config, $report_file_paths);
+
         $project_analyzer = ProjectBootstrap::createProjectAnalyzer(
             $options,
             $config,
@@ -429,6 +437,8 @@ final class Psalm
             $project_analyzer->checkPaths($paths_to_check);
         }
 
+        Collector::stage('post');
+
         if ($find_references_to) {
             $project_analyzer->findReferencesTo($find_references_to);
         }
@@ -443,6 +453,8 @@ final class Psalm
             self::generateStubs($options, $providers, $project_analyzer);
         }
 
+        Collector::stage('report');
+
         if (!isset($options['i'])) {
             IssueBuffer::finish(
                 $project_analyzer,
@@ -453,6 +465,73 @@ final class Psalm
             );
         } else {
             self::autoGenerateConfig($project_analyzer, $current_dir, $init_source_dir, $vendor_dir);
+        }
+    }
+
+    /**
+     * @param list<string> $given_option_names
+     */
+    private static function startPerformanceCollector(array $options, array $given_option_names): void
+    {
+        if (!array_key_exists('debug-performance', $options)) {
+            return;
+        }
+
+        /** @var list<string>|string|false $path type guaranteed by argument to getopt() */
+        $path = $options['debug-performance'];
+
+        if (is_array($path)) {
+            fwrite(STDERR, 'Only one --debug-performance path can be given' . PHP_EOL);
+            exit(1);
+        }
+
+        if ($path === '') {
+            fwrite(STDERR, '--debug-performance= needs a path: use --debug-performance=PATH or no value' . PHP_EOL);
+            exit(1);
+        }
+
+        Collector::start(is_string($path) ? $path : null, $given_option_names);
+    }
+
+    /**
+     * @param list<string>|string $report_file_paths
+     */
+    private static function rejectPerformanceDumpCollision(
+        array $options,
+        Config $config,
+        array|string $report_file_paths,
+    ): void {
+        $dump_path = Collector::dumpPath();
+
+        if ($dump_path === null) {
+            return;
+        }
+
+        $cwd = (string) getcwd();
+        $other_paths = is_string($report_file_paths) ? [$report_file_paths] : $report_file_paths;
+
+        if (isset($options['set-baseline'])) {
+            $other_paths[] = is_string($options['set-baseline'])
+                ? $options['set-baseline']
+                : $config->error_baseline ?? Config::DEFAULT_BASELINE_NAME;
+        }
+
+        if (isset($options['use-baseline']) && is_string($options['use-baseline'])) {
+            $other_paths[] = $options['use-baseline'];
+        }
+
+        if ($config->error_baseline !== null) {
+            $other_paths[] = $config->error_baseline;
+        }
+
+        foreach ($other_paths as $other_path) {
+            if (Collector::isSameDestination($other_path, $dump_path, $cwd)) {
+                fwrite(
+                    STDERR,
+                    '--debug-performance=' . $dump_path . ' would overwrite ' . $other_path . PHP_EOL,
+                );
+                exit(1);
+            }
         }
     }
 
@@ -1517,8 +1596,10 @@ final class Psalm
             --debug-by-line
                 Debug information on a line-by-line level
 
-            --debug-performance
-                Show performance information
+            --debug-performance[=PATH]
+                Print where the time and memory went: stages, slowest files, hottest statements and functions.
+                With =PATH, also write all of it as JSON to PATH. The path needs the `=`: after a space it is
+                a file to analyse. Debug output (--debug) distorts the timings.
 
             --debug-emitted-issues
                 Print a php backtrace to stderr when emitting issues.

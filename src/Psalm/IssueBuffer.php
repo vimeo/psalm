@@ -12,6 +12,8 @@ use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\BaselineMatcher;
 use Psalm\Internal\ExecutionEnvironment\BuildInfoCollector;
 use Psalm\Internal\ExecutionEnvironment\GitInfoCollector;
+use Psalm\Internal\Perf\Collector;
+use Psalm\Internal\Perf\DumpWriter;
 use Psalm\Internal\Provider\FileProvider;
 use Psalm\Issue\CodeIssue;
 use Psalm\Issue\ConfigIssue;
@@ -52,7 +54,6 @@ use function array_search;
 use function array_splice;
 use function array_sum;
 use function array_values;
-use function arsort;
 use function debug_print_backtrace;
 use function dirname;
 use function explode;
@@ -971,9 +972,11 @@ final class IssueBuffer
             $project_analyzer->stdout_report_options->format,
             [Report::TYPE_CONSOLE, Report::TYPE_PHP_STORM, Report::TYPE_GITHUB_ACTIONS],
         );
+        $prints_performance_summary = false;
+        $printed_peak_bytes = null;
 
         if ($prints_to_console && $codebase->alter_code && !$error_count) {
-            self::printAlterSummary(
+            $printed_peak_bytes = self::printAlterSummary(
                 $codebase->analyzer->getChangedFilesCount(),
                 $project_analyzer->dry_run,
                 $project_analyzer->stdout_report_options->use_color,
@@ -1026,7 +1029,7 @@ final class IssueBuffer
             echo str_repeat('-', 30) . "\n" . "\n";
 
             if ($start_time) {
-                self::printTiming($start_time);
+                $printed_peak_bytes = self::printTiming($start_time);
 
                 $analysis_summary = $codebase->analyzer->getTypeInferenceSummary($codebase);
                 echo $analysis_summary . "\n";
@@ -1037,27 +1040,7 @@ final class IssueBuffer
                     echo "\n";
                 }
 
-                if ($project_analyzer->debug_performance) {
-                    echo '-----------------' . "\n";
-                    echo 'Slow-to-analyze functions' . "\n";
-                    echo '-----------------' . "\n\n";
-
-                    $function_timings = $codebase->analyzer->getFunctionTimings();
-
-                    arsort($function_timings);
-
-                    $i = 0;
-
-                    foreach ($function_timings as $function_id => $time) {
-                        if (++$i > 10) {
-                            break;
-                        }
-
-                        echo $function_id . ': ' . round(1_000 * $time, 2) . 'ms per node' . "\n";
-                    }
-
-                    echo "\n";
-                }
+                $prints_performance_summary = Collector::$enabled;
             }
 
             if ($codebase->config->find_unused_issue_handler_suppression && (!$is_full || $codebase->diff_run)) {
@@ -1090,6 +1073,12 @@ final class IssueBuffer
 
         if ($type_coverage_message !== null) {
             fwrite(STDERR, $type_coverage_message . PHP_EOL);
+        }
+
+        // after everything that takes time, so that the report stage and the totals cover the whole run
+        $performance = Collector::finish($error_count, $info_count, $printed_peak_bytes);
+        if ($performance !== null) {
+            DumpWriter::emit($performance, $project_analyzer, $prints_performance_summary);
         }
 
         // a taint analysis run in GitHub Actions that writes a SARIF report exits successfully, so that a following
@@ -1163,7 +1152,7 @@ final class IssueBuffer
         bool $dry_run,
         bool $use_color,
         float $start_time,
-    ): void {
+    ): ?int {
         if ($changed_files_count === 0) {
             $message = 'No changes';
         } else {
@@ -1175,15 +1164,20 @@ final class IssueBuffer
         self::printResultBlock($message, $use_color);
         echo str_repeat('-', 30) . "\n\n";
 
-        if ($start_time) {
-            self::printTiming($start_time);
-        }
+        return $start_time ? self::printTiming($start_time) : null;
     }
 
-    private static function printTiming(float $start_time): void
+    /**
+     * @return int the memory peak it printed
+     */
+    private static function printTiming(float $start_time): int
     {
+        $peak_bytes = memory_get_peak_usage();
+
         echo 'Checks took ' . number_format(microtime(true) - $start_time, 2) . ' seconds';
-        echo ' and used ' . number_format(memory_get_peak_usage() / (1_024 * 1_024), 3) . 'MB of memory' . "\n";
+        echo ' and used ' . number_format($peak_bytes / (1_024 * 1_024), 3) . 'MB of memory' . "\n";
+
+        return $peak_bytes;
     }
 
     public static function printSuccessMessage(ProjectAnalyzer $project_analyzer): void

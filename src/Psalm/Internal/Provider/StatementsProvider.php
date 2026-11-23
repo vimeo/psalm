@@ -18,6 +18,7 @@ use Psalm\Config;
 use Psalm\Internal\Diff\FileDiffer;
 use Psalm\Internal\Diff\FileStatementsDiffer;
 use Psalm\Internal\Fork\IgbinarySerializer;
+use Psalm\Internal\Perf\Collector;
 use Psalm\Internal\PhpTraverser\CustomTraverser;
 use Psalm\Internal\PhpVisitor\CloningVisitor;
 use Psalm\Internal\PhpVisitor\PartialApplicationVisitor;
@@ -138,6 +139,10 @@ final class StatementsProvider
             [$kept_parsed_from, $kept_statements] = $this->vendor_statements[$file_path] ?? [null, null];
 
             if ($kept_statements !== null && $kept_parsed_from === $parsed_from) {
+                if (Collector::$enabled) {
+                    Collector::parserCacheHit();
+                }
+
                 return self::unserializeStatements($kept_statements);
             }
 
@@ -146,6 +151,10 @@ final class StatementsProvider
             $parse_errors = [];
 
             $stmts = self::parseStatements($file_contents, $analysis_php_version_id, $parse_errors);
+
+            if (Collector::$enabled) {
+                Collector::parsed(false);
+            }
 
             self::reportParseErrors($parse_errors, $file_contents, $file_path);
 
@@ -224,6 +233,10 @@ final class StatementsProvider
             $existing_statements_copy,
             $file_changes,
         );
+
+        if (Collector::$enabled) {
+            Collector::parsed(true);
+        }
 
         self::reportParseErrors($parse_errors, $file_contents, $file_path);
 
@@ -491,6 +504,10 @@ final class StatementsProvider
         array $stmts,
         array $parse_errors,
     ): array {
+        if (Collector::$enabled) {
+            Collector::parserCacheHit();
+        }
+
         self::reportParseErrors($parse_errors, $file_contents, $file_path);
 
         if ($parse_errors !== [] && !$stmts) {

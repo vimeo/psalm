@@ -8,6 +8,7 @@ use Closure;
 use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Context;
+use Psalm\Internal\Perf\Collector;
 use Psalm\Plugin\EventHandler\Event\MethodCapabilitiesProviderEvent;
 use Psalm\Plugin\EventHandler\MethodCapabilitiesProviderInterface;
 use Psalm\StatementsSource;
@@ -76,7 +77,7 @@ final class MethodCapabilitiesProvider
         CodeLocation $code_location,
     ): ?int {
         foreach (self::$handlers[strtolower($fq_classlike_name)] ?? [] as $class_handler) {
-            $result = $class_handler(new MethodCapabilitiesProviderEvent(
+            $event = new MethodCapabilitiesProviderEvent(
                 $statements_source,
                 $fq_classlike_name,
                 strtolower($method_name),
@@ -84,7 +85,10 @@ final class MethodCapabilitiesProvider
                 $stmt,
                 $context,
                 $code_location,
-            ));
+            );
+            $result = Collector::$enabled
+                ? Collector::call($class_handler, $event, 'MethodCapabilities')
+                : $class_handler($event);
 
             if ($result !== null) {
                 return $result;

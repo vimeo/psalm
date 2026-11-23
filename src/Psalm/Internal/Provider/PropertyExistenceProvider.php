@@ -7,6 +7,7 @@ namespace Psalm\Internal\Provider;
 use Closure;
 use Psalm\CodeLocation;
 use Psalm\Context;
+use Psalm\Internal\Perf\Collector;
 use Psalm\Plugin\EventHandler\Event\PropertyExistenceProviderEvent;
 use Psalm\Plugin\EventHandler\PropertyExistenceProviderInterface;
 use Psalm\StatementsSource;
@@ -83,7 +84,9 @@ final class PropertyExistenceProvider
                 $context,
                 $code_location,
             );
-            $property_exists = $property_handler($event);
+            $property_exists = Collector::$enabled
+                ? Collector::call($property_handler, $event, 'PropertyExistence')
+                : $property_handler($event);
 
             if ($property_exists !== null) {
                 return $property_exists;
