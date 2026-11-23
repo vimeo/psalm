@@ -305,6 +305,8 @@ final class ReturnAnalyzer
         }
 
         if ($stmt->expr) {
+            // a `return` of a file included in the returned expression must not end that expression's use
+            $was_inside_return = $context->inside_return;
             $context->inside_return = true;
 
             if ($stmt->expr instanceof PhpParser\Node\Expr\Closure
@@ -318,7 +320,7 @@ final class ReturnAnalyzer
             }
 
             if (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->expr, $context) === false) {
-                $context->inside_return = false;
+                $context->inside_return = $was_inside_return;
                 $context->has_returned = true;
 
                 return;
@@ -356,7 +358,7 @@ final class ReturnAnalyzer
                 $stmt_type = Type::getMixed();
             }
 
-            $context->inside_return = false;
+            $context->inside_return = $was_inside_return;
         } else {
             $stmt_type = Type::getVoid();
         }
