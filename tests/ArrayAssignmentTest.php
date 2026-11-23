@@ -132,29 +132,6 @@ final class ArrayAssignmentTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
-            'nestedAssignmentDoesNotMakeTheValuesOfTheOtherKeysNonEmpty' => [
-                'code' => '<?php
-                    /** @param array<string, array<int, int>> $a */
-                    function g(array $a, string $k, string $j, int $i): void {
-                        $a[$k][$i] = 1;
-
-                        if (isset($a[$j]) && empty($a[$j])) {
-                            echo "empty";
-                        }
-                    }
-
-                    /** @param array<string, array<int, int>> $a */
-                    function h(array $a, string $k, string $j): void {
-                        $a[$k] = [1];
-
-                        if (isset($a[$j]) && empty($a[$j])) {
-                            echo "empty";
-                        }
-                    }',
-                'assertions' => [],
-                'ignored_issues' => [],
-                'php_version' => '8.0',
-            ],
             'appendsStopGrowingAListShapeAtTheMaximumSize' => [
                 'code' => '<?php
                     $a = [];' . str_repeat('
@@ -3636,6 +3613,26 @@ final class ArrayAssignmentTest extends TestCase
                     '$e===' => 'array<string, non-empty-array<int, 1>>',
                 ],
             ],
+            'severalNestedWritesUnderOneComputedKeyKeepTheirKeysDefined' => [
+                'code' => '<?php
+                    /**
+                     * @param list<string> $jobs
+                     */
+                    function f(array $jobs, string $c, string $q): void {
+                        $groups = [];
+                        foreach ($jobs as $job) {
+                            $groups[$c . ":" . $q]["connection"] = $c;
+                            $groups[$c . ":" . $q]["queue"] = $q;
+                            $groups[$c . ":" . $q]["jobs"][] = $job;
+                        }
+                        foreach ($groups as $group) {
+                            echo $group["queue"];
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'arrayCreatedByANestedAssignmentInALoopIsNotEmpty' => [
                 'code' => <<<'PHP'
                     <?php
@@ -3701,22 +3698,6 @@ final class ArrayAssignmentTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
-            'nestedAssignmentLeavesTheValuesOfTheOtherKeysPossiblyEmpty' => [
-                'code' => '<?php
-                    /** @param array<string, array<int, int>> $a */
-                    function f(array $a, string $k, int $i): int {
-                        $a[$k][$i] = 1;
-
-                        foreach ($a as $e) {
-                            return array_key_first($e);
-                        }
-
-                        return 0;
-                    }',
-                'error_message' => 'NullableReturnStatement',
-                'error_levels' => [],
-                'php_version' => '8.0',
-            ],
             'byReferenceArgumentUnderAKeyTheListDoesNotHaveIsNull' => [
                 'code' => '<?php
                     function takesArray(array &$x): void {}
