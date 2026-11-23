@@ -1866,7 +1866,7 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                     // handled above
                 } elseif (!$var_type_part instanceof TNamedObject
                     || ($invoke_member = CallableTypeComparator::getInvokeMember($codebase, $var_type_part)) === null
-                    || !$codebase->classlikes->classOrInterfaceExists($invoke_member->value, null, $context)
+                    || !$codebase->classlikes->classOrInterfaceOrEnumExists($invoke_member->value, null, $context)
                 ) {
                     $invalid_function_call_types[] = (string)$var_type_part;
                 } else {
