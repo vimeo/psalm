@@ -456,6 +456,20 @@ final class Methods
                         );
                     }
 
+                    // the templates of the overridden method are not those of this one, whose docblock declares its
+                    // own: they stand for the types they are bounded by
+                    $method_template_types = $this->getStorage($method_id)->template_types;
+                    if (!$is_from_documenting_method
+                        && $method_template_types !== null
+                        && $method_template_types !== []
+                    ) {
+                        $type = self::replaceTemplatesByTheirBounds(
+                            $source ? $source->getCodebase() : ProjectAnalyzer::getInstance()->getCodebase(),
+                            $type,
+                            $method_template_types,
+                        );
+                    }
+
                     // unrelated ancestors that disagree give no type
                     if ($inherited_type !== null && $inherited_type->getId() !== $type->getId()) {
                         $inherited_type = null;
@@ -488,6 +502,15 @@ final class Methods
                     continue;
                 }
 
+                // the template a conditional return type of this method makes of the parameter stays, bounded by
+                // the inherited type
+                $param_atomic = $param->type?->isSingle() ? $param->type->getSingleAtomic() : null;
+                if ($param_atomic instanceof TTemplateParam
+                    && isset($storage->template_types[$param_atomic->param_name][$param_atomic->defining_class])
+                ) {
+                    $inherited_type = new Union([$param_atomic->replaceAs($inherited_type)]);
+                }
+
                 $params[$i] = clone $param;
                 $params[$i]->type = $inherited_type;
                 $params[$i]->type_location = $type_location;
@@ -498,6 +521,31 @@ final class Methods
         }
 
         throw new UnexpectedValueException('Cannot get method params for ' . $method_id);
+    }
+
+    /**
+     * @param non-empty-array<string, non-empty-array<string, Union>> $template_types
+     * @psalm-capabilities read-props|write-this-props|write-props|write-refs
+     */
+    private static function replaceTemplatesByTheirBounds(
+        Codebase $codebase,
+        Union $type,
+        array $template_types,
+    ): Union {
+        // a bound may name another template of the method
+        foreach ($template_types as $_) {
+            if ($type->getTemplateTypes() === []) {
+                break;
+            }
+
+            $type = TemplateInferredTypeReplacer::replace(
+                $type,
+                new TemplateResult($template_types, $template_types),
+                $codebase,
+            );
+        }
+
+        return $type;
     }
 
     public static function localizeType(

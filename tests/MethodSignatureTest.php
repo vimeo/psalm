@@ -772,6 +772,86 @@ final class MethodSignatureTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'overrideWithItsOwnDocblockDoesNotTakeATemplateOfTheOverriddenMethod' => [
+                'code' => '<?php
+                    interface LocatorInterface {
+                        /**
+                         * @template TFirst as bool
+                         * @param TFirst $first
+                         * @return (TFirst is true ? string : array)
+                         */
+                        public function locate(string $name, bool $first = true);
+                    }
+
+                    final class Locator implements LocatorInterface {
+                        /**
+                         * @return ($first is true ? string : list<string>)
+                         */
+                        #[Override]
+                        public function locate(string $name, bool $first = true): string|array {
+                            return $first ? $name : [$name];
+                        }
+                    }
+
+                    $many = (new Locator())->locate("a", false);',
+                'assertions' => [
+                    '$many===' => 'list<string>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
+            'overrideWithAConditionalReturnOnAParameterKeepsItsTemplateBoundedByTheInheritedType' => [
+                'code' => '<?php
+                    interface LocatorInterface {
+                        /**
+                         * @param bool $first
+                         * @return string|array
+                         */
+                        public function locate(string $name, $first = true);
+                    }
+
+                    final class Locator implements LocatorInterface {
+                        /**
+                         * @return ($first is true ? string : list<string>)
+                         */
+                        #[Override]
+                        public function locate(string $name, $first = true): string|array {
+                            return $first ? $name : [$name];
+                        }
+                    }
+
+                    $many = (new Locator())->locate("a", false);',
+                'assertions' => [
+                    '$many===' => 'list<string>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
+            'overrideWithoutADocblockTakesTheTemplateOfTheOverriddenMethod' => [
+                'code' => '<?php
+                    interface LocatorInterface {
+                        /**
+                         * @template TFirst as bool
+                         * @param TFirst $first
+                         * @return (TFirst is true ? string : list<string>)
+                         */
+                        public function locate(string $name, bool $first = true);
+                    }
+
+                    final class Locator implements LocatorInterface {
+                        #[Override]
+                        public function locate(string $name, bool $first = true): string|array {
+                            return $first ? $name : [$name];
+                        }
+                    }
+
+                    $many = (new Locator())->locate("a", false);',
+                'assertions' => [
+                    '$many===' => 'list<string>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
             'staticTypeArgumentMatchesInheritedReturnType' => [
                 'code' => '<?php
                     /** @template T */
@@ -2163,6 +2243,50 @@ final class MethodSignatureTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'overrideWithOnlyAReturnDocblockTakesTheBoundOfATemplateOfTheOverriddenMethod' => [
+                'code' => '<?php
+                    abstract class Base {
+                        /**
+                         * @template T of object
+                         * @param class-string<T> $class
+                         * @param Closure(T): void $callback
+                         */
+                        abstract public function each(string $class, Closure $callback): void;
+                    }
+
+                    final class Box extends Base {
+                        /** @return void */
+                        #[Override]
+                        public function each($class, $callback): void {}
+                    }
+
+                    (new Box())->each(ArrayObject::class, function (int $item): void {});',
+                'error_message' => 'Argument 2 of Box::each expects Closure[impure](object):void, but',
+                'error_levels' => [],
+                'php_version' => '8.3',
+            ],
+            'overrideWithOnlyAReturnDocblockTakesTheBoundOfATemplateBoundedByAnother' => [
+                'code' => '<?php
+                    abstract class Base {
+                        /**
+                         * @template T of object
+                         * @template U of T
+                         * @param U $value
+                         */
+                        abstract public function take($value): void;
+                    }
+
+                    final class Box extends Base {
+                        /** @return void */
+                        #[Override]
+                        public function take($value): void {}
+                    }
+
+                    (new Box())->take(1);',
+                'error_message' => 'Argument 1 of Box::take expects object, but',
+                'error_levels' => [],
+                'php_version' => '8.3',
+            ],
             'staticTypeArgumentStillChecksDocumentedReturnType' => [
                 'code' => '<?php
                     /** @template T */
