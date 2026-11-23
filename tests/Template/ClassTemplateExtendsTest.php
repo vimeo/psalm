@@ -132,6 +132,48 @@ final class ClassTemplateExtendsTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'traitMethodImplementingATemplatedInterfaceMethodTakesStatic' => [
+                'code' => '<?php
+                    /** @template T */
+                    interface Setter {
+                        /** @param T $value */
+                        public function set(mixed $value): void;
+                    }
+
+                    trait SetsSelf {
+                        /** @param static $value */
+                        public function set(mixed $value): void {}
+                    }
+
+                    /** @implements Setter<static> */
+                    class Node implements Setter {
+                        use SetsSelf;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'traitMethodImplementingATemplatedAbstractParentMethodTakesTheBoundType' => [
+                'code' => '<?php
+                    /** @template T */
+                    abstract class Base {
+                        /** @param T $value */
+                        abstract public function set(mixed $value): void;
+                    }
+
+                    trait SetsInt {
+                        /** @param int $value */
+                        public function set(mixed $value): void {}
+                    }
+
+                    /** @extends Base<int> */
+                    final class Node extends Base {
+                        use SetsInt;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'templateTagNamesParentInAnotherCase' => [
                 'code' => '<?php
                     /** @template T */
