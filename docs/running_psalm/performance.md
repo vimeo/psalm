@@ -14,7 +14,7 @@
 
 The path needs the `=`: after a space it is a file to analyse. Use `--no-cache` to measure a cold run, and leave out `--debug`, which distorts the timings. Times per file are most reliable with `--threads=1`.
 
-Measuring costs some time itself: about 1.4 % CPU on WordPress with taint analysis at `--threads=1`, most of it from timing each call of a plugin or Psalm handler. Without the option Psalm measures nothing and runs as fast as before.
+Measuring costs some time itself, mostly for timing each call of a plugin or Psalm handler: about 1.3 % CPU on WordPress with taint analysis at `--threads=1`, and about 6 % on a Laravel project whose plugins hook into every expression. There the times of those handlers include part of that cost. Without the option Psalm measures nothing and runs as fast as before.
 
 ## The dump
 
