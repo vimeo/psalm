@@ -1,0 +1,62 @@
+name: Debug pool hang
+
+on:
+  push:
+    branches: [debug-pool-hang]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  repro:
+    name: "PoolTest loop - PHP ${{ matrix.php-version }} #${{ matrix.rep }}"
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        php-version: ["8.2", "8.3", "8.4"]
+        rep: [1, 2]
+    steps:
+      - uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # v2
+        with:
+          php-version: "${{ matrix.php-version }}"
+          ini-values: zend.assertions=1, assert.exception=1
+          tools: composer:v2
+          coverage: none
+          extensions: none, curl, dom, filter, intl, json, libxml, mbstring, opcache, openssl, pcntl, pcre, phar, posix, reflection, simplexml, spl, tokenizer, xml, xmlwriter
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v6
+
+      - name: Install
+        run: |
+          composer update --no-install
+          composer install -o
+        env:
+          COMPOSER_ROOT_VERSION: dev-master
+
+      - name: Base Pool.php, the new test must fail
+        run: |
+          cp src/Psalm/Internal/Fork/Pool.php /tmp/Pool.fixed.php
+          git fetch -q --depth=1 origin master
+          git show FETCH_HEAD:src/Psalm/Internal/Fork/Pool.php > src/Psalm/Internal/Fork/Pool.php
+          for t in testEveryResultOfAFreshPoolReachesTheParent testATaskThatFailsIsReportedOnce; do
+            timeout 90 vendor/bin/phpunit --filter "$t" tests/Internal/Fork/PoolTest.php > /tmp/base.txt 2>&1
+            echo "BASE $t exit=$?"; tail -15 /tmp/base.txt
+          done
+          cp /tmp/Pool.fixed.php src/Psalm/Internal/Fork/Pool.php
+
+      - name: Fixed Pool.php, the tests in 4 parallel loops
+        run: |
+          loop() {
+            for i in $(seq 1 40); do
+              timeout 120 vendor/bin/phpunit --no-progress --filter "$2" tests/Internal/Fork/PoolTest.php > /tmp/out-$1.txt 2>&1
+              code=$?
+              if [ $code -ne 0 ]; then echo "FIXED loop $1 ($2) iteration $i exit $code"; cat /tmp/out-$1.txt; return 1; fi
+            done
+            echo "FIXED loop $1 ($2): 40 runs OK"
+          }
+          loop 1 testATaskThatFailsIsReportedOnce & loop 2 testEveryResultOfAFreshPoolReachesTheParent & loop 3 testATaskThatFailsIsReportedOnce & loop 4 PoolTest &
+          wait
