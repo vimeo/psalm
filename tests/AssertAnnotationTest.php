@@ -1267,7 +1267,129 @@ final class AssertAnnotationTest extends TestCase
 
                     function onAnAbstractClass(Model $m, object $o): void {
                         $m->mustBe($o);
-                        /** @psalm-check-type-exact $o = Model */;
+                        /** @psalm-check-type-exact $o = Model&static */;
+                    }',
+            ],
+            'staticInAnAssertionOnAnObjectThatMayBeOfASubclassIsNotNegated' => [
+                'code' => '<?php
+                    class User {
+                        /** @psalm-assert-if-true static $x */
+                        public static function is(object $x): bool {
+                            return $x instanceof static;
+                        }
+
+                        /** @psalm-assert-if-true static $x */
+                        public function same(object $x): bool {
+                            return $x instanceof static;
+                        }
+                    }
+
+                    final class Admin extends User {}
+
+                    final class Other {}
+
+                    function onTheClassOfAnObject(User $u, User|Other $o): void {
+                        if ($u::is($o)) {
+                            /** @psalm-check-type-exact $o = User&static */;
+                        } else {
+                            /** @psalm-check-type-exact $o = Other|User */;
+                        }
+                    }
+
+                    /** @param class-string<User> $class */
+                    function onAClassString(string $class, User|Other $o): void {
+                        if ($class::is($o)) {
+                            /** @psalm-check-type-exact $o = User&static */;
+                        } else {
+                            /** @psalm-check-type-exact $o = Other|User */;
+                        }
+                    }
+
+                    function onAnObject(User $u, User|Other $o): void {
+                        if ($u->same($o)) {
+                            /** @psalm-check-type-exact $o = User&static */;
+                        } else {
+                            /** @psalm-check-type-exact $o = Other|User */;
+                        }
+                    }
+
+                    function onAnObjectOfAFinalClass(Admin $a, Admin|Other $o): void {
+                        if ($a->same($o)) {
+                            /** @psalm-check-type-exact $o = Admin */;
+                        } else {
+                            /** @psalm-check-type-exact $o = Other */;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'staticInAnAssertionOfAStaticCallOnAClassStringOfATemplateIsTheTemplate' => [
+                'code' => '<?php
+                    class Model {
+                        /** @psalm-assert-if-true static $x */
+                        public static function is(object $x): bool {
+                            return $x instanceof static;
+                        }
+
+                        /** @psalm-assert static $x */
+                        public static function mustBe(object $x): void {
+                            if (!$x instanceof static) {
+                                throw new Exception();
+                            }
+                        }
+                    }
+
+                    /**
+                     * @template T of Model
+                     * @param class-string<T> $class
+                     * @return T
+                     */
+                    function ifTrue(string $class, object $o): Model {
+                        if ($class::is($o)) {
+                            return $o;
+                        }
+
+                        throw new Exception();
+                    }
+
+                    /**
+                     * @template T of Model
+                     * @param class-string<T> $class
+                     * @return T
+                     */
+                    function always(string $class, object $o): Model {
+                        $class::mustBe($o);
+                        return $o;
+                    }',
+            ],
+            'staticInAnAssertOfAConstructorIsTheClassInstantiated' => [
+                'code' => '<?php
+                    /** @psalm-consistent-constructor */
+                    class Box {
+                        /** @psalm-assert static $x */
+                        public function __construct(object $x) {
+                            if (!$x instanceof static) {
+                                throw new Exception();
+                            }
+                        }
+
+                        public static function make(object $o): void {
+                            new static($o);
+                            /** @psalm-check-type-exact $o = Box&static */;
+                        }
+                    }
+
+                    final class SubBox extends Box {}
+
+                    function onAFinalClass(object $o): void {
+                        new SubBox($o);
+                        /** @psalm-check-type-exact $o = SubBox */;
+                    }
+
+                    function onAClass(object $o): void {
+                        new Box($o);
+                        /** @psalm-check-type-exact $o = Box */;
                     }',
             ],
             'negatedAssertIfTrueOfALiteralStringKeepsTheString' => [

@@ -504,6 +504,18 @@ final class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
                 ? 'static'
                 : ($class_storage->final || $class_storage->is_enum ? $fq_class_name : null);
 
+            // what `static` is in the types of the assertions: the type of the object, late static when the object may
+            // be of a subclass
+            $assertion_static_type = $static_type;
+
+            if ($static_type instanceof TNamedObject) {
+                $static_type_storage = $codebase->classlike_storage_provider->get($static_type->value);
+
+                if (!$static_type_storage->final && !$static_type_storage->is_enum) {
+                    $assertion_static_type = $static_type->setIsStatic(true);
+                }
+            }
+
             if ($assertions) {
                 self::applyAssertionsToContext(
                     $stmt_name,
@@ -526,7 +538,7 @@ final class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
                     $template_result,
                     $context,
                     $statements_analyzer,
-                    $static_type ?? $fq_class_name,
+                    $assertion_static_type ?? $fq_class_name,
                     $trait_self_class,
                 );
             }
@@ -539,7 +551,7 @@ final class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
                 $args,
                 $template_result,
                 $lhs_var_id,
-                $static_type,
+                $assertion_static_type,
                 $trait_self_class,
                 $assertion_static_class,
                 $fq_class_name,
