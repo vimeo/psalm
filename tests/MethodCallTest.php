@@ -42,8 +42,8 @@ final class MethodCallTest extends TestCase
             '<?php
                 class Connection {
                     /**
-                     * @psalm-overload (string $dsn)
-                     * @psalm-overload (string $host, int $port)
+                     * @psalm-overload (string $dsnOrHost)
+                     * @psalm-overload (string $dsnOrHost, int $port)
                      */
                     public function __construct(string $dsnOrHost, ?int $port = null) {}
                 }
@@ -436,8 +436,8 @@ final class MethodCallTest extends TestCase
                 'code' => '<?php
                     class Connection {
                         /**
-                         * @psalm-overload (string $dsn)
-                         * @psalm-overload (string $host, int $port)
+                         * @psalm-overload (string $dsnOrHost)
+                         * @psalm-overload (string $dsnOrHost, int $port)
                          */
                         public function __construct(string $dsnOrHost, ?int $port = null) {
                         }
@@ -453,7 +453,7 @@ final class MethodCallTest extends TestCase
                         }
                     }
 
-                    $named = new Connection(host: "localhost", port: 3306);
+                    $named = new Connection(dsnOrHost: "localhost", port: 3306);
                     $memory = Connection::memory();',
                 'assertions' => [
                     '$named===' => 'Connection',
@@ -466,8 +466,8 @@ final class MethodCallTest extends TestCase
                 'code' => '<?php
                     class Connection {
                         /**
-                         * @psalm-overload (string $dsn)
-                         * @psalm-overload (string $host, int $port)
+                         * @psalm-overload (string $dsnOrHost)
+                         * @psalm-overload (string $dsnOrHost, int $port)
                          */
                         public function __construct(string $dsnOrHost, ?int $port = null) {
                         }
@@ -3793,8 +3793,8 @@ final class MethodCallTest extends TestCase
                 'code' => '<?php
                     final class Version {
                         /**
-                         * @psalm-overload (string $name)
-                         * @psalm-overload (int $id, int $number)
+                         * @psalm-overload (string $first)
+                         * @psalm-overload (int $first, int $second)
                          */
                         public function __construct(string|int $first, ?int $second = null) {
                         }
@@ -3810,8 +3810,8 @@ final class MethodCallTest extends TestCase
                 'code' => '<?php
                     class Base {
                         /**
-                         * @psalm-overload (string $name)
-                         * @psalm-overload (int $id, int $number)
+                         * @psalm-overload (string $first)
+                         * @psalm-overload (int $first, int $second)
                          */
                         public function __construct(string|int $first, ?int $second = null) {
                         }
@@ -3821,7 +3821,7 @@ final class MethodCallTest extends TestCase
 
                     new Child(1);',
                 'error_message' => 'TooFewArguments - src' . DIRECTORY_SEPARATOR . 'somefile.php:13:21 - '
-                    . 'Too few arguments for Child::__construct - expecting number to be passed',
+                    . 'Too few arguments for Child::__construct - expecting second to be passed',
                 'error_levels' => [],
                 'php_version' => '8.1',
             ],
