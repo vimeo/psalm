@@ -174,7 +174,7 @@ return [
         'nodeName' => 'string',
         'nodeType' => 'int',
         'nodeValue' => 'string|null',
-        'ownerDocument' => 'DOMDocument',
+        'ownerDocument' => 'DOMDocument|null',
         'parentNode' => 'DOMNode|null',
         'prefix' => 'string',
         'previousSibling' => 'DOMNode|null',
@@ -385,10 +385,10 @@ return [
         'items' => 'array<int, PhpParser\\Node\\Expr\\ArrayItem|null>',
     ],
     'phpparser\\node\\expr\\shellexec' => [
-        'parts' => 'list<PhpParser\\Node\\Expr>',
+        'parts' => 'list<PhpParser\\Node\\Expr|PhpParser\\Node\\InterpolatedStringPart>',
     ],
     'phpparser\\node\\matcharm' => [
-        'conds' => 'null|non-empty-list<PhpParser\\Node\\Expr>',
+        'conds' => 'null|list<PhpParser\\Node\\Expr>',
     ],
     'phpparser\\node\\name' => [
         'parts' => 'non-empty-list<non-empty-string>',

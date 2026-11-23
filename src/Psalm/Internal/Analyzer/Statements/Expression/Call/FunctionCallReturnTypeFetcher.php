@@ -143,7 +143,7 @@ final class FunctionCallReturnTypeFetcher
         }
 
         if (!$stmt_type) {
-            if (!$in_call_map || $is_stubbed) {
+            if (!$in_call_map || ($is_stubbed && $function_storage?->return_type)) {
                 if ($function_storage && $function_storage->template_types) {
                     foreach ($function_storage->template_types as $template_name => $_) {
                         if (!isset($template_result->lower_bounds[$template_name])) {

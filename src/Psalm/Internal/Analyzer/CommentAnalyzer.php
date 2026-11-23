@@ -586,6 +586,7 @@ final class CommentAnalyzer
                     $e->getMessage(),
                     new CodeLocation($statements_analyzer, $var),
                 ),
+                $statements_analyzer->getSuppressedIssues(),
             );
         } catch (DocblockParseException $e) {
             IssueBuffer::maybeAdd(
@@ -593,6 +594,7 @@ final class CommentAnalyzer
                     $e->getMessage(),
                     new CodeLocation($statements_analyzer->getSource(), $var),
                 ),
+                $statements_analyzer->getSuppressedIssues(),
             );
         }
 
@@ -678,6 +680,7 @@ final class CommentAnalyzer
                         $e->getMessage(),
                         new CodeLocation($statements_analyzer, $var),
                     ),
+                    $statements_analyzer->getSuppressedIssues(),
                 );
             }
         }

@@ -13,6 +13,13 @@ new Union([new TNamedObject('Foo\\Bar\\SomeClass')]); // equivalent to Foo\Bar\S
 new Union([new TString(), new TInt()]); // equivalent to string|int in docblock
 ```
 
+A type that a plugin builds, for instance in a return type provider, is used as it is. Psalm does not expand it, so a class constant, `self`, `static` and the `*` of a type argument stay unresolved in it. Pass the type through `TypeExpander::expandUnion()` to give them their meaning (the class names are its `$self_class` and `$static_class_type` arguments), and a `*` then holds the bound of its template:
+
+``` php
+$type = Type::parseString('Foo::BAR'); // Foo::BAR
+$type = TypeExpander::expandUnion($codebase, $type, null, null, null); // 'x', for const BAR = 'x'
+```
+
 ## Atomic types
 
 Primitive types like floats, integers and strings, plus arrays, and classes. You can find all of these in [`src/Psalm/Types/Atomic`](https://github.com/vimeo/psalm/tree/master/src/Psalm/Type/Atomic).

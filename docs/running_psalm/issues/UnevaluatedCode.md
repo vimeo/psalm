@@ -3,7 +3,7 @@
 Emitted when `--find-dead-code` is turned on and Psalm encounters code that will not be evaluated
 
 ```php
-<?php
+<?php // findUnusedCode="true"
 
 function foo() : void {
     return;
