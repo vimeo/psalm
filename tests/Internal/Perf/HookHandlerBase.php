@@ -15,6 +15,6 @@ class HookHandlerBase
      */
     public static function handle(object $event): int
     {
-        return 1;
+        return $event instanceof self ? 0 : 1;
     }
 }
