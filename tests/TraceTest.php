@@ -78,6 +78,19 @@ final class TraceTest extends TestCase
                     }',
                 'error_message' => 'self::$ids: list<int',
             ],
+            'traceStaticPropertyIgnoresWhatWasWrittenThroughSelf' => [
+                'code' => '<?php
+                    class Registry {
+                        /** @var list<int> */
+                        public static array $ids = [];
+
+                        public static function reset(): void {
+                            self::$ids = [1];
+                            /** @psalm-trace static::$ids */;
+                        }
+                    }',
+                'error_message' => 'static::$ids: list<int',
+            ],
             'traceInstancePropertyNamedStaticallyIsUndefined' => [
                 'code' => '<?php
                     final class Config {

@@ -469,7 +469,8 @@ final class StatementsAnalyzer extends SourceAnalyzer
 
         $property_id = $fq_class_name . '::$' . $property_name;
 
-        if (isset($context->vars_in_scope[$property_id])) {
+        // `static::$x` is kept under its own key, which the caller has already looked up
+        if (strtolower($class_name) !== 'static' && isset($context->vars_in_scope[$property_id])) {
             return $context->vars_in_scope[$property_id];
         }
 
