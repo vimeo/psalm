@@ -1,6 +1,8 @@
 ---
 name: merge-6x-into-master
 description: Use when asked to merge vimeo/psalm 6.x into master, or after any push to 6.x or master when the "Build docker image for stubs" workflow's push-composer-build job fails.
+metadata:
+  internal: "true"
 ---
 
 # Merging 6.x into master

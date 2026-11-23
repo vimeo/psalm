@@ -23,6 +23,7 @@ use Psalm\Internal\Analyzer\MethodAnalyzer;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Analyzer\ScopeAnalyzer;
 use Psalm\Internal\Analyzer\SourceAnalyzer;
+use Psalm\Internal\Analyzer\Statements\DeclareAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\ClassTemplateParamCollector;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
@@ -401,11 +402,17 @@ final class ReturnTypeAnalyzer
 
             if ($union_comparison_results->to_string_cast) {
                 IssueBuffer::maybeAdd(
-                    new ImplicitToStringCast(
-                        'The declared return type for ' . $cased_method_id . ' expects string, ' .
-                        '\'' . $inferred_return_type->getId() . '\' provided with a __toString method',
-                        $return_type_location,
-                    ),
+                    // under strict_types, the string return type of __toString does not cast an object to string
+                    DeclareAnalyzer::declaresStrictTypes($codebase, $source->getFilePath())
+                        ? new InvalidToString(
+                            '__toString methods must return a string, ' . $inferred_return_type->getId() . ' returned',
+                            $return_type_location,
+                        )
+                        : new ImplicitToStringCast(
+                            'The declared return type for ' . $cased_method_id . ' expects string, ' .
+                            '\'' . $inferred_return_type->getId() . '\' provided with a __toString method',
+                            $return_type_location,
+                        ),
                     $suppressed_issues,
                 );
             }
@@ -664,14 +671,27 @@ final class ReturnTypeAnalyzer
                 }
             }
 
-            if (!UnionTypeComparator::isContainedBy(
+            $type_match_found = UnionTypeComparator::isContainedBy(
                 $codebase,
                 $inferred_return_type,
                 $declared_return_type,
                 true,
                 true,
                 $union_comparison_results,
-            )) {
+            );
+
+            if ($union_comparison_results->to_string_cast
+                && !$declared_return_type->from_docblock
+                && DeclareAnalyzer::declaresStrictTypes($codebase, $source->getFilePath())
+            ) {
+                // under strict_types, an object fits a native type neither through __toString nor through a coercion
+                // of the cast string
+                $union_comparison_results->to_string_cast = false;
+                $union_comparison_results->type_coerced = false;
+                $type_match_found = false;
+            }
+
+            if (!$type_match_found) {
                 // is the declared return type more specific than the inferred one?
                 if ($union_comparison_results->type_coerced) {
                     if ($union_comparison_results->type_coerced_from_mixed) {
@@ -868,7 +888,8 @@ final class ReturnTypeAnalyzer
             if (!$inferred_return_type->ignore_falsable_issues
                 && $inferred_return_type->isFalsable()
                 && !$declared_return_type->isFalsable()
-                && !$declared_return_type->hasBool()
+                // true does not accept false
+                && !isset($declared_return_type->getAtomicTypes()['bool'])
                 && !$declared_return_type->hasScalar()
             ) {
                 if ($codebase->alter_code

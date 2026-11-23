@@ -23,8 +23,10 @@ use Psalm\Exception\UnresolvableConstantException;
 use Psalm\FileManipulation;
 use Psalm\Internal\Analyzer\FunctionLike\ReturnTypeAnalyzer;
 use Psalm\Internal\Analyzer\FunctionLike\ReturnTypeCollector;
+use Psalm\Internal\Analyzer\Statements\DeclareAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Assignment\InstancePropertyAssignmentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\CallPurityResolver;
+use Psalm\Internal\Analyzer\Statements\Expression\Call\ClassTemplateParamCollector;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\FunctionCallReturnTypeFetcher;
 use Psalm\Internal\Analyzer\Statements\Expression\DestructorAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
@@ -37,7 +39,7 @@ use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Internal\FileManipulation\FunctionDocblockManipulator;
 use Psalm\Internal\MethodIdentifier;
-use Psalm\Internal\PhpVisitor\NodeCounterVisitor;
+use Psalm\Internal\Perf;
 use Psalm\Internal\Provider\NodeDataProvider;
 use Psalm\Internal\Type\Comparator\TypeComparisonResult;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
@@ -113,7 +115,6 @@ use function in_array;
 use function is_string;
 use function krsort;
 use function mb_strpos;
-use function microtime;
 use function preg_match;
 use function reset;
 use function sort;
@@ -315,6 +316,9 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
         array &$byref_vars = [],
     ): ?bool {
         $storage = $this->storage;
+
+        // the code runs under the strict_types of its own file, which for a trait is not the file of the class
+        $context->strict_types = DeclareAnalyzer::declaresStrictTypes($this->codebase, $this->getFilePath());
 
         $function_stmts = $this->function->getStmts() ?: [];
 
@@ -796,7 +800,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             ]);
         }
 
-        $time = microtime(true);
+        $perf_start = Perf\Collector::$enabled ? Perf\Collector::functionStart() : null;
 
         $project_analyzer = $statements_analyzer->getProjectAnalyzer();
 
@@ -978,20 +982,18 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             }
         }
 
-        if (!$context->collect_initializations
-            && $project_analyzer->debug_performance
-            && $cased_method_id
-        ) {
-            $traverser = new PhpParser\NodeTraverser;
-
-            $node_counter = new NodeCounterVisitor();
-            $traverser->addVisitor($node_counter);
-            $traverser->traverse($function_stmts);
-
-            if ($node_counter->count > 5) {
-                $time_taken = microtime(true) - $time;
-                $codebase->analyzer->addFunctionTiming($cased_method_id, $time_taken / $node_counter->count);
-            }
+        if ($perf_start !== null) {
+            // the id of a method of an anonymous class names the file, and so does the path of the record
+            Perf\Collector::functionEnd(
+                $this->getFilePath(),
+                $this->getFileName(),
+                $this->function->getLine(),
+                $appearing_class_storage?->anonymous === true
+                    ? '{anonymous-class}::' . ($storage->cased_name ?? '')
+                    : $cased_method_id ?? '{closure}',
+                $context->collect_initializations,
+                $perf_start,
+            );
         }
 
         $final_actions = ScopeAnalyzer::getControlActions(
@@ -1899,6 +1901,79 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
     }
 
     /**
+     * A trait method is analyzed as a method of the class using the trait, where the templates of the trait
+     * are the types given to `@use`: an argument of such a template type fits the parameter of a call the
+     * concrete type fits.
+     */
+    public static function bindTraitTemplatesToUse(
+        Codebase $codebase,
+        FunctionLikeStorage $storage,
+        Context $context,
+        Union $type,
+    ): Union {
+        if (!$storage instanceof MethodStorage
+            || $storage->defining_fqcln === null
+            || $storage->cased_name === null
+            || $context->self === null
+            || strtolower($storage->defining_fqcln) === strtolower($context->self)
+        ) {
+            return $type;
+        }
+
+        $declaring_storage = $codebase->classlike_storage_provider->get($storage->defining_fqcln);
+
+        if (!$declaring_storage->is_trait || $declaring_storage->template_types === null) {
+            return $type;
+        }
+
+        $class_template_params = ClassTemplateParamCollector::collect(
+            $codebase,
+            $declaring_storage,
+            $codebase->classlike_storage_provider->get($context->self),
+            strtolower($storage->cased_name),
+        );
+
+        if ($class_template_params === null) {
+            return $type;
+        }
+
+        // a template narrowed by a check (`T as string` after `is_string($x)`) is not the type it is bound to
+        $bound_atomic_types = [];
+        $narrowed_atomic_types = [];
+
+        foreach ($type->getAtomicTypes() as $atomic_type) {
+            if ($atomic_type instanceof TTemplateParam
+                && isset($declaring_storage->template_types[$atomic_type->param_name][$atomic_type->defining_class])
+                && !$atomic_type->as->equals(
+                    $declaring_storage->template_types[$atomic_type->param_name][$atomic_type->defining_class],
+                )
+            ) {
+                $narrowed_atomic_types[] = $atomic_type;
+            } else {
+                $bound_atomic_types[] = $atomic_type;
+            }
+        }
+
+        if ($bound_atomic_types === []) {
+            return $type;
+        }
+
+        $bound_type = TemplateStandinTypeReplacer::replace(
+            $narrowed_atomic_types === [] ? $type : $type->getBuilder()->setTypes($bound_atomic_types)->freeze(),
+            new TemplateResult($class_template_params, []),
+            $codebase,
+            null,
+            null,
+            null,
+            $context->self,
+        );
+
+        return $narrowed_atomic_types === []
+            ? $bound_type
+            : Type::combineUnionTypes($bound_type, new Union($narrowed_atomic_types), $codebase);
+    }
+
+    /**
      * Reports the parameters and the by-reference void returns PHP deprecates, whatever PHP version is analysed
      */
     private function checkDeprecatedSignature(): void
@@ -2138,7 +2213,10 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                         $this->getParentFQCLN(),
                         true,
                         $param_type->hasConditional(),
-                        $this_object instanceof TNamedObject && !$this_object->is_static,
+                        ($this_object instanceof TNamedObject && !$this_object->is_static)
+                            || ($context->self !== null
+                                && $codebase->classlike_storage_provider->has($context->self)
+                                && $codebase->classlike_storage_provider->get($context->self)->final),
                         true,
                         false,
                         true,

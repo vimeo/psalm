@@ -176,7 +176,12 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
             if ($stmt instanceof PhpParser\Node\Stmt\ClassMethod
                 && strtolower($stmt->name->name) === strtolower($method_name)
             ) {
+                // the method runs under the strict_types of its own file, the code of the caller under its own
+                $strict_types = $context->strict_types;
+
                 (new MethodAnalyzer($stmt, $this))->analyze($context, new NodeDataProvider(), null, true);
+
+                $context->strict_types = $strict_types;
 
                 return;
             }
@@ -199,6 +204,9 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
             new MethodIdentifier($context->self ?: $this->fq_class_name, strtolower($method_name)),
         );
         $actual_method_name = $called_method_id !== null ? $called_method_id->method_name : $method_name;
+
+        // the method runs under the strict_types of its own file, the code of the caller under its own
+        $strict_types = $context->strict_types;
 
         // what the caller established about its own variables says nothing about the method's
         $context->clauses = [];
@@ -228,6 +236,8 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
                 );
             }
         }
+
+        $context->strict_types = $strict_types;
     }
 
     /**
@@ -582,6 +592,17 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
             }
         }
 
+        if ($check_classes && $options->required_at_runtime && !$class_storage->user_defined) {
+            ExtensionRequirementAnalyzer::check(
+                $codebase,
+                $class_storage->name,
+                true,
+                $code_location,
+                $options->context ?? $context,
+                $suppressed_issues,
+            );
+        }
+
         foreach ($class_storage->invalid_dependencies as $dependency_class_name => $_) {
             // if the implemented/extended class is stubbed, it may not yet have
             // been hydrated
@@ -594,7 +615,7 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
                     $fq_class_name . ' depends on class or interface '
                         . $dependency_class_name . ' that does not exist',
                     $code_location,
-                    $fq_class_name,
+                    $dependency_class_name,
                 ),
                 $suppressed_issues,
             )) {

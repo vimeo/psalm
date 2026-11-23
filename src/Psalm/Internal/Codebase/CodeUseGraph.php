@@ -15,6 +15,8 @@ use Psalm\Storage\MethodStorage;
 use function array_intersect_key;
 use function array_keys;
 use function array_pop;
+use function array_unique;
+use function array_values;
 use function hash;
 use function str_contains;
 use function strpos;
@@ -570,8 +572,9 @@ final class CodeUseGraph
             }
         }
 
-        $this->mutation_info = $other->mutation_info + $this->mutation_info;
-        $this->mutation_levels = null;
+        foreach ($other->mutation_info as $node_id => $info) {
+            $this->addMutationInfo($node_id, $info);
+        }
     }
 
     /**
@@ -602,13 +605,63 @@ final class CodeUseGraph
      */
     public function addMutationInfo(string $node_id, array $info): void
     {
-        $this->mutation_info[$node_id] = $info;
+        $existing = $this->mutation_info[$node_id] ?? null;
+
+        if ($existing !== null && $existing['fresh'] && !$info['fresh']) {
+            return;
+        }
+
+        $this->mutation_info[$node_id] = $existing !== null && $existing['fresh']
+            ? self::mergeMutationInfo($existing, $info)
+            : $info;
         $this->mutation_levels = null;
 
         if (!$this->record_edges) {
             // stale info is pruned by file, which addReference() notes only while edges are recorded
             $this->noteNodeFile($node_id, $info['location']->file_path);
         }
+    }
+
+    /**
+     * Two analyses of one function-like in the same run, e.g. of a trait method, analysed once per class using it,
+     * whose methods its calls on `$this` may reach. Annotating it must suit all of them.
+     *
+     * @param MutationInfo $a
+     * @param MutationInfo $b
+     * @return MutationInfo
+     * @psalm-pure
+     */
+    private static function mergeMutationInfo(array $a, array $b): array
+    {
+        $wildcards = $a['wildcards'] ?? null;
+
+        foreach ($b['wildcards'] ?? [] as $param => $paths) {
+            $wildcards[$param] = array_values(array_unique([...$wildcards[$param] ?? [], ...$paths]));
+        }
+
+        return [
+            'intrinsic' => $a['intrinsic'] | $b['intrinsic'],
+            'allowed' => $a['allowed'] & $b['allowed'],
+            'callees' => self::mergeCallees($a['callees'], $b['callees']),
+            'default_intrinsic' => $a['default_intrinsic'] | $b['default_intrinsic'],
+            'default_callees' => self::mergeCallees($a['default_callees'], $b['default_callees']),
+            'report' => $a['report'] && $b['report'],
+        ] + ($wildcards !== null ? ['wildcards' => $wildcards] : []) + $a;
+    }
+
+    /**
+     * @param array<string, bool> $a callee => whether its mutations of its own instance stay there
+     * @param array<string, bool> $b
+     * @return array<string, bool>
+     * @psalm-pure
+     */
+    private static function mergeCallees(array $a, array $b): array
+    {
+        foreach ($b as $callee_id => $internal_mutations_ok) {
+            $a[$callee_id] = $internal_mutations_ok && ($a[$callee_id] ?? true);
+        }
+
+        return $a;
     }
 
     /**
