@@ -106,7 +106,6 @@ final class TConditional extends Atomic
 
     /**
      * @param array<lowercase-string, string> $aliased_classes
-     * @psalm-pure
      */
     #[Override]
     public function toNamespacedString(
