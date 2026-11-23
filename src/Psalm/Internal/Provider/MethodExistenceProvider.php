@@ -48,11 +48,12 @@ final class MethodExistenceProvider
 
     /**
      * @param Closure(MethodExistenceProviderEvent): ?bool $c
-     * @psalm-external-mutation-free
      */
     public function registerClosure(string $fq_classlike_name, Closure $c): void
     {
-        self::$handlers[strtolower($fq_classlike_name)][] = $c;
+        self::$handlers[strtolower($fq_classlike_name)][] = Collector::$enabled
+            ? Collector::wrap($c, 'MethodExistence')
+            : $c;
     }
 
     /**
@@ -76,9 +77,7 @@ final class MethodExistenceProvider
                 $source,
                 $code_location,
             );
-            $method_exists = Collector::$enabled
-                ? Collector::call($method_handler, $event, 'MethodExistence')
-                : $method_handler($event);
+            $method_exists = $method_handler($event);
 
             if ($method_exists !== null) {
                 return $method_exists;

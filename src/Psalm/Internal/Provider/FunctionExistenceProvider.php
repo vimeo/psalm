@@ -51,11 +51,12 @@ final class FunctionExistenceProvider
     /**
      * @param lowercase-string $function_id
      * @param Closure(FunctionExistenceProviderEvent): ?bool $c
-     * @psalm-external-mutation-free
      */
     public function registerClosure(string $function_id, Closure $c): void
     {
-        self::$handlers[$function_id][] = $c;
+        self::$handlers[$function_id][] = Collector::$enabled
+            ? Collector::wrap($c, 'FunctionExistence')
+            : $c;
     }
 
     /**
@@ -75,9 +76,7 @@ final class FunctionExistenceProvider
                 $statements_source,
                 $function_id,
             );
-            $function_exists = Collector::$enabled
-                ? Collector::call($function_handler, $event, 'FunctionExistence')
-                : $function_handler($event);
+            $function_exists = $function_handler($event);
 
             if ($function_exists !== null) {
                 return $function_exists;

@@ -167,11 +167,12 @@ final class FunctionReturnTypeProvider
     /**
      * @param lowercase-string $function_id
      * @param Closure(FunctionReturnTypeProviderEvent): ?Union $c
-     * @psalm-external-mutation-free
      */
     public function registerClosure(string $function_id, Closure $c): void
     {
-        self::$handlers[$function_id][] = $c;
+        self::$handlers[$function_id][] = Collector::$enabled
+            ? Collector::wrap($c, 'FunctionReturnType')
+            : $c;
     }
 
     /**
@@ -200,9 +201,7 @@ final class FunctionReturnTypeProvider
                 $context,
                 $code_location,
             );
-            $return_type = Collector::$enabled
-                ? Collector::call($function_handler, $event, 'FunctionReturnType')
-                : $function_handler($event);
+            $return_type = $function_handler($event);
 
             if ($return_type) {
                 return $return_type;

@@ -64,11 +64,12 @@ final class MethodReturnTypeProvider
 
     /**
      * @param Closure(MethodReturnTypeProviderEvent): ?Union $c
-     * @psalm-external-mutation-free
      */
     public function registerClosure(string $fq_classlike_name, Closure $c): void
     {
-        self::$handlers[strtolower($fq_classlike_name)][] = $c;
+        self::$handlers[strtolower($fq_classlike_name)][] = Collector::$enabled
+            ? Collector::wrap($c, 'MethodReturnType')
+            : $c;
     }
 
     /**
@@ -105,9 +106,7 @@ final class MethodReturnTypeProvider
                 $called_fq_classlike_name,
                 $called_method_name ? strtolower($called_method_name) : null,
             );
-            $result = Collector::$enabled
-                ? Collector::call($class_handler, $event, 'MethodReturnType')
-                : $class_handler($event);
+            $result = $class_handler($event);
 
             if ($result) {
                 return $result;

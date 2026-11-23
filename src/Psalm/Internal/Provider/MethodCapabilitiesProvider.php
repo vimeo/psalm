@@ -49,11 +49,12 @@ final class MethodCapabilitiesProvider
 
     /**
      * @param Closure(MethodCapabilitiesProviderEvent): (CapabilitySet|null) $c
-     * @psalm-capabilities read-globals|write-globals
      */
     public function registerClosure(string $fq_classlike_name, Closure $c): void
     {
-        self::$handlers[strtolower($fq_classlike_name)][] = $c;
+        self::$handlers[strtolower($fq_classlike_name)][] = Collector::$enabled
+            ? Collector::wrap($c, 'MethodCapabilities')
+            : $c;
     }
 
     /**
@@ -77,7 +78,7 @@ final class MethodCapabilitiesProvider
         CodeLocation $code_location,
     ): ?int {
         foreach (self::$handlers[strtolower($fq_classlike_name)] ?? [] as $class_handler) {
-            $event = new MethodCapabilitiesProviderEvent(
+            $result = $class_handler(new MethodCapabilitiesProviderEvent(
                 $statements_source,
                 $fq_classlike_name,
                 strtolower($method_name),
@@ -85,10 +86,7 @@ final class MethodCapabilitiesProvider
                 $stmt,
                 $context,
                 $code_location,
-            );
-            $result = Collector::$enabled
-                ? Collector::call($class_handler, $event, 'MethodCapabilities')
-                : $class_handler($event);
+            ));
 
             if ($result !== null) {
                 return $result;

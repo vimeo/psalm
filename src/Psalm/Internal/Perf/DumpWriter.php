@@ -14,12 +14,15 @@ use Psalm\Internal\Provider\FileStorageProvider;
 use function array_column;
 use function array_slice;
 use function array_values;
+use function basename;
 use function count;
 use function dirname;
 use function error_get_last;
 use function file_put_contents;
 use function function_exists;
+use function fwrite;
 use function get_loaded_extensions;
+use function getmypid;
 use function hash_file;
 use function ini_get;
 use function is_dir;
@@ -31,11 +34,13 @@ use function mkdir;
 use function number_format;
 use function opcache_get_status;
 use function php_uname;
+use function rename;
 use function sort;
 use function sprintf;
 use function str_ends_with;
 use function str_replace;
 use function strlen;
+use function unlink;
 use function usort;
 
 use const DIRECTORY_SEPARATOR;
@@ -46,6 +51,7 @@ use const PHP_EOL;
 use const PHP_INT_MAX;
 use const PHP_OS_FAMILY;
 use const PHP_VERSION;
+use const STDERR;
 
 /**
  * Prints the `--debug-performance` summary and writes its dump
@@ -79,7 +85,13 @@ final class DumpWriter
             ? null
             : self::write(
                 $path,
-                ['schema' => 1, 'env' => self::env($project_analyzer), 'counts' => $counts] + $measurements,
+                [
+                    'schema' => 1,
+                    'displayTimeUnit' => 'ms',
+                    'traceEvents' => self::traceEvents($measurements),
+                    'env' => self::env($project_analyzer),
+                    'counts' => $counts,
+                ] + $measurements,
                 $project_analyzer,
             );
 
@@ -94,7 +106,8 @@ final class DumpWriter
         if ($failure === null) {
             $project_analyzer->progress->write('Performance dump written to ' . $path . PHP_EOL);
         } else {
-            $project_analyzer->progress->warning($failure);
+            // not through the progress: that one says nothing with --no-progress
+            fwrite(STDERR, 'Warning: ' . $failure . PHP_EOL);
         }
     }
 
@@ -210,23 +223,25 @@ final class DumpWriter
         $out .= "\n" . 'Hottest statements (own time)' . "\n";
         foreach (array_slice($measurements['top']['statements'], 0, self::SUMMARY_ROWS) as $statement) {
             $out .= sprintf(
-                "  %9s  %s:%d %s\n",
+                "  %9s  %s:%d %s%s\n",
                 self::seconds($statement['self_us']),
                 $statement['path'],
                 $statement['line'],
                 $statement['node'],
+                self::passes($statement['passes']),
             );
         }
 
         $out .= "\n" . 'Hottest functions and methods' . "\n";
         foreach (array_slice($measurements['top']['functions'], 0, self::SUMMARY_ROWS) as $function) {
             $out .= sprintf(
-                "  %9s  %s (%s)  %s:%d\n",
+                "  %9s  %s (%s)  %s:%d%s\n",
                 self::seconds($function['wall_us']),
                 $function['id'],
                 $function['pass'],
                 $function['path'],
                 $function['line'],
+                self::passes($function['passes']),
             );
         }
 
@@ -316,6 +331,58 @@ final class DumpWriter
     }
 
     /**
+     * The stages and files as Trace Event Format events, which ui.perfetto.dev and speedscope open
+     *
+     * @param Measurements $measurements
+     * @return list<array<string, mixed>>
+     */
+    private static function traceEvents(array $measurements): array
+    {
+        $main_pid = (int) getmypid();
+        $names = [$main_pid => 'psalm'];
+        $events = [];
+
+        foreach ($measurements['workers'] as $worker) {
+            $names[$worker['pid']] = 'psalm ' . $worker['role'] . ' worker';
+        }
+
+        foreach ($names as $pid => $name) {
+            $events[] = ['ph' => 'M', 'name' => 'process_name', 'pid' => $pid, 'tid' => 0, 'args' => ['name' => $name]];
+        }
+
+        foreach ($measurements['stages'] as $stage) {
+            $events[] = [
+                'name' => $stage['name'],
+                'cat' => 'stage',
+                'ph' => 'X',
+                'ts' => $stage['start_us'],
+                'dur' => $stage['wall_us'],
+                'pid' => $main_pid,
+                'tid' => 0,
+            ];
+        }
+
+        foreach ($measurements['files'] as $file) {
+            $events[] = [
+                'name' => basename($file['path']),
+                'cat' => $file['op'],
+                'ph' => 'X',
+                'ts' => $file['start_us'],
+                'dur' => $file['wall_us'],
+                'pid' => $file['pid'],
+                'tid' => 0,
+                'args' => [
+                    'path' => $file['path'],
+                    'cpu_us' => $file['cpu_us'],
+                    'mem_bytes' => $file['mem_bytes'],
+                ],
+            ];
+        }
+
+        return $events;
+    }
+
+    /**
      * The classes of the plugins: those the config names and those declared by the files it names
      *
      * @return list<string>
@@ -370,12 +437,23 @@ final class DumpWriter
                 . ': ' . (error_get_last()['message'] ?? 'unknown error');
         }
 
-        if (@file_put_contents($path, $json) !== strlen($json)) {
-            return 'Could not write the performance dump ' . $path
-                . ': ' . (error_get_last()['message'] ?? 'unknown error');
+        // a reader never sees half a dump
+        $temporary = $path . '.tmp';
+
+        if (@file_put_contents($temporary, $json) !== strlen($json) || !@rename($temporary, $path)) {
+            $reason = error_get_last()['message'] ?? 'unknown error';
+            @unlink($temporary);
+
+            return 'Could not write the performance dump ' . $path . ': ' . $reason;
         }
 
         return null;
+    }
+
+    /** @psalm-pure */
+    private static function passes(int $passes): string
+    {
+        return $passes > 1 ? '  ' . $passes . ' passes' : '';
     }
 
     /** @psalm-pure */

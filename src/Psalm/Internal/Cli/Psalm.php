@@ -50,10 +50,12 @@ use function array_search;
 use function array_slice;
 use function array_sum;
 use function array_values;
+use function basename;
 use function chdir;
 use function count;
 use function ctype_digit;
 use function defined;
+use function dirname;
 use function extension_loaded;
 use function file_exists;
 use function file_get_contents;
@@ -62,6 +64,7 @@ use function function_exists;
 use function fwrite;
 use function gc_collect_cycles;
 use function gc_disable;
+use function getcwd;
 use function getenv;
 use function implode;
 use function ini_get;
@@ -78,10 +81,12 @@ use function opcache_get_status;
 use function parse_url;
 use function preg_match;
 use function preg_replace;
+use function realpath;
 use function setlocale;
 use function sort;
 use function str_starts_with;
 use function strlen;
+use function strtolower;
 use function strval;
 use function substr;
 use function trim;
@@ -91,6 +96,7 @@ use const DIRECTORY_SEPARATOR;
 use const JSON_THROW_ON_ERROR;
 use const LC_CTYPE;
 use const PHP_EOL;
+use const PHP_OS_FAMILY;
 use const PHP_URL_SCHEME;
 use const PHP_VERSION;
 use const STDERR;
@@ -524,7 +530,7 @@ final class Psalm
         }
 
         foreach ($other_paths as $other_path) {
-            if (Collector::isSameDestination($other_path, $dump_path, $cwd)) {
+            if (self::destination($other_path, $cwd) === self::destination($dump_path, $cwd)) {
                 fwrite(
                     STDERR,
                     '--debug-performance=' . $dump_path . ' would overwrite ' . $other_path . PHP_EOL,
@@ -532,6 +538,20 @@ final class Psalm
                 exit(1);
             }
         }
+    }
+
+    /**
+     * Where a file written to $path ends up: in the real directory, and in lowercase if the file system may ignore
+     * the case. The dump writer checks again, before it writes, whether it is the file of a report.
+     */
+    private static function destination(string $path, string $cwd): string
+    {
+        $absolute = Path::makeAbsolute($path, $cwd);
+        $directory = realpath(dirname($absolute));
+        $destination = ($directory === false ? dirname($absolute) : Path::canonicalize($directory))
+            . '/' . basename($absolute);
+
+        return PHP_OS_FAMILY === 'Darwin' || PHP_OS_FAMILY === 'Windows' ? strtolower($destination) : $destination;
     }
 
     /** @return int<1, max> */

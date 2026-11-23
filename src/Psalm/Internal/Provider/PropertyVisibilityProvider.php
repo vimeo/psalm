@@ -49,11 +49,12 @@ final class PropertyVisibilityProvider
 
     /**
      * @param Closure(PropertyVisibilityProviderEvent): ?bool $c
-     * @psalm-external-mutation-free
      */
     public function registerClosure(string $fq_classlike_name, Closure $c): void
     {
-        self::$handlers[strtolower($fq_classlike_name)][] = $c;
+        self::$handlers[strtolower($fq_classlike_name)][] = Collector::$enabled
+            ? Collector::wrap($c, 'PropertyVisibility')
+            : $c;
     }
 
     /**
@@ -81,9 +82,7 @@ final class PropertyVisibilityProvider
                 $context,
                 $code_location,
             );
-            $property_visible = Collector::$enabled
-                ? Collector::call($property_handler, $event, 'PropertyVisibility')
-                : $property_handler($event);
+            $property_visible = $property_handler($event);
 
             if ($property_visible !== null) {
                 return $property_visible;

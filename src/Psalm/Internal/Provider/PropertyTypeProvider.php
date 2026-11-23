@@ -52,11 +52,12 @@ final class PropertyTypeProvider
 
     /**
      * @param Closure(PropertyTypeProviderEvent): ?Union $c
-     * @psalm-external-mutation-free
      */
     public function registerClosure(string $fq_classlike_name, Closure $c): void
     {
-        self::$handlers[strtolower($fq_classlike_name)][] = $c;
+        self::$handlers[strtolower($fq_classlike_name)][] = Collector::$enabled
+            ? Collector::wrap($c, 'PropertyType')
+            : $c;
     }
 
     /**
@@ -87,9 +88,7 @@ final class PropertyTypeProvider
                 $source,
                 $context,
             );
-            $property_type = Collector::$enabled
-                ? Collector::call($property_handler, $event, 'PropertyType')
-                : $property_handler($event);
+            $property_type = $property_handler($event);
 
             if ($property_type !== null) {
                 return $property_type;

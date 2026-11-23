@@ -52,11 +52,12 @@ final class MethodVisibilityProvider
 
     /**
      * @param Closure(MethodVisibilityProviderEvent): ?bool $c
-     * @psalm-external-mutation-free
      */
     public function registerClosure(string $fq_classlike_name, Closure $c): void
     {
-        self::$handlers[strtolower($fq_classlike_name)][] = $c;
+        self::$handlers[strtolower($fq_classlike_name)][] = Collector::$enabled
+            ? Collector::wrap($c, 'MethodVisibility')
+            : $c;
     }
 
     /**
@@ -82,9 +83,7 @@ final class MethodVisibilityProvider
                 $context,
                 $code_location,
             );
-            $method_visible = Collector::$enabled
-                ? Collector::call($method_handler, $event, 'MethodVisibility')
-                : $method_handler($event);
+            $method_visible = $method_handler($event);
 
             if ($method_visible !== null) {
                 return $method_visible;

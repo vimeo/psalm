@@ -299,71 +299,49 @@ final class EventDispatcher
 
     public function dispatchAfterMethodCallAnalysis(AfterMethodCallAnalysisEvent $event): void
     {
-        if (Collector::$enabled) {
-            Collector::dispatchVoid(
-                $this->after_method_checks,
-                'afterMethodCallAnalysis',
-                $event,
-                'AfterMethodCallAnalysis',
-            );
-
-            return;
-        }
-
         foreach ($this->after_method_checks as $handler) {
-            $handler::afterMethodCallAnalysis($event);
+            if (Collector::$enabled) {
+                Collector::timedVoid($handler, 'afterMethodCallAnalysis', $event, 'AfterMethodCallAnalysis');
+            } else {
+                $handler::afterMethodCallAnalysis($event);
+            }
         }
     }
 
     public function dispatchAfterFunctionCallAnalysis(AfterFunctionCallAnalysisEvent $event): void
     {
-        if (Collector::$enabled) {
-            Collector::dispatchVoid(
-                $this->after_function_checks,
-                'afterFunctionCallAnalysis',
-                $event,
-                'AfterFunctionCallAnalysis',
-            );
-
-            return;
-        }
-
         foreach ($this->after_function_checks as $handler) {
-            $handler::afterFunctionCallAnalysis($event);
+            if (Collector::$enabled) {
+                Collector::timedVoid($handler, 'afterFunctionCallAnalysis', $event, 'AfterFunctionCallAnalysis');
+            } else {
+                $handler::afterFunctionCallAnalysis($event);
+            }
         }
     }
 
     public function dispatchAfterEveryFunctionCallAnalysis(AfterEveryFunctionCallAnalysisEvent $event): void
     {
-        if (Collector::$enabled) {
-            Collector::dispatchVoid(
-                $this->after_every_function_checks,
-                'afterEveryFunctionCallAnalysis',
-                $event,
-                'AfterEveryFunctionCallAnalysis',
-            );
-
-            return;
-        }
-
         foreach ($this->after_every_function_checks as $handler) {
-            $handler::afterEveryFunctionCallAnalysis($event);
+            if (Collector::$enabled) {
+                Collector::timedVoid(
+                    $handler,
+                    'afterEveryFunctionCallAnalysis',
+                    $event,
+                    'AfterEveryFunctionCallAnalysis',
+                );
+            } else {
+                $handler::afterEveryFunctionCallAnalysis($event);
+            }
         }
     }
 
     public function dispatchBeforeExpressionAnalysis(BeforeExpressionAnalysisEvent $event): ?bool
     {
-        if (Collector::$enabled) {
-            return Collector::dispatchUntilFalse(
-                $this->before_expression_checks,
-                'beforeExpressionAnalysis',
-                $event,
-                'BeforeExpressionAnalysis',
-            );
-        }
-
         foreach ($this->before_expression_checks as $handler) {
-            if ($handler::beforeExpressionAnalysis($event) === false) {
+            if ((Collector::$enabled
+                ? Collector::timedBool($handler, 'beforeExpressionAnalysis', $event, 'BeforeExpressionAnalysis')
+                : $handler::beforeExpressionAnalysis($event)) === false
+            ) {
                 return false;
             }
         }
@@ -373,17 +351,11 @@ final class EventDispatcher
 
     public function dispatchAfterExpressionAnalysis(AfterExpressionAnalysisEvent $event): ?bool
     {
-        if (Collector::$enabled) {
-            return Collector::dispatchUntilFalse(
-                $this->after_expression_checks,
-                'afterExpressionAnalysis',
-                $event,
-                'AfterExpressionAnalysis',
-            );
-        }
-
         foreach ($this->after_expression_checks as $handler) {
-            if ($handler::afterExpressionAnalysis($event) === false) {
+            if ((Collector::$enabled
+                ? Collector::timedBool($handler, 'afterExpressionAnalysis', $event, 'AfterExpressionAnalysis')
+                : $handler::afterExpressionAnalysis($event)) === false
+            ) {
                 return false;
             }
         }
@@ -393,17 +365,11 @@ final class EventDispatcher
 
     public function dispatchBeforeStatementAnalysis(BeforeStatementAnalysisEvent $event): ?bool
     {
-        if (Collector::$enabled) {
-            return Collector::dispatchUntilFalse(
-                $this->before_statement_checks,
-                'beforeStatementAnalysis',
-                $event,
-                'BeforeStatementAnalysis',
-            );
-        }
-
         foreach ($this->before_statement_checks as $handler) {
-            if ($handler::beforeStatementAnalysis($event) === false) {
+            if ((Collector::$enabled
+                ? Collector::timedBool($handler, 'beforeStatementAnalysis', $event, 'BeforeStatementAnalysis')
+                : $handler::beforeStatementAnalysis($event)) === false
+            ) {
                 return false;
             }
         }
@@ -412,17 +378,11 @@ final class EventDispatcher
 
     public function dispatchAfterStatementAnalysis(AfterStatementAnalysisEvent $event): ?bool
     {
-        if (Collector::$enabled) {
-            return Collector::dispatchUntilFalse(
-                $this->after_statement_checks,
-                'afterStatementAnalysis',
-                $event,
-                'AfterStatementAnalysis',
-            );
-        }
-
         foreach ($this->after_statement_checks as $handler) {
-            if ($handler::afterStatementAnalysis($event) === false) {
+            if ((Collector::$enabled
+                ? Collector::timedBool($handler, 'afterStatementAnalysis', $event, 'AfterStatementAnalysis')
+                : $handler::afterStatementAnalysis($event)) === false
+            ) {
                 return false;
             }
         }
@@ -432,20 +392,11 @@ final class EventDispatcher
 
     public function dispatchStringInterpreter(StringInterpreterEvent $event): ?TLiteralString
     {
-        if (Collector::$enabled) {
-            /** @var ?TLiteralString $first */
-            $first = Collector::dispatchFirst(
-                $this->string_interpreters,
-                'getTypeFromValue',
-                $event,
-                'StringInterpreter',
-            );
-
-            return $first;
-        }
-
         foreach ($this->string_interpreters as $handler) {
-            if ($type = $handler::getTypeFromValue($event)) {
+            if ($type = Collector::$enabled
+                ? Collector::timedString($handler, 'getTypeFromValue', $event, 'StringInterpreter')
+                : $handler::getTypeFromValue($event)
+            ) {
                 return $type;
             }
         }
@@ -455,35 +406,22 @@ final class EventDispatcher
 
     public function dispatchAfterClassLikeExistenceCheck(AfterClassLikeExistenceCheckEvent $event): void
     {
-        if (Collector::$enabled) {
-            Collector::dispatchVoid(
-                $this->after_classlike_exists_checks,
-                'afterClassLikeExistenceCheck',
-                $event,
-                'AfterClassLikeExistenceCheck',
-            );
-
-            return;
-        }
-
         foreach ($this->after_classlike_exists_checks as $handler) {
-            $handler::afterClassLikeExistenceCheck($event);
+            if (Collector::$enabled) {
+                Collector::timedVoid($handler, 'afterClassLikeExistenceCheck', $event, 'AfterClassLikeExistenceCheck');
+            } else {
+                $handler::afterClassLikeExistenceCheck($event);
+            }
         }
     }
 
     public function dispatchAfterClassLikeAnalysis(AfterClassLikeAnalysisEvent $event): ?bool
     {
-        if (Collector::$enabled) {
-            return Collector::dispatchUntilFalse(
-                $this->after_classlike_checks,
-                'afterStatementAnalysis',
-                $event,
-                'AfterClassLikeAnalysis',
-            );
-        }
-
         foreach ($this->after_classlike_checks as $handler) {
-            if ($handler::afterStatementAnalysis($event) === false) {
+            if ((Collector::$enabled
+                ? Collector::timedBool($handler, 'afterStatementAnalysis', $event, 'AfterClassLikeAnalysis')
+                : $handler::afterStatementAnalysis($event)) === false
+            ) {
                 return false;
             }
         }
@@ -501,51 +439,32 @@ final class EventDispatcher
 
     public function dispatchAfterClassLikeVisit(AfterClassLikeVisitEvent $event): void
     {
-        if (Collector::$enabled) {
-            Collector::dispatchVoid(
-                $this->after_visit_classlikes,
-                'afterClassLikeVisit',
-                $event,
-                'AfterClassLikeVisit',
-            );
-
-            return;
-        }
-
         foreach ($this->after_visit_classlikes as $handler) {
-            $handler::afterClassLikeVisit($event);
+            if (Collector::$enabled) {
+                Collector::timedVoid($handler, 'afterClassLikeVisit', $event, 'AfterClassLikeVisit');
+            } else {
+                $handler::afterClassLikeVisit($event);
+            }
         }
     }
 
     public function dispatchAfterCodebasePopulated(AfterCodebasePopulatedEvent $event): void
     {
-        if (Collector::$enabled) {
-            Collector::dispatchVoid(
-                $this->after_codebase_populated,
-                'afterCodebasePopulated',
-                $event,
-                'AfterCodebasePopulated',
-            );
-
-            return;
-        }
-
         foreach ($this->after_codebase_populated as $handler) {
-            $handler::afterCodebasePopulated($event);
+            if (Collector::$enabled) {
+                Collector::timedVoid($handler, 'afterCodebasePopulated', $event, 'AfterCodebasePopulated');
+            } else {
+                $handler::afterCodebasePopulated($event);
+            }
         }
     }
 
     public function dispatchBeforeAddIssue(BeforeAddIssueEvent $event): ?bool
     {
-        if (Collector::$enabled) {
-            /** @var ?bool $first */
-            $first = Collector::dispatchFirst($this->before_add_issue, 'beforeAddIssue', $event, 'BeforeAddIssue');
-
-            return $first;
-        }
-
         foreach ($this->before_add_issue as $handler) {
-            $result = $handler::beforeAddIssue($event);
+            $result = Collector::$enabled
+                ? Collector::timedBool($handler, 'beforeAddIssue', $event, 'BeforeAddIssue')
+                : $handler::beforeAddIssue($event);
             if (is_bool($result)) {
                 return $result;
             }
@@ -555,56 +474,44 @@ final class EventDispatcher
 
     public function dispatchAfterAnalysis(AfterAnalysisEvent $event): void
     {
-        if (Collector::$enabled) {
-            Collector::dispatchVoid($this->after_analysis, 'afterAnalysis', $event, 'AfterAnalysis');
-
-            return;
-        }
-
         foreach ($this->after_analysis as $handler) {
-            $handler::afterAnalysis($event);
+            if (Collector::$enabled) {
+                Collector::timedVoid($handler, 'afterAnalysis', $event, 'AfterAnalysis');
+            } else {
+                $handler::afterAnalysis($event);
+            }
         }
     }
 
     public function dispatchAfterFileAnalysis(AfterFileAnalysisEvent $event): void
     {
-        if (Collector::$enabled) {
-            Collector::dispatchVoid($this->after_file_checks, 'afterAnalyzeFile', $event, 'AfterFileAnalysis');
-
-            return;
-        }
-
         foreach ($this->after_file_checks as $handler) {
-            $handler::afterAnalyzeFile($event);
+            if (Collector::$enabled) {
+                Collector::timedVoid($handler, 'afterAnalyzeFile', $event, 'AfterFileAnalysis');
+            } else {
+                $handler::afterAnalyzeFile($event);
+            }
         }
     }
 
     public function dispatchBeforeFileAnalysis(BeforeFileAnalysisEvent $event): void
     {
-        if (Collector::$enabled) {
-            Collector::dispatchVoid($this->before_file_checks, 'beforeAnalyzeFile', $event, 'BeforeFileAnalysis');
-
-            return;
-        }
-
         foreach ($this->before_file_checks as $handler) {
-            $handler::beforeAnalyzeFile($event);
+            if (Collector::$enabled) {
+                Collector::timedVoid($handler, 'beforeAnalyzeFile', $event, 'BeforeFileAnalysis');
+            } else {
+                $handler::beforeAnalyzeFile($event);
+            }
         }
     }
 
     public function dispatchAfterFunctionLikeAnalysis(AfterFunctionLikeAnalysisEvent $event): ?bool
     {
-        if (Collector::$enabled) {
-            return Collector::dispatchUntilFalse(
-                $this->after_functionlike_checks,
-                'afterStatementAnalysis',
-                $event,
-                'AfterFunctionLikeAnalysis',
-            );
-        }
-
         foreach ($this->after_functionlike_checks as $handler) {
-            if ($handler::afterStatementAnalysis($event) === false) {
+            if ((Collector::$enabled
+                ? Collector::timedBool($handler, 'afterStatementAnalysis', $event, 'AfterFunctionLikeAnalysis')
+                : $handler::afterStatementAnalysis($event)) === false
+            ) {
                 return false;
             }
         }
@@ -614,14 +521,12 @@ final class EventDispatcher
 
     public function dispatchAddTaints(AddRemoveTaintsEvent $event): int
     {
-        if (Collector::$enabled) {
-            return Collector::dispatchOr($this->add_taints_checks, 'addTaints', $event, 'AddTaints');
-        }
-
         $added_taints = 0;
 
         foreach ($this->add_taints_checks as $handler) {
-            $added_taints |= $handler::addTaints($event);
+            $added_taints |= Collector::$enabled
+                ? Collector::timedInt($handler, 'addTaints', $event, 'AddTaints')
+                : $handler::addTaints($event);
         }
 
         return $added_taints;
@@ -629,14 +534,12 @@ final class EventDispatcher
 
     public function dispatchRemoveTaints(AddRemoveTaintsEvent $event): int
     {
-        if (Collector::$enabled) {
-            return Collector::dispatchOr($this->remove_taints_checks, 'removeTaints', $event, 'RemoveTaints');
-        }
-
         $removed_taints = 0;
 
         foreach ($this->remove_taints_checks as $handler) {
-            $removed_taints |= $handler::removeTaints($event);
+            $removed_taints |= Collector::$enabled
+                ? Collector::timedInt($handler, 'removeTaints', $event, 'RemoveTaints')
+                : $handler::removeTaints($event);
         }
 
         return $removed_taints;

@@ -47,11 +47,12 @@ final class DynamicFunctionStorageProvider
 
     /**
      * @param Closure(DynamicFunctionStorageProviderEvent): ?DynamicFunctionStorage $c
-     * @psalm-external-mutation-free
      */
     public function registerClosure(string $fq_function_name, Closure $c): void
     {
-        self::$handlers[strtolower($fq_function_name)][] = $c;
+        self::$handlers[strtolower($fq_function_name)][] = Collector::$enabled
+            ? Collector::wrap($c, 'DynamicFunctionStorage')
+            : $c;
     }
 
     /**
@@ -94,9 +95,7 @@ final class DynamicFunctionStorageProvider
                 $code_location,
             );
 
-            $result = Collector::$enabled
-                ? Collector::call($class_handler, $event, 'DynamicFunctionStorage')
-                : $class_handler($event);
+            $result = $class_handler($event);
 
             return self::$dynamic_storages[$dynamic_storage_id] = $result
                 ? $result->toFunctionStorage($function_id)

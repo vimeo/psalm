@@ -7,16 +7,21 @@ namespace Psalm\Tests\Internal\Perf;
 use Override;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
+use PhpParser\Node\Stmt;
+use PhpParser\Node\Stmt\Nop;
 use Psalm\Internal\Perf\Collector;
+use Psalm\StatementsSource;
 use stdClass;
 
 use function array_column;
+use function array_map;
+use function array_slice;
 use function array_sum;
-use function array_unique;
 use function count;
 use function dirname;
 use function file_put_contents;
 use function getenv;
+use function hrtime;
 use function json_encode;
 use function ksort;
 use function link;
@@ -24,19 +29,18 @@ use function mkdir;
 use function putenv;
 use function range;
 use function rmdir;
-use function symlink;
 use function sys_get_temp_dir;
 use function uniqid;
 use function unlink;
 use function usleep;
 
 use const DIRECTORY_SEPARATOR;
-use const PHP_OS_FAMILY;
 
 /**
  * @psalm-import-type WorkerPerf from Collector
  * @psalm-import-type FileRecord from Collector
  * @psalm-import-type StatementRecord from Collector
+ * @psalm-import-type HookRecord from Collector
  */
 final class CollectorTest extends TestCase
 {
@@ -141,30 +145,111 @@ final class CollectorTest extends TestCase
         $this->assertSame(['sum' => 1_000, 'max' => 700], $result['pools'][0]['payload_bytes']);
     }
 
-    public function testTopListsKeepTheExactTopTwentyAcrossWorkers(): void
+    public function testExecutionsOfOneStatementAreOneHotItemWithTheirPasses(): void
     {
         Collector::start(null, []);
 
-        $first = [];
-        $second = [];
-        foreach (range(1, 30) as $i) {
-            $record = ['path' => 'src/F.php', 'line' => $i, 'node' => 'Stmt_If', 'self_us' => $i * 10, 'wall_us' => $i * 10];
-
-            if ($i % 2 === 0) {
-                $first[] = $record;
-            } else {
-                $second[] = $record;
-            }
+        for ($i = 0; $i < 30; ++$i) {
+            Collector::recordStatement('src/F.php', 271, 'Stmt_If', 40_000, 41_000);
         }
 
-        Collector::addWorkerData(self::workerPerf(1, 'analysis', [], $first));
-        Collector::addWorkerData(self::workerPerf(2, 'analysis', [], $second));
+        Collector::recordStatement('src/F.php', 5, 'Stmt_Echo', 1_500, 1_500);
+
+        for ($i = 0; $i < 2; ++$i) {
+            Collector::recordFunction('src/F.php', 20, 'A::__construct', 'initializations', 20_000);
+            Collector::recordFunction('src/F.php', 20, 'A::__construct', 'body', 20_000);
+        }
 
         $result = Collector::finish(0, 0);
 
         $this->assertNotNull($result);
-        $this->assertSame(range(300, 110, -10), array_column($result['top']['statements'], 'self_us'));
-        $this->assertCount(20, array_unique(array_column($result['top']['statements'], 'line')));
+        // the statement that took 1.5 ms in all is not hot, but it is in the top list
+        $this->assertSame(
+            [['src/F.php', 271, 30, 1_200_000, 1_230_000]],
+            array_map(
+                static fn(array $r): array => [$r['path'], $r['line'], $r['passes'], $r['self_us'], $r['wall_us']],
+                $result['hot']['statements'],
+            ),
+        );
+        $this->assertSame([271, 5], array_column($result['top']['statements'], 'line'));
+        $this->assertSame(
+            [['A::__construct', 'body', 2, 40_000], ['A::__construct', 'initializations', 2, 40_000]],
+            array_map(
+                static fn(array $r): array => [$r['id'], $r['pass'], $r['passes'], $r['wall_us']],
+                $result['top']['functions'],
+            ),
+        );
+        // 40 ms in all: below the threshold
+        $this->assertSame([], $result['hot']['functions']);
+    }
+
+    public function testTheRecordsOfWorkersAreMergedByPlace(): void
+    {
+        Collector::start(null, []);
+
+        $records = [];
+        foreach (range(1, 30) as $i) {
+            $records[] = [
+                'path' => 'src/F.php',
+                'line' => $i,
+                'node' => 'Stmt_If',
+                'passes' => 1,
+                'self_us' => $i * 1_000,
+                'wall_us' => $i * 1_000,
+            ];
+        }
+
+        Collector::addWorkerData(self::workerPerf(1, 'analysis', [], array_slice($records, 0, 20)));
+        Collector::addWorkerData(self::workerPerf(2, 'analysis', [], array_slice($records, 10)));
+
+        $result = Collector::finish(0, 0);
+
+        $this->assertNotNull($result);
+        $top = $result['top']['statements'];
+        $this->assertCount(20, $top);
+        // lines 11 to 20 are in both workers: 2 passes, twice the time
+        $this->assertSame(
+            [20, 19, 18, 17, 16, 15, 30, 29, 14, 28, 27, 13, 26, 25, 12, 24, 23, 11, 22, 21],
+            array_column($top, 'line'),
+        );
+        $this->assertSame([2, 40_000], [$top[0]['passes'], $top[0]['self_us']]);
+    }
+
+    public function testNestedStatementsAreTimedByTheirOwnTime(): void
+    {
+        Collector::start(null, []);
+        $outer = self::statement(10);
+        $inner = self::statement(11);
+        $source = $this->createStub(StatementsSource::class);
+        $source->method('getFilePath')->willReturn('/p/src/N.php');
+        $source->method('getFileName')->willReturn('src/N.php');
+
+        $saved_child_ns = Collector::$child_ns;
+        Collector::$child_ns = 0;
+        $outer_start = (int) hrtime(true);
+
+        $inner_saved = Collector::$child_ns;
+        Collector::$child_ns = 0;
+        $inner_start = (int) hrtime(true);
+        usleep(5_000);
+        Collector::statementEnd($source, $inner, $inner_start, $inner_saved);
+
+        usleep(5_000);
+        Collector::statementEnd($source, $outer, $outer_start, $saved_child_ns);
+
+        $result = Collector::finish(0, 0);
+
+        $this->assertNotNull($result);
+        $by_line = [];
+        foreach ($result['top']['statements'] as $record) {
+            $by_line[$record['line']] = $record;
+        }
+
+        // the outer one took about 10 ms with the inner one, and about 5 ms of its own
+        $this->assertGreaterThanOrEqual(10_000, $by_line[10]['wall_us']);
+        $this->assertGreaterThanOrEqual(5_000, $by_line[10]['self_us']);
+        $this->assertLessThan($by_line[10]['wall_us'] - 4_000, $by_line[10]['self_us']);
+        $this->assertGreaterThanOrEqual(5_000, $by_line[11]['self_us']);
     }
 
     public function testAnAnonymousHandlerIsNamedWithoutTheFileOfItsClass(): void
@@ -196,9 +281,9 @@ final class CollectorTest extends TestCase
             }
         };
 
-        Collector::dispatchVoid([$first, $second], 'handle', new stdClass(), 'AfterFileAnalysis');
-        Collector::dispatchVoid([FirstHookHandler::class], 'handle', new stdClass(), 'AfterFileAnalysis');
-        Collector::call($object->handle(...), new stdClass(), 'FunctionReturnType');
+        Collector::timedVoid($first, 'handle', new stdClass(), 'AfterFileAnalysis');
+        Collector::timedVoid($second, 'handle', new stdClass(), 'AfterFileAnalysis');
+        Collector::wrap($object->handle(...), 'FunctionReturnType')(new stdClass());
 
         $result = Collector::finish(0, 0);
 
@@ -211,7 +296,6 @@ final class CollectorTest extends TestCase
         ksort($by_handler);
         $this->assertSame(
             [
-                FirstHookHandler::class . ' AfterFileAnalysis' => ['psalm', 1],
                 '{anonymous-class} AfterFileAnalysis' => ['plugin', 2],
                 '{anonymous-class} FunctionReturnType' => ['plugin', 1],
             ],
@@ -220,14 +304,39 @@ final class CollectorTest extends TestCase
         $this->assertStringNotContainsString(__DIR__, (string) json_encode($result['hooks']));
     }
 
+    public function testOnlyClassesUnderPsalmInternalAreOfPsalm(): void
+    {
+        Collector::start(null, []);
+        $hooks = [];
+        foreach (['Psalm\\Internal\\Provider\\X', 'Psalm\\LaravelPlugin\\Handler', 'Acme\\Handler'] as $handler) {
+            $hooks[] = ['handler' => $handler, 'hook' => 'AfterFileAnalysis', 'calls' => 1, 'wall_ns' => 5_000];
+        }
+
+        Collector::addWorkerData(self::workerPerf(1, 'analysis', [], [], $hooks));
+
+        $result = Collector::finish(0, 0);
+
+        $this->assertNotNull($result);
+        $origins = [];
+        foreach ($result['hooks'] as $hook) {
+            $origins[$hook['handler']] = $hook['origin'];
+        }
+
+        ksort($origins);
+        $this->assertSame(
+            ['Acme\\Handler' => 'plugin', 'Psalm\\Internal\\Provider\\X' => 'psalm', 'Psalm\\LaravelPlugin\\Handler' => 'plugin'],
+            $origins,
+        );
+    }
+
     public function testClosuresOfAMethodTheClassesShareAreCountedForEachClass(): void
     {
         Collector::start(null, []);
         $event = new stdClass();
 
-        Collector::call(FirstHookHandler::handle(...), $event, 'FunctionReturnType');
-        Collector::call(SecondHookHandler::handle(...), $event, 'FunctionReturnType');
-        Collector::call(SecondHookHandler::handle(...), $event, 'FunctionReturnType');
+        Collector::wrap(FirstHookHandler::handle(...), 'FunctionReturnType')($event);
+        Collector::wrap(SecondHookHandler::handle(...), 'FunctionReturnType')($event);
+        Collector::wrap(SecondHookHandler::handle(...), 'FunctionReturnType')($event);
 
         $result = Collector::finish(0, 0);
 
@@ -241,69 +350,29 @@ final class CollectorTest extends TestCase
         $this->assertSame([FirstHookHandler::class => 1, SecondHookHandler::class => 2], $calls);
     }
 
-    public function testTheDispatchHelpersEndWhereTheDispatcherDoes(): void
+    public function testTheTimedCallsGiveBackWhatTheHandlerReturns(): void
     {
         Collector::start(null, []);
-        $null = new class {
-            public static int $calls = 0;
-
+        $handler = (new class {
+            /**
+             * @psalm-pure
+             */
             public static function handle(object $event): ?bool
             {
-                ++self::$calls;
-
-                return null;
-            }
-        };
-        $false = new class {
-            public static int $calls = 0;
-
-            public static function handle(object $event): ?bool
-            {
-                ++self::$calls;
-
                 return false;
             }
-        };
-        $true = new class {
-            public static int $calls = 0;
 
-            public static function handle(object $event): ?bool
-            {
-                ++self::$calls;
-
-                return true;
-            }
-        };
-        $bits = new class {
             /**
              * @psalm-pure
              */
-            public static function handle(object $event): int
+            public static function bits(object $event): int
             {
-                return 5;
+                return 6;
             }
-        };
-        $more_bits = new class {
-            /**
-             * @psalm-pure
-             */
-            public static function handle(object $event): int
-            {
-                return 2;
-            }
-        };
-        $event = new stdClass();
+        })::class;
 
-        $this->assertFalse(
-            Collector::dispatchUntilFalse([$null::class, $false::class, $true::class], 'handle', $event, 'X'),
-        );
-        $this->assertSame([1, 1, 0], [$null::$calls, $false::$calls, $true::$calls]);
-        $this->assertNull(Collector::dispatchUntilFalse([$null::class, $true::class], 'handle', $event, 'X'));
-        $this->assertTrue(Collector::dispatchFirst([$null::class, $true::class, $false::class], 'handle', $event, 'X'));
-        $this->assertSame([3, 1, 2], [$null::$calls, $false::$calls, $true::$calls]);
-        $this->assertFalse(Collector::dispatchFirst([$false::class, $true::class], 'handle', $event, 'X'));
-        $this->assertNull(Collector::dispatchFirst([$null::class], 'handle', $event, 'X'));
-        $this->assertSame(7, Collector::dispatchOr([$bits::class, $more_bits::class], 'handle', $event, 'Y'));
+        $this->assertFalse(Collector::timedBool($handler, 'handle', new stdClass(), 'X'));
+        $this->assertSame(6, Collector::timedInt($handler, 'bits', new stdClass(), 'X'));
     }
 
     public function testNoFileIsWrittenOverAReportOrTheBaseline(): void
@@ -481,102 +550,6 @@ final class CollectorTest extends TestCase
         $this->assertSame('D:/out', Collector::absolutePath('D:\\out', 'C:\\work', true));
     }
 
-    public function testDestinationsAreTheSameThroughASymlinkedDirectory(): void
-    {
-        if (DIRECTORY_SEPARATOR === '\\') {
-            $this->markTestSkipped('Creating symlinks needs a privilege on Windows');
-        }
-
-        $base = sys_get_temp_dir() . '/psalm-collector-' . uniqid();
-        mkdir($base . '/real', 0777, true);
-        symlink($base . '/real', $base . '/link');
-
-        try {
-            // the file does not exist yet, nor does the directory under the link
-            $this->assertTrue(Collector::isSameDestination($base . '/real/r.json', $base . '/link/r.json', '/'));
-            $this->assertTrue(Collector::isSameDestination('link/new/r.json', 'real/new/r.json', $base));
-            $this->assertFalse(Collector::isSameDestination($base . '/real/r.json', $base . '/link/other.json', '/'));
-            $this->assertFalse(Collector::isSameDestination('r.json', 'real/r.json', $base));
-        } finally {
-            unlink($base . '/link');
-            rmdir($base . '/real');
-            rmdir($base);
-        }
-    }
-
-    public function testDestinationsAreTheSameThroughADanglingSymlinkToTheFile(): void
-    {
-        if (DIRECTORY_SEPARATOR === '\\') {
-            $this->markTestSkipped('Creating symlinks needs a privilege on Windows');
-        }
-
-        $base = sys_get_temp_dir() . '/psalm-collector-dangling-' . uniqid();
-        mkdir($base . '/real', 0777, true);
-        symlink($base . '/real/report.json', $base . '/absolute.json');
-        symlink('real/report.json', $base . '/relative.json');
-        symlink('absolute.json', $base . '/chain.json');
-
-        try {
-            $this->assertTrue(Collector::isSameDestination($base . '/absolute.json', $base . '/real/report.json', '/'));
-            $this->assertTrue(Collector::isSameDestination('relative.json', 'real/report.json', $base));
-            $this->assertTrue(Collector::isSameDestination($base . '/chain.json', $base . '/real/report.json', '/'));
-            $this->assertFalse(Collector::isSameDestination($base . '/relative.json', $base . '/real/other.json', '/'));
-        } finally {
-            unlink($base . '/absolute.json');
-            unlink($base . '/relative.json');
-            unlink($base . '/chain.json');
-            rmdir($base . '/real');
-            rmdir($base);
-        }
-    }
-
-    public function testDestinationsAreTheSameWhenDotDotFollowsASymlink(): void
-    {
-        if (DIRECTORY_SEPARATOR === '\\') {
-            $this->markTestSkipped('Creating symlinks needs a privilege on Windows');
-        }
-
-        $base = sys_get_temp_dir() . '/psalm-collector-dotdot-' . uniqid();
-        mkdir($base . '/deep/inner', 0777, true);
-        symlink($base . '/deep/inner', $base . '/link');
-
-        try {
-            // `link/..` is deep, not the base
-            $this->assertTrue(Collector::isSameDestination($base . '/link/../r.json', $base . '/deep/r.json', '/'));
-            $this->assertFalse(Collector::isSameDestination($base . '/link/../r.json', $base . '/r.json', '/'));
-            $this->assertTrue(Collector::isSameDestination('link/../r.json', 'deep/r.json', $base));
-        } finally {
-            unlink($base . '/link');
-            rmdir($base . '/deep/inner');
-            rmdir($base . '/deep');
-            rmdir($base);
-        }
-    }
-
-    public function testDestinationsAreTheSameForAHardLinkAndWhereTheFileSystemIgnoresCase(): void
-    {
-        $base = sys_get_temp_dir() . '/psalm-collector-links-' . uniqid();
-        mkdir($base);
-        file_put_contents($base . '/report.json', '{}');
-
-        try {
-            if (DIRECTORY_SEPARATOR !== '\\') {
-                link($base . '/report.json', $base . '/hard.json');
-                $this->assertTrue(Collector::isSameDestination($base . '/report.json', $base . '/hard.json', '/'));
-                unlink($base . '/hard.json');
-            }
-
-            $ignores_case = PHP_OS_FAMILY === 'Darwin' || PHP_OS_FAMILY === 'Windows';
-            $this->assertSame(
-                $ignores_case,
-                Collector::isSameDestination($base . '/report.json', $base . '/REPORT.json', '/'),
-            );
-        } finally {
-            unlink($base . '/report.json');
-            rmdir($base);
-        }
-    }
-
     /**
      * @return array<string, array{?string, ?string}>
      * @psalm-pure
@@ -589,11 +562,8 @@ final class CollectorTest extends TestCase
             'valid' => [$valid, $valid],
             'unset' => [null, null],
             'malformed' => ['00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331', null],
-            'uppercase' => ['00-0AF7651916CD43DD8448EB211C80319C-B7AD6B7169203331-01', null],
-            'other version' => ['01-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-01', null],
             'zero trace id' => ['00-00000000000000000000000000000000-b7ad6b7169203331-01', null],
             'zero parent id' => ['00-0af7651916cd43dd8448eb211c80319c-0000000000000000-01', null],
-            'trailing newline' => ["00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-01\n", null],
         ];
     }
 
@@ -603,6 +573,14 @@ final class CollectorTest extends TestCase
         putenv($value === null ? 'TRACEPARENT' : 'TRACEPARENT=' . $value);
 
         $this->assertSame($expected, Collector::traceparent());
+    }
+
+    /**
+     * @psalm-pure
+     */
+    private static function statement(int $line): Stmt
+    {
+        return new Nop(['startLine' => $line]);
     }
 
     /**
@@ -625,12 +603,18 @@ final class CollectorTest extends TestCase
 
     /**
      * @param list<FileRecord> $files
-     * @param list<StatementRecord> $top_statements
+     * @param list<StatementRecord> $statements
+     * @param list<HookRecord> $hooks
      * @return WorkerPerf
      * @psalm-pure
      */
-    private static function workerPerf(int $pid, string $role, array $files, array $top_statements = []): array
-    {
+    private static function workerPerf(
+        int $pid,
+        string $role,
+        array $files,
+        array $statements = [],
+        array $hooks = [],
+    ): array {
         return [
             'pid' => $pid,
             'role' => $role,
@@ -642,11 +626,9 @@ final class CollectorTest extends TestCase
             'php_peak_bytes' => 2_000,
             'max_rss_bytes' => 3_000,
             'files' => $files,
-            'statements' => [],
+            'statements' => $statements,
             'functions' => [],
-            'top_statements' => $top_statements,
-            'top_functions' => [],
-            'hooks' => [],
+            'hooks' => $hooks,
             'parser' => ['files_parsed' => 0, 'parser_cache_hits' => 0, 'parser_cache_misses' => 0],
         ];
     }

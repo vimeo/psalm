@@ -4,16 +4,19 @@ declare(strict_types=1);
 
 namespace Psalm\Tests\EndToEnd;
 
+use Override;
 use PHPUnit\Framework\Attributes\RequiresPhpExtension;
 
 use function array_column;
 use function array_filter;
 use function array_keys;
 use function array_map;
+use function array_slice;
 use function array_sum;
 use function array_unique;
 use function array_values;
 use function assert;
+use function count;
 use function file_get_contents;
 use function file_put_contents;
 use function glob;
@@ -27,6 +30,7 @@ use function preg_replace;
 use function rmdir;
 use function rsort;
 use function sort;
+use function str_repeat;
 use function str_replace;
 use function symlink;
 use function unlink;
@@ -50,12 +54,29 @@ use const PHP_BINARY;
  *     }>,
  *     files: list<DumpFile>,
  *     top: array{functions: list<array{id: string, path: string}>},
+ *     taint: array{nodes: int},
+ *     traceEvents: list<array{ph: string, name: string, pid: int, ts?: int, dur?: int}>,
  *     hooks: list<array{handler: string, hook: string, origin: string, calls: int, wall_us: int}>,
  *     counts: array<string, int>,
  * }
  */
 final class PsalmDebugPerformanceEndToEndTest extends PsalmEndToEndTestCase
 {
+    #[Override]
+    public function setUp(): void
+    {
+        parent::setUp();
+        // a dump of an earlier test would let assertFileExists() pass
+        @unlink(self::$tmpDir . '/perf.json');
+    }
+
+    #[Override]
+    public function tearDown(): void
+    {
+        @unlink(self::$tmpDir . '/perf.json');
+        parent::tearDown();
+    }
+
     public function testThreadsOneDumpIsValidAndItsStagesAndFilesAddUp(): void
     {
         $this->setUpProject(3);
@@ -70,6 +91,34 @@ final class PsalmDebugPerformanceEndToEndTest extends PsalmEndToEndTestCase
 
         $this->assertSame(2, $result['CODE']);
         $this->assertSame(1, $dump['schema']);
+        // the stages come in this order, a stage that comes back (the scan of the stubs) after its first time
+        $this->assertSame(
+            [
+                'bootstrap',
+                'scan.setup',
+                'scan.files',
+                'scan.populate',
+                'analysis.setup',
+                'analysis.files',
+                'analysis.finish',
+                'post',
+                'report',
+            ],
+            array_values(array_unique(array_column($dump['stages'], 'name'))),
+        );
+        $this->assertSame('bootstrap', $dump['stages'][0]['name']);
+        $this->assertSame('report', array_slice($dump['stages'], -1)[0]['name']);
+
+        // the dump is a Trace Event Format object
+        $x_events = array_filter($dump['traceEvents'], static fn(array $e): bool => $e['ph'] === 'X');
+        $this->assertCount(count($dump['stages']) + count($dump['files']), $x_events);
+        $names = array_column(array_filter($dump['traceEvents'], static fn(array $e): bool => $e['ph'] === 'M'), 'name');
+        $this->assertSame(['process_name'], array_unique($names));
+        foreach ($x_events as $event) {
+            $this->assertIsInt($event['ts'] ?? null);
+            $this->assertGreaterThanOrEqual(0, $event['dur'] ?? -1);
+        }
+
         $this->assertSame('none', $dump['env']['cache']);
         $this->assertContains('debug-performance', $dump['env']['options']);
 
@@ -224,7 +273,7 @@ final class PsalmDebugPerformanceEndToEndTest extends PsalmEndToEndTestCase
 
         try {
             $result = $this->runPsalm(
-                ['--no-cache', '--debug-performance=' . $dump_path],
+                ['--no-cache', '--no-progress', '--debug-performance=' . $dump_path],
                 self::$tmpDir,
                 true,
             );
@@ -236,6 +285,7 @@ final class PsalmDebugPerformanceEndToEndTest extends PsalmEndToEndTestCase
         $this->assertStringContainsString('Warning: Could not write the performance dump ', $result['STDERR']);
         $this->assertStringContainsString('perf-dir', $result['STDERR']);
         $this->assertStringNotContainsString('Performance dump written', $result['STDERR']);
+        $this->assertFileDoesNotExist($dump_path . '.tmp');
         // the summary is there, but it doesn't point at a file that doesn't hold the data
         $this->assertStringContainsString("\nSlowest files by CPU\n", $result['STDOUT']);
         $this->assertStringNotContainsString('The full data is in', $result['STDOUT']);
@@ -377,6 +427,7 @@ final class PsalmDebugPerformanceEndToEndTest extends PsalmEndToEndTestCase
 
         $this->runPsalm(['--no-cache', '--no-progress', '--threads=1', '--debug-performance=' . $dump_path], self::$tmpDir, true);
         $before = $this->readDump($dump_path)['counts'];
+        unlink($dump_path);
 
         file_put_contents(
             self::$tmpDir . '/src/Defs.php',
@@ -405,6 +456,7 @@ final class PsalmDebugPerformanceEndToEndTest extends PsalmEndToEndTestCase
 
         $this->runPsalm(['--no-progress', '--threads=1', '--debug-performance=' . $dump_path], self::$tmpDir, true);
         $cold = $this->readDump($dump_path)['counts'];
+        unlink($dump_path);
         $this->runPsalm(['--no-progress', '--threads=1', '--debug-performance=' . $dump_path], self::$tmpDir, true);
         $warm = $this->readDump($dump_path)['counts'];
 
@@ -414,13 +466,51 @@ final class PsalmDebugPerformanceEndToEndTest extends PsalmEndToEndTestCase
         $this->assertGreaterThan(0, $warm['parser_cache_hits']);
     }
 
+    public function testATaintRunHasATaintStageAndGraphSizes(): void
+    {
+        $this->setUpProject(1, true);
+        file_put_contents(self::$tmpDir . '/src/Tainted.php', "<?php\nfunction tainted(): void\n{\n    echo \$_GET['x'];\n}\n");
+        $dump_path = self::$tmpDir . '/perf.json';
+
+        $this->runPsalm(['--no-cache', '--no-progress', '--threads=1', '--debug-performance=' . $dump_path], self::$tmpDir, true);
+        $dump = $this->readDump($dump_path);
+
+        $this->assertContains('taint', array_column($dump['stages'], 'name'));
+        $this->assertGreaterThan(0, $dump['taint']['nodes']);
+    }
+
+    public function testARelativePathInADirectoryThatDoesNotExistIsCreated(): void
+    {
+        $this->setUpProject(1);
+
+        try {
+            $this->runPsalm(
+                ['--no-cache', '--no-progress', '--debug-performance=out/new/perf.json'],
+                self::$tmpDir,
+                true,
+                false,
+            );
+
+            $this->assertFileExists(self::$tmpDir . '/out/new/perf.json');
+            $this->assertFileDoesNotExist(self::$tmpDir . '/out/new/perf.json.tmp');
+            $this->assertSame(1, $this->readDump(self::$tmpDir . '/out/new/perf.json')['schema']);
+        } finally {
+            @unlink(self::$tmpDir . '/out/new/perf.json');
+            @rmdir(self::$tmpDir . '/out/new');
+            @rmdir(self::$tmpDir . '/out');
+        }
+    }
+
     public function testNoRecordNamesTheDirectoryTheProjectIsIn(): void
     {
         $this->setUpProject(0);
         file_put_contents(
             self::$tmpDir . '/src/Anon.php',
             "<?php\nnamespace Acme\\Extra;\n\nfunction make(): object\n{\n"
-            . "    return new class {\n        public function go(): int\n        {\n            return 1;\n        }\n    };\n}\n",
+            // a method that takes at least 1 ms to analyse, which is what gets recorded
+            . "    return new class {\n        public function go(): int\n        {\n            \$a = 1;\n"
+            . str_repeat("            \$a = \$a + 1;\n", 800)
+            . "            return \$a;\n        }\n    };\n}\n",
         );
         $dump_path = self::$tmpDir . '/perf.json';
 
@@ -504,14 +594,14 @@ final class PsalmDebugPerformanceEndToEndTest extends PsalmEndToEndTestCase
         $this->assertFileExists($dump_path);
     }
 
-    private function setUpProject(int $extra_files): void
+    private function setUpProject(int $extra_files, bool $taint_analysis = false): void
     {
         $this->runPsalmInit(1);
 
         $psalm_xml = file_get_contents(self::$tmpDir . '/psalm.xml');
         file_put_contents(
             self::$tmpDir . '/psalm.xml',
-            str_replace('<psalm', '<psalm runTaintAnalysis="false"', (string) $psalm_xml),
+            str_replace('<psalm', '<psalm runTaintAnalysis="' . ($taint_analysis ? 'true' : 'false') . '"', (string) $psalm_xml),
         );
 
         for ($i = 0; $i < $extra_files; ++$i) {

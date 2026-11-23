@@ -1821,8 +1821,6 @@
   <file src="src/Psalm/Internal/Provider/DynamicFunctionStorageProvider.php">
     <ImpureStaticProperty>
       <code><![CDATA[self::$handlers]]></code>
-      <code><![CDATA[self::$handlers]]></code>
-      <code><![CDATA[self::$handlers]]></code>
     </ImpureStaticProperty>
   </file>
   <file src="src/Psalm/Internal/Provider/FileProvider.php">
@@ -1942,14 +1940,10 @@
     <ImpureStaticProperty>
       <code><![CDATA[self::$handlers]]></code>
       <code><![CDATA[self::$handlers]]></code>
-      <code><![CDATA[self::$handlers]]></code>
-      <code><![CDATA[self::$handlers]]></code>
     </ImpureStaticProperty>
   </file>
   <file src="src/Psalm/Internal/Provider/FunctionParamsProvider.php">
     <ImpureStaticProperty>
-      <code><![CDATA[self::$handlers]]></code>
-      <code><![CDATA[self::$handlers]]></code>
       <code><![CDATA[self::$handlers]]></code>
     </ImpureStaticProperty>
     <RiskyTruthyFalsyComparison>
@@ -1959,14 +1953,10 @@
   <file src="src/Psalm/Internal/Provider/FunctionReturnTypeProvider.php">
     <ImpureStaticProperty>
       <code><![CDATA[self::$handlers]]></code>
-      <code><![CDATA[self::$handlers]]></code>
-      <code><![CDATA[self::$handlers]]></code>
     </ImpureStaticProperty>
   </file>
   <file src="src/Psalm/Internal/Provider/MethodExistenceProvider.php">
     <ImpureStaticProperty>
-      <code><![CDATA[self::$handlers]]></code>
-      <code><![CDATA[self::$handlers]]></code>
       <code><![CDATA[self::$handlers]]></code>
       <code><![CDATA[self::$handlers]]></code>
     </ImpureStaticProperty>
@@ -1974,14 +1964,10 @@
   <file src="src/Psalm/Internal/Provider/MethodParamsProvider.php">
     <ImpureStaticProperty>
       <code><![CDATA[self::$handlers]]></code>
-      <code><![CDATA[self::$handlers]]></code>
-      <code><![CDATA[self::$handlers]]></code>
     </ImpureStaticProperty>
   </file>
   <file src="src/Psalm/Internal/Provider/MethodReturnTypeProvider.php">
     <ImpureStaticProperty>
-      <code><![CDATA[self::$handlers]]></code>
-      <code><![CDATA[self::$handlers]]></code>
       <code><![CDATA[self::$handlers]]></code>
     </ImpureStaticProperty>
     <RiskyTruthyFalsyComparison>
@@ -1990,8 +1976,6 @@
   </file>
   <file src="src/Psalm/Internal/Provider/MethodVisibilityProvider.php">
     <ImpureStaticProperty>
-      <code><![CDATA[self::$handlers]]></code>
-      <code><![CDATA[self::$handlers]]></code>
       <code><![CDATA[self::$handlers]]></code>
       <code><![CDATA[self::$handlers]]></code>
     </ImpureStaticProperty>
@@ -2005,14 +1989,10 @@
     <ImpureStaticProperty>
       <code><![CDATA[self::$handlers]]></code>
       <code><![CDATA[self::$handlers]]></code>
-      <code><![CDATA[self::$handlers]]></code>
-      <code><![CDATA[self::$handlers]]></code>
     </ImpureStaticProperty>
   </file>
   <file src="src/Psalm/Internal/Provider/PropertyTypeProvider.php">
     <ImpureStaticProperty>
-      <code><![CDATA[self::$handlers]]></code>
-      <code><![CDATA[self::$handlers]]></code>
       <code><![CDATA[self::$handlers]]></code>
     </ImpureStaticProperty>
   </file>
@@ -2025,8 +2005,6 @@
   </file>
   <file src="src/Psalm/Internal/Provider/PropertyVisibilityProvider.php">
     <ImpureStaticProperty>
-      <code><![CDATA[self::$handlers]]></code>
-      <code><![CDATA[self::$handlers]]></code>
       <code><![CDATA[self::$handlers]]></code>
       <code><![CDATA[self::$handlers]]></code>
     </ImpureStaticProperty>

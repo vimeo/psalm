@@ -52,11 +52,12 @@ final class PropertyExistenceProvider
 
     /**
      * @param Closure(PropertyExistenceProviderEvent): ?bool $c
-     * @psalm-external-mutation-free
      */
     public function registerClosure(string $fq_classlike_name, Closure $c): void
     {
-        self::$handlers[strtolower($fq_classlike_name)][] = $c;
+        self::$handlers[strtolower($fq_classlike_name)][] = Collector::$enabled
+            ? Collector::wrap($c, 'PropertyExistence')
+            : $c;
     }
 
     /**
@@ -84,9 +85,7 @@ final class PropertyExistenceProvider
                 $context,
                 $code_location,
             );
-            $property_exists = Collector::$enabled
-                ? Collector::call($property_handler, $event, 'PropertyExistence')
-                : $property_handler($event);
+            $property_exists = $property_handler($event);
 
             if ($property_exists !== null) {
                 return $property_exists;

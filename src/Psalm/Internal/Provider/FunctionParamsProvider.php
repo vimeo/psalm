@@ -57,11 +57,12 @@ final class FunctionParamsProvider
 
     /**
      * @param Closure(FunctionParamsProviderEvent): ?array<int, FunctionLikeParameter> $c
-     * @psalm-external-mutation-free
      */
     public function registerClosure(string $fq_classlike_name, Closure $c): void
     {
-        self::$handlers[strtolower($fq_classlike_name)][] = $c;
+        self::$handlers[strtolower($fq_classlike_name)][] = Collector::$enabled
+            ? Collector::wrap($c, 'FunctionParams')
+            : $c;
     }
 
     /**
@@ -91,9 +92,7 @@ final class FunctionParamsProvider
                 $context,
                 $code_location,
             );
-            $result = Collector::$enabled
-                ? Collector::call($class_handler, $event, 'FunctionParams')
-                : $class_handler($event);
+            $result = $class_handler($event);
 
             if ($result) {
                 return $result;
