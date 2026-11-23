@@ -3,7 +3,7 @@
 Emitted when the config flag `ensureArrayStringOffsetsExist` is set to `true` and a string-keyed offset is not checked for existence
 
 ```php
-<?php
+<?php // ensureArrayStringOffsetsExist="true"
 
 /**
  * @param array<string, string> $arr

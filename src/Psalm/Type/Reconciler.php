@@ -57,11 +57,13 @@ use Psalm\Storage\Assertion\NonEmptyCountable;
 use Psalm\Storage\Assertion\NotNestedAssertions;
 use Psalm\Storage\Assertion\Truthy;
 use Psalm\Type;
+use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TArrayKey;
 use Psalm\Type\Atomic\TBool;
 use Psalm\Type\Atomic\TClassStringMap;
 use Psalm\Type\Atomic\TFalse;
+use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TLiteralInt;
@@ -95,6 +97,7 @@ use function ksort;
 use function preg_match;
 use function preg_quote;
 use function reset;
+use function sort;
 use function str_contains;
 use function str_ends_with;
 use function str_split;
@@ -452,6 +455,19 @@ class Reconciler
                 throw new UnexpectedValueException('$result_type should not be null');
             }
 
+            // narrowing a value does not make its false or null (that the config ignores) matter again
+            if ($before_adjustment
+                && (($before_adjustment->ignore_falsable_issues && !$result_type->ignore_falsable_issues)
+                    || ($before_adjustment->ignore_nullable_issues && !$result_type->ignore_nullable_issues))
+            ) {
+                $result_type = $result_type->setProperties([
+                    'ignore_falsable_issues' => $result_type->ignore_falsable_issues
+                        || $before_adjustment->ignore_falsable_issues,
+                    'ignore_nullable_issues' => $result_type->ignore_nullable_issues
+                        || $before_adjustment->ignore_nullable_issues,
+                ]);
+            }
+
             if ($undefined_reads_as_null) {
                 // where the value cannot be null the variable is set
                 $result_type = $result_type->setPossiblyUndefined(
@@ -505,7 +521,8 @@ class Reconciler
                 // parent nodes, that no taint goes through. One that can't carry some taints the type it is
                 // narrowed from could (e.g. a scalar, nosql) gets nodes those don't go through.
                 $narrowed_taints = $can_carry_taints
-                    ? ($taints_to_remove | (self::getTaintsRemovedByPatterns($new_type_parts) & $input_taints))
+                    ? ($taints_to_remove
+                        | (self::getTaintsRemovedByPatterns($new_type_parts, $before_adjustment) & $input_taints))
                         & ~($before_adjustment?->getTaintsToRemove($input_taints) ?? 0)
                     : TaintKind::ALL;
 
@@ -634,6 +651,9 @@ class Reconciler
 
             if (!$has_object_array_access) {
                 $existing_types[$key] = $result_type;
+            } elseif (!$did_type_exist) {
+                // the offset of an object isn't tracked, nor what its array alternatives gave before the narrowing
+                unset($existing_types[$key]);
             }
 
             if (!$did_type_exist && isset($existing_types[$key]) && isset($reference_graph[$key_parts[0]])) {
@@ -882,7 +902,9 @@ class Reconciler
                     if (($offset === 0 || count($assertions) === 1)
                         && ($assertion instanceof IsEqualIsset
                             || $assertion instanceof IsIsset
-                            || $assertion instanceof NonEmpty)
+                            || $assertion instanceof NonEmpty
+                            || ($assertion instanceof IsIdentical
+                                && self::isCharacterOfAString($nk, $assertion->type, $existing_types)))
                     ) {
                         $is_set = true;
                         break;
@@ -990,6 +1012,26 @@ class Reconciler
         }
 
         return $new_types;
+    }
+
+    /**
+     * Whether an offset of a string is asserted to be a character, which it is only where the string has it
+     *
+     * @param array<string, Union> $existing_types
+     * @psalm-capabilities read-props|write-this-props
+     */
+    private static function isCharacterOfAString(string $offset_id, Atomic $type, array $existing_types): bool
+    {
+        if (!$type instanceof TLiteralString || $type->value === '') {
+            return false;
+        }
+
+        $key_parts = self::breakUpPathIntoParts($offset_id);
+
+        return count($key_parts) === 4
+            && $key_parts[1] === '['
+            && isset($existing_types[$key_parts[0]])
+            && $existing_types[$key_parts[0]]->isString();
     }
 
     /**
@@ -1183,6 +1225,36 @@ class Reconciler
     }
 
     /**
+     * What an `ArrayAccess<K, V>` can give for an offset that is indexed further: its value type without the
+     * parts that can't be indexed (an `int`), false when nothing of it can, null when it isn't known
+     *
+     * @psalm-pure
+     */
+    private static function getIndexableValueTypeOfArrayAccess(TNamedObject $object): Union|false|null
+    {
+        if (!$object instanceof TGenericObject
+            || strtolower($object->value) !== 'arrayaccess'
+            || count($object->type_params) !== 2
+        ) {
+            return null;
+        }
+
+        $indexable_atomic_types = [];
+
+        foreach ($object->type_params[1]->getAtomicTypes() as $value_atomic_type) {
+            if ($value_atomic_type instanceof TArray
+                || $value_atomic_type instanceof TKeyedArray
+                || $value_atomic_type instanceof TNamedObject
+                || $value_atomic_type instanceof TMixed
+            ) {
+                $indexable_atomic_types[] = $value_atomic_type;
+            }
+        }
+
+        return $indexable_atomic_types === [] ? false : new Union($indexable_atomic_types);
+    }
+
+    /**
      * The type of the class constant a key such as `Foo::BAR` or `static::BAR` stands for.
      */
     private static function getClassConstantTypeOfKey(
@@ -1239,6 +1311,10 @@ class Reconciler
 
             if ($key === Context::PHP_SAPI_VAR_ID) {
                 return $existing_keys[$key] ?? Type::getString();
+            }
+
+            if (str_starts_with($key, Context::PHP_EXTENSION_VAR_ID_PREFIX)) {
+                return $existing_keys[$key] ?? Type::getBool();
             }
 
             if (!isset($existing_keys[$key_parts[0]]) && str_contains($key, '::') && !str_contains($key, '$')) {
@@ -1303,19 +1379,34 @@ class Reconciler
 
                 if (!isset($existing_keys[$new_base_key])) {
                     $new_base_type = null;
+                    $has_object_part = false;
+                    $has_array_part = false;
+                    $has_unknown_object_part = false;
+                    $object_value_type = null;
 
-                    // a variable holding one literal is that literal as a key
-                    $lookup_key = $array_key;
+                    // a variable holding literals is one of those literals as a key
+                    $lookup_keys = [$array_key];
 
                     if ($array_key[0] === '$' && isset($existing_keys[$array_key])) {
-                        if ($existing_keys[$array_key]->isSingleStringLiteral()) {
-                            $lookup_key = ExpressionIdentifier::quoteOffset(
-                                $existing_keys[$array_key]->getSingleStringLiteral()->value,
-                            );
-                        } elseif ($existing_keys[$array_key]->isSingleIntLiteral()) {
-                            $lookup_key = (string) $existing_keys[$array_key]->getSingleIntLiteral()->value;
+                        $literal_keys = [];
+
+                        foreach ($existing_keys[$array_key]->getAtomicTypes() as $key_atomic_type) {
+                            if ($key_atomic_type instanceof TLiteralString) {
+                                $literal_keys[] = ExpressionIdentifier::quoteOffset($key_atomic_type->value);
+                            } elseif ($key_atomic_type instanceof TLiteralInt) {
+                                $literal_keys[] = (string) $key_atomic_type->value;
+                            } else {
+                                $literal_keys = [];
+                                break;
+                            }
+                        }
+
+                        if ($literal_keys) {
+                            $lookup_keys = $literal_keys;
                         }
                     }
+
+                    $lookup_key = $lookup_keys[0];
 
                     $atomic_types = $existing_keys[$base_key]->getAtomicTypes();
 
@@ -1373,11 +1464,37 @@ class Reconciler
                         } elseif ($existing_key_type_part instanceof TNamedObject
                             && ($has_isset || $has_inverted_isset || $has_inverted_key_exists)
                         ) {
-                            $has_object_array_access = true;
+                            // an object that isn't known to be an ArrayAccess may not take the offset at all: nothing
+                            // is known of it, as the read of the offset has to find out
+                            if (!$existing_key_type_part->hasArrayAccessInterface($codebase)) {
+                                $has_object_array_access = true;
 
-                            unset($existing_keys[$new_base_key]);
+                                unset($existing_keys[$new_base_key]);
 
-                            return null;
+                                return null;
+                            }
+
+                            // the object's offset is unknown, only its array alternatives are narrowed; for the
+                            // offset of a path that goes on, what the object gives has to be indexable as well
+                            $has_object_array_access = $has_object_part = true;
+
+                            if ($key_parts !== []) {
+                                $indexable_value_type = self::getIndexableValueTypeOfArrayAccess(
+                                    $existing_key_type_part,
+                                );
+
+                                if ($indexable_value_type === null) {
+                                    $has_unknown_object_part = true;
+                                } elseif ($indexable_value_type !== false) {
+                                    $object_value_type = Type::combineUnionTypes(
+                                        $object_value_type,
+                                        $indexable_value_type,
+                                        $codebase,
+                                    );
+                                }
+                            }
+
+                            continue;
                         } elseif (!$existing_key_type_part instanceof TKeyedArray) {
                             return Type::getMixed();
                         } elseif ($lookup_key[0] === '$'
@@ -1391,23 +1508,46 @@ class Reconciler
                             $new_base_type_candidate = $existing_key_type_part->getGenericValueType(true);
                         } else {
                             $array_properties = $existing_key_type_part->properties;
+                            $new_base_type_candidate = null;
 
-                            $key_parts_key = $lookup_key;
-                            if ($lookup_key[0] === '\'' || $lookup_key[0] === '"') {
-                                $key_parts_key = ExpressionIdentifier::unquoteOffset($lookup_key);
+                            foreach ($lookup_keys as $lookup_key) {
+                                $key_parts_key = $lookup_key;
+                                if ($lookup_key[0] === '\'' || $lookup_key[0] === '"') {
+                                    $key_parts_key = ExpressionIdentifier::unquoteOffset($lookup_key);
+                                }
+
+                                if (isset($array_properties[$key_parts_key])) {
+                                    $value_type = $array_properties[$key_parts_key];
+                                } elseif ($existing_key_type_part->fallback_params === null) {
+                                    // a sealed shape has nothing under a key it doesn't list
+                                    continue;
+                                } elseif (count($lookup_keys) === 1) {
+                                    $value_type = $existing_key_type_part->fallback_params[1]->setDifferent(true);
+                                } else {
+                                    // one of several keys the shape may not have is any of its values
+                                    $new_base_type_candidate = $existing_key_type_part->getGenericValueType(true);
+                                    break;
+                                }
+
+                                $new_base_type_candidate = Type::combineUnionTypes(
+                                    $new_base_type_candidate,
+                                    $value_type,
+                                    $codebase,
+                                );
                             }
 
-                            if (!isset($array_properties[$key_parts_key])) {
-                                if ($existing_key_type_part->fallback_params !== null) {
-                                    $new_base_type_candidate = $existing_key_type_part
-                                        ->fallback_params[1]->setDifferent(true);
-                                } else {
+                            if ($new_base_type_candidate === null) {
+                                if (count($lookup_keys) === 1) {
                                     return null;
                                 }
-                            } else {
-                                $new_base_type_candidate = $array_properties[$key_parts_key];
+
+                                // none of the keys is listed: what the shape holds, as for a key of no known value
+                                $new_base_type_candidate = $existing_key_type_part->getGenericValueType(true);
                             }
                         }
+
+                        $has_array_part = $has_array_part
+                            || !($existing_key_type_part instanceof TNull || $existing_key_type_part instanceof TFalse);
 
                         $new_base_type = Type::combineUnionTypes(
                             $new_base_type,
@@ -1416,6 +1556,25 @@ class Reconciler
                         );
 
                         $existing_keys[$new_base_key] = $new_base_type;
+                    }
+
+                    // next to an object, only what an array (or a string) gives is known of the offset: `null`
+                    // alone, from a `?Foo` or `Foo|false`, is not
+                    if ($has_object_part
+                        && (!$has_array_part
+                            || $new_base_type === null
+                            || $new_base_type->isMixed()
+                            || $has_unknown_object_part)
+                    ) {
+                        unset($existing_keys[$new_base_key]);
+
+                        return null;
+                    }
+
+                    if ($has_object_part) {
+                        $existing_keys[$new_base_key] = $object_value_type === null
+                            ? $new_base_type
+                            : Type::combineUnionTypes($new_base_type, $object_value_type, $codebase);
                     }
                 }
 
@@ -2275,15 +2434,20 @@ class Reconciler
      * @param array<array<Assertion>> $new_type_parts
      * @psalm-pure
      */
-    private static function getTaintsRemovedByPatterns(array $new_type_parts): int
+    private static function getTaintsRemovedByPatterns(array $new_type_parts, ?Union $existing_type): int
     {
+        $existing_node_ids = array_keys($existing_type?->parent_nodes ?? []);
+        sort($existing_node_ids);
+
         $removed_taints = 0;
 
         foreach ($new_type_parts as $alternatives) {
             $removed_by_alternatives = null;
 
             foreach ($alternatives as $alternative) {
-                $removed = $alternative instanceof MatchesPattern && !$alternative->negated
+                $removed = $alternative instanceof MatchesPattern
+                    && !$alternative->negated
+                    && ($alternative->parent_node_ids === null || $alternative->parent_node_ids === $existing_node_ids)
                     ? $alternative->removed_taints
                     : 0;
                 $removed_by_alternatives = $removed_by_alternatives === null

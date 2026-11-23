@@ -3,21 +3,28 @@
 declare(strict_types=1);
 
 const MB_FAIL_PCT = 5.0;
-const WALL_WARN_PCT = 20.0;
+const WALL_WARN_PCT = 10.0;
+/** Applies to the wall times summed over the projects that ran on both sides. */
+const TOTAL_WALL_WARN_PCT = 5.0;
 /**
  * Head timeout or memory crash fails only if base used under this share of the limit hit (else warn); any other
  * head crash fails. When the PR changes composer.json, MB and wall deltas cannot fail the check.
  */
 const LIMIT_HEADROOM = 0.5;
 const EXAMPLES_PER_LIST = 10;
-const MESSAGE_CHARS = 300;
+/** Locations listed per group of identical in-place changes. */
+const LOCATIONS_PER_CHANGE = 10;
+/** Cap on a message in summary.json; the report shortens class names and trims messages further. */
+const MESSAGE_CHARS = 2_000;
 const STATUSES = ['ok', 'crash', 'timeout', 'error'];
 /** 'skip' (💥, base not ok, not comparable) counts as warn overall. */
 const VERDICT_RANK = ['pass' => 0, 'skip' => 1, 'warn' => 1, 'fail' => 2];
 
 /**
  * @param array<mixed> $plan
- * @return array{verdict: string, deps_changed: bool, projects: array<string, array<string, mixed>>}
+ * @return array{
+ *     verdict: string, deps_changed: bool, total_wall_delta: ?float, projects: array<string, array<string, mixed>>
+ * }
  */
 function compareAll(array $plan, string $inDir, bool $depsChanged): array
 {
@@ -37,12 +44,35 @@ function compareAll(array $plan, string $inDir, bool $depsChanged): array
     }
 
     $worst = max(array_map(static fn(array $p): int => VERDICT_RANK[$p['verdict']], $projects) ?: [1]);
+    $totalWall = totalWallDelta($projects);
+    if (!$depsChanged && $totalWall !== null && $totalWall > TOTAL_WALL_WARN_PCT) {
+        $worst = max($worst, VERDICT_RANK['warn']);
+    }
 
     return [
         'verdict' => ['pass', 'warn', 'fail'][$worst],
         'deps_changed' => $depsChanged,
+        'total_wall_delta' => $totalWall,
         'projects' => $projects,
     ];
+}
+
+/**
+ * Change of the wall times summed over the projects that ran on both sides; null when there are none.
+ *
+ * @param array<string, array<string, mixed>> $projects
+ */
+function totalWallDelta(array $projects): ?float
+{
+    $base = $head = 0.0;
+    foreach ($projects as $p) {
+        if ($p['base']['status'] === 'ok' && $p['head']['status'] === 'ok') {
+            $base += (float) $p['base']['wall'];
+            $head += (float) $p['head']['wall'];
+        }
+    }
+
+    return pctDelta($base, $head);
 }
 
 /** @return array<string, mixed> */
@@ -406,13 +436,17 @@ function surplus(array $from, array $against): array
 }
 
 /**
+ * Issues added and removed against base. An issue that only changed in place (removed and added at the same file,
+ * line and column) is reported as a change, and identical changes are grouped (see changeGroups()).
+ *
  * @param list<array<string, mixed>> $base
  * @param list<array<string, mixed>> $head
  * @return array{
- *     base: int, head: int, added: int, removed: int,
+ *     base: int, head: int, added: int, removed: int, changed: int, unpaired_added: int, unpaired_removed: int,
  *     types: array<string, array{added: int, removed: int}>,
  *     categories: array<string, array{base: int, head: int, added: int, removed: int}>,
- *     added_examples: list<string>, removed_examples: list<string>
+ *     changed_examples: list<array<string, mixed>>,
+ *     added_examples: list<array<string, mixed>>, removed_examples: list<array<string, mixed>>
  * }
  */
 function diffIssues(array $base, array $head): array
@@ -448,21 +482,116 @@ function diffIssues(array $base, array $head): array
         $count($type, 'removed', $n['removed']);
     }
 
-    $example = static fn(array $p): string => mb_strimwidth(
-        "{$p[0]}:{$p[1]} {$p[3]} ({$p[4]}): " . preg_replace('/\s+/u', ' ', $p[5]),
-        0,
-        MESSAGE_CHARS,
-        '…',
-    );
+    $byLocation = [];
+    foreach (['old' => $removed, 'new' => $added] as $side => $list) {
+        foreach ($list as $parts) {
+            $byLocation["{$parts[0]}\0{$parts[1]}\0{$parts[2]}"][$side][] = $parts;
+        }
+    }
+
+    ksort($byLocation);
+    $changes = [];
+    $unpaired = ['added' => [], 'removed' => []];
+    foreach ($byLocation as $sides) {
+        if (isset($sides['old'], $sides['new'])) {
+            $changes[] = $sides;
+        } else {
+            array_push($unpaired['removed'], ...$sides['old'] ?? []);
+            array_push($unpaired['added'], ...$sides['new'] ?? []);
+        }
+    }
+
+    $example = static fn(array $p): array => [
+        'file' => $p[0],
+        'line' => (int) $p[1],
+        'type' => $p[3],
+        'severity' => $p[4],
+        'message' => cutMessage($p[5]),
+    ];
 
     return [
         'base' => count($base),
         'head' => count($head),
         'added' => count($added),
         'removed' => count($removed),
+        'changed' => count($changes),
+        'unpaired_added' => count($unpaired['added']),
+        'unpaired_removed' => count($unpaired['removed']),
         'types' => $types,
         'categories' => $categories,
-        'added_examples' => array_map($example, array_slice($added, 0, EXAMPLES_PER_LIST)),
-        'removed_examples' => array_map($example, array_slice($removed, 0, EXAMPLES_PER_LIST)),
+        'changed_examples' => array_slice(changeGroups($changes), 0, EXAMPLES_PER_LIST),
+        'added_examples' => array_map($example, array_slice($unpaired['added'], 0, EXAMPLES_PER_LIST)),
+        'removed_examples' => array_map($example, array_slice($unpaired['removed'], 0, EXAMPLES_PER_LIST)),
     ];
+}
+
+function cutMessage(string $message): string
+{
+    return mb_strimwidth(preg_replace('/\s+/u', ' ', $message), 0, MESSAGE_CHARS, '…');
+}
+
+/**
+ * Type and message of each issue, sorted; `$self` names written `{self}`.
+ *
+ * @param list<list<string>> $list exploded tally keys
+ * @return list<array{type: string, message: string}>
+ */
+function changeSide(array $list, ?string $self): array
+{
+    $issues = array_map(static fn(array $p): array => [
+        'type' => $p[3],
+        'message' => cutMessage($self === null ? $p[5] : preg_replace_callback(
+            QUALIFIED_NAME_PATTERN,
+            static fn(array $m): string => $m[1] === $self ? '{self}' : $m[0],
+            $p[5],
+        )),
+    ], $list);
+    sort($issues);
+
+    return $issues;
+}
+
+/**
+ * Groups in-place changes that change the same text once the class named after their file is written `{self}`:
+ * `HasMany` → `HasOneOrMany` in HasMany.php and `MorphMany` → `HasOneOrMany` in MorphMany.php are one group. A group
+ * shows the messages of its first change; a group of one keeps the class name.
+ *
+ * @param list<array{old: list<list<string>>, new: list<list<string>>}> $changes in location order
+ * @return list<array{
+ *     old: list<array{type: string, message: string}>, new: list<array{type: string, message: string}>,
+ *     locations: list<string>, count: int
+ * }>
+ */
+function changeGroups(array $changes): array
+{
+    $groups = [];
+    foreach ($changes as $sides) {
+        $self = pathinfo($sides['old'][0][0], PATHINFO_FILENAME);
+        $old = changeSide($sides['old'], $self);
+        $new = changeSide($sides['new'], $self);
+        $key = serialize([
+            array_column($old, 'type'),
+            array_column($new, 'type'),
+            array_values(array_filter(
+                changeSegments(array_column($old, 'message'), array_column($new, 'message')),
+                static fn(array $segment): bool => !isShared($segment),
+            )),
+        ]);
+        $groups[$key] ??= ['old' => $old, 'new' => $new, 'locations' => [], 'count' => 0, 'first' => $sides];
+        $groups[$key]['count']++;
+        if (count($groups[$key]['locations']) < LOCATIONS_PER_CHANGE) {
+            $groups[$key]['locations'][] = "{$sides['old'][0][0]}:{$sides['old'][0][1]}";
+        }
+    }
+
+    return array_values(array_map(static function (array $g): array {
+        if ($g['count'] === 1) {
+            $g['old'] = changeSide($g['first']['old'], null);
+            $g['new'] = changeSide($g['first']['new'], null);
+        }
+
+        unset($g['first']);
+
+        return $g;
+    }, $groups));
 }

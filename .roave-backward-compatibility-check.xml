@@ -4,11 +4,19 @@
     <baseline>
         <!-- Correct the duplicate issue code; 362 remains assigned to ImpureGlobalVariable. -->
         <ignored-regex>#^\[BC\] CHANGED: Value of constant Psalm\\Issue\\IncompatibleTypeParameters::SHORTCODE changed from 362 to 368$#</ignored-regex>
+        <!-- Correct the duplicate issue code; 387 remains assigned to TaintedRedirect. -->
+        <ignored-regex>#^\[BC\] CHANGED: Value of constant Psalm\\Issue\\MissingExtensionRequirement::SHORTCODE changed from 387 to 391$#</ignored-regex>
         <!-- The list of the annotations Psalm recognises grows with each new annotation (@psalm-cli-only). -->
         <ignored-regex>#^\[BC\] CHANGED: Value of constant Psalm\\DocComment::PSALM_ANNOTATIONS changed from #</ignored-regex>
         <!-- The list of the extensions Psalm has stubs for grows with each new stub (zstd). -->
         <ignored-regex>#^\[BC\] CHANGED: Property Psalm\\Config\#\$php_extensions changed default value from #</ignored-regex>
         <!-- Making a suggestion opt-in moves its issue from -1 to -2 (feature-specific errors): both are reported as errors, so severity is unchanged. -->
         <ignored-regex>#^\[BC\] CHANGED: Value of constant Psalm\\Issue\\CodeIssue::ERROR_LEVEL changed from -1 to -2$#</ignored-regex>
+        <!-- Adding a taint kind (redirect) shifts the bits after it and changes the aggregates; plugins use them symbolically. -->
+        <ignored-regex>#^\[BC\] CHANGED: Value of constant Psalm\\Type\\TaintKind::(USER_SECRET|SYSTEM_SECRET|ALL_INPUT|BUILTIN_TAINT_COUNT|TAINT_NAMES) changed from #</ignored-regex>
+        <!-- The default taint count of a codebase is BUILTIN_TAINT_COUNT, which grows with each builtin taint kind. -->
+        <ignored-regex>#^\[BC\] CHANGED: Property Psalm\\Codebase\#\$taint_count changed default value from #</ignored-regex>
+        <!-- The CWEs an issue reports, which reports print, move to an issue added for some of them (CWE-601 to TaintedRedirect). -->
+        <ignored-regex>#^\[BC\] CHANGED: Value of constant Psalm\\Issue\\[A-Za-z]+::CWE_IDS changed from #</ignored-regex>
     </baseline>
 </roave-bc-check>

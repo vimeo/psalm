@@ -48,13 +48,11 @@ use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TIntRange;
 use Psalm\Type\Atomic\TIterable;
 use Psalm\Type\Atomic\TKeyedArray;
-use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TLowercaseNumericString;
 use Psalm\Type\Atomic\TLowercaseString;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
-use Psalm\Type\Atomic\TNever;
 use Psalm\Type\Atomic\TNonDecimalIntString;
 use Psalm\Type\Atomic\TNonEmptyArray;
 use Psalm\Type\Atomic\TNonEmptyLowercaseString;
@@ -67,6 +65,7 @@ use Psalm\Type\Atomic\TNonFalsyLowercaseString;
 use Psalm\Type\Atomic\TNonFalsyNumericString;
 use Psalm\Type\Atomic\TNonFalsyString;
 use Psalm\Type\Atomic\TNonspecificLiteralString;
+use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TNumeric;
 use Psalm\Type\Atomic\TNumericString;
 use Psalm\Type\Atomic\TObject;
@@ -92,13 +91,9 @@ use function explode;
 use function in_array;
 use function is_int;
 use function ksort;
-use function min;
 use function strlen;
 use function strpos;
 use function strtolower;
-
-use const PHP_INT_MAX;
-use const PHP_INT_MIN;
 
 /**
  * This class receives a known type and an assertion (probably coming from AssertionFinder). The goal is to refine
@@ -215,7 +210,7 @@ final class SimpleAssertionReconciler extends Reconciler
         }
 
         if ($assertion instanceof IsGreaterThan) {
-            return self::reconcileIsGreaterThan(
+            return IntBoundReconciler::reconcileMinBound(
                 $assertion,
                 $existing_var_type,
                 $inside_loop,
@@ -228,7 +223,7 @@ final class SimpleAssertionReconciler extends Reconciler
         }
 
         if ($assertion instanceof IsLessThan) {
-            return self::reconcileIsLessThan(
+            return IntBoundReconciler::reconcileMaxBound(
                 $assertion,
                 $existing_var_type,
                 $inside_loop,
@@ -1058,6 +1053,17 @@ final class SimpleAssertionReconciler extends Reconciler
                     $type = $type->setFromDocblock(false);
                 }
                 $string_types[] = $type;
+            } elseif ($assertion instanceof IsLooselyEqual
+                && ($type instanceof TNumeric
+                    || $type instanceof TScalar
+                    || $type instanceof TArrayKey
+                    || $type instanceof TFloat
+                    || $type instanceof TBool
+                    || $type instanceof TNull)
+            ) {
+                // a non-strict comparison with a string juggles the types: `1 == "1"`, `true == "a"`, `null == ""`
+                $string_types[] = $type;
+                $redundant = false;
             } elseif ($type instanceof TCallable) {
                 $string_types[] = new TCallableString;
                 $redundant = false;
@@ -1070,7 +1076,13 @@ final class SimpleAssertionReconciler extends Reconciler
             } elseif ($type instanceof TTemplateParam) {
                 $bound = self::getTemplateBound($type);
 
-                if ($bound->hasString() || $bound->hasMixed() || $bound->hasScalar()) {
+                // a bound a string can be of: `numeric` and `array-key` include numeric strings
+                if ($bound->hasString()
+                    || $bound->hasMixed()
+                    || $bound->hasScalar()
+                    || $bound->hasNumeric()
+                    || $bound->hasArrayKey()
+                ) {
                     $type = $type->replaceAs(self::reconcileString(
                         $assertion,
                         $type->as,
@@ -1703,10 +1715,32 @@ final class SimpleAssertionReconciler extends Reconciler
             } elseif ($type instanceof TObject) {
                 $iterable_types[] = new TNamedObject('Countable');
                 $redundant = false;
-            } elseif ($type instanceof TNamedObject || $type instanceof TIterable) {
+            } elseif ($type instanceof TNamedObject) {
                 $countable = new TNamedObject('Countable');
                 $type = $type->addIntersectionType($countable);
                 $iterable_types[] = $type;
+                $redundant = false;
+            } elseif (($parts = AtomicParts::split($type, new TIterable(), $codebase)) !== null) {
+                // e.g. the countable iterables are the arrays and the Countable Traversable objects, and as with
+                // is_iterable() the countable callables are the callable-arrays
+                // (a `callable-object&Countable` would lose its `Countable`)
+                $parts_failed_reconciliation = Reconciler::RECONCILIATION_OK;
+                $countable_parts = self::reconcileCountable(
+                    $assertion,
+                    $codebase,
+                    new Union($parts),
+                    null,
+                    $negated,
+                    null,
+                    $suppressed_issues,
+                    $parts_failed_reconciliation,
+                    $is_equality,
+                );
+
+                if (!$countable_parts->isNever()) {
+                    $iterable_types = [...$iterable_types, ...array_values($countable_parts->getAtomicTypes())];
+                }
+
                 $redundant = false;
             } else {
                 $redundant = false;
@@ -1714,7 +1748,7 @@ final class SimpleAssertionReconciler extends Reconciler
         }
 
         return self::finishReconciliation(
-            $iterable_types ? new Union($iterable_types) : null,
+            $iterable_types ? TypeCombiner::combine($iterable_types) : null,
             $redundant,
             !$is_equality,
             false,
@@ -1787,7 +1821,7 @@ final class SimpleAssertionReconciler extends Reconciler
         }
 
         return self::finishReconciliation(
-            $iterable_types ? new Union($iterable_types) : null,
+            $iterable_types ? TypeCombiner::combine($iterable_types) : null,
             $redundant,
             !$is_equality,
             false,
@@ -1877,275 +1911,6 @@ final class SimpleAssertionReconciler extends Reconciler
         }
         unset($atomic_type);
         return $existing_var_type->setTypes($types);
-    }
-
-    /**
-     * The range a comparison narrowed an integer range to: the value itself when a single one is left
-     *
-     * @psalm-pure
-     */
-    public static function getNarrowedIntRange(?int $min_bound, ?int $max_bound): TIntRange|TLiteralInt
-    {
-        return $min_bound !== null && $min_bound === $max_bound
-            ? new TLiteralInt($min_bound)
-            : new TIntRange($min_bound, $max_bound);
-    }
-
-    /**
-     * @param string[] $suppressed_issues
-     */
-    private static function reconcileIsGreaterThan(
-        IsGreaterThan $assertion,
-        Union         $existing_var_type,
-        bool          $inside_loop,
-        string        $old_var_type_string,
-        ?string       $var_id,
-        bool          $negated,
-        ?CodeLocation $code_location,
-        array         $suppressed_issues,
-    ): Union {
-        $existing_var_type = $existing_var_type->getBuilder();
-        // no integer is greater than PHP_INT_MAX, and adding 1 to it would give a float
-        $is_unreachable = $assertion->value === PHP_INT_MAX;
-        //we add 1 from the assertion value because we're on a strict operator
-        $assertion_value = $is_unreachable ? PHP_INT_MAX : $assertion->value + 1;
-
-        $redundant = true;
-
-        if ($assertion->doesFilterNullOrFalse() &&
-            ($existing_var_type->hasType('null') || $existing_var_type->hasType('false'))
-        ) {
-            $redundant = false;
-            $existing_var_type->removeType('null');
-            $existing_var_type->removeType('false');
-        }
-
-        foreach ($existing_var_type->getAtomicTypes() as $atomic_type) {
-            if ($is_unreachable && $atomic_type instanceof TInt) {
-                $redundant = false;
-                $existing_var_type->removeType($atomic_type->getKey());
-            } elseif ($atomic_type instanceof TIntRange) {
-                if ($atomic_type->min_bound !== null && $atomic_type->min_bound >= $assertion_value) {
-                    // if the whole range is greater than the assertion, the check is redundant
-                } elseif ($atomic_type->contains($assertion_value)) {
-                    // if the range contains the assertion, the range must be adapted
-                    $redundant = false;
-                    $existing_var_type->removeType($atomic_type->getKey());
-                    $min_bound = $atomic_type->min_bound;
-                    if ($min_bound === null) {
-                        $min_bound = $assertion_value;
-                    } else {
-                        $min_bound = TIntRange::getNewHighestBound(
-                            $assertion_value,
-                            $min_bound,
-                        );
-                    }
-                    $existing_var_type->addType(self::getNarrowedIntRange(
-                        $min_bound,
-                        $atomic_type->max_bound,
-                    ));
-                } elseif ($atomic_type->isLesserThan($assertion_value)) {
-                    // if the range is lesser than the assertion, the type must be removed
-                    $redundant = false;
-                    $existing_var_type->removeType($atomic_type->getKey());
-                }
-            } elseif ($atomic_type instanceof TLiteralInt) {
-                if ($atomic_type->value < $assertion_value) {
-                    $redundant = false;
-                    $existing_var_type->removeType($atomic_type->getKey());
-                } /*elseif ($inside_loop) {
-                    //when inside a loop, allow the range to extends the type
-                    $existing_var_type->removeType($atomic_type->getKey());
-                    if ($atomic_type->value < $assertion_value) {
-                        $existing_var_type->addType(new TIntRange($atomic_type->value, $assertion_value));
-                    } else {
-                        $existing_var_type->addType(new TIntRange($assertion_value, $atomic_type->value));
-                    }
-                }*/
-            } elseif ($atomic_type instanceof TInt && is_int($assertion_value)) {
-                $redundant = false;
-                $existing_var_type->removeType($atomic_type->getKey());
-                $existing_var_type->addType(new TIntRange($assertion_value, null));
-            } elseif ($atomic_type instanceof TTemplateParam) {
-                $redundant = false;
-                self::narrowTemplateBound(
-                    $existing_var_type,
-                    $atomic_type,
-                    static fn(Union $bound): Union => self::reconcileIsGreaterThan(
-                        $assertion,
-                        $bound,
-                        $inside_loop,
-                        $old_var_type_string,
-                        null,
-                        $negated,
-                        null,
-                        $suppressed_issues,
-                    ),
-                );
-            } else {
-                // we assume that other types may have been removed (empty strings? numeric strings?)
-                //It may be worth refining to improve reconciliation while keeping in mind we're on loose comparison
-                $redundant = false;
-            }
-        }
-
-        if (!$inside_loop && $redundant && $var_id && $code_location) {
-            self::triggerIssueForImpossible(
-                $existing_var_type,
-                $old_var_type_string,
-                $var_id,
-                $assertion,
-                true,
-                $negated,
-                $code_location,
-                $suppressed_issues,
-            );
-        }
-
-        if ($existing_var_type->isUnionEmpty()) {
-            if ($var_id && $code_location) {
-                self::triggerIssueForImpossible(
-                    $existing_var_type,
-                    $old_var_type_string,
-                    $var_id,
-                    $assertion,
-                    false,
-                    $negated,
-                    $code_location,
-                    $suppressed_issues,
-                );
-            }
-            $existing_var_type->addType(new TNever());
-        }
-
-        return $existing_var_type->freeze();
-    }
-
-    /**
-     * @param string[] $suppressed_issues
-     */
-    private static function reconcileIsLessThan(
-        IsLessThan    $assertion,
-        Union         $existing_var_type,
-        bool          $inside_loop,
-        string        $old_var_type_string,
-        ?string       $var_id,
-        bool          $negated,
-        ?CodeLocation $code_location,
-        array         $suppressed_issues,
-    ): Union {
-        // no integer is less than PHP_INT_MIN, and removing 1 from it would give a float
-        $is_unreachable = $assertion->value === PHP_INT_MIN;
-        //we remove 1 from the assertion value because we're on a strict operator
-        $assertion_value = $is_unreachable ? PHP_INT_MIN : $assertion->value - 1;
-        $existing_var_type = $existing_var_type->getBuilder();
-
-        $redundant = true;
-
-        if ($assertion->doesFilterNullOrFalse() &&
-            ($existing_var_type->hasType('null') || $existing_var_type->hasType('false'))
-        ) {
-            $redundant = false;
-            $existing_var_type->removeType('null');
-            $existing_var_type->removeType('false');
-        }
-
-        foreach ($existing_var_type->getAtomicTypes() as $atomic_type) {
-            if ($is_unreachable && $atomic_type instanceof TInt) {
-                $redundant = false;
-                $existing_var_type->removeType($atomic_type->getKey());
-            } elseif ($atomic_type instanceof TIntRange) {
-                if ($atomic_type->max_bound !== null && $atomic_type->max_bound <= $assertion_value) {
-                    // if the whole range is lesser than the assertion, the check is redundant
-                } elseif ($atomic_type->contains($assertion_value)) {
-                    // if the range contains the assertion, the range must be adapted
-                    $redundant = false;
-                    $existing_var_type->removeType($atomic_type->getKey());
-                    $max_bound = $atomic_type->max_bound;
-                    if ($max_bound === null) {
-                        $max_bound = $assertion_value;
-                    } else {
-                        $max_bound = min($max_bound, $assertion_value);
-                    }
-                    $existing_var_type->addType(self::getNarrowedIntRange(
-                        $atomic_type->min_bound,
-                        $max_bound,
-                    ));
-                } elseif ($atomic_type->isGreaterThan($assertion_value)) {
-                    // if the range is greater than the assertion, the type must be removed
-                    $redundant = false;
-                    $existing_var_type->removeType($atomic_type->getKey());
-                }
-            } elseif ($atomic_type instanceof TLiteralInt) {
-                if ($atomic_type->value > $assertion_value) {
-                    $redundant = false;
-                    $existing_var_type->removeType($atomic_type->getKey());
-                } /* elseif ($inside_loop) {
-                    //when inside a loop, allow the range to extends the type
-                    $existing_var_type->removeType($atomic_type->getKey());
-                    if ($atomic_type->value < $assertion_value) {
-                        $existing_var_type->addType(new TIntRange($atomic_type->value, $assertion_value));
-                    } else {
-                        $existing_var_type->addType(new TIntRange($assertion_value, $atomic_type->value));
-                    }
-                }*/
-            } elseif ($atomic_type instanceof TInt) {
-                $redundant = false;
-                $existing_var_type->removeType($atomic_type->getKey());
-                $existing_var_type->addType(new TIntRange(null, $assertion_value));
-            } elseif ($atomic_type instanceof TTemplateParam) {
-                $redundant = false;
-                self::narrowTemplateBound(
-                    $existing_var_type,
-                    $atomic_type,
-                    static fn(Union $bound): Union => self::reconcileIsLessThan(
-                        $assertion,
-                        $bound,
-                        $inside_loop,
-                        $old_var_type_string,
-                        null,
-                        $negated,
-                        null,
-                        $suppressed_issues,
-                    ),
-                );
-            } else {
-                // we assume that other types may have been removed (empty strings? numeric strings?)
-                //It may be worth refining to improve reconciliation while keeping in mind we're on loose comparison
-                $redundant = false;
-            }
-        }
-
-        if (!$inside_loop && $redundant && $var_id && $code_location) {
-            self::triggerIssueForImpossible(
-                $existing_var_type,
-                $old_var_type_string,
-                $var_id,
-                $assertion,
-                true,
-                $negated,
-                $code_location,
-                $suppressed_issues,
-            );
-        }
-
-        if ($existing_var_type->isUnionEmpty()) {
-            if ($var_id && $code_location) {
-                self::triggerIssueForImpossible(
-                    $existing_var_type,
-                    $old_var_type_string,
-                    $var_id,
-                    $assertion,
-                    false,
-                    $negated,
-                    $code_location,
-                    $suppressed_issues,
-                );
-            }
-            $existing_var_type->addType(new TNever());
-        }
-
-        return $existing_var_type->freeze();
     }
 
     /**
@@ -2623,6 +2388,15 @@ final class SimpleAssertionReconciler extends Reconciler
             if ($type->isArrayAccessibleWithIntOrStringKey($codebase)) {
                 if ($type::class === TArray::class) {
                     $array_types[] = new TNonEmptyArray($type->type_params);
+                } elseif ($type::class === TString::class) {
+                    // a string with a character at an offset has one
+                    $array_types[] = new TNonEmptyString();
+                } elseif ($type::class === TLowercaseString::class) {
+                    $array_types[] = new TNonEmptyLowercaseString();
+                } elseif ($type::class === TNonspecificLiteralString::class) {
+                    $array_types[] = new TNonEmptyNonspecificLiteralString();
+                } elseif ($type instanceof TLiteralString && $type->value === '') {
+                    continue;
                 } else {
                     $array_types[] = $type;
                 }
@@ -2688,8 +2462,9 @@ final class SimpleAssertionReconciler extends Reconciler
                 $callable_types[] = new TCallableObject();
                 $redundant = false;
             } elseif ($type instanceof TNamedObject
-                && $codebase->classExists($type->value)
-                && $codebase->methodExists($type->value . '::__invoke')
+                && ($invoke_member = CallableTypeComparator::getInvokeMember($codebase, $type)) !== null
+                && ($codebase->classExists($invoke_member->value)
+                    || $codebase->classlikes->enumExists($invoke_member->value))
             ) {
                 $callable_types[] = $type;
             } elseif ($type instanceof TString
@@ -2718,25 +2493,21 @@ final class SimpleAssertionReconciler extends Reconciler
                 $callable_types[] = $type;
                 $redundant = false;
             } elseif ($type instanceof TTemplateParam) {
-                $bound = self::getTemplateBound($type);
-
-                if ($bound->hasCallableType() || $bound->hasMixed()) {
-                    $type = $type->replaceAs(self::reconcileCallable(
-                        $assertion,
-                        $codebase,
-                        $type->as,
-                        null,
-                        $negated,
-                        null,
-                        $suppressed_issues,
-                        $failed_reconciliation,
-                        $is_equality,
-                    ));
-                }
-
                 $redundant = false;
 
-                $callable_types[] = $type;
+                $callable_template = self::reconcileCallableTemplate(
+                    $assertion,
+                    $codebase,
+                    $type,
+                    $negated,
+                    $suppressed_issues,
+                    $failed_reconciliation,
+                    $is_equality,
+                );
+
+                if ($callable_template !== null) {
+                    $callable_types[] = $callable_template;
+                }
             } elseif (($parts = AtomicParts::split($type, new TCallable(), $codebase)) !== null) {
                 // e.g. the callable scalars are the callable-strings
                 $parts_failed_reconciliation = Reconciler::RECONCILIATION_OK;
@@ -2783,6 +2554,56 @@ final class SimpleAssertionReconciler extends Reconciler
             $suppressed_issues,
             $failed_reconciliation,
         );
+    }
+
+    /**
+     * The template narrowed to its callable values, null when its bound can't be callable (an object without
+     * __invoke()), as the bound itself isn't
+     *
+     * @param string[] $suppressed_issues
+     * @param Reconciler::RECONCILIATION_* $failed_reconciliation
+     */
+    private static function reconcileCallableTemplate(
+        Assertion $assertion,
+        Codebase $codebase,
+        TTemplateParam $type,
+        bool $negated,
+        array $suppressed_issues,
+        int &$failed_reconciliation,
+        bool $is_equality,
+    ): ?TTemplateParam {
+        $bound = self::getTemplateBound($type);
+        $bound_failed_reconciliation = Reconciler::RECONCILIATION_OK;
+
+        if (self::reconcileCallable(
+            $assertion,
+            $codebase,
+            $bound,
+            null,
+            $negated,
+            null,
+            $suppressed_issues,
+            $bound_failed_reconciliation,
+            $is_equality,
+        )->isNever()) {
+            return null;
+        }
+
+        if ($bound->hasCallableType() || $bound->hasMixed()) {
+            return $type->replaceAs(self::reconcileCallable(
+                $assertion,
+                $codebase,
+                $type->as,
+                null,
+                $negated,
+                null,
+                $suppressed_issues,
+                $failed_reconciliation,
+                $is_equality,
+            ));
+        }
+
+        return $type;
     }
 
     /**
@@ -3101,12 +2922,7 @@ final class SimpleAssertionReconciler extends Reconciler
             // For value-of<MyBackedEnum>, the assertion is meant to return *ANY* value of *ANY* enum case
             if ($enum_case_to_assert === null) {
                 foreach ($class_storage->enum_cases as $enum_case) {
-                    $enum_value = $enum_case->getValue($codebase->classlikes);
-                    assert(
-                        $enum_value !== null,
-                        'Verified enum type above, value can not contain `null` anymore.',
-                    );
-                    $reconciled_types[] = $enum_value;
+                    $reconciled_types[] = $enum_case->getValue($codebase->classlikes) ?? new TMixed();
                 }
 
                 continue;
@@ -3117,9 +2933,7 @@ final class SimpleAssertionReconciler extends Reconciler
                 return null;
             }
 
-            $enum_value = $enum_case->getValue($codebase->classlikes);
-            assert($enum_value !== null, 'Verified enum type above, value can not contain `null` anymore.');
-            $reconciled_types[] = $enum_value;
+            $reconciled_types[] = $enum_case->getValue($codebase->classlikes) ?? new TMixed();
         }
 
         if ($reconciled_types === []) {

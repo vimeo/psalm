@@ -489,13 +489,14 @@ final class FunctionLikeNodeScanner
             && $function_id
             && $storage instanceof FunctionStorage
         ) {
-            // A polyfill of a native function the analysed version predates must not replace the
-            // native signature (and its purity); the polyfill is still known through this file.
+            // A polyfill of a native function must not replace the native signature (and its
+            // purity), whether the analysed version has the function or predates it: PHP skips the
+            // polyfill where the function exists. The polyfill is still known through this file.
             if ($this->codebase->register_stub_files
                 || (($this->codebase->all_functions_global
                         || ($this->codebase->register_autoload_files
                             && !$this->codebase->functions->hasStubbedFunction($function_id)))
-                    && InternalCallMapHandler::getIntroducingPhpVersionId($function_id) === null)
+                    && !InternalCallMapHandler::isNativeFunction($function_id))
             ) {
                 $this->codebase->functions->addGlobalFunction($function_id, $storage);
             }
@@ -583,6 +584,7 @@ final class FunctionLikeNodeScanner
                 $var_comment_readonly = false;
                 $var_comment_allow_private_mutation = false;
                 $var_comment_suppressed_issues = [];
+                $var_comment_deprecated = false;
                 if ($doc_comment) {
                     $template_types = ($this->existing_function_template_types ?: [])
                         + ($classlike_storage->template_types ?: [])
@@ -605,6 +607,7 @@ final class FunctionLikeNodeScanner
                             $var_comment_readonly = $var_comment->readonly;
                             $var_comment_allow_private_mutation = $var_comment->allow_private_mutation;
                             $var_comment_suppressed_issues = $var_comment->suppressed_issues;
+                            $var_comment_deprecated = $var_comment->deprecated;
                         }
                     } catch (IncorrectDocblockException $e) {
                         $storage->docblock_issues[] = new MissingDocblockType(
@@ -654,6 +657,8 @@ final class FunctionLikeNodeScanner
                 $property_storage->readonly = $property_storage->native_readonly || $var_comment_readonly;
                 $property_storage->allow_private_mutation = $var_comment_allow_private_mutation;
                 $property_storage->suppressed_issues = $var_comment_suppressed_issues;
+                $property_storage->deprecated = $var_comment_deprecated;
+                $property_storage->attributes = $param_storage->attributes;
                 $param_storage->promoted_property = true;
                 $property_storage->is_promoted = true;
 
@@ -1221,7 +1226,7 @@ final class FunctionLikeNodeScanner
                 ) {
                     // see the polyfill rule where the function is first registered
                     if ($this->codebase->register_stub_files
-                        || InternalCallMapHandler::getIntroducingPhpVersionId($function_id) === null
+                        || !InternalCallMapHandler::isNativeFunction($function_id)
                     ) {
                         $this->codebase->functions->addGlobalFunction(
                             $function_id,
@@ -1406,11 +1411,12 @@ final class FunctionLikeNodeScanner
                 } else {
                     $storage->final = true;
                 }
+                $storage->final_from_docblock = $classlike_storage->final_from_docblock;
             } else {
                 $storage->final = $classlike_storage->final || $stmt->isFinal();
+                // a method declared final is final natively, even in a class that is final only in its docblock
+                $storage->final_from_docblock = $classlike_storage->final_from_docblock && !$stmt->isFinal();
             }
-
-            $storage->final_from_docblock = $classlike_storage->final_from_docblock;
 
             if ($stmt->isPrivate()) {
                 $storage->visibility = ClassLikeAnalyzer::VISIBILITY_PRIVATE;

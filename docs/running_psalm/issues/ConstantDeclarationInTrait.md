@@ -3,7 +3,7 @@
 Emitted when a trait declares a constant in PHP <8.2.0
 
 ```php
-<?php
+<?php // phpVersion="8.1"
 
 trait A {
     const B = 0;

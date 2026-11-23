@@ -196,6 +196,331 @@ final class ConditionalTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'countComparedToAClassConstantNarrowsTheArray' => [
+                'code' => '<?php
+                    final class Terms {
+                        private const LIMIT = 4;
+                        private const ONE = 1;
+                        private const ZERO = 0;
+
+                        /** @param non-empty-list<int> $terms */
+                        private static function widen(array $terms): int {
+                            return 0;
+                        }
+
+                        /** @param list<int> $terms */
+                        public static function greater(array $terms): int {
+                            return count($terms) > self::LIMIT ? self::widen($terms) : 0;
+                        }
+
+                        /** @param list<int> $terms */
+                        public static function greaterOrEqual(array $terms): int {
+                            return count($terms) >= self::ONE ? self::widen($terms) : 0;
+                        }
+
+                        /** @param list<int> $terms */
+                        public static function constantOnTheLeft(array $terms): int {
+                            return self::ZERO < count($terms) ? self::widen($terms) : 0;
+                        }
+
+                        /** @param list<int> $terms */
+                        public static function equal(array $terms): int {
+                            return count($terms) === self::ONE ? self::widen($terms) : 0;
+                        }
+
+                        /** @param list<int> $terms */
+                        public static function smaller(array $terms): int {
+                            if (count($terms) < self::ONE) {
+                                return 0;
+                            }
+
+                            return self::widen($terms);
+                        }
+
+                        /** @param list<int> $terms */
+                        public static function smallerOrEqual(array $terms): int {
+                            if (count($terms) <= self::ZERO) {
+                                return 0;
+                            }
+
+                            return self::widen($terms);
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
+            'negativeCountComparisonsDoNotNarrowTheArray' => [
+                'code' => '<?php
+                    final class Counts {
+                        private const NEG = -1;
+
+                        /** @param list<int> $a */
+                        public static function equalToMinusOne(array $a): int {
+                            if (count($a) === -1) {
+                                return 0;
+                            }
+
+                            /** @psalm-check-type-exact $a = list<int> */
+                            return 0;
+                        }
+
+                        /** @param list<int> $a */
+                        public static function looselyEqualToMinusOne(array $a): int {
+                            if (count($a) == -1) {
+                                return 0;
+                            }
+
+                            /** @psalm-check-type-exact $a = list<int> */
+                            return 0;
+                        }
+
+                        /** @param list<int> $a */
+                        public static function equalToANegativeConstant(array $a): int {
+                            if (count($a) === self::NEG) {
+                                return 0;
+                            }
+
+                            /** @psalm-check-type-exact $a = list<int> */
+                            return 0;
+                        }
+
+                        /** @param list<int> $a */
+                        public static function minusOneOnTheLeft(array $a): int {
+                            if (-1 === count($a)) {
+                                return 0;
+                            }
+
+                            /** @psalm-check-type-exact $a = list<int> */
+                            return 0;
+                        }
+
+                        /** @param list<int> $a */
+                        public static function smallerThanMinusOne(array $a): int {
+                            if (count($a) < -1) {
+                                return 0;
+                            }
+
+                            /** @psalm-check-type-exact $a = list<int> */
+                            return 0;
+                        }
+
+                        /** @param list<int> $a */
+                        public static function smallerThanANegativeConstant(array $a): int {
+                            if (count($a) < self::NEG) {
+                                return 0;
+                            }
+
+                            /** @psalm-check-type-exact $a = list<int> */
+                            return 0;
+                        }
+
+                        /** @param list<int> $a */
+                        public static function smallerThanZero(array $a): int {
+                            if (count($a) < 0) {
+                                return 0;
+                            }
+
+                            /** @psalm-check-type-exact $a = list<int> */
+                            return 0;
+                        }
+
+                        /** @param list<int> $a */
+                        public static function smallerOrEqualToANegativeConstant(array $a): int {
+                            if (count($a) <= self::NEG) {
+                                return 0;
+                            }
+
+                            /** @psalm-check-type-exact $a = list<int> */
+                            return 0;
+                        }
+
+                        /** @param list<int> $a */
+                        public static function greaterThanZeroOnTheLeft(array $a): int {
+                            if (0 > count($a)) {
+                                return 0;
+                            }
+
+                            /** @psalm-check-type-exact $a = list<int> */
+                            return 0;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['TypeDoesNotContainType', 'RedundantCondition'],
+                'php_version' => '8.3',
+            ],
+            'strlenComparedToAClassConstant' => [
+                'code' => '<?php
+                    final class Lengths {
+                        private const ZERO = 0;
+                        private const NEG = -1;
+
+                        public static function greater(string $s): void {
+                            if (strlen($s) > self::ZERO) {
+                                /** @psalm-check-type-exact $s = non-empty-string */
+                            }
+                        }
+
+                        public static function equalToZero(string $s): void {
+                            if (strlen($s) === self::ZERO) {
+                                return;
+                            }
+
+                            /** @psalm-check-type-exact $s = non-empty-string */
+                        }
+
+                        public static function zeroOnTheLeft(string $s): void {
+                            if (self::ZERO < strlen($s)) {
+                                /** @psalm-check-type-exact $s = non-empty-string */
+                            }
+                        }
+
+                        public static function greaterThanANegativeConstant(string $s): void {
+                            if (strlen($s) > self::NEG) {
+                                /** @psalm-check-type-exact $s = string */
+                            }
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
+            'instanceofParentNarrowsToTheParentClass' => [
+                'code' => '<?php
+                    interface Shape {}
+
+                    class Box implements Shape {
+                        public function getSize(): int {
+                            return 1;
+                        }
+                    }
+
+                    final class TaggedBox extends Box {
+                        public function narrowed(Shape $shape): int {
+                            if ($shape instanceof parent) {
+                                /** @psalm-check-type-exact $shape = Box */
+                                return $shape->getSize();
+                            }
+
+                            return 0;
+                        }
+
+                        public function negated(Shape $shape): int {
+                            if (!$shape instanceof parent) {
+                                return 0;
+                            }
+
+                            return $shape->getSize();
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+            ],
+            'parentOfTheClassUsingATraitNarrowsInTheTraitCode' => [
+                'code' => '<?php
+                    interface Shape {}
+
+                    class Box implements Shape {
+                        public function getSize(): int {
+                            return 1;
+                        }
+                    }
+
+                    trait T {
+                        public function viaInstanceof(Shape $shape): int {
+                            if ($shape instanceof parent) {
+                                return $shape->getSize();
+                            }
+
+                            return 0;
+                        }
+                    }
+
+                    final class UsesTrait extends Box {
+                        use T;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+            ],
+            'isAParentClassNarrowsToTheParentClass' => [
+                'code' => '<?php
+                    interface Shape {}
+
+                    class Box implements Shape {
+                        public function getSize(): int {
+                            return 1;
+                        }
+                    }
+
+                    final class TaggedBox extends Box {
+                        public function narrowed(Shape $shape): int {
+                            if (is_a($shape, parent::class)) {
+                                /** @psalm-check-type-exact $shape = Box */
+                                return $shape->getSize();
+                            }
+
+                            return 0;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+            ],
+            'getClassIdenticalToParentClassNarrowsToTheParentClass' => [
+                'code' => '<?php
+                    interface Shape {}
+
+                    class Box implements Shape {
+                        public function getSize(): int {
+                            return 1;
+                        }
+                    }
+
+                    final class TaggedBox extends Box {
+                        public function narrowed(Shape $shape): int {
+                            if (get_class($shape) === parent::class) {
+                                return $shape->getSize();
+                            }
+
+                            return 0;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+            ],
+            'classConstantIdenticalToParentClassNarrowsToTheParentClass' => [
+                'code' => '<?php
+                    interface Shape {}
+
+                    class Box implements Shape {
+                        public function getSize(): int {
+                            return 1;
+                        }
+                    }
+
+                    final class TaggedBox extends Box {
+                        public function narrowed(Shape $shape): int {
+                            if ($shape::class === parent::class) {
+                                return $shape->getSize();
+                            }
+
+                            return 0;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+            ],
+            'negatedIsFloatCombinesTheRemainingTypes' => [
+                'code' => '<?php
+                    /** @var numeric|"a" $x */
+                    $x = $_GET["x"];
+                    if (is_float($x)) {
+                        exit;
+                    }
+                ',
+                'assertions' => [
+                    '$x===' => 'int|string',
+                ],
+            ],
             'varAssignedUnderConditionIsDefinedUnderTheSameCondition' => [
                 'code' => '<?php
                     function f(bool $b): void {
@@ -1966,6 +2291,8 @@ final class ConditionalTest extends TestCase
 
                       return "backup";
                     }',
+                'assertions' => [],
+                'ignored_issues' => ['DeprecatedSyntax'],
             ],
             'stringOrCallableArg' => [
                 'code' => '<?php
@@ -5981,6 +6308,8 @@ final class ConditionalTest extends TestCase
                     final class B extends A {
                         public function onlyB(): void {}
                     }',
+                'assertions' => [],
+                'ignored_issues' => ['DeprecatedFunction'],
             ],
             'getClassInequalityWithoutArgumentsNarrowsThis' => [
                 'code' => '<?php
@@ -5995,6 +6324,8 @@ final class ConditionalTest extends TestCase
                     final class B extends A {
                         public function onlyB(): void {}
                     }',
+                'assertions' => [],
+                'ignored_issues' => ['DeprecatedFunction'],
             ],
             'privateMethodAnalysedFromTheConstructorIgnoresTheConditionsOfItsCaller' => [
                 'code' => '<?php
@@ -6487,6 +6818,35 @@ final class ConditionalTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'classNotEqualToAFinalClassExcludesIt' => [
+                'code' => '<?php
+                    final class A {}
+                    class B {}
+
+                    /** @var A|stdClass $final */;
+                    if ($final::class === A::class) {
+                        $final_if = $final;
+                    } else {
+                        $final_else = $final;
+                    }
+
+                    /** @var A|stdClass $by_get_class */;
+                    if (get_class($by_get_class) !== A::class) {
+                        $get_class_if = $by_get_class;
+                    }
+
+                    /** @var B|stdClass $not_final */;
+                    if ($not_final::class === B::class) {
+                        $not_final_if = $not_final;
+                    } else {
+                        $not_final_else = $not_final;
+                    }',
+                'assertions' => [
+                    '$final_else===' => 'stdClass',
+                    '$get_class_if===' => 'stdClass',
+                    '$not_final_else===' => 'B|stdClass',
+                ],
+            ],
             'classEqualToTheClassOfAnotherClassStillNarrows' => [
                 'code' => '<?php
                     class Bar {}
@@ -6955,6 +7315,202 @@ final class ConditionalTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'orderComparisonWithCountOnEitherSide' => [
+                'code' => '<?php
+                    /** @param list<int> $a */
+                    function f(array $a): void {
+                        if (0 < count($a)) {
+                            /** @psalm-check-type-exact $a = non-empty-list<int> */
+                        } else {
+                            /** @psalm-check-type-exact $a = array<never, never> */
+                        }
+                        if (1 <= count($a)) {
+                            /** @psalm-check-type-exact $a = non-empty-list<int> */
+                        } else {
+                            /** @psalm-check-type-exact $a = array<never, never> */
+                        }
+                        if (count($a) > 0) {
+                            /** @psalm-check-type-exact $a = non-empty-list<int> */
+                        } else {
+                            /** @psalm-check-type-exact $a = array<never, never> */
+                        }
+                        if (2 < count($a)) {
+                            /** @psalm-check-type-exact $a = list{int, int, int, ...<int>} */
+                        } else {
+                            /** @psalm-check-type-exact $a = list{0?: int, 1?: int} */
+                        }
+                        if (3 <= sizeof($a)) {
+                            /** @psalm-check-type-exact $a = list{int, int, int, ...<int>} */
+                        } else {
+                            /** @psalm-check-type-exact $a = list{0?: int, 1?: int} */
+                        }
+                        if (count($a) >= 3) {
+                            /** @psalm-check-type-exact $a = list{int, int, int, ...<int>} */
+                        } else {
+                            /** @psalm-check-type-exact $a = list{0?: int, 1?: int} */
+                        }
+                        if (count($a) < 3) {
+                            /** @psalm-check-type-exact $a = list{0?: int, 1?: int} */
+                        } else {
+                            /** @psalm-check-type-exact $a = list{int, int, int, ...<int>} */
+                        }
+                        if (count($a) <= 3) {
+                            /** @psalm-check-type-exact $a = list{0?: int, 1?: int, 2?: int} */
+                        } else {
+                            /** @psalm-check-type-exact $a = list{int, int, int, int, ...<int>} */
+                        }
+                        if (3 > count($a)) {
+                            /** @psalm-check-type-exact $a = list{0?: int, 1?: int} */
+                        } else {
+                            /** @psalm-check-type-exact $a = list{0: int, 1: int, 2: int, 3?: int, ...<int>} */
+                        }
+                        if (3 >= count($a)) {
+                            /** @psalm-check-type-exact $a = list{0?: int, 1?: int, 2?: int} */
+                        } else {
+                            /** @psalm-check-type-exact $a = list{int, int, int, int, ...<int>} */
+                        }
+                        if (1 > count($a)) {
+                            /** @psalm-check-type-exact $a = array<never, never> */
+                        } else {
+                            /** @psalm-check-type-exact $a = list{0: int, 1?: int, 2?: int, 3?: int, ...<int>} */
+                        }
+                    }',
+            ],
+            'orderComparisonWithStringLengthOnEitherSide' => [
+                'code' => '<?php
+                    function f(string $s): void {
+                        if (0 < strlen($s)) {
+                            /** @psalm-check-type-exact $s = non-empty-string */
+                        } else {
+                            /** @psalm-check-type-exact $s = "" */
+                        }
+                        if (1 <= mb_strlen($s)) {
+                            /** @psalm-check-type-exact $s = non-empty-string */
+                        } else {
+                            /** @psalm-check-type-exact $s = "" */
+                        }
+                        if (strlen($s) < 1) {
+                            /** @psalm-check-type-exact $s = "" */
+                        } else {
+                            /** @psalm-check-type-exact $s = non-empty-string */
+                        }
+                        if (mb_strlen($s) <= 0) {
+                            /** @psalm-check-type-exact $s = "" */
+                        } else {
+                            /** @psalm-check-type-exact $s = non-empty-string */
+                        }
+                        if (1 > strlen($s)) {
+                            /** @psalm-check-type-exact $s = "" */
+                        } else {
+                            /** @psalm-check-type-exact $s = non-empty-string */
+                        }
+                        if (3 < strlen($s)) {
+                            /** @psalm-check-type-exact $s = non-empty-string */
+                        } else {
+                            /** @psalm-check-type-exact $s = string */
+                        }
+                    }',
+            ],
+            'orderComparisonWithIntLiteralOnEitherSide' => [
+                'code' => '<?php
+                    function f(int $x, int $y): void {
+                        if ($x < 5) {
+                            /** @psalm-check-type-exact $x = int<min, 4> */
+                        } else {
+                            /** @psalm-check-type-exact $x = int<5, max> */
+                        }
+                        if ($x <= 5) {
+                            /** @psalm-check-type-exact $x = int<min, 5> */
+                        } else {
+                            /** @psalm-check-type-exact $x = int<6, max> */
+                        }
+                        if ($x > 5) {
+                            /** @psalm-check-type-exact $x = int<6, max> */
+                        } else {
+                            /** @psalm-check-type-exact $x = int<min, 5> */
+                        }
+                        if ($x >= 5) {
+                            /** @psalm-check-type-exact $x = int<5, max> */
+                        } else {
+                            /** @psalm-check-type-exact $x = int<min, 4> */
+                        }
+                        if (5 < $x) {
+                            /** @psalm-check-type-exact $x = int<6, max> */
+                        } else {
+                            /** @psalm-check-type-exact $x = int<min, 5> */
+                        }
+                        if (5 <= $x) {
+                            /** @psalm-check-type-exact $x = int<5, max> */
+                        } else {
+                            /** @psalm-check-type-exact $x = int<min, 4> */
+                        }
+                        if (5 > $x) {
+                            /** @psalm-check-type-exact $x = int<min, 4> */
+                        } else {
+                            /** @psalm-check-type-exact $x = int<5, max> */
+                        }
+                        if (5 >= $x) {
+                            /** @psalm-check-type-exact $x = int<min, 5> */
+                        } else {
+                            /** @psalm-check-type-exact $x = int<6, max> */
+                        }
+                        if (-5 < $x) {
+                            /** @psalm-check-type-exact $x = int<-4, max> */
+                        } else {
+                            /** @psalm-check-type-exact $x = int<min, -5> */
+                        }
+                        $z = 7;
+                        if ($y < $z) {
+                            /** @psalm-check-type-exact $y = int<min, 6> */
+                        } else {
+                            /** @psalm-check-type-exact $y = int<7, max> */
+                        }
+                        if ($z <= $y) {
+                            /** @psalm-check-type-exact $y = int<7, max> */
+                        } else {
+                            /** @psalm-check-type-exact $y = int<min, 6> */
+                        }
+                    }',
+            ],
+            'orderComparisonWithIntLiteralAndAWritingOperand' => [
+                'code' => '<?php
+                    function f(int $x, int $y): void {
+                        if ($x++ < 5) {
+                            /** @psalm-check-type-exact $x = int<min, 5> */
+                        } else {
+                            /** @psalm-check-type-exact $x = int<6, max> */
+                        }
+                        if (5 <= $x--) {
+                            /** @psalm-check-type-exact $x = int<4, max> */
+                        } else {
+                            /** @psalm-check-type-exact $x = int<min, 3> */
+                        }
+                        if ($y < ($y = 10)) {
+                            /** @psalm-check-type-exact $y = 10 */
+                        }
+                        if (($y = 3) <= $y) {
+                            /** @psalm-check-type-exact $y = 3 */
+                        }
+                    }',
+            ],
+            'looseEqualityWithAStringKeepsTheOtherScalars' => [
+                'code' => '<?php
+                    /** @param numeric $n */
+                    function f($n, string $s): void {
+                        if ($n == $s) {
+                            /** @psalm-check-type-exact $n = numeric */;
+                        }
+                    }
+
+                    function g(int|float|bool|null $x, string $s): void {
+                        if ($x == $s) {
+                            /** @psalm-check-type-exact $x = bool|float|int|null */;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
         ];
     }
 
@@ -6965,6 +7521,17 @@ final class ConditionalTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'typeLeftByNegatedTypeChecksStaysFromDocblock' => [
+                'code' => '<?php
+                    /** @param string|float|int|bool|null $x */
+                    function f($x): void {
+                        if ($x === null) {
+                        } elseif (is_int($x) || is_float($x)) {
+                        } elseif (is_bool($x)) {
+                        } elseif (is_array($x)) {}
+                    }',
+                'error_message' => 'DocblockTypeContradiction',
+            ],
             'narrowClassAndInterfaceIntersectionToFinalSubclassWithoutInterface' => [
                 'code' => '<?php
                     abstract class A {}
@@ -8079,7 +8646,8 @@ final class ConditionalTest extends TestCase
                     function getData(): ?array { return null; }
                     function check(): bool { return true; }
                     $r = (check() && ($data = getData()) !== null) ? 1 : $data;',
-                'error_message' => 'UndefinedGlobalVariable',
+                // assigned only when check() is true, so possibly undefined
+                'error_message' => 'PossiblyUndefinedGlobalVariable',
             ],
             'orWhoseLeftSideIsAConjunctionAndRightSideReassignsAVariableKeepsTheLeftNullable' => [
                 'code' => '<?php
@@ -8112,6 +8680,34 @@ final class ConditionalTest extends TestCase
                 'error_message' => 'NullableReturnStatement',
                 'error_levels' => [],
                 'php_version' => '8.0',
+            ],
+            'smallerComparisonWithCountOnTheRightIsRedundant' => [
+                'code' => '<?php
+                    /** @param non-empty-list<int> $a */
+                    function f(array $a): void {
+                        if (0 < count($a)) {}
+                    }',
+                'error_message' => 'RedundantCondition - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:29 - Type non-empty-list<int> for $a is always has-at-least-1',
+            ],
+            'smallerOrEqualComparisonWithCountOnTheRightNeverHolds' => [
+                'code' => '<?php
+                    /** @param array<never, never> $a */
+                    function f(array $a): void {
+                        if (2 <= count($a)) {}
+                    }',
+                'error_message' => 'TypeDoesNotContainType - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:29 - Type array<never, never> for $a is never has-at-least-2',
+            ],
+            'greaterComparisonWithIntOnTheLeftIsRedundant' => [
+                'code' => '<?php
+                    $x = rand(0, 3);
+                    if (5 > $x) {}',
+                'error_message' => 'RedundantCondition - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:25 - Type int<0, 3> for $x is always < 5',
+            ],
+            'smallerOrEqualComparisonWithIntOnTheLeftNeverHolds' => [
+                'code' => '<?php
+                    $x = rand(0, 3);
+                    if (10 <= $x) {}',
+                'error_message' => 'TypeDoesNotContainType - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:25 - Type int<0, 3> for $x is never >= 10',
             ],
         ];
     }
