@@ -41,6 +41,7 @@ jobs:
     name: "Unit Tests - ${{ matrix.chunk }}"
 
     runs-on: windows-latest
+    timeout-minutes: 30
     needs:
       - chunk-matrix
 

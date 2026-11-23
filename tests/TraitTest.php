@@ -184,6 +184,35 @@ final class TraitTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'adaptationsOfMethodsTheTraitsHave' => [
+                'code' => '<?php
+                    trait Greets {
+                        public function hello(): void {}
+                    }
+
+                    trait Waves {
+                        public function hello(): void {}
+                        public function wave(): void {}
+                    }
+
+                    trait GreetsToo {
+                        use Greets;
+                    }
+
+                    final class Greeter {
+                        use Greets, Waves {
+                            Waves::hello insteadof Greets;
+                            hello as protected helloAlias;
+                            Waves::wave as waveAlias;
+                        }
+                    }
+
+                    final class GreeterToo {
+                        use GreetsToo {
+                            hello as greet;
+                        }
+                    }',
+            ],
             'staticReturnOfTraitMethodOverriddenByMethodOfLaterTrait' => [
                 'code' => '<?php
                     trait A {
@@ -1616,17 +1645,6 @@ final class TraitTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.2',
             ],
-            'constant in trait with alias' => [
-                'code' => <<<'PHP'
-                    <?php
-                    trait TraitA { private const PRIVATE_CONST = 'PRIVATE_CONST'; }
-                    class ClassB { use TraitA { PRIVATE_CONST as public PUBLIC_CONST; } }
-                    $c = ClassB::PUBLIC_CONST;
-                    PHP,
-                'assertions' => ['$c' => 'string'],
-                'ignored_issues' => [],
-                'php_version' => '8.2',
-            ],
             'thisInGenericReturnTypeParam' => [
                 'code' => '<?php
                     /**
@@ -2079,6 +2097,75 @@ final class TraitTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'constant in trait with alias' => [
+                'code' => <<<'PHP'
+                    <?php
+                    trait TraitA { private const PRIVATE_CONST = 'PRIVATE_CONST'; }
+                    class ClassB { use TraitA { PRIVATE_CONST as public PUBLIC_CONST; } }
+                    $c = ClassB::PUBLIC_CONST;
+                    PHP,
+                'error_message' => 'An alias was defined for PRIVATE_CONST but this method does not exist',
+                'error_levels' => [],
+                'php_version' => '8.2',
+            ],
+            'aliasWithATraitThatDoesNotExist' => [
+                'code' => '<?php
+                    trait Greets {
+                        public function hello(): void {}
+                    }
+
+                    final class Greeter {
+                        use Greets, Waves {
+                            wave as greet;
+                        }
+                    }',
+                'error_message' => 'UndefinedTrait',
+            ],
+            'aliasOfAMethodNoTraitHas' => [
+                'code' => '<?php
+                    trait Greets {
+                        public function hello(): void {}
+                    }
+
+                    final class Greeter {
+                        use Greets {
+                            hi as greet;
+                        }
+                    }',
+                'error_message' => 'UndefinedMethod - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:29 - An alias was defined for hi but this method does not exist',
+            ],
+            'visibilityChangeOfAMethodTheTraitDoesNotHave' => [
+                'code' => '<?php
+                    trait Greets {
+                        public function hello(): void {}
+                    }
+
+                    final class Greeter {
+                        use Greets {
+                            Greets::hi as protected;
+                        }
+                    }',
+                'error_message' => 'The modifiers of the trait method Greets::hi() are changed, but this method does not exist',
+            ],
+            'precedenceForAMethodTheTraitDoesNotHave' => [
+                'code' => '<?php
+                    trait Greets {
+                        public function hello(): void {}
+                    }
+
+                    trait Waves {
+                        public function hello(): void {}
+                        public function wave(): void {}
+                    }
+
+                    final class Greeter {
+                        use Greets, Waves {
+                            Greets::hello insteadof Waves;
+                            Greets::wave insteadof Waves;
+                        }
+                    }',
+                'error_message' => 'A precedence rule was defined for Greets::wave but this method does not exist',
+            ],
             'staticReturnOfTraitMethodOverriddenByUnrelatedReturnTypeOfLaterTrait' => [
                 'code' => '<?php
                     class Foo {}

@@ -23,6 +23,331 @@ final class TraitTemplateTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'argumentRebuiltForACallableParamKeepsTheTraitTemplateInTheScope' => [
+                'code' => '<?php
+                    function takesCallable(callable $c): void {
+                        $c();
+                    }
+
+                    /** @template T of callable */
+                    trait Leak {
+                        /** @param T $x */
+                        public function h($x): void {
+                            takesCallable($x);
+                            if ($x instanceof Closure) {
+                                echo "closure";
+                            }
+                        }
+                    }
+
+                    final class LeakClosure {
+                        /** @use Leak<Closure> */
+                        use Leak;
+                    }
+
+                    /** @template T */
+                    trait Leak2 {
+                        /** @param T $x */
+                        public function h2($x): string {
+                            takesCallable($x);
+                            if (is_string($x)) {
+                                return $x;
+                            }
+                            return "o";
+                        }
+                    }
+
+                    final class LeakStr {
+                        /** @use Leak2<callable-string> */
+                        use Leak2;
+                    }',
+            ],
+            'traitMethodParamIsTheTypeGivenToUse' => [
+                'code' => '<?php
+                    /** @template T of object */
+                    trait Foo {
+                        /**
+                         * @param T $data
+                         * @return T
+                         */
+                        function a($data) {
+                            return $this->b($data);
+                        }
+                    }
+
+                    class Bar {
+                        /** @use Foo<DateTime> */
+                        use Foo;
+
+                        function b(DateTime $data): DateTime {
+                            return $data;
+                        }
+                    }',
+            ],
+            'traitMethodNarrowsItsTemplateWhateverTheUseTypeIs' => [
+                'code' => '<?php
+                    function takesString(string $s): void {
+                        echo $s;
+                    }
+
+                    function takesInt(int $i): void {
+                        echo $i;
+                    }
+
+                    /** @template T */
+                    trait Red {
+                        /** @param T $x */
+                        public function f($x): void {
+                            if (is_string($x)) {
+                                takesString($x);
+                            }
+                            if (is_int($x)) {
+                                takesInt($x);
+                            }
+                        }
+                    }
+
+                    final class RedStr {
+                        /** @use Red<string> */
+                        use Red;
+                    }
+
+                    final class RedInt {
+                        /** @use Red<int> */
+                        use Red;
+                    }',
+            ],
+            'traitMethodNarrowedTemplateIsStillCheckedAfterACall' => [
+                'code' => '<?php
+                    function takesString(string $s): void {
+                        echo $s;
+                    }
+
+                    /** @template T */
+                    trait Leak {
+                        /** @param T $x */
+                        public function g($x): string {
+                            if (is_string($x)) {
+                                takesString($x);
+
+                                return $x;
+                            }
+
+                            return "";
+                        }
+                    }
+
+                    final class LeakStr {
+                        /** @use Leak<string> */
+                        use Leak;
+                    }',
+            ],
+            'traitMethodArgumentKeepsItsTemplateTypeAfterTheCall' => [
+                'code' => '<?php
+                    function ts(string $s): void {
+                        echo $s;
+                    }
+
+                    function ti(int $i): void {
+                        echo $i;
+                    }
+
+                    /** @template T */
+                    trait Leak {
+                        /** @param T $x */
+                        public function h($x): string {
+                            ts($x);
+                            if (is_string($x)) {
+                                return $x;
+                            }
+                            return "o";
+                        }
+
+                        /** @param T $x */
+                        public function h2($x): void {
+                            ts($x);
+                            if (is_int($x)) {
+                                ti($x);
+                            }
+                        }
+                    }
+
+                    final class LeakStr {
+                        /** @use Leak<string> */
+                        use Leak;
+                    }',
+            ],
+            'traitMethodArgumentOfATemplateUsedAsMixedKeepsItsTemplateTypeAfterTheCall' => [
+                'code' => '<?php
+                    function ts(string $s): void {
+                        echo $s;
+                    }
+
+                    /** @template T */
+                    trait Leak {
+                        /** @param T $x */
+                        public function h($x): string {
+                            ts($x);
+                            if (is_string($x)) {
+                                return $x;
+                            }
+                            return "o";
+                        }
+                    }
+
+                    final class LeakMixed {
+                        /** @use Leak<mixed> */
+                        use Leak;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedArgument'],
+            ],
+            'traitMethodPassesItsTemplatedArrayAndCallbackToATemplatedFunction' => [
+                'code' => '<?php
+                    /**
+                     * @template TIn of array-key
+                     * @template TVal
+                     * @template TInit
+                     * @template TRet
+                     * @param array<TIn, TVal> $arr
+                     * @param callable(TInit|TRet, TVal, TIn): TRet $callback
+                     * @param TInit $initial
+                     * @return TInit|TRet
+                     */
+                    function red(array $arr, callable $callback, mixed $initial = null): mixed {
+                        $acc = $initial;
+                        foreach ($arr as $k => $v) {
+                            $acc = $callback($acc, $v, $k);
+                        }
+
+                        return $acc;
+                    }
+
+                    /**
+                     * @template TKey of array-key
+                     * @template TValue
+                     */
+                    trait Manip {
+                        /** @var array<TKey, TValue> */
+                        private array $value = [];
+
+                        /**
+                         * @template TInit
+                         * @template TRet
+                         * @param callable(TInit|TRet, TValue, TKey): TRet $callback
+                         * @param TInit $initial
+                         * @return TInit|TRet
+                         */
+                        public function reduce(callable $callback, mixed $initial = null): mixed {
+                            return red($this->value, $callback, $initial);
+                        }
+                    }
+
+                    /**
+                     * @template TKey of array-key
+                     * @template TValue
+                     */
+                    final class Arr {
+                        /** @use Manip<TKey, TValue> */
+                        use Manip;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'traitMethodMayBranchOnItsTemplateWhateverTheUseTypeIs' => [
+                'code' => '<?php
+                    /** @template T */
+                    trait Red {
+                        /** @param T $x */
+                        public function f($x): string {
+                            if (is_string($x)) {
+                                return $x;
+                            }
+
+                            return "other";
+                        }
+                    }
+
+                    final class RedStr {
+                        /** @use Red<string> */
+                        use Red;
+                    }
+
+                    final class RedInt {
+                        /** @use Red<int> */
+                        use Red;
+                    }',
+            ],
+            'traitMethodMayTakeItsTemplateByReference' => [
+                'code' => '<?php
+                    /** @template T */
+                    trait Ref {
+                        /** @param T $d */
+                        public function r(&$d): void {
+                            echo "x";
+                        }
+                    }
+
+                    final class RefCls {
+                        /** @use Ref<int> */
+                        use Ref;
+                    }',
+            ],
+            'traitTemplateIsBoundInAListParamAndInANestedTrait' => [
+                'code' => '<?php
+                    /** @template U of object */
+                    trait Inner {
+                        /** @param U $d */
+                        public function inner($d): void {
+                            $this->take($d);
+                        }
+                    }
+
+                    /** @template T of object */
+                    trait Outer {
+                        /** @use Inner<T> */
+                        use Inner;
+
+                        /** @param list<T> $ds */
+                        public function outer(array $ds): void {
+                            foreach ($ds as $d) {
+                                $this->take($d);
+                            }
+                        }
+                    }
+
+                    final class A {
+                        /** @use Outer<DateTime> */
+                        use Outer;
+
+                        public function take(DateTime $d): void {}
+                    }',
+            ],
+            'traitUsedWithDifferentTypesBindsEachOfThem' => [
+                'code' => '<?php
+                    /** @template T of object */
+                    trait Foo {
+                        /** @param T $data */
+                        function a($data): void {
+                            $this->b($data);
+                        }
+                    }
+
+                    class Bar {
+                        /** @use Foo<DateTime> */
+                        use Foo;
+
+                        function b(DateTime $data): void {}
+                    }
+
+                    class Baz {
+                        /** @use Foo<stdClass> */
+                        use Foo;
+
+                        function b(stdClass $data): void {}
+                    }',
+            ],
             'closureReturnTypeNamesTraitTemplate' => [
                 'code' => '<?php
                     interface a {}
@@ -986,6 +1311,54 @@ final class TraitTemplateTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'traitMethodParamIsNotAcceptedWhereTheUseTypeDoesNotFit' => [
+                'code' => '<?php
+                    /** @template T of object */
+                    trait Foo {
+                        /** @param T $data */
+                        function a($data): void {
+                            $this->b($data);
+                        }
+                    }
+
+                    class Bar {
+                        /** @use Foo<DateTime> */
+                        use Foo;
+
+                        function b(stdClass $data): void {}
+                    }',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:38 - '
+                    . 'Argument 1 of Bar::b expects stdClass, but DateTime provided',
+            ],
+            'covariantTraitTemplateInAParameterIsStillReportedWithAConcreteUse' => [
+                'code' => '<?php
+                    /** @template-covariant TValue */
+                    trait EV {
+                        /** @param TValue $v */
+                        public function has($v): bool { return (bool) $v; }
+                    }
+
+                    class Coll {
+                        /** @use EV<int> */
+                        use EV;
+                    }',
+                'error_message' => 'InvalidTemplateParam',
+            ],
+            'covariantClassTemplateInAParameterIsStillReportedWhereTheTraitIsUsedWithIt' => [
+                'code' => '<?php
+                    /** @template-covariant TValue */
+                    trait EV {
+                        /** @param TValue $v */
+                        public function has($v): bool { return (bool) $v; }
+                    }
+
+                    /** @template-covariant TValue */
+                    class Coll {
+                        /** @use EV<TValue> */
+                        use EV;
+                    }',
+                'error_message' => 'InvalidTemplateParam',
+            ],
             'closureReturnTypeNamesTraitTemplateStillChecked' => [
                 'code' => '<?php
                     interface a {}

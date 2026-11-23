@@ -660,6 +660,14 @@ final class ArrayMapReturnTypeProvider implements FunctionReturnTypeProviderInte
         foreach ($mapping_function_ids as $mapping_function_id) {
             $mapping_function_id_parts = explode('&', $mapping_function_id);
 
+            // the methods of an intersection (`$Foo::m&Bar::m`) are all called on the same object
+            if ($mapping_function_id[0] === '$') {
+                $mapping_function_id_parts = array_map(
+                    static fn(string $part): string => $part[0] === '$' ? $part : '$' . $part,
+                    $mapping_function_id_parts,
+                );
+            }
+
             if ($fake_var_discriminator === null) {
                 // Derive the discriminator deterministically from the call's position instead of mt_rand(),
                 // so the synthetic variable names (and therefore the taint-graph node ids built from them)
