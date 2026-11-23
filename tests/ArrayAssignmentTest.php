@@ -151,6 +151,22 @@ final class ArrayAssignmentTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'nestedWriteKeepsTheItemsTheArrayHeld' => [
+                'code' => '<?php
+                    /** @return array<string, list<int>> */
+                    function lists(): array { return []; }
+                    /** @return array<string, array<string, int>> */
+                    function maps(): array { return []; }
+
+                    $a = lists();
+                    $a["k"][] = 1;
+                    $b = maps();
+                    $b["x"]["y"] = 2;',
+                'assertions' => [
+                    '$a===' => 'array{k: non-empty-list<int>, ...<string, list<int>>}',
+                    '$b===' => 'array{x: array{y: 2, ...<string, int>}, ...<string, array<string, int>>}',
+                ],
+            ],
             'nestedWriteUnderAKeyTheListDoesNotHaveCreatesIt' => [
                 'code' => '<?php
                     $string_key = [1];
@@ -1042,7 +1058,7 @@ final class ArrayAssignmentTest extends TestCase
                     $e["x"]["y"] = 1;
                     $e["x"][(string) rand()] = "b";
                     $f = $e["x"]["y"];
-                    /** @psalm-check-type-exact $f = \'b\'|1 */;
+                    /** @psalm-check-type-exact $f = int|string */;
 
                     $g = ["y" => 1];
                     $g["x"] = 1;
