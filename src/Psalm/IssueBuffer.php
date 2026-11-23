@@ -1068,6 +1068,16 @@ final class IssueBuffer
                     . PHP_EOL . 'project with diff mode off to enable unused issue handler detection.' . PHP_EOL,
                 );
             }
+        } elseif ($start_time) {
+            // the report is the output of the other formats: the statistics go to stderr, as plain text
+            $statistics = self::timingLine($start_time, memory_get_peak_usage())
+                . $codebase->analyzer->getTypeInferenceSummary($codebase) . "\n";
+
+            if ($add_stats) {
+                $statistics .= '-----------------' . "\n" . $codebase->analyzer->getNonMixedStats() . "\n";
+            }
+
+            $project_analyzer->progress->write($statistics);
         }
 
         if ($is_full && $start_time) {
@@ -1182,8 +1192,13 @@ final class IssueBuffer
 
     private static function printTiming(float $start_time): void
     {
-        echo 'Checks took ' . number_format(microtime(true) - $start_time, 2) . ' seconds';
-        echo ' and used ' . number_format(memory_get_peak_usage() / (1_024 * 1_024), 3) . 'MB of memory' . "\n";
+        echo self::timingLine($start_time, memory_get_peak_usage());
+    }
+
+    private static function timingLine(float $start_time, int $peak_bytes): string
+    {
+        return 'Checks took ' . number_format(microtime(true) - $start_time, 2) . ' seconds'
+            . ' and used ' . number_format($peak_bytes / (1_024 * 1_024), 3) . 'MB of memory' . "\n";
     }
 
     public static function printSuccessMessage(ProjectAnalyzer $project_analyzer): void

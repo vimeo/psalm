@@ -202,6 +202,44 @@ final class PsalmEndToEndTest extends PsalmEndToEndTestCase
         $this->assertSame(2, $result['CODE']);
     }
 
+    public function testStatisticsOfANonConsoleFormatGoToStderr(): void
+    {
+        $this->runPsalmInit(1);
+        $psalmXml = file_get_contents(self::$tmpDir . '/psalm.xml');
+        $psalmXml = str_replace('<psalm', '<psalm runTaintAnalysis="false"', (string) $psalmXml);
+        file_put_contents(self::$tmpDir . '/psalm.xml', $psalmXml);
+
+        /** @param list<string> $args */
+        $run = function (array $args): Process {
+            $process = self::newProcess(
+                [PHP_BINARY, $this->psalm, '-c=' . self::$tmpDir . '/psalm.xml', '--no-cache', '--output-format=json', ...$args],
+                null,
+                self::agentEnvVarsToUnset(),
+            );
+            $process->run();
+            $this->assertSame(2, $process->getExitCode(), $process->getErrorOutput());
+
+            return $process;
+        };
+
+        $plain = $run([]);
+        $with_stats = $run(['--stats']);
+
+        $this->assertNotNull(json_decode($with_stats->getOutput(), true));
+        $this->assertSame($plain->getOutput(), $with_stats->getOutput());
+        $this->assertStringContainsString('Checks took', $with_stats->getErrorOutput());
+        $this->assertStringContainsString('Psalm was able to infer types for', $with_stats->getErrorOutput());
+        $this->assertStringContainsString("-----------------\n", $with_stats->getErrorOutput());
+        $this->assertStringNotContainsString("\e[", $with_stats->getErrorOutput());
+        $this->assertStringContainsString('Checks took', $plain->getErrorOutput());
+        $this->assertStringNotContainsString("-----------------\n", $plain->getErrorOutput());
+
+        $quiet = $run(['--no-progress', '--stats']);
+
+        $this->assertSame($plain->getOutput(), $quiet->getOutput());
+        $this->assertSame('', $quiet->getErrorOutput());
+    }
+
     // Psalm forks its workers only with these extensions (never on Windows)
     #[RequiresPhpExtension('pcntl')]
     #[RequiresPhpExtension('posix')]
