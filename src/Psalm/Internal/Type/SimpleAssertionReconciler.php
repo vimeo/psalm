@@ -1076,7 +1076,13 @@ final class SimpleAssertionReconciler extends Reconciler
             } elseif ($type instanceof TTemplateParam) {
                 $bound = self::getTemplateBound($type);
 
-                if ($bound->hasString() || $bound->hasMixed() || $bound->hasScalar()) {
+                // a bound a string can be of: `numeric` and `array-key` include numeric strings
+                if ($bound->hasString()
+                    || $bound->hasMixed()
+                    || $bound->hasScalar()
+                    || $bound->hasNumeric()
+                    || $bound->hasArrayKey()
+                ) {
                     $type = $type->replaceAs(self::reconcileString(
                         $assertion,
                         $type->as,
@@ -2360,6 +2366,15 @@ final class SimpleAssertionReconciler extends Reconciler
             if ($type->isArrayAccessibleWithIntOrStringKey($codebase)) {
                 if ($type::class === TArray::class) {
                     $array_types[] = new TNonEmptyArray($type->type_params);
+                } elseif ($type::class === TString::class) {
+                    // a string with a character at an offset has one
+                    $array_types[] = new TNonEmptyString();
+                } elseif ($type::class === TLowercaseString::class) {
+                    $array_types[] = new TNonEmptyLowercaseString();
+                } elseif ($type::class === TNonspecificLiteralString::class) {
+                    $array_types[] = new TNonEmptyNonspecificLiteralString();
+                } elseif ($type instanceof TLiteralString && $type->value === '') {
+                    continue;
                 } else {
                     $array_types[] = $type;
                 }
@@ -2455,25 +2470,21 @@ final class SimpleAssertionReconciler extends Reconciler
                 $callable_types[] = $type;
                 $redundant = false;
             } elseif ($type instanceof TTemplateParam) {
-                $bound = self::getTemplateBound($type);
-
-                if ($bound->hasCallableType() || $bound->hasMixed()) {
-                    $type = $type->replaceAs(self::reconcileCallable(
-                        $assertion,
-                        $codebase,
-                        $type->as,
-                        null,
-                        $negated,
-                        null,
-                        $suppressed_issues,
-                        $failed_reconciliation,
-                        $is_equality,
-                    ));
-                }
-
                 $redundant = false;
 
-                $callable_types[] = $type;
+                $callable_template = self::reconcileCallableTemplate(
+                    $assertion,
+                    $codebase,
+                    $type,
+                    $negated,
+                    $suppressed_issues,
+                    $failed_reconciliation,
+                    $is_equality,
+                );
+
+                if ($callable_template !== null) {
+                    $callable_types[] = $callable_template;
+                }
             } elseif (($parts = AtomicParts::split($type, new TCallable(), $codebase)) !== null) {
                 // e.g. the callable scalars are the callable-strings
                 $parts_failed_reconciliation = Reconciler::RECONCILIATION_OK;
@@ -2520,6 +2531,56 @@ final class SimpleAssertionReconciler extends Reconciler
             $suppressed_issues,
             $failed_reconciliation,
         );
+    }
+
+    /**
+     * The template narrowed to its callable values, null when its bound can't be callable (an object without
+     * __invoke()), as the bound itself isn't
+     *
+     * @param string[] $suppressed_issues
+     * @param Reconciler::RECONCILIATION_* $failed_reconciliation
+     */
+    private static function reconcileCallableTemplate(
+        Assertion $assertion,
+        Codebase $codebase,
+        TTemplateParam $type,
+        bool $negated,
+        array $suppressed_issues,
+        int &$failed_reconciliation,
+        bool $is_equality,
+    ): ?TTemplateParam {
+        $bound = self::getTemplateBound($type);
+        $bound_failed_reconciliation = Reconciler::RECONCILIATION_OK;
+
+        if (self::reconcileCallable(
+            $assertion,
+            $codebase,
+            $bound,
+            null,
+            $negated,
+            null,
+            $suppressed_issues,
+            $bound_failed_reconciliation,
+            $is_equality,
+        )->isNever()) {
+            return null;
+        }
+
+        if ($bound->hasCallableType() || $bound->hasMixed()) {
+            return $type->replaceAs(self::reconcileCallable(
+                $assertion,
+                $codebase,
+                $type->as,
+                null,
+                $negated,
+                null,
+                $suppressed_issues,
+                $failed_reconciliation,
+                $is_equality,
+            ));
+        }
+
+        return $type;
     }
 
     /**
@@ -2838,12 +2899,7 @@ final class SimpleAssertionReconciler extends Reconciler
             // For value-of<MyBackedEnum>, the assertion is meant to return *ANY* value of *ANY* enum case
             if ($enum_case_to_assert === null) {
                 foreach ($class_storage->enum_cases as $enum_case) {
-                    $enum_value = $enum_case->getValue($codebase->classlikes);
-                    assert(
-                        $enum_value !== null,
-                        'Verified enum type above, value can not contain `null` anymore.',
-                    );
-                    $reconciled_types[] = $enum_value;
+                    $reconciled_types[] = $enum_case->getValue($codebase->classlikes) ?? new TMixed();
                 }
 
                 continue;
@@ -2854,9 +2910,7 @@ final class SimpleAssertionReconciler extends Reconciler
                 return null;
             }
 
-            $enum_value = $enum_case->getValue($codebase->classlikes);
-            assert($enum_value !== null, 'Verified enum type above, value can not contain `null` anymore.');
-            $reconciled_types[] = $enum_value;
+            $reconciled_types[] = $enum_case->getValue($codebase->classlikes) ?? new TMixed();
         }
 
         if ($reconciled_types === []) {

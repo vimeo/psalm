@@ -217,6 +217,22 @@ final class WhileTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'barePostDecrementConditionIsMinusOneAfterTheLoop' => [
+                'code' => '<?php
+                    $i = 3;
+                    while ($i--) {}
+                    $afterLoop = $i;
+
+                    function getInt(): int {
+                        return 1;
+                    }
+                    $j = getInt();
+                    $afterIncrement = $j++ ? 0 : $j;',
+                'assertions' => [
+                    '$afterLoop===' => '-1',
+                    '$afterIncrement===' => '0|1',
+                ],
+            ],
             'whileCounterIncrementedThroughAReferenceIsWidened' => [
                 'code' => <<<'PHP'
                     <?php
@@ -1418,6 +1434,87 @@ final class WhileTest extends TestCase
                     '$i===' => '0',
                 ],
             ],
+            'counterDecrementedByTheConditionOfALoopLeftByABreakHoldsWhatTheBreakOrTheConditionLeaves' => [
+                'code' => '<?php
+                    $i = 5;
+                    while ($i-- > 0) {
+                        if (rand(0, 1)) {
+                            break;
+                        }
+                    }
+
+                    $j = 5;
+                    while (--$j > 0) {
+                        if (rand(0, 1)) {
+                            break;
+                        }
+                    }
+
+                    $k = 5;
+                    while ($k-- > 0) {
+                        foreach ([1, 2] as $_) {
+                            if (rand(0, 1)) {
+                                break 2;
+                            }
+                        }
+                    }',
+                'assertions' => [
+                    '$i===' => 'int<-1, 4>',
+                    '$j===' => 'int<0, 4>',
+                    '$k===' => 'int<-1, 4>',
+                ],
+            ],
+            'loopLeftOnlyByABreakOfAnOuterLoopHasNoBreaksOfItsOwn' => [
+                'code' => '<?php
+                    /** @param list<int> $items */
+                    function f(array $items): int {
+                        $n = 3;
+                        while ($n-- > 0) {
+                            foreach ($items as $item) {
+                                if ($item) {
+                                    break 2;
+                                }
+                            }
+                        }
+                        return $n;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'counterReassignedBeforeABreakOfALoopDecrementingItInTheConditionKeepsThatValue' => [
+                'code' => '<?php
+                    $i = 5;
+                    while ($i-- > 0) {
+                        if (rand(0, 1)) {
+                            $i = 5;
+                            break;
+                        }
+                    }
+
+                    $j = 5;
+                    do {
+                        if (rand(0, 1)) {
+                            break;
+                        }
+                    } while ($j-- > 0);
+
+                    $k = 5;
+                    while ($k-- > 0) {
+                        try {
+                            if (rand(0, 1)) {
+                                break;
+                            }
+                        } finally {
+                            $k = 50;
+                        }
+                    }',
+                'assertions' => [
+                    '$i===' => 'int<-1, 5>',
+                    '$j===' => 'int<-1, 5>',
+                    '$k===' => 'int<0, 50>',
+                ],
+            ],
             'incrementOfSeveralLiteralsInALoopIsWidened' => [
                 'code' => '<?php
                     $i = rand(0, 1) ? 0 : 1;
@@ -2426,6 +2523,37 @@ final class WhileTest extends TestCase
                         return $z;
                     }',
             ],
+            'variableAssignedInTheRightOperandOfOrIsDefinedAfterTheLoop' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param array<int, int> $t */
+                    function f(array $t, int $d): int {
+                        $s = 0;
+                        while (!($s > 3) || ($a = $t[$s] ?? 0) === $d) {
+                            $s++;
+                        }
+                        return $a;
+                    }
+
+                    function g(bool $x): int {
+                        while (!$x or ($b = rand()) === 3) {
+                            $x = true;
+                        }
+                        return $b;
+                    }
+                PHP,
+            ],
+            'variableAssignedInTheRightOperandOfOrInTheLastForConditionIsDefinedAfterTheLoop' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function f(bool $x): int {
+                        for ($i = 0; $i++, !$x || ($c = rand()) === 3;) {
+                            $x = true;
+                        }
+                        return $c;
+                    }
+                PHP,
+            ],
         ];
     }
 
@@ -2820,6 +2948,57 @@ final class WhileTest extends TestCase
                         }
                     }',
                 'error_message' => 'RedundantCondition',
+            ],
+            'variableAssignedInTheRightOperandOfAndIsPossiblyUndefinedAfterTheLoop' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function f(bool $x): int {
+                        while ($x && ($a = rand()) === 3) {
+                            $x = false;
+                        }
+                        return $a;
+                    }
+                PHP,
+                'error_message' => 'PossiblyUndefinedVariable',
+            ],
+            'variableAssignedInTheRightOperandOfOrIsPossiblyUndefinedAfterALoopWithABreak' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function f(bool $x): int {
+                        while (!$x || ($a = rand()) === 3) {
+                            if (rand(0, 1)) {
+                                break;
+                            }
+                            $x = true;
+                        }
+                        return $a;
+                    }
+                PHP,
+                'error_message' => 'PossiblyUndefinedVariable',
+            ],
+            'variableAssignedInAnOrThatIsOneConjunctOfTheWhileConditionIsPossiblyUndefined' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function w(bool $x): int {
+                        while ((!$x || ($a = rand()) === 3) && rand(0, 1)) {
+                            $x = true;
+                        }
+                        return $a;
+                    }
+                PHP,
+                'error_message' => 'PossiblyUndefinedVariable',
+            ],
+            'variableAssignedInAnOrThatIsNotTheLastForConditionIsPossiblyUndefined' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function f(bool $x): int {
+                        for (; !$x || ($b = rand()) === 3, rand(0, 1);) {
+                            $x = true;
+                        }
+                        return $b;
+                    }
+                PHP,
+                'error_message' => 'PossiblyUndefinedVariable',
             ],
         ];
     }

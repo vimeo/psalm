@@ -1712,7 +1712,7 @@ final class ArgumentAnalyzer
         return $potential_method_id->fq_class_name !== $context->self
             || ($cased_method_id !== null
                 && !$method_id
-                && !in_array($cased_method_id, self::PHP_NATIVE_NON_PUBLIC_CB, true))
+                && !in_array(strtolower($cased_method_id), self::PHP_NATIVE_NON_PUBLIC_CB, true))
             || ($method_id
                 && $method_id->fq_class_name !== $context->self
                 && $method_id->fq_class_name !== 'Closure');
@@ -3117,9 +3117,13 @@ final class ArgumentAnalyzer
         // don’t get overwritten
         $readonly_template_result->readonly = true;
 
+        $receiver_template_result = new TemplateResult($class_generic_params, []);
+        $receiver_template_result->readonly = true;
+        $receiver_template_result->of_receiver = true;
+
         $bound_param_type = TemplateStandinTypeReplacer::replace(
             $param_type,
-            $readonly_template_result,
+            $receiver_template_result,
             $codebase,
             $statements_analyzer,
             $arg_value_type,
