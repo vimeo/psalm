@@ -243,12 +243,13 @@ final class ComparisonAssertionTest extends TestCase
                         return $item->flag;
                     }
 
-                    function g(?Item $item): bool {
-                        if ($item?->ok() !== true) {
+                    function g(?Item $item, ?bool $maybe): bool {
+                        if ($item?->flag !== $maybe) {
                             return false;
                         }
 
-                        return $item->ok();
+                        /** @psalm-check-type-exact $item = Item|null */;
+                        return true;
                     }',
                 'assertions' => [],
                 'ignored_issues' => [],

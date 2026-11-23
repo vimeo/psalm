@@ -17,7 +17,6 @@ use Psalm\Internal\Analyzer\Statements\Expression\NullsafeChainState;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Clause;
 use Psalm\Internal\Provider\NodeDataProvider;
-use Psalm\IssueBuffer;
 use Psalm\Node\Expr\BinaryOp\VirtualBooleanAnd;
 use Psalm\Node\Expr\BinaryOp\VirtualBooleanOr;
 use Psalm\Node\Expr\BinaryOp\VirtualEqual;
@@ -417,48 +416,6 @@ final class FormulaGenerator
             }
         }
 
-        // `$a?->b !== $c` is `!($a?->b === $c)`: its negation also tells that `$a` is not null, which no assertion
-        // of the comparison itself can say, as a null `$a` makes it true whatever `$c` is
-        if ($conditional instanceof PhpParser\Node\Expr\BinaryOp\NotIdentical
-            && !$conditional instanceof VirtualNotIdentical
-            && (self::isNullsafeChain($conditional->left) || self::isNullsafeChain($conditional->right))
-            && !self::isNullLiteral($conditional->left)
-            && !self::isNullLiteral($conditional->right)
-        ) {
-            // the issues of the comparison are worded for `!==`
-            self::getFormula(
-                $conditional_object_id,
-                $creating_object_id,
-                new VirtualNotIdentical($conditional->left, $conditional->right, $conditional->getAttributes()),
-                $this_class_name,
-                $source,
-                $codebase,
-                $inside_negation,
-                $cache,
-            );
-
-            IssueBuffer::startRecording();
-
-            $clauses = self::getFormula(
-                $conditional_object_id,
-                $creating_object_id,
-                new VirtualBooleanNot(
-                    new VirtualIdentical($conditional->left, $conditional->right, $conditional->getAttributes()),
-                    $conditional->getAttributes(),
-                ),
-                $this_class_name,
-                $source,
-                $codebase,
-                $inside_negation,
-                $cache,
-            );
-
-            IssueBuffer::clearRecordingLevel();
-            IssueBuffer::stopRecording();
-
-            return $clauses;
-        }
-
         if ($conditional instanceof PhpParser\Node\Expr\BinaryOp\NotIdentical
             || $conditional instanceof PhpParser\Node\Expr\BinaryOp\NotEqual
         ) {
@@ -759,6 +716,33 @@ final class FormulaGenerator
 
             if (!$found) {
                 $clauses[] = $receiver_clause;
+            }
+        }
+
+        // `$x !== $a?->p` with an `$x` that can't be null is also true where `$a` is null
+        if ($conditional instanceof PhpParser\Node\Expr\BinaryOp\NotIdentical) {
+            $receiver_id = self::getReceiverOfANullsafeFetchIdenticalToANonNull(
+                new VirtualIdentical($conditional->left, $conditional->right, $conditional->getAttributes()),
+                $this_class_name,
+                $source,
+            );
+
+            if ($receiver_id !== null) {
+                $null = new IsType(new TNull());
+                $clauses = array_map(
+                    static fn(Clause $clause): Clause => isset($clause->possibilities[$receiver_id])
+                        ? $clause
+                        : new Clause(
+                            [...$clause->possibilities, $receiver_id => [(string) $null => $null]],
+                            $conditional_object_id,
+                            $creating_object_id,
+                            false,
+                            $clause->reconcilable,
+                            $clause->generated,
+                            $clause->redefined_vars,
+                        ),
+                    $clauses,
+                );
             }
         }
 
@@ -1671,14 +1655,5 @@ final class FormulaGenerator
             || ($expr instanceof PhpParser\Node\Scalar\Float_ && $expr->value === 0.0)
             || ($expr instanceof PhpParser\Node\Scalar\String_ && in_array($expr->value, ['', '0'], true))
             || ($expr instanceof PhpParser\Node\Expr\Array_ && $expr->items === []);
-    }
-
-    /**
-     * @psalm-pure
-     */
-    private static function isNullsafeChain(PhpParser\Node\Expr $expr): bool
-    {
-        return $expr instanceof PhpParser\Node\Expr\NullsafePropertyFetch
-            || $expr instanceof PhpParser\Node\Expr\NullsafeMethodCall;
     }
 }
