@@ -1210,6 +1210,10 @@ abstract class CallAnalyzer
         $trait_self_class = $codebase->methods->getAppearingMethodId($method_id)?->fq_class_name
             ?? $class_storage->name;
 
+        /**
+         * @param array<Possibilities> $assertions
+         * @return list<Possibilities>
+         */
         $resolve = static fn(array $assertions): array => self::resolveStaticPropertyAssertionClasses(
             self::getAssertionsOnArgs(
                 $assertions,
