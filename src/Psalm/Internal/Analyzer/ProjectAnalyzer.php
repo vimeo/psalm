@@ -754,6 +754,12 @@ final class ProjectAnalyzer
             );
 
             if (isset($source_class_constants[$source_parts[1]])) {
+                if (strtolower($destination_parts[1]) === 'class') {
+                    throw new RefactorException(
+                        'A class constant must not be called class, it is reserved for class name fetching',
+                    );
+                }
+
                 if (!$this->codebase->classlikes->hasFullyQualifiedClassName($destination_parts[0])) {
                     throw new RefactorException(
                         'Destination class ' . $destination_parts[0] . ' doesn’t exist',

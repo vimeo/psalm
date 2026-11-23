@@ -19,7 +19,7 @@ final class AssignedProperty
         public Union $property_type,
         public string $id,
         public Union $assignment_type,
-        public bool $interface_setter = false,
+        public bool $through_set_hook = false,
         public ?Union $read_type = null,
     ) {
     }

@@ -107,6 +107,19 @@ use const FILTER_VALIDATE_URL;
 final class FilterUtils
 {
     /**
+     * FILTER_THROW_ON_FAILURE exists as of PHP 8.5: a failure throws a Filter\FilterFailedException instead of
+     * returning false or null, and a default option is not used. Before PHP 8.5 its value is that of
+     * FILTER_FLAG_GLOBAL_RANGE, so the flag only counts when analysing PHP 8.5 or later.
+     */
+    public const FILTER_THROW_ON_FAILURE = 0x10000000;
+
+    /**
+     * FILTER_FLAG_GLOBAL_RANGE moved to this value in PHP 8.5, which Php85.phpstub declares; the constant of the PHP
+     * Psalm runs on may hold the value it had up to PHP 8.4.
+     */
+    public const FILTER_FLAG_GLOBAL_RANGE_SINCE_PHP_85 = 0x20000000;
+
+    /**
      * @psalm-mutation-free
      */
     public static function missingFirstArg(Codebase $codebase): Union
@@ -375,8 +388,12 @@ final class FilterUtils
      * @return array{Union, Union, Union}
      * @psalm-pure
      */
-    public static function getFailsNotSetType(int $flags_int_used): array
+    public static function getFailsNotSetType(int $flags_int_used, bool $throws_on_failure = false): array
     {
+        if ($throws_on_failure) {
+            return array(Type::getNever(), Type::getNever(), Type::getNever());
+        }
+
         $fails_type   = Type::getFalse();
         $not_set_type = Type::getNull();
         if (self::hasFlag($flags_int_used, FILTER_NULL_ON_FAILURE)) {
@@ -390,6 +407,16 @@ final class FilterUtils
             $not_set_type,
             $fails_or_not_set_type,
         );
+    }
+
+    /**
+     * Whether the flags make a failure throw
+     *
+     * @psalm-mutation-free
+     */
+    public static function throwsOnFailure(Codebase $codebase, int $flags): bool
+    {
+        return $codebase->analysis_php_version_id >= 8_05_00 && self::hasFlag($flags, self::FILTER_THROW_ON_FAILURE);
     }
 
     /**
@@ -436,6 +463,17 @@ final class FilterUtils
             IssueBuffer::maybeAdd(
                 new RedundantFlag(
                     'Not all flags used are supported by the filter used',
+                    $code_location,
+                ),
+                $statements_analyzer->getSuppressedIssues(),
+            );
+        }
+
+        if (self::throwsOnFailure($codebase, $flags_int_used)
+            && self::hasFlag($flags_int_used, FILTER_NULL_ON_FAILURE)) {
+            IssueBuffer::maybeAdd(
+                new InvalidArgument(
+                    'FILTER_NULL_ON_FAILURE cannot be combined with FILTER_THROW_ON_FAILURE, it is a ValueError',
                     $code_location,
                 ),
                 $statements_analyzer->getSuppressedIssues(),
@@ -1655,6 +1693,10 @@ final class FilterUtils
             FILTER_FLAG_NONE, // does nothing, default
         );
 
+        if ($codebase->analysis_php_version_id >= 8_05_00) {
+            $general_filter_flags[] = self::FILTER_THROW_ON_FAILURE;
+        }
+
         // https://www.php.net/manual/en/filter.filters.sanitize.php
         $sanitize_filters = array(
             FILTER_SANITIZE_EMAIL => array(
@@ -1833,8 +1875,10 @@ final class FilterUtils
             $validate_filters[FILTER_VALIDATE_URL]['flags'][] = 131072; // FILTER_FLAG_HOST_REQUIRED
         }
 
-        if ($codebase->analysis_php_version_id >= 8_02_00) {
-            // its value depends on the PHP Psalm runs on (268435456 up to PHP 8.4, 536870912 from PHP 8.5)
+        if ($codebase->analysis_php_version_id >= 8_05_00) {
+            $validate_filters[FILTER_VALIDATE_IP]['flags'][] = self::FILTER_FLAG_GLOBAL_RANGE_SINCE_PHP_85;
+        } elseif ($codebase->analysis_php_version_id >= 8_02_00) {
+            // its value depends on the PHP Psalm runs on
             $validate_filters[FILTER_VALIDATE_IP]['flags'][] = FILTER_FLAG_GLOBAL_RANGE;
         }
 
