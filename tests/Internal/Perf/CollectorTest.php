@@ -249,7 +249,7 @@ final class CollectorTest extends TestCase
     {
         return [
             'pid' => $pid, 'role' => 'analysis', 'start_us' => 10, 'end_us' => 10_000, 'cpu_us' => 5_000,
-            'cpu_sys_us' => 100, 'php_start_bytes' => 1_000, 'php_peak_growth_bytes' => 2_000, 'max_rss_bytes' => 3_000,
+            'cpu_sys_us' => 100, 'php_start_bytes' => 1_000, 'peak_growth_bytes' => 2_000, 'max_rss_bytes' => 3_000,
             'files' => $files, 'statements' => $statements, 'functions' => $functions, 'hooks' => [],
             'parser' => ['parses' => 2, 'cache_hits' => 3],
         ];

@@ -53,7 +53,7 @@ use const PHP_OS_FAMILY;
  *     peak_growth_bytes: int,
  *     deep?: bool,
  *     storage?: string,
- *     bytes?: int,
+ *     size_bytes?: int,
  *     issues?: int,
  * }
  * @psalm-type StatementRecord = array{
@@ -83,7 +83,7 @@ use const PHP_OS_FAMILY;
  *     cpu_us: int,
  *     cpu_sys_us: int,
  *     php_start_bytes: int,
- *     php_peak_growth_bytes: int,
+ *     peak_growth_bytes: int,
  *     max_rss_bytes: int,
  *     files: list<FileRecord>,
  *     statements: list<StatementRecord>,
@@ -131,7 +131,7 @@ use const PHP_OS_FAMILY;
  *     cpu_us: int,
  *     cpu_sys_us: int,
  *     php_start_bytes: int,
- *     php_peak_growth_bytes: int,
+ *     peak_growth_bytes: int,
  *     max_rss_bytes: int,
  * }
  * @psalm-type Measurements = array{
@@ -158,6 +158,7 @@ use const PHP_OS_FAMILY;
  *         functions: list<FunctionRecord>,
  *     },
  *     hooks: list<array{handler: string, hook: string, origin: string, calls: int, wall_us: int}>,
+ *     plugins: list<array{class: string, init_us: int}>,
  *     parser: ParserCounts,
  * }
  */
@@ -235,8 +236,8 @@ final class Collector
     /** @var list<PoolRecord> */
     private static array $pools = [];
 
-    /** @var list<WorkerRecord> the workers of the pool that is running */
-    private static array $pool_workers = [];
+    /** @var list<array{class: string, init_us: int}> */
+    private static array $plugins = [];
 
     /** @var ?PoolRecord */
     private static ?array $pool = null;
@@ -288,7 +289,7 @@ final class Collector
         self::$marks = [];
         self::$step_marks = [];
         self::$pools = [];
-        self::$pool_workers = [];
+        self::$plugins = [];
         self::$pool = null;
         self::$payload_sum = null;
         self::$payload_max = 0;
@@ -361,16 +362,6 @@ final class Collector
         self::$scan_bytes = $bytes;
     }
 
-    public static function scanStorage(): string
-    {
-        return self::$scan_storage;
-    }
-
-    public static function scanBytes(): int
-    {
-        return self::$scan_bytes;
-    }
-
     /** @return array{int, int, int} */
     public static function fileStart(): array
     {
@@ -387,11 +378,9 @@ final class Collector
         string $file_name,
         array $start,
         bool $deep,
-        string $storage,
-        int $bytes,
     ): void {
         self::$files[] = self::fileRecord('scan', $file_path, $file_name, $start)
-            + ['deep' => $deep, 'storage' => $storage, 'bytes' => $bytes];
+            + ['deep' => $deep, 'storage' => self::$scan_storage, 'size_bytes' => self::$scan_bytes];
     }
 
     /** @param array{int, int, int} $start */
@@ -530,8 +519,8 @@ final class Collector
             'cpu_us' => self::cpuUs(0) - self::$worker_start['cpu_us'],
             'cpu_sys_us' => self::sysUs() - self::$worker_start['sys_us'],
             'php_start_bytes' => self::$worker_start['bytes'],
-            'php_peak_growth_bytes' => memory_get_peak_usage() - self::$worker_start['bytes'],
-            'max_rss_bytes' => self::maxRssBytes(0),
+            'peak_growth_bytes' => memory_get_peak_usage() - self::$worker_start['bytes'],
+            'max_rss_bytes' => self::maxRssBytes(),
             'files' => self::$files,
             'statements' => array_values(self::$statements),
             'functions' => array_values(self::$functions),
@@ -558,7 +547,6 @@ final class Collector
             'cpu_us' => 0,
             'workers' => [],
         ];
-        self::$pool_workers = [];
         self::$pool_cpu_us = self::cpuUs(1);
         self::$pool_mark_ns = (int) hrtime(true);
         self::$payload_sum = null;
@@ -637,7 +625,11 @@ final class Collector
         self::$parses += $data['parser']['parses'];
         self::$cache_hits += $data['parser']['cache_hits'];
 
-        self::$pool_workers[] = [
+        if (self::$pool === null) {
+            return;
+        }
+
+        self::$pool['workers'][] = [
             'pid' => $data['pid'],
             'start_us' => $data['start_us'],
             'end_us' => $data['end_us'],
@@ -646,7 +638,7 @@ final class Collector
             'cpu_us' => $data['cpu_us'],
             'cpu_sys_us' => $data['cpu_sys_us'],
             'php_start_bytes' => $data['php_start_bytes'],
-            'php_peak_growth_bytes' => $data['php_peak_growth_bytes'],
+            'peak_growth_bytes' => $data['peak_growth_bytes'],
             'max_rss_bytes' => $data['max_rss_bytes'],
         ];
     }
@@ -667,7 +659,6 @@ final class Collector
 
         // the workers of the pool are reaped by now, so their CPU time is in the children's
         self::$pool['cpu_us'] = self::cpuUs(1) - self::$pool_cpu_us;
-        self::$pool['workers'] = self::$pool_workers;
 
         if (self::$payload_sum !== null) {
             self::$pool['payload_bytes'] = self::$payload_sum;
@@ -720,10 +711,10 @@ final class Collector
         ++self::$parses;
     }
 
-    /** The registration of a plugin took $wall_ns */
+    /** The plugin was initialised since $start_ns */
     public static function pluginInit(string $class, int $start_ns): void
     {
-        self::addHook($class, 'PluginInit', 1, (int) hrtime(true) - $start_ns);
+        self::$plugins[] = ['class' => $class, 'init_us' => intdiv((int) hrtime(true) - $start_ns, 1_000)];
     }
 
     /** Statements of a file that were reused instead of parsed */
@@ -824,7 +815,7 @@ final class Collector
                 'cpu_sys_us' => self::sysUs() - self::$start_sys_us,
                 'children_cpu_us' => $end['children_cpu_us'] - $first['children_cpu_us'],
                 'php_peak_bytes' => $php_peak_bytes ?? $end['peak'],
-                'max_rss_bytes' => self::maxRssBytes(0),
+                'max_rss_bytes' => self::maxRssBytes(),
                 'files_scanned' => $scanned,
                 'files_analyzed' => $analyzed,
                 'issues' => ['errors' => $errors, 'infos' => $infos],
@@ -834,6 +825,7 @@ final class Collector
             'pools' => self::$pools,
             'files' => $files,
             'taint' => self::$taint,
+            'plugins' => self::$plugins,
             'hot' => [
                 'min_us' => self::MIN_RECORD_US,
                 'limit' => self::HOT_COUNT,
@@ -1074,13 +1066,9 @@ final class Collector
     }
 
     /** macOS reports the peak resident set in bytes, Linux in kibibytes */
-    private static function maxRssBytes(int $who): int
+    private static function maxRssBytes(): int
     {
-        if ($who === 1 && PHP_OS_FAMILY === 'Windows') {
-            return 0;
-        }
-
-        return (int) (getrusage($who)['ru_maxrss'] ?? 0) * (PHP_OS_FAMILY === 'Darwin' ? 1 : 1_024);
+        return (int) (getrusage()['ru_maxrss'] ?? 0) * (PHP_OS_FAMILY === 'Darwin' ? 1 : 1_024);
     }
 
     /**

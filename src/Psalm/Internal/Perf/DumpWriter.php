@@ -6,16 +6,13 @@ namespace Psalm\Internal\Perf;
 
 use Composer\XdebugHandler\XdebugHandler;
 use Fidry\CpuCoreCounter\CpuCoreCounter;
-use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\CliUtils;
 use Psalm\Internal\Provider\ClassLikeStorageProvider;
 use Psalm\Internal\Provider\FileStorageProvider;
 
-use function array_column;
 use function array_filter;
 use function array_slice;
-use function array_values;
 use function count;
 use function dirname;
 use function error_clear_last;
@@ -24,6 +21,7 @@ use function file_put_contents;
 use function function_exists;
 use function fwrite;
 use function get_loaded_extensions;
+use function getmypid;
 use function hash_file;
 use function ini_get;
 use function is_dir;
@@ -38,10 +36,8 @@ use function php_uname;
 use function sort;
 use function sprintf;
 use function str_ends_with;
-use function str_replace;
 use function usort;
 
-use const DIRECTORY_SEPARATOR;
 use const JSON_INVALID_UTF8_SUBSTITUTE;
 use const JSON_THROW_ON_ERROR;
 use const JSON_UNESCAPED_SLASHES;
@@ -94,7 +90,7 @@ final class DumpWriter
             );
 
         if ($print_summary) {
-            echo self::summary($measurements, $counts, $path, $path !== null && $failure === null);
+            echo self::summary($measurements, $counts, $path);
         }
 
         if ($path === null) {
@@ -114,10 +110,9 @@ final class DumpWriter
     /**
      * @param Measurements $measurements
      * @param Counts $counts
-     * @param bool $written whether the dump is in the file
      * @psalm-pure
      */
-    public static function summary(array $measurements, array $counts, ?string $path, bool $written): string
+    public static function summary(array $measurements, array $counts, ?string $path): string
     {
         $totals = $measurements['totals'];
         $out = '-----------------' . "\n" . 'Performance' . "\n" . '-----------------' . "\n\n";
@@ -165,7 +160,7 @@ final class DumpWriter
 
         $out .= sprintf(
             "\nPeak memory %s. Counts: %d class-likes, %d functions, %d methods, %d file storages, "
-            . "%d parses, %d statements reused instead of parsed\n",
+            . "%d parses, %d parser cache hits\n",
             self::megabytes($totals['php_peak_bytes']),
             $counts['classlikes'],
             $counts['functions'],
@@ -178,6 +173,19 @@ final class DumpWriter
         $analysis_us = 0;
         foreach ($measurements['files'] as $file) {
             $analysis_us += $file['op'] === 'analysis' ? $file['wall_us'] : 0;
+        }
+
+        $plugins = array_filter(
+            $measurements['plugins'],
+            static fn(array $plugin): bool => $plugin['init_us'] >= self::MIN_ROW_US,
+        );
+
+        if ($plugins !== []) {
+            $out .= "\n" . 'Plugin initialisation' . "\n";
+        }
+
+        foreach ($plugins as $plugin) {
+            $out .= sprintf("  %9s  %s\n", self::seconds($plugin['init_us']), $plugin['class']);
         }
 
         $hooks = array_filter(
@@ -245,11 +253,14 @@ final class DumpWriter
             );
         }
 
-        $out .= "\n" . 'Hottest statements (own time)' . "\n";
         $rows = array_filter(
             $measurements['hot']['statements'],
             static fn(array $record): bool => $record['self_us'] >= self::MIN_ROW_US,
         );
+
+        if ($rows !== []) {
+            $out .= "\n" . 'Hottest statements (own time)' . "\n";
+        }
 
         foreach (array_slice($rows, 0, self::SUMMARY_ROWS) as $statement) {
             $out .= sprintf(
@@ -262,11 +273,14 @@ final class DumpWriter
             );
         }
 
-        $out .= "\n" . 'Hottest functions and methods (own time, and with the functions analysed meanwhile)' . "\n";
         $rows = array_filter(
             $measurements['hot']['functions'],
             static fn(array $record): bool => $record['self_us'] >= self::MIN_ROW_US,
         );
+
+        if ($rows !== []) {
+            $out .= "\n" . 'Hottest functions and methods (own time, and with the functions analysed meanwhile)' . "\n";
+        }
 
         foreach (array_slice($rows, 0, self::SUMMARY_ROWS) as $function) {
             $out .= sprintf(
@@ -287,8 +301,7 @@ final class DumpWriter
                 . self::VIEWER . "\n\n";
         }
 
-        return $out . "\n"
-            . ($written ? 'The full data is in ' . $path . ', open it in ' . self::VIEWER . "\n\n" : '');
+        return $out . "\n";
     }
 
     /**
@@ -325,8 +338,8 @@ final class DumpWriter
             'config_sha256' => $config->source_filename !== null && is_file($config->source_filename)
                 ? hash_file('sha256', $config->source_filename)
                 : null,
+            'pid' => (int) getmypid(),
             'restarted' => XdebugHandler::getRestartSettings() !== null,
-            'plugins' => self::pluginClasses($project_analyzer),
             'options' => Collector::optionNames(),
         ];
 
@@ -367,30 +380,6 @@ final class DumpWriter
             'methods' => $methods,
             'file_storages' => count($file_storages),
         ];
-    }
-
-    /**
-     * The classes of the plugins: those the config names and those declared by the files it names
-     *
-     * @return list<string>
-     */
-    private static function pluginClasses(ProjectAnalyzer $project_analyzer): array
-    {
-        $codebase = $project_analyzer->getCodebase();
-        $classes = array_column($codebase->config->getPluginClasses(), 'class');
-
-        foreach ($codebase->config->plugin_paths as $path) {
-            $declared = array_values(ClassLikeAnalyzer::getClassesForFile(
-                $codebase,
-                str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $path),
-            ));
-
-            if ($declared !== []) {
-                $classes[] = $declared[0];
-            }
-        }
-
-        return $classes;
     }
 
     /**

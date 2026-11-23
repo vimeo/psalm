@@ -557,6 +557,7 @@ final class ProjectAnalyzer
         }
 
         if (!$diff_no_files) {
+            Perf\Collector::step('stubs');
             $this->config->visitStubFiles($this->codebase, $this->progress);
 
             Perf\Collector::step('plugins.after_populated');
@@ -1041,6 +1042,7 @@ final class ProjectAnalyzer
 
         $this->codebase->scanFiles($this->scanThreads, 'scan.project');
 
+        Perf\Collector::step('stubs');
         $this->config->visitStubFiles($this->codebase, $this->progress);
 
         Perf\Collector::step('plugins.after_populated');

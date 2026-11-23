@@ -1057,8 +1057,6 @@ final class Scanner
                 $this->config->shortenFileName($file_path),
                 $perf_start,
                 $deep,
-                Perf\Collector::scanStorage(),
-                Perf\Collector::scanBytes(),
             );
         } else {
             $this->scanFile(

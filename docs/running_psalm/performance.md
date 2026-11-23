@@ -24,16 +24,17 @@ Times are integer microseconds (`_us`), sizes integer bytes (`_bytes`).
 
 |Key|Content|
 |---|---|
-|`env`|Psalm, PHP and OS versions, whether this is the process Psalm restarted (`restarted`; the restart itself happens before it and is not in the dump), extensions, thread counts, cache mode, plugin classes, the names of the options given, and `traceparent` when the `TRACEPARENT` environment variable holds a valid W3C trace context|
+|`env`|Psalm, PHP and OS versions, whether this is the process Psalm restarted (`restarted`; the restart itself happens before it and is not in the dump), extensions, thread counts, cache mode, the process id (`pid`), the names of the options given, and `traceparent` when the `TRACEPARENT` environment variable holds a valid W3C trace context|
 |`totals`|Wall and CPU time, peak memory, file and issue counts|
 |`stages`|The main process, stage by stage|
-|`steps`|Finer parts of some stages, in the main process; their names may change in any release|
+|`steps`|Finer parts of some stages, in the main process|
 |`pools`|The pools of forked processes, with their workers: tasks, busy time, CPU time, memory growth, and for analysis pools the size of the results|
 |`files`|One record per file scanned or analysed, with its time and how much it raised the memory peak|
-|`hot`|The 50 statements and the 50 function-likes that took longest, per place, with the number of `passes` over them (a constructor is analysed twice) and the time of all of them, a function-like's own time (`self_us`) as well as its total (`wall_us`) with the functions analysed meanwhile. Only a statement execution (own time) or a function-like pass of `min_us` or more is counted, so `passes` counts the passes of 1 ms or more, and `limit` items of each kind are kept|
-|`hooks`|Time per handler of a plugin or of Psalm, and per hook, and the time each plugin took to register (`PluginInit`)|
+|`hot`|The slowest statements and function-likes (`limit` of each, none under `min_us`), per place: the number of `passes` (a constructor is analysed twice), the own time (`self_us`) and the total with the functions analysed meanwhile (`wall_us`)|
+|`hooks`|Time per handler of a plugin or of Psalm, and per hook|
+|`plugins`|The time each plugin took to initialise|
 |`counts`|Class-likes, functions, methods and files in memory|
-|`parser`|Files parsed, and statements reused instead of parsed, in all processes|
+|`parser`|Files parsed and parser cache hits, in all processes|
 |`taint`|Size of the taint graph|
 
 `schema` changes when a key is removed or changes its meaning.

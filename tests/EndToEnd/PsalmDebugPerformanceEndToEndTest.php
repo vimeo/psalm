@@ -36,7 +36,7 @@ use const PHP_BINARY;
 /**
  * Tests `--debug-performance[=PATH]` by launching a new process as if invoked by a real user.
  *
- * @psalm-type DumpFile = array{op: string, path: string, pid: int, start_us: int, wall_us: int, bytes?: int}
+ * @psalm-type DumpFile = array{op: string, path: string, pid: int, start_us: int, wall_us: int, size_bytes?: int}
  * @psalm-type Dump = array{
  *     schema: int,
  *     totals: array{wall_us: int, cpu_us: int, children_cpu_us: int},
@@ -47,6 +47,7 @@ use const PHP_BINARY;
  *     files: list<DumpFile>,
  *     hooks: list<array{handler: string, hook: string, origin: string, calls: int, wall_us: int}>,
  *     counts: array<string, int>,
+ *     plugins: list<array{class: string, init_us: int}>,
  * }
  */
 final class PsalmDebugPerformanceEndToEndTest extends PsalmEndToEndTestCase
@@ -94,7 +95,7 @@ final class PsalmDebugPerformanceEndToEndTest extends PsalmEndToEndTestCase
             self::recordedPaths($dump, 'analysis'),
         );
         // a scan record has the size of the file it read
-        $scanned = array_column(self::recordsOf($dump, 'scan'), 'bytes', 'path');
+        $scanned = array_column(self::recordsOf($dump, 'scan'), 'size_bytes', 'path');
         $this->assertGreaterThan(0, $scanned['src/A0.php'] ?? 0);
 
         // the stages add up to the run
@@ -212,7 +213,7 @@ final class PsalmDebugPerformanceEndToEndTest extends PsalmEndToEndTestCase
 
         $result = $this->runPsalm(['--no-cache', '--debug-performance'], self::$tmpDir, true);
 
-        foreach (['Performance', 'Slowest files by CPU', 'Hottest statements (own time)'] as $header) {
+        foreach (['Performance', 'Slowest files by CPU'] as $header) {
             $this->assertStringContainsString("\n" . $header . "\n", $result['STDOUT']);
         }
 
@@ -271,8 +272,8 @@ final class PsalmDebugPerformanceEndToEndTest extends PsalmEndToEndTestCase
             }
 
             ksort($calls);
-            $this->assertSame(['AfterFileAnalysis', 'FunctionReturnType', 'PluginInit'], array_keys($calls), $threads);
-            $this->assertSame(1, $calls['PluginInit'], $threads);
+            $this->assertSame(['AfterFileAnalysis', 'FunctionReturnType'], array_keys($calls), $threads);
+            $this->assertSame(['Acme\\Plug\\TimedPlugin'], array_column($dump['plugins'], 'class'), $threads);
             // once for each file analysed, and once for each call of strlen() that the project analyses
             $this->assertCount($calls['AfterFileAnalysis'], self::recordsOf($dump, 'analysis'), $threads);
             $this->assertSame(2, $calls['FunctionReturnType'], $threads);
