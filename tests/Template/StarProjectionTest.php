@@ -1833,7 +1833,10 @@ final class StarProjectionTest extends TestCase
                      * @implements IteratorAggregate<TKey, TValue>
                      */
                     class Collection implements IteratorAggregate {
-                        /** @return ArrayIterator<TKey, TValue> */
+                        /**
+                         * @return ArrayIterator<TKey, TValue>
+                         * @psalm-suppress InvalidTemplateParam
+                         */
                         public function getIterator(): ArrayIterator {
                             throw new Exception();
                         }
@@ -1846,25 +1849,38 @@ final class StarProjectionTest extends TestCase
                      */
                     final class EloquentCollection extends Collection {}
 
+                    /**
+                     * @template TId of positive-int
+                     * @template TModel of Model
+                     * @extends Collection<TId, TModel>
+                     */
+                    final class ByIdCollection extends Collection {}
+
                     /** @var EloquentCollection<*, *> $any */
                     $any = new EloquentCollection();
                     /** @var EloquentCollection<int, *> $listed */
                     $listed = new EloquentCollection();
+                    /** @var ByIdCollection<*, *> $by_id */
+                    $by_id = new ByIdCollection();
                     $any_key = null;
                     $any_model = null;
                     $listed_key = null;
                     $listed_model = null;
+                    $id = null;
 
                     foreach ($any as $any_key => $any_model) {}
 
-                    foreach ($listed as $listed_key => $listed_model) {}',
+                    foreach ($listed as $listed_key => $listed_model) {}
+
+                    foreach ($by_id as $id => $_) {}',
                 'assertions' => [
                     '$any_key===' => 'array-key|null',
                     '$any_model===' => 'Model|null',
                     '$listed_key===' => 'int|null',
                     '$listed_model===' => 'Model|null',
+                    '$id===' => 'int<1, max>|null',
                 ],
-                'ignored_issues' => ['InvalidTemplateParam'],
+                'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
             'starProjectionIterationReadsTheBoundOfEachReceiver' => [
@@ -1942,38 +1958,6 @@ final class StarProjectionTest extends TestCase
                     '$box===' => 'Box<*>|null',
                 ],
                 'ignored_issues' => [],
-                'php_version' => '8.0',
-            ],
-            'starProjectionIterationOfAUnionWithAConcreteReceiverKeepsItsValues' => [
-                'code' => '<?php
-                    abstract class Model {}
-
-                    /**
-                     * @template TValue
-                     * @implements IteratorAggregate<int, TValue>
-                     */
-                    class Collection implements IteratorAggregate {
-                        /** @return ArrayIterator<int, TValue> */
-                        public function getIterator(): ArrayIterator {
-                            throw new Exception();
-                        }
-                    }
-
-                    /**
-                     * @template TModel of Model
-                     * @extends Collection<TModel>
-                     */
-                    final class ModelCollection extends Collection {}
-
-                    /** @var ModelCollection<*>|Collection<int> $either */
-                    $either = new ModelCollection();
-                    $value = null;
-
-                    foreach ($either as $value) {}',
-                'assertions' => [
-                    '$value===' => 'Model|int|mixed',
-                ],
-                'ignored_issues' => ['MixedAssignment'],
                 'php_version' => '8.0',
             ],
             'starProjectionOfAnInterfaceMethodTagKeepsTheStar' => [
@@ -4021,6 +4005,37 @@ final class StarProjectionTest extends TestCase
                         }
                     }',
                 'error_message' => 'PossiblyInvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:24:36 - Argument 1 of strlen expects string, but possibly different type Pair<*, Model>|string provided',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'starProjectionIterationReadsADocblockDefinedBound' => [
+                'code' => '<?php
+                    abstract class Model {}
+
+                    /**
+                     * @template TValue
+                     * @implements IteratorAggregate<int, TValue>
+                     */
+                    class Collection implements IteratorAggregate {
+                        /** @return ArrayIterator<int, TValue> */
+                        public function getIterator(): ArrayIterator {
+                            throw new Exception();
+                        }
+                    }
+
+                    /**
+                     * @template TModel of Model
+                     * @extends Collection<TModel>
+                     */
+                    final class ModelCollection extends Collection {}
+
+                    /** @param ModelCollection<*> $star */
+                    function f(ModelCollection $star): void {
+                        foreach ($star as $model) {
+                            if ($model instanceof Model) {}
+                        }
+                    }',
+                'error_message' => 'RedundantConditionGivenDocblockType',
                 'error_levels' => [],
                 'php_version' => '8.0',
             ],

@@ -1875,8 +1875,8 @@ final class ForeachAnalyzer
     }
 
     /**
-     * An invariant argument of what getIterator() returns may hold a new `*` with the bound of the
-     * iterator class's own template; the Traversable params of a `*` receiver keep its bound
+     * The Traversable params of a `*` receiver, or null for any other receiver. They hold the bound of its `*`, which
+     * is lost when getIterator() returns the `*` in an invariant argument (`ArrayIterator<int, *>` holds `mixed`).
      */
     private static function getStarIterable(Codebase $codebase, Atomic $receiver): ?TIterable
     {
@@ -1906,12 +1906,13 @@ final class ForeachAnalyzer
     }
 
     /**
-     * The receiver's declared read replaces the iterated part only when it is contained in it without
-     * coercion, so no element of the part is lost
+     * The declared type replaces the iterated part only when it narrows it. A declared type that the part accepts
+     * only through a cast leaves the part as it is. A `*` is written only in docblocks, so the bound it reads is
+     * docblock-defined.
      */
     private static function readStarIterablePart(Codebase $codebase, Union $part, Union $declared): Union
     {
-        if ($declared->isMixed() || $part === $declared) {
+        if ($declared->isMixed()) {
             return $part;
         }
 
@@ -1927,19 +1928,13 @@ final class ForeachAnalyzer
             false,
             false,
         )
-            || $comparison_result->type_coerced
-            || $comparison_result->type_coerced_from_mixed
-            || $comparison_result->type_coerced_from_as_mixed
-            || $comparison_result->type_coerced_from_scalar
             || $comparison_result->to_string_cast
             || $comparison_result->callable_by_reference_mismatch
-            || $comparison_result->type_variable_lower_bounds
-            || $comparison_result->type_variable_upper_bounds
         ) {
             return $part;
         }
 
-        return $declared->addParentNodes($part->parent_nodes);
+        return $part->setTypes($declared->getAtomicTypes())->setFromDocblock();
     }
 
     /**
