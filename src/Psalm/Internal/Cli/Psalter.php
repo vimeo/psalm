@@ -88,6 +88,7 @@ final class Psalter
         'no-cache',
         'no-progress',
         'memory-limit:',
+        'use-ini-defaults',
     ];
 
     /** @param array<int,string> $argv */
@@ -141,8 +142,11 @@ final class Psalter
                 -c, --config=psalm.xml
                     Path to a psalm.xml configuration file. Run psalm --init to create one.
 
+                --use-ini-defaults
+                    Use PHP-provided ini defaults for memory and error display
+
                 --memory-limit=LIMIT
-                    Use a specific memory limit.
+                    Use a specific memory limit. Cannot be combined with --use-ini-defaults
 
                 -m, --monochrome
                     Enable monochrome output.

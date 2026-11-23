@@ -532,6 +532,47 @@ final class PsalmEndToEndTest extends PsalmEndToEndTestCase
         }
     }
 
+    public function testPsalterHonoursUseIniDefaults(): void
+    {
+        $memory_limit_file = self::$tmpDir . '/psalter-ini-defaults-memory-limit.txt';
+        $prepend_file = self::$tmpDir . '/psalter-ini-defaults-prepend.php';
+        file_put_contents(
+            $prepend_file,
+            "<?php\nregister_shutdown_function(static function (): void {\n"
+                . "    file_put_contents(\n"
+                . "        " . var_export($memory_limit_file, true) . ", (string) ini_get('memory_limit')\n"
+                . "    );\n"
+                . "});\n",
+        );
+
+        try {
+            $process = self::newProcess(
+                [
+                    PHP_BINARY,
+                    '-d',
+                    'memory_limit=64M',
+                    '-d',
+                    'auto_prepend_file=' . $prepend_file,
+                    $this->psalter,
+                    '--use-ini-defaults',
+                    '--issues=all',
+                    '--root=missing-project',
+                ],
+                self::$tmpDir,
+                self::agentEnvVarsToUnset(),
+            );
+            $process->run();
+
+            $this->assertStringContainsString('Could not locate root directory', $process->getErrorOutput());
+            $this->assertSame('64M', file_get_contents($memory_limit_file));
+        } finally {
+            unlink($prepend_file);
+            if (file_exists($memory_limit_file)) {
+                unlink($memory_limit_file);
+            }
+        }
+    }
+
     /**
      * @param list<string> $args
      */
