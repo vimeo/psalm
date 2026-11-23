@@ -15,8 +15,8 @@ use Psalm\Internal\Analyzer\IssueData;
 final class BaselineApplication
 {
     /**
-     * @param array<string, list<IssueData>> $issues_data the issues, a copy of severity info for each the baseline
-     *  covers
+     * @param array<string, list<IssueData>> $issues_data the issues, a copy with severity info for each issue the
+     *  baseline covers
      * @param array<string, int<1, max>> $baselined_issue_counts how many issues the baseline covered, by type, sorted
      * @param array<string, array<string, array{o: int, s: array<int, string>}>> $remaining_baseline the entries no
      *  issue took

@@ -30,7 +30,7 @@ use const ENT_XML1;
 final class BaselineMatcher
 {
     /**
-     * The issues as reported with the baseline, in their order. An issue the baseline covers is a copy of
+     * The issues as reported with the baseline, in their order. Each issue the baseline covers is a copy with
      * severity info: the issues given may be kept, and the baseline applied to them again.
      *
      * @param array<string, list<IssueData>> $issues_data
