@@ -28,49 +28,7 @@ final class HtmlFunctionTainter implements AddTaintsInterface, RemoveTaintsInter
     #[Override]
     public static function addTaints(AddRemoveTaintsEvent $event): int
     {
-        $item = $event->getExpr();
-        $statements_analyzer = $event->getStatementsSource();
-
-        if (!$statements_analyzer instanceof StatementsAnalyzer
-            || !$item instanceof PhpParser\Node\Expr\FuncCall
-            || $item->isFirstClassCallable()
-            || !$item->name instanceof PhpParser\Node\Name
-            || count($item->name->getParts()) !== 1
-            || count($item->getArgs()) === 0
-        ) {
-            return 0;
-        }
-
-        $function_id = strtolower($item->name->getFirst());
-
-        if ($function_id === 'html_entity_decode'
-            || $function_id === 'htmlspecialchars_decode'
-        ) {
-            $second_arg = self::getFlagsArg($item);
-
-            if ($second_arg === null) {
-                if ($statements_analyzer->getCodebase()->analysis_php_version_id >= 8_01_00) {
-                    return TaintKind::INPUT_HTML|TaintKind::INPUT_HAS_QUOTES;
-                }
-                return TaintKind::INPUT_HTML;
-            }
-
-            $second_arg_value = $statements_analyzer->node_data->getType($second_arg);
-
-            if (!$second_arg_value || !$second_arg_value->isSingleIntLiteral()) {
-                return TaintKind::INPUT_HTML;
-            }
-
-            $second_arg_value = $second_arg_value->getSingleIntLiteral()->value;
-
-            if (($second_arg_value & ENT_QUOTES) === ENT_QUOTES) {
-                return TaintKind::INPUT_HTML|TaintKind::INPUT_HAS_QUOTES;
-            }
-
-            return TaintKind::INPUT_HTML;
-        }
-
-        return 0;
+        return self::getHtmlTaints($event, 'html_entity_decode', 'htmlspecialchars_decode');
     }
 
     /**
@@ -79,6 +37,17 @@ final class HtmlFunctionTainter implements AddTaintsInterface, RemoveTaintsInter
     #[Override]
     public static function removeTaints(AddRemoveTaintsEvent $event): int
     {
+        return self::getHtmlTaints($event, 'htmlentities', 'htmlspecialchars');
+    }
+
+    /**
+     * The HTML taints a call to one of the two functions adds or removes, depending on its `flags`
+     */
+    private static function getHtmlTaints(
+        AddRemoveTaintsEvent $event,
+        string $first_function_id,
+        string $second_function_id,
+    ): int {
         $item = $event->getExpr();
         $statements_analyzer = $event->getStatementsSource();
 
@@ -94,34 +63,32 @@ final class HtmlFunctionTainter implements AddTaintsInterface, RemoveTaintsInter
 
         $function_id = strtolower($item->name->getFirst());
 
-        if ($function_id === 'htmlentities'
-            || $function_id === 'htmlspecialchars'
-        ) {
-            $second_arg = self::getFlagsArg($item);
+        if ($function_id !== $first_function_id && $function_id !== $second_function_id) {
+            return 0;
+        }
 
-            if ($second_arg === null) {
-                if ($statements_analyzer->getCodebase()->analysis_php_version_id >= 8_01_00) {
-                    return TaintKind::INPUT_HTML|TaintKind::INPUT_HAS_QUOTES;
-                }
-                return TaintKind::INPUT_HTML;
-            }
+        $second_arg = self::getFlagsArg($item);
 
-            $second_arg_value = $statements_analyzer->node_data->getType($second_arg);
-
-            if (!$second_arg_value || !$second_arg_value->isSingleIntLiteral()) {
-                return TaintKind::INPUT_HTML;
-            }
-
-            $second_arg_value = $second_arg_value->getSingleIntLiteral()->value;
-
-            if (($second_arg_value & ENT_QUOTES) === ENT_QUOTES) {
+        if ($second_arg === null) {
+            if ($statements_analyzer->getCodebase()->analysis_php_version_id >= 8_01_00) {
                 return TaintKind::INPUT_HTML|TaintKind::INPUT_HAS_QUOTES;
             }
-
             return TaintKind::INPUT_HTML;
         }
 
-        return 0;
+        $second_arg_value = $statements_analyzer->node_data->getType($second_arg);
+
+        if (!$second_arg_value || !$second_arg_value->isSingleIntLiteral()) {
+            return TaintKind::INPUT_HTML;
+        }
+
+        $second_arg_value = $second_arg_value->getSingleIntLiteral()->value;
+
+        if (($second_arg_value & ENT_QUOTES) === ENT_QUOTES) {
+            return TaintKind::INPUT_HTML|TaintKind::INPUT_HAS_QUOTES;
+        }
+
+        return TaintKind::INPUT_HTML;
     }
 
     /**

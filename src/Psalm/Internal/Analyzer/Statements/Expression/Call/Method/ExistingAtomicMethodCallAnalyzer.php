@@ -51,14 +51,11 @@ use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
-use function array_filter;
 use function array_map;
 use function array_slice;
 use function count;
 use function explode;
 use function in_array;
-use function is_string;
-use function str_starts_with;
 use function strtolower;
 
 /**
@@ -287,6 +284,15 @@ final class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
                 (string) $method_id,
             );
         }
+
+        // what is read from a `*` receiver is as unknown as the receiver, and what is written to it is never
+        ClassTemplateParamCollector::markStarBindings(
+            $template_result,
+            $codebase,
+            $class_storage,
+            $lhs_type_part,
+            $class_template_params,
+        );
 
         $is_first_class_callable = $stmt->isFirstClassCallable();
 
@@ -561,12 +567,7 @@ final class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
                     ),
                 );
                 if ($lhs_var_id === null) {
-                    $possibilities = array_filter(
-                        $possibilities,
-                        static fn(Possibilities $assertion): bool => !(is_string($assertion->var_id)
-                            && str_starts_with($assertion->var_id, '$this->')
-                        ),
-                    );
+                    $possibilities = self::removeThisAssertions($possibilities);
                 }
                 $statements_analyzer->node_data->setIfTrueAssertions(
                     $stmt,
@@ -603,12 +604,7 @@ final class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
                     ),
                 );
                 if ($lhs_var_id === null) {
-                    $possibilities = array_filter(
-                        $possibilities,
-                        static fn(Possibilities $assertion): bool => !(is_string($assertion->var_id)
-                            && str_starts_with($assertion->var_id, '$this->')
-                        ),
-                    );
+                    $possibilities = self::removeThisAssertions($possibilities);
                 }
                 $statements_analyzer->node_data->setIfFalseAssertions(
                     $stmt,

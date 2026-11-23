@@ -16,6 +16,7 @@ use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\InheritedMethodTaints;
 use Psalm\Internal\Analyzer\NamespaceAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Assignment\InstancePropertyAssignmentAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Call\ClassTemplateParamCollector;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodCallPurityAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\MethodCallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
@@ -65,14 +66,12 @@ use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TObject;
 use Psalm\Type\Atomic\TObjectWithProperties;
 use Psalm\Type\Atomic\TString;
-use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
 
 use function array_flip;
 use function array_intersect_key;
 use function array_keys;
 use function array_map;
-use function array_search;
 use function count;
 use function explode;
 use function in_array;
@@ -289,7 +288,22 @@ final class AtomicPropertyFetchAnalyzer
         // add method before changing fq_class_name
         $get_method_id = new MethodIdentifier($fq_class_name, '__get');
 
-        if (!$naive_property_exists) {
+        // outside the class a property that isn't accessible is read through __get(), which the mixins of the class
+        // document, as they do for a property the class doesn't have
+        $inaccessible_property_read_by_getter = $naive_property_exists
+            && $stmt_var_id !== '$this'
+            && $fq_class_name !== $context->self
+            && isset($class_storage->declaring_method_ids['__get'])
+            && ClassLikeAnalyzer::checkPropertyVisibility(
+                $property_id,
+                $context,
+                $statements_analyzer,
+                new CodeLocation($statements_analyzer->getSource(), $stmt),
+                $statements_analyzer->getSuppressedIssues(),
+                false,
+            ) !== true;
+
+        if (!$naive_property_exists || $inaccessible_property_read_by_getter) {
             // Resolve explicit shape properties before consulting other class-like types.
             // Keep final classes closed unless they provide a magic getter.
             if ($intersection_types !== []
@@ -830,6 +844,7 @@ final class AtomicPropertyFetchAnalyzer
                             ? $codebase->classlike_storage_provider->get(
                                 $declaring_property_class,
                             ) : $class_storage,
+                        false,
                     );
 
                     // reading a property through a type variable resolves it
@@ -938,12 +953,18 @@ final class AtomicPropertyFetchAnalyzer
         return true;
     }
 
+    /**
+     * @param bool|null $star_input where a template bound to a `*` of the object is a `*` again as a whole generic
+     *                              argument: false for what is read from the object, and `never` for what is assigned
+     *                              to the property (true); null for the type of the property with the bound
+     */
     public static function localizePropertyType(
         Codebase $codebase,
         Union $class_property_type,
         TGenericObject $lhs_type_part,
         ClassLikeStorage $property_class_storage,
         ClassLikeStorage $property_declaring_class_storage,
+        ?bool $star_input,
     ): Union {
         $template_types = CallAnalyzer::getTemplateTypesForCall(
             $codebase,
@@ -971,40 +992,93 @@ final class AtomicPropertyFetchAnalyzer
                 }
             }
 
-            foreach ($template_types as $type_name => $_) {
-                if (isset($extended_types[$property_declaring_class_storage->name][$type_name])) {
-                    $mapped_type = $extended_types[$property_declaring_class_storage->name][$type_name];
+            // what the class passes to the declaring class (`@extends Base<list<U>>`), with the arguments of the
+            // object for its own templates
+            $lhs_template_types = [];
+            $param_offset = 0;
 
-                    foreach ($mapped_type->getAtomicTypes() as $mapped_type_atomic) {
-                        if (!$mapped_type_atomic instanceof TTemplateParam) {
-                            continue;
-                        }
-
-                        $param_name = $mapped_type_atomic->param_name;
-
-                        $position = false;
-
-                        if (isset($property_class_storage->template_types[$param_name])) {
-                            $position = array_search(
-                                $param_name,
-                                array_keys($property_class_storage->template_types),
-                                true,
-                            );
-                        }
-
-                        if ($position !== false && isset($lhs_type_part->type_params[$position])) {
-                            $template_types[$type_name][$property_declaring_class_storage->name]
-                                = $lhs_type_part->type_params[$position];
-                        }
-                    }
+            foreach ($property_class_storage->template_types ?? [] as $param_name => $_) {
+                if (isset($lhs_type_part->type_params[$param_offset])) {
+                    $lhs_template_types[$param_name][$property_class_storage->name]
+                        = $lhs_type_part->type_params[$param_offset];
                 }
+
+                $param_offset++;
+            }
+
+            // a template of a class in between (`@extends Two<string, W>`) is what the class passes to it
+            $extended_template_types = [];
+
+            foreach ($extended_types ?? [] as $extended_class => $extended_class_types) {
+                foreach ($extended_class_types as $extended_name => $extended_type) {
+                    $extended_template_types[$extended_name][$extended_class] = $extended_type;
+                }
+            }
+
+            foreach ($template_types as $type_name => $_) {
+                if (!isset($extended_types[$property_declaring_class_storage->name][$type_name])) {
+                    continue;
+                }
+
+                $mapped_type = TypeExpander::expandUnion(
+                    $codebase,
+                    $extended_types[$property_declaring_class_storage->name][$type_name],
+                    $property_class_storage->name,
+                    $property_class_storage->name,
+                    $property_class_storage->parent_class,
+                );
+
+                for ($depth = 0; $depth < 10; $depth++) {
+                    $replaced_type = TemplateInferredTypeReplacer::replace(
+                        $mapped_type,
+                        new TemplateResult([], $extended_template_types),
+                        $codebase,
+                    );
+
+                    if ($replaced_type->getId() === $mapped_type->getId()) {
+                        break;
+                    }
+
+                    $mapped_type = $replaced_type;
+                }
+
+                $template_types[$type_name][$property_declaring_class_storage->name]
+                    = TemplateInferredTypeReplacer::replace(
+                        $mapped_type,
+                        new TemplateResult([], $lhs_template_types),
+                        $codebase,
+                    );
+            }
+
+            $template_result = new TemplateResult([], $template_types);
+
+            if ($star_input !== null) {
+                ClassTemplateParamCollector::markStarBindings(
+                    $template_result,
+                    $codebase,
+                    $property_class_storage,
+                    $lhs_type_part,
+                    $template_types,
+                );
+                $template_result = $template_result->withStarPosition($star_input);
             }
 
             $class_property_type = TemplateInferredTypeReplacer::replace(
                 $class_property_type,
-                new TemplateResult([], $template_types),
+                $template_result,
                 $codebase,
             );
+
+            // a new `*` holds the bound of its own class' template
+            if ($template_result->star_bindings !== []) {
+                $class_property_type = TypeExpander::expandUnion(
+                    $codebase,
+                    $class_property_type,
+                    $property_declaring_class_storage->name,
+                    $property_declaring_class_storage->name,
+                    $property_declaring_class_storage->parent_class,
+                );
+            }
         }
 
         return $class_property_type;
@@ -1652,6 +1726,7 @@ final class AtomicPropertyFetchAnalyzer
                         ? $codebase->classlike_storage_provider->get(
                             $declaring_property_class,
                         ) : $class_storage,
+                    false,
                 );
 
                 $stmt_type = TypeVariableTracker::resolveTypeVariables($stmt_type, $codebase);
@@ -1750,6 +1825,7 @@ final class AtomicPropertyFetchAnalyzer
                     $lhs_type_part,
                     $class_storage,
                     $declaring_class_storage,
+                    false,
                 );
             } elseif ($lhs_type_part instanceof TGenericObject) {
                 $class_property_type = self::localizePropertyType(
@@ -1758,6 +1834,7 @@ final class AtomicPropertyFetchAnalyzer
                     $lhs_type_part,
                     $class_storage,
                     $declaring_class_storage,
+                    false,
                 );
             }
         }

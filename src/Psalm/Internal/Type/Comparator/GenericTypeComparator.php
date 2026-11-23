@@ -6,6 +6,7 @@ namespace Psalm\Internal\Type\Comparator;
 
 use Psalm\Codebase;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
+use Psalm\Internal\Type\TypeArgumentProjection;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TIterable;
@@ -55,12 +56,14 @@ final class GenericTypeComparator
         }
 
         $container_type_params_covariant = [];
+        $input_star_offsets = [];
 
         $input_type_params = TemplateStandinTypeReplacer::getMappedGenericTypeParams(
             $codebase,
             $input_type_part,
             $container_type_part,
             $container_type_params_covariant,
+            $input_star_offsets,
         );
 
         $atomic_comparison_result_type_params = null;
@@ -79,6 +82,16 @@ final class GenericTypeComparator
             }
 
             $container_param = $container_type_part->type_params[$i];
+            $container_projection = $container_type_part instanceof TGenericObject
+                ? $container_type_part->getProjection($i)
+                : null;
+
+            // a `*` holds any argument
+            if ($container_projection === TypeArgumentProjection::Star) {
+                continue;
+            }
+
+            $input_is_star = isset($input_star_offsets[$i]);
 
             // a param standing for `never` (an empty construction's type
             // variable included) is widened to the container's param: the
@@ -113,6 +126,17 @@ final class GenericTypeComparator
                     continue;
                 }
 
+                // a `*` is one unknown type, not a mixed value: `U<*>` is a parent type of each `U<X>` whose `X` it
+                // may be, whatever the bound
+                if ($input_is_star) {
+                    $param_comparison_result->type_coerced = UnionTypeComparator::isContainedBy(
+                        $codebase,
+                        $container_param,
+                        $input_param,
+                    );
+                    $param_comparison_result->type_coerced_from_mixed = false;
+                }
+
                 if ($atomic_comparison_result) {
                     $atomic_comparison_result->type_coerced
                         = $param_comparison_result->type_coerced === true
@@ -144,6 +168,19 @@ final class GenericTypeComparator
                 // from a template type
                 if ($container_was_iterable || !$param_comparison_result->type_coerced_from_as_mixed) {
                     $all_types_contain = false;
+                }
+            } elseif ($input_is_star) {
+                // `*` stands for one unknown type: an invariant argument holds it only when it is `*` too, or left out
+                if (!$input_type_part instanceof TIterable
+                    && !$container_type_part instanceof TIterable
+                    && !($container_type_params_covariant[$i] ?? false)
+                    && $container_projection !== TypeArgumentProjection::Omitted
+                ) {
+                    $all_types_contain = false;
+
+                    if ($atomic_comparison_result) {
+                        $atomic_comparison_result->type_coerced = $atomic_comparison_result->type_coerced !== false;
+                    }
                 }
             } elseif (!$input_type_part instanceof TIterable
                 && !$container_type_part instanceof TIterable
