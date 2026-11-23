@@ -1209,6 +1209,20 @@ final class AtomicTypeComparator
             );
         }
 
+        // a value of a template is a value of its bound: `T of numeric` can be a numeric string
+        foreach ([[$type1_part, $type2_part], [$type2_part, $type1_part]] as [$template_part, $other_part]) {
+            if ($template_part instanceof TTemplateParam
+                && !$other_part instanceof TTemplateParam
+                && !$template_part->as->isMixed()
+            ) {
+                foreach ($template_part->as->getAtomicTypes() as $bound_part) {
+                    if (self::canBeIdentical($codebase, $bound_part, $other_part, $allow_interface_equality)) {
+                        return true;
+                    }
+                }
+            }
+        }
+
         $first_comparison_result = new TypeComparisonResult();
         $second_comparison_result = new TypeComparisonResult();
 

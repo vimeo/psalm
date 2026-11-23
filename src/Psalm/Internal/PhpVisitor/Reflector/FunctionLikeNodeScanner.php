@@ -658,6 +658,7 @@ final class FunctionLikeNodeScanner
                 $property_storage->allow_private_mutation = $var_comment_allow_private_mutation;
                 $property_storage->suppressed_issues = $var_comment_suppressed_issues;
                 $property_storage->deprecated = $var_comment_deprecated;
+                $property_storage->attributes = $param_storage->attributes;
                 $param_storage->promoted_property = true;
                 $property_storage->is_promoted = true;
 
