@@ -101,12 +101,15 @@ final class Possibilities
         if ($asserted_type instanceof TGenericObject
             && $static_type instanceof TNamedObject
             && !$static_type instanceof TGenericObject
+            && $codebase !== null
+            && $codebase->classlike_storage_provider->has($static_type->value)
+            && $codebase->classlike_storage_provider->get($static_type->value)->template_types
         ) {
             $static_type = new TGenericObject(
                 $static_type->value,
                 $asserted_type->type_params,
                 false,
-                false,
+                $static_type->is_static,
                 $static_type->extra_types,
             );
         }

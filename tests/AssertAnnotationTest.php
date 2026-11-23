@@ -1436,6 +1436,44 @@ final class AssertAnnotationTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'staticWithTypeArgumentsInAnAssertionTakesThemOnlyOnAClassWithTemplates' => [
+                'code' => '<?php
+                    /** @template T */
+                    class Box {
+                        /** @psalm-assert-if-true static<int> $value */
+                        public function isIntBox(mixed $value): bool {
+                            return $value instanceof static;
+                        }
+
+                        /** @psalm-assert-if-true static<int> $value */
+                        public static function isAnIntBox(mixed $value): bool {
+                            return $value instanceof static;
+                        }
+                    }
+
+                    /** @return Box<int>|null */
+                    function intBox(mixed $value): ?Box {
+                        if (Box::isAnIntBox($value)) {
+                            return $value;
+                        }
+
+                        return null;
+                    }
+
+                    /** @extends Box<int> */
+                    class IntBox extends Box {
+                        public function same(mixed $value): static {
+                            if ($this->isIntBox($value)) {
+                                return $value;
+                            }
+
+                            throw new Exception();
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'staticATemplateOfAnAssertionIsBoundToIsTheCallers' => [
                 'code' => '<?php
                     final class Guard {
