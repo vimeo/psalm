@@ -1232,21 +1232,21 @@ final class AssertionFinder
                         $if_types[$var_name] = self::getAlternatives($assertion->rule);
                     }
                 } elseif ($assertion->var_id === '$this') {
-                    if (!$expr instanceof PhpParser\Node\Expr\MethodCall) {
+                    if ($expr instanceof PhpParser\Node\Expr\FuncCall) {
                         IssueBuffer::maybeAdd(
                             new InvalidDocblock(
                                 'Assertion of $this can be done only on method of a class',
                                 new CodeLocation($source, $expr),
                             ),
+                            $source->getSuppressedIssues(),
                         );
                         continue;
                     }
 
-                    $var_id = ExpressionIdentifier::getExtendedVarId(
-                        $expr->var,
-                        $this_class_name,
-                        $source,
-                    );
+                    // a static call keeps its assertions on `$this` only when it is called on `$this`
+                    $var_id = $expr instanceof PhpParser\Node\Expr\MethodCall
+                        ? ExpressionIdentifier::getExtendedVarId($expr->var, $this_class_name, $source)
+                        : '$this';
 
                     if ($var_id) {
                         $if_types[$var_id] = self::getAlternatives($assertion->rule);
@@ -1295,6 +1295,7 @@ final class AssertionFinder
                                 sprintf('Assertion of variable "%s" cannot be recognized', $assertion->var_id),
                                 new CodeLocation($source, $expr),
                             ),
+                            $source->getSuppressedIssues(),
                         );
                         continue;
                     }
@@ -1388,6 +1389,7 @@ final class AssertionFinder
                                 sprintf('Assertion of variable "%s" cannot be recognized', $assertion->var_id),
                                 new CodeLocation($source, $expr),
                             ),
+                            $source->getSuppressedIssues(),
                         );
                     }
                 }
@@ -1423,6 +1425,7 @@ final class AssertionFinder
                     'Variable '.$var_id.' is not an argument so cannot be asserted',
                     new CodeLocation($source, $expr),
                 ),
+                $source->getSuppressedIssues(),
             );
 
             return null;
@@ -1438,6 +1441,7 @@ final class AssertionFinder
                     'Variable being asserted as argument ' . ((int) $var_id + 1) . ' cannot be found in local scope',
                     new CodeLocation($source, $expr),
                 ),
+                $source->getSuppressedIssues(),
             );
 
             return null;
@@ -1454,6 +1458,7 @@ final class AssertionFinder
             if (null !== $failedMessage) {
                 IssueBuffer::maybeAdd(
                     new InvalidDocblock($failedMessage, new CodeLocation($source, $expr)),
+                    $source->getSuppressedIssues(),
                 );
 
                 return null;

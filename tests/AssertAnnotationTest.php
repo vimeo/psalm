@@ -5064,6 +5064,196 @@ final class AssertAnnotationTest extends TestCase
                 'assertions' => [],
                 'ignored_issues' => ['InvalidDocblock'],
             ],
+            'assertOnThisPropertyOfAConstructorIsNotReportedOnNew' => [
+                'code' => '<?php
+                    class Holder {
+                        public ?int $v = null;
+
+                        /** @psalm-assert int $this->v */
+                        public function __construct(int $v) {
+                            $this->v = $v;
+                        }
+                    }
+
+                    $holder = new Holder(1);',
+            ],
+            'newDoesNotAssertTheCallersThisProperty' => [
+                'code' => '<?php
+                    class Holder {
+                        public ?int $v = null;
+
+                        /** @psalm-assert int $this->v */
+                        public function __construct(int $v) {
+                            $this->v = $v;
+                        }
+                    }
+
+                    class Caller {
+                        public ?int $v = null;
+
+                        public function test(): ?int {
+                            $this->v = null;
+                            new Holder(1);
+                            $v = $this->v;
+                            return $v;
+                        }
+                    }',
+            ],
+            'staticCallOfAnotherClassDoesNotAssertTheCallersThisProperty' => [
+                'code' => '<?php
+                    class Holder {
+                        /** @psalm-assert int $this->v */
+                        public static function assertSet(): void {}
+
+                        /** @psalm-assert-if-true int $this->v */
+                        public static function isSet(): bool {
+                            return true;
+                        }
+                    }
+
+                    class Caller {
+                        public ?int $v = null;
+
+                        public function test(): void {
+                            $this->v = null;
+                            Holder::assertSet();
+                            /** @psalm-check-type-exact $this->v = null */;
+                            if (Holder::isSet()) {
+                                /** @psalm-check-type-exact $this->v = null */;
+                            }
+                        }
+                    }',
+            ],
+            'callOnAnObjectWithoutIdDoesNotAssertTheCallersThisProperty' => [
+                'code' => '<?php
+                    class Holder {
+                        public ?int $v = null;
+
+                        /** @psalm-assert int $this->v */
+                        public function set(int $v): void {
+                            $this->v = $v;
+                        }
+                    }
+
+                    class Caller {
+                        public ?int $v = null;
+
+                        public function test(): ?int {
+                            $this->v = null;
+                            self::holder()->set(1);
+                            $v = $this->v;
+                            return $v;
+                        }
+
+                        public static function holder(): Holder {
+                            return new Holder();
+                        }
+                    }',
+            ],
+            'parentCallAssertsThis' => [
+                'code' => '<?php
+                    interface Marker {}
+
+                    class Holder {
+                        public ?int $v = null;
+
+                        /** @psalm-assert int $this->v */
+                        public function set(int $v): void {
+                            $this->v = $v;
+                        }
+
+                        /** @psalm-assert-if-true Marker $this */
+                        public function isMarker(): bool {
+                            return $this instanceof Marker;
+                        }
+                    }
+
+                    class Child extends Holder {
+                        public function test(): void {
+                            parent::set(1);
+                            /** @psalm-check-type-exact $this->v = int */;
+                            if (!parent::isMarker()) {
+                                return;
+                            }
+                            /** @psalm-check-type $this = Child&Marker */;
+                        }
+                    }',
+            ],
+            'selfCallAssertsThisInAConditional' => [
+                'code' => '<?php
+                    interface Marker {}
+
+                    class Holder {
+                        public ?int $v = null;
+
+                        /** @psalm-assert-if-true Marker $this */
+                        public function isMarker(): bool {
+                            return $this instanceof Marker;
+                        }
+
+                        /** @psalm-assert-if-false null $this->v */
+                        public function hasNoValue(): bool {
+                            return $this->v === null;
+                        }
+                    }
+
+                    class Child extends Holder {
+                        public function test(): void {
+                            if (self::isMarker()) {
+                                /** @psalm-check-type $this = Child&Marker */;
+                            }
+                            if (!self::hasNoValue()) {
+                                /** @psalm-check-type-exact $this->v = null */;
+                            }
+                        }
+                    }',
+            ],
+            'invalidAssertionOfAFunctionIsSuppressedAtTheCall' => [
+                'code' => '<?php
+                    class Foo {
+                        public ?int $v = null;
+                    }
+
+                    /** @psalm-assert-if-true int $nope */
+                    function isTrue(mixed $_m): bool {
+                        return true;
+                    }
+
+                    /** @psalm-assert-if-false int $nope */
+                    function isFalse(mixed $_m): bool {
+                        return false;
+                    }
+
+                    /** @psalm-assert-if-true Foo $this */
+                    function isThis(): bool {
+                        return true;
+                    }
+
+                    /** @psalm-assert int $nope->v */
+                    function assertNotAnArgument(object $_o): void {}
+
+                    /** @psalm-assert int $o->v */
+                    function assertProperty(mixed $o): void {}
+
+                    function test(mixed $m): void {
+                        /** @psalm-suppress InvalidDocblock */
+                        if (isTrue($m)) {}
+                        /** @psalm-suppress InvalidDocblock */
+                        if (isFalse($m)) {}
+                        /** @psalm-suppress InvalidDocblock */
+                        if (isThis()) {}
+                        /** @psalm-suppress InvalidDocblock */
+                        assertNotAnArgument(new Foo());
+                        /** @psalm-suppress InvalidDocblock */
+                        assertProperty(new Foo());
+                        $i = 1;
+                        /** @psalm-suppress InvalidDocblock */
+                        assertProperty($i);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
         ];
     }
 

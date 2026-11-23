@@ -1106,6 +1106,7 @@ final class AssignmentAnalyzer
                     $e->getMessage(),
                     new CodeLocation($statements_analyzer->getSource(), $assign_var),
                 ),
+                $statements_analyzer->getSuppressedIssues(),
             );
 
             return;
@@ -1273,6 +1274,7 @@ final class AssignmentAnalyzer
                     $e->getMessage(),
                     new CodeLocation($statements_analyzer->getSource(), $stmt),
                 ),
+                $statements_analyzer->getSuppressedIssues(),
             );
         }
     }
@@ -1497,6 +1499,7 @@ final class AssignmentAnalyzer
                         $e->getMessage(),
                         new CodeLocation($statements_analyzer->getSource(), $stmt),
                     ),
+                    $statements_analyzer->getSuppressedIssues(),
                 );
             }
             if (!empty($var_comments) && $var_comments[0]->type !== null && $var_comments[0]->var_id === null) {
@@ -1505,6 +1508,7 @@ final class AssignmentAnalyzer
                         "Docblock type cannot be used for reference assignment",
                         new CodeLocation($statements_analyzer->getSource(), $stmt),
                     ),
+                    $statements_analyzer->getSuppressedIssues(),
                 );
             }
         }
@@ -2995,6 +2999,7 @@ final class AssignmentAnalyzer
                                 $e->getMessage(),
                                 new CodeLocation($statements_analyzer->getSource(), $assign_var),
                             ),
+                            $statements_analyzer->getSuppressedIssues(),
                         );
                     }
                 }

@@ -87,7 +87,6 @@ use function preg_match;
 use function preg_replace;
 use function spl_object_id;
 use function str_contains;
-use function str_replace;
 use function str_starts_with;
 use function strrpos;
 use function strtolower;
@@ -966,6 +965,23 @@ abstract class CallAnalyzer
     }
 
     /**
+     * The assertions of a call minus those on `$this` and its properties, for a call with no object to assert them on
+     *
+     * @template TKey of array-key
+     * @param array<TKey, Possibilities> $possibilities
+     * @return array<TKey, Possibilities>
+     * @psalm-capabilities read-props
+     */
+    public static function removeThisAssertions(array $possibilities): array
+    {
+        return array_filter(
+            $possibilities,
+            static fn(Possibilities $assertion): bool => !is_string($assertion->var_id)
+                || ($assertion->var_id !== '$this' && !str_starts_with($assertion->var_id, '$this->')),
+        );
+    }
+
+    /**
      * `self` written in the assertions of a method of a trait, at any depth of the types, is the class using the trait
      */
     public static function resolveTraitSelf(Possibilities $possibilities, string $self_class): Possibilities
@@ -1112,10 +1128,16 @@ abstract class CallAnalyzer
                 if ($arg_var_id) {
                     $assertion_var_id = $arg_var_id;
                 }
-            } elseif ($var_possibilities->var_id === '$this' && $thisName !== null) {
-                $assertion_var_id = $thisName;
-            } elseif (str_starts_with($var_possibilities->var_id, '$this->') && $thisName !== null) {
-                $assertion_var_id = $thisName . str_replace('$this->', '->', $var_possibilities->var_id);
+            } elseif ($var_possibilities->var_id === '$this'
+                || str_starts_with($var_possibilities->var_id, '$this->')
+            ) {
+                // `$this` is the object the method is called on, never the caller's: without one, as for `new`,
+                // there's nothing to assert
+                if ($thisName === null) {
+                    continue;
+                }
+
+                $assertion_var_id = $thisName . substr($var_possibilities->var_id, 5);
             } elseif (str_contains($var_possibilities->var_id, '::$')) {
                 // allow assertions to bring external static props into scope
                 $assertion_var_id = $var_possibilities->var_id;
