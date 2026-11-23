@@ -89,7 +89,7 @@ final class CoreStubsTest extends TestCase
                 '$period' => 'DatePeriod<string, DateTime>',
                 '$dt' => 'DateTime|null',
             ],
-            'ignored_issues' => [],
+            'ignored_issues' => ['DeprecatedMethod'],
             'php_version' => '8.0',
         ];
         yield 'DatePeriod implements only Traversable on PHP 7' => [
@@ -98,7 +98,7 @@ final class CoreStubsTest extends TestCase
             $period = new DatePeriod("R4/2012-07-01T00:00:00Z/P7D");
             if ($period instanceof IteratorAggregate) {}',
             'assertions' => [],
-            'ignored_issues' => [],
+            'ignored_issues' => ['DeprecatedMethod'],
             'php_version' => '7.3',
         ];
         yield 'DatePeriod implements IteratorAggregate on PHP 8' => [
@@ -107,7 +107,7 @@ final class CoreStubsTest extends TestCase
             $period = new DatePeriod("R4/2012-07-01T00:00:00Z/P7D");
             if ($period instanceof IteratorAggregate) {}',
             'assertions' => [],
-            'ignored_issues' => ['RedundantCondition'],
+            'ignored_issues' => ['RedundantCondition', 'DeprecatedMethod'],
             'php_version' => '8.0',
         ];
         yield 'DatePeriod with TDate template param does not trigger TooManyTemplateParams' => [
@@ -165,7 +165,7 @@ final class CoreStubsTest extends TestCase
             'assertions' => [
                 '$iterator' => 'Iterator<int, DateTime>',
             ],
-            'ignored_issues' => [],
+            'ignored_issues' => ['DeprecatedMethod'],
             'php_version' => '8.2',
         ];
         yield 'sprintf yields a non-empty-string for non-empty-string value' => [
@@ -324,6 +324,38 @@ final class CoreStubsTest extends TestCase
                 '$d===' => 'non-empty-string',
                 '$e===' => 'non-empty-string',
             ],
+        ];
+        yield 'long || chain of str_starts_with asserts non-empty-string' => [
+            'code' => '<?php
+                /** @return non-empty-string */
+                function quirks_doctype(string $public_id): string
+                {
+                    if (str_starts_with($public_id, "+//silmaril//dtd html pro v0r11 19970101//")
+                        || str_starts_with($public_id, "-//as//dtd html 3.0 aswedit + extensions//")
+                        || str_starts_with($public_id, "-//advasoft ltd//dtd html 3.0 aswedit + extensions//")
+                        || str_starts_with($public_id, "-//ietf//dtd html 2.0 level 1//")
+                        || str_starts_with($public_id, "-//ietf//dtd html 2.0 level 2//")
+                        || str_starts_with($public_id, "-//ietf//dtd html 2.0 strict level 1//")
+                        || str_starts_with($public_id, "-//ietf//dtd html 2.0 strict level 2//")
+                        || str_starts_with($public_id, "-//ietf//dtd html 2.0 strict//")
+                        || str_starts_with($public_id, "-//ietf//dtd html 2.0//")
+                        || str_starts_with($public_id, "-//ietf//dtd html 2.1e//")
+                        || str_starts_with($public_id, "-//ietf//dtd html 3.0//")
+                        || str_starts_with($public_id, "-//ietf//dtd html 3.2 final//")
+                        || str_starts_with($public_id, "-//ietf//dtd html 3.2//")
+                        || str_starts_with($public_id, "-//ietf//dtd html 3//")
+                        || str_starts_with($public_id, "-//ietf//dtd html level 0//")
+                        || str_starts_with($public_id, "-//ietf//dtd html level 1//")
+                        || str_starts_with($public_id, "-//ietf//dtd html level 2//")
+                    ) {
+                        return $public_id;
+                    }
+                    throw new RuntimeException();
+                }
+            ',
+            'assertions' => [],
+            'ignored_issues' => [],
+            'php_version' => '8.0',
         ];
         yield "PHP80-str_* function doesn't subtract string after assertion" => [
             'code' => '<?php
@@ -494,7 +526,7 @@ final class CoreStubsTest extends TestCase
                 $globBrace = glob('abc', GLOB_BRACE);
                 PHP,
         ];
-        yield "ownerDocument's type is non-nullable DOMDocument and always null on DOMDocument itself" => [
+        yield "ownerDocument's type is nullable DOMDocument and always null on DOMDocument itself" => [
             'code' => '<?php
                 $a = (new DOMDocument())->ownerDocument;
                 $b = (new DOMNode())->ownerDocument;
@@ -503,9 +535,19 @@ final class CoreStubsTest extends TestCase
             ',
             'assertions' => [
                 '$a===' => 'null',
-                '$b===' => 'DOMDocument',
-                '$c===' => 'DOMDocument',
-                '$d===' => 'DOMDocument',
+                '$b===' => 'DOMDocument|null',
+                '$c===' => 'DOMDocument|null',
+                '$d===' => 'DOMDocument|null',
+            ],
+        ];
+        yield 'ownerDocument of a node without a document is checked before it is used' => [
+            'code' => '<?php
+                $node = new DOMElement("foo");
+                assert($node->ownerDocument instanceof DOMDocument);
+                $document = $node->ownerDocument;
+            ',
+            'assertions' => [
+                '$document===' => 'DOMDocument',
             ],
         ];
     }

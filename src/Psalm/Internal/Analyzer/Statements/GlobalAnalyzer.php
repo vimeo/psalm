@@ -447,6 +447,17 @@ final class GlobalAnalyzer
     }
 
     /**
+     * The node of what the program stores in the session (see DataFlowNode::getForSession())
+     */
+    public static function getSessionNode(TaintFlowGraph $graph): DataFlowNode
+    {
+        $session_node = DataFlowNode::getForSession();
+        $graph->addNode($session_node);
+
+        return $session_node;
+    }
+
+    /**
      * What reading the global variable $name gets: what is written to it, by its name or by one not known
      * statically.
      *

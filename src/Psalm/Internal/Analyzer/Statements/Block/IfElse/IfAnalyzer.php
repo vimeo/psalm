@@ -197,6 +197,10 @@ final class IfAnalyzer
         $if_scope->if_actions = $final_actions;
         $if_scope->final_actions = $final_actions;
 
+        if (in_array(ScopeAnalyzer::ACTION_NONE, $final_actions, true)) {
+            $if_scope->phantom_classes_of_blocks[] = $if_context->phantom_classes;
+        }
+
         /** @var array<string, int> */
         $new_assigned_var_ids = $if_context->assigned_var_ids;
         /** @var array<string, bool> */
@@ -460,7 +464,6 @@ final class IfAnalyzer
     {
         if ($stmt instanceof PhpParser\Node\Expr\BinaryOp\BooleanOr
             || $stmt instanceof PhpParser\Node\Expr\BinaryOp\LogicalOr
-            || $stmt instanceof PhpParser\Node\Expr\BinaryOp\LogicalXor
         ) {
             return [
                 ...self::getDefinitelyEvaluatedOredExpressions($stmt->left),

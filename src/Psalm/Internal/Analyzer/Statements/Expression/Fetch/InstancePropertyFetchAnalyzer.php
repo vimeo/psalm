@@ -157,6 +157,9 @@ final class InstancePropertyFetchAnalyzer
         }
 
         if ($stmt_var_type->isNever()) {
+            // a property of a value that can't exist is never fetched (a loop's first pass narrowing null away)
+            $statements_analyzer->node_data->setType($stmt, Type::getNever());
+
             return !IssueBuffer::accepts(
                 new MixedPropertyFetch(
                     'Cannot fetch property on empty var ' . $stmt_var_id,
@@ -552,6 +555,12 @@ final class InstancePropertyFetchAnalyzer
                 && !$context->inside_unset
             ) {
                 if ($context->inside_isset
+                    // PHP creates an uninitialized array property when an offset of it is written, not a readonly one
+                    || ($in_assignment
+                        && $stmt_type->isArray()
+                        && $codebase->properties->hasStorage($property_id)
+                        && !$codebase->properties->getStorage($property_id)->native_readonly
+                    )
                     || ($context->inside_assignment
                         && isset($context->vars_in_scope[$var_id])
                         && $context->vars_in_scope[$var_id]->isNullable()

@@ -22,8 +22,10 @@ use Psalm\Internal\Codebase\ConditionalTaintSinks;
 use Psalm\Internal\Codebase\DatabaseTaints;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Internal\Codebase\InternalTaintSourceMap;
+use Psalm\Internal\Codebase\StringContext;
 use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\Codebase\TaintStore;
+use Psalm\Internal\Codebase\UrlHosts;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Internal\MethodIdentifier;
@@ -141,7 +143,7 @@ final class FunctionCallReturnTypeFetcher
         }
 
         if (!$stmt_type) {
-            if (!$in_call_map || $is_stubbed) {
+            if (!$in_call_map || ($is_stubbed && $function_storage?->return_type)) {
                 if ($function_storage && $function_storage->template_types) {
                     foreach ($function_storage->template_types as $template_name => $_) {
                         if (!isset($template_result->lower_bounds[$template_name])) {
@@ -352,7 +354,16 @@ final class FunctionCallReturnTypeFetcher
         }
 
         if (!$statements_analyzer->data_flow_graph || !$function_storage) {
-            return $stmt_type;
+            return $stmt->isFirstClassCallable()
+                ? $stmt_type
+                : UrlHosts::recordParseUrl(
+                    $statements_analyzer,
+                    $context,
+                    $stmt,
+                    $function_id,
+                    $stmt->getArgs(),
+                    $stmt_type,
+                );
         }
 
         // For a first-class callable (`foo(...)`) the value produced here is the closure
@@ -410,7 +421,15 @@ final class FunctionCallReturnTypeFetcher
             }
         }
 
-        return $stmt_type;
+        // the host of a URL, which a list of hosts can fix
+        return UrlHosts::recordParseUrl(
+            $statements_analyzer,
+            $context,
+            $stmt,
+            $function_id,
+            $stmt->getArgs(),
+            $stmt_type,
+        );
     }
 
     // functions whose false return stays reported with ignoreInternalFunctionFalseReturn
@@ -1693,7 +1712,7 @@ final class FunctionCallReturnTypeFetcher
                             if (self::simpleExclusion($pattern, $first_arg_value[0])) {
                                 $removed_taints |= TaintKind::INPUT_HTML;
                                 $removed_taints |= TaintKind::INPUT_HAS_QUOTES;
-                                $removed_taints |= TaintKind::INPUT_SQL;
+                                $removed_taints |= TaintKind::INPUT_SQL | TaintKind::INPUT_SQL_UNQUOTED;
                             }
                         }
                     }
@@ -1725,6 +1744,27 @@ final class FunctionCallReturnTypeFetcher
                     $function_id === 'vsprintf',
                 )
                 : [];
+
+            // where the values are embedded in the formatted string
+            if ($function_id === 'sprintf' || $function_id === 'vsprintf') {
+                $arg_contexts = $format_type && $format_type->allStringLiterals()
+                    ? StringContext::getForFormatArguments(
+                        ConcatAnalyzer::getLiteralValues($format_type),
+                        $function_id === 'vsprintf',
+                    )
+                    : [];
+
+                foreach ($args as $i => $arg) {
+                    if ($i === 0 || $arg->unpack) {
+                        continue;
+                    }
+
+                    $arg_context = $arg_contexts[$i] ?? StringContext::getUnknown();
+                    $arg_removed_taints[$i] = ($arg_removed_taints[$i] ?? 0) | $arg_context->getRemovedTaints();
+
+                    ConcatAnalyzer::addPositionSinksForExpression($statements_analyzer, $arg_context, $arg->value);
+                }
+            }
 
             self::taintUsingFlows(
                 $function_storage,
