@@ -10,5 +10,5 @@ namespace Psalm\Issue;
 final class MissingExtensionRequirement extends CodeIssue
 {
     public const ERROR_LEVEL = 2;
-    public const SHORTCODE = 387;
+    public const SHORTCODE = 391;
 }

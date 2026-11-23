@@ -1355,10 +1355,10 @@ final class Config
         if ($composer_json !== null) {
             $config->declared_extensions = self::getDeclaredExtensions($composer_json, $config->base_dir);
 
-            $lowest_php_version = $config->getPHPVersionFromComposerJson();
+            $lowest_php_version = self::getLowestPhpVersion($composer_json);
             if ($lowest_php_version !== null) {
-                [$major, $minor] = explode('.', $lowest_php_version);
-                $config->lowest_composer_php_version_id = (int) $major * 10_000 + (int) $minor * 100;
+                $config->lowest_composer_php_version_id = (int) substr($lowest_php_version, 0, 1) * 10_000
+                    + (int) substr($lowest_php_version, 2) * 100;
             }
         }
 
@@ -3942,8 +3942,53 @@ final class Config
     }
 
     /**
+     * The lowest PHP version (`8.2`) the `php` requirement of a composer.json allows
+     *
+     * @param array<array-key, mixed> $composer_json
      * @psalm-suppress MixedAssignment
      * @psalm-suppress MixedArrayAccess
+     */
+    private static function getLowestPhpVersion(array $composer_json): ?string
+    {
+        // php-64bit is the platform package of a 64-bit php: it constrains the version just as well
+        $php_version = $composer_json['require']['php'] ?? $composer_json['require']['php-64bit'] ?? null;
+
+        if (is_string($php_version)) {
+            $version_parser = new VersionParser();
+
+            $constraint = $version_parser->parseConstraints($php_version);
+            $php_versions = [
+                '5.4',
+                '5.5',
+                '5.6',
+                '7.0',
+                '7.1',
+                '7.2',
+                '7.3',
+                '7.4',
+                '8.0',
+                '8.1',
+                '8.2',
+                '8.3',
+                '8.4',
+                '8.5',
+                '8.6',
+            ];
+
+            foreach ($php_versions as $candidate) {
+                if ($constraint->matches(new Constraint('<=', "$candidate.0.0-dev"))
+                    || $constraint->matches(new Constraint('<=', "$candidate.999"))
+                ) {
+                    return $candidate;
+                }
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * @psalm-suppress MixedAssignment
      */
     public function getPHPVersionFromComposerJson(): ?string
     {
@@ -3958,42 +4003,11 @@ final class Config
                 $composer_json = null;
             }
 
-            if (!$composer_json) {
+            if (!$composer_json || !is_array($composer_json)) {
                 throw new UnexpectedValueException('Invalid composer.json at ' . $composer_json_path);
             }
-            // php-64bit is the platform package of a 64-bit php: it constrains the version just as well
-            $php_version = $composer_json['require']['php'] ?? $composer_json['require']['php-64bit'] ?? null;
 
-            if (is_string($php_version)) {
-                $version_parser = new VersionParser();
-
-                $constraint = $version_parser->parseConstraints($php_version);
-                $php_versions = [
-                    '5.4',
-                    '5.5',
-                    '5.6',
-                    '7.0',
-                    '7.1',
-                    '7.2',
-                    '7.3',
-                    '7.4',
-                    '8.0',
-                    '8.1',
-                    '8.2',
-                    '8.3',
-                    '8.4',
-                    '8.5',
-                    '8.6',
-                ];
-
-                foreach ($php_versions as $candidate) {
-                    if ($constraint->matches(new Constraint('<=', "$candidate.0.0-dev"))
-                        || $constraint->matches(new Constraint('<=', "$candidate.999"))
-                    ) {
-                        return $candidate;
-                    }
-                }
-            }
+            return self::getLowestPhpVersion($composer_json);
         }
 
         return null;
