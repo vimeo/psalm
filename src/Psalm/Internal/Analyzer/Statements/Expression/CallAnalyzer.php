@@ -20,7 +20,9 @@ use Psalm\Internal\Analyzer\Statements\Expression\Call\ArgumentsAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodCallProhibitionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
+use Psalm\Internal\Codebase\AssertionsFromInheritanceResolver;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
+use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Provider\NodeDataProvider;
 use Psalm\Internal\Type\Comparator\TypeComparisonResult;
@@ -45,6 +47,7 @@ use Psalm\IssueBuffer;
 use Psalm\Node\Expr\BinaryOp\VirtualIdentical;
 use Psalm\Node\Expr\VirtualConstFetch;
 use Psalm\Node\VirtualName;
+use Psalm\Plugin\EventHandler\Event\AfterMethodCallAnalysisEvent;
 use Psalm\StatementsSource;
 use Psalm\Storage\Assertion\Falsy;
 use Psalm\Storage\Assertion\IsIdentical;
@@ -59,6 +62,7 @@ use Psalm\Storage\FunctionStorage;
 use Psalm\Storage\MethodStorage;
 use Psalm\Storage\Possibilities;
 use Psalm\Type;
+use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\Scalar;
 use Psalm\Type\Atomic\TCallableObject;
 use Psalm\Type\Atomic\TNamedObject;
@@ -1123,6 +1127,147 @@ abstract class CallAnalyzer
         }
 
         return $resolved_assertions;
+    }
+
+    /**
+     * Lets the AfterMethodCallAnalysis handlers see the call, and returns the return type they leave
+     */
+    public static function dispatchAfterMethodCallAnalysis(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr\MethodCall|PhpParser\Node\Expr\StaticCall $stmt,
+        MethodIdentifier $method_id,
+        Context $context,
+        ?Union $return_type_candidate,
+    ): ?Union {
+        $codebase = $statements_analyzer->getCodebase();
+        $event_dispatcher = $codebase->config->eventDispatcher;
+
+        if (!$event_dispatcher->hasAfterMethodCallAnalysisHandlers()) {
+            return $return_type_candidate;
+        }
+
+        $file_manipulations = [];
+
+        $appearing_method_id = $codebase->methods->getAppearingMethodId($method_id);
+        $declaring_method_id = $codebase->methods->getDeclaringMethodId($method_id);
+
+        if ($appearing_method_id !== null && $declaring_method_id !== null) {
+            $event = new AfterMethodCallAnalysisEvent(
+                $stmt,
+                (string) $method_id,
+                (string) $appearing_method_id,
+                (string) $declaring_method_id,
+                $context,
+                $statements_analyzer,
+                $codebase,
+                $file_manipulations,
+                $return_type_candidate,
+            );
+
+            $event_dispatcher->dispatchAfterMethodCallAnalysis($event);
+            $file_manipulations = $event->getFileReplacements();
+            $return_type_candidate = $event->getReturnTypeCandidate();
+        }
+
+        if ($file_manipulations) {
+            FileManipulationBuffer::add($statements_analyzer->getFilePath(), $file_manipulations);
+        }
+
+        return $return_type_candidate;
+    }
+
+    /**
+     * Applies the assertions of the called method to the context, and records its conditional ones on the call
+     *
+     * @param list<PhpParser\Node\Arg> $args
+     * @param ?string $this_var_id the variable `$this` of the called method is, if any
+     * @param ?string $context_this_var_id the same, for the assertions applied to the context
+     * @param ?string $static_class the class `static` is in the called method, `static` when the call forwards the
+     *                              caller's, null when unknown
+     * @param ?string $context_static_class the class `static` expands to in the assertions applied to the context
+     */
+    public static function applyMethodAssertions(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr\MethodCall|PhpParser\Node\Expr\StaticCall $stmt,
+        Identifier $stmt_name,
+        array $args,
+        MethodIdentifier $method_id,
+        MethodStorage $method_storage,
+        ClassLikeStorage $class_storage,
+        TemplateResult $template_result,
+        Context $context,
+        string $fq_class_name,
+        ?string $this_var_id,
+        ?string $context_this_var_id,
+        ?string $static_class,
+        ?Atomic $static_type,
+        ?string $context_static_class,
+    ): void {
+        $codebase = $statements_analyzer->getCodebase();
+        $assertions_resolver = new AssertionsFromInheritanceResolver($codebase);
+
+        // `self` in the assertions of a method of a trait is the class using the trait, where it appears
+        $trait_self_class = $codebase->methods->getAppearingMethodId($method_id)?->fq_class_name
+            ?? $class_storage->name;
+
+        $resolve = static fn(array $assertions): array => self::resolveStaticPropertyAssertionClasses(
+            self::getAssertionsOnArgs(
+                $assertions,
+                $method_storage,
+                $args,
+                $statements_analyzer->node_data,
+                $context->strict_types,
+            ),
+            $codebase,
+            $context,
+            $trait_self_class,
+            $static_class,
+            $fq_class_name,
+        );
+
+        $assertions = $assertions_resolver->resolve($method_storage, $class_storage);
+
+        if ($assertions) {
+            self::applyAssertionsToContext(
+                $stmt_name,
+                $context_this_var_id,
+                $resolve($assertions),
+                $args,
+                $template_result,
+                $context,
+                $statements_analyzer,
+                $context_static_class,
+                $trait_self_class,
+            );
+        }
+
+        $untemplate = static fn(Possibilities $assertion): Possibilities => self::resolveTraitSelf(
+            $assertion->getUntemplatedCopy($template_result, $this_var_id, $codebase, $static_type),
+            $trait_self_class,
+        );
+
+        $if_true_assertions = $assertions_resolver->resolveIfTrue($method_storage, $class_storage);
+        $if_false_assertions = $assertions_resolver->resolveIfFalse($method_storage, $class_storage);
+
+        // `$this` is the object the method is called on: without a variable for it, there's nothing to assert
+        if ($this_var_id === null) {
+            $if_true_assertions = self::removeThisAssertions($if_true_assertions);
+            $if_false_assertions = self::removeThisAssertions($if_false_assertions);
+        }
+
+        if ($if_true_assertions) {
+            $statements_analyzer->node_data->setIfTrueAssertions(
+                $stmt,
+                array_map($untemplate, $resolve($if_true_assertions)),
+            );
+        }
+
+        if ($if_false_assertions) {
+            $statements_analyzer->node_data->setIfFalseAssertions(
+                $stmt,
+                array_map($untemplate, $resolve($if_false_assertions)),
+            );
+        }
     }
 
     /**

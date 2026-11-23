@@ -1150,6 +1150,49 @@ final class AssertAnnotationTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'staticInAnAssertionOfAStaticMethodIsTheClassTheCallNames' => [
+                'code' => '<?php
+                    class Shape {
+                        /** @psalm-assert static $value */
+                        public static function assert(mixed $value): void {}
+
+                        /** @psalm-assert-if-true static $value */
+                        public static function is(mixed $value): bool {
+                            return $value instanceof static;
+                        }
+
+                        /** @psalm-assert-if-false static $value */
+                        public static function isNot(mixed $value): bool {
+                            return !$value instanceof static;
+                        }
+                    }
+
+                    final class Circle extends Shape {}
+
+                    function asserted(object $value): Circle {
+                        Circle::assert($value);
+                        return $value;
+                    }
+
+                    function ifTrue(object $value): ?Circle {
+                        if (Circle::is($value)) {
+                            return $value;
+                        }
+
+                        return null;
+                    }
+
+                    function ifFalse(object $value): ?Circle {
+                        if (Circle::isNot($value)) {
+                            return null;
+                        }
+
+                        return $value;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'staticInAnAssertionOfAnInheritedMethodIsTheCalledClass' => [
                 'code' => '<?php
                     interface Comparable {
