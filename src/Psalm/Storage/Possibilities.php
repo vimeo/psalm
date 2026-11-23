@@ -54,7 +54,8 @@ final class Possibilities
             $assertion_type = $assertion->getAtomicType();
 
             if ($assertion_type) {
-                // `static` of the called method is the class it is called on; one a template is bound to is the caller's
+                // `static` of the called method is the class it is called on; one a template is bound to is the
+                // caller's
                 if ($static_type !== null) {
                     $assertion_type = self::resolveStatic($assertion_type, $static_type, $codebase);
                 }
