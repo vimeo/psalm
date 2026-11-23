@@ -49,6 +49,57 @@ final class ToStringTest extends TestCase
         );
     }
 
+    public function testACallToAStrictTraitMethodKeepsTheStrictTypesOfTheCaller(): void
+    {
+        $this->testConfig->throw_exception = false;
+
+        $strict_trait_path = self::$src_dir_path . 'stricttrait.php';
+        $class_path = self::$src_dir_path . 'class.php';
+
+        $this->addFile(
+            $strict_trait_path,
+            '<?php
+                declare(strict_types=1);
+
+                trait U {
+                    private function init(): void {}
+                }',
+        );
+        $this->addFile(
+            $class_path,
+            '<?php
+                final class S {
+                    public function __toString(): string {
+                        return "s";
+                    }
+                }
+
+                function takesString(string $s): void {}
+
+                final class A {
+                    use U;
+
+                    public string $s;
+
+                    public function __construct(S $o) {
+                        $this->init();
+                        $this->s = $o;
+                        takesString($o);
+                    }
+                }',
+        );
+
+        $this->analyzeFile($class_path, new Context());
+
+        self::assertSame(
+            ['ImplicitToStringCast', 'ImplicitToStringCast'],
+            array_map(
+                static fn(IssueData $issue): string => $issue->type,
+                IssueBuffer::getIssuesDataForFile($class_path),
+            ),
+        );
+    }
+
     public function testTheCodeOfATraitRunsUnderTheStrictTypesOfItsOwnFile(): void
     {
         $this->testConfig->throw_exception = false;
