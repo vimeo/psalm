@@ -43,8 +43,8 @@ final class CollectorTest extends TestCase
         Collector::recordStatement('src/F.php', 5, 'Stmt_Echo', 1_500, 1_500);
 
         for ($i = 0; $i < 2; ++$i) {
-            Collector::recordFunction('src/F.php', 20, 'A::__construct', 'initializations', 20_000);
-            Collector::recordFunction('src/F.php', 20, 'A::__construct', 'body', 20_000);
+            Collector::recordFunction('src/F.php', 20, 'A::__construct', 'initializations', 20_000, 20_000);
+            Collector::recordFunction('src/F.php', 20, 'A::__construct', 'body', 20_000, 20_000);
         }
 
         $result = Collector::finish(0, 0);
@@ -85,6 +85,30 @@ final class CollectorTest extends TestCase
         $this->assertGreaterThanOrEqual(10_000, $wall[10]);
         $this->assertLessThan($wall[10] - 4_000, $self[10]);
         $this->assertGreaterThanOrEqual(5_000, $self[11]);
+    }
+
+    public function testFunctionLikePassesAreRankedByTheirOwnTime(): void
+    {
+        Collector::start(null, []);
+
+        // an outer pass of about 100 ms, with an inner pass of 60 ms in it
+        $outer = Collector::functionStart();
+        usleep(40_000);
+        $inner = Collector::functionStart();
+        usleep(60_000);
+        Collector::functionEnd('/p/src/F.php', 'src/F.php', 20, 'inner', false, $inner);
+        Collector::functionEnd('/p/src/F.php', 'src/F.php', 10, 'outer', false, $outer);
+
+        $result = Collector::finish(0, 0);
+
+        $this->assertNotNull($result);
+        // the inner pass took more of its own time than the outer one, though the outer one took longer in all
+        $this->assertSame(['inner', 'outer'], array_column($result['hot']['functions'], 'id'));
+        $self = array_column($result['hot']['functions'], 'self_us', 'id');
+        $wall = array_column($result['hot']['functions'], 'wall_us', 'id');
+        $this->assertSame($self['inner'], $wall['inner']);
+        $this->assertGreaterThanOrEqual(100_000, $wall['outer']);
+        $this->assertEqualsWithDelta($wall['outer'] - $wall['inner'], $self['outer'], 1_000);
     }
 
     public function testDisabledCollectorRecordsNothing(): void

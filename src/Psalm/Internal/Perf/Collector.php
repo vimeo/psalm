@@ -68,6 +68,7 @@ use const PHP_OS_FAMILY;
  *     id: string,
  *     pass: string,
  *     passes: int,
+ *     self_us: int,
  *     wall_us: int,
  * }
  * @psalm-type HookRecord = array{handler: string, hook: string, calls: int, wall_ns: int}
@@ -156,6 +157,9 @@ final class Collector
 
     /** Inclusive nanoseconds of the statements analysed inside the statement being timed */
     public static int $child_ns = 0;
+
+    /** Inclusive nanoseconds of the function-like passes analysed inside the pass being timed */
+    private static int $function_child_ns = 0;
 
     private const HOT_COUNT = 50;
 
@@ -267,6 +271,7 @@ final class Collector
     private static function clearRecords(): void
     {
         self::$child_ns = 0;
+        self::$function_child_ns = 0;
         self::$files = [];
         self::$statements = [];
         self::$functions = [];
@@ -379,40 +384,60 @@ final class Collector
         self::$statements[$key] = $record;
     }
 
+    /** @return array{int, int} the time the pass starts at, and what the passes it is in took so far */
+    public static function functionStart(): array
+    {
+        $outer_child_ns = self::$function_child_ns;
+        self::$function_child_ns = 0;
+
+        return [(int) hrtime(true), $outer_child_ns];
+    }
+
+    /** @param array{int, int} $start */
     public static function functionEnd(
         string $file_path,
         string $file_name,
         int $line,
         string $id,
         bool $initializations,
-        int $start_ns,
+        array $start,
     ): void {
-        $wall_ns = (int) hrtime(true) - $start_ns;
+        $inclusive_ns = (int) hrtime(true) - $start[0];
+        $self_ns = $inclusive_ns - self::$function_child_ns;
+        self::$function_child_ns = $start[1] + $inclusive_ns;
 
-        if ($wall_ns >= self::MIN_RECORD_NS) {
+        if ($inclusive_ns >= self::MIN_RECORD_NS) {
             self::recordFunction(
                 self::displayPath($file_path, $file_name),
                 $line,
                 $id,
                 $initializations ? 'initializations' : 'body',
-                intdiv($wall_ns, 1_000),
+                intdiv($self_ns, 1_000),
+                intdiv($inclusive_ns, 1_000),
             );
         }
     }
 
-    /** $passes passes over a function-like, which took $wall_us */
+    /**
+     * $passes passes over a function-like, which took $self_us of their own, and $wall_us with the passes over
+     * other function-likes that they made
+     */
     public static function recordFunction(
         string $path,
         int $line,
         string $id,
         string $pass,
+        int $self_us,
         int $wall_us,
         int $passes = 1,
     ): void {
         $key = $path . ':' . $line . ':' . $id . ':' . $pass;
-        $record = self::$functions[$key]
-            ?? ['path' => $path, 'line' => $line, 'id' => $id, 'pass' => $pass, 'passes' => 0, 'wall_us' => 0];
+        $record = self::$functions[$key] ?? [
+            'path' => $path, 'line' => $line, 'id' => $id, 'pass' => $pass, 'passes' => 0, 'self_us' => 0,
+            'wall_us' => 0,
+        ];
         $record['passes'] += $passes;
+        $record['self_us'] += $self_us;
         $record['wall_us'] += $wall_us;
         self::$functions[$key] = $record;
     }
@@ -541,7 +566,15 @@ final class Collector
         }
 
         foreach ($data['functions'] as $r) {
-            self::recordFunction($r['path'], $r['line'], $r['id'], $r['pass'], $r['wall_us'], $r['passes']);
+            self::recordFunction(
+                $r['path'],
+                $r['line'],
+                $r['id'],
+                $r['pass'],
+                $r['self_us'],
+                $r['wall_us'],
+                $r['passes'],
+            );
         }
 
         foreach ($data['hooks'] as $hook) {
@@ -921,8 +954,8 @@ final class Collector
         $list = array_values(self::$functions);
         usort(
             $list,
-            static fn(array $a, array $b): int => [$b['wall_us'], $a['path'], $a['line'], $a['pass']]
-                <=> [$a['wall_us'], $b['path'], $b['line'], $b['pass']],
+            static fn(array $a, array $b): int => [$b['self_us'], $a['path'], $a['line'], $a['pass']]
+                <=> [$a['self_us'], $b['path'], $b['line'], $b['pass']],
         );
 
         return $list;

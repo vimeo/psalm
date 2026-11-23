@@ -108,7 +108,6 @@ use function count;
 use function end;
 use function explode;
 use function hash;
-use function hrtime;
 use function implode;
 use function in_array;
 use function is_string;
@@ -775,7 +774,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             ]);
         }
 
-        $perf_start_ns = Collector::$enabled ? (int) hrtime(true) : 0;
+        $perf_start = Collector::$enabled ? Collector::functionStart() : null;
 
         $project_analyzer = $statements_analyzer->getProjectAnalyzer();
 
@@ -957,7 +956,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             }
         }
 
-        if ($perf_start_ns !== 0) {
+        if ($perf_start !== null) {
             // the id of a method of an anonymous class names the file, and so does the path of the record
             Collector::functionEnd(
                 $this->getFilePath(),
@@ -967,7 +966,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                     ? '{anonymous-class}::' . ($storage->cased_name ?? '')
                     : $cased_method_id ?? '{closure}',
                 $context->collect_initializations,
-                $perf_start_ns,
+                $perf_start,
             );
         }
 

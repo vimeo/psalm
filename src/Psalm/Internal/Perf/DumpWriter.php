@@ -230,10 +230,11 @@ final class DumpWriter
             );
         }
 
-        $out .= "\n" . 'Hottest functions and methods' . "\n";
+        $out .= "\n" . 'Hottest functions and methods (own time, and with the functions analysed meanwhile)' . "\n";
         foreach (array_slice($measurements['hot']['functions'], 0, self::SUMMARY_ROWS) as $function) {
             $out .= sprintf(
-                "  %9s  %s (%s)  %s:%d%s\n",
+                "  %9s own  %9s total  %s (%s)  %s:%d%s\n",
+                self::seconds($function['self_us']),
                 self::seconds($function['wall_us']),
                 $function['id'],
                 $function['pass'],
