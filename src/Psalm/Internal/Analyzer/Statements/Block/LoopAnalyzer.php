@@ -340,7 +340,10 @@ final class LoopAnalyzer
                         ) {
                             $has_changes = true;
                         }
-                    } elseif (isset($original_parent_context->vars_in_scope[$var_id])) {
+                    } elseif (isset($original_parent_context->vars_in_scope[$var_id])
+                        // what assigning the loop variables forgot (`$a[$k]` for a foreach key `$k`) is not restored
+                        && isset($pre_loop_context->vars_in_scope[$var_id])
+                    ) {
                         if (!$type->equals($original_parent_context->vars_in_scope[$var_id])) {
                             $has_changes = true;
 
@@ -729,7 +732,9 @@ final class LoopAnalyzer
                     continue;
                 }
 
-                if ($continue_context->vars_in_scope[$var_id]->hasMixed()) {
+                if ($continue_context->vars_in_scope[$var_id]->hasMixed()
+                    && self::differ($continue_context->vars_in_scope[$var_id], $type)
+                ) {
                     $continue_context->vars_in_scope[$var_id]
                         = $continue_context->vars_in_scope[$var_id]->addParentNodes(
                             $loop_parent_context->vars_in_scope[$var_id]->parent_nodes,

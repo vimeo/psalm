@@ -3371,6 +3371,59 @@ final class ForeachTest extends TestCase
                         return $seen;
                     }',
             ],
+            'clausesOnAMixedItemTheLoopDoesntChangeAreKept' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param array<string, mixed> $p */
+                    function f(array $p, string $n, array $d, bool $b, bool $c): void {
+                        $m = is_array($p[$n]) && $b;
+                        if ($c) {
+                            foreach ($d as $_v) {}
+                        }
+                        if ($m) {
+                            $p[$n][] = 1;
+                        }
+                    }
+                PHP,
+            ],
+            'itemKeyedByTheValueIsForgottenOnEachIteration' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @param array<string, int|string> $r
+                     * @param list<string> $keys
+                     */
+                    function f(array $r, array $keys): void {
+                        $k = 'z';
+                        $r[$k] = 1;
+                        foreach ($keys as $k) {
+                            $y = $r[$k];
+                            /** @psalm-check-type-exact $y = int|string */;
+                            $r[$k] = 1;
+                        }
+                    }
+                PHP,
+            ],
+            'itemKeyedByTheValueIsForgottenOnEachIterationUnderANarrowedKey' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @param array<string, int|string> $r
+                     * @param list<string> $keys
+                     */
+                    function f(array $r, array $keys): void {
+                        $k = 'z';
+                        $r[$k] = 1;
+                        foreach ($keys as $k) {
+                            if ($k === 'a') {
+                                $y = $r[$k];
+                                /** @psalm-check-type-exact $y = int|string */;
+                            }
+                            $r[$k] = 1;
+                        }
+                    }
+                PHP,
+            ],
         ];
     }
 

@@ -3713,6 +3713,57 @@ final class ArrayAssignmentTest extends TestCase
                     }
                 PHP,
             ],
+            'itemWrittenUnderAKeyNarrowedByAnAnd' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param array<string, array<int, mixed>> $r */
+                    function f(array $r, string $k, int $i, string $s): array {
+                        $r[$k][$i] = ['offset' => 1];
+                        $k === 'scot' && ($r[$k][$i]['data'] = $s);
+                        return $r;
+                    }
+                PHP,
+            ],
+            'itemWrittenUnderAKeyNarrowedByATernary' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param array<string, array<int, mixed>> $r */
+                    function f(array $r, string $k, int $i, string $s): array {
+                        $r[$k][$i] = ['offset' => 1];
+                        $k === 'scot' ? ($r[$k][$i]['data'] = $s) : null;
+                        return $r;
+                    }
+                PHP,
+            ],
+            'itemWrittenUnderAKeyNarrowedBySwitch' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param array<string, array<int, mixed>> $r */
+                    function f(array $r, string $k, int $i, string $s): array {
+                        $r[$k][$i] = ['offset' => 1];
+                        switch ($k) {
+                            case 'scot':
+                                $r[$k][$i]['data'] = $s;
+                        }
+                        return $r;
+                    }
+                PHP,
+            ],
+            'itemCheckedWithIsArrayStaysArrayAfterALoopUnderANarrowedKey' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param array<string, mixed> $p */
+                    function f(array $p, string $n, array $d, bool $b): void {
+                        $m = is_array($p[$n]) && $b;
+                        if ($n === 'join') {
+                            foreach ($d as $_v) {}
+                        }
+                        if ($m) {
+                            $p[$n][] = 1;
+                        }
+                    }
+                PHP,
+            ],
         ];
     }
 
@@ -4492,6 +4543,35 @@ final class ArrayAssignmentTest extends TestCase
                     }
                 ',
                 'error_message' => 'InvalidOperand',
+            ],
+            'itemUnderAKeyNarrowedToALiteralTheArrayCantHave' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param array<0, int> $a */
+                    function f(array $a, int $k): void {
+                        $x = $a[$k];
+                        if ($k === 1) {
+                            echo $a[$k];
+                        }
+                    }
+                PHP,
+                'error_message' => "InvalidArrayOffset - src" . DIRECTORY_SEPARATOR . "somefile.php:6:18 - Cannot access value on variable \$a using offset value of '1', expecting 0",
+            ],
+            'itemUnderAKeyNarrowedToATypeTheArrayCantHave' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param array<string, int> $a */
+                    function f(array $a, string|int $k): void {
+                        if (isset($a[$k])) {
+                            if (is_int($k)) {
+                                echo $a[$k];
+                            }
+                        }
+                    }
+                PHP,
+                'error_message' => 'InvalidArrayOffset',
+                'error_levels' => [],
+                'php_version' => '8.0',
             ],
         ];
     }

@@ -6,6 +6,7 @@ namespace Psalm\Internal\Analyzer;
 
 use PhpParser;
 use Psalm\CodeLocation;
+use Psalm\Codebase;
 use Psalm\Context;
 use Psalm\Exception\ComplicatedExpressionException;
 use Psalm\Internal\Algebra;
@@ -226,14 +227,15 @@ final class AlgebraAnalyzer
     /**
      * Whether what is known about a variable is forgotten when a condition narrows another one: an item or property
      * of it, or an item it is the key of in an array with known keys, which a fetch with the narrower key may know
-     * better. Narrowing a key doesn't change the item it points to: an item of an array without known keys keeps what
-     * is known about it, what was written to it included.
+     * better, or whose keys don't include the narrower key, which a fetch reports. Narrowing a key doesn't change the
+     * item it points to: an item of another array keeps what is known about it, what was written to it included.
      *
      * @param array<string, Union> $vars_in_scope
-     * @psalm-pure
      */
     public static function isForgottenOnNarrowing(
+        Codebase $codebase,
         string $narrowed_var_id,
+        ?Union $narrowed_type,
         string $var_id,
         array $vars_in_scope,
     ): bool {
@@ -250,12 +252,14 @@ final class AlgebraAnalyzer
 
             $array_type = $vars_in_scope[substr($var_id, 0, $position - 1)] ?? null;
 
-            if ($array_type === null) {
+            if ($array_type === null || $narrowed_type === null) {
                 return true;
             }
 
             foreach ($array_type->getAtomicTypes() as $atomic_type) {
-                if (!$atomic_type instanceof TArray) {
+                if (!$atomic_type instanceof TArray
+                    || !UnionTypeComparator::isContainedBy($codebase, $narrowed_type, $atomic_type->type_params[0])
+                ) {
                     return true;
                 }
             }

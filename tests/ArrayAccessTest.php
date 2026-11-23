@@ -52,6 +52,29 @@ final class ArrayAccessTest extends TestCase
         $this->analyzeFile('somefile.php', new Context());
     }
 
+    public function testOffsetCheckedWithIssetStaysDefinedUnderANarrowedKey(): void
+    {
+        Config::getInstance()->ensure_array_string_offsets_exist = true;
+
+        $this->addFile(
+            'somefile.php',
+            <<<'PHP'
+                <?php
+                /** @param array<string, int> $levels */
+                function getLevel(array $levels, string $issue_type): int {
+                    if (isset($levels[$issue_type])) {
+                        if ($issue_type === 'UndefinedFunction') {
+                            return $levels[$issue_type];
+                        }
+                    }
+                    return -1;
+                }
+                PHP,
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
     public function testEnsureArrayOffsetsExist(): void
     {
         $this->expectException(CodeException::class);

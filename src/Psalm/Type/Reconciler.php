@@ -603,7 +603,13 @@ class Reconciler
                         }
 
                         if (!isset($new_types[$new_key])
-                            && AlgebraAnalyzer::isForgottenOnNarrowing($key, $new_key, $existing_types)
+                            && AlgebraAnalyzer::isForgottenOnNarrowing(
+                                $codebase,
+                                $key,
+                                $result_type,
+                                $new_key,
+                                $existing_types,
+                            )
                             && $is_real
                         ) {
                             // Fix any references to the type before removing it.
