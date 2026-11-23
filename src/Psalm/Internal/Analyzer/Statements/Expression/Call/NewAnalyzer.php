@@ -282,7 +282,7 @@ final class NewAnalyzer extends CallAnalyzer
                     new CodeLocation($statements_analyzer->getSource(), $stmt->class),
                     $context,
                     $statements_analyzer->getSuppressedIssues(),
-                    new ClassLikeNameOptions(context: $context),
+                    new ClassLikeNameOptions(context: $context, required_at_runtime: true),
                 ) === false) {
                     ArgumentsAnalyzer::analyze(
                         $statements_analyzer,

@@ -581,6 +581,17 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
             }
         }
 
+        if ($check_classes && $options->required_at_runtime && !$class_storage->user_defined) {
+            ExtensionRequirementAnalyzer::check(
+                $codebase,
+                $class_storage->name,
+                true,
+                $code_location,
+                $options->context ?? $context,
+                $suppressed_issues,
+            );
+        }
+
         foreach ($class_storage->invalid_dependencies as $dependency_class_name => $_) {
             // if the implemented/extended class is stubbed, it may not yet have
             // been hydrated
