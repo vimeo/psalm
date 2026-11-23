@@ -963,6 +963,8 @@ final class ReturnTypeAnalyzer
                 $classlike_storage->name ?? null,
                 $classlike_storage->name ?? null,
                 $parent_class,
+                true,
+                true,
             );
 
             /** @psalm-suppress UnusedMethodCall Actually generates issues */

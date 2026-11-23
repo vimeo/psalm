@@ -2445,9 +2445,38 @@ final class ConditionalReturnTypeTest extends TestCase
                     $iterator = limit(new ArrayIterator([1, 2]));',
                 'assertions' => [
                     '$array' => 'array<int<0, 1>, string>',
+                    '$iterator' => 'LimitIterator<int<0, 1>, int, ArrayIterator[pure]<int<0, 1>, int>>',
                 ],
                 'ignored_issues' => [],
                 'php_version' => '8.1',
+            ],
+            'conditionalElseBranchTemplateIsNarrowedWithoutANativeReturnType' => [
+                'code' => '<?php
+                    /** @template T of int */
+                    final class Foo {}
+
+                    /**
+                     * @template T of int|string
+                     * @param T $in
+                     * @return (T is string ? T : Foo<T>)
+                     */
+                    function bar($in) {
+                        throw new RuntimeException();
+                    }',
+            ],
+            'conditionalTrueBranchTemplateIsNarrowedWithoutANativeReturnType' => [
+                'code' => '<?php
+                    /** @template T of string */
+                    final class Foo {}
+
+                    /**
+                     * @template T of int|string
+                     * @param T $in
+                     * @return (T is string ? Foo<T> : T)
+                     */
+                    function bar($in) {
+                        throw new RuntimeException();
+                    }',
             ],
             'conditionalTrueBranchTemplateTakesTheBoundOfItsCondition' => [
                 'code' => '<?php
@@ -2850,6 +2879,40 @@ final class ConditionalReturnTypeTest extends TestCase
                      * @return (T is float ? string : IntBox<T>)
                      */
                     function box($value): string|IntBox {
+                        throw new RuntimeException();
+                    }',
+                'error_message' => 'InvalidTemplateParam',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'conditionalElseBranchKeepsABoundMemberContainedOnlyByAStringCast' => [
+                'code' => '<?php
+                    /** @template T of int */
+                    final class IntBox {}
+
+                    /**
+                     * @template T of Stringable|int
+                     * @param T $value
+                     * @return (T is string ? string : IntBox<T>)
+                     */
+                    function box($value): string|IntBox {
+                        throw new RuntimeException();
+                    }',
+                'error_message' => 'InvalidTemplateParam',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'conditionalElseBranchKeepsAnIntBoundMemberOfAFloatCondition' => [
+                'code' => '<?php
+                    /** @template T of string */
+                    final class StrBox {}
+
+                    /**
+                     * @template T of int|string
+                     * @param T $value
+                     * @return (T is float ? string : StrBox<T>)
+                     */
+                    function box2($value): string|StrBox {
                         throw new RuntimeException();
                     }',
                 'error_message' => 'InvalidTemplateParam',

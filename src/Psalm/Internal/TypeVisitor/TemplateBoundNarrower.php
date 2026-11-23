@@ -6,6 +6,7 @@ namespace Psalm\Internal\TypeVisitor;
 
 use Override;
 use Psalm\Codebase;
+use Psalm\Internal\Type\Comparator\TypeComparisonResult;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Type;
 use Psalm\Type\Atomic\TTemplateParam;
@@ -51,11 +52,18 @@ final class TemplateBoundNarrower extends MutableTypeVisitor
             $remaining_bound = [];
 
             foreach ($type->as->getAtomicTypes() as $key => $bound_type) {
+                $comparison_result = new TypeComparisonResult();
+
                 if (!UnionTypeComparator::isContainedBy(
                     $this->codebase,
                     new Union([$bound_type]),
                     $this->narrowed_bound,
-                )) {
+                    false,
+                    false,
+                    $comparison_result,
+                    false,
+                    false,
+                ) || $comparison_result->to_string_cast) {
                     $remaining_bound[$key] = $bound_type;
                 }
             }
