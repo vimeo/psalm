@@ -20,6 +20,8 @@ use Closure;
 use Override;
 use Psalm\Progress\Progress;
 use Revolt\EventLoop;
+use Revolt\EventLoop\Driver\StreamSelectDriver;
+use RuntimeException;
 
 use function Amp\Future\await;
 use function array_map;
@@ -54,6 +56,21 @@ final class Pool
         private readonly float $timeLimit,
         private readonly Progress $progress,
     ) {
+        // Workers can't use a driver with a native handle: a forked worker
+        // shares an epoll instance with its parent, which crashes the parent,
+        // and doesn't inherit a kqueue.
+        $driver = EventLoop::getDriver();
+        if ($driver->getHandle() !== null) {
+            if ($driver->isRunning()) {
+                throw new RuntimeException(
+                    "Can't fork workers while the event loop runs on " . $driver::class . ': set'
+                    . ' REVOLT_DRIVER=Revolt\EventLoop\Driver\StreamSelectDriver or use --threads=1',
+                );
+            }
+
+            EventLoop::setDriver(new StreamSelectDriver());
+        }
+
         $this->pool = new ContextWorkerPool(
             $threads,
             new ContextWorkerFactory(
