@@ -324,6 +324,37 @@ final class ClassLikeStringTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'templateClassStringIsComparedWithAClassName' => [
+                'code' => '<?php
+                    final class Special {}
+
+                    /**
+                     * @template T of object
+                     * @param class-string<T> $name
+                     */
+                    function isSpecial(string $name): bool {
+                        return $name === "Special";
+                    }
+
+                    echo isSpecial(Special::class) ? "yes" : "no";',
+                'assertions' => [],
+                'ignored_issues' => ['InvalidStringClass'],
+            ],
+            'boundedTemplateClassStringIsComparedWithASubclassName' => [
+                'code' => '<?php
+                    abstract class Base {}
+                    final class Child extends Base {}
+
+                    /**
+                     * @template T of Base
+                     * @param class-string<T> $name
+                     */
+                    function isChild(string $name): bool {
+                        return $name === "Child";
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['InvalidStringClass'],
+            ],
             'negatedClassExistsOnTheLeftOfAnOrAllowsTheClassOnTheRight' => [
                 'code' => '<?php
                     function check(): bool {
@@ -820,6 +851,39 @@ final class ClassLikeStringTest extends TestCase
                         function foo() : string {
                             return get_parent_class();
                         }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['DeprecatedFunction'],
+            ],
+            'getParentClassWithoutArgumentIsTheParentClass' => [
+                'code' => '<?php
+                    class A {}
+
+                    class B extends A {
+                        public function f(): void {
+                            $parent = get_parent_class();
+                            /** @psalm-check-type-exact $parent = A::class */;
+                            $object = new $parent();
+                            /** @psalm-check-type-exact $object = A */;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['DeprecatedFunction'],
+            ],
+            'getParentClassWithoutArgumentInATraitIsTheParentOfTheUsingClass' => [
+                'code' => '<?php
+                    class A {}
+                    class B extends A {}
+
+                    trait T {
+                        public function f(): void {
+                            $parent = get_parent_class();
+                            /** @psalm-check-type-exact $parent = B::class */;
+                        }
+                    }
+
+                    class C extends B {
+                        use T;
                     }',
                 'assertions' => [],
                 'ignored_issues' => ['DeprecatedFunction'],
@@ -1426,6 +1490,51 @@ final class ClassLikeStringTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'templateClassStringIsNeverAClassThatDoesNotExist' => [
+                'code' => '<?php
+                    /**
+                     * @template T of object
+                     * @param class-string<T> $name
+                     */
+                    function isNope(string $name): bool {
+                        return $name === "Nope";
+                    }',
+                'error_message' => 'DocblockTypeContradiction',
+            ],
+            'boundedTemplateClassStringIsNeverAnUnrelatedClass' => [
+                'code' => '<?php
+                    abstract class Base {}
+                    final class Other {}
+
+                    /**
+                     * @template T of Base
+                     * @param class-string<T> $name
+                     */
+                    function isOther(string $name): bool {
+                        return $name === "Other";
+                    }',
+                'error_message' => 'DocblockTypeContradiction',
+            ],
+            'getParentClassWithoutArgumentInATraitIsExactlyTheParentOfTheUsingClass' => [
+                'code' => '<?php
+                    class A {}
+                    class B extends A {}
+
+                    trait T {
+                        public function f(): void {
+                            $parent = get_parent_class();
+                            if ($parent !== B::class) {
+                                echo "never";
+                            }
+                        }
+                    }
+
+                    class C extends B {
+                        use T;
+                    }',
+                'error_message' => 'TypeDoesNotContainType',
+                'error_levels' => ['DeprecatedFunction'],
+            ],
             'classExistsOnTheLeftOfAnOrDoesNotAllowTheClassOnTheRight' => [
                 'code' => '<?php
                     function check(): bool {

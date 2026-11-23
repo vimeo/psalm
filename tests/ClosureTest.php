@@ -129,6 +129,70 @@ final class ClosureTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'closureFromAnAssertionOfAClassStringIsAClosure' => [
+                'code' => '<?php
+                    /**
+                     * @template T of object
+                     * @param class-string<T> $class
+                     * @psalm-assert T $value
+                     */
+                    function assertInstanceOf(mixed $value, string $class): void {
+                        if (!$value instanceof $class) {
+                            throw new InvalidArgumentException();
+                        }
+                    }
+
+                    function makesClosure(mixed $thing): Closure {
+                        assertInstanceOf($thing, Closure::class);
+
+                        return $thing;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'closureFromAnAssertionOfAClassStringIsAClosureAsAnArgument' => [
+                'code' => '<?php
+                    /**
+                     * @template T of object
+                     * @param class-string<T> $class
+                     * @psalm-assert T $value
+                     */
+                    function assertInstanceOf(mixed $value, string $class): void {
+                        if (!$value instanceof $class) {
+                            throw new InvalidArgumentException();
+                        }
+                    }
+
+                    function takesClosure(Closure $c): void {}
+                    function takesObj(object $o): void {}
+
+                    function f(mixed $t): void {
+                        assertInstanceOf($t, Closure::class);
+                        takesClosure($t);
+                        takesObj($t);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'instanceofAnInterfaceExcludesTheFinalClosure' => [
+                'code' => '<?php
+                    interface K {}
+                    /** @return K|Closure */
+                    function getC() {
+                        return function (): void {};
+                    }
+                    $c = getC();
+                    if ($c instanceof K) {
+                        $d = $c;
+                    } else {
+                        $d = null;
+                    }',
+                'assertions' => [
+                    '$d===' => 'K|null',
+                ],
+            ],
             'closureGetCurrentSinceEightFive' => [
                 'code' => '<?php
                     $fib = static function (int $n): int {
@@ -3280,6 +3344,78 @@ final class ClosureTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'FirstClassCallable:MethodForwardedToCallResolvesStaticAndClassTemplates' => [
+                'code' => '<?php
+                    /** @psalm-no-seal-methods */
+                    abstract class Base {
+                        public function __call(string $name, array $args): static {
+                            return $this;
+                        }
+                    }
+
+                    final class Child extends Base {
+                        public function hello(): string {
+                            return "";
+                        }
+                    }
+
+                    /**
+                     * @template T
+                     * @psalm-no-seal-methods
+                     */
+                    final class Box {
+                        /** @param T $v */
+                        public function __construct(private mixed $v) {}
+
+                        /** @return T */
+                        public function __call(string $name, array $args): mixed {
+                            return $this->v;
+                        }
+                    }
+
+                    /** @return Box<int> */
+                    function intBox(): Box {
+                        return new Box(1);
+                    }
+
+                    $viaStatic = (new Child())->x(...)();
+                    $hello = $viaStatic->hello();
+                    $viaTemplate = intBox()->x(...)();',
+                'assertions' => [
+                    '$viaStatic===' => 'Child',
+                    '$hello===' => 'string',
+                    '$viaTemplate===' => 'int',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'FirstClassCallable:MethodForwardedToCallOfAnUnsealedClass' => [
+                'code' => '<?php
+                    /** @psalm-no-seal-methods */
+                    final class Dynamic {
+                        public function __call(string $name, array $args): int {
+                            return 1;
+                        }
+
+                        private function hidden(): string {
+                            return "";
+                        }
+                    }
+
+                    $d = new Dynamic();
+                    $missing = $d->missing(...);
+                    $hidden = $d->hidden(...);
+                    $direct = $d->missing(1);
+                    $viaCallable = $missing(1);
+                    $viaHidden = $hidden();',
+                'assertions' => [
+                    '$direct' => 'int',
+                    '$viaCallable' => 'int',
+                    '$viaHidden' => 'int',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
         ];
     }
 
@@ -3290,6 +3426,34 @@ final class ClosureTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'closureFromAnAssertionIsCoercedToASpecificClosure' => [
+                'code' => '<?php
+                    /**
+                     * @template T of object
+                     * @param class-string<T> $class
+                     * @psalm-assert T $value
+                     */
+                    function assertInstanceOf(mixed $value, string $class): void {
+                        if (!$value instanceof $class) {
+                            throw new InvalidArgumentException();
+                        }
+                    }
+
+                    /** @return Closure(int): int */
+                    function makesClosure(mixed $thing): Closure {
+                        assertInstanceOf($thing, Closure::class);
+
+                        return $thing;
+                    }',
+                'error_message' => 'MixedReturnTypeCoercion',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'closureIsFinal' => [
+                'code' => '<?php
+                    class C extends Closure {}',
+                'error_message' => 'InvalidExtendClass',
+            ],
             'closureGetCurrentBeforeEightFive' => [
                 'code' => '<?php
                     $self = Closure::getCurrent();',
@@ -3887,6 +4051,28 @@ final class ClosureTest extends TestCase
                     $length = $closure();
                 ',
                 'error_message' => 'UndefinedMagicMethod',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'FirstClassCallable:UndefinedMagicInstanceMethodOfASealedClassWithAnotherUnsealedOne' => [
+                'code' => '<?php
+                    /** @psalm-no-seal-methods */
+                    final class Loose {
+                        public function __call(string $name, array $args): mixed {
+                            return null;
+                        }
+                    }
+
+                    final class Strict {
+                        public function __call(string $name, array $args): mixed {
+                            return null;
+                        }
+                    }
+
+                    $loose = (new Loose())->anything(...);
+                    $strict = (new Strict())->anything(...);
+                ',
+                'error_message' => 'UndefinedMagicMethod - src' . DIRECTORY_SEPARATOR . 'somefile.php:16:47 - Magic method Strict::anything does not exist',
                 'error_levels' => [],
                 'php_version' => '8.1',
             ],

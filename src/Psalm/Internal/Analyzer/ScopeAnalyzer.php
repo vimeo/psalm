@@ -34,7 +34,8 @@ final class ScopeAnalyzer
 
     /**
      * @param array<PhpParser\Node> $stmts
-     * @param list<'loop'|'switch'> $break_types
+     * @param list<'loop'|'switch'|'outer_switch'> $break_types an outer switch is one around the switch whose
+     *                                                         case actions these are
      * @param bool $return_is_exit Exit and Throw statements are treated differently from return if this is false
      * @param bool $skip_impossible_else treat the missing else of an if whose conditions matched every value
      *                                   (see NodeDataProvider::isImplicitElseImpossible()) as leaving
@@ -103,6 +104,11 @@ final class ScopeAnalyzer
                 if ($break_types && $index !== null && $index >= 0) {
                     if ($break_types[$index] === 'switch') {
                         return [...$control_actions, self::ACTION_LEAVE_SWITCH];
+                    }
+
+                    // `continue N` of a switch leaves it like `break N`, beyond the switch of the case
+                    if ($break_types[$index] === 'outer_switch') {
+                        return array_values(array_unique([...$control_actions, self::ACTION_BREAK]));
                     }
 
                     if ($is_break && $break_types[$index] === 'loop') {

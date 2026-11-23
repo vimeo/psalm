@@ -11,6 +11,7 @@ use PhpParser\Node\Name;
 use Psalm\Config;
 use Psalm\Exception\CodeException;
 use Psalm\Internal\Analyzer\FileAnalyzer;
+use Psalm\Internal\Analyzer\IssueData;
 use Psalm\Internal\Provider\ClassLikeStorageProvider;
 use Psalm\IssueBuffer;
 use Psalm\Plugin\EventHandler\AfterExpressionAnalysisInterface;
@@ -20,6 +21,7 @@ use ReflectionProperty;
 
 use function array_combine;
 use function array_keys;
+use function array_map;
 use function getcwd;
 use function preg_quote;
 use function set_time_limit;
@@ -1204,6 +1206,38 @@ final class IncludeTest extends TestCase
                 'directories' => [(string) getcwd() . DIRECTORY_SEPARATOR],
             ],
         ];
+    }
+
+    public function testCallWhoseArgumentRequiresAFileThatReturnsIsStillReturned(): void
+    {
+        $codebase = $this->project_analyzer->getCodebase();
+        $codebase->reportUnusedVariables();
+        $codebase->config->throw_exception = false;
+
+        $main = (string) getcwd() . DIRECTORY_SEPARATOR . 'one.php';
+        $included = (string) getcwd() . DIRECTORY_SEPARATOR . 'two.php';
+
+        $this->addFile($main, '<?php
+            function foo(): array {
+                return array_merge([1], require __DIR__ . "/two.php");
+            }');
+        $this->addFile($included, '<?php
+            return [2];');
+
+        $codebase->scanner->addFilesToShallowScan([$included => $included]);
+        $codebase->addFilesToAnalyze([$main => $main]);
+        $codebase->scanFiles();
+
+        $file_analyzer = new FileAnalyzer($this->project_analyzer, $main, $codebase->config->shortenFileName($main));
+        $file_analyzer->analyze();
+
+        $this->assertSame(
+            [],
+            array_map(
+                static fn(IssueData $issue): string => $issue->type . ': ' . $issue->message,
+                IssueBuffer::getIssuesDataForFile($main),
+            ),
+        );
     }
 
     /**
