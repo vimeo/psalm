@@ -10,6 +10,7 @@ use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\DataFlow\NodeTable;
 use Psalm\Internal\DataFlow\Path;
+use Psalm\Internal\Perf;
 use Psalm\Progress\Progress;
 use Psalm\Type\TaintKind;
 
@@ -888,6 +889,10 @@ final class TaintFlowResolution
             }
 
             $progress->taskDone(0);
+
+            if (Perf\Collector::$enabled) {
+                Perf\Collector::taintRound();
+            }
         }
     }
 

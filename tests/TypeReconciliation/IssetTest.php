@@ -81,6 +81,105 @@ final class IssetTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'offsetUnderOneOfSeveralLiteralKeysIsTheValueOfThoseKeys' => [
+                'code' => '<?php
+                    function getUserIps(): string {
+                        $ips = [];
+                        foreach (["REMOTE_ADDR", "HTTP_X_FORWARDED_FOR", "HTTP_CLIENT_IP"] as $k) {
+                            if (isset($_SERVER[$k])) {
+                                $ips[] = $_SERVER[$k];
+                            }
+                        }
+
+                        return implode(", ", $ips);
+                    }
+
+                    /**
+                     * @param array{a?: non-empty-string, b?: non-empty-string, argv?: list<string>, ...<string, scalar>} $arr
+                     * @param "a"|"b" $k
+                     * @return non-empty-string
+                     */
+                    function setOne(array $arr, string $k): string {
+                        if (isset($arr[$k])) {
+                            return $arr[$k];
+                        }
+                        return "x";
+                    }
+
+                    /**
+                     * @param array{a: int, b: string} $arr
+                     * @param "a"|"c" $k
+                     */
+                    function sealed(array $arr, string $k): int {
+                        if (isset($arr[$k])) {
+                            return $arr[$k];
+                        }
+                        return 0;
+                    }',
+            ],
+            'offsetUnderSeveralLiteralKeysNoneOfWhichASealedShapeListsIsItsValue' => [
+                'code' => '<?php
+                    enum Level: int {
+                        case Debug = 100;
+                        case Info = 200;
+                    }
+
+                    final class Logger {
+                        private const LEVELS = [7 => Level::Debug, 6 => Level::Info];
+
+                        /** @param 100|200|Level $level */
+                        public static function level(int|Level $level): Level {
+                            if (is_int($level) && isset(self::LEVELS[$level])) {
+                                $level = self::LEVELS[$level];
+                            }
+
+                            return $level instanceof Level ? $level : Level::from($level);
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['InvalidArrayOffset'],
+                'php_version' => '8.1',
+            ],
+            'stringWithACharacterAtAnOffsetIsNonEmpty' => [
+                'code' => '<?php
+                    /** @return non-empty-string */
+                    function firstIsA(string $s): string {
+                        if ($s[0] === "a") {
+                            return $s;
+                        }
+                        return "a";
+                    }
+
+                    /** @return non-empty-string */
+                    function secondIsSet(string $s): string {
+                        if (isset($s[1])) {
+                            return $s;
+                        }
+                        return "a";
+                    }
+
+                    /**
+                     * @param lowercase-string $s
+                     * @return non-empty-lowercase-string
+                     */
+                    function lowercase(string $s): string {
+                        if (isset($s[1])) {
+                            return $s;
+                        }
+                        return "a";
+                    }
+
+                    /**
+                     * @param ""|"ab" $s
+                     * @return "ab"
+                     */
+                    function literal(string $s): string {
+                        if (isset($s[1])) {
+                            return $s;
+                        }
+                        return "ab";
+                    }',
+            ],
             'issetOnListOffsetDefinesTheOffsetsBeforeIt' => [
                 'code' => <<<'PHP'
                     <?php

@@ -93263,7 +93263,8 @@ return array (
   ),
   'stream_last_errors' => 
   array (
-    -1 => 'list<StreamError>',
+    0 => 'list<StreamError>',
+    -1 => 'array<array-key, mixed>',
   ),
   'stream_notification_callback' => 
   array (
