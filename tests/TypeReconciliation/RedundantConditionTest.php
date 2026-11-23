@@ -225,6 +225,28 @@ final class RedundantConditionTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'notIdenticalToAVariableOfSeveralLiteralsDoesNotExcludeThem' => [
+                'code' => '<?php
+                    /** @param 1|2|3|5 $old */
+                    function changeType(int $new, int $old): bool {
+                        if ($new === $old) {
+                            return true;
+                        }
+                        if (!in_array($new, [2, 3, 5], true)) {
+                            return false;
+                        }
+                        return true;
+                    }
+
+                    /** @param 1|2 $old */
+                    function same(int $new, int $old): int {
+                        if ($new !== $old) {
+                            return 0;
+                        }
+                        /** @psalm-check-type-exact $new = 1|2 */
+                        return $new;
+                    }',
+            ],
             'assertionOfStaticOnAnInterfaceReceiverIsNotImplied' => [
                 'code' => '<?php
                     interface Comparable {

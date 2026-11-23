@@ -770,6 +770,13 @@ final class LoopAnalyzer
 
         $loop_scope->condition_written_vars = $condition_written_var_ids;
 
+        self::markVarsUnsetAtJumpsPossiblyUndefined(
+            $loop_parent_context,
+            $loop_scope,
+            $pre_conditions,
+            $post_expressions,
+        );
+
         // all the comma separated conditions of a for are evaluated, but only the first operand of the && of a while
         foreach ($only_last_condition_decides ? $pre_conditions : array_slice($pre_conditions, 0, 1) as $evaluated) {
             self::addAlwaysWrittenVarIds(
@@ -889,6 +896,49 @@ final class LoopAnalyzer
         );
 
         return null;
+    }
+
+    /**
+     * A variable unset before a `break` or a `continue` is possibly undefined after the loop, unless the conditions
+     * or post-expressions evaluated after the `continue` may assign it
+     *
+     * @param list<PhpParser\Node\Expr> $pre_conditions
+     * @param array<PhpParser\Node\Expr> $post_expressions
+     */
+    private static function markVarsUnsetAtJumpsPossiblyUndefined(
+        Context $loop_parent_context,
+        LoopScope $loop_scope,
+        array $pre_conditions,
+        array $post_expressions,
+    ): void {
+        $assigned_after_continue = [];
+
+        if ($loop_scope->vars_at_continues !== null && ($pre_conditions || $post_expressions)) {
+            $assignment_mapper = new AssignmentMapVisitor($loop_parent_context->self);
+            $traverser = new PhpParser\NodeTraverser($assignment_mapper);
+            $traverser->traverse([...$pre_conditions, ...$post_expressions]);
+            $assigned_after_continue = $assignment_mapper->getAssignedVarIds();
+        }
+
+        foreach ($loop_parent_context->vars_in_scope as $var_id => $type) {
+            if ($type->possibly_undefined || !self::isLoopVar($var_id)) {
+                continue;
+            }
+
+            // unset before one jump and set at the others is possibly undefined too
+            if (($loop_scope->vars_at_breaks !== null
+                    && !$loop_scope->breaks_through_finally
+                    && (!isset($loop_scope->vars_at_breaks[$var_id])
+                        || $loop_scope->vars_at_breaks[$var_id]->possibly_undefined))
+                || ($loop_scope->vars_at_continues !== null
+                    && !$loop_scope->continues_through_finally
+                    && (!isset($loop_scope->vars_at_continues[$var_id])
+                        || $loop_scope->vars_at_continues[$var_id]->possibly_undefined)
+                    && !isset($assigned_after_continue[$var_id]))
+            ) {
+                $loop_parent_context->vars_in_scope[$var_id] = $type->setPossiblyUndefined(true);
+            }
+        }
     }
 
     /**
@@ -2388,6 +2438,7 @@ final class LoopAnalyzer
     private static function differ(Union $type, Union $other_type): bool
     {
         return $type->getId() !== $other_type->getId()
+            || $type->possibly_undefined !== $other_type->possibly_undefined
             || array_diff_key($type->getAtomicTypes(), $other_type->getAtomicTypes()) !== []
             || array_diff_key($other_type->getAtomicTypes(), $type->getAtomicTypes()) !== [];
     }
