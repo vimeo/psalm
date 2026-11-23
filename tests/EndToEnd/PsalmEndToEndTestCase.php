@@ -47,9 +47,8 @@ abstract class PsalmEndToEndTestCase extends TestCase
     #[Override]
     public static function setUpBeforeClass(): void
     {
-        $tmp_dir = tempnam(sys_get_temp_dir(), 'PsalmEndToEndTest_');
-        assert($tmp_dir !== false);
-        self::$tmpDir = $tmp_dir;
+        self::$tmpDir = tempnam(sys_get_temp_dir(), 'PsalmEndToEndTest_');
+        assert(self::$tmpDir !== false);
         unlink(self::$tmpDir);
         mkdir(self::$tmpDir);
 

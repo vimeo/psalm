@@ -218,6 +218,7 @@ final class InstancePropertyAssignmentAnalyzer
      * property gets
      *
      * @param non-empty-list<AssignedProperty> $assigned_properties
+     * @param bool $report_null_and_false whether a value that can be null or false while the property can't is reported
      */
     public static function checkAssignedPropertyTypes(
         StatementsAnalyzer $statements_analyzer,
@@ -226,6 +227,7 @@ final class InstancePropertyAssignmentAnalyzer
         array $assigned_properties,
         Union $assignment_value_type,
         Context $context,
+        bool $report_null_and_false = true,
     ): void {
         $codebase = $statements_analyzer->getCodebase();
 
@@ -345,7 +347,7 @@ final class InstancePropertyAssignmentAnalyzer
                 $has_valid_assignment_value_type = true;
             }
 
-            if ($type_match_found) {
+            if ($type_match_found && $report_null_and_false) {
                 if (!$assignment_type->ignore_nullable_issues
                     && $assignment_type->isNullable()
                     && !$class_property_type->isNullable()

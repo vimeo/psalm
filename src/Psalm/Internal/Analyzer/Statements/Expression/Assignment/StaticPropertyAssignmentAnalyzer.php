@@ -237,6 +237,7 @@ final class StaticPropertyAssignmentAnalyzer
                 $assigned_properties,
                 $assignment_value_type,
                 $context,
+                false,
             );
         }
 

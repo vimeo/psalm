@@ -720,9 +720,9 @@ final class PropertyTypeTest extends TestCase
             }
 
             /** @param class-string<P>|class-string<Q> $c */
-            function set(string $c, ?string $x): void {
-                $c::$s = $x;
-                undefinedAfterNull();
+            function set(string $c): void {
+                $c::$s = 1.0;
+                undefinedAfterSeveral();
                 P::$s = 1.0;
                 undefinedAfterInvalid();
             }
@@ -738,7 +738,7 @@ final class PropertyTypeTest extends TestCase
 
         self::assertSame(
             [
-                'PossiblyNullPropertyAssignmentValue:12',
+                'InvalidPropertyAssignmentValue:12',
                 'UndefinedFunction:13',
                 'InvalidPropertyAssignmentValue:14',
                 'UndefinedFunction:15',
@@ -1502,27 +1502,18 @@ final class PropertyTypeTest extends TestCase
                         }
                     }',
             ],
-            'staticPropertyAssignedAnIgnoredNullOrFalse' => [
+            'staticPropertyIsNotReportedForAPossiblyNullOrFalseValue' => [
                 'code' => '<?php
-                    /** @psalm-ignore-nullable-return */
-                    function nullable(): ?string {
-                        return rand(0, 1) ? "a" : null;
-                    }
-
-                    /**
-                     * @return string|false
-                     * @psalm-ignore-falsable-return
-                     */
-                    function falsable() {
-                        return rand(0, 1) ? "a" : false;
-                    }
-
                     final class A {
-                        public static string $foo = "a";
+                        /** @var string */
+                        public static $foo = "a";
+                        public static string $native = "a";
 
-                        public static function set(): void {
-                            self::$foo = nullable();
-                            self::$foo = falsable();
+                        /** @param string|false $f */
+                        public static function set(?string $n, $f): void {
+                            self::$foo = $n;
+                            static::$foo = $f;
+                            A::$native = $n;
                         }
                     }',
             ],
@@ -5799,46 +5790,6 @@ final class PropertyTypeTest extends TestCase
                         $c::$t = 1;
                     }',
                 'error_message' => 'PossiblyInvalidPropertyAssignmentValue',
-            ],
-            'nullableAssignmentToStaticProperty' => [
-                'code' => '<?php
-                    final class A {
-                        /** @var string */
-                        public static $foo = "a";
-
-                        public static function set(?string $s): void {
-                            self::$foo = $s;
-                        }
-                    }',
-                'error_message' => 'PossiblyNullPropertyAssignmentValue - src' . DIRECTORY_SEPARATOR
-                    . 'somefile.php:7:42 - A::$foo with non-nullable declared type \'string\' cannot be assigned'
-                    . ' nullable type \'null|string',
-            ],
-            'nullableAssignmentToNativelyTypedStaticPropertyThroughTheClassName' => [
-                'code' => '<?php
-                    final class A {
-                        public static string $foo = "a";
-                    }
-
-                    function set(?string $s): void {
-                        A::$foo = $s;
-                    }',
-                'error_message' => 'PossiblyNullPropertyAssignmentValue',
-            ],
-            'falsableAssignmentToStaticProperty' => [
-                'code' => '<?php
-                    final class A {
-                        /** @var string */
-                        public static $foo = "a";
-
-                        /** @param string|false $s */
-                        public static function set($s): void {
-                            static::$foo = $s;
-                        }
-                    }',
-                'error_message' => 'PossiblyFalsePropertyAssignmentValue - src' . DIRECTORY_SEPARATOR
-                    . 'somefile.php:8:44 - static::$foo with non-falsable declared type \'string\' cannot be assigned'
-                    . ' possibly false type \'false|string',
             ],
             'badAssignmentAsWell' => [
                 'code' => '<?php
