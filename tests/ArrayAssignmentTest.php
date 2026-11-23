@@ -11,6 +11,10 @@ use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 use Psalm\Type;
 
+use function array_fill;
+use function implode;
+use function str_repeat;
+
 use const DIRECTORY_SEPARATOR;
 
 final class ArrayAssignmentTest extends TestCase
@@ -207,6 +211,50 @@ final class ArrayAssignmentTest extends TestCase
                     '$appended===' => 'array{0: int, 1: bool, 2: string, ...<int<0, max>, \'a\'|mixed>}',
                     '$sealedAppended===' => 'array{a: int, ...<int<0, max>, \'v\'>}',
                 ],
+            ],
+            'appendsStopGrowingAListShapeAtTheMaximumSize' => [
+                'code' => '<?php
+                    $a = [];' . str_repeat('
+                    $a[] = "x";', 150),
+                'assertions' => [
+                    '$a===' => 'list{' . implode(', ', array_fill(0, 100, '\'x\'')) . ', ...<\'x\'>}',
+                ],
+            ],
+            'writeUnderAKeyOfTheRestOfAShapeKeepsItsItems' => [
+                'code' => '<?php
+                    /** @var list{int, int, ...<int>} $next */
+                    $next = [1, 2];
+                    $next[2] = 5;
+
+                    /** @var list{int, int, ...<int>} $inside */
+                    $inside = [1, 2];
+                    $inside[1] = 5;
+
+                    /** @var list{int, int, ...<int>} $beyond */
+                    $beyond = [1, 2];
+                    $beyond[5] = 5;',
+                'assertions' => [
+                    '$next===' => 'list{int, int, 5, ...<int>}',
+                    '$inside===' => 'list{int, 5, ...<int>}',
+                    '$beyond===' => 'array{0: int, 1: int, 5: 5, ...<int<0, max>, int>}',
+                ],
+            ],
+            'writeUnderTheNextKeyOfACappedListKeepsItAList' => [
+                'code' => '<?php
+                    /** @param list<int> $l */
+                    function takesAList(array $l): void {}
+
+                    function capped(): int {
+                        $a = [];' . str_repeat('
+                        $a[] = 1;', 101) . '
+                        $a[100] = 0;
+                        takesAList($a);
+
+                        return $a[0];
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'nestedWriteKeepsTheItemsTheArrayHeld' => [
                 'code' => '<?php

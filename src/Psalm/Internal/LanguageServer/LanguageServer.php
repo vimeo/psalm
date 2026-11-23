@@ -67,6 +67,7 @@ use function fwrite;
 use function get_object_vars;
 use function implode;
 use function is_object;
+use function is_string;
 use function json_encode;
 use function max;
 use function parse_url;
@@ -86,6 +87,7 @@ use function urldecode;
 
 use const ARRAY_FILTER_USE_KEY;
 use const JSON_PRETTY_PRINT;
+use const PHP_URL_PATH;
 use const STDERR;
 use const STDIN;
 use const STDOUT;
@@ -987,6 +989,20 @@ final class LanguageServer extends Dispatcher
     }
 
     /**
+     * Whether the URI names a file (`file://`), rather than e.g. an unsaved `untitled:` document
+     *
+     * @psalm-pure
+     */
+    public static function isFileUri(string $uri): bool
+    {
+        $fragments = parse_url($uri);
+
+        return $fragments !== false
+            && ($fragments['scheme'] ?? null) === 'file'
+            && isset($fragments['path']);
+    }
+
+    /**
      * Transforms URI into file path
      */
     public function uriToPath(string $uri): string
@@ -1016,15 +1032,11 @@ final class LanguageServer extends Dispatcher
      */
     private function getPathPart(string $uri): string
     {
-        $fragments = parse_url($uri);
-        if ($fragments === false
-            || !isset($fragments['scheme'])
-            || $fragments['scheme'] !== 'file'
-            || !isset($fragments['path'])
-        ) {
+        $path = parse_url($uri, PHP_URL_PATH);
+        if (!self::isFileUri($uri) || !is_string($path)) {
             throw new InvalidArgumentException("Not a valid file URI: $uri");
         }
-        return $fragments['path'];
+        return $path;
     }
 
     // the methods below forward special paths

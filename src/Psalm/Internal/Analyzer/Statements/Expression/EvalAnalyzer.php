@@ -11,8 +11,10 @@ use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Issue\ForbiddenCode;
+use Psalm\Issue\ImpureFunctionCall;
 use Psalm\IssueBuffer;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
+use Psalm\Storage\Capabilities;
 use Psalm\Type\TaintKind;
 
 /**
@@ -84,6 +86,14 @@ final class EvalAnalyzer
                 $statements_analyzer->getSuppressedIssues(),
             );
         }
+
+        $statements_analyzer->signalMutation(
+            Capabilities::ALL,
+            $context,
+            'eval',
+            ImpureFunctionCall::class,
+            $stmt,
+        );
 
         $context->check_classes = false;
         $context->check_variables = false;
