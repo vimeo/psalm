@@ -217,7 +217,6 @@ final class PsalmDebugPerformanceEndToEndTest extends PsalmEndToEndTestCase
         }
 
         $this->assertStringContainsString('Run with --debug-performance=PATH', $result['STDOUT']);
-        $this->assertStringContainsString("\nPlugins and providers (time in handlers", $result['STDOUT']);
         $this->assertMatchesRegularExpression('/^Peak memory [\d.]+ MB\. Counts: \d+ class-likes, /m', $result['STDOUT']);
         // a stage that comes back is one row
         $this->assertSame(1, preg_match_all('/^  scan\.files /m', $result['STDOUT']));

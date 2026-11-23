@@ -180,9 +180,18 @@ final class DumpWriter
             $analysis_us += $file['op'] === 'analysis' ? $file['wall_us'] : 0;
         }
 
-        $out .= "\n" . 'Plugins and providers (time in handlers, as a share of file analysis time over all processes)'
-            . "\n";
-        foreach (array_slice($measurements['hooks'], 0, self::SUMMARY_ROWS) as $hook) {
+        $hooks = array_filter(
+            $measurements['hooks'],
+            static fn(array $hook): bool => $hook['wall_us'] >= self::MIN_ROW_US,
+        );
+
+        if ($hooks !== []) {
+            $out .= "\n"
+                . 'Plugins and providers (time in handlers, as a share of file analysis time over all processes)'
+                . "\n";
+        }
+
+        foreach (array_slice($hooks, 0, self::SUMMARY_ROWS) as $hook) {
             $out .= sprintf(
                 "  %9s %5.1f%% %9d calls  %s (%s)\n",
                 self::seconds($hook['wall_us']),
