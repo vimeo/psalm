@@ -144,6 +144,22 @@ final class PsalmShepherdEndToEndTest extends PsalmEndToEndTestCase
         );
     }
 
+    public function testPsalmSendsTheReportOnlyToAnHttpUrl(): void
+    {
+        $secret_file = self::$tmpDir . '/src/secret.txt';
+        file_put_contents($secret_file, 'local-secret-value');
+
+        $process = $this->runPsalmWithShepherd(['--debug', '--shepherd=file://' . $secret_file], self::githubActions());
+
+        $this->assertStringContainsString(
+            'Warning: Results not sent to Shepherd: the URL must use http or https',
+            $process->getErrorOutput(),
+        );
+        // curl would read a local file and show it as the response
+        $this->assertStringNotContainsString('local-secret-value', $process->getErrorOutput());
+        $this->assertSame(0, $process->getExitCode());
+    }
+
     public function testPsalmSendsTheHeadOfAGithubActionsPullRequestAsItsCommit(): void
     {
         $head_of_checkout = $this->initGitRepository();

@@ -34,6 +34,7 @@ use function error_get_last;
 use function explode;
 use function file_put_contents;
 use function function_exists;
+use function in_array;
 use function is_array;
 use function is_string;
 use function json_encode;
@@ -56,8 +57,12 @@ use const CURLOPT_FOLLOWLOCATION;
 use const CURLOPT_HTTPHEADER;
 use const CURLOPT_POST;
 use const CURLOPT_POSTFIELDS;
+use const CURLOPT_PROTOCOLS;
+use const CURLOPT_REDIR_PROTOCOLS;
 use const CURLOPT_RETURNTRANSFER;
 use const CURLOPT_TIMEOUT;
+use const CURLPROTO_HTTP;
+use const CURLPROTO_HTTPS;
 use const JSON_THROW_ON_ERROR;
 use const PHP_EOL;
 use const PHP_URL_HOST;
@@ -260,6 +265,13 @@ final class Shepherd implements AfterAnalysisInterface
     {
         $payload = self::encodePayload($rawPayload);
 
+        // curl also reads local files (file://) and would show them as the response
+        if (!in_array(strtolower((string) parse_url($endpoint, PHP_URL_SCHEME)), ['http', 'https'], true)) {
+            $progress->warning('Results not sent to Shepherd: the URL must use http or https');
+
+            return;
+        }
+
         // Prepare new cURL resource
         $ch = curl_init($endpoint);
         assert($ch !== false);
@@ -268,6 +280,8 @@ final class Shepherd implements AfterAnalysisInterface
         curl_setopt($ch, CURLOPT_TIMEOUT, 30);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+        curl_setopt($ch, CURLOPT_PROTOCOLS, CURLPROTO_HTTP | CURLPROTO_HTTPS);
+        curl_setopt($ch, CURLOPT_REDIR_PROTOCOLS, CURLPROTO_HTTP | CURLPROTO_HTTPS);
         curl_setopt($ch, CURLINFO_HEADER_OUT, true);
         curl_setopt($ch, CURLOPT_POST, true);
         curl_setopt($ch, CURLOPT_POSTFIELDS, $payload);
