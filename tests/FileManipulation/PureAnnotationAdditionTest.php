@@ -257,6 +257,81 @@ final class PureAnnotationAdditionTest extends FileManipulationTestCase
                 'issues_to_fix' => ['MissingPureAnnotation'],
                 'safe_types' => true,
             ],
+            'closureOfATraitMethodSuitsEveryClassUsingIt' => [
+                'input' => '<?php
+                    trait T {
+                        public int $n = 0;
+
+                        /**
+                         * @psalm-capabilities read-props
+                         */
+                        public function inner(): int {
+                            return $this->n;
+                        }
+
+                        public function withClosure(): int {
+                            $c = function (): int {
+                                return $this->inner();
+                            };
+
+                            return $c();
+                        }
+                    }
+
+                    final class Writer {
+                        use T;
+
+                        /**
+                         * @psalm-impure
+                         */
+                        public function inner(): int {
+                            file_put_contents("/tmp/x", "y");
+                            return $this->n;
+                        }
+                    }
+
+                    final class Reader {
+                        use T;
+                    }',
+                'output' => '<?php
+                    trait T {
+                        public int $n = 0;
+
+                        /**
+                         * @psalm-capabilities read-props
+                         */
+                        public function inner(): int {
+                            return $this->n;
+                        }
+
+                        public function withClosure(): int {
+                            $c = function (): int {
+                                return $this->inner();
+                            };
+
+                            return $c();
+                        }
+                    }
+
+                    final class Writer {
+                        use T;
+
+                        /**
+                         * @psalm-impure
+                         */
+                        public function inner(): int {
+                            file_put_contents("/tmp/x", "y");
+                            return $this->n;
+                        }
+                    }
+
+                    final class Reader {
+                        use T;
+                    }',
+                'php_version' => '7.4',
+                'issues_to_fix' => ['MissingPureAnnotation'],
+                'safe_types' => true,
+            ],
             'propertyWritesOfArgumentsAreNotPure' => [
                 'input' => '<?php
                     final class C {

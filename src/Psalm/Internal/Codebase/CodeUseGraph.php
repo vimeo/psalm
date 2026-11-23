@@ -623,8 +623,8 @@ final class CodeUseGraph
     }
 
     /**
-     * Two analyses of one function-like in the same run: a trait method is analysed once per class using it, whose
-     * methods its calls on `$this` may reach. Annotating it must suit all of them.
+     * Two analyses of one function-like in the same run, e.g. of a trait method, analysed once per class using it,
+     * whose methods its calls on `$this` may reach. Annotating it must suit all of them.
      *
      * @param MutationInfo $a
      * @param MutationInfo $b
