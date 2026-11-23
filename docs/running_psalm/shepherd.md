@@ -46,35 +46,3 @@ Pass a URL instead, and Psalm posts the same JSON there:
 ```
 
 Psalm posts to exactly that URL, and adds `https://` when the value has no scheme.
-
-### Report format
-
-For example, with `build`, `git` and the issue trimmed to a few of their keys:
-
-```json
-{
-  "build": {"CI_NAME": "github-actions", "CI_REPO_OWNER": "psalm", "CI_REPO_NAME": "example", "CI_BRANCH": "master", "CI_PR_NUMBER": "42"},
-  "git": {"branch": "main", "head": {"id": "0123456789abcdef0123456789abcdef01234567", "author_name": "Psalm"}, "remotes": [{"name": "origin", "url": "https://github.com/psalm/example.git"}]},
-  "issues": [{"severity": "error", "type": "InvalidReturnStatement", "file_name": "src/B.php", "line_from": 4, "snippet": "    return 'b';", "…": "…"}],
-  "issue_counts": {
-    "baselined": {"InvalidReturnStatement": 2, "InvalidReturnType": 2},
-    "info": {"InvalidReturnType": 1, "MissingReturnType": 1}
-  },
-  "analysis": {
-    "full": true,
-    "file_count": 4,
-    "target_php_version": "7.1",
-    "find_unused_code": true,
-    "taint_analysis": false
-  },
-  "coverage": [0, 12],
-  "level": 1,
-  "versions": {"psalm": "dev-master@f2ccf76759784652b74313def4ac90a9322ffe9a", "parser": "v5.9.0@9e33da9553fe7786f0962b35f4e4ecf01be89def", "php": "8.5.12"}
-}
-```
-
-Every issue is in exactly one place: an error is in `issues`, an issue your baseline covers is counted in `issue_counts.baselined` (also when your config reports it as `info`), and any other `info` issue is counted in `issue_counts.info`. A group without issues is `{}`.
-
-`coverage` is `[mixed, non-mixed]` expression counts. `analysis.target_php_version` is the version Psalm analyses your code for, and `versions.php` is the one that runs Psalm. A run on given paths has `"full": false` and counts only those paths, so follow trends with full runs.
-
-Newer versions of Psalm only add keys. Ignore the keys you don't know, and treat a missing key as unknown, not as zero.
