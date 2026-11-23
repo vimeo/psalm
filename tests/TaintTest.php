@@ -1766,6 +1766,22 @@ final class TaintTest extends TestCase
                     echo implode(",", [$tag, new Plain()]);
                     echo strval(new Plain());',
             ],
+            'otherItemsDestructuredFromAMixedValueAreNotTainted' => [
+                'code' => '<?php
+                    function get(): mixed {
+                        return ["safe", "k" => "safe", 2 => $_GET["x"]];
+                    }
+
+                    function show(): void {
+                        [$first] = get();
+                        echo (string) $first;
+                        ["k" => $keyed] = get();
+                        echo (string) $keyed;
+                        foreach ([get()] as [$item]) {
+                            echo (string) $item;
+                        }
+                    }',
+            ],
             'deprecatedPromotedPropertyIsNotUsedByItsOwnDeclaration' => [
                 'code' => '<?php
                     final class A {
@@ -1887,6 +1903,18 @@ final class TaintTest extends TestCase
                             return;
                         }
                         fsockopen($url, 80);
+                    }',
+            ],
+            'matchingAnotherListOfHostsIsADifferentCondition' => [
+                'code' => '<?php
+                    function fetch(): void {
+                        $url = trim((string) $_GET["next"]);
+                        $host = (string) parse_url($url, PHP_URL_HOST);
+                        if (preg_match("#^(api\.example\.com|cdn\.example\.com)$#", $host)) {
+                            fsockopen($url, 80);
+                        } elseif (preg_match("#^(img\.example\.com|static\.example\.com)$#", $host)) {
+                            fsockopen($url, 443);
+                        }
                     }',
             ],
             'noTaintFromASpecializedPregReplaceCallbackCallbackInItsOtherCalls' => [
@@ -7408,6 +7436,60 @@ final class TaintTest extends TestCase
     public static function providerInvalidCodeParse(): array
     {
         return [
+            'itemDestructuredFromAMixedValueIsTainted' => [
+                'code' => '<?php
+                    function get(): mixed {
+                        return ["safe", $_GET["x"]];
+                    }
+
+                    [$first, $second] = get();
+                    echo (string) $second;',
+                'error_message' => 'TaintedHtml',
+            ],
+            'itemDestructuredByKeyFromAMixedValueIsTainted' => [
+                'code' => '<?php
+                    function get(): mixed {
+                        return ["k" => $_GET["x"]];
+                    }
+
+                    ["k" => $keyed] = get();
+                    echo (string) $keyed;',
+                'error_message' => 'TaintedHtml',
+            ],
+            'itemDestructuredFromAMixedParameterIsTainted' => [
+                'code' => '<?php
+                    function show(mixed $value): void {
+                        [$first] = $value;
+                        echo (string) $first;
+                    }
+
+                    show($_GET["x"]);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'itemDestructuredFromAMixedValueInAForeachIsTainted' => [
+                'code' => '<?php
+                    function get(): mixed {
+                        return ["safe", $_GET["x"]];
+                    }
+
+                    foreach ([get()] as [$first, $second]) {
+                        echo (string) $second;
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'itemDestructuredFromAnArrayAccessObjectIsTainted' => [
+                'code' => '<?php
+                    $values = new ArrayObject($_GET);
+                    [$first] = $values;
+                    echo (string) $first;',
+                'error_message' => 'TaintedHtml',
+            ],
+            'superglobalIsStillTaintedAfterEval' => [
+                'code' => '<?php // --taint-analysis
+                    eval("return 1;");
+                    echo $_GET["a"];',
+                'error_message' => 'TaintedHtml',
+            ],
             'foreachOverANullableArrayKeepsTheTaintOfItsValues' => [
                 'code' => '<?php
                     $a = rand(0, 1) ? null : [(string) $_GET["x"]];
