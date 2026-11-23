@@ -2163,6 +2163,26 @@ final class MethodSignatureTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'overrideNativeFinalMethodOfDocblockFinalClass' => [
+                'code' => '<?php
+                    /**
+                     * @final
+                     */
+                    class A {
+                       final public function foo(): void {}
+                    }
+
+                    /**
+                     * @psalm-suppress InvalidExtendClass
+                     */
+                    class B extends A {
+                        /**
+                         * @psalm-suppress MethodSignatureMismatch
+                         */
+                        public function foo(): void {}
+                    }',
+                'error_message' => 'MethodSignatureMismatch',
+            ],
             'staticTypeArgumentStillChecksDocumentedReturnType' => [
                 'code' => '<?php
                     /** @template T */

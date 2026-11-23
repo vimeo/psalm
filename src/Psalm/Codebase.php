@@ -1176,6 +1176,8 @@ final class Codebase
             throw new UnexpectedValueException('Should not be checking references');
         }
 
+        $symbol = ltrim($symbol, '\\');
+
         if (str_contains($symbol, '::$')) {
             return $this->findReferencesToProperty($symbol);
         }
@@ -1185,7 +1187,8 @@ final class Codebase
                 + $this->findReferencesToClassConstant($symbol);
         }
 
-        return $this->findReferencesToClassLike($symbol);
+        // a name without `::` is a class-like's or a function's
+        return $this->findReferencesToClassLike($symbol) + $this->findReferencesToMethod($symbol);
     }
 
     /**
