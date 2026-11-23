@@ -190,10 +190,7 @@ class FileFilter
                     }
 
                     if (!is_dir($directory_path)) {
-                        throw new ConfigException(
-                            $base_dir . DIRECTORY_SEPARATOR . $directory_path
-                            . ' is not a directory',
-                        );
+                        throw new ConfigException($directory_path . ' is not a directory');
                     }
 
                     $directory_paths = [$directory_path];
@@ -212,7 +209,7 @@ class FileFilter
                                 $linked_path = realpath($iterator->getPathname());
 
                                 if ($linked_path !== false
-                                    && stripos($linked_path, $directory_path) !== 0
+                                    && stripos(self::slashify($linked_path), self::slashify($directory_path)) !== 0
                                     && is_dir($linked_path)
                                 ) {
                                     $filter->addConfiguredDirectory(
@@ -684,6 +681,8 @@ class FileFilter
         bool $ignore_type_stats,
         bool $declare_strict_types,
     ): void {
+        $dir_name = self::slashify($dir_name);
+
         if ($this instanceof ProjectFileFilter) {
             if ($ignore_type_stats) {
                 $this->ignore_type_stats[$dir_name] = true;
