@@ -597,7 +597,7 @@ final class FormulaGenerator
                     return [$truthy_clause];
                 }
 
-                return [
+                $clauses = [
                     $truthy_clause,
                     new Clause(
                         [$result_id => [(string) $falsy => $falsy], $receiver_id => [(string) $not_null => $not_null]],
@@ -605,6 +605,47 @@ final class FormulaGenerator
                         $creating_object_id,
                     ),
                 ];
+
+                // where the call is truthy, the method was called and returned true
+                if ($nullsafe_call === $conditional) {
+                    $custom_assertions = AssertionFinder::getCustomAssertions(
+                        $nullsafe_call,
+                        $this_class_name,
+                        $source,
+                    );
+
+                    foreach ($custom_assertions as $assertions) {
+                        // the receiver is not null where the call is truthy: said first, so that an assertion on the
+                        // receiver (`@psalm-assert-if-true =self<T> $this`) doesn't make that a redundant check
+                        if (isset($assertions[$receiver_id])) {
+                            $clauses[] = new Clause(
+                                [$receiver_id => [(string) $not_null => $not_null]],
+                                $conditional_object_id,
+                                $creating_object_id,
+                            );
+                        }
+
+                        foreach ($assertions as $var => $anded_types) {
+                            foreach ($anded_types as $orred_types) {
+                                $mapped_orred_types = [];
+                                foreach ($orred_types as $orred_type) {
+                                    $mapped_orred_types[(string) $orred_type] = $orred_type;
+                                }
+
+                                $clauses[] = new Clause(
+                                    [$var => $mapped_orred_types],
+                                    $conditional_object_id,
+                                    $creating_object_id,
+                                    false,
+                                    true,
+                                    $orred_types[0]->hasEquality(),
+                                );
+                            }
+                        }
+                    }
+                }
+
+                return $clauses;
             }
         }
 
