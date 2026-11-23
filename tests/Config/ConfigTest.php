@@ -44,6 +44,7 @@ use function array_keys;
 use function array_map;
 use function array_pop;
 use function basename;
+use function class_exists;
 use function dirname;
 use function error_get_last;
 use function file_get_contents;
@@ -2308,7 +2309,7 @@ final class ConfigTest extends DeferredAnalyzerTestCase
     }
 
     /**
-     * @return array<string, array{class-string, string, string}>
+     * @return array<string, array{string, string, string}>
      * @psalm-pure
      */
     public static function providerSinksOfExtensionsWithoutTheirStubs(): array
@@ -2330,8 +2331,6 @@ final class ConfigTest extends DeferredAnalyzerTestCase
     /**
      * The extension stubs are only loaded when composer.json requires their extension, which projects often leave
      * out for the bundled ones: the sinks of their functions still apply
-     *
-     * @param class-string $class
      */
     #[DataProvider('providerSinksOfExtensionsWithoutTheirStubs')]
     public function testSinksOfExtensionsWithoutTheirStubs(string $class, string $method, string $error): void
