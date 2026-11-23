@@ -8,6 +8,7 @@ use BadMethodCallException;
 use Override;
 use Psalm\Config;
 use Psalm\Internal\Analyzer\IssueData;
+use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\VersionUtils;
 use Psalm\IssueBuffer;
 use Psalm\Plugin\EventHandler\AfterAnalysisInterface;
@@ -32,9 +33,13 @@ use function function_exists;
 use function is_array;
 use function is_string;
 use function json_encode;
+use function ksort;
+use function memory_get_peak_usage;
+use function microtime;
 use function parse_url;
 use function preg_replace;
 use function rawurldecode;
+use function round;
 use function sprintf;
 use function str_replace;
 use function strip_tags;
@@ -50,6 +55,7 @@ use const CURLOPT_POST;
 use const CURLOPT_POSTFIELDS;
 use const CURLOPT_RETURNTRANSFER;
 use const CURLOPT_TIMEOUT;
+use const JSON_PRESERVE_ZERO_FRACTION;
 use const JSON_THROW_ON_ERROR;
 use const PHP_EOL;
 use const PHP_URL_HOST;
@@ -95,6 +101,9 @@ final class Shepherd implements AfterAnalysisInterface
      *     git: array,
      *     issues: array,
      *     baselined: object,
+     *     info: object,
+     *     fixable: object,
+     *     run: array{seconds: float, peak_memory: int, threads: int},
      *     coverage: list<int>,
      *     level: int<1, 8>,
      *     versions: array<string, string>
@@ -139,12 +148,23 @@ final class Shepherd implements AfterAnalysisInterface
 
         $codebase = $event->getCodebase();
 
+        $fixable_issue_counts = IssueBuffer::getFixableIssues();
+        ksort($fixable_issue_counts);
+
         return [
             'build' => $build_info,
             'git' => $source_control_data,
             'issues' => $normalized_data,
-            // an object even when empty, which PHP would encode as a list
+            // objects even when empty, which PHP would encode as lists
             'baselined' => (object) IssueBuffer::getBaselinedIssueCounts(),
+            'info' => (object) IssueBuffer::getInfoIssueCounts(),
+            'fixable' => (object) $fixable_issue_counts,
+            'run' => [
+                'seconds' => round(microtime(true) - IssueBuffer::getFinishStartTime(), 2),
+                // of this process only, not of its forked workers
+                'peak_memory' => memory_get_peak_usage(),
+                'threads' => ProjectAnalyzer::getInstance()->threads,
+            ],
             'coverage' => $codebase->analyzer->getTotalTypeCoverage($codebase),
             'level' => Config::getInstance()->level,
             'versions' => [
@@ -156,7 +176,8 @@ final class Shepherd implements AfterAnalysisInterface
 
     private static function sendPayload(string $endpoint, array $rawPayload, Progress $progress): void
     {
-        $payload = json_encode($rawPayload, JSON_THROW_ON_ERROR);
+        // so that `run.seconds` is always a float, 2.0 included
+        $payload = json_encode($rawPayload, JSON_THROW_ON_ERROR | JSON_PRESERVE_ZERO_FRACTION);
 
         // Prepare new cURL resource
         $ch = curl_init($endpoint);

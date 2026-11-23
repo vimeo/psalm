@@ -215,6 +215,7 @@ final class PsalmShepherdEndToEndTest extends PsalmEndToEndTestCase
         $report = $this->runPsalmAndReadTheRawReport(['--no-cache'], self::githubActions());
 
         $this->assertStringContainsString('"baselined":{}', $report);
+        $this->assertStringContainsString('"info":{}', $report);
         $this->assertSame(
             [
                 'src/FileWithErrors.php MissingReturnType',
@@ -264,7 +265,10 @@ final class PsalmShepherdEndToEndTest extends PsalmEndToEndTestCase
         // the InvalidReturnType of a() and foo() are info now, but the baseline still covers them (it has no
         // unused entry); those of b() and the MissingReturnType of c() are info, and not in the baseline
         $this->assertStringContainsString('"baselined":{"InvalidReturnStatement":2,"InvalidReturnType":2}', $report);
+        $this->assertStringContainsString('"info":{"InvalidReturnType":1,"MissingReturnType":1}', $report);
         $this->assertSame(['src/B.php InvalidReturnStatement'], self::sentIssues($report));
+        // all the issues Psalm can fix, whether reported as errors, as info or covered by the baseline
+        $this->assertSame(['InvalidReturnType' => 3, 'MissingReturnType' => 1], self::decode($report)['fixable']);
     }
 
     public function testPsalmSendsTheSameBaselinedIssuesWithTheCacheAndWithThreads(): void
@@ -282,21 +286,31 @@ final class PsalmShepherdEndToEndTest extends PsalmEndToEndTestCase
             $without_cache['baselined'],
         );
 
+        // the conditions under which Psalm::getThreads() allows more than one thread
+        $can_fork = !defined('PHP_WINDOWS_VERSION_MAJOR')
+            && extension_loaded('pcntl')
+            && extension_loaded('posix')
+            && function_exists('pcntl_fork');
+
         // with a cold cache (--set-baseline changed psalm.xml, which the cache is keyed by), then a warm one, then
         // a warm one with forked workers, as there are more files than threads
         foreach ([['--threads=1'], ['--threads=1'], ['--threads=2', '--debug']] as $args) {
             $report = self::decode($this->runPsalmAndReadTheRawReport($args, self::githubActions(), $error_output));
 
             $this->assertSame($without_cache['baselined'], $report['baselined'], implode(' ', $args));
+            $this->assertSame($without_cache['fixable'], $report['fixable'], implode(' ', $args));
             $this->assertSame($without_cache['issues'], $report['issues'], implode(' ', $args));
+
+            /** @var array{seconds: mixed, peak_memory: mixed, threads: mixed} $run */
+            $run = $report['run'];
+            $this->assertSame($args[0] === '--threads=2' && $can_fork ? 2 : 1, $run['threads'], implode(' ', $args));
+            $this->assertIsFloat($run['seconds']);
+            $this->assertGreaterThanOrEqual(0, $run['seconds']);
+            $this->assertIsInt($run['peak_memory']);
+            $this->assertGreaterThan(0, $run['peak_memory']);
         }
 
-        // the conditions under which Psalm::getThreads() allows more than one thread
-        if (!defined('PHP_WINDOWS_VERSION_MAJOR')
-            && extension_loaded('pcntl')
-            && extension_loaded('posix')
-            && function_exists('pcntl_fork')
-        ) {
+        if ($can_fork) {
             $this->assertStringContainsString('Forking analysis', $error_output);
         }
     }

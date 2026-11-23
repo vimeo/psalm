@@ -32,6 +32,9 @@ One JSON `POST` request at the end of the run, with:
 * the CI build and the last commit, including the **names and emails** of its author and committer
 * every issue of severity `error`, with its file path and the **source code snippet** around it
 * how many issues your [baseline](dealing_with_code_issues.md#using-a-baseline-file) covers, by issue type (only the types and counts, no code), for example `"baselined": {"InvalidReturnType": 3, "MixedAssignment": 12}`. It is `{}` when the run uses no baseline (none is configured, or `--ignore-baseline` is given) or the baseline covers none of the issues
+* how many issues your config reports as `info` (see [issue handlers](dealing_with_code_issues.md)) and the baseline doesn't cover, by issue type, for example `"info": {"MissingReturnType": 4}`. Every issue is in exactly one of `issues` (errors), `baselined` and `info`: an `info` issue the baseline covers is only counted in `baselined`
+* how many issues Psalm can fix with `--alter`, by issue type, for example `"fixable": {"InvalidReturnType": 3}`. These count every fixable issue, whether it is an error, `info` or covered by the baseline
+* the run itself, for example `"run": {"seconds": 12.34, "peak_memory": 268435456, "threads": 8}`: how long the analysis took, the peak memory in bytes (of the main process only, the one that prints how much memory it used, so forked workers are not included), and the number of threads
 * the type coverage counts, your error level, and the versions of Psalm and the PHP parser
 
 Because of the code snippets, don't use `--shepherd` for code that must not leave your servers. Without `--shepherd` (or `PSALM_SHEPHERD`) Psalm sends nothing.

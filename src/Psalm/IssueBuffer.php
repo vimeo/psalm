@@ -161,6 +161,11 @@ final class IssueBuffer
     /** @var array<string, int<1, max>> */
     private static array $baselined_issue_counts = [];
 
+    /** @var array<string, int<1, max>> */
+    private static array $info_issue_counts = [];
+
+    private static float $finish_start_time = 0.0;
+
     /**
      * This will add an issue to be emitted if it's not suppressed and return if it has been added
      *
@@ -626,6 +631,30 @@ final class IssueBuffer
     }
 
     /**
+     * How many issues the config reports as info and the baseline didn't cover in the last finish(), by issue type,
+     * sorted by type
+     *
+     * @internal
+     * @return array<string, int<1, max>>
+     * @psalm-capabilities read-globals
+     */
+    public static function getInfoIssueCounts(): array
+    {
+        return self::$info_issue_counts;
+    }
+
+    /**
+     * The start time given to the last finish(), as microtime(true)
+     *
+     * @internal
+     * @psalm-capabilities read-globals
+     */
+    public static function getFinishStartTime(): float
+    {
+        return self::$finish_start_time;
+    }
+
+    /**
      * @return array<string, int>
      * @psalm-external-mutation-free
      */
@@ -782,6 +811,8 @@ final class IssueBuffer
 
         $issues_data = [];
         self::$baselined_issue_counts = [];
+        self::$info_issue_counts = [];
+        self::$finish_start_time = $start_time;
 
         if (self::$issues_data) {
             if (in_array(
@@ -808,28 +839,32 @@ final class IssueBuffer
             $issues_data = self::$issues_data;
         }
 
-        if (!empty($issue_baseline)) {
-            // Set severity for issues in baseline to INFO
-            foreach ($issues_data as $file_path => $file_issues) {
-                foreach ($file_issues as $key => $issue_data) {
-                    if (BaselineMatcher::consume(
-                        $codebase->config,
-                        $issue_baseline,
-                        $issue_data->file_name,
-                        $issue_data->type,
-                        $issue_data->selected_text,
-                    )) {
-                        $issue_data->severity = IssueData::SEVERITY_INFO;
-                        self::$baselined_issue_counts[$issue_data->type]
-                            = (self::$baselined_issue_counts[$issue_data->type] ?? 0) + 1;
-                    }
-
-                    $issues_data[$file_path][$key] = $issue_data;
+        foreach ($issues_data as $file_path => $file_issues) {
+            foreach ($file_issues as $key => $issue_data) {
+                // Set severity for issues in baseline to INFO
+                if ($issue_baseline && BaselineMatcher::consume(
+                    $codebase->config,
+                    $issue_baseline,
+                    $issue_data->file_name,
+                    $issue_data->type,
+                    $issue_data->selected_text,
+                )) {
+                    $issue_data->severity = IssueData::SEVERITY_INFO;
+                    self::$baselined_issue_counts[$issue_data->type]
+                        = (self::$baselined_issue_counts[$issue_data->type] ?? 0) + 1;
+                } elseif ($issue_data->severity === IssueData::SEVERITY_INFO) {
+                    self::$info_issue_counts[$issue_data->type]
+                        = (self::$info_issue_counts[$issue_data->type] ?? 0) + 1;
                 }
+
+                $issues_data[$file_path][$key] = $issue_data;
             }
+        }
 
-            ksort(self::$baselined_issue_counts);
+        ksort(self::$baselined_issue_counts);
+        ksort(self::$info_issue_counts);
 
+        if (!empty($issue_baseline)) {
             if ($codebase->config->find_unused_baseline_entry) {
                 foreach ($issue_baseline as $file_path => $issues) {
                     foreach ($issues as $issue_name => $issue) {
