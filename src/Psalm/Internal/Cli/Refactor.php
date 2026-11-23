@@ -94,7 +94,12 @@ final class Refactor
         $options = CliUtils::getOptions($args, $valid_short_options, $valid_long_options);
 
         // --refactor is an option of psalm, which forwards the call to psalm-refactor
-        CliUtils::rejectUnrecognisedOptions($args, $valid_short_options, $valid_long_options, ['--refactor']);
+        CliUtils::rejectUnrecognisedOptions(
+            $args,
+            $valid_short_options,
+            $valid_long_options,
+            ['--refactor', '--into', '--to'],
+        );
 
         if (array_key_exists('help', $options)) {
             $options['h'] = false;

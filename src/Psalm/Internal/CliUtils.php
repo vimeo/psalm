@@ -273,7 +273,8 @@ final class CliUtils
      * @param list<string> $args the arguments, without the script name
      * @param list<string> $short_options
      * @param list<string> $long_options
-     * @param list<string> $ignored_options options of the psalm command that forwarded the call, like "--alter"
+     * @param list<string> $ignored_options options of the psalm command that forwarded the call, like "--alter",
+     *      and those the command validates itself
      */
     public static function rejectUnrecognisedOptions(
         array $args,
