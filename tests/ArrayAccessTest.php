@@ -3930,6 +3930,27 @@ final class ArrayAccessTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'offsetSetOfAnItemOfAnArrayChecksTheValue' => [
+                'code' => '<?php
+                    final class Dog {}
+                    final class Cat {}
+
+                    /** @implements ArrayAccess<int, Dog> */
+                    final class Dogs implements ArrayAccess {
+                        public function offsetExists(mixed $offset): bool { return false; }
+                        public function offsetGet(mixed $offset): Dog { return new Dog(); }
+                        public function offsetSet(mixed $offset, mixed $value): void { echo "set"; }
+                        public function offsetUnset(mixed $offset): void { echo "unset"; }
+                    }
+
+                    /** @param array<string, Dogs> $packs */
+                    function addCat(array $packs): void {
+                        $packs["k"][] = new Cat();
+                    }',
+                'error_message' => 'InvalidArgument',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
             'nullOffsetOfAnObjectThatRejectsItInArrayAccess' => [
                 'code' => '<?php
                     /** @implements ArrayAccess<string, int> */

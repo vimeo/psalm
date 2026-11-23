@@ -381,6 +381,7 @@
             <xs:element name="MissingClosureReturnType" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="MissingConstructor" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="MissingDependency" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="MissingExtensionRequirement" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="MissingDocblockType" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="MissingFile" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="MissingInterfaceImmutableAnnotation" type="IssueHandlerType" minOccurs="0" />

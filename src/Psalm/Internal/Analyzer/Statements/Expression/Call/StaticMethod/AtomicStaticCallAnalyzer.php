@@ -1453,7 +1453,23 @@ final class AtomicStaticCallAnalyzer
 
         $fake_method_call_type = $statements_analyzer->node_data->getType($fake_method_call_expr);
 
+        // a call forwarded to `$this` keeps the conditional assertions of the instance call, on `$this` too
+        $if_true_assertions = $virtual_var_name === 'this'
+            ? $statements_analyzer->node_data->getIfTrueAssertions($fake_method_call_expr)
+            : null;
+        $if_false_assertions = $virtual_var_name === 'this'
+            ? $statements_analyzer->node_data->getIfFalseAssertions($fake_method_call_expr)
+            : null;
+
         $statements_analyzer->node_data = $old_data_provider;
+
+        if ($if_true_assertions !== null) {
+            $statements_analyzer->node_data->setIfTrueAssertions($stmt, $if_true_assertions);
+        }
+
+        if ($if_false_assertions !== null) {
+            $statements_analyzer->node_data->setIfFalseAssertions($stmt, $if_false_assertions);
+        }
 
         if ($fake_method_call_type) {
             $statements_analyzer->node_data->setType($stmt, $fake_method_call_type);

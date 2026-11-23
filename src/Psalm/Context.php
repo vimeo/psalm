@@ -84,6 +84,12 @@ final class Context
     public const PHP_SYMBOL_GUARD_VAR_ID = 'PHP_SYMBOL_GUARD';
 
     /**
+     * The prefix of the pseudo-variables that are true where an extension is known to be loaded: an
+     * `extension_loaded()` check, or a `function_exists()` or `class_exists()` check of one of its symbols
+     */
+    public const PHP_EXTENSION_VAR_ID_PREFIX = 'PHP_EXTENSION ';
+
+    /**
      * The pseudo-variable through which comparisons of the PHP_SAPI constant and of php_sapi_name() narrow them, so
      * a branch knows the SAPI it runs in (e.g. `if (PHP_SAPI === 'cli')`); it can't clash with a variable name.
      */
@@ -2101,6 +2107,16 @@ final class Context
                 $this->vars_in_scope[$const_name] = $const_type;
             }
         }
+    }
+
+    /**
+     * The pseudo-variable that is true where the extension is loaded (see PHP_EXTENSION_VAR_ID_PREFIX)
+     *
+     * @psalm-pure
+     */
+    public static function getExtensionVarId(string $extension): string
+    {
+        return self::PHP_EXTENSION_VAR_ID_PREFIX . strtolower($extension);
     }
 
     /**

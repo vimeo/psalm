@@ -55,8 +55,8 @@ const INCLUDES = [
 const EXCLUDES = [
     // php-zmq does not build on PHP 8.5 (it calls zend_exception_get_default(), removed in 8.5).
     '8.5' => ['zmq'],
-    // php-zmq still calls zend_exception_get_default()
-    '8.6' => ['zmq'],
+    // php-zmq still calls zend_exception_get_default(), and grpc 1.85.4 doesn't compile against 8.6
+    '8.6' => ['zmq', 'grpc'],
 ];
 
 /** Extension versions pinned for specific versions, by base extension name. */
