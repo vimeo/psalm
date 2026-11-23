@@ -114,6 +114,47 @@ final class PsalmEndToEndTest extends PsalmEndToEndTestCase
         $this->assertStringNotContainsString('Uncaught', $process->getErrorOutput());
     }
 
+    public function testEmptyComposerJsonIsAValidProject(): void
+    {
+        $project_dir = tempnam(sys_get_temp_dir(), 'PsalmEndToEndEmptyComposerJson_');
+        assert($project_dir !== false);
+        unlink($project_dir);
+        mkdir($project_dir);
+
+        try {
+            file_put_contents($project_dir . '/composer.json', '{}');
+            mkdir($project_dir . '/vendor');
+            file_put_contents($project_dir . '/vendor/autoload.php', "<?php\n");
+
+            $init = self::newProcess([PHP_BINARY, $this->psalm, '--init'], $project_dir, self::agentEnvVarsToUnset());
+            $init->run();
+
+            mkdir($project_dir . '/src');
+            file_put_contents($project_dir . '/src/a.php', "<?php\necho strlen('a');\n");
+            file_put_contents(
+                $project_dir . '/psalm.xml',
+                '<?xml version="1.0"?><psalm><projectFiles><directory name="src"/></projectFiles></psalm>',
+            );
+
+            $analysis = self::newProcess(
+                [PHP_BINARY, $this->psalm, '--no-cache', '--no-progress'],
+                $project_dir,
+                self::agentEnvVarsToUnset(),
+            );
+            $analysis->run();
+        } finally {
+            self::recursiveRemoveDirectory($project_dir);
+        }
+
+        $this->assertStringNotContainsString('Invalid composer.json', $init->getErrorOutput());
+        $this->assertStringContainsString(
+            'Could not located any PSR-0 or PSR-4-compatible paths',
+            $init->getErrorOutput(),
+        );
+        $this->assertSame(0, $analysis->getExitCode(), $analysis->getOutput() . $analysis->getErrorOutput());
+        $this->assertStringContainsString('No errors found!', $analysis->getOutput());
+    }
+
     /**
      * @param list<string> $args
      */
@@ -391,6 +432,26 @@ final class PsalmEndToEndTest extends PsalmEndToEndTestCase
         $this->assertSame('', $process->getErrorOutput());
     }
 
+    public function testRefactorHelpListsMonochromeOnceAndRejectsTheUnusedFileOption(): void
+    {
+        $help = self::newProcess([PHP_BINARY, $this->psalmRefactor, '--help'], self::$tmpDir, self::agentEnvVarsToUnset());
+        $help->run();
+
+        $this->assertSame(0, $help->getExitCode(), $help->getErrorOutput());
+        $this->assertSame(1, substr_count($help->getOutput(), '-m, --monochrome'));
+        $this->assertDoesNotMatchRegularExpression('/^\s*-m\s*$/m', $help->getOutput());
+
+        $file = self::newProcess(
+            [PHP_BINARY, $this->psalmRefactor, '-f', 'src/Foo.php', '--help'],
+            self::$tmpDir,
+            self::agentEnvVarsToUnset(),
+        );
+        $file->run();
+
+        $this->assertSame(1, $file->getExitCode());
+        $this->assertStringContainsString('Unrecognised argument "-f"', $file->getErrorOutput());
+    }
+
     public function testRefactorAcceptsMemoryLimitAndUseIniDefaultsOptions(): void
     {
         $process = self::newProcess(
@@ -483,6 +544,47 @@ final class PsalmEndToEndTest extends PsalmEndToEndTestCase
 
             $this->assertSame('64M', file_get_contents($memory_limit_file));
             $this->assertStringContainsString('Could not locate root directory', $process->getErrorOutput());
+        } finally {
+            unlink($prepend_file);
+            if (file_exists($memory_limit_file)) {
+                unlink($memory_limit_file);
+            }
+        }
+    }
+
+    public function testPsalterHonoursUseIniDefaults(): void
+    {
+        $memory_limit_file = self::$tmpDir . '/psalter-ini-defaults-memory-limit.txt';
+        $prepend_file = self::$tmpDir . '/psalter-ini-defaults-prepend.php';
+        file_put_contents(
+            $prepend_file,
+            "<?php\nregister_shutdown_function(static function (): void {\n"
+                . "    file_put_contents(\n"
+                . "        " . var_export($memory_limit_file, true) . ", (string) ini_get('memory_limit')\n"
+                . "    );\n"
+                . "});\n",
+        );
+
+        try {
+            $process = self::newProcess(
+                [
+                    PHP_BINARY,
+                    '-d',
+                    'memory_limit=64M',
+                    '-d',
+                    'auto_prepend_file=' . $prepend_file,
+                    $this->psalter,
+                    '--use-ini-defaults',
+                    '--issues=all',
+                    '--root=missing-project',
+                ],
+                self::$tmpDir,
+                self::agentEnvVarsToUnset(),
+            );
+            $process->run();
+
+            $this->assertStringContainsString('Could not locate root directory', $process->getErrorOutput());
+            $this->assertSame('64M', file_get_contents($memory_limit_file));
         } finally {
             unlink($prepend_file);
             if (file_exists($memory_limit_file)) {

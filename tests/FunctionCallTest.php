@@ -24,6 +24,71 @@ final class FunctionCallTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'ignoredNullableReturnInAnExtraEntryOfAnUnsealedShape' => [
+                'code' => '<?php
+                    /** @psalm-ignore-nullable-return */
+                    function maybeName(): ?string {
+                        return rand(0, 1) ? "a" : null;
+                    }
+
+                    /** @param array{id: int, ...<string, string>} $a */
+                    function takesShape(array $a): void {}
+
+                    takesShape(["id" => 1, "name" => maybeName()]);
+                ',
+            ],
+            'ignoredFalsableReturnInAnExtraEntryOfAnUnsealedShape' => [
+                'code' => '<?php
+                    /** @psalm-ignore-falsable-return */
+                    function maybeName(): string|false {
+                        return rand(0, 1) ? "a" : false;
+                    }
+
+                    /** @param array{id: int, ...<string, string>} $a */
+                    function takesShape(array $a): void {}
+
+                    takesShape(["id" => 1, "name" => maybeName()]);
+                ',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'containedEntriesOfAnUnsealedShape' => [
+                'code' => '<?php
+                    /** @param array{id: int, ...<string, int>} $a */
+                    function takesShape(array $a): void {}
+
+                    /** @param array{id: positive-int, ...<non-empty-string, positive-int>} $b */
+                    function passesShape(array $b): void {
+                        takesShape($b);
+                        takesShape(["id" => 1, "a" => 2, "b" => 3]);
+                    }
+                ',
+            ],
+            'strtolowerOfStringLiteralsIsTheLoweredLiterals' => [
+                'code' => '<?php
+                    /** @return \'Interface\'|\'Trait\'|\'Enum\'|\'Class\' */
+                    function kind(): string {
+                        return \'Class\';
+                    }
+
+                    /** @param \'interface\'|\'trait\'|\'enum\'|\'class\' $kind */
+                    function check(string $kind): void {}
+
+                    check(strtolower(kind()));
+                    check(mb_strtolower(kind()));
+
+                    $literal = strtolower("ABC");
+                    $multibyte = mb_strtolower("ÄBC");
+                    $other = strtolower(rand() ? "ABC" : (string) rand());
+                    $encoding = mb_strtolower("ABC", "UTF-8");',
+                'assertions' => [
+                    '$literal===' => '\'abc\'',
+                    '$multibyte===' => '\'äbc\'',
+                    '$other===' => 'non-empty-lowercase-string',
+                    '$encoding===' => 'non-empty-string',
+                ],
+            ],
             'pathinfoWithAllElementsReturnsTheArray' => [
                 'code' => '<?php
                     /** @param non-empty-string $path */
@@ -1211,6 +1276,20 @@ final class FunctionCallTest extends TestCase
                      return preg_grep("/search/", $strings, PREG_GREP_INVERT);
                   }
                 ',
+            ],
+            'pregGrepCanReturnFalse' => [
+                'code' => '<?php
+                    $rc = preg_grep("/^foo/i", ["foobar", "toobar"]);
+
+                    if ($rc === false) {
+                        $r = null;
+                    } else {
+                        $r = $rc;
+                    }',
+                'assertions' => [
+                    '$rc===' => 'array<int<0, 1>, string>|false',
+                    '$r===' => 'array<int<0, 1>, string>|null',
+                ],
             ],
             'typedArrayWithDefault' => [
                 'code' => '<?php
@@ -3695,10 +3774,10 @@ final class FunctionCallTest extends TestCase
                     '$b===' => 'non-empty-lowercase-string',
                     '$c===' => 'lowercase-string',
                     '$d===' => 'lowercase-string',
-                    '$e===' => 'non-empty-lowercase-string',
-                    '$f===' => 'non-empty-lowercase-string',
-                    '$g===' => 'lowercase-string',
-                    '$h===' => 'lowercase-string',
+                    '$e===' => '\'aaa\'',
+                    '$f===' => '\'aaa\'',
+                    '$g===' => "''",
+                    '$h===' => "''",
                 ],
                 'ignored_issues' => [],
                 'php_version' => '8.1',
@@ -4334,6 +4413,32 @@ final class FunctionCallTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'strtolowerOfDocblockLiteralsKeepsFromDocblock' => [
+                'code' => '<?php
+                    /** @param \'A\'|\'B\' $k */
+                    function f(string $k): void {
+                        $l = strtolower($k);
+                        if ($l === \'c\') {}
+                    }',
+                'error_message' => 'DocblockTypeContradiction',
+            ],
+            'mbStrtolowerOfDocblockLiteralsKeepsFromDocblock' => [
+                'code' => '<?php
+                    /** @param \'A\'|\'B\' $k */
+                    function f(string $k): void {
+                        $l = mb_strtolower($k);
+                        if ($l === \'c\') {}
+                    }',
+                'error_message' => 'DocblockTypeContradiction',
+            ],
+            'strtolowerOfNativeLiteralsIsStillATypeContradiction' => [
+                'code' => '<?php
+                    function f(): void {
+                        $l = strtolower(rand() ? \'A\' : \'B\');
+                        if ($l === \'c\') {}
+                    }',
+                'error_message' => 'TypeDoesNotContainType',
+            ],
             'callUserFuncWithADifferentCase' => [
                 'code' => '<?php
                     function takesInt(int $i): string {
@@ -5827,6 +5932,123 @@ final class FunctionCallTest extends TestCase
                     takesArrayShapeWithZeroOrPositiveInt(["bar" => $mayBeInt]);
                 ',
                 'error_message' => 'ArgumentTypeCoercion',
+            ],
+            'implicitToStringCastOfAnExtraEntryOfAnUnsealedShape' => [
+                'code' => '<?php
+                    final class S {
+                        public function __toString(): string {
+                            return "s";
+                        }
+                    }
+
+                    /** @param array{id: int, ...<string, string>} $a */
+                    function takesShape(array $a): void {}
+
+                    takesShape(["id" => 1, "name" => new S()]);
+                ',
+                'error_message' => 'ImplicitToStringCast',
+            ],
+            'implicitToStringCastOfTheFallbackOfAnUnsealedShape' => [
+                'code' => '<?php
+                    final class S {
+                        public function __toString(): string {
+                            return "s";
+                        }
+                    }
+
+                    /** @param array{id: int, ...<string, string>} $a */
+                    function takesShape(array $a): void {}
+
+                    /** @param array{id: int, ...<string, S>} $b */
+                    function passesShape(array $b): void {
+                        takesShape($b);
+                    }
+                ',
+                'error_message' => 'ImplicitToStringCast',
+            ],
+            'implicitToStringCastOfAnExtraEntryOfAnUnsealedList' => [
+                'code' => '<?php
+                    final class S {
+                        public function __toString(): string {
+                            return "s";
+                        }
+                    }
+
+                    /** @param list{int, ...<string>} $a */
+                    function takesList(array $a): void {}
+
+                    takesList([1, new S()]);
+                ',
+                'error_message' => 'ImplicitToStringCast',
+            ],
+            'additionalFieldsOfANestedShapeInAnExtraEntry' => [
+                'code' => '<?php
+                    /** @param array{id: int, ...<string, array{name: string}>} $a */
+                    function takesShape(array $a): void {}
+
+                    takesShape(["id" => 1, "child" => ["name" => 1, "age" => 2]]);
+                ',
+                'error_message' => 'with additional array shape fields (age) was provided',
+            ],
+            'parentTypeOfAnEntryDoesNotHideAnInvalidEntry' => [
+                'code' => '<?php
+                    class P {}
+                    final class C extends P {}
+
+                    /** @param array{a: int, b: C} $a */
+                    function takesShape(array $a): void {}
+
+                    function passesParent(P $p): void {
+                        takesShape(["a" => "str", "b" => $p]);
+                    }
+                ',
+                'error_message' => 'InvalidArgument',
+            ],
+            'parentTypeOfAnExtraEntryDoesNotHideAnInvalidEntry' => [
+                'code' => '<?php
+                    class P {}
+                    final class C extends P {}
+
+                    /** @param array{a: int, ...<string, C>} $a */
+                    function takesShape(array $a): void {}
+
+                    function passesParent(P $p): void {
+                        takesShape(["a" => "str", "x" => $p]);
+                    }
+                ',
+                'error_message' => 'InvalidArgument',
+            ],
+            'possiblyInvalidEntryOfAList' => [
+                'code' => '<?php
+                    /** @param scalar|list<scalar> $value */
+                    function takesValue(string|int|float|bool|array $value): void {}
+
+                    /** @param list{0: list{0: string, ...<string>}|string, 1?: string, ...<string>}|string $v */
+                    function passesValue(array|string $v): void {
+                        takesValue($v);
+                    }
+                ',
+                'error_message' => 'PossiblyInvalidArgument',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'extraKeyOutsideTheFallbackKeyType' => [
+                'code' => '<?php
+                    /** @param array{a: int, ...<non-empty-string, int>} $a */
+                    function takesShape(array $a): void {}
+
+                    takesShape(["a" => 1, "" => 2]);
+                ',
+                'error_message' => 'InvalidArgument',
+            ],
+            'extraEntryOfASealedShape' => [
+                'code' => '<?php
+                    /** @param array{id: int} $a */
+                    function takesShape(array $a): void {}
+
+                    takesShape(["id" => 1, "name" => "a"]);
+                ',
+                'error_message' => 'InvalidArgument',
             ],
             'strtolowerOfALowercaseString' => [
                 'code' => '<?php

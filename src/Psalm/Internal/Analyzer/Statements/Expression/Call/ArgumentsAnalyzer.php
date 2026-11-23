@@ -169,6 +169,7 @@ final class ArgumentsAnalyzer
             );
 
             foreach ($written_var_ids as $var_id => $_) {
+                $context->releaseKeysBoundToList($var_id);
                 $context->removeVarFromConflictingClauses(
                     $var_id,
                     $context->vars_in_scope[$var_id] ?? null,
@@ -2147,8 +2148,8 @@ final class ArgumentsAnalyzer
                 && $function_param !== null
                 && ($graph = $statements_analyzer->getTaintFlowGraphWithSuppressed())
             ) {
-                foreach (self::getByRefFlowInputs($method_id, $function_param->name) as $input_key => $input_value) {
-                    [$input_name, $path_type] = is_int($input_key) ? [$input_value, null] : [$input_key, $input_value];
+                $by_ref_flow_inputs = self::getByRefFlowInputs($method_id, $function_param, $function_params);
+                foreach ($by_ref_flow_inputs as $input_name => $path_type) {
                     $input_arg = self::getArgForParam($args, $function_params, $input_name);
                     $input_type = $input_arg ? $statements_analyzer->node_data->getType($input_arg->value) : null;
 
@@ -2212,20 +2213,44 @@ final class ArgumentsAnalyzer
     }
 
     /**
-     * The parameters of a builtin whose taints flow into its by-reference parameter $param_name, each as a value, or
-     * as a key whose value is the type of the path it flows through (see dictionaries/InternalTaintByRefFlowMap.php)
+     * The names of the parameters of a builtin whose taints flow into its by-reference parameter $function_param, each
+     * with the type of the path it flows through, or null for a plain flow (see
+     * dictionaries/InternalTaintByRefFlowMap.php, which names the parameters as the newest PHP version does)
      *
-     * @return array<int|string, string>
-     * @psalm-capabilities read-globals|write-globals
+     * @param array<int, FunctionLikeParameter> $function_params
+     * @return array<string, ?string>
+     * @psalm-capabilities read-props|read-globals|write-globals|io
      */
-    private static function getByRefFlowInputs(string $function_id, string $param_name): array
-    {
+    private static function getByRefFlowInputs(
+        string $function_id,
+        FunctionLikeParameter $function_param,
+        array $function_params,
+    ): array {
         if (self::$by_ref_flow_map === null) {
             /** @var array<lowercase-string, array<string, array<int|string, string>>> */
             self::$by_ref_flow_map = require(dirname(__DIR__, 7) . '/dictionaries/InternalTaintByRefFlowMap.php');
         }
 
-        return self::$by_ref_flow_map[strtolower($function_id)][$param_name] ?? [];
+        $flows = self::$by_ref_flow_map[strtolower($function_id)] ?? [];
+        $inputs = $flows[$function_param->name] ?? null;
+        if ($inputs === null) {
+            $offset = array_search($function_param, $function_params, true);
+            $newest_name = $offset === false
+                ? null
+                : InternalCallMapHandler::getNewestParamNames($function_id)[$offset] ?? null;
+            $inputs = $newest_name === null ? [] : $flows[$newest_name] ?? [];
+        }
+
+        $analysed_inputs = [];
+        foreach ($inputs as $input_key => $input_value) {
+            [$input_name, $path_type] = is_int($input_key) ? [$input_value, null] : [$input_key, $input_value];
+            $input_name = InternalCallMapHandler::getAnalysedParamName($function_id, $input_name, $function_params);
+            if ($input_name !== null) {
+                $analysed_inputs[$input_name] = $path_type;
+            }
+        }
+
+        return $analysed_inputs;
     }
 
     /**

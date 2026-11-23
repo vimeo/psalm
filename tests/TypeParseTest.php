@@ -13,10 +13,13 @@ use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Internal\Type\TypeArgumentProjection;
 use Psalm\Type;
 use Psalm\Type\Atomic\TClassConstant;
+use Psalm\Type\Atomic\TConditional;
 use Psalm\Type\Atomic\TGenericObject;
+use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TLiteralFloat;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
+use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TTemplateKeyOf;
 use Psalm\Type\Union;
 use ReflectionFunction;
@@ -2190,5 +2193,47 @@ final class TypeParseTest extends TestCase
             'The * type argument is only for the type arguments of a class, not of ' . $generic,
         );
         Type::parseString($string);
+    }
+
+    public function testShapesKeepTheirTypesInNamespacedString(): void
+    {
+        foreach ([
+            'array{a: int, ...<string, string>}',
+            'list{int, ...<string>}',
+            'array{a: int, b?: string}',
+            'list{0: int, 1?: string}',
+            'list{int, string}',
+            'list<int>',
+            'non-empty-list<int>',
+        ] as $type_string) {
+            $type = Type::parseString($type_string);
+            self::assertSame($type_string, $type->toNamespacedString(null, [], null, false));
+            self::assertTrue($type->equals(Type::parseString($type->toNamespacedString(null, [], null, false))));
+        }
+
+        $type = Type::parseString('array{a: Ns\Foo, ...<string, Ns\Bar>}');
+        self::assertSame(
+            'array{a: \Ns\Foo, ...<string, \Ns\Bar>}',
+            $type->toNamespacedString(null, [], null, false),
+        );
+        self::assertSame('array{a: Foo, ...<string, Bar>}', $type->toNamespacedString('Ns', [], null, false));
+    }
+
+    public function testConditionalKeepsItsTypesInNamespacedString(): void
+    {
+        $conditional = new TConditional(
+            'T',
+            'fn-f',
+            Type::getMixed(),
+            Type::getTrue(),
+            new Union([new TNamedObject('Ns\Foo')]),
+            Type::getString(),
+        );
+        $type = new Union([TKeyedArray::make(['a' => Type::getInt()], null, [Type::getString(), new Union([$conditional])])]);
+
+        self::assertSame(
+            'array{a: int, ...<string, (T is true ? Foo : string)>}',
+            $type->toNamespacedString('Ns', [], null, false),
+        );
     }
 }
