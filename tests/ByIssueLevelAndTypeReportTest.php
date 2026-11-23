@@ -39,17 +39,18 @@ final class ByIssueLevelAndTypeReportTest extends TestCase
         |                                                                                        |
         |    The level at which issue is reported as an error is given in brackets - e.g.        |
         |    `ERROR (2): MissingReturnType` indicates that MissingReturnType is only reported    |
-        |    as an error when Psalm's level is set to 2 or below.                                |
+        |    as an error when Psalm's level is set to 2 or below. `(always)` marks the issues    |
+        |    reported as errors at every level, `(feature)` those of an enabled feature.         |
         |                                                                                        |
         |    Issues are shown or hidden in this report according to current settings. For        |
         |    the most complete report set Psalm's error level to 1 or use --show-info=true       |
         |    See https://psalm.dev/docs/running_psalm/error_levels/                              |
         |----------------------------------------------------------------------------------------|
 
-        ERROR: SomeAlwaysReportedIssueType - file.php:1:1 - message
+        ERROR (always): SomeAlwaysReportedIssueType - file.php:1:1 - message
 
 
-        ERROR: SomeFeatureSpecificIssueType - file.php:1:1 - message
+        ERROR (feature): SomeFeatureSpecificIssueType - file.php:1:1 - message
 
 
         ERROR (7): SomeLevel7IssueType - file.php:1:1 - message

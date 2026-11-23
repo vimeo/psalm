@@ -73,6 +73,52 @@ final class ArgTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'namedArgumentsOfArrayObjectAndArrayIteratorUseThePhp8Names' => [
+                'code' => '<?php
+                    $object = new ArrayObject(array: [3, 1, 2]);
+                    $object->uasort(callback: fn(int $a, int $b): int => $a <=> $b);
+                    $object->uksort(callback: fn(int $a, int $b): int => $a <=> $b);
+                    $object->exchangeArray(array: [1]);
+                    $object->setIteratorClass(iteratorClass: ArrayIterator::class);
+                    $object->unserialize(data: "");
+
+                    $iterator = new ArrayIterator([1, 2, 3]);
+                    $iterator->seek(offset: 1);
+                    $iterator->uasort(callback: fn(int $a, int $b): int => $a <=> $b);
+                    $iterator->unserialize(data: "");',
+                'assertions' => [],
+                'ignored_issues' => ['DeprecatedMethod'],
+                'php_version' => '8.0',
+            ],
+            'arrayIteratorSubclassMayNameTheOffsetParameterLikeArrayAccessOrLikeTheClass' => [
+                'code' => '<?php
+                    /**
+                     * @extends ArrayIterator<int, int>
+                     * @psalm-capabilities read-props|write-this-props
+                     */
+                    final class ByOffset extends ArrayIterator {
+                        /** @psalm-mutation-free */
+                        #[Override]
+                        public function offsetGet(mixed $offset): mixed {
+                            return parent::offsetGet($offset);
+                        }
+                    }
+
+                    /**
+                     * @extends ArrayIterator<int, int>
+                     * @psalm-capabilities read-props|write-this-props
+                     */
+                    final class ByKey extends ArrayIterator {
+                        /** @psalm-mutation-free */
+                        #[Override]
+                        public function offsetGet(mixed $key): mixed {
+                            return parent::offsetGet($key);
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'namedKeysSplitOverSeveralUnpackedArrays' => [
                 'code' => '<?php
                     function foo(int $a, string $b, float $c): void {
@@ -683,6 +729,14 @@ final class ArgTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'arrayObjectNamedArgumentsOfPhp7AreRejected' => [
+                'code' => '<?php
+                    $o = new ArrayObject([3, 1, 2]);
+                    $o->uasort(cmp_function: fn(int $a, int $b): int => $a <=> $b);',
+                'error_message' => 'InvalidNamedArgument',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
             'namedKeyOfUnpackedArrayOfTheWrongType' => [
                 'code' => '<?php
                     function foo(int $a, string $b, float $c): void {
@@ -1679,6 +1733,14 @@ final class ArgTest extends TestCase
                 'error_message' => 'TooFewArguments',
                 'error_levels' => [],
                 'php_version' => '8.0',
+            ],
+            'emptyArrayForANonEmptyArrayOrTraversableParam' => [
+                'code' => '<?php
+                    /** @param non-empty-array<int, int>|Traversable<int, int> $x */
+                    function nonEmpty($x): void {}
+
+                    nonEmpty([]);',
+                'error_message' => 'InvalidArgument',
             ],
         ];
     }

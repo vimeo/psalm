@@ -20,6 +20,34 @@ final class BaselineMatcherTest extends TestCase
         self::assertSame(['src/A.php' => ['UndefinedFunction' => ['o' => 1, 's' => ['a()']]]], $baseline);
     }
 
+    public function testAnEntryWithACharacterXmlForbidsCoversTheIssueWithTheCharacter(): void
+    {
+        $baseline = ['src/A.php' => ['InvalidScalarArgument' => ['o' => 1, 's' => ["\"a\u{FFFD}\""]]]];
+        $config = new TestConfig();
+
+        self::assertTrue(
+            BaselineMatcher::consume($config, $baseline, 'src/A.php', 'InvalidScalarArgument', "\"a\x1b\""),
+        );
+    }
+
+    public function testAnEntryWithInvalidUtf8CoversTheIssue(): void
+    {
+        $baseline = ['src/A.php' => ['InvalidScalarArgument' => ['o' => 1, 's' => ["\"caf\u{FFFD}\""]]]];
+
+        self::assertTrue(
+            BaselineMatcher::consume(new TestConfig(), $baseline, 'src/A.php', 'InvalidScalarArgument', "\"caf\xe9\""),
+        );
+    }
+
+    public function testACharacterXmlForbidsAtTheEdgeOfTheSnippetIsTrimmedBeforeItIsReplaced(): void
+    {
+        $baseline = ['src/A.php' => ['UndefinedFunction' => ['o' => 1, 's' => ['foo']]]];
+
+        self::assertTrue(
+            BaselineMatcher::consume(new TestConfig(), $baseline, 'src/A.php', 'UndefinedFunction', "\0foo\x0B"),
+        );
+    }
+
     public function testEachEntryCoversOneIssue(): void
     {
         $baseline = ['src/A.php' => ['UndefinedFunction' => ['o' => 1, 's' => ['a()']]]];

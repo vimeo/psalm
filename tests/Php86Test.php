@@ -70,7 +70,10 @@ final class Php86Test extends TestCase
             ],
             'pureCodeCanUseDurationsAndBuilders' => [
                 'code' => '<?php
-                    /** @psalm-pure */
+                    /**
+                     * @param positive-int $attempt
+                     * @psalm-pure
+                     */
                     function delay(int $attempt): Time\Duration {
                         return Time\Duration::fromSeconds(1)->multiplyBy(2 ** $attempt);
                     }
@@ -112,6 +115,15 @@ final class Php86Test extends TestCase
                     }',
                 'assertions' => [],
                 'ignored_issues' => ['UnusedVariable'],
+                'php_version' => '8.6',
+            ],
+            'streamLastErrors' => [
+                'code' => '<?php
+                    $errors = stream_last_errors();',
+                'assertions' => [
+                    '$errors===' => 'list<StreamError>',
+                ],
+                'ignored_issues' => [],
                 'php_version' => '8.6',
             ],
         ];
