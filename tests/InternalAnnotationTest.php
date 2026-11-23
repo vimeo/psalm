@@ -1385,6 +1385,34 @@ final class InternalAnnotationTest extends TestCase
                     }',
                 'error_message' => 'A\B\Foo::$foo is internal to A\B',
             ],
+            'psalmInternalStaticPropertyGet' => [
+                'code' => '<?php
+                    namespace A\B {
+                        class Foo {
+                            /** @psalm-internal A\B */
+                            public static ?int $foo = null;
+                        }
+                    }
+
+                    namespace A\C {
+                        echo \A\B\Foo::$foo;
+                    }',
+                'error_message' => 'InternalProperty - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:30 - A\B\Foo::$foo is internal to A\B',
+            ],
+            'psalmInternalStaticPropertySet' => [
+                'code' => '<?php
+                    namespace A\B {
+                        class Foo {
+                            /** @psalm-internal A\B */
+                            public static ?int $foo = null;
+                        }
+                    }
+
+                    namespace A\C {
+                        \A\B\Foo::$foo = 5;
+                    }',
+                'error_message' => 'InternalProperty - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:25 - A\B\Foo::$foo is internal to A\B',
+            ],
             'psalmInternalClassMissingNamespace' => [
                     'code' => '<?php
 

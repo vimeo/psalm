@@ -759,6 +759,19 @@ final class PropertyTypeTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'writingAPropertyOfAnUndefinedDocblockClassIsADocblockIssue' => [
+                'code' => '<?php
+                    /** @return mixed */
+                    function k() {
+                        return null;
+                    }
+
+                    /** @var Foobar $o */
+                    $o = k();
+                    $o->a = 1;',
+                'assertions' => [],
+                'ignored_issues' => ['UndefinedDocblockClass'],
+            ],
             'offsetWriteInitializesAnUninitializedArrayProperty' => [
                 'code' => '<?php
                     final class Bag

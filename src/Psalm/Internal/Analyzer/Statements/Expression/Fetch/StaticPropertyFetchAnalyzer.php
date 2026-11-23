@@ -11,6 +11,7 @@ use Psalm\FileManipulation;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\ClassLikeNameOptions;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
+use Psalm\Internal\Analyzer\Statements\Expression\PropertyAccessAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
@@ -18,8 +19,6 @@ use Psalm\Internal\Type\TypeExpander;
 use Psalm\Issue\ImpureStaticProperty;
 use Psalm\Issue\InvalidStringClass;
 use Psalm\Issue\ParentNotFound;
-use Psalm\Issue\UndefinedPropertyAssignment;
-use Psalm\Issue\UndefinedPropertyFetch;
 use Psalm\IssueBuffer;
 use Psalm\Node\Expr\VirtualPropertyFetch;
 use Psalm\Node\Expr\VirtualStaticPropertyFetch;
@@ -286,13 +285,12 @@ final class StaticPropertyFetchAnalyzer
                 return true;
             }
 
-            IssueBuffer::maybeAdd(
-                new UndefinedPropertyFetch(
-                    'Static property ' . $property_id . ' is not defined',
-                    new CodeLocation($statements_analyzer->getSource(), $stmt),
-                    $property_id,
-                ),
-                $statements_analyzer->getSuppressedIssues(),
+            PropertyAccessAnalyzer::reportUndefinedProperty(
+                $statements_analyzer,
+                $stmt,
+                $property_id,
+                false,
+                is_static_property: true,
             );
 
             return true;
@@ -308,14 +306,16 @@ final class StaticPropertyFetchAnalyzer
             return false;
         }
 
-        AtomicPropertyFetchAnalyzer::checkPropertyDeprecation(
-            $prop_name,
-            $declaring_property_class,
-            $stmt,
+        $class_storage = $codebase->classlike_storage_provider->get($declaring_property_class);
+
+        PropertyAccessAnalyzer::checkDeprecation(
             $statements_analyzer,
+            $stmt,
+            $prop_name,
+            $declaring_property_class . '::$' . $prop_name,
+            $class_storage,
         );
 
-        $class_storage = $codebase->classlike_storage_provider->get($declaring_property_class);
         $property = $class_storage->properties[$prop_name];
 
         if (!$property->is_static) {
@@ -323,28 +323,26 @@ final class StaticPropertyFetchAnalyzer
                 return true;
             }
 
-            if ($context->inside_assignment) {
-                IssueBuffer::maybeAdd(
-                    new UndefinedPropertyAssignment(
-                        'Static property ' . $property_id . ' is not defined',
-                        new CodeLocation($statements_analyzer->getSource(), $stmt),
-                        $property_id,
-                    ),
-                    $statements_analyzer->getSuppressedIssues(),
-                );
-            } else {
-                IssueBuffer::maybeAdd(
-                    new UndefinedPropertyFetch(
-                        'Static property ' . $property_id . ' is not defined',
-                        new CodeLocation($statements_analyzer->getSource(), $stmt),
-                        $property_id,
-                    ),
-                    $statements_analyzer->getSuppressedIssues(),
-                );
-            }
+            PropertyAccessAnalyzer::reportUndefinedProperty(
+                $statements_analyzer,
+                $stmt,
+                $property_id,
+                $context->inside_assignment,
+                is_static_property: true,
+            );
 
             return true;
         }
+
+        PropertyAccessAnalyzer::checkDeclaredProperty(
+            $statements_analyzer,
+            $stmt,
+            $context,
+            $prop_name,
+            $property_id,
+            $class_storage,
+            $context->inside_assignment,
+        );
 
         if (ClassLikeAnalyzer::checkPropertyVisibility(
             $property_id,
