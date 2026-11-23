@@ -24,6 +24,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\AtomicPropertyFetchAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\InstancePropertyFetchAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
+use Psalm\Internal\Analyzer\Statements\TypeMismatch\PropertyTypeMismatchReporter;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\DataFlowGraph;
 use Psalm\Internal\Codebase\Methods;
@@ -37,25 +38,18 @@ use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Internal\Type\TypeExpander;
 use Psalm\Issue\DeprecatedProperty;
-use Psalm\Issue\ImplicitToStringCast;
 use Psalm\Issue\ImpurePropertyAssignment;
 use Psalm\Issue\InaccessibleProperty;
 use Psalm\Issue\InternalClass;
 use Psalm\Issue\InternalProperty;
 use Psalm\Issue\InvalidPropertyAssignment;
-use Psalm\Issue\InvalidPropertyAssignmentValue;
 use Psalm\Issue\LoopInvalidation;
 use Psalm\Issue\MixedAssignment;
 use Psalm\Issue\MixedPropertyAssignment;
-use Psalm\Issue\MixedPropertyTypeCoercion;
 use Psalm\Issue\NoInterfaceProperties;
 use Psalm\Issue\NullPropertyAssignment;
-use Psalm\Issue\PossiblyFalsePropertyAssignmentValue;
 use Psalm\Issue\PossiblyInvalidPropertyAssignment;
-use Psalm\Issue\PossiblyInvalidPropertyAssignmentValue;
 use Psalm\Issue\PossiblyNullPropertyAssignment;
-use Psalm\Issue\PossiblyNullPropertyAssignmentValue;
-use Psalm\Issue\PropertyTypeCoercion;
 use Psalm\Issue\UndefinedClass;
 use Psalm\Issue\UndefinedMagicPropertyAssignment;
 use Psalm\Issue\UndefinedPropertyAssignment;
@@ -190,9 +184,15 @@ final class InstancePropertyAssignmentAnalyzer
             return;
         }
 
-        $invalid_assignment_value_types = [];
+        $mismatch_reporters = [];
 
         $has_valid_assignment_value_type = false;
+
+        $assignment_location = new CodeLocation(
+            $statements_analyzer->getSource(),
+            $assignment_value ?? $stmt,
+            $context->include_location,
+        );
 
         if ($codebase->store_node_types
             && !$context->collect_initializations
@@ -248,159 +248,42 @@ final class InstancePropertyAssignmentAnalyzer
                 $statements_analyzer->type_variable_tracker->addPropertyAssignmentBounds(
                     $union_comparison_results,
                     $assigned_property->id,
-                    new CodeLocation(
-                        $statements_analyzer->getSource(),
-                        $assignment_value ?? $stmt,
-                        $context->include_location,
-                    ),
+                    $assignment_location,
                     $statements_analyzer->getSuppressedIssues(),
                 );
             }
 
-            if ($union_comparison_results->type_coerced) {
-                if ($union_comparison_results->type_coerced_from_mixed) {
-                    IssueBuffer::maybeAdd(
-                        new MixedPropertyTypeCoercion(
-                            $var_id . ' expects \'' . $class_property_type->getId() . '\', '
-                                . ' parent type `' . $assignment_type->getId() . '` provided',
-                            new CodeLocation(
-                                $statements_analyzer->getSource(),
-                                $assignment_value ?? $stmt,
-                                $context->include_location,
-                            ),
-                            $assigned_property->id,
-                        ),
-                        $statements_analyzer->getSuppressedIssues(),
-                    );
-                } else {
-                    IssueBuffer::maybeAdd(
-                        new PropertyTypeCoercion(
-                            $var_id . ' expects \'' . $class_property_type->getId() . '\', '
-                                . ' parent type \'' . $assignment_type->getId() . '\' provided',
-                            new CodeLocation(
-                                $statements_analyzer->getSource(),
-                                $assignment_value ?? $stmt,
-                                $context->include_location,
-                            ),
-                            $assigned_property->id,
-                        ),
-                        $statements_analyzer->getSuppressedIssues(),
-                    );
-                }
-            }
+            $mismatch_reporter = new PropertyTypeMismatchReporter(
+                $statements_analyzer,
+                $assignment_type,
+                $class_property_type,
+                $assignment_location,
+                $var_id ?? $assigned_property->id,
+                $assigned_property->id,
+                $context->strict_types,
+                true,
+            );
 
-            if ($union_comparison_results->to_string_cast) {
-                IssueBuffer::maybeAdd(
-                    new ImplicitToStringCast(
-                        $var_id . ' expects \'' . $class_property_type . '\', '
-                            . '\'' . $assignment_type . '\' provided with a __toString method',
-                        new CodeLocation(
-                            $statements_analyzer->getSource(),
-                            $assignment_value ?? $stmt,
-                            $context->include_location,
-                        ),
-                    ),
-                    $statements_analyzer->getSuppressedIssues(),
-                );
-            }
-
-            if (!$type_match_found && !$union_comparison_results->type_coerced) {
-                if (UnionTypeComparator::canBeContainedBy(
-                    $codebase,
-                    $assignment_type,
-                    $class_property_type,
-                    true,
-                    true,
-                )) {
+            if (!$mismatch_reporter->reportComparison($type_match_found, $union_comparison_results)) {
+                if ($mismatch_reporter->canFit()) {
                     $has_valid_assignment_value_type = true;
                 }
 
-                $invalid_assignment_value_types[$assigned_property->id] = $class_property_type->getId();
-            } else {
-                $has_valid_assignment_value_type = true;
+                $mismatch_reporters[] = $mismatch_reporter;
+
+                continue;
             }
 
-            if ($type_match_found) {
-                if (!$assignment_type->ignore_nullable_issues
-                    && $assignment_type->isNullable()
-                    && !$class_property_type->isNullable()
-                ) {
-                    if (IssueBuffer::accepts(
-                        new PossiblyNullPropertyAssignmentValue(
-                            $var_id . ' with non-nullable declared type \'' . $class_property_type .
-                                '\' cannot be assigned nullable type \'' . $assignment_type . '\'',
-                            new CodeLocation(
-                                $statements_analyzer->getSource(),
-                                $assignment_value ?? $stmt,
-                                $context->include_location,
-                            ),
-                            $assigned_property->id,
-                        ),
-                        $statements_analyzer->getSuppressedIssues(),
-                    )) {
-                        return;
-                    }
-                }
+            $has_valid_assignment_value_type = true;
 
-                if (!$assignment_type->ignore_falsable_issues
-                    && $assignment_type->isFalsable()
-                    && !$class_property_type->hasBool()
-                    && !$class_property_type->hasScalar()
-                ) {
-                    if (IssueBuffer::accepts(
-                        new PossiblyFalsePropertyAssignmentValue(
-                            $var_id . ' with non-falsable declared type \'' . $class_property_type .
-                                '\' cannot be assigned possibly false type \'' . $assignment_type . '\'',
-                            new CodeLocation(
-                                $statements_analyzer->getSource(),
-                                $assignment_value ?? $stmt,
-                                $context->include_location,
-                            ),
-                            $assigned_property->id,
-                        ),
-                        $statements_analyzer->getSuppressedIssues(),
-                    )) {
-                        return;
-                    }
-                }
+            if ($type_match_found) {
+                $mismatch_reporter->reportNullAndFalse();
             }
         }
 
-        foreach ($invalid_assignment_value_types as $property_id => $invalid_class_property_type) {
-            if (!$has_valid_assignment_value_type) {
-                if (IssueBuffer::accepts(
-                    new InvalidPropertyAssignmentValue(
-                        $var_id . ' with declared type \'' . $invalid_class_property_type .
-                            '\' cannot be assigned type \'' . $assignment_value_type->getId() . '\'',
-                        new CodeLocation(
-                            $statements_analyzer->getSource(),
-                            $assignment_value ?? $stmt,
-                            $context->include_location,
-                        ),
-                        $property_id,
-                    ),
-                    $statements_analyzer->getSuppressedIssues(),
-                )) {
-                    return;
-                }
-            } else {
-                if (IssueBuffer::accepts(
-                    new PossiblyInvalidPropertyAssignmentValue(
-                        $var_id . ' with declared type \'' . $invalid_class_property_type .
-                            '\' cannot be assigned possibly different type \'' .
-                            $assignment_value_type->getId() . '\'',
-                        new CodeLocation(
-                            $statements_analyzer->getSource(),
-                            $assignment_value ?? $stmt,
-                            $context->include_location,
-                        ),
-                        $property_id,
-                    ),
-                    $statements_analyzer->getSuppressedIssues(),
-                )) {
-                    return;
-                }
-            }
+        // the value may fit the property of another of the classes the object can be of
+        foreach ($mismatch_reporters as $mismatch_reporter) {
+            $mismatch_reporter->reportDeferredMismatch($has_valid_assignment_value_type);
         }
     }
 

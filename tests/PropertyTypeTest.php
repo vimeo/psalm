@@ -15,6 +15,9 @@ use Psalm\IssueBuffer;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
+use function array_column;
+use function sort;
+
 use const DIRECTORY_SEPARATOR;
 use const PHP_VERSION_ID;
 
@@ -801,6 +804,33 @@ final class PropertyTypeTest extends TestCase
 
         self::assertSame('Dom\DtdNamedNodeMap', $context->vars_in_scope['$entities']->getId(true));
         self::assertSame('int', $context->vars_in_scope['$entityCount']->getId(true));
+    }
+
+    public function testPossiblyNullAndPossiblyFalseAssignmentsToAPropertyAreBothReported(): void
+    {
+        $this->project_analyzer->getConfig()->throw_exception = false;
+
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                final class A {
+                    public int $i = 0;
+
+                    /** @param int|null|false $i */
+                    public function set($i): void {
+                        $this->i = $i;
+                    }
+                }',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+
+        $types = array_column(IssueBuffer::getIssuesDataForFile($file_path), 'type');
+        sort($types);
+
+        self::assertSame(['PossiblyFalsePropertyAssignmentValue', 'PossiblyNullPropertyAssignmentValue'], $types);
     }
 
     /**
@@ -7124,6 +7154,174 @@ final class PropertyTypeTest extends TestCase
                 'error_message' => 'RedundantCondition - src' . DIRECTORY_SEPARATOR . 'somefile.php:11:29 - Type string for $book->name is always isset',
                 'error_levels' => [],
                 'php_version' => '8.0',
+            ],
+            'nullAssignedToAStaticProperty' => [
+                'code' => '<?php
+                    final class A {
+                        public static int $i = 0;
+                    }
+
+                    A::$i = null;',
+                'error_message' => 'PossiblyNullPropertyAssignmentValue',
+            ],
+            'possiblyNullAssignedToAStaticProperty' => [
+                'code' => '<?php
+                    final class A {
+                        public static int $i = 0;
+
+                        public static function set(?int $i): void {
+                            self::$i = $i;
+                        }
+                    }',
+                'error_message' => 'PossiblyNullPropertyAssignmentValue',
+            ],
+            'possiblyFalseAssignedToAStaticProperty' => [
+                'code' => '<?php
+                    final class A {
+                        public static int $i = 0;
+
+                        public static function set(int|false $i): void {
+                            self::$i = $i;
+                        }
+                    }',
+                'error_message' => 'PossiblyFalsePropertyAssignmentValue',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'nullOfAValueDoesNotMakeItPossiblyValidForANullableStaticProperty' => [
+                'code' => '<?php
+                    final class A {
+                        public static ?int $i = null;
+
+                        public static function set(?string $s): void {
+                            self::$i = $s;
+                        }
+                    }',
+                'error_message' => 'InvalidPropertyAssignmentValue',
+            ],
+            'possiblyFalseAssignedToAPropertyOfTrueOrInt' => [
+                'code' => '<?php
+                    final class A {
+                        public true|int $p = 1;
+
+                        public function set(int|false $i): void {
+                            $this->p = $i;
+                        }
+                    }',
+                'error_message' => 'PossiblyFalsePropertyAssignmentValue',
+                'error_levels' => [],
+                'php_version' => '8.2',
+            ],
+            'possiblyFalseAssignedToAStaticPropertyOfTrueOrInt' => [
+                'code' => '<?php
+                    final class A {
+                        public static true|int $p = 1;
+
+                        public static function set(int|false $i): void {
+                            self::$p = $i;
+                        }
+                    }',
+                'error_message' => 'PossiblyFalsePropertyAssignmentValue',
+                'error_levels' => [],
+                'php_version' => '8.2',
+            ],
+            'stringableAssignedToAStringPropertyUnderStrictTypes' => [
+                'code' => '<?php
+                    declare(strict_types=1);
+
+                    final class S {
+                        public function __toString(): string {
+                            return "s";
+                        }
+                    }
+
+                    final class A {
+                        public string $s = "";
+
+                        public function set(S $s): void {
+                            $this->s = $s;
+                        }
+                    }',
+                'error_message' => 'InvalidPropertyAssignmentValue',
+            ],
+            'stringableAssignedToAStaticStringPropertyUnderStrictTypes' => [
+                'code' => '<?php
+                    declare(strict_types=1);
+
+                    final class S {
+                        public function __toString(): string {
+                            return "s";
+                        }
+                    }
+
+                    final class A {
+                        public static string $s = "";
+
+                        public static function set(S $s): void {
+                            self::$s = $s;
+                        }
+                    }',
+                'error_message' => 'InvalidPropertyAssignmentValue',
+            ],
+            'stringableAssignedToANonEmptyStringPropertyUnderStrictTypes' => [
+                'code' => '<?php
+                    declare(strict_types=1);
+
+                    final class S {
+                        public function __toString(): string {
+                            return "s";
+                        }
+                    }
+
+                    final class A {
+                        /** @var non-empty-string */
+                        public string $s = "a";
+
+                        public function set(S $s): void {
+                            $this->s = $s;
+                        }
+                    }',
+                'error_message' => 'InvalidPropertyAssignmentValue',
+            ],
+            'stringableAssignedToANonEmptyStringStaticPropertyUnderStrictTypes' => [
+                'code' => '<?php
+                    declare(strict_types=1);
+
+                    final class S {
+                        public function __toString(): string {
+                            return "s";
+                        }
+                    }
+
+                    final class A {
+                        /** @var non-empty-string */
+                        public static string $s = "a";
+
+                        public static function set(S $s): void {
+                            self::$s = $s;
+                        }
+                    }',
+                'error_message' => 'InvalidPropertyAssignmentValue',
+            ],
+            'stringableAssignedToADocblockStringPropertyUnderStrictTypes' => [
+                'code' => '<?php
+                    declare(strict_types=1);
+
+                    final class S {
+                        public function __toString(): string {
+                            return "s";
+                        }
+                    }
+
+                    final class A {
+                        /** @var string */
+                        public $s = "";
+
+                        public function set(S $s): void {
+                            $this->s = $s;
+                        }
+                    }',
+                'error_message' => 'ImplicitToStringCast',
             ],
         ];
     }
