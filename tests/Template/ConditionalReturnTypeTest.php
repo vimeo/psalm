@@ -21,6 +21,37 @@ final class ConditionalReturnTypeTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'conditionalOnAnUnresolvedBoolClassTemplateKeepsBothBranches' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class Lazy {}
+                    final class Response {}
+
+                    /** @template TAsync of bool */
+                    final class Request {
+                        /** @param TAsync $async */
+                        public function __construct(public bool $async) {}
+
+                        /**
+                         * @return (TAsync is false ? Response : Lazy)
+                         */
+                        public function send(): Response|Lazy {
+                            return $this->async ? new Lazy() : new Response();
+                        }
+
+                        public function get(): ?Response {
+                            $r = $this->send();
+                            if ($r instanceof Response) {
+                                return $r;
+                            }
+                            return null;
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'conditionalOnClosureKeepsTheIfBranchForAnInterfaceNarrowedToClosure' => [
                 'code' => <<<'PHP'
                     <?php

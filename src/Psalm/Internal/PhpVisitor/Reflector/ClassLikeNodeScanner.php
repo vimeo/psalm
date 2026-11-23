@@ -96,6 +96,7 @@ use function preg_match;
 use function preg_split;
 use function reset;
 use function sprintf;
+use function str_contains;
 use function str_starts_with;
 use function strlen;
 use function strtok;
@@ -421,6 +422,24 @@ final class ClassLikeNodeScanner
         foreach ($node->getComments() as $comment) {
             if (!$comment instanceof PhpParser\Comment\Doc) {
                 continue;
+            }
+
+            // like `@psalm-type`, an import is read from any docblock before the class, not only from the last one
+            if ($comment !== $doc_comment
+                && (str_contains($comment->getText(), '@psalm-import-type')
+                    || str_contains($comment->getText(), '@phpstan-import-type'))
+            ) {
+                try {
+                    $this->type_aliases += $this->getImportedTypeAliases(
+                        ClassLikeDocblockParser::parse($node, $comment, $this->aliases),
+                        $fq_classlike_name,
+                    );
+                } catch (DocblockParseException $e) {
+                    $storage->docblock_issues[] = new InvalidDocblock(
+                        $e->getMessage() . ' in docblock for ' . $fq_classlike_name,
+                        $name_location ?? $class_location,
+                    );
+                }
             }
 
             try {
@@ -1484,6 +1503,10 @@ final class ClassLikeNodeScanner
                 continue;
             }
 
+            if ($this->reportStarArgument($storage, $node, $atomic_type, $tag)) {
+                continue;
+            }
+
             $type_parameters = [];
 
             foreach ($atomic_type->type_params as $type_param) {
@@ -1495,6 +1518,27 @@ final class ClassLikeNodeScanner
         }
 
         return $counts;
+    }
+
+    /**
+     * Reports a `*` argument, which cannot bind a template of the parent (`@extends Box<*>`), as PHPStan does
+     */
+    private function reportStarArgument(
+        ClassLikeStorage $storage,
+        PhpParser\Node $node,
+        TGenericObject $atomic_type,
+        string $tag,
+    ): bool {
+        if (!$atomic_type->hasStarProjection()) {
+            return false;
+        }
+
+        $storage->docblock_issues[] = new InvalidDocblock(
+            'The * type argument of ' . $atomic_type->getId() . ' is not allowed in ' . $tag,
+            new CodeLocation($this->file_scanner, $node, null, true),
+        );
+
+        return true;
     }
 
     private static function registerEmptyConstructor(ClassLikeStorage $class_storage): void
