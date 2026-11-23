@@ -1828,6 +1828,8 @@ final class MethodComparator
 
     /**
      * Whether an override has to keep the name of this parameter, as it can be passed by name
+     *
+     * @psalm-capabilities read-props
      */
     private static function isParamNameBinding(
         Config $config,
