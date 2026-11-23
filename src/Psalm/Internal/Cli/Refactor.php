@@ -5,22 +5,19 @@ declare(strict_types=1);
 namespace Psalm\Internal\Cli;
 
 use AssertionError;
-use Composer\XdebugHandler\XdebugHandler;
 use Psalm\Exception\RefactorException;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\CliUtils;
 use Psalm\Internal\Composer;
 use Psalm\Internal\ErrorHandler;
 use Psalm\Internal\IncludeCollector;
+use Psalm\Internal\Preloader;
 use Psalm\Internal\Provider\ClassLikeStorageCacheProvider;
 use Psalm\Internal\Provider\FileProvider;
 use Psalm\Internal\Provider\FileStorageCacheProvider;
 use Psalm\Internal\Provider\ProjectCacheProvider;
 use Psalm\Internal\Provider\Providers;
 use Psalm\IssueBuffer;
-use Psalm\Progress\DebugProgress;
-use Psalm\Progress\DefaultProgress;
-use Psalm\Progress\VoidProgress;
 use Psalm\Report;
 use Psalm\Report\ReportOptions;
 
@@ -33,15 +30,12 @@ use function explode;
 use function fwrite;
 use function gc_collect_cycles;
 use function gc_disable;
-use function getcwd;
 use function in_array;
 use function is_array;
-use function is_string;
 use function microtime;
 use function preg_last_error_msg;
 use function preg_match;
 use function preg_split;
-use function realpath;
 use function str_contains;
 use function str_ends_with;
 use function str_starts_with;
@@ -49,7 +43,6 @@ use function strpos;
 use function substr;
 use function trim;
 
-use const DIRECTORY_SEPARATOR;
 use const PHP_EOL;
 use const STDERR;
 
@@ -88,7 +81,7 @@ final class Refactor
 
         $args = array_slice($argv, 1);
 
-        $valid_short_options = ['f:', 'm', 'h', 'r:', 'c:'];
+        $valid_short_options = ['m', 'h', 'r:', 'c:'];
         $valid_long_options = self::LONG_OPTIONS;
 
         // get options from command line
@@ -97,17 +90,12 @@ final class Refactor
         // --refactor is an option of psalm, which forwards the call to psalm-refactor
         CliUtils::rejectUnrecognisedOptions($args, $valid_short_options, $valid_long_options, ['--refactor']);
 
-        if (array_key_exists('help', $options)) {
-            $options['h'] = false;
-        }
-
-        if (array_key_exists('monochrome', $options)) {
-            $options['m'] = false;
-        }
-
-        if (isset($options['config'])) {
-            $options['c'] = $options['config'];
-        }
+        CliUtils::syncShortOptions($options, [
+            'help' => 'h',
+            'monochrome' => 'm',
+            'config' => 'c',
+            'root' => 'r',
+        ]);
 
         if (isset($options['c']) && is_array($options['c'])) {
             fwrite(STDERR, 'Too many config files provided' . PHP_EOL);
@@ -126,7 +114,7 @@ final class Refactor
                 --debug, --debug-by-line, --debug-emitted-issues
                     Debug information
 
-                -m
+                -m, --monochrome
                     Enable monochrome output.
                     Auto-enabled when NO_COLOR is set to a non-empty value, when
                     TERM=dumb, when stdout is not a terminal, or when an AI coding
@@ -136,9 +124,6 @@ final class Refactor
                 --no-progress
                     Disable the progress indicator.
                     Auto-enabled when an AI coding agent is driving the shell outside CI.
-
-                -m, --monochrome
-                    Enable monochrome output.
 
                 -c, --config=psalm.xml
                     Path to a psalm.xml configuration file. Run psalm --init to create one.
@@ -180,26 +165,9 @@ final class Refactor
             exit;
         }
 
-        if (isset($options['root'])) {
-            $options['r'] = $options['root'];
-        }
         CliUtils::setMemoryLimit($options);
 
-        $current_dir = (string) getcwd();
-
-        if (isset($options['r']) && is_string($options['r'])) {
-            $root_path = realpath($options['r']);
-
-            if ($root_path === false) {
-                fwrite(
-                    STDERR,
-                    'Could not locate root directory ' . $current_dir . DIRECTORY_SEPARATOR . $options['r'] . PHP_EOL,
-                );
-                exit(1);
-            }
-
-            $current_dir = $root_path;
-        }
+        $current_dir = CliUtils::getCurrentDir($options);
 
         $vendor_dir = CliUtils::getVendorDir($current_dir);
 
@@ -207,16 +175,17 @@ final class Refactor
         IssueBuffer::captureServer($_SERVER);
 
         $include_collector = new IncludeCollector();
-        $autoloaders = $include_collector->runAndCollect(
-            // we ignore the FQN because of a hack in scoper.inc that needs full path
-            // phpcs:ignore SlevomatCodingStandard.Namespaces.ReferenceUsedNamesOnly.ReferenceViaFullyQualifiedName
-            /** @return list<ClassLoader> */
-            static fn(): array =>
-                CliUtils::requireAutoloaders($current_dir, isset($options['r']), $vendor_dir),
+        $autoloaders = CliUtils::loadAutoloaders(
+            $include_collector,
+            $current_dir,
+            isset($options['r']),
+            $vendor_dir,
         );
 
         // If Xdebug is enabled, restart without it
-        (new XdebugHandler('PSALTER'))->check();
+        CliUtils::createRestarter('PSALTER')->check();
+
+        Preloader::preload();
 
         $path_to_config = CliUtils::getPathToConfig($options);
 
@@ -397,17 +366,7 @@ final class Refactor
             );
         }
 
-        $debug = array_key_exists('debug', $options) || array_key_exists('debug-by-line', $options);
-        // CI takes precedence over AI detection, matching Psalm.php / Psalter.php.
-        $no_progress = isset($options['no-progress'])
-            || (!$in_ci && CliUtils::runningUnderAiAgent());
-        if ($debug) {
-            $progress = new DebugProgress();
-        } elseif ($no_progress) {
-            $progress = new VoidProgress();
-        } else {
-            $progress = new DefaultProgress();
-        }
+        $progress = CliUtils::getAlterProgress($options, $in_ci);
 
         if (array_key_exists('debug-emitted-issues', $options)) {
             $config->debug_emitted_issues = true;
@@ -415,6 +374,7 @@ final class Refactor
 
         $report_options = new ReportOptions();
         $report_options->use_color = CliUtils::useColor($options, true);
+        $report_options->in_ci = $in_ci;
 
         $project_analyzer = new ProjectAnalyzer(
             $config,

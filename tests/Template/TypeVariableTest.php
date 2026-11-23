@@ -1428,6 +1428,41 @@ final class TypeVariableTest extends TestCase
                         return $n;
                     }',
             ],
+            'constructionOfACovariantTemplateNothingCanConstrain' => [
+                'code' => '<?php
+                    /** @template-covariant T */
+                    final class Coll {
+                        public function __construct() {}
+
+                        /** @return list<T> */
+                        public function all(): array {
+                            return [];
+                        }
+                    }
+
+                    /** @template-covariant T */
+                    final class ConstructorlessColl {
+                        /** @return list<T> */
+                        public function all(): array {
+                            return [];
+                        }
+                    }
+
+                    /** @return Coll<int> */
+                    function ints(): Coll {
+                        return new Coll();
+                    }
+
+                    /** @return ConstructorlessColl<string> */
+                    function strings(): ConstructorlessColl {
+                        return new ConstructorlessColl();
+                    }
+
+                    $c = new Coll();',
+                'assertions' => [
+                    '$c===' => 'Coll<never>',
+                ],
+            ],
             'constructorlessConstructionOfUnconstrainableTemplate' => [
                 'code' => '<?php
                     /** @template T = int */
@@ -2116,6 +2151,22 @@ final class TypeVariableTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'constructionOfAnInvariantTemplateNothingCanConstrain' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class Coll {
+                        /** @return list<T> */
+                        public function all(): array {
+                            return [];
+                        }
+                    }
+
+                    /** @return Coll<int> */
+                    function ints(): Coll {
+                        return new Coll();
+                    }',
+                'error_message' => 'MixedReturnTypeCoercion',
+            ],
             'mixedConstructionCallableParamRequirement' => [
                 // a value that entered the variable as mixed is then required to
                 // be a Foo by the callable's parameter: reported at the call, as

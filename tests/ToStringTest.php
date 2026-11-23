@@ -49,6 +49,136 @@ final class ToStringTest extends TestCase
         );
     }
 
+    public function testACallToAStrictTraitMethodKeepsTheStrictTypesOfTheCaller(): void
+    {
+        $this->testConfig->throw_exception = false;
+
+        $strict_trait_path = self::$src_dir_path . 'stricttrait.php';
+        $class_path = self::$src_dir_path . 'class.php';
+
+        $this->addFile(
+            $strict_trait_path,
+            '<?php
+                declare(strict_types=1);
+
+                trait U {
+                    private function init(): void {}
+                }',
+        );
+        $this->addFile(
+            $class_path,
+            '<?php
+                final class S {
+                    public function __toString(): string {
+                        return "s";
+                    }
+                }
+
+                function takesString(string $s): void {}
+
+                final class A {
+                    use U;
+
+                    public string $s;
+
+                    public function __construct(S $o) {
+                        $this->init();
+                        $this->s = $o;
+                        takesString($o);
+                    }
+                }',
+        );
+
+        $this->analyzeFile($class_path, new Context());
+
+        self::assertSame(
+            ['ImplicitToStringCast', 'ImplicitToStringCast'],
+            array_map(
+                static fn(IssueData $issue): string => $issue->type,
+                IssueBuffer::getIssuesDataForFile($class_path),
+            ),
+        );
+    }
+
+    public function testTheCodeOfATraitRunsUnderTheStrictTypesOfItsOwnFile(): void
+    {
+        $this->testConfig->throw_exception = false;
+
+        $defs_path = self::$src_dir_path . 'defs.php';
+        $trait_path = self::$src_dir_path . 'trait.php';
+        $strict_trait_path = self::$src_dir_path . 'stricttrait.php';
+        $strict_class_path = self::$src_dir_path . 'strictclass.php';
+        $class_path = self::$src_dir_path . 'class.php';
+
+        $this->addFile(
+            $defs_path,
+            '<?php
+                final class S {
+                    public function __toString(): string {
+                        return "s";
+                    }
+                }
+
+                function takesString(string $s): void {}',
+        );
+        $this->addFile(
+            $trait_path,
+            '<?php
+                trait T {
+                    public string $s = "";
+
+                    public function set(S $o): void {
+                        $this->s = $o;
+                        takesString($o);
+                    }
+                }',
+        );
+        $this->addFile(
+            $strict_trait_path,
+            '<?php
+                declare(strict_types=1);
+
+                trait U {
+                    public string $s = "";
+
+                    public function __construct(S $o) {
+                        $this->s = $o;
+                    }
+
+                    public function call(S $o): void {
+                        takesString($o);
+                    }
+                }',
+        );
+        $this->addFile(
+            $strict_class_path,
+            '<?php
+                declare(strict_types=1);
+
+                final class UsesT {
+                    use T;
+                }',
+        );
+        $this->addFile(
+            $class_path,
+            '<?php
+                final class UsesU {
+                    use U;
+                }',
+        );
+
+        $this->analyzeFile($strict_class_path, new Context());
+        $this->analyzeFile($class_path, new Context());
+
+        $types = static fn(string $file_path): array => array_map(
+            static fn(IssueData $issue): string => $issue->type,
+            IssueBuffer::getIssuesDataForFile($file_path),
+        );
+
+        self::assertSame(['ImplicitToStringCast', 'ImplicitToStringCast'], $types($trait_path));
+        self::assertSame(['InvalidPropertyAssignmentValue', 'InvalidArgument'], $types($strict_trait_path));
+    }
+
     /**
      * @return iterable<string, array{bool}>
      * @psalm-pure
@@ -539,10 +669,68 @@ final class ToStringTest extends TestCase
                 ',
                 'error_message' => 'ImplicitToStringCast',
             ],
-            'implicitCastInToString' => [
+            'stringableArgumentAtTheTopLevelOfANamespacedStrictFile' => [
                 'code' => '<?php
                     declare(strict_types=1);
 
+                    namespace N;
+
+                    final class S {
+                        public function __toString(): string {
+                            return "s";
+                        }
+                    }
+
+                    function takesString(string $s): void {}
+
+                    takesString(new S());',
+                'error_message' => 'InvalidArgument',
+            ],
+            'stringableArgumentInAFunctionOfANamespacedStrictFile' => [
+                'code' => '<?php
+                    declare(strict_types=1);
+
+                    namespace N;
+
+                    final class S {
+                        public function __toString(): string {
+                            return "s";
+                        }
+                    }
+
+                    function takesString(string $s): void {}
+
+                    function f(S $s): void {
+                        takesString($s);
+                    }',
+                'error_message' => 'InvalidArgument',
+            ],
+            'traitOfAStrictFileStartingWithAShebang' => [
+                'code' => '#!/usr/bin/env php
+<?php
+                    declare(strict_types=1);
+
+                    final class S {
+                        public function __toString(): string {
+                            return "s";
+                        }
+                    }
+
+                    function takesString(string $s): void {}
+
+                    trait T {
+                        public function call(S $o): void {
+                            takesString($o);
+                        }
+                    }
+
+                    final class A {
+                        use T;
+                    }',
+                'error_message' => 'InvalidArgument',
+            ],
+            'implicitCastInToString' => [
+                'code' => '<?php
                     final class A
                     {
                         public function __toString(): string

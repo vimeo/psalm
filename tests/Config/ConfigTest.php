@@ -44,6 +44,8 @@ use function array_keys;
 use function array_map;
 use function array_pop;
 use function basename;
+use function chmod;
+use function class_exists;
 use function dirname;
 use function error_get_last;
 use function file_get_contents;
@@ -57,6 +59,8 @@ use function implode;
 use function in_array;
 use function is_array;
 use function is_dir;
+use function is_link;
+use function is_readable;
 use function json_encode;
 use function mkdir;
 use function preg_match;
@@ -438,6 +442,154 @@ final class ConfigTest extends DeferredAnalyzerTestCase
             rmdir($root . '/vendor/some');
             rmdir($root . '/vendor');
             rmdir($root . '/app');
+            rmdir($root);
+        }
+    }
+
+    #[RequiresOperatingSystem('^(?!WIN)')]
+    #[DataProvider('providerSymlinkedDirectoryKeepsDirectoryOptions')]
+    public function testSymlinkedDirectoryKeepsDirectoryOptions(
+        string $directory_name,
+        string $link_path,
+        string $link_target,
+    ): void {
+        $root = (string) realpath(sys_get_temp_dir()) . '/psalm_symlink_options_' . uniqid();
+        mkdir($root . '/src', 0777, true);
+        mkdir($root . '/pkgs/a', 0777, true);
+        mkdir($root . '/outside');
+        file_put_contents($root . '/outside/a.php', '<?php');
+        mkdir($root . '/src-shared');
+        file_put_contents($root . '/src-shared/a.php', '<?php');
+
+        try {
+            if (!@symlink(str_replace('{root}', $root, $link_target), $root . '/' . $link_path)) {
+                $this->markTestSkipped('symlinks cannot be created');
+            }
+
+            $config = Config::loadFromXML(
+                $root,
+                '<?xml version="1.0"?>
+                <psalm>
+                    <projectFiles>
+                        <directory name="' . $directory_name . '" resolveSymlinks="true"
+                            useStrictTypes="true" ignoreTypeStats="true" />
+                    </projectFiles>
+                </psalm>',
+            );
+
+            $file_path = $root . '/' . basename($link_target) . '/a.php';
+
+            $this->assertTrue($config->isInProjectDirs($file_path));
+            $this->assertTrue($config->useStrictTypesForFile($file_path));
+            $this->assertFalse($config->reportTypeStatsForFile($file_path));
+        } finally {
+            if (is_link($root . '/' . $link_path)) {
+                unlink($root . '/' . $link_path);
+            }
+
+            unlink($root . '/outside/a.php');
+            rmdir($root . '/outside');
+            unlink($root . '/src-shared/a.php');
+            rmdir($root . '/src-shared');
+            rmdir($root . '/pkgs/a');
+            rmdir($root . '/pkgs');
+            rmdir($root . '/src');
+            rmdir($root);
+        }
+    }
+
+    /**
+     * @psalm-pure
+     * @return iterable<string, array{string, string, string}>
+     */
+    public static function providerSymlinkedDirectoryKeepsDirectoryOptions(): iterable
+    {
+        yield 'absolute link target' => ['src', 'src/lib', '{root}/outside'];
+        yield 'relative link target' => ['src', 'src/lib', '../outside'];
+        yield 'link in a wildcard directory' => ['pkgs/*', 'pkgs/a/lib', '{root}/outside'];
+        yield 'link target sharing the directory prefix' => ['src', 'src/lib', '{root}/src-shared'];
+    }
+
+    #[RequiresOperatingSystem('^(?!WIN)')]
+    #[DataProvider('providerResolveSymlinksSkipsUnreadableDirectories')]
+    public function testResolveSymlinksSkipsUnreadableDirectories(string $directory_name): void
+    {
+        $root = (string) realpath(sys_get_temp_dir()) . '/psalm_unreadable_' . uniqid();
+        mkdir($root . '/pkgs/a/private', 0777, true);
+        file_put_contents($root . '/pkgs/a/a.php', '<?php');
+        chmod($root . '/pkgs/a/private', 0);
+
+        try {
+            if (is_readable($root . '/pkgs/a/private')) {
+                $this->markTestSkipped('directory permissions are not enforced');
+            }
+
+            $config = Config::loadFromXML(
+                $root,
+                '<?xml version="1.0"?>
+                <psalm>
+                    <projectFiles>
+                        <directory name="' . $directory_name . '" resolveSymlinks="true" />
+                        <ignoreFiles>
+                            <directory name="pkgs/a/private" />
+                        </ignoreFiles>
+                    </projectFiles>
+                </psalm>',
+            );
+
+            $this->assertTrue($config->isInProjectDirs($root . '/pkgs/a/a.php'));
+        } finally {
+            chmod($root . '/pkgs/a/private', 0777);
+            rmdir($root . '/pkgs/a/private');
+            unlink($root . '/pkgs/a/a.php');
+            rmdir($root . '/pkgs/a');
+            rmdir($root . '/pkgs');
+            rmdir($root);
+        }
+    }
+
+    /**
+     * @psalm-pure
+     * @return iterable<string, array{string}>
+     */
+    public static function providerResolveSymlinksSkipsUnreadableDirectories(): iterable
+    {
+        yield 'directory' => ['pkgs'];
+        yield 'wildcard directory' => ['pkgs/*'];
+    }
+
+    public function testDirectoryOptionsDoNotApplyToSiblingDirectories(): void
+    {
+        $root = (string) realpath(sys_get_temp_dir()) . DIRECTORY_SEPARATOR . 'psalm_sibling_options_' . uniqid();
+        mkdir($root . '/src', 0777, true);
+        mkdir($root . '/src2');
+        file_put_contents($root . '/src/a.php', '<?php');
+        file_put_contents($root . '/src2/b.php', '<?php');
+
+        try {
+            $config = Config::loadFromXML(
+                $root,
+                '<?xml version="1.0"?>
+                <psalm>
+                    <projectFiles>
+                        <directory name="src" useStrictTypes="true" ignoreTypeStats="true" />
+                        <directory name="src2" />
+                    </projectFiles>
+                </psalm>',
+            );
+
+            $src_file = $root . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'a.php';
+            $src2_file = $root . DIRECTORY_SEPARATOR . 'src2' . DIRECTORY_SEPARATOR . 'b.php';
+
+            $this->assertTrue($config->useStrictTypesForFile($src_file));
+            $this->assertFalse($config->reportTypeStatsForFile($src_file));
+            $this->assertFalse($config->useStrictTypesForFile($src2_file));
+            $this->assertTrue($config->reportTypeStatsForFile($src2_file));
+        } finally {
+            unlink($root . '/src/a.php');
+            unlink($root . '/src2/b.php');
+            rmdir($root . '/src');
+            rmdir($root . '/src2');
             rmdir($root);
         }
     }
@@ -2359,6 +2511,79 @@ final class ConfigTest extends DeferredAnalyzerTestCase
     }
 
     /**
+     * @return array<string, array{string, string, string}>
+     * @psalm-pure
+     */
+    public static function providerSinksOfExtensionsWithoutTheirStubs(): array
+    {
+        return [
+            'PDO::query' => ['PDO', 'query', 'TaintedSql'],
+            'PDO::exec' => ['PDO', 'exec', 'TaintedSql'],
+            'PDO::prepare' => ['PDO', 'prepare', 'TaintedSql'],
+            'PDOStatement::fetchObject' => ['PDOStatement', 'fetchObject', 'TaintedCallable'],
+            'mysqli::execute_query' => ['mysqli', 'execute_query', 'TaintedSql'],
+            'mysqli_result::fetch_object' => ['mysqli_result', 'fetch_object', 'TaintedCallable'],
+            'DOMXPath::query' => ['DOMXPath', 'query', 'TaintedXpath'],
+            'DOMXPath::evaluate' => ['DOMXPath', 'evaluate', 'TaintedXpath'],
+            'SimpleXMLElement::xpath' => ['SimpleXMLElement', 'xpath', 'TaintedXpath'],
+            'SoapClient::__setLocation' => ['SoapClient', '__setLocation', 'TaintedSSRF'],
+        ];
+    }
+
+    /**
+     * The extension stubs are only loaded when composer.json requires their extension, which projects often leave
+     * out for the bundled ones: the sinks of their functions still apply
+     */
+    #[DataProvider('providerSinksOfExtensionsWithoutTheirStubs')]
+    public function testSinksOfExtensionsWithoutTheirStubs(string $class, string $method, string $error): void
+    {
+        if (!class_exists($class)) {
+            // without its stub, Psalm only knows the class of an extension that PHP loads
+            $this->markTestSkipped('The extension of ' . $class . ' is not loaded');
+        }
+
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__, 2),
+                '<?xml version="1.0"?>
+                <psalm>
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+                    <disableExtensions>
+                        <extension name="pdo" />
+                        <extension name="mysqli" />
+                        <extension name="dom" />
+                        <extension name="simplexml" />
+                        <extension name="soap" />
+                    </disableExtensions>
+                </psalm>',
+            ),
+        );
+        $this->project_analyzer->setPhpVersion('8.4', 'tests');
+        $this->project_analyzer->trackTaintedInputs();
+
+        $file_path = (string) getcwd() . '/src/somefile.php';
+        $this->addFile(
+            $file_path,
+            '<?php
+                /** @psalm-suppress ArgumentTypeCoercion, PossiblyUnusedReturnValue, UnusedFunctionCall */
+                function run(' . $class . ' $object): void {
+                    $input = $_GET["input"] ?? "";
+                    if (!is_string($input)) {
+                        return;
+                    }
+                    $object->' . $method . '($input);
+                }',
+        );
+
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessageMatches('/\b' . $error . '\b/');
+
+        $this->analyzeFile($file_path, new Context());
+    }
+
+    /**
      * @return array<string, array{0: string, 1: string}>
      * @psalm-pure
      */
@@ -3084,6 +3309,137 @@ final class ConfigTest extends DeferredAnalyzerTestCase
             rmdir(dirname($composer_dir));
             rmdir($root);
         }
+    }
+
+    /**
+     * @param array<string, string> $files
+     * @param list<string>|null $expected
+     */
+    #[DataProvider('providerDeclaredExtensions')]
+    public function testCollectsTheDeclaredExtensions(array $files, string $config_xml, ?array $expected): void
+    {
+        $root = sys_get_temp_dir() . DIRECTORY_SEPARATOR . uniqid('psalm-declared-extensions-');
+        mkdir($root);
+        $dirs = [$root];
+        $paths = [];
+        foreach ($files as $path => $contents) {
+            $path = $root . DIRECTORY_SEPARATOR . $path;
+            for ($dir = dirname($path); !is_dir($dir); $dir = dirname($dir)) {
+                $dirs[] = $dir;
+            }
+            if (!is_dir(dirname($path))) {
+                mkdir(dirname($path), 0777, true);
+            }
+            file_put_contents($path, $contents);
+            $paths[] = $path;
+        }
+
+        try {
+            $config = Config::loadFromXML($root, '<?xml version="1.0"?>' . $config_xml);
+        } finally {
+            foreach ($paths as $path) {
+                unlink($path);
+            }
+            rsort($dirs);
+            foreach ($dirs as $dir) {
+                rmdir($dir);
+            }
+        }
+
+        $declared = $config->declared_extensions === null ? null : array_keys($config->declared_extensions);
+        if ($declared !== null) {
+            sort($declared);
+        }
+
+        $this->assertSame($expected, $declared);
+    }
+
+    #[DataProvider('providerLowestComposerPhpVersion')]
+    public function testReadsTheLowestPhpVersionComposerAllows(string $composer_json, ?int $expected): void
+    {
+        $root = sys_get_temp_dir() . DIRECTORY_SEPARATOR . uniqid('psalm-lowest-php-');
+        mkdir($root);
+        file_put_contents($root . DIRECTORY_SEPARATOR . 'composer.json', $composer_json);
+
+        try {
+            $config = Config::loadFromXML($root, '<?xml version="1.0"?><psalm/>');
+        } finally {
+            unlink($root . DIRECTORY_SEPARATOR . 'composer.json');
+            rmdir($root);
+        }
+
+        $this->assertSame($expected, $config->lowest_composer_php_version_id);
+    }
+
+    /**
+     * @return iterable<string, array{string, ?int}>
+     * @psalm-pure
+     */
+    public static function providerLowestComposerPhpVersion(): iterable
+    {
+        yield 'empty composer.json' => ['{}', null];
+        yield 'no php requirement' => ['{"require": {}}', null];
+        yield 'one major version' => ['{"require": {"php": "^8.2"}}', 8_02_00];
+        yield 'several major versions' => ['{"require": {"php": "^7.3 || ^8.0"}}', 7_03_00];
+    }
+
+    /**
+     * @return iterable<string, array{array<string, string>, string, list<string>|null}>
+     * @psalm-pure
+     */
+    public static function providerDeclaredExtensions(): iterable
+    {
+        yield 'no composer.json' => [[], '<psalm/>', null];
+
+        yield 'require, require-dev and suggest' => [
+            ['composer.json' => '{"require": {"php": "^8.2", "ext-SimpleXML": "*", "psr/log": "^3"},'
+                . ' "require-dev": {"ext-curl": "*"}, "suggest": {"ext-igbinary": "faster cache"}}'],
+            '<psalm/>',
+            ['curl', 'igbinary', 'simplexml'],
+        ];
+
+        yield 'provided and replaced by installed packages' => [
+            [
+                'composer.json' => '{"require": {}}',
+                'vendor/composer/installed.json' => '{"packages": [{"name": "symfony/polyfill-mbstring",'
+                    . ' "provide": {"ext-mbstring": "*"}}, {"name": "a/b", "replace": {"ext-ctype": "*"}}]}',
+            ],
+            '<psalm/>',
+            ['ctype', 'mbstring'],
+        ];
+
+        yield 'installed.json of Composer 1' => [
+            [
+                'composer.json' => '{"require": {}}',
+                'vendor/composer/installed.json' => '[{"name": "a/b", "provide": {"ext-iconv": "*"}}]',
+            ],
+            '<psalm/>',
+            ['iconv'],
+        ];
+
+        yield 'custom vendor-dir' => [
+            [
+                'composer.json' => '{"config": {"vendor-dir": "lib"}}',
+                'lib/composer/installed.json' => '{"packages": [{"name": "a/b", "provide": {"ext-iconv": "*"}}]}',
+            ],
+            '<psalm/>',
+            ['iconv'],
+        ];
+
+        yield 'composer.lock without installed packages' => [
+            [
+                'composer.json' => '{"require": {}}',
+                'composer.lock' => '{"packages": [], "packages-dev": [{"name": "a/b", "provide": {"ext-intl": "*"}}]}',
+            ],
+            '<psalm/>',
+            ['intl'],
+        ];
+
+        yield 'enableExtensions' => [
+            ['composer.json' => '{"require": {"ext-pdo": "*"}}'],
+            '<psalm><enableExtensions><extension name="redis"/></enableExtensions></psalm>',
+            ['pdo', 'redis'],
+        ];
     }
 
     public function testDisablesArrayCache(): void
