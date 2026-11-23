@@ -2308,6 +2308,82 @@ final class ConfigTest extends DeferredAnalyzerTestCase
     }
 
     /**
+     * @return array<string, array{string, string}>
+     * @psalm-pure
+     */
+    public static function providerSinksOfExtensionsWithoutTheirStubs(): array
+    {
+        return [
+            'PDO::query' => ['$pdo->query($input);', 'TaintedSql'],
+            'PDO::exec' => ['$pdo->exec($input);', 'TaintedSql'],
+            'PDO::prepare' => ['$pdo->prepare($input);', 'TaintedSql'],
+            'PDOStatement::fetchObject' => ['$statement->fetchObject($input);', 'TaintedCallable'],
+            'mysqli::execute_query' => ['$mysqli->execute_query($input);', 'TaintedSql'],
+            'mysqli_result::fetch_object' => ['$result->fetch_object($input);', 'TaintedCallable'],
+            'DOMXPath::query' => ['$xpath->query($input);', 'TaintedXpath'],
+            'DOMXPath::evaluate' => ['$xpath->evaluate($input);', 'TaintedXpath'],
+            'SimpleXMLElement::xpath' => ['$xml->xpath($input);', 'TaintedXpath'],
+            'SoapClient::__setLocation' => ['$soap->__setLocation($input);', 'TaintedSSRF'],
+        ];
+    }
+
+    /**
+     * The extension stubs are only loaded when composer.json requires their extension, which projects often leave
+     * out for the bundled ones: the sinks of their functions still apply
+     */
+    #[DataProvider('providerSinksOfExtensionsWithoutTheirStubs')]
+    public function testSinksOfExtensionsWithoutTheirStubs(string $call, string $error): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__, 2),
+                '<?xml version="1.0"?>
+                <psalm>
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+                    <disableExtensions>
+                        <extension name="pdo" />
+                        <extension name="mysqli" />
+                        <extension name="dom" />
+                        <extension name="simplexml" />
+                        <extension name="soap" />
+                    </disableExtensions>
+                </psalm>',
+            ),
+        );
+        $this->project_analyzer->setPhpVersion('8.4', 'tests');
+        $this->project_analyzer->trackTaintedInputs();
+
+        $file_path = (string) getcwd() . '/src/somefile.php';
+        $this->addFile(
+            $file_path,
+            '<?php
+                /** @psalm-suppress ArgumentTypeCoercion, PossiblyUnusedReturnValue, UnusedFunctionCall */
+                function run(
+                    PDO $pdo,
+                    PDOStatement $statement,
+                    mysqli $mysqli,
+                    mysqli_result $result,
+                    DOMXPath $xpath,
+                    SimpleXMLElement $xml,
+                    SoapClient $soap,
+                ): void {
+                    $input = $_GET["input"] ?? "";
+                    if (!is_string($input)) {
+                        return;
+                    }
+                    ' . $call . '
+                }',
+        );
+
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessageMatches('/\b' . $error . '\b/');
+
+        $this->analyzeFile($file_path, new Context());
+    }
+
+    /**
      * @return array<string, array{0: string, 1: string}>
      * @psalm-pure
      */
