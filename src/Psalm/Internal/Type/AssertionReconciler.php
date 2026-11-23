@@ -2528,6 +2528,9 @@ final class AssertionReconciler extends Reconciler
         return $type_2_atomic;
     }
 
+    /**
+     * @psalm-capabilities read-props|write-props
+     */
     private static function isOnlyImplementedByEnums(Codebase $codebase, string $interface_name): bool
     {
         return strtolower($interface_name) === 'unitenum'
