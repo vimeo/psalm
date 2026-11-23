@@ -15,6 +15,7 @@ use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 use function array_filter;
 use function array_map;
 use function array_values;
+use function str_contains;
 
 use const DIRECTORY_SEPARATOR;
 
@@ -22,6 +23,44 @@ final class TraitTest extends TestCase
 {
     use InvalidCodeAnalysisTestTrait;
     use ValidCodeAnalysisTestTrait;
+
+    public function testAnAliasOfATraitConstantIsReportedAndDefinesNothing(): void
+    {
+        $this->project_analyzer->setPhpVersion('8.2', 'tests');
+        $this->testConfig->throw_exception = false;
+
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            <<<'PHP'
+                <?php
+                trait TraitA { private const PRIVATE_CONST = 'PRIVATE_CONST'; }
+                class ClassB { use TraitA { PRIVATE_CONST as public PUBLIC_CONST; } }
+                $c = ClassB::PUBLIC_CONST;
+                PHP,
+        );
+
+        $this->analyzeFile($file_path, new Context(), false);
+
+        $messages = array_map(
+            static fn(IssueData $issue): string => $issue->type . ': ' . $issue->message,
+            IssueBuffer::getIssuesDataForFile($file_path),
+        );
+
+        $this->assertContains(
+            'UndefinedConstant: Constant ClassB::PUBLIC_CONST is not defined',
+            $messages,
+        );
+        $this->assertCount(
+            1,
+            array_filter(
+                $messages,
+                static fn(string $message): bool
+                    => str_contains($message, 'An alias was defined for PRIVATE_CONST but this method does not exist'),
+            ),
+        );
+    }
 
     /**
      * @param list<array{int, string}> $expected_issues line and message of each UndefinedTrait
@@ -2207,17 +2246,6 @@ final class TraitTest extends TestCase
                 'error_message' => 'UndefinedConstant - src' . DIRECTORY_SEPARATOR . 'somefile.php:16:30 - Constant Greeter::greet is not defined',
                 'error_levels' => [],
                 'php_version' => '8.3',
-            ],
-            'constant in trait with alias' => [
-                'code' => <<<'PHP'
-                    <?php
-                    trait TraitA { private const PRIVATE_CONST = 'PRIVATE_CONST'; }
-                    class ClassB { use TraitA { PRIVATE_CONST as public PUBLIC_CONST; } }
-                    $c = ClassB::PUBLIC_CONST;
-                    PHP,
-                'error_message' => 'An alias was defined for PRIVATE_CONST but this method does not exist',
-                'error_levels' => [],
-                'php_version' => '8.2',
             ],
             'aliasWithATraitThatDoesNotExist' => [
                 'code' => '<?php
