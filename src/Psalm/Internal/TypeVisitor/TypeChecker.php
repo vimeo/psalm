@@ -90,23 +90,32 @@ final class TypeChecker extends TypeVisitor
     private array $checked_types = [];
 
     /**
-     * The position each type this checker marked was in, by object id: a type it meets again in another position
+     * The positions each type this checker marked was in, by object id: a type it meets again in another position
      * (the bound of a method's template, one type for all its occurrences) is checked again
      *
-     * @var array<int, ?TemplateVariance>
+     * @var array<int, array{?TemplateVariance, ?TemplateVariance}>
      */
     private array $checked_positions = [];
+
+    /**
+     * In the bound of a method's template, the position a contravariant template is checked in: Hack checks the
+     * bound (`@template U of T`) as an input position of the method, wherever the method's template is used.
+     * A covariant template is still checked where the method's template is used, as it always was
+     */
+    private ?TemplateVariance $bound_position = null;
 
     /**
      * @param array<string>    $suppressed_issues
      * @param array<string, bool> $phantom_classes
      * @param ?TemplateVariance $position the variance a template must have to be where the type is: covariant for
-     *                                    an output position (a method's return type), contravariant for an input
-     *                                    position (a method's parameter), invariant for one that is both. Null
-     *                                    for one that is neither (a constructor parameter, what isn't a method's
-     *                                    signature), where templates are not checked. A callable's parameter
-     *                                    types and contravariant type params are in the opposite position
-     * @param bool $in_property_type whether the type is a property's, which may hold a covariant template
+     *                                    an output position (a method's return type, a property only the class
+     *                                    writes), contravariant for an input one (a method's parameter), invariant
+     *                                    for one that is both (a writable property). Null where templates are not
+     *                                    checked (a constructor's parameters, a private property, what isn't the
+     *                                    signature of a member)
+     * @param bool $only_contravariant whether only contravariant templates are checked: a covariant one may be in
+     *                                 a property's type, and was never checked in `@param-out`, by-ref output and
+     *                                 assertion types
      * @psalm-mutation-free
      */
     public function __construct(
@@ -118,7 +127,7 @@ final class TypeChecker extends TypeVisitor
         private readonly bool $inherited = false,
         private ?TemplateVariance $position = null,
         private readonly ?Context $context = null,
-        private readonly bool $in_property_type = false,
+        private readonly bool $only_contravariant = false,
     ) {
     }
 
@@ -134,7 +143,7 @@ final class TypeChecker extends TypeVisitor
 
         if ($type->checked
             && (!array_key_exists($id = spl_object_id($type), $this->checked_positions)
-                || $this->checked_positions[$id] === $this->position)
+                || $this->checked_positions[$id] === [$this->position, $this->bound_position])
         ) {
             return self::DONT_TRAVERSE_CHILDREN;
         }
@@ -145,6 +154,7 @@ final class TypeChecker extends TypeVisitor
             if ($type instanceof TGenericObject && $param_variances !== null) {
                 // each type param is checked with its own variance, and the siblings with the outer one
                 $outer_position = $this->position;
+                $outer_bound_position = $this->bound_position;
 
                 foreach ($type->extra_types as $extra_type) {
                     $this->traverse($extra_type);
@@ -157,10 +167,14 @@ final class TypeChecker extends TypeVisitor
                     }
 
                     $this->position = $this->getTypeParamPosition($outer_position, $param_variances[$i]);
+                    $this->bound_position = $outer_bound_position === null
+                        ? null
+                        : $this->getTypeParamPosition($outer_bound_position, $param_variances[$i]);
                     $this->traverse($type_param);
                 }
 
                 $this->position = $outer_position;
+                $this->bound_position = $outer_bound_position;
 
                 $this->markChecked($type);
 
@@ -174,6 +188,21 @@ final class TypeChecker extends TypeVisitor
             $this->checkIntMaskConstants($type);
         } elseif ($type instanceof TTemplateParam) {
             $this->checkTemplateParam($type);
+
+            if (str_starts_with($type->defining_class, 'fn-')) {
+                $this->markChecked($type);
+
+                foreach ($type->extra_types as $extra_type) {
+                    $this->traverse($extra_type);
+                }
+
+                $outer_bound_position = $this->bound_position;
+                $this->bound_position = TemplateVariance::Contravariant;
+                $this->traverse($type->as);
+                $this->bound_position = $outer_bound_position;
+
+                return self::DONT_TRAVERSE_CHILDREN;
+            }
         } elseif ($type instanceof TResource) {
             $this->checkResource($type);
         } elseif ($type instanceof TIntersection) {
@@ -199,11 +228,14 @@ final class TypeChecker extends TypeVisitor
 
         // a callable's parameter types are in the opposite position
         $outer_position = $this->position;
+        $outer_bound_position = $this->bound_position;
         $this->position = self::getOppositePosition($outer_position);
+        $this->bound_position = self::getOppositePosition($outer_bound_position);
 
         $result = parent::traverse($node);
 
         $this->position = $outer_position;
+        $this->bound_position = $outer_bound_position;
 
         return $result;
     }
@@ -271,7 +303,7 @@ final class TypeChecker extends TypeVisitor
         /** @psalm-suppress InaccessibleProperty Doesn't affect anything else */
         $type->checked = true;
         $this->checked_types[] = $type;
-        $this->checked_positions[spl_object_id($type)] = $this->position;
+        $this->checked_positions[spl_object_id($type)] = [$this->position, $this->bound_position];
     }
 
     /**
@@ -706,12 +738,16 @@ final class TypeChecker extends TypeVisitor
         // elsewhere: the bound of a method's template is one type for all of the method's params and its return type
         $this->context_free = false;
 
-        if ($this->position === null || $variance === $this->position) {
+        $position = $variance === TemplateVariance::Contravariant && $this->bound_position !== null
+            ? $this->bound_position
+            : $this->position;
+
+        if ($this->position === null || $variance === $position) {
             return;
         }
 
         if ($variance === TemplateVariance::Covariant) {
-            if ($this->in_property_type) {
+            if ($this->only_contravariant) {
                 return;
             }
 

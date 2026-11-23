@@ -295,6 +295,88 @@ final class ClassTemplateContravarianceTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'contravariantTemplateInTheBoundOfAMethodTemplate' => [
+                'code' => self::SINK . '
+                    /** @template-contravariant T */
+                    interface C {
+                        /**
+                         * @template U of T
+                         * @param U $value
+                         * @return U
+                         */
+                        public function same(mixed $value): mixed;
+                        /**
+                         * @template U of T
+                         * @return Closure(U): U
+                         */
+                        public function identity(): Closure;
+                        /**
+                         * @template U of Source<T>
+                         * @param U $source
+                         * @return U
+                         */
+                        public function pass(Source $source): Source;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'covariantTemplateInContravariantArgs' => [
+                'code' => self::SINK . '
+                    /** @template-covariant T */
+                    interface C {
+                        /** @param Sink<T> $sink */
+                        public function drainTo(Sink $sink): void;
+                        /** @return Sink<Sink<T>> */
+                        public function sinks(): Sink;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'contravariantTemplateInPropertiesOnlyTheClassWrites' => [
+                'code' => '<?php
+                    /** @template-contravariant T */
+                    final class C {
+                        /** @var Closure(T): void */
+                        public private(set) Closure $set;
+                        /**
+                         * @var Closure(T): void
+                         * @psalm-readonly
+                         */
+                        public Closure $readonly;
+                        /** @param Closure(T): void $consumer */
+                        public function __construct(Closure $consumer) {
+                            $this->set = $consumer;
+                            $this->readonly = $consumer;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.4',
+            ],
+            'newWithCovariantAndContravariantTemplates' => [
+                'code' => '<?php
+                    /**
+                     * @template-covariant A
+                     * @template-contravariant B
+                     */
+                    final class Pipe {
+                        /**
+                         * @param A $value
+                         * @param Closure(B): void $consumer
+                         */
+                        public function __construct(public readonly mixed $value, private Closure $consumer) {}
+                        /** @param B $value */
+                        public function put(mixed $value): void { ($this->consumer)($value); }
+                    }
+                    $pipe = new Pipe(1, function (string $s): void {});',
+                'assertions' => [
+                    '$pipe===' => 'Pipe<1, string>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
         ];
     }
 
@@ -419,6 +501,18 @@ final class ClassTemplateContravarianceTest extends TestCase
                             $this->consumer = $consumer;
                         }
                     }',
+                'error_message' => 'InvalidTemplateParam - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:34'
+                    . ' - Template param T of C is marked contravariant and cannot be used here',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'preventContravariantTemplateInAProtectedProperty' => [
+                'code' => '<?php
+                    /** @template-contravariant T */
+                    abstract class C {
+                        /** @var Closure(T): void */
+                        protected Closure $consumer;
+                    }',
                 'error_message' => 'Template param T of C is marked contravariant',
                 'error_levels' => [],
                 'php_version' => '8.0',
@@ -514,19 +608,92 @@ final class ClassTemplateContravarianceTest extends TestCase
                 'error_levels' => [],
                 'php_version' => '8.0',
             ],
-            'preventContravariantTemplateInTheBoundOfAMethodTemplateReturnedAfterAParam' => [
+            'preventContravariantTemplateInTheBoundOfAMethodTemplateInAContravariantArg' => [
+                'code' => self::SINK . '
+                    /** @template-contravariant T */
+                    interface C {
+                        /**
+                         * @template U of Sink<T>
+                         * @param U $sink
+                         */
+                        public function take(Sink $sink): void;
+                    }',
+                'error_message' => 'Template param T of C is marked contravariant',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'preventCovariantTemplateInAContravariantArgOfReturn' => [
+                'code' => self::SINK . '
+                    /** @template-covariant T */
+                    interface C {
+                        /** @return Sink<T> */
+                        public function sink(): Sink;
+                    }',
+                'error_message' => 'Template param T of C is marked covariant',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'preventContravariantTemplateInAByRefParam' => [
+                'code' => '<?php
+                    /** @template-contravariant T */
+                    interface C {
+                        /** @param T $value */
+                        public function swap(mixed &$value): void;
+                    }',
+                'error_message' => 'Template param T of C is marked contravariant',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'preventContravariantTemplateInAParamOut' => [
                 'code' => '<?php
                     /** @template-contravariant T */
                     interface C {
                         /**
-                         * @template U of T
-                         * @param U $value
-                         * @return U
+                         * @param mixed $value
+                         * @param-out T $value
                          */
-                        public function same(mixed $value): mixed;
+                        public function fill(mixed &$value): void;
                     }',
-                'error_message' => 'InvalidTemplateParam - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:36'
-                    . ' - Template param T of C is marked contravariant and cannot be used here',
+                'error_message' => 'Template param T of C is marked contravariant',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'preventContravariantTemplateInAnAssertion' => [
+                'code' => '<?php
+                    /** @template-contravariant T */
+                    interface C {
+                        /** @psalm-assert-if-true T $value */
+                        public function accepts(mixed $value): bool;
+                    }',
+                'error_message' => 'Template param T of C is marked contravariant',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'sinkWithoutTypeArgsIsACoercionFromMixed' => [
+                'code' => self::SINK . '
+                    /** @param Sink<int> $sink */
+                    function takesIntSink(Sink $sink): void {}
+                    function f(Sink $sink): void {
+                        takesIntSink($sink);
+                    }',
+                'error_message' => 'MixedArgumentTypeCoercion',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'newThroughASinkArgTakesWhatTheSinkTakes' => [
+                'code' => self::SINK . '
+                    /** @template-contravariant T */
+                    final class Forwarder {
+                        /** @param Sink<T> $sink */
+                        public function __construct(private Sink $sink) {}
+                        /** @param T $value */
+                        public function put(mixed $value): void { $this->sink->put($value); }
+                    }
+                    /** @param Sink<int> $sink */
+                    function f(Sink $sink): void {
+                        (new Forwarder($sink))->put("a");
+                    }',
+                'error_message' => 'Argument 1 of Forwarder::put expects int, but \'a\' provided',
                 'error_levels' => [],
                 'php_version' => '8.0',
             ],
@@ -759,21 +926,6 @@ final class ClassTemplateContravarianceTest extends TestCase
                     }',
                 'error_message' => 'IncompatibleTypeParameters - src' . DIRECTORY_SEPARATOR . 'somefile.php:31:38'
                     . ' - Type \'a\' should be a subtype of int',
-                'error_levels' => [],
-                'php_version' => '8.0',
-            ],
-            'preventContravariantTemplateInTheBoundOfAMethodTemplateInACallableReturn' => [
-                'code' => '<?php
-                    /** @template-contravariant T */
-                    interface C {
-                        /**
-                         * @template U of T
-                         * @return Closure(U): U
-                         */
-                        public function same(): Closure;
-                    }',
-                'error_message' => 'InvalidTemplateParam - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:36'
-                    . ' - Template param T of C is marked contravariant and cannot be used here',
                 'error_levels' => [],
                 'php_version' => '8.0',
             ],

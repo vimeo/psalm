@@ -23,6 +23,45 @@ final class ClassTemplateCovarianceTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'covariantTemplateInAParamTypeTakenFromTheOverriddenMethod' => [
+                'code' => '<?php
+                    /** @template-covariant T */
+                    interface Src {
+                        /**
+                         * @param list<T> $items
+                         * @psalm-suppress InvalidTemplateParam
+                         */
+                        public function each(array $items): void;
+                    }
+                    /**
+                     * @template-covariant T
+                     * @implements Src<T>
+                     */
+                    final class Impl implements Src {
+                        public function each(array $items): void {}
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MissingOverrideAttribute'],
+                'php_version' => '8.0',
+            ],
+            'covariantTemplateInOutputsOtherThanTheReturnType' => [
+                'code' => '<?php
+                    /** @template-covariant T */
+                    interface C {
+                        /** @param Closure(T): void $callback */
+                        public function swap(Closure &$callback): void;
+                        /**
+                         * @param mixed $value
+                         * @param-out T $value
+                         */
+                        public function fill(mixed &$value): void;
+                        /** @psalm-assert-if-true T $value */
+                        public function accepts(mixed $value): bool;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'allowBoundedType' => [
                 'code' => '<?php
                     class Base {}
@@ -699,6 +738,8 @@ final class ClassTemplateCovarianceTest extends TestCase
                     }',
                 'error_message' => 'InvalidTemplateParam - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:35'
                     . ' - Template param T of C is marked covariant and cannot be used here',
+                'error_levels' => [],
+                'php_version' => '8.0',
             ],
             'preventCovariantTemplateInTheBoundOfAMethodTemplateInACallableParam' => [
                 'code' => '<?php
@@ -712,6 +753,8 @@ final class ClassTemplateCovarianceTest extends TestCase
                     }',
                 'error_message' => 'InvalidTemplateParam - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:35'
                     . ' - Template param T of C is marked covariant and cannot be used here',
+                'error_levels' => [],
+                'php_version' => '8.0',
             ],
             'preventExtendingWithCovariance' => [
                 'code' => '<?php

@@ -82,6 +82,7 @@ use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Storage\FunctionStorage;
 use Psalm\Storage\MethodStorage;
+use Psalm\Storage\TemplateVariance;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArray;
@@ -735,6 +736,30 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 false,
                 $context,
             );
+        }
+
+        // what an assertion narrows a value to is handed out, as a return type is (a negated one hands nothing out)
+        if ($storage->location !== null) {
+            $asserted_types = [];
+            $possibilities_list = [
+                ...$storage->assertions,
+                ...$storage->if_true_assertions,
+                ...$storage->if_false_assertions,
+            ];
+
+            foreach ($possibilities_list as $possibilities) {
+                foreach ($possibilities->rule as $assertion) {
+                    if (!$assertion->isNegation() && ($asserted_type = $assertion->getAtomicType()) !== null) {
+                        $asserted_types[] = $asserted_type;
+                    }
+                }
+            }
+
+            if ($asserted_types
+                && !$this->checkOutputTypeTemplates(new Union($asserted_types), $storage->location, $storage, $context)
+            ) {
+                $check_stmts = false;
+            }
         }
 
         // a signature that fails the check skips the body, but what the body initialises still counts:
@@ -1838,6 +1863,42 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
     }
 
     /**
+     * Checks a type a method hands out other than as its return type (`@param-out`, a by-ref parameter, what an
+     * assertion narrows to) for the contravariant templates of its class. Covariant ones were never checked there.
+     *
+     * @return bool whether the type has no errors, as for check()
+     * @psalm-capabilities read-props
+     */
+    private function checkOutputTypeTemplates(
+        Union $type,
+        CodeLocation $location,
+        FunctionLikeStorage $storage,
+        Context $context,
+    ): bool {
+        if (!$storage instanceof MethodStorage
+            || $storage->defining_fqcln === null
+            || !$this->function instanceof ClassMethod
+            || strtolower($this->function->name->name) === '__construct'
+            || $this->codebase->classlike_storage_provider->get($storage->defining_fqcln)->template_contravariants
+                === null
+        ) {
+            return true;
+        }
+
+        return (new TypeChecker(
+            $this,
+            $location,
+            $storage->suppressed_issues,
+            [],
+            false,
+            false,
+            TemplateVariance::Covariant,
+            $context,
+            true,
+        ))->check($type);
+    }
+
+    /**
      * Reports the parameters and the by-reference void returns PHP deprecates, whatever PHP version is analysed
      */
     private function checkDeprecatedSignature(): void
@@ -2103,10 +2164,26 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                         [],
                         false,
                         false,
+                        // a type the parameter takes from the overridden method is checked there, for its templates
                         $this->function instanceof ClassMethod
-                            && strtolower($this->function->name->name) !== '__construct',
+                            && strtolower($this->function->name->name) !== '__construct'
+                            && $function_param === ($storage->params[$offset] ?? null),
                         $context,
                     ) === false) {
+                        $check_stmts = false;
+                    }
+
+                    $output_type = $function_param->out_type ?? ($function_param->by_ref ? $param_type : null);
+
+                    if ($output_type !== null
+                        && $function_param === ($storage->params[$offset] ?? null)
+                        && !$this->checkOutputTypeTemplates(
+                            $output_type,
+                            $function_param->type_location,
+                            $storage,
+                            $context,
+                        )
+                    ) {
                         $check_stmts = false;
                     }
                 }
