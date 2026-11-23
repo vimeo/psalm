@@ -106,6 +106,7 @@ final class MissingMethodCallHandler
             $context->mergeFunctionExceptions(
                 $found_method_and_class_storage[0],
                 new CodeLocation($statements_analyzer->getSource(), $stmt->name),
+                $statements_analyzer->getCodebase(),
             );
         }
 
@@ -181,6 +182,14 @@ final class MissingMethodCallHandler
             $template_result = new TemplateResult(
                 $pseudo_method_storage->template_types ?? [],
                 $found_generic_params ?? [],
+            );
+
+            ClassTemplateParamCollector::markStarBindings(
+                $template_result,
+                $codebase,
+                $pseudo_method_class_storage,
+                $mixin_type ?? $lhs_type_part,
+                $found_generic_params,
             );
 
             ArgumentsAnalyzer::analyze(
@@ -425,6 +434,7 @@ final class MissingMethodCallHandler
                 $context->mergeFunctionExceptions(
                     $pseudo_method_storage,
                     new CodeLocation($statements_analyzer, $stmt->name),
+                    $statements_analyzer->getCodebase(),
                 );
             }
 
@@ -440,6 +450,14 @@ final class MissingMethodCallHandler
             $template_result = new TemplateResult(
                 $pseudo_method_storage->template_types ?? [],
                 $found_generic_params ?? [],
+            );
+
+            ClassTemplateParamCollector::markStarBindings(
+                $template_result,
+                $codebase,
+                $class_storage,
+                $lhs_type_part,
+                $found_generic_params,
             );
 
             if (ArgumentsAnalyzer::analyze(
@@ -571,6 +589,15 @@ final class MissingMethodCallHandler
             !$statements_analyzer->isStatic() && $method_id->fq_class_name === $context->self,
         );
 
+        $template_result = new TemplateResult([], $found_generic_params ?? []);
+        ClassTemplateParamCollector::markStarBindings(
+            $template_result,
+            $codebase,
+            $class_storage,
+            $lhs_type_part,
+            $found_generic_params,
+        );
+
         return MethodCallReturnTypeFetcher::getFirstClassCallableType(
             $codebase,
             $stmt,
@@ -579,7 +606,7 @@ final class MissingMethodCallHandler
                 $pseudo_method_storage->return_type,
                 $pseudo_method_storage->capabilities,
             ),
-            new TemplateResult([], $found_generic_params ?? []),
+            $template_result,
             $pseudo_method_storage->template_types ?? [],
             $defining_class_storage->name,
             $lhs_type_part instanceof Atomic\TNamedObject ? $lhs_type_part : $method_id->fq_class_name,

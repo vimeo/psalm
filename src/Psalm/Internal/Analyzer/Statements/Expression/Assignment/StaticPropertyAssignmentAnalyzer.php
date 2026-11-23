@@ -229,6 +229,11 @@ final class StaticPropertyAssignmentAnalyzer
                 $fq_class_name,
                 $fq_class_name,
                 $class_storage->parent_class,
+                true,
+                false,
+                $codebase->classlike_storage_provider->get(
+                    $codebase->classlikes->getUnAliasedName($fq_class_name),
+                )->final,
             );
 
             $union_comparison_results = new TypeComparisonResult();
@@ -241,6 +246,22 @@ final class StaticPropertyAssignmentAnalyzer
                 true,
                 $union_comparison_results,
             );
+
+            if ($type_match_found
+                && ($union_comparison_results->type_variable_lower_bounds
+                    || $union_comparison_results->type_variable_upper_bounds)
+            ) {
+                $statements_analyzer->type_variable_tracker->addPropertyAssignmentBounds(
+                    $union_comparison_results,
+                    $property_id,
+                    new CodeLocation(
+                        $statements_analyzer->getSource(),
+                        $assignment_value ?? $stmt,
+                        $context->include_location,
+                    ),
+                    $statements_analyzer->getSuppressedIssues(),
+                );
+            }
 
             if ($union_comparison_results->type_coerced) {
                 if ($union_comparison_results->type_coerced_from_mixed) {

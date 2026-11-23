@@ -101,6 +101,7 @@ function writeJsonFile(string $path, array $data, bool $pretty = true): void
 require __DIR__ . '/lib/plan.php';
 require __DIR__ . '/lib/config.php';
 require __DIR__ . '/lib/normalize.php';
+require __DIR__ . '/lib/messagediff.php';
 require __DIR__ . '/lib/compare.php';
 require __DIR__ . '/lib/report.php';
 

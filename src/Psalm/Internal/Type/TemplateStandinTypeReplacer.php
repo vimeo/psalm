@@ -43,6 +43,7 @@ use Psalm\Type\Atomic\TTypeVariable;
 use Psalm\Type\MutableUnion;
 use Psalm\Type\Union;
 
+use function array_any;
 use function array_fill;
 use function array_filter;
 use function array_keys;
@@ -141,6 +142,52 @@ final class TemplateStandinTypeReplacer
             }
 
             $other_input_type = $new_input_type->isUnionEmpty() ? null : $new_input_type->freeze();
+
+            // an input atom contained by a template-free atom of the union, `'a'` for `string`, is that atom's and
+            // not the template's, unless
+            // - it is also contained by an atom that holds a template (`class-string<T>`, `iterable<T>`), which it
+            //   binds, or
+            // - it is all that is left (`notString("only")` binds `'only'`)
+            if ($other_input_type) {
+                $template_free_input_type = $other_input_type->getBuilder();
+
+                $template_free_atomic_types = [];
+                $templated_atomic_types = [];
+
+                foreach ($original_atomic_types as $original_atomic_type) {
+                    $template_collector = new TemplateTypeCollector();
+                    $template_collector->traverseArray([$original_atomic_type]);
+
+                    if (!$template_collector->getTemplateTypes()) {
+                        $template_free_atomic_types[] = $original_atomic_type;
+                    } elseif ($original_atomic_type instanceof TTemplateParamClass) {
+                        $templated_atomic_types[] = new TClassString(
+                            $original_atomic_type->as,
+                            $original_atomic_type->as_type,
+                        );
+                    } elseif (!$original_atomic_type instanceof TTemplateParam) {
+                        $templated_atomic_types[] = $original_atomic_type;
+                    }
+                }
+
+                foreach ($other_input_type->getAtomicTypes() as $input_key => $input_atomic_type) {
+                    if (array_any(
+                        $template_free_atomic_types,
+                        static fn(Atomic $atomic_type): bool
+                            => AtomicTypeComparator::isContainedBy($codebase, $input_atomic_type, $atomic_type),
+                    ) && !array_any(
+                        $templated_atomic_types,
+                        static fn(Atomic $atomic_type): bool
+                            => AtomicTypeComparator::isContainedBy($codebase, $input_atomic_type, $atomic_type),
+                    )) {
+                        $template_free_input_type->removeType($input_key);
+                    }
+                }
+
+                if (!$template_free_input_type->isUnionEmpty()) {
+                    $other_input_type = $template_free_input_type->freeze();
+                }
+            }
 
             // a bare template keeps the subtraction for every atom: its bounds would otherwise
             // compete by depth with the deeper bounds a matched container atom adds
@@ -263,8 +310,12 @@ final class TemplateStandinTypeReplacer
             );
         }
 
+        // a template of the class being analysed here is the caller's own: a call's bindings of the receiver's class
+        // templates were applied to the declared type before
         if ($atomic_type instanceof TTemplateParam
             && isset($template_result->lower_bounds[$atomic_type->param_name][$atomic_type->defining_class])
+            && ($atomic_type->defining_class !== $calling_class
+                || $template_result->isForAnotherObject($calling_class))
         ) {
             $most_specific_type = self::getMostSpecificTypeFromBounds(
                 $template_result->lower_bounds[$atomic_type->param_name][$atomic_type->defining_class],
@@ -751,7 +802,12 @@ final class TemplateStandinTypeReplacer
         bool $was_single,
         bool &$had_template,
     ): array {
-        if ($atomic_type->defining_class === $calling_class) {
+        // the templates of the class being analysed are the types of the object the code runs for, unless the
+        // result is for another object: the receiver of a call (`$other->add()` inside the class of `$other`) or
+        // the object a `new` constructs
+        if ($atomic_type->defining_class === $calling_class
+            && !$template_result->isForAnotherObject($calling_class)
+        ) {
             return [$atomic_type];
         }
 
@@ -822,7 +878,8 @@ final class TemplateStandinTypeReplacer
                     null,
                 );
 
-                if ($depth < 10) {
+                // the receiver's type arguments are in the caller's terms already: their templates are the caller's
+                if ($depth < 10 && !$template_result->of_receiver) {
                     $replacement_type = self::replace(
                         $replacement_type,
                         $template_result,
@@ -838,6 +895,8 @@ final class TemplateStandinTypeReplacer
                         $depth + 1,
                     );
                 }
+
+                $templates_in_scope = null;
 
                 foreach ($replacement_type->getAtomicTypes() as $replacement_atomic_type) {
                     $replacements_found = false;
@@ -878,6 +937,13 @@ final class TemplateStandinTypeReplacer
                     if ($replacement_atomic_type instanceof TTemplateParam
                         && $replacement_atomic_type->defining_class !== $calling_class
                         && $replacement_atomic_type->defining_class !== 'fn-' . $calling_function
+                        // a trait method is analysed as a method of the using class,
+                        // so its own templates don't match the `fn-` id of the calling function
+                        && !isset(
+                            ($templates_in_scope ??= $statements_analyzer?->getTemplateTypeMap() ?? [])
+                                [$replacement_atomic_type->param_name]
+                                [$replacement_atomic_type->defining_class],
+                        )
                     ) {
                         foreach ($replacement_atomic_type->as->getAtomicTypes() as $nested_type_atomic) {
                             $replacements_found = true;
@@ -1532,6 +1598,7 @@ final class TemplateStandinTypeReplacer
      * @param TGenericObject|TNamedObject|TIterable $input_type_part
      * @param TGenericObject|TNamedObject|TIterable $container_type_part
      * @psalm-capabilities read-props|write-this-props|write-props|write-refs
+     * @param-out array<int, true> $input_star_offsets the offsets of the returned params that are a `*`
      * @return list<Union>
      */
     public static function getMappedGenericTypeParams(
@@ -1539,6 +1606,7 @@ final class TemplateStandinTypeReplacer
         Atomic $input_type_part,
         Atomic $container_type_part,
         ?array &$container_type_params_covariant = null,
+        ?array &$input_star_offsets = null,
     ): array {
         if ($input_type_part instanceof TGenericObject || $input_type_part instanceof TIterable) {
             $input_type_params = $input_type_part->type_params;
@@ -1588,6 +1656,15 @@ final class TemplateStandinTypeReplacer
             ? $codebase->classlike_storage_provider->get($input_type_part->value)
             : null;
 
+        $input_projections = $input_type_part instanceof TGenericObject ? $input_type_part->getProjections() : [];
+        $input_star_offsets = [];
+
+        foreach ($input_projections as $offset => $projection) {
+            if ($projection === TypeArgumentProjection::Star) {
+                $input_star_offsets[$offset] = true;
+            }
+        }
+
         $container_type_params_covariant = $codebase->classlike_storage_provider->has($container_type_part->value)
             ? $codebase->classlike_storage_provider->get($container_type_part->value)->template_covariants
             : null;
@@ -1599,6 +1676,7 @@ final class TemplateStandinTypeReplacer
             $i = 0;
 
             $replacement_templates = [];
+            $star_templates = [];
 
             if ($input_template_types
                 && (!$container_type_part instanceof TGenericObject || !$container_type_part->remapped_params)
@@ -1610,9 +1688,17 @@ final class TemplateStandinTypeReplacer
 
                     $replacement_templates[$template_name][$input_type_part->value] = $input_type_params[$i];
 
+                    if (($input_projections[$i] ?? null) === TypeArgumentProjection::Star) {
+                        // `Box<T>` of the `@implements Getter<Box<T>>` of a `Box<*>` is as unknown as the receiver
+                        $star_templates[$template_name][$input_type_part->value] = true;
+                    }
+
                     $i++;
                 }
             }
+
+            $replacement_result = new TemplateResult([], $replacement_templates);
+            $replacement_result->markStarBindings($star_templates);
 
             $template_extends = $input_class_storage->template_extended_params;
 
@@ -1624,9 +1710,11 @@ final class TemplateStandinTypeReplacer
                 $params = $template_extends[$container_type_part_value];
 
                 $new_input_params = [];
+                $mapped_star_offsets = [];
 
                 foreach ($params as $extended_input_param_type) {
                     $new_input_param = null;
+                    $candidate_offsets = [];
 
                     foreach ($extended_input_param_type->getAtomicTypes() as $extended_template) {
                         $extended_templates = $extended_template instanceof TTemplateParam
@@ -1656,6 +1744,7 @@ final class TemplateStandinTypeReplacer
                                     true,
                                 );
 
+                                $candidate_offsets[] = $old_params_offset;
                                 $candidate_param_types[] = ($input_type_params[$old_params_offset] ?? Type::getMixed())
                                     ->setProperties(['from_template_default' => true]);
                             }
@@ -1671,14 +1760,36 @@ final class TemplateStandinTypeReplacer
 
                     $new_input_param = TemplateInferredTypeReplacer::replace(
                         $new_input_param,
-                        new TemplateResult([], $replacement_templates),
+                        $replacement_result,
                         $codebase,
                     );
+
+                    // a `*` argument of the input is one of the container when the container's template stands for
+                    // exactly the template that holds it
+                    if (count($candidate_offsets) === 1
+                        && $extended_input_param_type->isSingle()
+                        && ($input_projections[$candidate_offsets[0]] ?? null) === TypeArgumentProjection::Star
+                    ) {
+                        $mapped_star_offsets[count($new_input_params)] = true;
+                    } elseif ($star_templates !== []) {
+                        // an argument that wraps the template (`list<T>`) holds a `*` as unknown as it is
+                        $template_collector = new TemplateTypeCollector(true);
+                        $template_collector->traverseArray($extended_input_param_type->getAtomicTypes());
+
+                        foreach ($template_collector->getTemplateTypes() as $template) {
+                            if (isset($star_templates[$template->param_name][$template->defining_class])) {
+                                $mapped_star_offsets[count($new_input_params)] = true;
+
+                                break;
+                            }
+                        }
+                    }
 
                     $new_input_params[] = $new_input_param;
                 }
 
                 $input_type_params = $new_input_params;
+                $input_star_offsets = $mapped_star_offsets;
             }
         }
 

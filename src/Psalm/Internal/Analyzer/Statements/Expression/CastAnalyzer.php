@@ -14,7 +14,9 @@ use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\CombinedFlowGraph;
+use Psalm\Internal\Codebase\PhpDeprecations;
 use Psalm\Internal\Codebase\TaintFlowGraph;
+use Psalm\Internal\Codebase\UrlHosts;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Internal\MethodIdentifier;
@@ -24,6 +26,7 @@ use Psalm\Internal\Type\TypeCombiner;
 use Psalm\Internal\Type\TypeExpander;
 use Psalm\Internal\Type\TypeVariableTracker;
 use Psalm\Internal\TypeVisitor\TypeVariableResolver;
+use Psalm\Issue\DeprecatedSyntax;
 use Psalm\Issue\ImpureMethodCall;
 use Psalm\Issue\InvalidCast;
 use Psalm\Issue\PossiblyInvalidCast;
@@ -92,6 +95,8 @@ final class CastAnalyzer
         PhpParser\Node\Expr\Cast $stmt,
         Context $context,
     ): bool {
+        self::checkCastName($statements_analyzer, $stmt);
+
         if ($stmt instanceof PhpParser\Node\Expr\Cast\Int_) {
             if (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->expr, $context) === false) {
                 return false;
@@ -1328,6 +1333,10 @@ final class CastAnalyzer
                 );
             }
 
+            if ($statements_analyzer->taint_flow_graph && $cast_type === 'string') {
+                UrlHosts::recordCast($statements_analyzer->taint_flow_graph, $parent_nodes, $cast_node);
+            }
+
             $parent_nodes = [$cast_node->id => $cast_node];
         }
 
@@ -1524,5 +1533,41 @@ final class CastAnalyzer
         }
 
         return [$conversion_node->id => $conversion_node];
+    }
+
+    /**
+     * Reports the cast names PHP deprecates, whatever PHP version is analysed
+     */
+    private static function checkCastName(StatementsAnalyzer $statements_analyzer, PhpParser\Node\Expr\Cast $stmt): void
+    {
+        [$name, $canonical_name] = match (true) {
+            $stmt instanceof PhpParser\Node\Expr\Cast\Int_
+                && $stmt->getAttribute('kind') === PhpParser\Node\Expr\Cast\Int_::KIND_INTEGER
+                => ['integer', 'int'],
+            $stmt instanceof PhpParser\Node\Expr\Cast\Bool_
+                && $stmt->getAttribute('kind') === PhpParser\Node\Expr\Cast\Bool_::KIND_BOOLEAN
+                => ['boolean', 'bool'],
+            $stmt instanceof PhpParser\Node\Expr\Cast\Double
+                && $stmt->getAttribute('kind') === PhpParser\Node\Expr\Cast\Double::KIND_DOUBLE
+                => ['double', 'float'],
+            $stmt instanceof PhpParser\Node\Expr\Cast\String_
+                && $stmt->getAttribute('kind') === PhpParser\Node\Expr\Cast\String_::KIND_BINARY
+                => ['binary', 'string'],
+            default => [null, null],
+        };
+
+        if ($name !== null) {
+            IssueBuffer::maybeAdd(
+                new DeprecatedSyntax(
+                    PhpDeprecations::getDeprecatedSinceMessage(
+                        'The (' . $name . ') cast',
+                        8_05_00,
+                        '(' . $canonical_name . ')',
+                    ),
+                    new CodeLocation($statements_analyzer, $stmt),
+                ),
+                $statements_analyzer->getSuppressedIssues(),
+            );
+        }
     }
 }

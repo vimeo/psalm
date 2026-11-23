@@ -66,6 +66,90 @@ final class TypeAnnotationTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'typeImportInADocblockSeparateFromTheClassDocblock' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-type X = array{a: int}
+                     */
+                    final class Other {}
+
+                    /**
+                     * @psalm-import-type X from Other
+                     * @psalm-type Y = array{key: X}
+                     */
+
+                    /**
+                     * Class doc
+                     */
+                    final class A {
+                        /** @return Y */
+                        public function y(): array {
+                            return ["key" => ["a" => 1]];
+                        }
+
+                        /** @return X */
+                        public function x(): array {
+                            return ["a" => 1];
+                        }
+                    }
+
+                    $y = (new A())->y();
+                    $x = (new A())->x();',
+                'assertions' => [
+                    '$y===' => 'array{key: array{a: int}}',
+                    '$x===' => 'array{a: int}',
+                ],
+            ],
+            'phpstanTypeImportInADocblockSeparateFromTheClassDocblock' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-type Original = array{a: int}
+                     */
+                    final class Other {}
+
+                    /**
+                     * @phpstan-import-type Original from Other as X
+                     */
+
+                    /**
+                     * Class doc
+                     */
+                    final class A {
+                        /** @return X */
+                        public function x(): array {
+                            return ["a" => 1];
+                        }
+                    }
+
+                    $x = (new A())->x();',
+                'assertions' => [
+                    '$x===' => 'array{a: int}',
+                ],
+            ],
+            'importedTypeAliasInAnIntersectionOfAnotherAlias' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-type X = array{x: int}
+                     */
+                    class A {}
+
+                    /**
+                     * @psalm-import-type X from A
+                     * @psalm-type Y = array{y: int}
+                     * @psalm-type Q = X&Y
+                     */
+                    class B {
+                        /** @return Q */
+                        public function get(): array {
+                            return ["x" => 1, "y" => 2];
+                        }
+                    }
+
+                    $q = (new B())->get();',
+                'assertions' => [
+                    '$q===' => 'array{x: int, y: int}',
+                ],
+            ],
             'typeImportRenamedWithAs' => [
                 'code' => '<?php
                     namespace A {
@@ -1284,6 +1368,20 @@ final class TypeAnnotationTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'importedTypeAliasOfAnArrayMixedWithAnObjectInAnIntersection' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-type X = array{x: int}
+                     */
+                    class A {}
+
+                    /**
+                     * @psalm-import-type X from A
+                     * @psalm-type Q = X&Countable
+                     */
+                    class B {}',
+                'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR . 'somefile.php:11:21 - Intersection types must be all objects or all keyed array',
+            ],
             'typeImportNamedLikeAnExistingClass' => [
                 'code' => '<?php
                     namespace A {

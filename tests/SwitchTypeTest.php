@@ -61,6 +61,191 @@ final class SwitchTypeTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'continueTargetingAnOuterSwitchLeavesItLikeBreak' => [
+                'code' => '<?php
+                    $outer = uniqid();
+                    $inner = uniqid();
+
+                    switch ($outer) {
+                        case "A":
+                            switch ($inner) {
+                                case "x":
+                                    $q = 1;
+                                    continue 2;
+                            }
+
+                            $q = 2;
+                            break;
+                        default:
+                            $q = 3;
+                    }',
+                'assertions' => [
+                    '$q===' => '1|2|3',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '7.4',
+            ],
+            'continueTargetingTheOutermostOfThreeSwitchesLeavesIt' => [
+                'code' => '<?php
+                    $outer = uniqid();
+                    $middle = uniqid();
+                    $inner = uniqid();
+
+                    switch ($outer) {
+                        case "A":
+                            switch ($middle) {
+                                case "m":
+                                    switch ($inner) {
+                                        case "x":
+                                            $q = 1;
+                                            continue 3;
+                                    }
+
+                                    $q = 2;
+                                    break 2;
+                            }
+
+                            $q = 3;
+                            break;
+                        default:
+                            $q = 4;
+                    }',
+                'assertions' => [
+                    '$q===' => '1|2|3|4',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '7.4',
+            ],
+            'continueTargetingAnOuterSwitchInALoopLeavesTheSwitchNotTheLoop' => [
+                'code' => '<?php
+                    $r = 0;
+                    foreach (["A", "B"] as $s) {
+                        switch ($s) {
+                            case "A":
+                                switch (uniqid()) {
+                                    case "x":
+                                        $q = 1;
+                                        continue 2;
+                                }
+
+                                $q = 2;
+                                break;
+                            default:
+                                $q = 3;
+                        }
+
+                        $r = $q;
+                    }',
+                'assertions' => [
+                    '$r===' => '1|2|3',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '7.4',
+            ],
+            'switchWithoutDefaultNarrowsTheSubjectWhenEveryCaseReturns' => [
+                'code' => '<?php
+                    /** @param "a"|"b"|"c" $letter */
+                    function f(string $letter): string {
+                        switch ($letter) {
+                            case "a":
+                                return "A";
+                            case "b":
+                                return "B";
+                        }
+
+                        return $letter;
+                    }
+
+                    /** @return "a"|"b"|"c" */
+                    function letter(): string {
+                        return "a";
+                    }
+
+                    $letter = letter();
+                    switch ($letter) {
+                        case "a":
+                            throw new Exception();
+                        case "b":
+                            throw new Exception();
+                    }
+
+                    $rest = $letter;',
+                'assertions' => ['$rest===' => "'c'"],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'switchWithoutDefaultNarrowsNullWhenEveryCaseReturns' => [
+                'code' => '<?php
+                    function f(?string $type): int {
+                        switch ($type) {
+                            case null:
+                                return 0;
+                            case "a":
+                                return 1;
+                        }
+
+                        throw new InvalidArgumentException(sprintf("Unknown %s", $type));
+                    }',
+            ],
+            'switchWithoutDefaultAfterANullCaseKeepsTheStringsThatAreNotNull' => [
+                'code' => '<?php
+                    /** @return ?string */
+                    function value() {
+                        return null;
+                    }
+
+                    $type = value();
+                    switch ($type) {
+                        case null:
+                            throw new Exception();
+                        case "a":
+                            throw new Exception();
+                    }
+
+                    $rest = $type;',
+                'assertions' => [
+                    '$rest===' => 'non-empty-string',
+                ],
+            ],
+            'switchWithoutDefaultAfterANullCaseOfAnIntDropsTheNull' => [
+                'code' => '<?php
+                    /** @return ?int */
+                    function value() {
+                        return null;
+                    }
+
+                    $type = value();
+                    switch ($type) {
+                        case null:
+                            throw new Exception();
+                        case 1:
+                            throw new Exception();
+                    }
+
+                    $rest = $type;',
+                'assertions' => [
+                    '$rest===' => 'int',
+                ],
+            ],
+            'switchWithoutDefaultKeepsTheSubjectWhenACaseBreaks' => [
+                'code' => '<?php
+                    /** @return "a"|"b"|"c" */
+                    function letter(): string {
+                        return "a";
+                    }
+
+                    $letter = letter();
+                    switch ($letter) {
+                        case "a":
+                            break;
+                        case "b":
+                            throw new Exception();
+                    }
+                    $rest = $letter;',
+                'assertions' => ['$rest===' => "'a'|'b'|'c'"],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'conditionalBreakOfAnExitingCaseKeepsTheTypeOfAVarDefinedBeforeTheSwitch' => [
                 'code' => <<<'PHP'
                     <?php
@@ -1271,6 +1456,8 @@ final class SwitchTypeTest extends TestCase
                                 return "foo69";
                         }
                     }',
+                'assertions' => [],
+                'ignored_issues' => ['DeprecatedSyntax'],
             ],
             'switchTruthyWithBoolean' => [
                 'code' => '<?php
@@ -1776,6 +1963,22 @@ final class SwitchTypeTest extends TestCase
                         }
                     }',
                 'error_message' => 'UndefinedVariable',
+            ],
+            'varFromContinueTwoOutOfNestedSwitchIsUndefinedAfterIt' => [
+                'code' => '<?php
+                    function f(string $s, string $u): void {
+                        switch ($s) {
+                            case "A":
+                                switch ($u) {
+                                    case "x":
+                                        $q = 1;
+                                        continue 2;
+                                }
+                                echo $q;
+                                break;
+                        }
+                    }',
+                'error_message' => 'UndefinedVariable - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:38',
             ],
             'varFromCaseThatThrowsOrBreaksTwoIsUndefinedAfterNestedSwitch' => [
                 'code' => '<?php

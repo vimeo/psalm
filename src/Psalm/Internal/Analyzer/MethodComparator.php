@@ -185,8 +185,7 @@ final class MethodComparator
 
         // a trait method takes the docblock of the parent method per using class (see Populator), not per storage
         $inherits_return_type = $implementer_method_storage->inherited_return_type
-            || (!$implementer_method_storage->has_docblock_param_types
-                && !$implementer_method_storage->has_docblock_return_type
+            || (!$implementer_method_storage->has_docblock_return_type
                 && isset($codebase->classlike_storage_provider->get($implementer_called_class_name)
                     ->documenting_method_ids[strtolower($guide_method_storage->cased_name ?? '')]));
 
@@ -209,7 +208,7 @@ final class MethodComparator
                 $implementer_method_storage->return_type,
                 $cased_guide_method_id,
                 $implementer_called_class_name,
-                $implementer_declaring_method_id,
+                $cased_implementer_method_id,
                 $code_location,
                 $suppressed_issues,
                 $inherits_return_type,
@@ -1058,6 +1057,16 @@ final class MethodComparator
             );
         if (!$is_contained_by) {
             $config = Config::getInstance();
+            $message = 'Argument ' . ($i + 1) . ' of '
+                . $cased_implementer_method_id
+                . ' has wrong type \''
+                . $implementer_param_signature_type . '\', expecting \''
+                . $guide_param_signature_type . '\' as defined by '
+                . $cased_guide_method_id;
+            $location = $implementer_method_storage->params[$i]->location
+                && $config->isInProjectDirs($implementer_method_storage->params[$i]->location->file_path)
+                ? $implementer_method_storage->params[$i]->location
+                : $code_location;
 
             if ($codebase->analysis_php_version_id >= 8_00_00
                 || $guide_classlike_storage->is_trait === $implementer_classlike_storage->is_trait
@@ -1066,60 +1075,14 @@ final class MethodComparator
                 || (!$implementer_method_storage->abstract
                     && !$guide_method_storage->abstract)
             ) {
-                if ($implementer_method_storage->cased_name === '__construct') {
-                    IssueBuffer::maybeAdd(
-                        new ConstructorSignatureMismatch(
-                            'Argument ' . ($i + 1) . ' of '
-                                . $cased_implementer_method_id
-                                . ' has wrong type \''
-                                . $implementer_param_signature_type . '\', expecting \''
-                                . $guide_param_signature_type . '\' as defined by '
-                                . $cased_guide_method_id,
-                            $implementer_method_storage->params[$i]->location
-                                && $config->isInProjectDirs(
-                                    $implementer_method_storage->params[$i]->location->file_path,
-                                )
-                                ? $implementer_method_storage->params[$i]->location
-                                : $code_location,
-                        ),
-                        $suppressed_issues + $implementer_classlike_storage->suppressed_issues,
-                    );
-                } else {
-                    IssueBuffer::maybeAdd(
-                        new MethodSignatureMismatch(
-                            'Argument ' . ($i + 1) . ' of '
-                                . $cased_implementer_method_id
-                                . ' has wrong type \''
-                                . $implementer_param_signature_type . '\', expecting \''
-                                . $guide_param_signature_type . '\' as defined by '
-                                . $cased_guide_method_id,
-                            $implementer_method_storage->params[$i]->location
-                                && $config->isInProjectDirs(
-                                    $implementer_method_storage->params[$i]->location->file_path,
-                                )
-                                ? $implementer_method_storage->params[$i]->location
-                                : $code_location,
-                        ),
-                        $suppressed_issues + $implementer_classlike_storage->suppressed_issues,
-                    );
-                }
+                $issue = $implementer_method_storage->cased_name === '__construct'
+                    ? new ConstructorSignatureMismatch($message, $location)
+                    : new MethodSignatureMismatch($message, $location);
             } else {
-                IssueBuffer::maybeAdd(
-                    new TraitMethodSignatureMismatch(
-                        'Argument ' . ($i + 1) . ' of ' . $cased_implementer_method_id . ' has wrong type \'' .
-                            $implementer_param_signature_type . '\', expecting \'' .
-                            $guide_param_signature_type . '\' as defined by ' .
-                            $cased_guide_method_id,
-                        $implementer_method_storage->params[$i]->location
-                            && $config->isInProjectDirs(
-                                $implementer_method_storage->params[$i]->location->file_path,
-                            )
-                            ? $implementer_method_storage->params[$i]->location
-                            : $code_location,
-                    ),
-                    $suppressed_issues + $implementer_classlike_storage->suppressed_issues,
-                );
+                $issue = new TraitMethodSignatureMismatch($message, $location);
             }
+
+            IssueBuffer::maybeAdd($issue, $suppressed_issues + $implementer_classlike_storage->suppressed_issues);
         }
     }
 
@@ -1213,6 +1176,16 @@ final class MethodComparator
                 $implementer_classlike_storage->parent_class,
             );
         }
+
+        self::mapTemplatesOfTheCalledClass(
+            $codebase,
+            $implementer_classlike_storage,
+            $implementer_method_storage,
+            $implementer_called_class_name,
+            $guide_class_name,
+            $guide_method_storage_param_type,
+            $implementer_method_storage_param_type,
+        );
 
         $union_comparison_results = new TypeComparisonResult();
 
@@ -1449,7 +1422,7 @@ final class MethodComparator
         Union $implementer_return_type,
         string $cased_guide_method_id,
         string $implementer_called_class_name,
-        ?MethodIdentifier $implementer_declaring_method_id,
+        string $cased_implementer_method_id,
         CodeLocation $code_location,
         array $suppressed_issues,
         bool $inherits_return_type,
@@ -1514,6 +1487,16 @@ final class MethodComparator
                 );
             }
         }
+
+        self::mapTemplatesOfTheCalledClass(
+            $codebase,
+            $implementer_classlike_storage,
+            $implementer_method_storage,
+            $implementer_called_class_name,
+            $guide_class_name,
+            $guide_method_storage_return_type,
+            $implementer_method_storage_return_type,
+        );
 
         if ($implementer_classlike_storage->is_trait) {
             $implementer_called_class_storage = $codebase->classlike_storage_provider->get(
@@ -1598,7 +1581,7 @@ final class MethodComparator
                     new LessSpecificImplementedReturnType(
                         'The inherited return type \'' . $guide_method_storage_return_type->getId()
                             . '\' for ' . $cased_guide_method_id . ' is more specific than the implemented '
-                            . 'return type for ' . $implementer_declaring_method_id . ' \''
+                            . 'return type for ' . $cased_implementer_method_id . ' \''
                             . $implementer_method_storage_return_type->getId() . '\'',
                         $implementer_method_storage->return_type_location
                             ?: $code_location,
@@ -1621,7 +1604,7 @@ final class MethodComparator
                     new ImplementedReturnTypeMismatch(
                         'The inherited return type \'' . $guide_method_storage_return_type->getId()
                             . '\' for ' . $cased_guide_method_id . ' is different to the implemented '
-                            . 'return type for ' . $implementer_declaring_method_id . ' \''
+                            . 'return type for ' . $cased_implementer_method_id . ' \''
                             . $implementer_method_storage_return_type->getId() . '\'',
                         $implementer_method_storage->return_type_location
                             ?: $code_location,
@@ -1670,6 +1653,71 @@ final class MethodComparator
         (new FunctionPurityTemplateReplacer())->traverse($type);
 
         return $type;
+    }
+
+    /**
+     * A class that gets the method from a parent and the interface from elsewhere knows the templates of both
+     */
+    private static function mapTemplatesOfTheCalledClass(
+        Codebase $codebase,
+        ClassLikeStorage $implementer_classlike_storage,
+        MethodStorage $implementer_method_storage,
+        string $implementer_called_class_name,
+        string $guide_class_name,
+        Union &$guide_type,
+        Union &$implementer_type,
+    ): void {
+        if ($implementer_classlike_storage->is_trait
+            || $implementer_method_storage->defining_fqcln === null
+            || strtolower($implementer_called_class_name) === strtolower($implementer_classlike_storage->name)
+        ) {
+            return;
+        }
+
+        // the declaring class implements the interface itself: it was checked in its own context
+        if ($codebase->classExtendsOrImplements($implementer_method_storage->defining_fqcln, $guide_class_name)) {
+            return;
+        }
+
+        $called_class_storage = $codebase->classlike_storage_provider->get($implementer_called_class_name);
+        $called_class_params = $called_class_storage->template_extended_params;
+
+        if ($called_class_params === null) {
+            return;
+        }
+
+        self::transformTemplates(
+            $called_class_params,
+            $guide_class_name,
+            $guide_type,
+            $codebase,
+            $implementer_called_class_name,
+            $implementer_called_class_name,
+            $called_class_storage->parent_class,
+            $called_class_storage->final,
+        );
+
+        // the guide's templates may be the ones of the class declaring the method by now
+        self::transformTemplates(
+            $called_class_params,
+            $implementer_method_storage->defining_fqcln,
+            $guide_type,
+            $codebase,
+            $implementer_called_class_name,
+            $implementer_called_class_name,
+            $called_class_storage->parent_class,
+            $called_class_storage->final,
+        );
+        self::transformTemplates(
+            $called_class_params,
+            $implementer_method_storage->defining_fqcln,
+            $implementer_type,
+            $codebase,
+            $implementer_called_class_name,
+            $implementer_called_class_name,
+            $called_class_storage->parent_class,
+            $called_class_storage->final,
+        );
     }
 
     /**

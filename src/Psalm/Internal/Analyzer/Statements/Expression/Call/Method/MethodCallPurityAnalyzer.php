@@ -19,6 +19,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\Call\NoDiscardAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\GlobalStateAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ReturnAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Codebase\AssertionsFromInheritanceResolver;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
@@ -435,12 +436,15 @@ final class MethodCallPurityAnalyzer
 
         $args = $stmt->isFirstClassCallable() ? [] : $stmt->getArgs();
 
+        $impure_callee = $callee_capabilities === Capabilities::ALL;
+
         $method_capabilities = ByRefArgumentAnalyzer::adjustCapabilities(
             $statements_analyzer,
             $context,
             $method_capabilities,
             $method_storage->params,
             $args,
+            $impure_callee,
         );
 
         // the same for the inferred purity, which some template capabilities may be left out of
@@ -452,6 +456,7 @@ final class MethodCallPurityAnalyzer
                 $receiver_capabilities | $inferred_template_capabilities,
                 $method_storage->params,
                 $args,
+                $impure_callee,
             );
 
         $statements_analyzer->signalMutation(
@@ -546,13 +551,11 @@ final class MethodCallPurityAnalyzer
                 if (!$context->inside_assignment
                     && !$context->inside_call
                     && !$context->inside_return
-                    && !$method_storage->assertions
-                    && !$method_storage->if_true_assertions
-                    && !$method_storage->if_false_assertions
                     && !$method_storage->throws
                     && !$method_storage->return_type?->isNever()
                     && !$method_storage->signature_return_type?->isNever()
                     && !self::isCalledForItsTemplatesEffects($method_storage)
+                    && !(new AssertionsFromInheritanceResolver($codebase))->hasAny($method_storage, $class_storage)
                 ) {
                     IssueBuffer::maybeAdd(
                         new UnusedMethodCall(

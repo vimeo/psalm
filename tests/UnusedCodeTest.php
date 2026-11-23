@@ -1635,6 +1635,7 @@ final class UnusedCodeTest extends TestCase
                     }
 
                     A::foo();',
+                'ignored_issues' => ['DeprecatedSyntax'],
             ],
             'possiblyUnusedParamWithUnusedPrefix' => [
                 'code' => '<?php
@@ -1643,6 +1644,7 @@ final class UnusedCodeTest extends TestCase
                     }
 
                     A::foo();',
+                'ignored_issues' => ['DeprecatedSyntax'],
             ],
             'usedClass' => [
                 'code' => '<?php
@@ -2134,6 +2136,7 @@ final class UnusedCodeTest extends TestCase
                     }
 
                     new Foo();',
+                'ignored_issues' => ['DeprecatedInterface'],
             ],
             'ignoreSerializeAndUnserialize' => [
                 'code' => '<?php
@@ -2164,6 +2167,7 @@ final class UnusedCodeTest extends TestCase
 
                         return true;
                     }',
+                'ignored_issues' => ['DeprecatedSyntax'],
             ],
             'useIteratorMethodsWhenCallingForeach' => [
                 'code' => '<?php
@@ -2466,6 +2470,51 @@ final class UnusedCodeTest extends TestCase
 
                     (new A())->foo()->bar();',
             ],
+            'fluentMethodDelegatingToAnotherFluentCallAllowed' => [
+                'code' => '<?php
+                    final class Query {
+                        /** @return $this */
+                        public function where(string $column): static {
+                            echo $column;
+                            return $this;
+                        }
+
+                        /** @return $this */
+                        public function active() {
+                            return $this->where("active");
+                        }
+                    }
+
+                    $query = new Query();
+                    $query->where("a");
+                    $query->active();',
+            ],
+            'overrideInheritingReturnsThisDelegatingToAnotherFluentCallAllowed' => [
+                'code' => '<?php
+                    class ParentQ {
+                        /** @return $this */
+                        public function a() {
+                            echo "p";
+                            return $this;
+                        }
+
+                        /** @return $this */
+                        public function b() {
+                            echo "b";
+                            return $this;
+                        }
+                    }
+
+                    final class ChildQ extends ParentQ {
+                        public function a(): static {
+                            return $this->b();
+                        }
+                    }
+
+                    (new ChildQ())->a();
+                    (new ParentQ())->a();
+                    (new ParentQ())->b();',
+            ],
             'unusedInterfaceReturnValueWithImplementingClassSuppressed' => [
                 'code' => '<?php
                     interface IWorker {
@@ -2558,6 +2607,7 @@ final class UnusedCodeTest extends TestCase
                     /** @psalm-suppress ForbiddenCode */
                     `$used`;
                 ',
+                'ignored_issues' => ['DeprecatedSyntax'],
             ],
             'notUnevaluatedFunction' => [
                 'code' => '<?php
@@ -2595,6 +2645,54 @@ final class UnusedCodeTest extends TestCase
 
                     $a = new A();
                     echo $a->getVal(null);',
+            ],
+            'NotUnusedWhenAssertIsInheritedByAnUndocumentedOverride' => [
+                'code' => '<?php
+                    /** @psalm-immutable */
+                    abstract class Checker {
+                        /** @psalm-assert string $val */
+                        abstract public function check(?string $val): void;
+                    }
+
+                    /** @psalm-immutable */
+                    final class StringChecker extends Checker {
+                        public function check(?string $val): void {
+                            if ($val === null) {
+                                throw new Exception();
+                            }
+                        }
+                    }
+
+                    function getVal(StringChecker $checker, ?string $val): string {
+                        $checker->check($val);
+
+                        return $val;
+                    }
+
+                    echo getVal(new StringChecker(), null);',
+            ],
+            'NotUnusedWhenAssertIsInheritedByAnUndocumentedStaticOverride' => [
+                'code' => '<?php
+                    /** @psalm-immutable */
+                    abstract class Checker {
+                        /** @psalm-assert string $val */
+                        abstract public static function check(?string $val): bool;
+                    }
+
+                    /** @psalm-immutable */
+                    final class StringChecker extends Checker {
+                        public static function check(?string $val): bool {
+                            return $val !== null;
+                        }
+                    }
+
+                    function getVal(?string $val): string {
+                        StringChecker::check($val);
+
+                        return $val;
+                    }
+
+                    echo getVal(null);',
             ],
             'NotUnusedWhenThrows' => [
                 'code' => '<?php
@@ -3318,6 +3416,20 @@ final class UnusedCodeTest extends TestCase
                         private function compute(): string { return "a"; }
                     }
                     echo (new Foo())->name;',
+            ],
+            'methodsNamedByCallablesGivenToAClosureParamAreUsed' => [
+                'code' => '<?php
+                    final class Handler
+                    {
+                        public function method(): void {}
+                        public static function named(): void {}
+                    }
+
+                    function takesClosure(Closure $closure): void { $closure(); }
+
+                    takesClosure([new Handler(), "method"]);
+                    takesClosure("Handler::named");',
+                'ignored_issues' => ['InvalidArgument', 'ArgumentTypeCoercion'],
             ],
         ];
     }
@@ -4090,6 +4202,7 @@ final class UnusedCodeTest extends TestCase
                         return false;
                     }',
                 'error_message' => 'UnevaluatedCode',
+                'error_levels' => ['DeprecatedSyntax'],
             ],
             'UnusedFunctionCallWithOptionalByReferenceParameter' => [
                 'code' => '<?php
@@ -4154,6 +4267,25 @@ final class UnusedCodeTest extends TestCase
                     $foo = new A();
                     echo $foo->a;',
                 'error_message' => 'PossiblyUnusedProperty',
+            ],
+            'delegatingMethodNotMarkedAsReturningThisIsReported' => [
+                'code' => '<?php
+                    final class Query {
+                        public function where(string $column): static {
+                            echo $column;
+                            return $this;
+                        }
+
+                        /** @return static */
+                        public function active() {
+                            return $this->where("active");
+                        }
+                    }
+
+                    $query = new Query();
+                    $query->where("a");
+                    $query->active();',
+                'error_message' => 'PossiblyUnusedReturnValue',
             ],
             'unusedInterfaceReturnValue' => [
                 'code' => '<?php

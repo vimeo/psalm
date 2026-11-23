@@ -197,6 +197,10 @@ final class IfAnalyzer
         $if_scope->if_actions = $final_actions;
         $if_scope->final_actions = $final_actions;
 
+        if (in_array(ScopeAnalyzer::ACTION_NONE, $final_actions, true)) {
+            $if_scope->phantom_classes_of_blocks[] = $if_context->phantom_classes;
+        }
+
         /** @var array<string, int> */
         $new_assigned_var_ids = $if_context->assigned_var_ids;
         /** @var array<string, bool> */
@@ -460,7 +464,6 @@ final class IfAnalyzer
     {
         if ($stmt instanceof PhpParser\Node\Expr\BinaryOp\BooleanOr
             || $stmt instanceof PhpParser\Node\Expr\BinaryOp\LogicalOr
-            || $stmt instanceof PhpParser\Node\Expr\BinaryOp\LogicalXor
         ) {
             return [
                 ...self::getDefinitelyEvaluatedOredExpressions($stmt->left),
@@ -573,6 +576,16 @@ final class IfAnalyzer
         }
 
         $possibly_redefined_vars = $redefined_vars;
+
+        // a variable the branch unset is possibly undefined afterwards
+        foreach ($possibly_assigned_var_ids as $var_id => $_) {
+            if (preg_match('/^\$\w+$/', $var_id) === 1
+                && isset($outer_context->vars_in_scope[$var_id])
+                && !isset($if_context->vars_in_scope[$var_id])
+            ) {
+                $possibly_redefined_vars[$var_id] = Type::getNever()->setPossiblyUndefined(true);
+            }
+        }
 
         foreach ($possibly_redefined_vars as $var_id => $type) {
             if (!isset($possibly_assigned_var_ids[$var_id])

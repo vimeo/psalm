@@ -31,6 +31,9 @@ final class CompletionTest extends TestCase
         $this->file_provider = new FakeFileProvider();
 
         $config = new TestConfig();
+        // the completions of functions use the ones of PHPUnit
+        $config->setProjectPackages(['phpunit/phpunit' => true]);
+        $config->collectPredefinedFunctions();
 
         $providers = new Providers(
             $this->file_provider,
