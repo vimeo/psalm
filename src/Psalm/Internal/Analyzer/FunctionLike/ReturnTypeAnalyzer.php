@@ -35,6 +35,7 @@ use Psalm\Internal\Type\IterationPurity;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Internal\Type\TypeExpander;
+use Psalm\Internal\TypeVisitor\ConditionTypeCollector;
 use Psalm\Internal\TypeVisitor\TypeChecker;
 use Psalm\Issue\ImplicitToStringCast;
 use Psalm\Issue\InvalidFalsableReturnType;
@@ -51,6 +52,7 @@ use Psalm\Issue\MoreSpecificReturnType;
 use Psalm\Issue\UnresolvableConstant;
 use Psalm\IssueBuffer;
 use Psalm\StatementsSource;
+use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Storage\MethodStorage;
 use Psalm\Type;
@@ -988,6 +990,17 @@ final class ReturnTypeAnalyzer
                 true,
             );
 
+            if (!self::checkConditionTypes(
+                $storage->return_type,
+                $function_like_analyzer,
+                $classlike_storage,
+                $parent_class,
+                $storage,
+                $context,
+            )) {
+                return null;
+            }
+
             /** @psalm-suppress UnusedMethodCall Actually generates issues */
             self::checkTypeAsReturned(
                 $fleshed_out_return_type,
@@ -1047,6 +1060,17 @@ final class ReturnTypeAnalyzer
                 true,
             );
             $fleshed_out_return_type = $storage->return_type;
+        }
+
+        if (!self::checkConditionTypes(
+            $storage->return_type,
+            $function_like_analyzer,
+            $classlike_storage,
+            $parent_class,
+            $storage,
+            null,
+        )) {
+            return false;
         }
 
         if (!self::checkTypeAsReturned(
@@ -1186,6 +1210,47 @@ final class ReturnTypeAnalyzer
             $inferred_return_type->canBeFullyExpressedInPhp($codebase->analysis_php_version_id),
             $function_like_storage->return_type_description ?? null,
         );
+    }
+
+    /**
+     * The types a conditional return type tests its subject against are not part of the expanded type, which
+     * only keeps the branch that applies
+     */
+    private static function checkConditionTypes(
+        Union $return_type,
+        FunctionLikeAnalyzer $function_like_analyzer,
+        ?ClassLikeStorage $classlike_storage,
+        ?string $parent_class,
+        FunctionLikeStorage $storage,
+        ?Context $context,
+    ): bool {
+        if ($storage->return_type_location === null) {
+            return true;
+        }
+
+        $collector = new ConditionTypeCollector();
+        $collector->traverse($return_type);
+
+        foreach ($collector->getConditions() as $condition) {
+            if (!self::checkTypeAsReturned(
+                TypeExpander::expandUnion(
+                    $function_like_analyzer->getCodebase(),
+                    $condition,
+                    $classlike_storage->name ?? null,
+                    $classlike_storage->name ?? null,
+                    $parent_class,
+                ),
+                $function_like_analyzer,
+                $storage->return_type_location,
+                $storage->suppressed_issues,
+                false,
+                $context,
+            )) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /**

@@ -2916,6 +2916,31 @@ final class ConditionalReturnTypeTest extends TestCase
                 'error_levels' => [],
                 'php_version' => '8.1',
             ],
+            'conditionTypeOfADocblockOnlyConditionalReturnIsChecked' => [
+                'code' => '<?php
+                    /**
+                     * @param int|float $n
+                     * @return ($n is INF ? \'a\' : string)
+                     */
+                    function docOnly($n) {
+                        return \'a\';
+                    }',
+                'error_message' => 'UndefinedDocblockClass',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'conditionTypeOfAConditionalReturnWithANativeReturnTypeIsChecked' => [
+                'code' => '<?php
+                    /**
+                     * @return ($n is INF ? \'a\' : string)
+                     */
+                    function withSig(int|float $n): string {
+                        return \'a\';
+                    }',
+                'error_message' => 'UndefinedDocblockClass',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
             'conditionalElseBranchKeepsABoundMemberContainedOnlyByAStringCast' => [
                 'code' => '<?php
                     /** @template T of int */
