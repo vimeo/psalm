@@ -776,12 +776,25 @@ final class TypeParseTest extends TestCase
 
     public function testTKeyedArrayWithQuotedKeys(): void
     {
-        $this->assertSame('array{\'\\"\': int, \'\\\'\': string}', (string) Type::parseString('array{\'"\': int, \'\\\'\': string}'));
+        $this->assertSame('array{\'"\': int, \'\\\'\': string}', (string) Type::parseString('array{\'"\': int, \'\\\'\': string}'));
         // `\'` is no escape in a double-quoted string: the key holds the backslash too
         $this->assertSame(
-            'array{\'\\"\': int, \'\\\\\\\'\': string}',
+            'array{\'"\': int, \'\\\\\\\'\': string}',
             (string) Type::parseString('array{"\\"": int, "\\\'": string}'),
         );
+    }
+
+    public function testTKeyedArrayKeysRoundTrip(): void
+    {
+        $keys = ['"', "a\nb", "a\r\nb", "nul\0", 'Foo\\Bar', "it's", "tab\there", "\x7f", "\e\f\v", "\$x\n", "\\\n\"", "\0001", 'end\\', "end\\\n", "x\\'y", "a,b: {c}|d", "\xc3\xa9\n", '$x', '\\n'];
+
+        foreach ($keys as $key) {
+            $printed = TKeyedArray::make([$key => Type::getInt()])->getId();
+            $type = Type::parseString($printed)->getSingleAtomic();
+
+            $this->assertInstanceOf(TKeyedArray::class, $type);
+            $this->assertSame([$key], array_keys($type->properties), $printed);
+        }
     }
 
     public function testTKeyedArrayWithEscapeSequencesInKeys(): void
