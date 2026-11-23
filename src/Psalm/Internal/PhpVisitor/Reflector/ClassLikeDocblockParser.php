@@ -25,9 +25,7 @@ use function array_key_first;
 use function count;
 use function explode;
 use function preg_match;
-use function preg_replace;
 use function reset;
-use function str_replace;
 use function strlen;
 use function substr_count;
 use function trim;
@@ -374,54 +372,33 @@ final class ClassLikeDocblockParser
         $magic_property_comments = $specials[$property_tag] ?? [];
 
         foreach ($magic_property_comments as $offset => $property) {
-            $line_parts = CommentAnalyzer::splitDocLine($property);
+            $parsed = CommentAnalyzer::parseVariableDocLine($property, false);
 
-            if (count($line_parts) === 1 && isset($line_parts[0][0]) && $line_parts[0][0] === '$') {
+            if ($parsed === false) {
+                throw new DocblockParseException('Badly-formatted @property');
+            }
+
+            if ($parsed === null) {
                 continue;
             }
 
-            if (count($line_parts) > 1) {
-                if (preg_match('/^&?\$[A-Za-z0-9_\x80-\xff]+[,;]?$/', $line_parts[1])
-                    && $line_parts[0][0] !== '{'
-                ) {
-                    $line_parts[1] = str_replace('&', '', $line_parts[1]);
-
-                    $line_parts[1] = (string) preg_replace('/[,;]$/', '', $line_parts[1], 1);
-
-                    $end = $offset + strlen($line_parts[0]);
-
-                    $line_parts[0] = CommentAnalyzer::sanitizeDocblockType($line_parts[0]);
-
-                    if ($line_parts[0] === ''
-                        || ($line_parts[0][0] === '$'
-                            && !preg_match('/^\$this *(\||$)/', $line_parts[0]))
-                    ) {
-                        throw new IncorrectDocblockException('Misplaced variable');
-                    }
-
-                    $name = trim($line_parts[1]);
-
-                    if (!preg_match('/^\$([a-zA-Z_\x7f-\xff][a-zA-Z0-9_\x7f-\xff]*)$/', $name)) {
-                        throw new DocblockParseException('Badly-formatted @property name');
-                    }
-
-                    $info->properties[] = [
-                        'name' => $name,
-                        'type' => $line_parts[0],
-                        'line_number' => $comment->getStartLine() + substr_count(
-                            $comment->getText(),
-                            "\n",
-                            0,
-                            $offset - $comment->getStartFilePos(),
-                        ),
-                        'tag' => $property_tag,
-                        'start' => $offset,
-                        'end' => $end,
-                    ];
-                }
-            } else {
-                throw new DocblockParseException('Badly-formatted @property');
+            if (!preg_match('/^\$([a-zA-Z_\x7f-\xff][a-zA-Z0-9_\x7f-\xff]*)$/', $parsed['name'])) {
+                throw new DocblockParseException('Badly-formatted @property name');
             }
+
+            $info->properties[] = [
+                'name' => $parsed['name'],
+                'type' => $parsed['type'],
+                'line_number' => $comment->getStartLine() + substr_count(
+                    $comment->getText(),
+                    "\n",
+                    0,
+                    $offset - $comment->getStartFilePos(),
+                ),
+                'tag' => $property_tag,
+                'start' => $offset,
+                'end' => $offset + $parsed['type_length'],
+            ];
         }
     }
 }
