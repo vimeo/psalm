@@ -21,7 +21,8 @@ use function usleep;
 /**
  * @psalm-import-type WorkerPerf from Collector
  * @psalm-import-type FileRecord from Collector
- * @psalm-import-type HookRecord from Collector
+ * @psalm-import-type StatementRecord from Collector
+ * @psalm-import-type FunctionRecord from Collector
  */
 final class CollectorTest extends TestCase
 {
@@ -57,6 +58,43 @@ final class CollectorTest extends TestCase
         // each pass of the constructor is an entry of its own
         $this->assertSame(['body', 'initializations'], array_column($result['hot']['functions'], 'pass'));
         $this->assertSame([2, 2], array_column($result['hot']['functions'], 'passes'));
+    }
+
+    public function testAddWorkerDataMergesWhatTheWorkersRecorded(): void
+    {
+        Collector::start(null, []);
+        $statement = ['path' => 'src/F.php', 'line' => 3, 'node' => 'Stmt_If', 'passes' => 2, 'self_us' => 5, 'wall_us' => 7];
+        $function = ['path' => 'src/F.php', 'line' => 1, 'id' => 'f', 'pass' => 'body', 'passes' => 1, 'self_us' => 4,
+            'wall_us' => 9];
+
+        Collector::addWorkerData(self::workerPerf(
+            101,
+            [self::file('analysis', 'src/A.php', 101, 1_000), self::file('scan', 'src/Lazy.php', 101, 400)],
+            [$statement],
+            [$function],
+        ));
+        Collector::addWorkerData(self::workerPerf(102, [self::file('analysis', 'src/B.php', 102, 500)], [$statement], [$function]));
+
+        $result = Collector::finish(0, 0);
+
+        $this->assertNotNull($result);
+        $this->assertSame([[4, 10, 14]], array_map(
+            static fn(array $r): array => [$r['passes'], $r['self_us'], $r['wall_us']],
+            $result['hot']['statements'],
+        ));
+        $this->assertSame([[2, 8, 18]], array_map(
+            static fn(array $r): array => [$r['passes'], $r['self_us'], $r['wall_us']],
+            $result['hot']['functions'],
+        ));
+        // the scan inside the analysis of a file is part of it, so it is not busy time of its own
+        $this->assertSame([[101, 1, 1_000], [102, 1, 500]], array_map(
+            static fn(array $worker): array => [$worker['pid'], $worker['tasks'], $worker['busy_us']],
+            $result['workers'],
+        ));
+        $this->assertSame(
+            ['files_parsed' => 4, 'parser_cache_hits' => 6, 'parser_cache_misses' => 2],
+            $result['parser'],
+        );
     }
 
     public function testNestedStatementsAreTimedByTheirOwnTime(): void
@@ -194,17 +232,18 @@ final class CollectorTest extends TestCase
 
     /**
      * @param list<FileRecord> $files
-     * @param list<HookRecord> $hooks
+     * @param list<StatementRecord> $statements
+     * @param list<FunctionRecord> $functions
      * @return WorkerPerf
      * @psalm-pure
      */
-    private static function workerPerf(int $pid, array $files, array $hooks = []): array
+    private static function workerPerf(int $pid, array $files, array $statements = [], array $functions = []): array
     {
         return [
             'pid' => $pid, 'role' => 'analysis', 'start_us' => 10, 'end_us' => 10_000, 'cpu_us' => 5_000,
             'cpu_sys_us' => 100, 'php_start_bytes' => 1_000, 'php_peak_bytes' => 2_000, 'max_rss_bytes' => 3_000,
-            'files' => $files, 'statements' => [], 'functions' => [], 'hooks' => $hooks,
-            'parser' => ['files_parsed' => 0, 'parser_cache_hits' => 0, 'parser_cache_misses' => 0],
+            'files' => $files, 'statements' => $statements, 'functions' => $functions, 'hooks' => [],
+            'parser' => ['files_parsed' => 2, 'parser_cache_hits' => 3, 'parser_cache_misses' => 1],
         ];
     }
 }

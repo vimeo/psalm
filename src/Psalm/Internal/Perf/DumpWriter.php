@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Psalm\Internal\Perf;
 
+use Composer\XdebugHandler\XdebugHandler;
 use Fidry\CpuCoreCounter\CpuCoreCounter;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
@@ -13,6 +14,7 @@ use Psalm\Internal\Provider\FileStorageProvider;
 
 use function array_column;
 use function array_diff_key;
+use function array_filter;
 use function array_slice;
 use function array_values;
 use function basename;
@@ -70,6 +72,9 @@ use const STDERR;
 final class DumpWriter
 {
     private const SUMMARY_ROWS = 10;
+
+    /** A statement or function-like that took less of its own time is left out of the summary */
+    private const MIN_ROW_US = 10_000;
 
     /**
      * @param Measurements $measurements
@@ -238,7 +243,12 @@ final class DumpWriter
         }
 
         $out .= "\n" . 'Hottest statements (own time)' . "\n";
-        foreach (array_slice($measurements['hot']['statements'], 0, self::SUMMARY_ROWS) as $statement) {
+        $rows = array_filter(
+            $measurements['hot']['statements'],
+            static fn(array $record): bool => $record['self_us'] >= self::MIN_ROW_US,
+        );
+
+        foreach (array_slice($rows, 0, self::SUMMARY_ROWS) as $statement) {
             $out .= sprintf(
                 "  %9s  %s:%d %s%s\n",
                 self::seconds($statement['self_us']),
@@ -250,7 +260,12 @@ final class DumpWriter
         }
 
         $out .= "\n" . 'Hottest functions and methods (own time, and with the functions analysed meanwhile)' . "\n";
-        foreach (array_slice($measurements['hot']['functions'], 0, self::SUMMARY_ROWS) as $function) {
+        $rows = array_filter(
+            $measurements['hot']['functions'],
+            static fn(array $record): bool => $record['self_us'] >= self::MIN_ROW_US,
+        );
+
+        foreach (array_slice($rows, 0, self::SUMMARY_ROWS) as $function) {
             $out .= sprintf(
                 "  %9s own  %9s total  %s (%s)  %s:%d%s\n",
                 self::seconds($function['self_us']),
@@ -304,6 +319,7 @@ final class DumpWriter
             'config_sha256' => $config->source_filename !== null && is_file($config->source_filename)
                 ? hash_file('sha256', $config->source_filename)
                 : null,
+            'restarted' => XdebugHandler::getRestartSettings() !== null,
             'plugins' => self::pluginClasses($project_analyzer),
             'options' => Collector::optionNames(),
         ];
@@ -349,7 +365,9 @@ final class DumpWriter
     }
 
     /**
-     * The stages and files as Trace Event Format events, which ui.perfetto.dev and speedscope open
+     * Trace Event Format events, which ui.perfetto.dev and speedscope open. The main process has lanes for its
+     * stages, steps and pools, and each process one for the spans of its files; a worker has one more for when it
+     * worked and when it waited.
      *
      * @param Measurements $measurements
      * @return list<array<string, mixed>>

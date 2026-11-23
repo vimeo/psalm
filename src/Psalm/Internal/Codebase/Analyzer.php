@@ -255,14 +255,12 @@ final class Analyzer
         );
 
         Collector::stage('analysis.files');
-        Collector::step('analysis.files');
         $this->doAnalysis($project_analyzer, $pool_size);
 
         $scanned_files = $codebase->scanner->getScannedFiles();
 
         if ($codebase->taint_flow_graph) {
             Collector::stage('taint');
-            Collector::step('taint.resolve');
             $codebase->taint_flow_graph->connectSinksAndSources($codebase->progress);
         }
 
@@ -352,7 +350,6 @@ final class Analyzer
             $pool->run($this->files_to_analyze, AnalyzerTask::class, $task_done_closure);
             Collector::poolStep('run_us');
             Collector::stage('analysis.merge');
-            Collector::step('pool.merge');
             $this->progress->debug('Collecting forked analysis results' . "\n");
             $this->progress->startPhase(Phase::MERGING_THREAD_RESULTS);
             $this->progress->expand($pool->threads);

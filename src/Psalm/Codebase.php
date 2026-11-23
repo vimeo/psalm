@@ -1077,7 +1077,6 @@ final class Codebase
         }
 
         Collector::stage('scan.populate');
-        Collector::step('populate');
 
         if ($has_changes) {
             // the classes scanned again may make other `new`

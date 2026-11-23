@@ -993,6 +993,7 @@ final class ProjectAnalyzer
         $this->progress->write($this->generateAnalysisSetupMessage());
         $this->progress->startPhase(Phase::SCAN, $this->scanThreads);
         Collector::stage('scan.setup');
+        Collector::step('files.list');
 
         if (!$this->project_files_initialized) {
             $file_extensions = $this->config->getFileExtensions();
@@ -1012,10 +1013,13 @@ final class ProjectAnalyzer
         }
         $this->initExtraFiles();
 
+        Collector::step('stubs.preloaded');
         $this->config->visitPreloadedStubFiles($this->codebase, $this->progress);
 
+        Collector::step('plugins.init');
         $this->config->initializePlugins($this);
 
+        Collector::step('autoload');
         $this->visitAutoloadFiles();
 
         $this->codebase->scanner->addFilesToShallowScan($this->extra_files);
@@ -1032,12 +1036,14 @@ final class ProjectAnalyzer
             }
         }
 
+        Collector::step('reference_cache.load');
         $this->file_reference_provider->loadReferenceCache();
 
         $this->codebase->scanFiles($this->scanThreads, 'scan.project');
 
         $this->config->visitStubFiles($this->codebase, $this->progress);
 
+        Collector::step('plugins.after_populated');
         $event = new AfterCodebasePopulatedEvent($this->codebase);
 
         $this->config->eventDispatcher->dispatchAfterCodebasePopulated($event);

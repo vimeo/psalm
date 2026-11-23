@@ -105,10 +105,24 @@ final class PsalmDebugPerformanceEndToEndTest extends PsalmEndToEndTestCase
 
         // the steps are named, lie in their stage and do not overlap
         $this->assertSame([], array_diff(
-            ['config', 'restart', 'preload', 'providers', 'files.list', 'scan.stubs', 'scan.project', 'populate',
-                'analysis.files', 'mutation_levels', 'output'],
+            ['config', 'restart.check', 'preload', 'providers', 'files.list', 'scan.stubs', 'scan.project',
+                'mutation_levels', 'output'],
             array_column($dump['steps'], 'name'),
         ));
+        // each file was analysed inside the stage that analyses files
+        $analysis_stage = array_values(array_filter(
+            $dump['stages'],
+            static fn(array $stage): bool => $stage['name'] === 'analysis.files',
+        ))[0] ?? ['start_us' => 0, 'wall_us' => 0];
+
+        foreach (self::recordsOf($dump, 'analysis') as $record) {
+            $this->assertGreaterThanOrEqual($analysis_stage['start_us'], $record['start_us']);
+            $this->assertLessThanOrEqual(
+                $analysis_stage['start_us'] + $analysis_stage['wall_us'],
+                $record['start_us'] + $record['wall_us'],
+            );
+        }
+
         $step_end = 0;
 
         foreach ($dump['steps'] as $step) {

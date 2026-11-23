@@ -9,6 +9,8 @@ use PhpParser\Node\Stmt;
 use Psalm\StatementsSource;
 use ReflectionFunction;
 
+use function array_keys;
+use function array_map;
 use function array_slice;
 use function array_values;
 use function basename;
@@ -665,7 +667,7 @@ final class Collector
      * @template TResult
      * @param callable(TEvent): TResult $handler
      * @param TEvent $event
-     * @param class-string $class the class of the handler
+     * @param string $class the class of the handler
      * @return TResult
      */
     public static function timed(callable $handler, object $event, string $class, string $hook): mixed
@@ -691,13 +693,7 @@ final class Collector
         // the class the closure was made for, not the one that declares its method
         $class = (new ReflectionFunction($handler))->getClosureCalledClass()?->name ?? '{closure}';
 
-        return static function (object $event) use ($handler, $class, $hook): mixed {
-            $start = (int) hrtime(true);
-            $result = $handler($event);
-            self::addHook($class, $hook, 1, (int) hrtime(true) - $start);
-
-            return $result;
-        };
+        return static fn(object $event): mixed => self::timed($handler, $event, $class, $hook);
     }
 
     /** A file the parser parsed; $cache_missed if a parser cache was asked first */
@@ -794,8 +790,8 @@ final class Collector
             }
         }
 
-        $statements = self::rankedStatements();
-        $functions = self::rankedFunctions();
+        $statements = self::ranked(self::$statements);
+        $functions = self::ranked(self::$functions);
 
         return [
             'totals' => [
@@ -988,30 +984,21 @@ final class Collector
         ];
     }
 
-    /** @return list<StatementRecord> the statement that took longest first */
-    private static function rankedStatements(): array
+    /**
+     * @template T of StatementRecord|FunctionRecord
+     * @param array<string, T> $records by place
+     * @return list<T> the one that took longest of its own first
+     * @psalm-pure
+     */
+    private static function ranked(array $records): array
     {
-        $list = array_values(self::$statements);
+        $places = array_keys($records);
         usort(
-            $list,
-            static fn(array $a, array $b): int => [$b['self_us'], $a['path'], $a['line'], $a['node']]
-                <=> [$a['self_us'], $b['path'], $b['line'], $b['node']],
+            $places,
+            static fn(string $a, string $b): int => [$records[$b]['self_us'], $a] <=> [$records[$a]['self_us'], $b],
         );
 
-        return $list;
-    }
-
-    /** @return list<FunctionRecord> the function-like that took longest first */
-    private static function rankedFunctions(): array
-    {
-        $list = array_values(self::$functions);
-        usort(
-            $list,
-            static fn(array $a, array $b): int => [$b['self_us'], $a['path'], $a['line'], $a['pass']]
-                <=> [$a['self_us'], $b['path'], $b['line'], $b['pass']],
-        );
-
-        return $list;
+        return array_map(static fn(string $place): array => $records[$place], $places);
     }
 
     /** @return array{name: string, t_us: int, cpu_us: int, children_cpu_us: int, bytes: int, peak: int} */
