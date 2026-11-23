@@ -42,6 +42,7 @@ use Psalm\Internal\Fork\IgbinarySerializer;
 use Psalm\Internal\GzipSerializer;
 use Psalm\Internal\IncludeCollector;
 use Psalm\Internal\Lz4Serializer;
+use Psalm\Internal\Perf;
 use Psalm\Internal\Provider\AddRemoveTaints\HtmlFunctionTainter;
 use Psalm\Internal\Provider\AddRemoveTaints\JsonEncodeTainter;
 use Psalm\Internal\Scanner\FileScanner;
@@ -109,6 +110,7 @@ use function getcwd;
 use function getenv;
 use function glob;
 use function hash;
+use function hrtime;
 use function implode;
 use function in_array;
 use function interface_exists;
@@ -2219,7 +2221,12 @@ final class Config
             }
 
             try {
+                $perf_start = Perf\Collector::$enabled ? (int) hrtime(true) : 0;
                 $plugin($socket, $plugin_config);
+
+                if ($perf_start !== 0) {
+                    Perf\Collector::pluginInit($plugin_class_name, $perf_start);
+                }
             } catch (Throwable $t) {
                 throw new ConfigException(
                     'Failed to invoke plugin ' . $plugin_class_name,
@@ -2257,8 +2264,17 @@ final class Config
 
         foreach ($this->plugin_paths as $path) {
             try {
+                $perf_start = Perf\Collector::$enabled ? (int) hrtime(true) : 0;
                 $plugin = new FileBasedPluginAdapter($path, $this, $codebase);
                 $plugin($socket);
+
+                if ($perf_start !== 0) {
+                    $declared = array_values(ClassLikeAnalyzer::getClassesForFile(
+                        $codebase,
+                        str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $path),
+                    ));
+                    Perf\Collector::pluginInit($declared[0] ?? $path, $perf_start);
+                }
             } catch (Throwable $e) {
                 throw new ConfigException('Failed to load plugin ' . $path, 0, $e);
             }

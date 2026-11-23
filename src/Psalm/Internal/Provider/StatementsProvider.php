@@ -153,7 +153,7 @@ final class StatementsProvider
             $stmts = self::parseStatements($file_contents, $analysis_php_version_id, $parse_errors);
 
             if (Perf\Collector::$enabled) {
-                Perf\Collector::parsed(false);
+                Perf\Collector::parsed();
             }
 
             self::reportParseErrors($parse_errors, $file_contents, $file_path);
@@ -235,7 +235,7 @@ final class StatementsProvider
         );
 
         if (Perf\Collector::$enabled) {
-            Perf\Collector::parsed(true);
+            Perf\Collector::parsed();
         }
 
         self::reportParseErrors($parse_errors, $file_contents, $file_path);

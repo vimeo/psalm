@@ -92,7 +92,7 @@ final class CollectorTest extends TestCase
             $result['workers'],
         ));
         $this->assertSame(
-            ['files_parsed' => 4, 'parser_cache_hits' => 6, 'parser_cache_misses' => 2],
+            ['parses' => 4, 'cache_hits' => 6],
             $result['parser'],
         );
     }
@@ -172,6 +172,12 @@ final class CollectorTest extends TestCase
         return [
             'project file' => ['/proj/src/A.php', 'src/A.php', null, 'src/A.php'],
             'absolute path of a missing file' => ['/home/me/src/A.php', '/home/me/src/A.php', null, '<external>/A.php'],
+            'file of another phar' => [
+                'phar:///x/other.phar/a/B.php',
+                '../../phar:///x/other.phar/a/B.php',
+                '/opt/psalm',
+                '<external>/other.phar/a/B.php',
+            ],
             'Psalm outside the project' => [
                 '/opt/psalm/stubs/Core.phpstub',
                 '../../opt/psalm/stubs/Core.phpstub',
@@ -226,7 +232,7 @@ final class CollectorTest extends TestCase
     {
         return [
             'op' => $op, 'path' => $path, 'pid' => $pid, 'start_us' => 0, 'wall_us' => $wall_us,
-            'cpu_us' => $wall_us, 'mem_bytes' => 0, 'peak_growth_bytes' => 0,
+            'cpu_us' => $wall_us, 'peak_growth_bytes' => 0,
         ];
     }
 
@@ -241,9 +247,9 @@ final class CollectorTest extends TestCase
     {
         return [
             'pid' => $pid, 'role' => 'analysis', 'start_us' => 10, 'end_us' => 10_000, 'cpu_us' => 5_000,
-            'cpu_sys_us' => 100, 'php_start_bytes' => 1_000, 'php_peak_bytes' => 2_000, 'max_rss_bytes' => 3_000,
+            'cpu_sys_us' => 100, 'php_start_bytes' => 1_000, 'php_peak_growth_bytes' => 2_000, 'max_rss_bytes' => 3_000,
             'files' => $files, 'statements' => $statements, 'functions' => $functions, 'hooks' => [],
-            'parser' => ['files_parsed' => 2, 'parser_cache_hits' => 3, 'parser_cache_misses' => 1],
+            'parser' => ['parses' => 2, 'cache_hits' => 3],
         ];
     }
 }

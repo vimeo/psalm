@@ -15,12 +15,12 @@ use function array_keys;
 use function array_sum;
 use function array_unique;
 use function array_values;
-use function count;
 use function file_get_contents;
 use function file_put_contents;
 use function glob;
 use function implode;
 use function json_decode;
+use function ksort;
 use function mkdir;
 use function preg_match_all;
 use function realpath;
@@ -41,10 +41,10 @@ use const PHP_BINARY;
  *     totals: array{wall_us: int, cpu_us: int, children_cpu_us: int},
  *     stages: list<array{name: string, start_us: int, wall_us: int, cpu_us: int}>,
  *     steps: list<array{name: string, stage: string, start_us: int, wall_us: int}>,
- *     pools: list<array{payload_bytes: array{sum: ?int}}>,
+ *     pools: list<array{role: string, cpu_us: int, payload_bytes?: int}>,
+ *     parser: array{parses: int, cache_hits: int},
  *     workers: list<array{role: string, pid: int, start_us: int, end_us: int, tasks: int, busy_us: int, cpu_us: int}>,
  *     files: list<DumpFile>,
- *     traceEvents: list<array{ph: string, name: string, pid: int}>,
  *     hooks: list<array{handler: string, hook: string, origin: string, calls: int, wall_us: int}>,
  *     counts: array<string, int>,
  * }
@@ -98,10 +98,6 @@ final class PsalmDebugPerformanceEndToEndTest extends PsalmEndToEndTestCase
         $this->assertSame($dump['totals']['wall_us'], array_sum(array_column($dump['stages'], 'wall_us')));
         $this->assertSame($dump['totals']['cpu_us'], array_sum(array_column($dump['stages'], 'cpu_us')));
         $this->assertSame([], $dump['workers']);
-
-        // a Trace Event Format object: an event for each stage, step and file
-        $spans = array_filter($dump['traceEvents'], static fn(array $event): bool => $event['ph'] === 'X');
-        $this->assertCount(count($dump['stages']) + count($dump['steps']) + count($dump['files']), $spans);
 
         // the steps are named, lie in their stage and do not overlap
         $this->assertSame([], array_diff(
@@ -180,14 +176,12 @@ final class PsalmDebugPerformanceEndToEndTest extends PsalmEndToEndTestCase
             $this->assertContains($record['pid'], $pids);
         }
 
-        // each worker shows as a span of its own in the trace
-        $worked = array_column(
-            array_filter($dump['traceEvents'], static fn(array $e): bool => $e['ph'] === 'X' && $e['name'] === 'worker'),
-            'pid',
-        );
-        $this->assertSame([], array_diff(array_column($dump['workers'], 'pid'), $worked));
-
-        $this->assertGreaterThan(0, $dump['pools'][0]['payload_bytes']['sum']);
+        $pool = array_values(array_filter($dump['pools'], static fn(array $p): bool => $p['role'] === 'analysis'))[0]
+            ?? ['cpu_us' => 0];
+        $this->assertGreaterThan(0, $pool['cpu_us']);
+        $this->assertGreaterThan(0, $pool['payload_bytes'] ?? 0);
+        // every file was asked of the parser by the process that analysed it
+        $this->assertGreaterThanOrEqual(7, $dump['parser']['parses'] + $dump['parser']['cache_hits']);
     }
 
     #[RequiresPhpExtension('pcntl')]
@@ -278,7 +272,9 @@ final class PsalmDebugPerformanceEndToEndTest extends PsalmEndToEndTestCase
                 }
             }
 
-            $this->assertSame(['AfterFileAnalysis', 'FunctionReturnType'], array_keys($calls), $threads);
+            ksort($calls);
+            $this->assertSame(['AfterFileAnalysis', 'FunctionReturnType', 'PluginInit'], array_keys($calls), $threads);
+            $this->assertSame(1, $calls['PluginInit'], $threads);
             // once for each file analysed, and once for each call of strlen() that the project analyses
             $this->assertCount($calls['AfterFileAnalysis'], self::recordsOf($dump, 'analysis'), $threads);
             $this->assertSame(2, $calls['FunctionReturnType'], $threads);

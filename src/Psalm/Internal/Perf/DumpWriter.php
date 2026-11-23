@@ -13,11 +13,9 @@ use Psalm\Internal\Provider\ClassLikeStorageProvider;
 use Psalm\Internal\Provider\FileStorageProvider;
 
 use function array_column;
-use function array_diff_key;
 use function array_filter;
 use function array_slice;
 use function array_values;
-use function basename;
 use function count;
 use function dirname;
 use function error_clear_last;
@@ -26,7 +24,6 @@ use function file_put_contents;
 use function function_exists;
 use function fwrite;
 use function get_loaded_extensions;
-use function getmypid;
 use function hash_file;
 use function ini_get;
 use function is_dir;
@@ -64,9 +61,6 @@ use const STDERR;
  *     functions: int,
  *     methods: int,
  *     file_storages: int,
- *     files_parsed: int,
- *     parser_cache_hits: int,
- *     parser_cache_misses: int,
  * }
  */
 final class DumpWriter
@@ -86,7 +80,7 @@ final class DumpWriter
     {
         $path = Collector::dumpPath();
 
-        $counts = self::counts($measurements['parser']);
+        $counts = self::counts();
 
         $failure = $path === null
             ? null
@@ -94,11 +88,9 @@ final class DumpWriter
                 $path,
                 [
                     'schema' => 1,
-                    'displayTimeUnit' => 'ms',
-                    'traceEvents' => self::traceEvents($measurements),
                     'env' => self::env($project_analyzer),
                     'counts' => $counts,
-                ] + array_diff_key($measurements, ['parser' => true]),
+                ] + $measurements,
             );
 
         if ($print_summary) {
@@ -173,15 +165,14 @@ final class DumpWriter
 
         $out .= sprintf(
             "\nPeak memory %s. Counts: %d class-likes, %d functions, %d methods, %d file storages, "
-            . "%d files parsed (parser cache: %d hits, %d misses)\n",
+            . "%d parses, %d statements reused instead of parsed\n",
             self::megabytes($totals['php_peak_bytes']),
             $counts['classlikes'],
             $counts['functions'],
             $counts['methods'],
             $counts['file_storages'],
-            $counts['files_parsed'],
-            $counts['parser_cache_hits'],
-            $counts['parser_cache_misses'],
+            $measurements['parser']['parses'],
+            $measurements['parser']['cache_hits'],
         );
 
         $analysis_us = 0;
@@ -343,11 +334,10 @@ final class DumpWriter
     /**
      * What the main process holds once the workers' results are merged
      *
-     * @param array{files_parsed: int, parser_cache_hits: int, parser_cache_misses: int} $parser
      * @return Counts
      * @psalm-capabilities read-props|write-this-props|write-refs
      */
-    private static function counts(array $parser): array
+    private static function counts(): array
     {
         $classlike_storages = ClassLikeStorageProvider::getAll();
         $methods = 0;
@@ -369,116 +359,7 @@ final class DumpWriter
             'functions' => $functions,
             'methods' => $methods,
             'file_storages' => count($file_storages),
-        ] + $parser;
-    }
-
-    /**
-     * Trace Event Format events, which ui.perfetto.dev and speedscope open. The main process has lanes for its
-     * stages, steps and pools, and each process one for the spans of its files; a worker has one more for when it
-     * worked and when it waited.
-     *
-     * @param Measurements $measurements
-     * @return list<array<string, mixed>>
-     */
-    private static function traceEvents(array $measurements): array
-    {
-        $main_pid = (int) getmypid();
-        $names = [$main_pid => 'psalm'];
-        $events = [];
-
-        foreach ($measurements['workers'] as $worker) {
-            $names[$worker['pid']] = 'psalm ' . $worker['role'] . ' worker';
-        }
-
-        foreach ($names as $pid => $name) {
-            $events[] = ['ph' => 'M', 'name' => 'process_name', 'pid' => $pid, 'tid' => 0, 'args' => ['name' => $name]];
-        }
-
-        // in the main process the stages, steps and pools are lanes of their own; a worker has the lane of its
-        // files and one for when it worked and when it waited
-        foreach (['stages', 'steps', 'pools'] as $tid => $lane) {
-            $events[] = self::threadName($main_pid, $tid, $lane);
-        }
-
-        foreach ($measurements['workers'] as $worker) {
-            $events[] = self::threadName($worker['pid'], 0, 'files');
-            $events[] = self::threadName($worker['pid'], 1, 'worker');
-        }
-
-        foreach ($measurements['stages'] as $stage) {
-            $events[] = self::span($stage['name'], 'stage', $stage['start_us'], $stage['wall_us'], $main_pid, 0);
-        }
-
-        foreach ($measurements['steps'] as $step) {
-            $events[] = self::span($step['name'], 'step', $step['start_us'], $step['wall_us'], $main_pid, 1);
-        }
-
-        $collect_starts = [];
-        foreach ($measurements['pools'] as $pool) {
-            $at = $pool['start_us'];
-
-            $phases = ['init' => $pool['init_us'], 'run' => $pool['run_us'], 'collect' => $pool['collect_us'],
-                'merge' => $pool['merge_us']];
-
-            foreach ($phases as $phase => $wall_us) {
-                if ($phase === 'collect') {
-                    $collect_starts[$pool['id']] = $at;
-                }
-
-                $events[] = self::span($pool['role'] . ' ' . $phase, 'pool', $at, $wall_us, $main_pid, 2);
-                $at += $wall_us;
-            }
-        }
-
-        foreach ($measurements['workers'] as $worker) {
-            $pid = $worker['pid'];
-            $worked_us = $worker['end_us'] - $worker['start_us'];
-            $idle_us = max(0, ($collect_starts[$worker['pool']] ?? $worker['end_us']) - $worker['end_us']);
-
-            $events[] = self::span('worker', 'worker', $worker['start_us'], $worked_us, $pid, 1);
-            $events[] = self::span('idle', 'worker', $worker['end_us'], $idle_us, $pid, 1);
-        }
-
-        foreach ($measurements['files'] as $file) {
-            $events[] = [
-                'name' => basename($file['path']),
-                'cat' => $file['op'],
-                'ph' => 'X',
-                'ts' => $file['start_us'],
-                'dur' => $file['wall_us'],
-                'pid' => $file['pid'],
-                'tid' => 0,
-                'args' => ['path' => $file['path']],
-            ];
-        }
-
-        return $events;
-    }
-
-    /**
-     * @return array<string, mixed>
-     * @psalm-pure
-     */
-    private static function span(string $name, string $category, int $start_us, int $wall_us, int $pid, int $tid): array
-    {
-        return [
-            'name' => $name,
-            'cat' => $category,
-            'ph' => 'X',
-            'ts' => $start_us,
-            'dur' => $wall_us,
-            'pid' => $pid,
-            'tid' => $tid,
         ];
-    }
-
-    /**
-     * @return array<string, mixed>
-     * @psalm-pure
-     */
-    private static function threadName(int $pid, int $tid, string $name): array
-    {
-        return ['ph' => 'M', 'name' => 'thread_name', 'pid' => $pid, 'tid' => $tid, 'args' => ['name' => $name]];
     }
 
     /**

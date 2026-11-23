@@ -50,7 +50,6 @@ use const PHP_OS_FAMILY;
  *     start_us: int,
  *     wall_us: int,
  *     cpu_us: int,
- *     mem_bytes: int,
  *     peak_growth_bytes: int,
  *     deep?: bool,
  *     storage?: string,
@@ -74,7 +73,7 @@ use const PHP_OS_FAMILY;
  *     wall_us: int,
  * }
  * @psalm-type HookRecord = array{handler: string, hook: string, calls: int, wall_ns: int}
- * @psalm-type ParserCounts = array{files_parsed: int, parser_cache_hits: int, parser_cache_misses: int}
+ * @psalm-type ParserCounts = array{parses: int, cache_hits: int}
  * @psalm-type WorkerPerf = array{
  *     pid: int,
  *     role: string,
@@ -83,7 +82,7 @@ use const PHP_OS_FAMILY;
  *     cpu_us: int,
  *     cpu_sys_us: int,
  *     php_start_bytes: int,
- *     php_peak_bytes: int,
+ *     php_peak_growth_bytes: int,
  *     max_rss_bytes: int,
  *     files: list<FileRecord>,
  *     statements: list<StatementRecord>,
@@ -97,7 +96,7 @@ use const PHP_OS_FAMILY;
  *     wall_us: int,
  *     cpu_us: int,
  *     children_cpu_us: int,
- *     php_bytes: int,
+ *     php_end_bytes: int,
  *     php_peak_bytes: int,
  * }
  * @psalm-type StepRecord = array{
@@ -106,7 +105,7 @@ use const PHP_OS_FAMILY;
  *     start_us: int,
  *     wall_us: int,
  *     cpu_us: int,
- *     php_bytes: int,
+ *     php_end_bytes: int,
  * }
  * @psalm-type PoolRecord = array{
  *     id: int,
@@ -118,7 +117,9 @@ use const PHP_OS_FAMILY;
  *     run_us: int,
  *     collect_us: int,
  *     merge_us: int,
- *     payload_bytes: array{sum: ?int, max: ?int},
+ *     cpu_us: int,
+ *     payload_bytes?: int,
+ *     payload_max_bytes?: int,
  * }
  * @psalm-type WorkerRecord = array{
  *     pool: int,
@@ -131,7 +132,7 @@ use const PHP_OS_FAMILY;
  *     cpu_us: int,
  *     cpu_sys_us: int,
  *     php_start_bytes: int,
- *     php_peak_bytes: int,
+ *     php_peak_growth_bytes: int,
  *     max_rss_bytes: int,
  * }
  * @psalm-type Measurements = array{
@@ -142,7 +143,6 @@ use const PHP_OS_FAMILY;
  *         children_cpu_us: int,
  *         php_peak_bytes: int,
  *         max_rss_bytes: int,
- *         children_max_rss_bytes: int,
  *         files_scanned: int,
  *         files_analyzed: int,
  *         issues: array{errors: int, infos: int},
@@ -153,7 +153,12 @@ use const PHP_OS_FAMILY;
  *     workers: list<WorkerRecord>,
  *     files: list<FileRecord>,
  *     taint: array{nodes: int, sources: int, sinks: int, specializations: int, resolver_rounds: int},
- *     hot: array{statements: list<StatementRecord>, functions: list<FunctionRecord>},
+ *     hot: array{
+ *         min_us: int,
+ *         limit: int,
+ *         statements: list<StatementRecord>,
+ *         functions: list<FunctionRecord>,
+ *     },
  *     hooks: list<array{handler: string, hook: string, origin: string, calls: int, wall_us: int}>,
  *     parser: ParserCounts,
  * }
@@ -175,7 +180,7 @@ final class Collector
     private const HOT_COUNT = 50;
 
     /** Statements and function-likes that take less than this are not recorded */
-    private const MIN_RECORD_NS = 1_000_000;
+    private const MIN_RECORD_US = 1_000;
 
     private static ?string $dump_path = null;
 
@@ -223,11 +228,9 @@ final class Collector
     /** @var array<string, array<string, int>> nanoseconds in the handlers, by handler class and hook */
     private static array $hook_ns = [];
 
-    private static int $files_parsed = 0;
+    private static int $parses = 0;
 
-    private static int $parser_cache_hits = 0;
-
-    private static int $parser_cache_misses = 0;
+    private static int $cache_hits = 0;
 
     /** @var list<PoolRecord> */
     private static array $pools = [];
@@ -239,6 +242,9 @@ final class Collector
     private static ?array $pool = null;
 
     private static int $pool_mark_ns = 0;
+
+    /** The CPU time of the terminated children of the main process when the pool started */
+    private static int $pool_cpu_us = 0;
 
     private static ?int $payload_sum = null;
 
@@ -298,9 +304,8 @@ final class Collector
         self::$functions = [];
         self::$hook_calls = [];
         self::$hook_ns = [];
-        self::$files_parsed = 0;
-        self::$parser_cache_hits = 0;
-        self::$parser_cache_misses = 0;
+        self::$parses = 0;
+        self::$cache_hits = 0;
     }
 
     public static function dumpPath(): ?string
@@ -358,16 +363,16 @@ final class Collector
         return self::$scan_storage;
     }
 
-    /** @return array{int, int, int, int} */
+    /** @return array{int, int, int} */
     public static function fileStart(): array
     {
-        return [(int) hrtime(true), self::cpuUs(0), memory_get_usage(), memory_get_peak_usage()];
+        return [(int) hrtime(true), self::cpuUs(0), memory_get_peak_usage()];
     }
 
     /**
      * @param string $file_path the path of the file, as it is on disk
      * @param string $file_name the path of the file as Psalm prints it (see Config::shortenFileName())
-     * @param array{int, int, int, int} $start
+     * @param array{int, int, int} $start
      */
     public static function scanEnd(
         string $file_path,
@@ -380,7 +385,7 @@ final class Collector
             + ['deep' => $deep, 'storage' => $storage];
     }
 
-    /** @param array{int, int, int, int} $start */
+    /** @param array{int, int, int} $start */
     public static function analysisEnd(string $file_path, string $file_name, array $start, int $issues): void
     {
         self::$files[] = self::fileRecord('analysis', $file_path, $file_name, $start) + ['issues' => $issues];
@@ -392,7 +397,7 @@ final class Collector
         $self_ns = $inclusive_ns - self::$child_ns;
         self::$child_ns = $outer_child_ns + $inclusive_ns;
 
-        if ($self_ns >= self::MIN_RECORD_NS) {
+        if ($self_ns >= self::MIN_RECORD_US * 1_000) {
             self::recordStatement(
                 self::displayPath($source->getFilePath(), $source->getFileName()),
                 $stmt->getStartLine(),
@@ -443,7 +448,7 @@ final class Collector
         $self_ns = $inclusive_ns - self::$function_child_ns;
         self::$function_child_ns = $start[1] + $inclusive_ns;
 
-        if ($inclusive_ns >= self::MIN_RECORD_NS) {
+        if ($inclusive_ns >= self::MIN_RECORD_US * 1_000) {
             self::recordFunction(
                 self::displayPath($file_path, $file_name),
                 $line,
@@ -516,7 +521,7 @@ final class Collector
             'cpu_us' => self::cpuUs(0) - self::$worker_start['cpu_us'],
             'cpu_sys_us' => self::sysUs() - self::$worker_start['sys_us'],
             'php_start_bytes' => self::$worker_start['bytes'],
-            'php_peak_bytes' => memory_get_peak_usage(),
+            'php_peak_growth_bytes' => memory_get_peak_usage() - self::$worker_start['bytes'],
             'max_rss_bytes' => self::maxRssBytes(0),
             'files' => self::$files,
             'statements' => array_values(self::$statements),
@@ -542,8 +547,9 @@ final class Collector
             'run_us' => 0,
             'collect_us' => 0,
             'merge_us' => 0,
-            'payload_bytes' => ['sum' => null, 'max' => null],
+            'cpu_us' => 0,
         ];
+        self::$pool_cpu_us = self::cpuUs(1);
         self::$pool_mark_ns = (int) hrtime(true);
         self::$payload_sum = null;
         self::$payload_max = 0;
@@ -618,9 +624,8 @@ final class Collector
             self::addHook($hook['handler'], $hook['hook'], $hook['calls'], $hook['wall_ns']);
         }
 
-        self::$files_parsed += $data['parser']['files_parsed'];
-        self::$parser_cache_hits += $data['parser']['parser_cache_hits'];
-        self::$parser_cache_misses += $data['parser']['parser_cache_misses'];
+        self::$parses += $data['parser']['parses'];
+        self::$cache_hits += $data['parser']['cache_hits'];
 
         self::$workers[] = [
             'pool' => self::$pool['id'] ?? 0,
@@ -633,7 +638,7 @@ final class Collector
             'cpu_us' => $data['cpu_us'],
             'cpu_sys_us' => $data['cpu_sys_us'],
             'php_start_bytes' => $data['php_start_bytes'],
-            'php_peak_bytes' => $data['php_peak_bytes'],
+            'php_peak_growth_bytes' => $data['php_peak_growth_bytes'],
             'max_rss_bytes' => $data['max_rss_bytes'],
         ];
     }
@@ -652,8 +657,12 @@ final class Collector
             return;
         }
 
+        // the workers of the pool are reaped by now, so their CPU time is in the children's
+        self::$pool['cpu_us'] = self::cpuUs(1) - self::$pool_cpu_us;
+
         if (self::$payload_sum !== null) {
-            self::$pool['payload_bytes'] = ['sum' => self::$payload_sum, 'max' => self::$payload_max];
+            self::$pool['payload_bytes'] = self::$payload_sum;
+            self::$pool['payload_max_bytes'] = self::$payload_max;
         }
 
         self::$pools[] = self::$pool;
@@ -696,16 +705,22 @@ final class Collector
         return static fn(object $event): mixed => self::timed($handler, $event, $class, $hook);
     }
 
-    /** A file the parser parsed; $cache_missed if a parser cache was asked first */
-    public static function parsed(bool $cache_missed): void
+    /** A file the parser parsed */
+    public static function parsed(): void
     {
-        ++self::$files_parsed;
-        self::$parser_cache_misses += $cache_missed ? 1 : 0;
+        ++self::$parses;
     }
 
+    /** The registration of a plugin took $wall_ns */
+    public static function pluginInit(string $class, int $start_ns): void
+    {
+        self::addHook($class, 'PluginInit', 1, (int) hrtime(true) - $start_ns);
+    }
+
+    /** Statements of a file that were reused instead of parsed */
     public static function parserCacheHit(): void
     {
-        ++self::$parser_cache_hits;
+        ++self::$cache_hits;
     }
 
     public static function taint(int $nodes, int $sources, int $sinks, int $specializations): void
@@ -752,7 +767,7 @@ final class Collector
                 'wall_us' => $next['t_us'] - $mark['t_us'],
                 'cpu_us' => $next['cpu_us'] - $mark['cpu_us'],
                 'children_cpu_us' => $next['children_cpu_us'] - $mark['children_cpu_us'],
-                'php_bytes' => $next['bytes'],
+                'php_end_bytes' => $next['bytes'],
                 'php_peak_bytes' => $next['peak'],
             ];
         }
@@ -770,7 +785,7 @@ final class Collector
                 'start_us' => $entry['mark']['t_us'],
                 'wall_us' => $next['t_us'] - $entry['mark']['t_us'],
                 'cpu_us' => $next['cpu_us'] - $entry['mark']['cpu_us'],
-                'php_bytes' => $next['bytes'],
+                'php_end_bytes' => $next['bytes'],
             ];
         }
 
@@ -801,7 +816,6 @@ final class Collector
                 'children_cpu_us' => $end['children_cpu_us'] - $first['children_cpu_us'],
                 'php_peak_bytes' => $php_peak_bytes ?? $end['peak'],
                 'max_rss_bytes' => self::maxRssBytes(0),
-                'children_max_rss_bytes' => self::maxRssBytes(1),
                 'files_scanned' => $scanned,
                 'files_analyzed' => $analyzed,
                 'issues' => ['errors' => $errors, 'infos' => $infos],
@@ -813,6 +827,8 @@ final class Collector
             'files' => $files,
             'taint' => self::$taint,
             'hot' => [
+                'min_us' => self::MIN_RECORD_US,
+                'limit' => self::HOT_COUNT,
                 'statements' => array_slice($statements, 0, self::HOT_COUNT),
                 'functions' => array_slice($functions, 0, self::HOT_COUNT),
             ],
@@ -824,8 +840,8 @@ final class Collector
     /**
      * The path of a file as the dump shows it: as Psalm prints it (see Config::shortenFileName()), except that a
      * file of Psalm's own installation outside the project is `<psalm>/<path in Psalm>` and any other path that
-     * is still absolute, or inside a phar, is `<external>/<file name>`: the dump names no directory above the
-     * project that Psalm didn't print itself.
+     * is still absolute is `<external>/<file name>`, and one inside another phar `<external>/<phar>/<path in it>`:
+     * the dump names no directory above the project that Psalm didn't print itself.
      *
      * @param string $file_path the path of the file on disk
      * @param string $file_name the path as Psalm prints it
@@ -839,7 +855,14 @@ final class Collector
         $in_psalm = str_starts_with($path, $root . '/');
 
         if (str_starts_with($path, 'phar://')) {
-            return $in_psalm ? '<psalm>/' . substr($path, strlen($root) + 1) : '<external>/' . basename($path);
+            if ($in_psalm) {
+                return '<psalm>/' . substr($path, strlen($root) + 1);
+            }
+
+            // the phar and the path in it
+            return preg_match('~([^/]+\.phar)(/.*)?$~', $path, $phar) === 1 && isset($phar[1])
+                ? '<external>/' . $phar[1] . ($phar[2] ?? '')
+                : '<external>/' . basename($path);
         }
 
         $outside_project = str_starts_with($file_name, '../') || self::isAbsolute($file_name);
@@ -942,11 +965,7 @@ final class Collector
     /** @return ParserCounts */
     private static function parserCounts(): array
     {
-        return [
-            'files_parsed' => self::$files_parsed,
-            'parser_cache_hits' => self::$parser_cache_hits,
-            'parser_cache_misses' => self::$parser_cache_misses,
-        ];
+        return ['parses' => self::$parses, 'cache_hits' => self::$cache_hits];
     }
 
     /** @psalm-pure */
@@ -959,7 +978,7 @@ final class Collector
     }
 
     /**
-     * @param array{int, int, int, int} $start
+     * @param array{int, int, int} $start
      * @return FileRecord
      */
     private static function fileRecord(string $op, string $file_path, string $file_name, array $start): array
@@ -979,8 +998,7 @@ final class Collector
             'start_us' => $start_us,
             'wall_us' => $end_us - $start_us,
             'cpu_us' => self::cpuUs(0) - $start[1],
-            'mem_bytes' => memory_get_usage() - $start[2],
-            'peak_growth_bytes' => memory_get_peak_usage() - $start[3],
+            'peak_growth_bytes' => memory_get_peak_usage() - $start[2],
         ];
     }
 
