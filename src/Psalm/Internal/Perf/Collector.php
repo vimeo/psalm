@@ -111,7 +111,6 @@ use const PHP_OS_FAMILY;
  * @psalm-type PoolRecord = array{
  *     id: int,
  *     role: string,
- *     workers: int,
  *     tasks: int,
  *     start_us: int,
  *     init_us: int,
@@ -121,11 +120,10 @@ use const PHP_OS_FAMILY;
  *     cpu_us: int,
  *     payload_bytes?: int,
  *     payload_max_bytes?: int,
+ *     workers: list<WorkerRecord>,
  * }
  * @psalm-type WorkerRecord = array{
- *     pool: int,
  *     pid: int,
- *     role: string,
  *     start_us: int,
  *     end_us: int,
  *     tasks: int,
@@ -151,7 +149,6 @@ use const PHP_OS_FAMILY;
  *     stages: list<StageRecord>,
  *     steps: list<StepRecord>,
  *     pools: list<PoolRecord>,
- *     workers: list<WorkerRecord>,
  *     files: list<FileRecord>,
  *     taint: array{nodes: int, sources: int, sinks: int, specializations: int, resolver_rounds: int},
  *     hot: array{
@@ -238,8 +235,8 @@ final class Collector
     /** @var list<PoolRecord> */
     private static array $pools = [];
 
-    /** @var list<WorkerRecord> */
-    private static array $workers = [];
+    /** @var list<WorkerRecord> the workers of the pool that is running */
+    private static array $pool_workers = [];
 
     /** @var ?PoolRecord */
     private static ?array $pool = null;
@@ -291,7 +288,7 @@ final class Collector
         self::$marks = [];
         self::$step_marks = [];
         self::$pools = [];
-        self::$workers = [];
+        self::$pool_workers = [];
         self::$pool = null;
         self::$payload_sum = null;
         self::$payload_max = 0;
@@ -543,7 +540,7 @@ final class Collector
         ];
     }
 
-    public static function poolStart(string $role, int $workers, int $tasks): void
+    public static function poolStart(string $role, int $tasks): void
     {
         if (!self::$enabled) {
             return;
@@ -552,7 +549,6 @@ final class Collector
         self::$pool = [
             'id' => count(self::$pools) + 1,
             'role' => $role,
-            'workers' => $workers,
             'tasks' => $tasks,
             'start_us' => self::nowUs(),
             'init_us' => 0,
@@ -560,7 +556,9 @@ final class Collector
             'collect_us' => 0,
             'merge_us' => 0,
             'cpu_us' => 0,
+            'workers' => [],
         ];
+        self::$pool_workers = [];
         self::$pool_cpu_us = self::cpuUs(1);
         self::$pool_mark_ns = (int) hrtime(true);
         self::$payload_sum = null;
@@ -639,10 +637,8 @@ final class Collector
         self::$parses += $data['parser']['parses'];
         self::$cache_hits += $data['parser']['cache_hits'];
 
-        self::$workers[] = [
-            'pool' => self::$pool['id'] ?? 0,
+        self::$pool_workers[] = [
             'pid' => $data['pid'],
-            'role' => $data['role'],
             'start_us' => $data['start_us'],
             'end_us' => $data['end_us'],
             'tasks' => $tasks,
@@ -671,6 +667,7 @@ final class Collector
 
         // the workers of the pool are reaped by now, so their CPU time is in the children's
         self::$pool['cpu_us'] = self::cpuUs(1) - self::$pool_cpu_us;
+        self::$pool['workers'] = self::$pool_workers;
 
         if (self::$payload_sum !== null) {
             self::$pool['payload_bytes'] = self::$payload_sum;
@@ -835,7 +832,6 @@ final class Collector
             'stages' => $stages,
             'steps' => $steps,
             'pools' => self::$pools,
-            'workers' => self::$workers,
             'files' => $files,
             'taint' => self::$taint,
             'hot' => [

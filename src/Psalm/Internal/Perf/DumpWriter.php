@@ -199,14 +199,12 @@ final class DumpWriter
             $busy_max = 0;
             $first_end = PHP_INT_MAX;
             $last_end = 0;
-            foreach ($measurements['workers'] as $worker) {
-                if ($worker['pool'] === $pool['id']) {
-                    ++$count;
-                    $busy_sum += $worker['busy_us'];
-                    $busy_max = max($busy_max, $worker['busy_us']);
-                    $first_end = min($first_end, $worker['end_us']);
-                    $last_end = max($last_end, $worker['end_us']);
-                }
+            foreach ($pool['workers'] as $worker) {
+                ++$count;
+                $busy_sum += $worker['busy_us'];
+                $busy_max = max($busy_max, $worker['busy_us']);
+                $first_end = min($first_end, $worker['end_us']);
+                $last_end = max($last_end, $worker['end_us']);
             }
 
             if ($count === 0) {
@@ -216,7 +214,7 @@ final class DumpWriter
             $out .= sprintf(
                 "\n%s pool: %d workers, %d tasks, busy imbalance %.2f (max / mean), tail %s\n",
                 $pool['role'],
-                $pool['workers'],
+                $count,
                 $pool['tasks'],
                 $busy_sum > 0 ? $busy_max * $count / $busy_sum : 1.0,
                 self::seconds($last_end - $first_end),

@@ -561,7 +561,7 @@ final class Scanner
                 $this->progress,
             );
 
-            Perf\Collector::poolStart('scan', $pool_size, $file_count);
+            Perf\Collector::poolStart('scan', $file_count);
             await($pool->runAll(new InitScannerTask));
             Perf\Collector::poolStep('init_us');
             $pool->run(

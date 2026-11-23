@@ -12,6 +12,7 @@ use function array_column;
 use function array_diff;
 use function array_filter;
 use function array_keys;
+use function array_merge;
 use function array_sum;
 use function array_unique;
 use function array_values;
@@ -41,9 +42,8 @@ use const PHP_BINARY;
  *     totals: array{wall_us: int, cpu_us: int, children_cpu_us: int},
  *     stages: list<array{name: string, start_us: int, wall_us: int, cpu_us: int}>,
  *     steps: list<array{name: string, stage: string, start_us: int, wall_us: int}>,
- *     pools: list<array{role: string, cpu_us: int, payload_bytes?: int}>,
+ *     pools: list<array{role: string, cpu_us: int, payload_bytes?: int, workers: list<array{pid: int, start_us: int, end_us: int, tasks: int, busy_us: int, cpu_us: int}>}>,
  *     parser: array{parses: int, cache_hits: int},
- *     workers: list<array{role: string, pid: int, start_us: int, end_us: int, tasks: int, busy_us: int, cpu_us: int}>,
  *     files: list<DumpFile>,
  *     hooks: list<array{handler: string, hook: string, origin: string, calls: int, wall_us: int}>,
  *     counts: array<string, int>,
@@ -100,7 +100,7 @@ final class PsalmDebugPerformanceEndToEndTest extends PsalmEndToEndTestCase
         // the stages add up to the run
         $this->assertSame($dump['totals']['wall_us'], array_sum(array_column($dump['stages'], 'wall_us')));
         $this->assertSame($dump['totals']['cpu_us'], array_sum(array_column($dump['stages'], 'cpu_us')));
-        $this->assertSame([], $dump['workers']);
+        $this->assertSame([], array_merge(...array_column($dump['pools'], 'workers')));
 
         // the steps are named, lie in their stage and do not overlap
         $this->assertSame([], array_diff(
@@ -163,10 +163,8 @@ final class PsalmDebugPerformanceEndToEndTest extends PsalmEndToEndTestCase
         $this->assertCount(7, $analysis_paths);
         $this->assertSame($analysis_paths, array_values(array_unique($analysis_paths)));
 
-        $workers = array_values(array_filter(
-            $dump['workers'],
-            static fn(array $worker): bool => $worker['role'] === 'analysis',
-        ));
+        $pool = array_values(array_filter($dump['pools'], static fn(array $p): bool => $p['role'] === 'analysis'))[0];
+        $workers = $pool['workers'];
         $pids = array_column($workers, 'pid');
         $this->assertCount(2, array_unique($pids));
         $this->assertSame(7, array_sum(array_column($workers, 'tasks')));
@@ -179,8 +177,6 @@ final class PsalmDebugPerformanceEndToEndTest extends PsalmEndToEndTestCase
             $this->assertContains($record['pid'], $pids);
         }
 
-        $pool = array_values(array_filter($dump['pools'], static fn(array $p): bool => $p['role'] === 'analysis'))[0]
-            ?? ['cpu_us' => 0];
         $this->assertGreaterThan(0, $pool['cpu_us']);
         $this->assertGreaterThan(0, $pool['payload_bytes'] ?? 0);
         // every file was asked of the parser by the process that analysed it

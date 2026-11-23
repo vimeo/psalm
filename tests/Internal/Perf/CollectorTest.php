@@ -63,6 +63,7 @@ final class CollectorTest extends TestCase
     public function testAddWorkerDataMergesWhatTheWorkersRecorded(): void
     {
         Collector::start(null, []);
+        Collector::poolStart('analysis', 2);
         $statement = ['path' => 'src/F.php', 'line' => 3, 'node' => 'Stmt_If', 'passes' => 2, 'self_us' => 5, 'wall_us' => 7];
         $function = ['path' => 'src/F.php', 'line' => 1, 'id' => 'f', 'pass' => 'body', 'passes' => 1, 'self_us' => 4,
             'wall_us' => 9];
@@ -74,6 +75,7 @@ final class CollectorTest extends TestCase
             [$function],
         ));
         Collector::addWorkerData(self::workerPerf(102, [self::file('analysis', 'src/B.php', 102, 500)], [$statement], [$function]));
+        Collector::poolEnd();
 
         $result = Collector::finish(0, 0);
 
@@ -89,7 +91,7 @@ final class CollectorTest extends TestCase
         // the scan inside the analysis of a file is part of it, so it is not busy time of its own
         $this->assertSame([[101, 1, 1_000], [102, 1, 500]], array_map(
             static fn(array $worker): array => [$worker['pid'], $worker['tasks'], $worker['busy_us']],
-            $result['workers'],
+            $result['pools'][0]['workers'],
         ));
         $this->assertSame(
             ['parses' => 4, 'cache_hits' => 6],
@@ -155,7 +157,7 @@ final class CollectorTest extends TestCase
         $this->assertSame('', Collector::stage('scan.files'));
         $this->assertNull(Collector::workerData());
 
-        Collector::poolStart('scan', 2, 10);
+        Collector::poolStart('scan', 10);
         Collector::addWorkerData(self::workerPerf(1, [self::file('scan', 'src/A.php', 1, 10)]));
         Collector::poolEnd();
 
