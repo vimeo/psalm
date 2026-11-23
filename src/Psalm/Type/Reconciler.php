@@ -79,7 +79,6 @@ use Psalm\Type\Atomic\TTemplateParam;
 use ReflectionProperty;
 use UnexpectedValueException;
 
-use function array_all;
 use function array_key_first;
 use function array_keys;
 use function array_merge;
@@ -598,24 +597,9 @@ class Reconciler
                         $result_type,
                     );
                 } elseif ($key !== '$this') {
-                    // an object narrowed to a subtype of each type it had is the same object of the same class
-                    // hierarchy: what is known of its properties holds (not when it is narrowed to one of several
-                    // classes, whose properties have their own types)
-                    $keeps_properties = $before_adjustment
-                        && $before_adjustment->isObjectType()
-                        && $result_type->isObjectType()
-                        && array_all(
-                            $before_adjustment->getAtomicTypes(),
-                            static fn(Atomic $before_part): bool => UnionTypeComparator::isContainedBy(
-                                $codebase,
-                                $result_type,
-                                new Union([$before_part]),
-                            ),
-                        );
-
                     foreach ($existing_types as $new_key => $_) {
                         if ($new_key === $key
-                            || ($keeps_properties && str_starts_with($new_key, $key . '->'))
+                            || self::narrowingKeepsProperty($codebase, $before_adjustment, $result_type, $key, $new_key)
                         ) {
                             continue;
                         }
@@ -1109,6 +1093,54 @@ class Reconciler
                 && !$atomic_type instanceof TNever
                 && (!$atomic_type instanceof TArray || !$atomic_type->type_params[1]->isNever())
             ) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * Whether what is known of `$property_var_id` still holds after its object was narrowed: the object is the same,
+     * unless it was narrowed to one of several classes or to a class that redeclares the property
+     */
+    public static function narrowingKeepsProperty(
+        Codebase $codebase,
+        ?Union $before,
+        ?Union $after,
+        string $object_id,
+        string $property_var_id,
+    ): bool {
+        if ($before === null
+            || $after === null
+            || !str_starts_with($property_var_id, $object_id . '->')
+            || !preg_match('/\G(\w+)(?=$|->|\[)/', $property_var_id, $match, 0, strlen($object_id) + 2)
+            || !isset($match[1])
+        ) {
+            return false;
+        }
+
+        $declaring_class = null;
+
+        foreach ([...array_values($before->getAtomicTypes()), ...array_values($after->getAtomicTypes())] as $atomic) {
+            if (!$atomic instanceof TNamedObject || !$codebase->classlike_storage_provider->has($atomic->value)) {
+                return false;
+            }
+
+            $declaring = $codebase->properties->getDeclaringClassForProperty(
+                $atomic->value . '::$' . $match[1],
+                true,
+            );
+
+            if ($declaring === null || ($declaring_class !== null && $declaring !== $declaring_class)) {
+                return false;
+            }
+
+            $declaring_class = $declaring;
+        }
+
+        foreach ($before->getAtomicTypes() as $before_part) {
+            if (!UnionTypeComparator::isContainedBy($codebase, $after, new Union([$before_part]))) {
                 return false;
             }
         }

@@ -128,6 +128,13 @@ final class ElseAnalyzer
                 foreach ($else_context->vars_in_scope as $var_id => $_) {
                     if (preg_match('/' . preg_quote($changed_var_id, '/') . '[\]\[\-]/', $var_id)
                         && !array_key_exists($var_id, $changed_var_ids)
+                        && !Reconciler::narrowingKeepsProperty(
+                            $codebase,
+                            $original_context->vars_in_scope[$changed_var_id] ?? null,
+                            $else_context->vars_in_scope[$changed_var_id] ?? null,
+                            $changed_var_id,
+                            $var_id,
+                        )
                     ) {
                         $else_context->removePossibleReference($var_id);
                     }

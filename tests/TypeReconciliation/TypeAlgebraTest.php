@@ -139,6 +139,168 @@ final class TypeAlgebraTest extends TestCase
                         }
                     }',
             ],
+            'instanceofInANestedIfKeepsWhatIsKnownOfAProperty' => [
+                'code' => '<?php
+                    class A {
+                        public ?C $value = null;
+                    }
+                    final class B extends A {}
+                    final class C {
+                        public function yay(): string {
+                            return "yay";
+                        }
+                    }
+
+                    function nested(A $v): string {
+                        if ($v->value) {
+                            if ($v instanceof B) {
+                                return $v->value->yay();
+                            }
+                        }
+                        return "";
+                    }',
+            ],
+            'instanceofAfterAnEarlyReturnKeepsWhatIsKnownOfAProperty' => [
+                'code' => '<?php
+                    class A {
+                        public ?C $value = null;
+                    }
+                    final class B extends A {}
+                    final class C {
+                        public function yay(): string {
+                            return "yay";
+                        }
+                    }
+
+                    function early(A $v): string {
+                        if (!$v->value) {
+                            return "";
+                        }
+                        if ($v instanceof B) {
+                            return $v->value->yay();
+                        }
+                        return "";
+                    }',
+            ],
+            'instanceofAfterAnAssignmentKeepsThePropertyType' => [
+                'code' => '<?php
+                    class A {
+                        public ?C $value = null;
+                    }
+                    final class B extends A {}
+                    final class C {
+                        public function yay(): string {
+                            return "yay";
+                        }
+                    }
+
+                    function assigned(A $v): string {
+                        $v->value = new C();
+                        if ($v instanceof B) {
+                            return $v->value->yay();
+                        }
+                        return "";
+                    }',
+            ],
+            'instanceofInAnElseifKeepsWhatIsKnownOfAProperty' => [
+                'code' => '<?php
+                    class A {
+                        public ?C $value = null;
+                    }
+                    final class B extends A {}
+                    final class D extends A {}
+                    final class C {
+                        public function yay(): string {
+                            return "yay";
+                        }
+                    }
+
+                    function chain(A $v): string {
+                        if (!$v->value) {
+                            return "";
+                        }
+                        if ($v instanceof D) {
+                            return "d";
+                        } elseif ($v instanceof B) {
+                            return $v->value->yay();
+                        }
+                        return "";
+                    }',
+            ],
+            'negatedInstanceofInAnElseKeepsWhatIsKnownOfAProperty' => [
+                'code' => '<?php
+                    class A {
+                        public ?C $value = null;
+                    }
+                    final class B extends A {}
+                    final class C {
+                        public function yay(): string {
+                            return "yay";
+                        }
+                    }
+
+                    function otherwise(A $v): string {
+                        if (!$v->value) {
+                            return "";
+                        }
+                        if (!$v instanceof B) {
+                            return "";
+                        } else {
+                            return $v->value->yay();
+                        }
+                    }',
+            ],
+            'instanceofReadsThePropertyASubclassRedeclares' => [
+                'code' => '<?php
+                    final class C {
+                        public function yay(): string {
+                            return "yay";
+                        }
+                    }
+                    class A {
+                        /** @var object */
+                        public $value;
+                        public function __construct() {
+                            $this->value = new C();
+                        }
+                    }
+                    final class B extends A {
+                        /** @var C */
+                        public $value;
+                    }
+
+                    function redeclared(A $v): string {
+                        $before = $v->value;
+                        if ($v instanceof B) {
+                            return $v->value->yay();
+                        }
+                        return $before::class;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['NonInvariantDocblockPropertyType'],
+            ],
+            'instanceofForgetsTheResultOfAMethodASubclassMayOverride' => [
+                'code' => '<?php
+                    class A {
+                        /** @psalm-mutation-free */
+                        public function value(): ?string {
+                            return null;
+                        }
+                    }
+                    final class B extends A {
+                        /** @psalm-mutation-free */
+                        public function value(): string {
+                            return "b";
+                        }
+                    }
+
+                    function method(A $v): string {
+                        if ($v->value() === null && $v instanceof B) {
+                            return $v->value();
+                        }
+                        return "";
+                    }',
+            ],
             'falsyStoredConditionThatReadsTheVariableItselfDoesNotNarrow' => [
                 'code' => '<?php
                     final class Node {}

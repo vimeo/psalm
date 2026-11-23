@@ -105,6 +105,7 @@ final class IfAnalyzer
         // if the if has an || in the conditional, we cannot easily reason about it
         if ($reconcilable_if_types) {
             $changed_var_ids = [];
+            $types_before = $if_context->vars_in_scope;
 
             [$if_context->vars_in_scope, $if_context->references_in_scope] = Reconciler::reconcileKeyedTypes(
                 $reconcilable_if_types,
@@ -143,6 +144,13 @@ final class IfAnalyzer
                         if (preg_match('/' . preg_quote($changed_var_id, '/') . '[\]\[\-]/', $var_id)
                             && !array_key_exists($var_id, $changed_var_ids)
                             && !array_key_exists($var_id, $cond_referenced_var_ids)
+                            && !Reconciler::narrowingKeepsProperty(
+                                $statements_analyzer->getCodebase(),
+                                $types_before[$changed_var_id] ?? null,
+                                $if_context->vars_in_scope[$changed_var_id] ?? null,
+                                $changed_var_id,
+                                $var_id,
+                            )
                         ) {
                             $if_context->removePossibleReference($var_id);
                         }
