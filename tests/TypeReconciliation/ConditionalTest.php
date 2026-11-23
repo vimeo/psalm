@@ -385,6 +385,130 @@ final class ConditionalTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.3',
             ],
+            'instanceofParentNarrowsToTheParentClass' => [
+                'code' => '<?php
+                    interface Shape {}
+
+                    class Box implements Shape {
+                        public function getSize(): int {
+                            return 1;
+                        }
+                    }
+
+                    final class TaggedBox extends Box {
+                        public function narrowed(Shape $shape): int {
+                            if ($shape instanceof parent) {
+                                /** @psalm-check-type-exact $shape = Box */
+                                return $shape->getSize();
+                            }
+
+                            return 0;
+                        }
+
+                        public function negated(Shape $shape): int {
+                            if (!$shape instanceof parent) {
+                                return 0;
+                            }
+
+                            return $shape->getSize();
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+            ],
+            'parentOfTheClassUsingATraitNarrowsInTheTraitCode' => [
+                'code' => '<?php
+                    interface Shape {}
+
+                    class Box implements Shape {
+                        public function getSize(): int {
+                            return 1;
+                        }
+                    }
+
+                    trait T {
+                        public function viaInstanceof(Shape $shape): int {
+                            if ($shape instanceof parent) {
+                                return $shape->getSize();
+                            }
+
+                            return 0;
+                        }
+                    }
+
+                    final class UsesTrait extends Box {
+                        use T;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+            ],
+            'isAParentClassNarrowsToTheParentClass' => [
+                'code' => '<?php
+                    interface Shape {}
+
+                    class Box implements Shape {
+                        public function getSize(): int {
+                            return 1;
+                        }
+                    }
+
+                    final class TaggedBox extends Box {
+                        public function narrowed(Shape $shape): int {
+                            if (is_a($shape, parent::class)) {
+                                /** @psalm-check-type-exact $shape = Box */
+                                return $shape->getSize();
+                            }
+
+                            return 0;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+            ],
+            'getClassIdenticalToParentClassNarrowsToTheParentClass' => [
+                'code' => '<?php
+                    interface Shape {}
+
+                    class Box implements Shape {
+                        public function getSize(): int {
+                            return 1;
+                        }
+                    }
+
+                    final class TaggedBox extends Box {
+                        public function narrowed(Shape $shape): int {
+                            if (get_class($shape) === parent::class) {
+                                return $shape->getSize();
+                            }
+
+                            return 0;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+            ],
+            'classConstantIdenticalToParentClassNarrowsToTheParentClass' => [
+                'code' => '<?php
+                    interface Shape {}
+
+                    class Box implements Shape {
+                        public function getSize(): int {
+                            return 1;
+                        }
+                    }
+
+                    final class TaggedBox extends Box {
+                        public function narrowed(Shape $shape): int {
+                            if ($shape::class === parent::class) {
+                                return $shape->getSize();
+                            }
+
+                            return 0;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+            ],
             'negatedIsFloatCombinesTheRemainingTypes' => [
                 'code' => '<?php
                     /** @var numeric|"a" $x */
@@ -6693,6 +6817,35 @@ final class ConditionalTest extends TestCase
                 'assertions' => [],
                 'ignored_issues' => [],
                 'php_version' => '8.0',
+            ],
+            'classNotEqualToAFinalClassExcludesIt' => [
+                'code' => '<?php
+                    final class A {}
+                    class B {}
+
+                    /** @var A|stdClass $final */;
+                    if ($final::class === A::class) {
+                        $final_if = $final;
+                    } else {
+                        $final_else = $final;
+                    }
+
+                    /** @var A|stdClass $by_get_class */;
+                    if (get_class($by_get_class) !== A::class) {
+                        $get_class_if = $by_get_class;
+                    }
+
+                    /** @var B|stdClass $not_final */;
+                    if ($not_final::class === B::class) {
+                        $not_final_if = $not_final;
+                    } else {
+                        $not_final_else = $not_final;
+                    }',
+                'assertions' => [
+                    '$final_else===' => 'stdClass',
+                    '$get_class_if===' => 'stdClass',
+                    '$not_final_else===' => 'B|stdClass',
+                ],
             ],
             'classEqualToTheClassOfAnotherClassStillNarrows' => [
                 'code' => '<?php

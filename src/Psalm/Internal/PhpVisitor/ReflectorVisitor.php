@@ -142,6 +142,15 @@ final class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements Fi
             $this->handleNamespace($node);
         } elseif ($node instanceof PhpParser\Node\Stmt\Use_ || $node instanceof PhpParser\Node\Stmt\GroupUse) {
             $this->handleUse($node);
+        } elseif ($node instanceof PhpParser\Node\Stmt\Declare_) {
+            foreach ($node->declares as $declaration) {
+                if ((string) $declaration->key === 'strict_types'
+                    && $declaration->value instanceof PhpParser\Node\Scalar\Int_
+                    && $declaration->value->value === 1
+                ) {
+                    $this->file_storage->strict_types = true;
+                }
+            }
         } elseif ($node instanceof PhpParser\Node\Stmt\ClassLike) {
             if ($this->skip_if_descendants) {
                 return null;
