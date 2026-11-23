@@ -14,6 +14,7 @@ use Psalm\Internal\Analyzer\InheritedMethodTaints;
 use Psalm\Internal\Analyzer\Statements\Expression\Assignment\InstancePropertyAssignmentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\Statements\Expression\NullsafeChainState;
+use Psalm\Internal\Analyzer\Statements\Expression\PropertyAccessAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\Statements\UnsetAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
@@ -672,11 +673,25 @@ final class InstancePropertyFetchAnalyzer
                     );
 
                     if ($declaring_property_class) {
-                        AtomicPropertyFetchAnalyzer::checkPropertyDeprecation(
-                            $stmt->name->name,
+                        $declaring_class_storage = $codebase->classlike_storage_provider->get(
                             $declaring_property_class,
-                            $stmt,
+                        );
+
+                        PropertyAccessAnalyzer::checkDeprecation(
                             $statements_analyzer,
+                            $stmt,
+                            $stmt->name->name,
+                            $declaring_class_storage,
+                        );
+
+                        PropertyAccessAnalyzer::checkDeclaredProperty(
+                            $statements_analyzer,
+                            $stmt,
+                            $context,
+                            $stmt->name->name,
+                            $property_id,
+                            $declaring_class_storage,
+                            false,
                         );
                     }
 

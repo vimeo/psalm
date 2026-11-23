@@ -542,7 +542,6 @@ final class AtomicPropertyFetchAnalyzer
                 $statements_analyzer,
                 $stmt,
                 $prop_name,
-                $declaring_property_class . '::$' . $prop_name,
                 $declaring_class_storage,
             );
         }
@@ -669,24 +668,6 @@ final class AtomicPropertyFetchAnalyzer
         }
 
         return Type::getMixed()->setParentNodes([$property_node->id => $property_node]);
-    }
-
-    /**
-     * @param PropertyFetch|StaticPropertyFetch $stmt
-     */
-    public static function checkPropertyDeprecation(
-        string $prop_name,
-        string $declaring_property_class,
-        PhpParser\Node\Expr $stmt,
-        StatementsAnalyzer $statements_analyzer,
-    ): void {
-        PropertyAccessAnalyzer::checkDeprecation(
-            $statements_analyzer,
-            $stmt,
-            $prop_name,
-            $declaring_property_class . '::$' . $prop_name,
-            $statements_analyzer->getCodebase()->classlike_storage_provider->get($declaring_property_class),
-        );
     }
 
     private static function propertyFetchCanBeAnalyzed(

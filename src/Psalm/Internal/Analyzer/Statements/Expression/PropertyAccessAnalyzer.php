@@ -212,43 +212,32 @@ final class PropertyAccessAnalyzer
     }
 
     /**
-     * @param string $reported_property_id the property as the issue names it
+     * Reports a deprecated property by its declaring class, whichever class it is reached through
      */
     public static function checkDeprecation(
         StatementsAnalyzer $statements_analyzer,
         PropertyFetch|StaticPropertyFetch $stmt,
         string $prop_name,
-        string $reported_property_id,
         ClassLikeStorage $declaring_class_storage,
     ): void {
+        $declaring_property_id = $declaring_class_storage->name . '::$' . $prop_name;
+
         if (isset($declaring_class_storage->properties[$prop_name])
             && $declaring_class_storage->properties[$prop_name]->deprecated
         ) {
-            IssueBuffer::maybeAdd(
-                new DeprecatedProperty(
-                    $reported_property_id . ' is marked deprecated',
-                    new CodeLocation($statements_analyzer->getSource(), $stmt),
-                    $reported_property_id,
-                ),
-                $statements_analyzer->getSuppressedIssues(),
-            );
-
-            return;
+            $message = $declaring_property_id . ' is marked deprecated';
+        } elseif (!$declaring_class_storage->user_defined) {
+            $message = PhpDeprecations::getPropertyMessage($declaring_property_id, $declaring_property_id);
+        } else {
+            $message = null;
         }
 
-        if ($declaring_class_storage->user_defined) {
-            return;
-        }
-
-        $declaring_property_id = $declaring_class_storage->name . '::$' . $prop_name;
-        $builtin_message = PhpDeprecations::getPropertyMessage($declaring_property_id, $declaring_property_id);
-
-        if ($builtin_message !== null) {
+        if ($message !== null) {
             IssueBuffer::maybeAdd(
                 new DeprecatedProperty(
-                    $builtin_message,
+                    $message,
                     new CodeLocation($statements_analyzer->getSource(), $stmt),
-                    $reported_property_id,
+                    $declaring_property_id,
                 ),
                 $statements_analyzer->getSuppressedIssues(),
             );

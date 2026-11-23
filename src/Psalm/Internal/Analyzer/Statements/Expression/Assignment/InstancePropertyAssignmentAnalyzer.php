@@ -1679,7 +1679,6 @@ final class InstancePropertyAssignmentAnalyzer
                 $statements_analyzer,
                 $stmt,
                 $prop_name,
-                $property_id,
                 $declaring_class_storage,
             );
         }
