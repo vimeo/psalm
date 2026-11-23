@@ -1016,6 +1016,32 @@ final class CallableTypeComparator
     }
 
     /**
+     * The classes of an intersection, through template bounds and nested intersections
+     *
+     * @param array<Atomic> $types
+     * @return list<string>
+     * @psalm-pure
+     */
+    public static function getIntersectionClassNames(array $types): array
+    {
+        $class_names = [];
+
+        foreach ($types as $type) {
+            if ($type instanceof TTemplateParam) {
+                $class_names = [...$class_names, ...self::getIntersectionClassNames($type->as->getAtomicTypes())];
+            } elseif ($type instanceof TNamedObject) {
+                $class_names[] = $type->value;
+            } else {
+                continue;
+            }
+
+            $class_names = [...$class_names, ...self::getIntersectionClassNames($type->extra_types)];
+        }
+
+        return $class_names;
+    }
+
+    /**
      * The member of an object type whose `__invoke` it has: the type itself, or else the first class of those it is
      * intersected with
      */
@@ -1119,11 +1145,9 @@ final class CallableTypeComparator
 
                     // of an intersection, the method is the one of the type that has it
                     if ($codebase && !self::classHasMethod($codebase, $class_name, $method_name)) {
-                        foreach ($lhs_atomic_type->getIntersectionTypes() as $intersection_type) {
-                            if ($intersection_type instanceof TNamedObject
-                                && self::classHasMethod($codebase, $intersection_type->value, $method_name)
-                            ) {
-                                $class_name = $intersection_type->value;
+                        foreach (self::getIntersectionClassNames([$lhs_atomic_type]) as $intersection_class) {
+                            if (self::classHasMethod($codebase, $intersection_class, $method_name)) {
+                                $class_name = $intersection_class;
                                 break;
                             }
                         }
@@ -1136,6 +1160,17 @@ final class CallableTypeComparator
                             $class_name = $lhs_template_atomic_type->value;
                         } elseif ($lhs_template_atomic_type instanceof TClassString) {
                             $class_name = $lhs_template_atomic_type->as;
+                        }
+                    }
+
+                    if ($codebase
+                        && ($class_name === null || !self::classHasMethod($codebase, $class_name, $method_name))
+                    ) {
+                        foreach (self::getIntersectionClassNames([$lhs_atomic_type]) as $intersection_class) {
+                            if (self::classHasMethod($codebase, $intersection_class, $method_name)) {
+                                $class_name = $intersection_class;
+                                break;
+                            }
                         }
                     }
                 } elseif ($lhs_atomic_type instanceof TClassString
