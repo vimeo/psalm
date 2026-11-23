@@ -60,6 +60,14 @@ foreach ($files as $path => $time) {
 $phpunit_config = new DOMDocument('1.0', 'UTF-8');
 $phpunit_config->preserveWhiteSpace = false;
 $phpunit_config->load($root . 'phpunit.xml.dist');
+
+// A test hanging past the time limit fails, naming itself, instead of holding the runner until the job times out.
+// PHPUnit needs pcntl to enforce it. Set here rather than as ParaTest options, which older ParaTest versions lack.
+if (extension_loaded('pcntl')) {
+    $phpunit_config->documentElement->setAttribute('enforceTimeLimit', 'true');
+    $phpunit_config->documentElement->setAttribute('defaultTimeLimit', '300');
+    $phpunit_config->documentElement->setAttribute('failOnRisky', 'true');
+}
 $suites_container = $phpunit_config->getElementsByTagName('testsuites')->item(0);
 
 while ($suites_container->firstChild) {
