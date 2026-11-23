@@ -770,6 +770,7 @@ final class NamedFunctionCallHandler
     public static function getExtractedArray(StatementsAnalyzer $statements_analyzer, array $args): ?TKeyedArray
     {
         if (!isset($args[0])
+            || $args[0]->unpack
             || ($args[0]->name !== null && $args[0]->name->name !== 'array')
             || (isset($args[1]) && $args[1]->name !== null && $args[1]->name->name !== 'flags')
             || self::getExtractFlag($statements_analyzer, $args) === false
@@ -799,6 +800,7 @@ final class NamedFunctionCallHandler
         $validated_var_ids = [];
         if ($flag_value !== false
             && isset($args[0])
+            && !$args[0]->unpack
             && ($array_type_union = $statements_analyzer->node_data->getType($args[0]->value))
             && $array_type_union->isSingle()
         ) {

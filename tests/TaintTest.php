@@ -19776,6 +19776,12 @@ final class TaintTest extends TestCase
                     extract(["name" => "value"] + $_GET);',
                 'error_message' => 'TaintedExtract',
             ],
+            'extractUnpackedArgument' => [
+                'code' => '<?php
+                    $a = [$_GET];
+                    extract(...$a);',
+                'error_message' => 'TaintedExtract',
+            ],
             'extractSealedArrayWithAFlagNotTracked' => [
                 'code' => '<?php
                     extract(["name" => (string) $_GET["name"]], EXTR_PREFIX_ALL, "p");',
