@@ -57,11 +57,13 @@ use Psalm\Storage\Assertion\NonEmptyCountable;
 use Psalm\Storage\Assertion\NotNestedAssertions;
 use Psalm\Storage\Assertion\Truthy;
 use Psalm\Type;
+use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TArrayKey;
 use Psalm\Type\Atomic\TBool;
 use Psalm\Type\Atomic\TClassStringMap;
 use Psalm\Type\Atomic\TFalse;
+use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TLiteralInt;
@@ -649,6 +651,9 @@ class Reconciler
 
             if (!$has_object_array_access) {
                 $existing_types[$key] = $result_type;
+            } elseif (!$did_type_exist) {
+                // the offset of an object isn't tracked, nor what its array alternatives gave before the narrowing
+                unset($existing_types[$key]);
             }
 
             if (!$did_type_exist && isset($existing_types[$key]) && isset($reference_graph[$key_parts[0]])) {
@@ -897,7 +902,9 @@ class Reconciler
                     if (($offset === 0 || count($assertions) === 1)
                         && ($assertion instanceof IsEqualIsset
                             || $assertion instanceof IsIsset
-                            || $assertion instanceof NonEmpty)
+                            || $assertion instanceof NonEmpty
+                            || ($assertion instanceof IsIdentical
+                                && self::isCharacterOfAString($nk, $assertion->type, $existing_types)))
                     ) {
                         $is_set = true;
                         break;
@@ -1005,6 +1012,26 @@ class Reconciler
         }
 
         return $new_types;
+    }
+
+    /**
+     * Whether an offset of a string is asserted to be a character, which it is only where the string has it
+     *
+     * @param array<string, Union> $existing_types
+     * @psalm-capabilities read-props|write-this-props
+     */
+    private static function isCharacterOfAString(string $offset_id, Atomic $type, array $existing_types): bool
+    {
+        if (!$type instanceof TLiteralString || $type->value === '') {
+            return false;
+        }
+
+        $key_parts = self::breakUpPathIntoParts($offset_id);
+
+        return count($key_parts) === 4
+            && $key_parts[1] === '['
+            && isset($existing_types[$key_parts[0]])
+            && $existing_types[$key_parts[0]]->isString();
     }
 
     /**
@@ -1198,6 +1225,36 @@ class Reconciler
     }
 
     /**
+     * What an `ArrayAccess<K, V>` can give for an offset that is indexed further: its value type without the
+     * parts that can't be indexed (an `int`), false when nothing of it can, null when it isn't known
+     *
+     * @psalm-pure
+     */
+    private static function getIndexableValueTypeOfArrayAccess(TNamedObject $object): Union|false|null
+    {
+        if (!$object instanceof TGenericObject
+            || strtolower($object->value) !== 'arrayaccess'
+            || count($object->type_params) !== 2
+        ) {
+            return null;
+        }
+
+        $indexable_atomic_types = [];
+
+        foreach ($object->type_params[1]->getAtomicTypes() as $value_atomic_type) {
+            if ($value_atomic_type instanceof TArray
+                || $value_atomic_type instanceof TKeyedArray
+                || $value_atomic_type instanceof TNamedObject
+                || $value_atomic_type instanceof TMixed
+            ) {
+                $indexable_atomic_types[] = $value_atomic_type;
+            }
+        }
+
+        return $indexable_atomic_types === [] ? false : new Union($indexable_atomic_types);
+    }
+
+    /**
      * The type of the class constant a key such as `Foo::BAR` or `static::BAR` stands for.
      */
     private static function getClassConstantTypeOfKey(
@@ -1254,6 +1311,10 @@ class Reconciler
 
             if ($key === Context::PHP_SAPI_VAR_ID) {
                 return $existing_keys[$key] ?? Type::getString();
+            }
+
+            if (str_starts_with($key, Context::PHP_EXTENSION_VAR_ID_PREFIX)) {
+                return $existing_keys[$key] ?? Type::getBool();
             }
 
             if (!isset($existing_keys[$key_parts[0]]) && str_contains($key, '::') && !str_contains($key, '$')) {
@@ -1318,6 +1379,10 @@ class Reconciler
 
                 if (!isset($existing_keys[$new_base_key])) {
                     $new_base_type = null;
+                    $has_object_part = false;
+                    $has_array_part = false;
+                    $has_unknown_object_part = false;
+                    $object_value_type = null;
 
                     // a variable holding one literal is that literal as a key
                     $lookup_key = $array_key;
@@ -1388,11 +1453,37 @@ class Reconciler
                         } elseif ($existing_key_type_part instanceof TNamedObject
                             && ($has_isset || $has_inverted_isset || $has_inverted_key_exists)
                         ) {
-                            $has_object_array_access = true;
+                            // an object that isn't known to be an ArrayAccess may not take the offset at all: nothing
+                            // is known of it, as the read of the offset has to find out
+                            if (!$existing_key_type_part->hasArrayAccessInterface($codebase)) {
+                                $has_object_array_access = true;
 
-                            unset($existing_keys[$new_base_key]);
+                                unset($existing_keys[$new_base_key]);
 
-                            return null;
+                                return null;
+                            }
+
+                            // the object's offset is unknown, only its array alternatives are narrowed; for the
+                            // offset of a path that goes on, what the object gives has to be indexable as well
+                            $has_object_array_access = $has_object_part = true;
+
+                            if ($key_parts !== []) {
+                                $indexable_value_type = self::getIndexableValueTypeOfArrayAccess(
+                                    $existing_key_type_part,
+                                );
+
+                                if ($indexable_value_type === null) {
+                                    $has_unknown_object_part = true;
+                                } elseif ($indexable_value_type !== false) {
+                                    $object_value_type = Type::combineUnionTypes(
+                                        $object_value_type,
+                                        $indexable_value_type,
+                                        $codebase,
+                                    );
+                                }
+                            }
+
+                            continue;
                         } elseif (!$existing_key_type_part instanceof TKeyedArray) {
                             return Type::getMixed();
                         } elseif ($lookup_key[0] === '$'
@@ -1424,6 +1515,9 @@ class Reconciler
                             }
                         }
 
+                        $has_array_part = $has_array_part
+                            || !($existing_key_type_part instanceof TNull || $existing_key_type_part instanceof TFalse);
+
                         $new_base_type = Type::combineUnionTypes(
                             $new_base_type,
                             $new_base_type_candidate,
@@ -1431,6 +1525,25 @@ class Reconciler
                         );
 
                         $existing_keys[$new_base_key] = $new_base_type;
+                    }
+
+                    // next to an object, only what an array (or a string) gives is known of the offset: `null`
+                    // alone, from a `?Foo` or `Foo|false`, is not
+                    if ($has_object_part
+                        && (!$has_array_part
+                            || $new_base_type === null
+                            || $new_base_type->isMixed()
+                            || $has_unknown_object_part)
+                    ) {
+                        unset($existing_keys[$new_base_key]);
+
+                        return null;
+                    }
+
+                    if ($has_object_part) {
+                        $existing_keys[$new_base_key] = $object_value_type === null
+                            ? $new_base_type
+                            : Type::combineUnionTypes($new_base_type, $object_value_type, $codebase);
                     }
                 }
 

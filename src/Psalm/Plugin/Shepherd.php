@@ -76,6 +76,10 @@ final class Shepherd implements AfterAnalysisInterface
         $rawPayload = self::collectPayloadToSend($event);
 
         if ($rawPayload === null) {
+            $progress->warning(
+                'Results not sent to Shepherd: no CI service with a GitHub repository detected',
+            );
+
             return;
         }
 
@@ -109,6 +113,18 @@ final class Shepherd implements AfterAnalysisInterface
 
         if ($source_control_data === [] && isset($build_info['git']) && is_array($build_info['git'])) {
             $source_control_data = $build_info['git'];
+        }
+
+        // A pull request is checked out as a merge commit that is not part of it: its review is made on its head
+        /** @var array{head?: array{id?: string}}|null $event_git */
+        $event_git = $build_info['git'] ?? null;
+        $pull_request_head = $event_git['head']['id'] ?? null;
+        if (isset($build_info['CI_PR_NUMBER'])
+            && $pull_request_head !== null
+            && isset($source_control_data['head'])
+            && is_array($source_control_data['head'])
+        ) {
+            $source_control_data['head']['id'] = $pull_request_head;
         }
 
         unset($build_info['git']);

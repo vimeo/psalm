@@ -257,8 +257,16 @@ final class MixinLookup
                 $codebase,
             );
         } else {
+            $mixin_template_result = new TemplateResult([], $template_params ?? []);
+            ClassTemplateParamCollector::markStarBindings(
+                $mixin_template_result,
+                $codebase,
+                $storage,
+                $receiver,
+                $template_params,
+            );
             $bound_mixin = new Union([$mixin->replaceTemplateTypesWithArgTypes(
-                new TemplateResult([], $template_params ?? []),
+                $mixin_template_result,
                 $codebase,
             )]);
         }

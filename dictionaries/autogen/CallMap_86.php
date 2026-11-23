@@ -15872,6 +15872,253 @@ return array (
     -1 => 'string',
     'command' => 'string',
   ),
+  'ev::backend' => 
+  array (
+    -1 => 'int',
+  ),
+  'ev::depth' => 
+  array (
+    -1 => 'int',
+  ),
+  'ev::embeddablebackends' => 
+  array (
+    -1 => 'int',
+  ),
+  'ev::feedsignal' => 
+  array (
+    -1 => 'void',
+    'signum' => 'int',
+  ),
+  'ev::feedsignalevent' => 
+  array (
+    -1 => 'void',
+    'signum' => 'int',
+  ),
+  'ev::iteration' => 
+  array (
+    -1 => 'int',
+  ),
+  'ev::now' => 
+  array (
+    -1 => 'float',
+  ),
+  'ev::nowupdate' => 
+  array (
+    -1 => 'void',
+  ),
+  'ev::recommendedbackends' => 
+  array (
+    -1 => 'int',
+  ),
+  'ev::resume' => 
+  array (
+    -1 => 'void',
+  ),
+  'ev::run' => 
+  array (
+    -1 => 'void',
+    'flags=' => 'int',
+  ),
+  'ev::sleep' => 
+  array (
+    -1 => 'void',
+    'seconds' => 'float',
+  ),
+  'ev::stop' => 
+  array (
+    -1 => 'void',
+    'how=' => 'int',
+  ),
+  'ev::supportedbackends' => 
+  array (
+    -1 => 'int',
+  ),
+  'ev::suspend' => 
+  array (
+    -1 => 'void',
+  ),
+  'ev::time' => 
+  array (
+    -1 => 'float',
+  ),
+  'ev::verify' => 
+  array (
+    -1 => 'void',
+  ),
+  'evcheck::__construct' => 
+  array (
+    0 => 'void',
+    -2 => 'none',
+    'callback' => 'mixed',
+    'data=' => 'mixed',
+    'priority=' => 'int',
+  ),
+  'evcheck::clear' => 
+  array (
+    -1 => 'int',
+  ),
+  'evcheck::createstopped' => 
+  array (
+    -1 => 'EvCheck',
+    'callback' => 'mixed',
+    'data=' => 'mixed',
+    'priority=' => 'int',
+  ),
+  'evcheck::feed' => 
+  array (
+    -1 => 'void',
+    'revents' => 'int',
+  ),
+  'evcheck::getloop' => 
+  array (
+    -1 => 'EvLoop|null',
+  ),
+  'evcheck::invoke' => 
+  array (
+    -1 => 'void',
+    'revents' => 'int',
+  ),
+  'evcheck::keepalive' => 
+  array (
+    -1 => 'bool',
+    'value=' => 'bool',
+  ),
+  'evcheck::setcallback' => 
+  array (
+    -1 => 'void',
+    'callback' => 'mixed',
+  ),
+  'evcheck::start' => 
+  array (
+    -1 => 'void',
+  ),
+  'evcheck::stop' => 
+  array (
+    -1 => 'void',
+  ),
+  'evchild::__construct' => 
+  array (
+    0 => 'void',
+    -2 => 'none',
+    'pid' => 'int',
+    'trace' => 'bool',
+    'callback' => 'mixed',
+    'data=' => 'mixed',
+    'priority=' => 'int',
+  ),
+  'evchild::clear' => 
+  array (
+    -1 => 'int',
+  ),
+  'evchild::createstopped' => 
+  array (
+    -1 => 'EvChild',
+    'pid' => 'int',
+    'trace' => 'bool',
+    'callback' => 'mixed',
+    'data=' => 'mixed',
+    'priority=' => 'int',
+  ),
+  'evchild::feed' => 
+  array (
+    -1 => 'void',
+    'revents' => 'int',
+  ),
+  'evchild::getloop' => 
+  array (
+    -1 => 'EvLoop|null',
+  ),
+  'evchild::invoke' => 
+  array (
+    -1 => 'void',
+    'revents' => 'int',
+  ),
+  'evchild::keepalive' => 
+  array (
+    -1 => 'bool',
+    'value=' => 'bool',
+  ),
+  'evchild::set' => 
+  array (
+    -1 => 'void',
+    'pid' => 'int',
+    'trace' => 'bool',
+  ),
+  'evchild::setcallback' => 
+  array (
+    -1 => 'void',
+    'callback' => 'mixed',
+  ),
+  'evchild::start' => 
+  array (
+    -1 => 'void',
+  ),
+  'evchild::stop' => 
+  array (
+    -1 => 'void',
+  ),
+  'evembed::__construct' => 
+  array (
+    0 => 'void',
+    -2 => 'none',
+    'other' => 'EvLoop',
+    'callback' => 'mixed',
+    'data=' => 'mixed',
+    'priority=' => 'int',
+  ),
+  'evembed::clear' => 
+  array (
+    -1 => 'int',
+  ),
+  'evembed::createstopped' => 
+  array (
+    -1 => 'EvEmbed',
+    'other' => 'EvLoop',
+    'callback' => 'mixed',
+    'data=' => 'mixed',
+    'priority=' => 'int',
+  ),
+  'evembed::feed' => 
+  array (
+    -1 => 'void',
+    'revents' => 'int',
+  ),
+  'evembed::getloop' => 
+  array (
+    -1 => 'EvLoop|null',
+  ),
+  'evembed::invoke' => 
+  array (
+    -1 => 'void',
+    'revents' => 'int',
+  ),
+  'evembed::keepalive' => 
+  array (
+    -1 => 'bool',
+    'value=' => 'bool',
+  ),
+  'evembed::set' => 
+  array (
+    -1 => 'void',
+    'other' => 'EvLoop',
+  ),
+  'evembed::setcallback' => 
+  array (
+    -1 => 'void',
+    'callback' => 'mixed',
+  ),
+  'evembed::start' => 
+  array (
+    -1 => 'void',
+  ),
+  'evembed::stop' => 
+  array (
+    -1 => 'void',
+  ),
+  'evembed::sweep' => 
+  array (
+    -1 => 'void',
+  ),
   'event::__construct' => 
   array (
     0 => 'void',
@@ -16802,6 +17049,674 @@ return array (
   'eventutil::sslrandpoll' => 
   array (
     -1 => 'bool',
+  ),
+  'evfork::__construct' => 
+  array (
+    0 => 'void',
+    -2 => 'none',
+    'loop' => 'EvLoop',
+    'callback' => 'mixed',
+    'data=' => 'mixed',
+    'priority=' => 'int',
+  ),
+  'evfork::clear' => 
+  array (
+    -1 => 'int',
+  ),
+  'evfork::createstopped' => 
+  array (
+    -1 => 'EvFork',
+    'loop' => 'EvLoop',
+    'callback' => 'mixed',
+    'data=' => 'mixed',
+    'priority=' => 'int',
+  ),
+  'evfork::feed' => 
+  array (
+    -1 => 'void',
+    'revents' => 'int',
+  ),
+  'evfork::getloop' => 
+  array (
+    -1 => 'EvLoop|null',
+  ),
+  'evfork::invoke' => 
+  array (
+    -1 => 'void',
+    'revents' => 'int',
+  ),
+  'evfork::keepalive' => 
+  array (
+    -1 => 'bool',
+    'value=' => 'bool',
+  ),
+  'evfork::setcallback' => 
+  array (
+    -1 => 'void',
+    'callback' => 'mixed',
+  ),
+  'evfork::start' => 
+  array (
+    -1 => 'void',
+  ),
+  'evfork::stop' => 
+  array (
+    -1 => 'void',
+  ),
+  'evidle::__construct' => 
+  array (
+    0 => 'void',
+    -2 => 'none',
+    'callback' => 'mixed',
+    'data=' => 'mixed',
+    'priority=' => 'int',
+  ),
+  'evidle::clear' => 
+  array (
+    -1 => 'int',
+  ),
+  'evidle::createstopped' => 
+  array (
+    -1 => 'EvIdle',
+    'callback' => 'mixed',
+    'data=' => 'mixed',
+    'priority=' => 'int',
+  ),
+  'evidle::feed' => 
+  array (
+    -1 => 'void',
+    'revents' => 'int',
+  ),
+  'evidle::getloop' => 
+  array (
+    -1 => 'EvLoop|null',
+  ),
+  'evidle::invoke' => 
+  array (
+    -1 => 'void',
+    'revents' => 'int',
+  ),
+  'evidle::keepalive' => 
+  array (
+    -1 => 'bool',
+    'value=' => 'bool',
+  ),
+  'evidle::setcallback' => 
+  array (
+    -1 => 'void',
+    'callback' => 'mixed',
+  ),
+  'evidle::start' => 
+  array (
+    -1 => 'void',
+  ),
+  'evidle::stop' => 
+  array (
+    -1 => 'void',
+  ),
+  'evio::__construct' => 
+  array (
+    0 => 'void',
+    -2 => 'none',
+    'fd' => 'mixed',
+    'events' => 'int',
+    'callback' => 'mixed',
+    'data=' => 'mixed',
+    'priority=' => 'int',
+  ),
+  'evio::clear' => 
+  array (
+    -1 => 'int',
+  ),
+  'evio::createstopped' => 
+  array (
+    -1 => 'EvIo',
+    'fd' => 'mixed',
+    'events' => 'int',
+    'callback' => 'mixed',
+    'data=' => 'mixed',
+    'priority=' => 'int',
+  ),
+  'evio::feed' => 
+  array (
+    -1 => 'void',
+    'revents' => 'int',
+  ),
+  'evio::getloop' => 
+  array (
+    -1 => 'EvLoop|null',
+  ),
+  'evio::invoke' => 
+  array (
+    -1 => 'void',
+    'revents' => 'int',
+  ),
+  'evio::keepalive' => 
+  array (
+    -1 => 'bool',
+    'value=' => 'bool',
+  ),
+  'evio::set' => 
+  array (
+    -1 => 'void',
+    'fd' => 'mixed',
+    'events' => 'int',
+  ),
+  'evio::setcallback' => 
+  array (
+    -1 => 'void',
+    'callback' => 'mixed',
+  ),
+  'evio::start' => 
+  array (
+    -1 => 'void',
+  ),
+  'evio::stop' => 
+  array (
+    -1 => 'void',
+  ),
+  'evloop::__construct' => 
+  array (
+    0 => 'void',
+    -2 => 'none',
+    'flags=' => 'int',
+    'data=' => 'mixed',
+    'io_interval=' => 'float',
+    'timeout_interval=' => 'float',
+  ),
+  'evloop::backend' => 
+  array (
+    -1 => 'int',
+  ),
+  'evloop::check' => 
+  array (
+    -1 => 'EvCheck',
+    'callback' => 'callable[impure]',
+    'data=' => 'mixed',
+    'priority=' => 'int',
+  ),
+  'evloop::child' => 
+  array (
+    -1 => 'EvChild',
+    'pid' => 'int',
+    'trace' => 'bool',
+    'callback' => 'mixed',
+    'data=' => 'mixed',
+    'priority=' => 'int',
+  ),
+  'evloop::defaultloop' => 
+  array (
+    -1 => 'EvLoop',
+    'flags=' => 'int',
+    'data=' => 'mixed',
+    'io_interval=' => 'float',
+    'timeout_interval=' => 'float',
+  ),
+  'evloop::embed' => 
+  array (
+    -1 => 'EvEmbed',
+    'callback' => 'callable[impure]',
+    'data=' => 'mixed',
+    'priority=' => 'int',
+  ),
+  'evloop::fork' => 
+  array (
+    -1 => 'EvFork',
+    'callback' => 'callable[impure]',
+    'data=' => 'mixed',
+    'priority=' => 'int',
+  ),
+  'evloop::idle' => 
+  array (
+    -1 => 'EvIdle',
+    'callback' => 'mixed',
+    'data=' => 'mixed',
+    'priority=' => 'int',
+  ),
+  'evloop::invokepending' => 
+  array (
+    -1 => 'void',
+  ),
+  'evloop::io' => 
+  array (
+    -1 => 'EvIo',
+    'fd' => 'mixed',
+    'events' => 'int',
+    'callback' => 'mixed',
+    'data=' => 'mixed',
+    'priority=' => 'int',
+  ),
+  'evloop::loopfork' => 
+  array (
+    -1 => 'void',
+  ),
+  'evloop::now' => 
+  array (
+    -1 => 'float',
+  ),
+  'evloop::nowupdate' => 
+  array (
+    -1 => 'void',
+  ),
+  'evloop::periodic' => 
+  array (
+    -1 => 'EvPeriodic',
+    'offset' => 'float',
+    'interval' => 'float',
+    'reschedule_cb' => 'mixed',
+    'callback' => 'mixed',
+    'data=' => 'mixed',
+    'priority=' => 'int',
+  ),
+  'evloop::prepare' => 
+  array (
+    -1 => 'EvPrepare',
+    'callback' => 'callable[impure]',
+    'data=' => 'mixed',
+    'priority=' => 'int',
+  ),
+  'evloop::resume' => 
+  array (
+    -1 => 'void',
+  ),
+  'evloop::run' => 
+  array (
+    -1 => 'void',
+    'flags=' => 'int',
+  ),
+  'evloop::signal' => 
+  array (
+    -1 => 'EvSignal',
+    'signum' => 'int',
+    'callback' => 'mixed',
+    'data=' => 'mixed',
+    'priority=' => 'int',
+  ),
+  'evloop::stat' => 
+  array (
+    -1 => 'EvStat',
+    'path' => 'string',
+    'interval' => 'float',
+    'callback' => 'mixed',
+    'data=' => 'mixed',
+    'priority=' => 'int',
+  ),
+  'evloop::stop' => 
+  array (
+    -1 => 'void',
+    'how=' => 'int',
+  ),
+  'evloop::suspend' => 
+  array (
+    -1 => 'void',
+  ),
+  'evloop::timer' => 
+  array (
+    -1 => 'EvTimer',
+    'after' => 'float',
+    'repeat' => 'float',
+    'callback' => 'mixed',
+    'data=' => 'mixed',
+    'priority=' => 'int',
+  ),
+  'evloop::verify' => 
+  array (
+    -1 => 'void',
+  ),
+  'evperiodic::__construct' => 
+  array (
+    0 => 'void',
+    -2 => 'none',
+    'offset' => 'float',
+    'interval' => 'float',
+    'reschedule_cb' => 'mixed',
+    'callback' => 'mixed',
+    'data=' => 'mixed',
+    'priority=' => 'int',
+  ),
+  'evperiodic::again' => 
+  array (
+    -1 => 'void',
+  ),
+  'evperiodic::at' => 
+  array (
+    -1 => 'float',
+  ),
+  'evperiodic::clear' => 
+  array (
+    -1 => 'int',
+  ),
+  'evperiodic::createstopped' => 
+  array (
+    -1 => 'EvPeriodic',
+    'offset' => 'float',
+    'interval' => 'float',
+    'reschedule_cb' => 'mixed',
+    'callback' => 'mixed',
+    'data=' => 'mixed',
+    'priority=' => 'int',
+  ),
+  'evperiodic::feed' => 
+  array (
+    -1 => 'void',
+    'revents' => 'int',
+  ),
+  'evperiodic::getloop' => 
+  array (
+    -1 => 'EvLoop|null',
+  ),
+  'evperiodic::invoke' => 
+  array (
+    -1 => 'void',
+    'revents' => 'int',
+  ),
+  'evperiodic::keepalive' => 
+  array (
+    -1 => 'bool',
+    'value=' => 'bool',
+  ),
+  'evperiodic::set' => 
+  array (
+    -1 => 'void',
+    'offset' => 'float',
+    'interval' => 'float',
+    'reschedule_cb=' => 'mixed',
+  ),
+  'evperiodic::setcallback' => 
+  array (
+    -1 => 'void',
+    'callback' => 'mixed',
+  ),
+  'evperiodic::start' => 
+  array (
+    -1 => 'void',
+  ),
+  'evperiodic::stop' => 
+  array (
+    -1 => 'void',
+  ),
+  'evprepare::__construct' => 
+  array (
+    0 => 'void',
+    -2 => 'none',
+    'callback' => 'mixed',
+    'data=' => 'mixed',
+    'priority=' => 'int',
+  ),
+  'evprepare::clear' => 
+  array (
+    -1 => 'int',
+  ),
+  'evprepare::createstopped' => 
+  array (
+    -1 => 'EvPrepare',
+    'callback' => 'mixed',
+    'data=' => 'mixed',
+    'priority=' => 'int',
+  ),
+  'evprepare::feed' => 
+  array (
+    -1 => 'void',
+    'revents' => 'int',
+  ),
+  'evprepare::getloop' => 
+  array (
+    -1 => 'EvLoop|null',
+  ),
+  'evprepare::invoke' => 
+  array (
+    -1 => 'void',
+    'revents' => 'int',
+  ),
+  'evprepare::keepalive' => 
+  array (
+    -1 => 'bool',
+    'value=' => 'bool',
+  ),
+  'evprepare::setcallback' => 
+  array (
+    -1 => 'void',
+    'callback' => 'mixed',
+  ),
+  'evprepare::start' => 
+  array (
+    -1 => 'void',
+  ),
+  'evprepare::stop' => 
+  array (
+    -1 => 'void',
+  ),
+  'evsignal::__construct' => 
+  array (
+    0 => 'void',
+    -2 => 'none',
+    'signum' => 'int',
+    'callback' => 'mixed',
+    'data=' => 'mixed',
+    'priority=' => 'int',
+  ),
+  'evsignal::clear' => 
+  array (
+    -1 => 'int',
+  ),
+  'evsignal::createstopped' => 
+  array (
+    -1 => 'EvSignal',
+    'signum' => 'int',
+    'callback' => 'mixed',
+    'data=' => 'mixed',
+    'priority=' => 'int',
+  ),
+  'evsignal::feed' => 
+  array (
+    -1 => 'void',
+    'revents' => 'int',
+  ),
+  'evsignal::getloop' => 
+  array (
+    -1 => 'EvLoop|null',
+  ),
+  'evsignal::invoke' => 
+  array (
+    -1 => 'void',
+    'revents' => 'int',
+  ),
+  'evsignal::keepalive' => 
+  array (
+    -1 => 'bool',
+    'value=' => 'bool',
+  ),
+  'evsignal::set' => 
+  array (
+    -1 => 'void',
+    'signum' => 'int',
+  ),
+  'evsignal::setcallback' => 
+  array (
+    -1 => 'void',
+    'callback' => 'mixed',
+  ),
+  'evsignal::start' => 
+  array (
+    -1 => 'void',
+  ),
+  'evsignal::stop' => 
+  array (
+    -1 => 'void',
+  ),
+  'evstat::__construct' => 
+  array (
+    0 => 'void',
+    -2 => 'none',
+    'path' => 'string',
+    'interval' => 'float',
+    'callback' => 'mixed',
+    'data=' => 'mixed',
+    'priority=' => 'int',
+  ),
+  'evstat::attr' => 
+  array (
+    -1 => 'mixed',
+  ),
+  'evstat::clear' => 
+  array (
+    -1 => 'int',
+  ),
+  'evstat::createstopped' => 
+  array (
+    -1 => 'EvStat',
+    'path' => 'string',
+    'interval' => 'float',
+    'callback' => 'mixed',
+    'data=' => 'mixed',
+    'priority=' => 'int',
+  ),
+  'evstat::feed' => 
+  array (
+    -1 => 'void',
+    'revents' => 'int',
+  ),
+  'evstat::getloop' => 
+  array (
+    -1 => 'EvLoop|null',
+  ),
+  'evstat::invoke' => 
+  array (
+    -1 => 'void',
+    'revents' => 'int',
+  ),
+  'evstat::keepalive' => 
+  array (
+    -1 => 'bool',
+    'value=' => 'bool',
+  ),
+  'evstat::prev' => 
+  array (
+    -1 => 'mixed',
+  ),
+  'evstat::set' => 
+  array (
+    -1 => 'void',
+    'path' => 'string',
+    'interval' => 'float',
+  ),
+  'evstat::setcallback' => 
+  array (
+    -1 => 'void',
+    'callback' => 'mixed',
+  ),
+  'evstat::start' => 
+  array (
+    -1 => 'void',
+  ),
+  'evstat::stat' => 
+  array (
+    -1 => 'bool',
+  ),
+  'evstat::stop' => 
+  array (
+    -1 => 'void',
+  ),
+  'evtimer::__construct' => 
+  array (
+    0 => 'void',
+    -2 => 'none',
+    'after' => 'float',
+    'repeat' => 'float',
+    'callback' => 'mixed',
+    'data=' => 'mixed',
+    'priority=' => 'int',
+  ),
+  'evtimer::again' => 
+  array (
+    -1 => 'void',
+  ),
+  'evtimer::clear' => 
+  array (
+    -1 => 'int',
+  ),
+  'evtimer::createstopped' => 
+  array (
+    -1 => 'EvTimer',
+    'after' => 'float',
+    'repeat' => 'float',
+    'callback' => 'mixed',
+    'data=' => 'mixed',
+    'priority=' => 'int',
+  ),
+  'evtimer::feed' => 
+  array (
+    -1 => 'void',
+    'revents' => 'int',
+  ),
+  'evtimer::getloop' => 
+  array (
+    -1 => 'EvLoop|null',
+  ),
+  'evtimer::invoke' => 
+  array (
+    -1 => 'void',
+    'revents' => 'int',
+  ),
+  'evtimer::keepalive' => 
+  array (
+    -1 => 'bool',
+    'value=' => 'bool',
+  ),
+  'evtimer::set' => 
+  array (
+    -1 => 'void',
+    'after' => 'float',
+    'repeat' => 'float',
+  ),
+  'evtimer::setcallback' => 
+  array (
+    -1 => 'void',
+    'callback' => 'mixed',
+  ),
+  'evtimer::start' => 
+  array (
+    -1 => 'void',
+  ),
+  'evtimer::stop' => 
+  array (
+    -1 => 'void',
+  ),
+  'evwatcher::clear' => 
+  array (
+    -1 => 'int',
+  ),
+  'evwatcher::feed' => 
+  array (
+    -1 => 'void',
+    'revents' => 'int',
+  ),
+  'evwatcher::getloop' => 
+  array (
+    -1 => 'EvLoop|null',
+  ),
+  'evwatcher::invoke' => 
+  array (
+    -1 => 'void',
+    'revents' => 'int',
+  ),
+  'evwatcher::keepalive' => 
+  array (
+    -1 => 'bool',
+    'value=' => 'bool',
+  ),
+  'evwatcher::setcallback' => 
+  array (
+    -1 => 'void',
+    'callback' => 'mixed',
+  ),
+  'evwatcher::start' => 
+  array (
+    -1 => 'void',
+  ),
+  'evwatcher::stop' => 
+  array (
+    -1 => 'void',
   ),
   'exception::__clone' => 
   array (
@@ -18978,6 +19893,222 @@ return array (
     'offset' => 'int',
     'length=' => 'int|null',
     'locale=' => 'string',
+  ),
+  'grpc\\call::__construct' => 
+  array (
+    0 => 'void',
+    -2 => 'none',
+    'channel' => 'mixed',
+    'method' => 'mixed',
+    'deadline' => 'mixed',
+    'host_override=' => 'mixed',
+  ),
+  'grpc\\call::cancel' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+  ),
+  'grpc\\call::getpeer' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+  ),
+  'grpc\\call::setcredentials' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'credentials' => 'mixed',
+  ),
+  'grpc\\call::startbatch' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'ops' => 'mixed',
+  ),
+  'grpc\\callcredentials::createcomposite' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'creds1' => 'mixed',
+    'creds2' => 'mixed',
+  ),
+  'grpc\\callcredentials::createfromplugin' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'callback' => 'mixed',
+  ),
+  'grpc\\channel::__construct' => 
+  array (
+    0 => 'void',
+    -2 => 'none',
+    'target' => 'mixed',
+    'args' => 'mixed',
+  ),
+  'grpc\\channel::close' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+  ),
+  'grpc\\channel::getconnectivitystate' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'try_to_connect=' => 'mixed',
+  ),
+  'grpc\\channel::gettarget' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+  ),
+  'grpc\\channel::watchconnectivitystate' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'last_state' => 'mixed',
+    'deadline' => 'mixed',
+  ),
+  'grpc\\channelcredentials::createcomposite' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'channel_creds' => 'mixed',
+    'call_creds' => 'mixed',
+  ),
+  'grpc\\channelcredentials::createdefault' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+  ),
+  'grpc\\channelcredentials::createinsecure' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+  ),
+  'grpc\\channelcredentials::createssl' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'pem_root_certs=' => 'mixed',
+    'pem_private_key=' => 'mixed',
+    'pem_cert_chain=' => 'mixed',
+  ),
+  'grpc\\channelcredentials::createxds' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'fallback_creds' => 'Grpc\\ChannelCredentials|null',
+  ),
+  'grpc\\channelcredentials::invalidatedefaultrootspem' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+  ),
+  'grpc\\channelcredentials::isdefaultrootspemset' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+  ),
+  'grpc\\channelcredentials::setdefaultrootspem' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'pem_roots' => 'mixed',
+  ),
+  'grpc\\server::__construct' => 
+  array (
+    0 => 'void',
+    -2 => 'none',
+    'args=' => 'mixed',
+  ),
+  'grpc\\server::addhttp2port' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'addr' => 'mixed',
+  ),
+  'grpc\\server::addsecurehttp2port' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'addr' => 'mixed',
+    'server_creds' => 'mixed',
+  ),
+  'grpc\\server::requestcall' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+  ),
+  'grpc\\server::start' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+  ),
+  'grpc\\servercredentials::createssl' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'pem_root_certs' => 'mixed',
+    'pem_private_key' => 'mixed',
+    'pem_cert_chain' => 'mixed',
+  ),
+  'grpc\\timeval::__construct' => 
+  array (
+    0 => 'void',
+    -2 => 'none',
+    'microseconds' => 'mixed',
+  ),
+  'grpc\\timeval::add' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'timeval' => 'mixed',
+  ),
+  'grpc\\timeval::compare' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'a_timeval' => 'mixed',
+    'b_timeval' => 'mixed',
+  ),
+  'grpc\\timeval::inffuture' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+  ),
+  'grpc\\timeval::infpast' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+  ),
+  'grpc\\timeval::now' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+  ),
+  'grpc\\timeval::similar' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'a_timeval' => 'mixed',
+    'b_timeval' => 'mixed',
+    'threshold_timeval' => 'mixed',
+  ),
+  'grpc\\timeval::sleepuntil' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+  ),
+  'grpc\\timeval::subtract' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'timeval' => 'mixed',
+  ),
+  'grpc\\timeval::zero' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
   ),
   'gzclose' => 
   array (
