@@ -1380,6 +1380,34 @@ final class StatementsAnalyzer extends SourceAnalyzer
     }
 
     /**
+     * Whether the mixed and non-mixed counts (the inferred-type percentage) include
+     * the expressions analysed here: not in initialization passes, included files,
+     * or trait methods (they are analysed once per using class).
+     *
+     * @psalm-mutation-free
+     */
+    public function shouldCountMixed(Context $context): bool
+    {
+        return !$context->collect_initializations
+            && $this->getFilePath() === $this->getRootFilePath()
+            && (!(($parent_source = $this->getSource()) instanceof FunctionLikeAnalyzer)
+                || !$parent_source->getSource() instanceof TraitAnalyzer);
+    }
+
+    public function countMixed(Context $context, bool $is_mixed): void
+    {
+        if (!$this->shouldCountMixed($context)) {
+            return;
+        }
+
+        if ($is_mixed) {
+            $this->codebase->analyzer->incrementMixedCount($this->getFilePath());
+        } else {
+            $this->codebase->analyzer->incrementNonMixedCount($this->getFilePath());
+        }
+    }
+
+    /**
      * @psalm-external-mutation-free
      */
     public function addVariableInitialization(string $var_id, int $branch_point): void

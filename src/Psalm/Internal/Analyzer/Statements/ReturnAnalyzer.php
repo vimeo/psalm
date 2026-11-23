@@ -20,6 +20,8 @@ use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\MethodAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\ClassTemplateParamCollector;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodCallPurityAnalyzer;
+use Psalm\Internal\Analyzer\Statements\TypeMismatch\ReturnTypeMismatchReporter;
+use Psalm\Internal\Analyzer\Statements\TypeMismatch\TypeMismatchReporter;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
 use Psalm\Internal\Codebase\PhpDeprecations;
@@ -32,16 +34,12 @@ use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TypeCombiner;
 use Psalm\Internal\Type\TypeExpander;
 use Psalm\Issue\DeprecatedSyntax;
-use Psalm\Issue\FalsableReturnStatement;
 use Psalm\Issue\HiddenGeneratorReturn;
 use Psalm\Issue\InvalidDocblock;
 use Psalm\Issue\InvalidReturnStatement;
-use Psalm\Issue\LessSpecificReturnStatement;
 use Psalm\Issue\MixedReturnStatement;
-use Psalm\Issue\MixedReturnTypeCoercion;
 use Psalm\Issue\NoValue;
 use Psalm\Issue\NonVariableReferenceReturn;
-use Psalm\Issue\NullableReturnStatement;
 use Psalm\IssueBuffer;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Storage\FunctionLikeStorage;
@@ -63,10 +61,7 @@ use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
 
 use function array_values;
-use function count;
 use function explode;
-use function implode;
-use function reset;
 use function strtolower;
 
 /**
@@ -310,6 +305,8 @@ final class ReturnAnalyzer
         }
 
         if ($stmt->expr) {
+            // a `return` of a file included in the returned expression must not end that expression's use
+            $was_inside_return = $context->inside_return;
             $context->inside_return = true;
 
             if ($stmt->expr instanceof PhpParser\Node\Expr\Closure
@@ -323,7 +320,7 @@ final class ReturnAnalyzer
             }
 
             if (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->expr, $context) === false) {
-                $context->inside_return = false;
+                $context->inside_return = $was_inside_return;
                 $context->has_returned = true;
 
                 return;
@@ -361,7 +358,7 @@ final class ReturnAnalyzer
                 $stmt_type = Type::getMixed();
             }
 
-            $context->inside_return = false;
+            $context->inside_return = $was_inside_return;
         } else {
             $stmt_type = Type::getVoid();
         }
@@ -539,38 +536,20 @@ final class ReturnAnalyzer
                             }
                         }
 
-                        if (!$context->collect_initializations
-                            && $statements_analyzer->getFilePath() === $statements_analyzer->getRootFilePath()
-                            && !($source->getSource() instanceof TraitAnalyzer)
-                        ) {
-                            $codebase->analyzer->incrementMixedCount($statements_analyzer->getFilePath());
-                        }
+                        $statements_analyzer->countMixed($context, true);
 
                         if ($stmt_type->isMixed()) {
-                            $origin_locations = [];
-
-                            if ($statements_analyzer->variable_use_graph) {
-                                foreach ($stmt_type->parent_nodes as $parent_node) {
-                                    $origin_locations = [
-                                        ...$origin_locations,
-                                        ...$statements_analyzer->variable_use_graph->getOriginLocations($parent_node),
-                                    ];
-                                }
-                            }
-
-                            $origin_location = count($origin_locations) === 1 ? reset($origin_locations) : null;
-
                             $return_location = new CodeLocation($source, $stmt->expr);
-
-                            if ($origin_location && $origin_location->getHash() === $return_location->getHash()) {
-                                $origin_location = null;
-                            }
 
                             IssueBuffer::maybeAdd(
                                 new MixedReturnStatement(
                                     'Could not infer a return type',
                                     $return_location,
-                                    $origin_location,
+                                    TypeMismatchReporter::getOriginLocation(
+                                        $statements_analyzer,
+                                        $stmt_type,
+                                        $return_location,
+                                    ),
                                 ),
                                 $statements_analyzer->getSuppressedIssues(),
                             );
@@ -591,12 +570,7 @@ final class ReturnAnalyzer
                         return;
                     }
 
-                    if (!$context->collect_initializations
-                        && $statements_analyzer->getFilePath() === $statements_analyzer->getRootFilePath()
-                        && !($source->getSource() instanceof TraitAnalyzer)
-                    ) {
-                        $codebase->analyzer->incrementNonMixedCount($statements_analyzer->getFilePath());
-                    }
+                    $statements_analyzer->countMixed($context, false);
 
                     if ($local_return_type->isVoid()) {
                         IssueBuffer::maybeAdd(
@@ -654,134 +628,63 @@ final class ReturnAnalyzer
                         );
                     }
 
-                    if (!$is_contained_by) {
-                        // is the declared return type more specific than the inferred one?
-                        if ($union_comparison_results->type_coerced) {
-                            if ($union_comparison_results->type_coerced_from_mixed) {
-                                if (!$union_comparison_results->type_coerced_from_as_mixed) {
-                                    if ($inferred_type->hasMixed()) {
-                                        IssueBuffer::maybeAdd(
-                                            new MixedReturnStatement(
-                                                'Could not infer a return type',
-                                                new CodeLocation($source, $stmt->expr),
-                                            ),
-                                            $statements_analyzer->getSuppressedIssues(),
-                                        );
-                                    } else {
-                                        IssueBuffer::maybeAdd(
-                                            new MixedReturnTypeCoercion(
-                                                'The type \'' . $stmt_type->getId() . '\' is more general than the'
-                                                    . ' declared return type \'' . $local_return_type->getId() . '\''
-                                                    . ' for ' . $cased_method_id,
-                                                new CodeLocation($source, $stmt->expr),
-                                            ),
-                                            $statements_analyzer->getSuppressedIssues(),
-                                        );
-                                    }
-                                }
-                            } else {
-                                IssueBuffer::maybeAdd(
-                                    new LessSpecificReturnStatement(
-                                        'The type \'' . $stmt_type->getId() . '\' is more general than the'
-                                            . ' declared return type \'' . $local_return_type->getId() . '\''
-                                            . ' for ' . $cased_method_id,
-                                        new CodeLocation($source, $stmt->expr),
-                                    ),
+                    $mismatch_reporter = new ReturnTypeMismatchReporter(
+                        $statements_analyzer,
+                        $inferred_type,
+                        $local_return_type,
+                        new CodeLocation($source, $stmt->expr),
+                        $stmt_type,
+                        $cased_method_id,
+                        $context->strict_types,
+                    );
+
+                    $mismatch_reporter->reportComparison($is_contained_by, $union_comparison_results);
+
+                    if ($union_comparison_results->type_coerced) {
+                        foreach ($local_return_type->getAtomicTypes() as $local_type_part) {
+                            if ($local_type_part instanceof TClassString
+                                && $stmt->expr instanceof PhpParser\Node\Scalar\String_
+                            ) {
+                                if (ClassLikeAnalyzer::checkFullyQualifiedClassLikeName(
+                                    $statements_analyzer,
+                                    $stmt->expr->value,
+                                    new CodeLocation($source, $stmt->expr),
+                                    $context,
                                     $statements_analyzer->getSuppressedIssues(),
-                                );
-                            }
-
-                            foreach ($local_return_type->getAtomicTypes() as $local_type_part) {
-                                if ($local_type_part instanceof TClassString
-                                    && $stmt->expr instanceof PhpParser\Node\Scalar\String_
+                                    new ClassLikeNameOptions(true),
+                                ) === false
                                 ) {
-                                    if (ClassLikeAnalyzer::checkFullyQualifiedClassLikeName(
-                                        $statements_analyzer,
-                                        $stmt->expr->value,
-                                        new CodeLocation($source, $stmt->expr),
-                                        $context,
-                                        $statements_analyzer->getSuppressedIssues(),
-                                        new ClassLikeNameOptions(true),
-                                    ) === false
-                                    ) {
-                                        return;
-                                    }
-                                } elseif ($local_type_part instanceof TArray
-                                    && $stmt->expr instanceof PhpParser\Node\Expr\Array_
-                                ) {
-                                    $value_param = $local_type_part->type_params[1];
+                                    return;
+                                }
+                            } elseif ($local_type_part instanceof TArray
+                                && $stmt->expr instanceof PhpParser\Node\Expr\Array_
+                            ) {
+                                $value_param = $local_type_part->type_params[1];
 
-                                    foreach ($value_param->getAtomicTypes() as $local_array_type_part) {
-                                        if ($local_array_type_part instanceof TClassString) {
-                                            foreach ($stmt->expr->items as $item) {
-                                                if ($item->value instanceof PhpParser\Node\Scalar\String_) {
-                                                    if (ClassLikeAnalyzer::checkFullyQualifiedClassLikeName(
-                                                        $statements_analyzer,
-                                                        $item->value->value,
-                                                        new CodeLocation($source, $item->value),
-                                                        $context,
-                                                        $statements_analyzer->getSuppressedIssues(),
-                                                        new ClassLikeNameOptions(true),
-                                                    ) === false
-                                                    ) {
-                                                        return;
-                                                    }
+                                foreach ($value_param->getAtomicTypes() as $local_array_type_part) {
+                                    if ($local_array_type_part instanceof TClassString) {
+                                        foreach ($stmt->expr->items as $item) {
+                                            if ($item->value instanceof PhpParser\Node\Scalar\String_) {
+                                                if (ClassLikeAnalyzer::checkFullyQualifiedClassLikeName(
+                                                    $statements_analyzer,
+                                                    $item->value->value,
+                                                    new CodeLocation($source, $item->value),
+                                                    $context,
+                                                    $statements_analyzer->getSuppressedIssues(),
+                                                    new ClassLikeNameOptions(true),
+                                                ) === false
+                                                ) {
+                                                    return;
                                                 }
                                             }
                                         }
                                     }
                                 }
                             }
-                        } else {
-                            IssueBuffer::maybeAdd(
-                                new InvalidReturnStatement(
-                                    'The inferred type \'' . $inferred_type->getId()
-                                        . '\' does not match the declared return '
-                                        . 'type \'' . $local_return_type->getId() . '\' for ' . $cased_method_id
-                                        . ($union_comparison_results->missing_shape_fields
-                                            ? ' due to additional array shape fields ('
-                                                . implode(', ', $union_comparison_results->missing_shape_fields)
-                                                . ')'
-                                            : ''),
-                                    new CodeLocation($source, $stmt->expr),
-                                ),
-                                $statements_analyzer->getSuppressedIssues(),
-                            );
                         }
                     }
 
-                    if (!$stmt_type->ignore_nullable_issues
-                        && $inferred_type->isNullable()
-                        && !$local_return_type->isNullable()
-                        && !$local_return_type->hasTemplate()
-                    ) {
-                        IssueBuffer::maybeAdd(
-                            new NullableReturnStatement(
-                                'The declared return type \'' . $local_return_type->getId() . '\' for '
-                                    . $cased_method_id . ' is not nullable, but the function returns \''
-                                        . $inferred_type->getId() . '\'',
-                                new CodeLocation($source, $stmt->expr),
-                            ),
-                            $statements_analyzer->getSuppressedIssues(),
-                        );
-                    }
-
-                    if (!$stmt_type->ignore_falsable_issues
-                        && $inferred_type->isFalsable()
-                        && !$local_return_type->isFalsable()
-                        && (!$local_return_type->hasBool() || $local_return_type->isTrue())
-                        && !$local_return_type->hasScalar()
-                    ) {
-                        IssueBuffer::maybeAdd(
-                            new FalsableReturnStatement(
-                                'The declared return type \'' . $local_return_type->getId() . '\' for '
-                                    . $cased_method_id . ' does not allow false, but the function returns \''
-                                        . $inferred_type->getId() . '\'',
-                                new CodeLocation($source, $stmt->expr),
-                            ),
-                            $statements_analyzer->getSuppressedIssues(),
-                        );
-                    }
+                    $mismatch_reporter->reportNullAndFalse();
                 }
             } else {
                 if ($storage->signature_return_type
