@@ -684,13 +684,9 @@
   </file>
   <file src="src/Psalm/Internal/Analyzer/Statements/Expression/BinaryOp/ArithmeticOpAnalyzer.php">
     <ImplicitToStringCast>
-      <code><![CDATA[$left_type]]></code>
-      <code><![CDATA[$left_type]]></code>
       <code><![CDATA[$left_type_part]]></code>
       <code><![CDATA[$left_type_part]]></code>
       <code><![CDATA[$left_type_part]]></code>
-      <code><![CDATA[$right_type]]></code>
-      <code><![CDATA[$right_type]]></code>
       <code><![CDATA[$right_type_part]]></code>
       <code><![CDATA[$right_type_part]]></code>
       <code><![CDATA[$right_type_part]]></code>

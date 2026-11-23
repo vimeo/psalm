@@ -1188,6 +1188,27 @@ final class TypeCombiner
         return null;
     }
 
+    /**
+     * The string type too many literals are combined into: as specific as all of them are
+     *
+     * @param array<TLiteralString> $literals
+     * @psalm-pure
+     */
+    private static function getStringOfLiterals(array $literals): TString
+    {
+        $non_falsy = true;
+
+        foreach ($literals as $literal) {
+            if ($literal->value === '') {
+                return new TString();
+            }
+
+            $non_falsy = $non_falsy && $literal->value !== '0';
+        }
+
+        return $non_falsy ? new TNonFalsyString() : new TNonEmptyString();
+    }
+
     private static function scrapeStringProperties(
         string $type_key,
         Atomic $type,
@@ -1247,6 +1268,7 @@ final class TypeCombiner
             } else {
                 $shared_classlikes = $codebase ? self::getSharedTypes($combination, $codebase) : [];
 
+                $literals = $combination->strings ?? [];
                 $had_literals = $combination->strings !== null;
                 $combination->strings = null;
 
@@ -1320,6 +1342,8 @@ final class TypeCombiner
                     && $type->value !== ''
                 ) {
                     // do nothing
+                } elseif ($had_literals && !isset($combination->value_types['string'])) {
+                    $combination->value_types['string'] = self::getStringOfLiterals([...$literals, $type]);
                 } else {
                     $combination->value_types['string'] = new TString();
                 }
