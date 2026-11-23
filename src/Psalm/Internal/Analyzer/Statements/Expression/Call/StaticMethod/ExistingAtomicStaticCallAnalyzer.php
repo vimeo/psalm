@@ -467,10 +467,20 @@ final class ExistingAtomicStaticCallAnalyzer
                     ? 'static'
                     : null);
 
+            // an instance method of the caller's class or of an ancestor, called statically from an instance method,
+            // is called on `$this`
+            $assertion_this_var_id = !$method_storage->is_static
+                && isset($context->vars_in_scope['$this'])
+                && $context->self !== null
+                && (strtolower($context->self) === strtolower($fq_class_name)
+                    || $codebase->classExtendsOrImplements($context->self, $fq_class_name))
+                ? '$this'
+                : null;
+
             if ($assertions) {
                 CallAnalyzer::applyAssertionsToContext(
                     $stmt_name,
-                    null,
+                    $assertion_this_var_id,
                     CallAnalyzer::resolveStaticPropertyAssertionClasses(
                         CallAnalyzer::getAssertionsOnArgs(
                             $assertions,
@@ -495,6 +505,10 @@ final class ExistingAtomicStaticCallAnalyzer
             }
 
             $if_true_assertions = $assertionsResolver->resolveIfTrue($method_storage, $class_storage);
+
+            if ($assertion_this_var_id === null) {
+                $if_true_assertions = CallAnalyzer::removeThisAssertions($if_true_assertions);
+            }
 
             if ($if_true_assertions) {
                 $statements_analyzer->node_data->setIfTrueAssertions(
@@ -523,6 +537,10 @@ final class ExistingAtomicStaticCallAnalyzer
             }
 
             $if_false_assertions = $assertionsResolver->resolveIfFalse($method_storage, $class_storage);
+
+            if ($assertion_this_var_id === null) {
+                $if_false_assertions = CallAnalyzer::removeThisAssertions($if_false_assertions);
+            }
 
             if ($if_false_assertions) {
                 $statements_analyzer->node_data->setIfFalseAssertions(
