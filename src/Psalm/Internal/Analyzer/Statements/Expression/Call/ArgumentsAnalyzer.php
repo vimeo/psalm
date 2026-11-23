@@ -2219,7 +2219,7 @@ final class ArgumentsAnalyzer
      *
      * @param array<int, FunctionLikeParameter> $function_params
      * @return array<string, ?string>
-     * @psalm-capabilities read-props|read-globals|write-globals
+     * @psalm-capabilities read-props|read-globals|write-globals|io
      */
     private static function getByRefFlowInputs(
         string $function_id,

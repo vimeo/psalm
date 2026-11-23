@@ -32,6 +32,9 @@ use function class_exists;
 use function count;
 use function dirname;
 use function explode;
+use function fclose;
+use function fgets;
+use function fopen;
 use function function_exists;
 use function intdiv;
 use function interface_exists;
@@ -40,10 +43,12 @@ use function is_string;
 use function ltrim;
 use function max;
 use function min;
+use function preg_match;
 use function rtrim;
 use function str_contains;
 use function str_ends_with;
 use function str_starts_with;
+use function stripslashes;
 use function strpos;
 use function strtolower;
 use function substr;
@@ -641,7 +646,7 @@ final class InternalCallMapHandler
      *
      * @param array<int, FunctionLikeParameter> $params
      * @return array<int, string>
-     * @psalm-capabilities read-props|read-globals|write-globals
+     * @psalm-capabilities read-props|read-globals|write-globals|io
      */
     public static function getReturnTaintFlows(string $function_id, array $params): array
     {
@@ -672,7 +677,7 @@ final class InternalCallMapHandler
      * count_chars($string) since), keeping their positions. Null if the analysed version has no such parameter.
      *
      * @param array<int, FunctionLikeParameter> $params
-     * @psalm-capabilities read-props|read-globals|write-globals
+     * @psalm-capabilities read-props|read-globals|write-globals|io
      */
     public static function getAnalysedParamName(string $function_id, string $newest_name, array $params): ?string
     {
@@ -689,11 +694,11 @@ final class InternalCallMapHandler
 
     /**
      * The names of the parameters of the builtin $function_id in the newest PHP version, for the builtins the taint
-     * maps name parameters of
+     * maps name parameters of. They are read line by line from the callmap of that version, which var_export()
+     * writes, rather than loaded with the rest of it.
      *
      * @return list<string>
-     * @psalm-capabilities read-globals|write-globals
-     * @psalm-suppress UnresolvableInclude
+     * @psalm-capabilities read-globals|write-globals|io
      */
     public static function getNewestParamNames(string $function_id): array
     {
@@ -702,22 +707,33 @@ final class InternalCallMapHandler
             /** @var array<lowercase-string, mixed> $taint_functions */
             $taint_functions = (require($root . 'InternalTaintFlowMap.php'))
                 + (require($root . 'InternalTaintByRefFlowMap.php'));
-            /** @var array<lowercase-string, array<int|string, string>> $call_map */
-            $call_map = require($root . 'CallMap_' . self::MAX_CALLMAP_VERSION . '.php');
 
             self::$newest_param_names = [];
-            foreach ($taint_functions as $taint_function => $_) {
-                $names = [];
-                foreach ($call_map[$taint_function] ?? [] as $arg_name => $_type) {
-                    if (is_string($arg_name)) {
-                        // without the &, w, =, ... of InternalCallMapHandler::getCallablesFromCallMap()
-                        $arg_name = rtrim(ltrim($arg_name, '&.'), '=');
-                        $space = strpos($arg_name, ' ');
-                        $names[] = $space === false ? $arg_name : substr($arg_name, $space + 1);
+            $file = fopen($root . 'CallMap_' . self::MAX_CALLMAP_VERSION . '.php', 'rb');
+            assert($file !== false);
+            $function = null;
+            while (($line = fgets($file)) !== false) {
+                if (preg_match("/^  '((?:[^'\\\\]|\\\\.)*)' => $/", rtrim($line, "\n"), $matches)
+                    && isset($matches[1])
+                ) {
+                    $function = strtolower(stripslashes($matches[1]));
+                    $function = isset($taint_functions[$function]) ? $function : null;
+                    if ($function !== null) {
+                        self::$newest_param_names[$function] = [];
                     }
+                } elseif ($function !== null
+                    && preg_match("/^    '((?:[^'\\\\]|\\\\.)*)' => /", $line, $matches)
+                    && isset($matches[1])
+                ) {
+                    // without the &, w, =, ... of InternalCallMapHandler::getCallablesFromCallMap()
+                    $arg_name = rtrim(ltrim(stripslashes($matches[1]), '&.'), '=');
+                    $space = strpos($arg_name, ' ');
+                    self::$newest_param_names[$function][] = $space === false
+                        ? $arg_name
+                        : substr($arg_name, $space + 1);
                 }
-                self::$newest_param_names[$taint_function] = $names;
             }
+            fclose($file);
         }
 
         return self::$newest_param_names[strtolower($function_id)] ?? [];
