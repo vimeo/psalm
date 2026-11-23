@@ -450,6 +450,73 @@ final class MagicMethodAnnotationTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'shapeReturnTypesOfAMethod' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @method array{a: int, ...<string, string>} unsealed()
+                     * @method list{int, ...<string>} unsealedList()
+                     * @method array{a: int, b?: string} sealed()
+                     * @method list{0: int, 1?: string} optionalListKey()
+                     * @method list{int, string} sealedList()
+                     * @method non-empty-list<int> nonEmptyList()
+                     * @method callable-array{object, string} callableArray()
+                     */
+                    final class A {
+                        public function __call(string $n, array $a): mixed {
+                            return null;
+                        }
+                    }
+
+                    $unsealed = (new A)->unsealed();
+                    $unsealedList = (new A)->unsealedList();
+                    $sealed = (new A)->sealed();
+                    $optionalListKey = (new A)->optionalListKey();
+                    $sealedList = (new A)->sealedList();
+                    $nonEmptyList = (new A)->nonEmptyList();
+                    $callableArray = (new A)->callableArray();
+                    PHP,
+                'assertions' => [
+                    '$unsealed===' => 'array{a: int, ...<string, string>}',
+                    '$unsealedList===' => 'list{int, ...<string>}',
+                    '$sealed===' => 'array{a: int, b?: string}',
+                    '$optionalListKey===' => 'list{0: int, 1?: string}',
+                    '$sealedList===' => 'list{int, string}',
+                    '$nonEmptyList===' => 'non-empty-list<int>',
+                    '$callableArray===' => 'callable-list{object, string}',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'shapeParamsOfAMethod' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @method void unsealed(array{a: int, ...<string, string>} $x)
+                     * @method void unsealedList(list{int, ...<string>} $x)
+                     * @method void sealed(array{a: int, b?: string} $x)
+                     * @method void optionalListKey(list{0: int, 1?: string} $x)
+                     * @method void sealedList(list{int, string} $x)
+                     * @method void nonEmptyList(non-empty-list<int> $x)
+                     */
+                    final class A {
+                        public function __call(string $n, array $a): void {}
+                    }
+
+                    function f(A $o): void {
+                        $o->unsealed(['a' => 1, 'b' => 'x']);
+                        $o->unsealedList([1, 'x', 'y']);
+                        $o->sealed(['a' => 1]);
+                        $o->sealed(['a' => 1, 'b' => 'x']);
+                        $o->optionalListKey([1]);
+                        $o->sealedList([1, 'x']);
+                        $o->nonEmptyList([1, 2]);
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'intersectionTypeOfAMethodParam' => [
                 'code' => '<?php
                     interface I1 {}
@@ -2501,6 +2568,42 @@ final class MagicMethodAnnotationTest extends TestCase
                 'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:15:15',
                 'error_levels' => [],
                 'php_version' => '8.1',
+            ],
+            'methodParamOfAnUnsealedShapeChecksItsFallbackTypes' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @method void take(array{a: int, ...<string, string>} $x)
+                     */
+                    final class A {
+                        public function __call(string $n, array $a): void {}
+                    }
+
+                    function f(A $o): void {
+                        $o->take(['a' => 1, 'b' => []]);
+                    }
+                    PHP,
+                'error_message' => 'InvalidArgument',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'methodParamOfAnUnsealedListChecksItsFallbackType' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @method void take(list{int, ...<string>} $x)
+                     */
+                    final class A {
+                        public function __call(string $n, array $a): void {}
+                    }
+
+                    function f(A $o): void {
+                        $o->take([1, []]);
+                    }
+                    PHP,
+                'error_message' => 'InvalidArgument',
+                'error_levels' => [],
+                'php_version' => '8.0',
             ],
             'magicMethodOverloadReportsAMethodOfAnotherResult' => [
                 'code' => '<?php

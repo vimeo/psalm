@@ -13,10 +13,13 @@ use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Internal\Type\TypeArgumentProjection;
 use Psalm\Type;
 use Psalm\Type\Atomic\TClassConstant;
+use Psalm\Type\Atomic\TConditional;
 use Psalm\Type\Atomic\TGenericObject;
+use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TLiteralFloat;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
+use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TTemplateKeyOf;
 use Psalm\Type\Union;
 use ReflectionFunction;
@@ -24,6 +27,7 @@ use ReflectionParameter;
 use Stringable;
 use Traversable;
 
+use function array_keys;
 use function array_map;
 use function function_exists;
 use function mb_substr;
@@ -774,8 +778,33 @@ final class TypeParseTest extends TestCase
 
     public function testTKeyedArrayWithQuotedKeys(): void
     {
-        $this->assertSame('array{\'\\"\': int, \'\\\'\': string}', (string) Type::parseString('array{\'"\': int, \'\\\'\': string}'));
-        $this->assertSame('array{\'\\"\': int, \'\\\'\': string}', (string) Type::parseString('array{"\\"": int, "\\\'": string}'));
+        $this->assertSame('array{\'"\': int, \'\\\'\': string}', (string) Type::parseString('array{\'"\': int, \'\\\'\': string}'));
+        // `\'` is no escape in a double-quoted string: the key holds the backslash too
+        $this->assertSame(
+            'array{\'"\': int, \'\\\\\\\'\': string}',
+            (string) Type::parseString('array{"\\"": int, "\\\'": string}'),
+        );
+    }
+
+    public function testTKeyedArrayKeysRoundTrip(): void
+    {
+        $keys = ['"', "a\nb", "a\r\nb", "nul\0", 'Foo\\Bar', "it's", "tab\there", "\x7f", "\e\f\v", "\$x\n", "\\\n\"", "\0001", 'end\\', "end\\\n", "x\\'y", "a,b: {c}|d", "\xc3\xa9\n", '$x', '\\n'];
+
+        foreach ($keys as $key) {
+            $printed = TKeyedArray::make([$key => Type::getInt()])->getId();
+            $type = Type::parseString($printed)->getSingleAtomic();
+
+            $this->assertInstanceOf(TKeyedArray::class, $type);
+            $this->assertSame([$key], array_keys($type->properties), $printed);
+        }
+    }
+
+    public function testTKeyedArrayWithEscapeSequencesInKeys(): void
+    {
+        $type = Type::parseString('array{"a\\r\\nb": int, \'c\\nd\': string}')->getSingleAtomic();
+
+        $this->assertInstanceOf(TKeyedArray::class, $type);
+        $this->assertSame(["a\r\nb", 'c\\nd'], array_keys($type->properties));
     }
 
     public function testTKeyedArrayWithClassConstantValueType(): void
@@ -2190,5 +2219,47 @@ final class TypeParseTest extends TestCase
             'The * type argument is only for the type arguments of a class, not of ' . $generic,
         );
         Type::parseString($string);
+    }
+
+    public function testShapesKeepTheirTypesInNamespacedString(): void
+    {
+        foreach ([
+            'array{a: int, ...<string, string>}',
+            'list{int, ...<string>}',
+            'array{a: int, b?: string}',
+            'list{0: int, 1?: string}',
+            'list{int, string}',
+            'list<int>',
+            'non-empty-list<int>',
+        ] as $type_string) {
+            $type = Type::parseString($type_string);
+            self::assertSame($type_string, $type->toNamespacedString(null, [], null, false));
+            self::assertTrue($type->equals(Type::parseString($type->toNamespacedString(null, [], null, false))));
+        }
+
+        $type = Type::parseString('array{a: Ns\Foo, ...<string, Ns\Bar>}');
+        self::assertSame(
+            'array{a: \Ns\Foo, ...<string, \Ns\Bar>}',
+            $type->toNamespacedString(null, [], null, false),
+        );
+        self::assertSame('array{a: Foo, ...<string, Bar>}', $type->toNamespacedString('Ns', [], null, false));
+    }
+
+    public function testConditionalKeepsItsTypesInNamespacedString(): void
+    {
+        $conditional = new TConditional(
+            'T',
+            'fn-f',
+            Type::getMixed(),
+            Type::getTrue(),
+            new Union([new TNamedObject('Ns\Foo')]),
+            Type::getString(),
+        );
+        $type = new Union([TKeyedArray::make(['a' => Type::getInt()], null, [Type::getString(), new Union([$conditional])])]);
+
+        self::assertSame(
+            'array{a: int, ...<string, (T is true ? Foo : string)>}',
+            $type->toNamespacedString('Ns', [], null, false),
+        );
     }
 }
