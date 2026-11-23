@@ -32,6 +32,7 @@ use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Internal\MethodIdentifier;
+use Psalm\Internal\ReferenceConstraint;
 use Psalm\Internal\Scope\LoopScope;
 use Psalm\Internal\Type\AssertionReconciler;
 use Psalm\Internal\Type\Comparator\AtomicTypeComparator;
@@ -143,6 +144,7 @@ final class ForeachAnalyzer
                         $e->getMessage(),
                         new CodeLocation($statements_analyzer, $stmt),
                     ),
+                    $statements_analyzer->getSuppressedIssues(),
                 );
             }
         }
@@ -317,6 +319,16 @@ final class ForeachAnalyzer
                 $key_type,
                 $value_type,
             );
+
+            [$key_type, $value_type] = self::taintAggregateIteration(
+                $statements_analyzer,
+                $stmt->expr,
+                $iterator_type,
+                $codebase,
+                $context,
+                $key_type,
+                $value_type,
+            );
         }
 
         $foreach_context = clone $context;
@@ -385,6 +397,25 @@ final class ForeachAnalyzer
             // TODO support references with destructuring
             $foreach_context->references_to_external_scope['$' . $stmt->valueVar->name] = true;
             $foreach_context->forgetReferencesPossiblyBound('$' . $stmt->valueVar->name);
+
+            $iterated_var_id = ExpressionIdentifier::getExtendedVarId(
+                $stmt->expr,
+                $statements_analyzer->getFQCLN(),
+                $statements_analyzer,
+            );
+
+            // what is written to the value is written to an item of the property
+            $item_type = $iterated_var_id !== null
+                ? AssignmentAnalyzer::getReferencedPropertyItemType($statements_analyzer, $stmt->expr, $foreach_context)
+                : null;
+
+            if ($item_type !== null && !$item_type->hasMixed()) {
+                $foreach_context->byref_constraints['$' . $stmt->valueVar->name] = new ReferenceConstraint(
+                    $item_type,
+                    false,
+                    ['an item of ' . $iterated_var_id],
+                );
+            }
         }
 
         // PHP evaluates the iterated expression once, before it assigns the value and then a key of the same name
@@ -1170,6 +1201,77 @@ final class ForeachAnalyzer
             ($key_type ?? Type::getMixed())->addParentNodes([$key_node->id => $key_node]),
             ($value_type ?? Type::getMixed())->addParentNodes([$value_node->id => $value_node]),
         ];
+    }
+
+    /**
+     * The keys and values iterating over the IteratorAggregate objects of $aggregate_type gives come from the iterator
+     * their getIterator() returns: what that iterator gives, and if it is an IteratorAggregate in turn, what its own
+     * getIterator() returns.
+     *
+     * @return array{?Union, ?Union}
+     */
+    private static function taintAggregateIteration(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr $aggregate_expr,
+        Union $aggregate_type,
+        Codebase $codebase,
+        Context $context,
+        ?Union $key_type,
+        ?Union $value_type,
+        int $depth = 0,
+    ): array {
+        if ($depth > 3 || !$statements_analyzer->taint_flow_graph) {
+            return [$key_type, $value_type];
+        }
+
+        foreach ($aggregate_type->getAtomicTypes() as $atomic_type) {
+            if (!$atomic_type instanceof TNamedObject
+                || !$codebase->classlikes->classOrInterfaceExists($atomic_type->value)
+                || !self::classLikeIs($codebase, $context, $atomic_type->value, 'IteratorAggregate')
+            ) {
+                continue;
+            }
+
+            // a node holding the aggregate alone, which getIterator() is called on
+            $aggregate = new VirtualMethodCall(
+                $aggregate_expr,
+                new VirtualIdentifier('getIterator', $aggregate_expr->getAttributes()),
+                [],
+                $aggregate_expr->getAttributes(),
+            );
+
+            $statements_analyzer->node_data->setType(
+                $aggregate,
+                new Union([$atomic_type], ['parent_nodes' => $aggregate_type->parent_nodes]),
+            );
+
+            $iterator_type = self::getFakeMethodCallType($statements_analyzer, $aggregate, $context, 'getIterator');
+
+            if ($iterator_type === null) {
+                continue;
+            }
+
+            [$key_type, $value_type] = self::taintObjectIteration(
+                $statements_analyzer,
+                $aggregate_expr,
+                $iterator_type,
+                $key_type,
+                $value_type,
+            );
+
+            [$key_type, $value_type] = self::taintAggregateIteration(
+                $statements_analyzer,
+                $aggregate,
+                $iterator_type,
+                $codebase,
+                $context,
+                $key_type,
+                $value_type,
+                $depth + 1,
+            );
+        }
+
+        return [$key_type, $value_type];
     }
 
     /**
