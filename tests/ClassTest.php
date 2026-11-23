@@ -159,6 +159,40 @@ final class ClassTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'aLazyGhostInitializerPassedByNameOrToReflectionObject' => [
+                'code' => '<?php
+                    final class Example {
+                        public function __construct(public int $prop) {}
+                    }
+                    $reset = new Example(1);
+                    $reflector = new ReflectionClass(Example::class);
+                    $reflector->resetAsLazyGhost(initializer: static function (Example $object): void {
+                        $object->__construct(2);
+                    }, object: $reset);
+                    $ghost = (new ReflectionObject($reset))->newLazyGhost(static function (Example $object): void {
+                        $object->__construct(3);
+                    });',
+                'assertions' => [],
+                'ignored_issues' => ['ArgumentTypeCoercion'],
+                'php_version' => '8.4',
+            ],
+            'aLazyGhostInitializerConstructsTheObject' => [
+                'code' => '<?php
+                    final class Example {
+                        public function __construct(public int $prop) {}
+                    }
+                    $reflector = new ReflectionClass(Example::class);
+                    $ghost = $reflector->newLazyGhost(function (Example $object): void {
+                        $object->__construct(1);
+                    });
+                    $reset = new Example(2);
+                    $reflector->resetAsLazyGhost($reset, static function (Example $object): void {
+                        $object->__construct(3);
+                    });',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.4',
+            ],
             'arrayOfLiteralStringOrClassStringIsNotCheckedAsClassName' => [
                 'code' => '<?php
                     /** @param array<"string"|"int"|class-string> $input */
@@ -1332,6 +1366,45 @@ final class ClassTest extends TestCase
                         Missing\C::run();
                     }',
             ],
+            'classExistsCoversTheCodeAfterAnIfChainOnlyReachedThroughTheBlocksWhereTheClassExists' => [
+                'code' => '<?php
+                    function elseIfFallsThrough(bool $f): void {
+                        if ($f) {
+                            return;
+                        } elseif (class_exists(Missing\A::class)) {
+                            echo 1;
+                        } else {
+                            return;
+                        }
+
+                        Missing\A::run();
+                    }
+
+                    function nestedEarlyReturn(): void {
+                        if (class_exists(Missing\A::class)) {
+                            if (!class_exists(Missing\B::class)) {
+                                return;
+                            }
+                        } else {
+                            return;
+                        }
+
+                        Missing\A::run();
+                        Missing\B::run();
+                    }
+
+                    function bothBlocksFallThrough(bool $f): void {
+                        if ($f && class_exists(Missing\A::class)) {
+                            echo 1;
+                        } elseif (class_exists(Missing\A::class)) {
+                            echo 2;
+                        } else {
+                            return;
+                        }
+
+                        Missing\A::run();
+                    }',
+            ],
             'classExistsCoversTheIfAndElseIfBody' => [
                 'code' => '<?php
                     function foo(): void {
@@ -1944,6 +2017,75 @@ final class ClassTest extends TestCase
                         Missing\Thing::run();
                     }',
                 'error_message' => 'UndefinedClass - src' . DIRECTORY_SEPARATOR . 'somefile.php:11:25',
+            ],
+            'classExistsInOnlyOneOfTheBlocksThatFallThroughDoesNotCoverTheCodeAfterTheIf' => [
+                'code' => '<?php
+                    function foo(bool $flag): void {
+                        if (class_exists(Missing\Thing::class)) {
+                            echo 1;
+                        } elseif ($flag) {
+                            echo 2;
+                        } else {
+                            return;
+                        }
+
+                        Missing\Thing::run();
+                    }',
+                'error_message' => 'UndefinedClass - src' . DIRECTORY_SEPARATOR . 'somefile.php:11:25',
+            ],
+            'classExistsDoesNotCoverItsElse' => [
+                'code' => '<?php
+                    function foo(bool $flag): void {
+                        if (class_exists(Missing\Thing::class)) {
+                            echo 1;
+                        } elseif ($flag) {
+                            echo 2;
+                        } else {
+                            Missing\Thing::run();
+                        }
+                    }',
+                'error_message' => 'UndefinedClass - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:29',
+            ],
+            'classExistsDoesNotCoverThePlainElse' => [
+                'code' => '<?php
+                    function foo(): void {
+                        if (class_exists(Missing\Thing::class)) {
+                            echo 1;
+                        } else {
+                            Missing\Thing::run();
+                        }
+                    }',
+                'error_message' => 'UndefinedClass - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:29',
+            ],
+            'classExistsOfAnElseIfDoesNotCoverTheBlocksAfterIt' => [
+                'code' => '<?php
+                    function twoElseIfs(bool $f, bool $g): void {
+                        if ($f) {
+                            return;
+                        } elseif (class_exists(Missing\A::class)) {
+                            echo 1;
+                        } elseif ($g) {
+                            echo 2;
+                        } else {
+                            return;
+                        }
+
+                        Missing\A::run();
+                    }',
+                'error_message' => 'UndefinedClass - src' . DIRECTORY_SEPARATOR . 'somefile.php:13:25',
+            ],
+            'classExistsOfAnElseIfDoesNotCoverItsElse' => [
+                'code' => '<?php
+                    function elseIfThenElse(bool $f): void {
+                        if ($f) {
+                            echo 1;
+                        } elseif (class_exists(Missing\G::class)) {
+                            echo 2;
+                        } else {
+                            Missing\G::run();
+                        }
+                    }',
+                'error_message' => 'UndefinedClass - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:29',
             ],
             'classExistsDoesNotCoverTheCodeAfterTheIfInAMethod' => [
                 'code' => '<?php
@@ -2780,6 +2922,20 @@ final class ClassTest extends TestCase
                     $a->__construct();
                 ',
                 'error_message' => 'DirectConstructorCall',
+            ],
+            'directConstructorCallOfAnotherObjectInALazyGhostInitializer' => [
+                'code' => '<?php
+                    final class Example {
+                        public function __construct(public int $prop) {}
+                    }
+                    $other = new Example(1);
+                    $reflector = new ReflectionClass(Example::class);
+                    $ghost = $reflector->newLazyGhost(function (Example $object) use ($other): void {
+                        $other->__construct(2);
+                    });',
+                'error_message' => 'DirectConstructorCall',
+                'error_levels' => [],
+                'php_version' => '8.4',
             ],
             'directConstructorCallOnThis' => [
                 'code' => '<?php

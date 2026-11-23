@@ -30,6 +30,17 @@ final class DoTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'doWhileBarePostDecrementConditionIsMinusOneAfterTheLoop' => [
+                'code' => '<?php
+                    $c = 3;
+                    do {
+                        $c = 0;
+                    } while ($c--);
+                    $afterLoop = $c;',
+                'assertions' => [
+                    '$afterLoop===' => '-1',
+                ],
+            ],
             'doCounterIncrementedThroughAReferenceIsWidened' => [
                 'code' => <<<'PHP'
                     <?php

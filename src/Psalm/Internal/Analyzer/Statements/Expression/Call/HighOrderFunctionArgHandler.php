@@ -182,6 +182,16 @@ final class HighOrderFunctionArgHandler
             return null;
         }
 
+        // only a closure is a Closure: a string naming a function, or an object, is not
+        if ($container_param->type?->isSingle()
+            && $container_param->type->getSingleAtomic() instanceof TClosure
+            && !$input_arg_expr instanceof PhpParser\Node\Expr\FuncCall
+            && !$input_arg_expr instanceof PhpParser\Node\Expr\MethodCall
+            && !$input_arg_expr instanceof PhpParser\Node\Expr\StaticCall
+        ) {
+            return null;
+        }
+
         $codebase = $statements_analyzer->getCodebase();
 
         try {

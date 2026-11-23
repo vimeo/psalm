@@ -65,6 +65,7 @@ final class YieldAnalyzer
                         $e->getMessage(),
                         new CodeLocation($statements_analyzer->getSource(), $stmt),
                     ),
+                    $statements_analyzer->getSuppressedIssues(),
                 );
             }
 
@@ -232,6 +233,7 @@ final class YieldAnalyzer
                     $expression_atomic_type,
                     $classlike_storage,
                     $declaring_classlike_storage,
+                    false,
                 );
             }
 

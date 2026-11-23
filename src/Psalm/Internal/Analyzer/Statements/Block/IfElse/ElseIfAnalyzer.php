@@ -16,6 +16,7 @@ use Psalm\Internal\Algebra\FormulaGenerator;
 use Psalm\Internal\Analyzer\AlgebraAnalyzer;
 use Psalm\Internal\Analyzer\ScopeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Block\IfConditionalAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\BinaryOp\GuardedClasses;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Clause;
 use Psalm\Internal\Scope\IfScope;
@@ -126,6 +127,7 @@ final class ElseIfAnalyzer
         int $branch_point,
     ): ?bool {
         $pre_conditional_context = clone $else_context;
+        $phantom_classes_before_cond = $else_context->phantom_classes;
 
         try {
             $if_conditional_scope = IfConditionalAnalyzer::analyze(
@@ -143,6 +145,12 @@ final class ElseIfAnalyzer
         } catch (ScopeAnalysisException) {
             return false;
         }
+
+        // the following elseifs and the else run where this condition is false
+        $else_context->phantom_classes = [
+            ...$phantom_classes_before_cond,
+            ...GuardedClasses::unknownWhenResult($elseif->cond, false, $codebase),
+        ];
 
         // the condition is analysed on a copy of $else_context where the earlier conditions being false narrow
         // it: what the condition assigns is assigned for the elseifs and the else after it too
@@ -410,6 +418,10 @@ final class ElseIfAnalyzer
         $has_continue_statement = $final_actions === [ScopeAnalyzer::ACTION_CONTINUE];
 
         $if_scope->final_actions = array_merge($final_actions, $if_scope->final_actions);
+
+        if (in_array(ScopeAnalyzer::ACTION_NONE, $final_actions, true)) {
+            $if_scope->phantom_classes_of_blocks[] = $elseif_context->phantom_classes;
+        }
 
         // update the parent context as necessary
         if (!$has_leaving_statements) {

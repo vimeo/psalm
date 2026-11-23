@@ -32,6 +32,7 @@ use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Internal\MethodIdentifier;
+use Psalm\Internal\ReferenceConstraint;
 use Psalm\Internal\Scope\LoopScope;
 use Psalm\Internal\Type\AssertionReconciler;
 use Psalm\Internal\Type\Comparator\AtomicTypeComparator;
@@ -143,6 +144,7 @@ final class ForeachAnalyzer
                         $e->getMessage(),
                         new CodeLocation($statements_analyzer, $stmt),
                     ),
+                    $statements_analyzer->getSuppressedIssues(),
                 );
             }
         }
@@ -317,6 +319,16 @@ final class ForeachAnalyzer
                 $key_type,
                 $value_type,
             );
+
+            [$key_type, $value_type] = self::taintAggregateIteration(
+                $statements_analyzer,
+                $stmt->expr,
+                $iterator_type,
+                $codebase,
+                $context,
+                $key_type,
+                $value_type,
+            );
         }
 
         $foreach_context = clone $context;
@@ -385,6 +397,25 @@ final class ForeachAnalyzer
             // TODO support references with destructuring
             $foreach_context->references_to_external_scope['$' . $stmt->valueVar->name] = true;
             $foreach_context->forgetReferencesPossiblyBound('$' . $stmt->valueVar->name);
+
+            $iterated_var_id = ExpressionIdentifier::getExtendedVarId(
+                $stmt->expr,
+                $statements_analyzer->getFQCLN(),
+                $statements_analyzer,
+            );
+
+            // what is written to the value is written to an item of the property
+            $item_type = $iterated_var_id !== null
+                ? AssignmentAnalyzer::getReferencedPropertyItemType($statements_analyzer, $stmt->expr, $foreach_context)
+                : null;
+
+            if ($item_type !== null && !$item_type->hasMixed()) {
+                $foreach_context->byref_constraints['$' . $stmt->valueVar->name] = new ReferenceConstraint(
+                    $item_type,
+                    false,
+                    ['an item of ' . $iterated_var_id],
+                );
+            }
         }
 
         // PHP evaluates the iterated expression once, before it assigns the value and then a key of the same name
@@ -1173,6 +1204,77 @@ final class ForeachAnalyzer
     }
 
     /**
+     * The keys and values iterating over the IteratorAggregate objects of $aggregate_type gives come from the iterator
+     * their getIterator() returns: what that iterator gives, and if it is an IteratorAggregate in turn, what its own
+     * getIterator() returns.
+     *
+     * @return array{?Union, ?Union}
+     */
+    private static function taintAggregateIteration(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr $aggregate_expr,
+        Union $aggregate_type,
+        Codebase $codebase,
+        Context $context,
+        ?Union $key_type,
+        ?Union $value_type,
+        int $depth = 0,
+    ): array {
+        if ($depth > 3 || !$statements_analyzer->taint_flow_graph) {
+            return [$key_type, $value_type];
+        }
+
+        foreach ($aggregate_type->getAtomicTypes() as $atomic_type) {
+            if (!$atomic_type instanceof TNamedObject
+                || !$codebase->classlikes->classOrInterfaceExists($atomic_type->value)
+                || !self::classLikeIs($codebase, $context, $atomic_type->value, 'IteratorAggregate')
+            ) {
+                continue;
+            }
+
+            // a node holding the aggregate alone, which getIterator() is called on
+            $aggregate = new VirtualMethodCall(
+                $aggregate_expr,
+                new VirtualIdentifier('getIterator', $aggregate_expr->getAttributes()),
+                [],
+                $aggregate_expr->getAttributes(),
+            );
+
+            $statements_analyzer->node_data->setType(
+                $aggregate,
+                new Union([$atomic_type], ['parent_nodes' => $aggregate_type->parent_nodes]),
+            );
+
+            $iterator_type = self::getFakeMethodCallType($statements_analyzer, $aggregate, $context, 'getIterator');
+
+            if ($iterator_type === null) {
+                continue;
+            }
+
+            [$key_type, $value_type] = self::taintObjectIteration(
+                $statements_analyzer,
+                $aggregate_expr,
+                $iterator_type,
+                $key_type,
+                $value_type,
+            );
+
+            [$key_type, $value_type] = self::taintAggregateIteration(
+                $statements_analyzer,
+                $aggregate,
+                $iterator_type,
+                $codebase,
+                $context,
+                $key_type,
+                $value_type,
+                $depth + 1,
+            );
+        }
+
+        return [$key_type, $value_type];
+    }
+
+    /**
      * The marker of foreach loop $stmt if an assignment in its body may put the values of the elements it
      * iterates over back under their key (see ArrayAssignmentAnalyzer::getForeachMarker()): where its function,
      * the loop and its body are, for the taint analysis to know where the value of an element is that of the
@@ -1309,13 +1411,17 @@ final class ForeachAnalyzer
                         $always_non_empty_array = false;
                     }
 
-                    $iterator_atomic_type = $iterator_atomic_type->getGenericArrayType(
-                        ExpressionIdentifier::getExtendedVarId(
-                            $expr,
-                            $statements_analyzer->getFQCLN(),
-                            $statements_analyzer,
-                        ),
+                    $iterated_var_id = ExpressionIdentifier::getExtendedVarId(
+                        $expr,
+                        $statements_analyzer->getFQCLN(),
+                        $statements_analyzer,
                     );
+
+                    $iterator_atomic_type = $iterator_atomic_type->getGenericArrayType($iterated_var_id);
+
+                    if ($iterated_var_id !== null) {
+                        $context->list_key_bound_lists[$iterated_var_id] = true;
+                    }
                 } elseif (!$iterator_atomic_type instanceof TNonEmptyArray) {
                     $always_non_empty_array = false;
                 }
@@ -1688,13 +1794,20 @@ final class ForeachAnalyzer
                                             && $generic_storage
                                                 ->template_extended_params['Traversable']['TValue']->isMixed())
                                     ) {
+                                        $get_iterator_call = new VirtualMethodCall(
+                                            $foreach_expr,
+                                            new VirtualIdentifier('getIterator', $foreach_expr->getAttributes()),
+                                        );
+
+                                        $statements_analyzer->node_data->setType(
+                                            $get_iterator_call,
+                                            new Union([$array_atomic_type]),
+                                        );
+
                                         self::handleIterable(
                                             $statements_analyzer,
                                             $array_atomic_type,
-                                            new VirtualMethodCall(
-                                                $foreach_expr,
-                                                new VirtualIdentifier('getIterator', $foreach_expr->getAttributes()),
-                                            ),
+                                            $get_iterator_call,
                                             $codebase,
                                             $context,
                                             $key_type,
@@ -2229,10 +2342,12 @@ final class ForeachAnalyzer
         // only the type is wanted here: the loop is charged for the call
         $context->inside_type_only_call = true;
 
+        // the iterated expression was analysed by the loop, which also may have side effects (`$a ??= new B()`)
         MethodCallAnalyzer::analyze(
             $statements_analyzer,
             $fake_method_call,
             $context,
+            receiver_analyzed: true,
         );
 
         $context->inside_call = $was_inside_call;
