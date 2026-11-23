@@ -240,6 +240,10 @@ final class PsalterEndToEndTest extends PsalmEndToEndTestCase
             ['--move', 'Ns\A::foo', '--into', '\Ns\Missing'],
             'Destination class Ns\Missing doesn’t exist',
         ];
+        yield 'constant renamed to class' => [
+            ['--rename', 'Ns\A::K', '--to', 'Ns\A::class'],
+            'A class constant must not be called class, it is reserved for class name fetching',
+        ];
     }
 
     /**
@@ -370,6 +374,14 @@ final class PsalterEndToEndTest extends PsalmEndToEndTestCase
         yield 'valid mapping followed by a malformed one' => [
             ['--rename', 'Ns\A::foo', '--to', 'Ns\A::baz', '--rename', 'Ns\B', '--to', 'Foo'],
             'Renaming a namespaced class into the global namespace is not supported',
+        ];
+        yield 'keyword as class name' => [
+            ['--rename', 'Ns\A', '--to', 'Ns\class'],
+            'Cannot use class as a class name as it is reserved',
+        ];
+        yield 'reserved type name as class name' => [
+            ['--rename', 'Ns\A', '--to', 'Ns\Int'],
+            'Cannot use Int as a class name as it is reserved',
         ];
     }
 

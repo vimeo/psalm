@@ -8,6 +8,7 @@ use Closure;
 use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Context;
+use Psalm\Internal\Perf;
 use Psalm\Internal\Provider\ReturnTypeProvider\ArrayChunkReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\ArrayColumnReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\ArrayCombineReturnTypeProvider;
@@ -166,11 +167,12 @@ final class FunctionReturnTypeProvider
     /**
      * @param lowercase-string $function_id
      * @param Closure(FunctionReturnTypeProviderEvent): ?Union $c
-     * @psalm-external-mutation-free
      */
     public function registerClosure(string $function_id, Closure $c): void
     {
-        self::$handlers[$function_id][] = $c;
+        self::$handlers[$function_id][] = Perf\Collector::$enabled
+            ? Perf\Collector::wrap($c, 'FunctionReturnType')
+            : $c;
     }
 
     /**

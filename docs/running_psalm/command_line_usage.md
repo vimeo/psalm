@@ -54,6 +54,16 @@ The coverage history and the badges use the runs on the default branch of your r
 
 See [Using Shepherd](shepherd.md) for badges, what is sent, and how to send reports to your own endpoint.
 
+## Finding out why Psalm is slow
+
+`--debug-performance` prints the stages of a run, the slowest files and the hottest statements and functions. `--debug-performance=PATH` also writes the measurements as JSON (the path needs the `=`):
+
+```bash
+./vendor/bin/psalm --no-cache --debug-performance=psalm-perf.json
+```
+
+See [Finding out why Psalm is slow](performance.md) for how to read the dump.
+
 ## Running Psalm faster
 
 To run Psalm up to 50% faster, use the [official docker image](https://psalm.dev/docs/running_psalm/installation/#docker-image).  

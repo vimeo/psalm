@@ -2463,7 +2463,8 @@ final class SimpleAssertionReconciler extends Reconciler
                 $redundant = false;
             } elseif ($type instanceof TNamedObject
                 && ($invoke_member = CallableTypeComparator::getInvokeMember($codebase, $type)) !== null
-                && $codebase->classExists($invoke_member->value)
+                && ($codebase->classExists($invoke_member->value)
+                    || $codebase->classlikes->enumExists($invoke_member->value))
             ) {
                 $callable_types[] = $type;
             } elseif ($type instanceof TString

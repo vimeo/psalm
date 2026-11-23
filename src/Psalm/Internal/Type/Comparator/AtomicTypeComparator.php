@@ -47,7 +47,6 @@ use Psalm\Type\Atomic\TScalar;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateKeyOf;
 use Psalm\Type\Atomic\TTemplateParam;
-use Psalm\Type\Atomic\TTemplateParamClass;
 use Psalm\Type\Atomic\TTemplateValueOf;
 use Psalm\Type\Atomic\TTypeVariable;
 use Psalm\Type\Atomic\TValueOf;
@@ -334,6 +333,19 @@ final class AtomicTypeComparator
                 if ($atomic_comparison_result) {
                     $atomic_comparison_result->type_coerced = true;
                 }
+            }
+
+            // a closure of unknown signature (narrowed by an assertion) is any closure
+            if ($input_type_part instanceof TNamedObject
+                && !$input_type_part instanceof TClosure
+                && strtolower($input_type_part->value) === 'closure'
+            ) {
+                return CallableTypeComparator::isContainedBy(
+                    $codebase,
+                    new TClosure(),
+                    $container_type_part,
+                    $atomic_comparison_result,
+                );
             }
 
             return false;
@@ -1185,8 +1197,7 @@ final class AtomicTypeComparator
             return $type1_part->value === $type2_part->value;
         }
 
-        if (($type1_part instanceof TClassString && !$type1_part instanceof TTemplateParamClass
-                || $type1_part instanceof TDependentGetClass)
+        if (($type1_part instanceof TClassString || $type1_part instanceof TDependentGetClass)
             && $type2_part::class === TLiteralString::class
         ) {
             return ClassLikeStringComparator::canLiteralNameBeClassString(
@@ -1197,8 +1208,7 @@ final class AtomicTypeComparator
             );
         }
 
-        if (($type2_part instanceof TClassString && !$type2_part instanceof TTemplateParamClass
-                || $type2_part instanceof TDependentGetClass)
+        if (($type2_part instanceof TClassString || $type2_part instanceof TDependentGetClass)
             && $type1_part::class === TLiteralString::class
         ) {
             return ClassLikeStringComparator::canLiteralNameBeClassString(

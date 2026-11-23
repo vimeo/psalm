@@ -89,6 +89,13 @@ final class NegatedAssertionReconciler extends Reconciler
                 return $existing_var_type;
             }
 
+            // not identical to one of the values an operand may have, the value may still be any of them
+            if (($assertion instanceof IsNotIdentical || $assertion instanceof IsNotLooselyEqual)
+                && $assertion->comparand !== null
+            ) {
+                return $existing_var_type;
+            }
+
             return self::handleLiteralNegatedEquality(
                 $statements_analyzer,
                 $assertion,
