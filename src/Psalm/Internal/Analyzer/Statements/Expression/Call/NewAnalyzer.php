@@ -55,7 +55,6 @@ use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Storage\Capabilities;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\MethodStorage;
-use Psalm\Storage\Possibilities;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TAnonymousClassInstance;
@@ -64,6 +63,7 @@ use Psalm\Type\Atomic\TConditional;
 use Psalm\Type\Atomic\TDependentGetClass;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TGenericObject;
+use Psalm\Type\Atomic\TIntRange;
 use Psalm\Type\Atomic\TLiteralClassString;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
@@ -79,7 +79,9 @@ use Psalm\Type\TaintKind;
 use Psalm\Type\Union;
 
 use function array_key_first;
+use function array_keys;
 use function array_map;
+use function array_search;
 use function array_values;
 use function count;
 use function in_array;
@@ -687,6 +689,7 @@ final class NewAnalyzer extends CallAnalyzer
             }
 
             $template_result ??= new TemplateResult([], []);
+            $template_result->constructed_class = $storage->name;
 
             if (!self::isInTrait($statements_analyzer)) {
                 $template_result->static_class_type = $fq_class_name;
@@ -761,40 +764,6 @@ final class NewAnalyzer extends CallAnalyzer
                     $method_id,
                     $template_result,
                 );
-
-                if ($method_storage->if_true_assertions) {
-                    $statements_analyzer->node_data->setIfTrueAssertions(
-                        $stmt,
-                        array_map(
-                            static fn(Possibilities $assertion): Possibilities
-                                => $assertion->getUntemplatedCopy($template_result, null, $codebase),
-                            self::getAssertionsOnArgs(
-                                $method_storage->if_true_assertions,
-                                $method_storage,
-                                $stmt->getArgs(),
-                                $statements_analyzer->node_data,
-                                $context->strict_types,
-                            ),
-                        ),
-                    );
-                }
-
-                if ($method_storage->if_false_assertions) {
-                    $statements_analyzer->node_data->setIfFalseAssertions(
-                        $stmt,
-                        array_map(
-                            static fn(Possibilities $assertion): Possibilities
-                                => $assertion->getUntemplatedCopy($template_result, null, $codebase),
-                            self::getAssertionsOnArgs(
-                                $method_storage->if_false_assertions,
-                                $method_storage,
-                                $stmt->getArgs(),
-                                $statements_analyzer->node_data,
-                                $context->strict_types,
-                            ),
-                        ),
-                    );
-                }
             }
 
             $generic_param_types = null;
@@ -1952,6 +1921,20 @@ final class NewAnalyzer extends CallAnalyzer
     }
 
     /**
+     * @psalm-pure
+     */
+    private static function isIntRange(Union $type): bool
+    {
+        foreach ($type->getAtomicTypes() as $atomic_type) {
+            if (!$atomic_type instanceof TIntRange) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
      * Returns the set of class templates with no public channel that can constrain
      * them: a template named anywhere in a public non-constructor method parameter
      * or a public writable property type is one that later code can still
@@ -2133,8 +2116,12 @@ final class NewAnalyzer extends CallAnalyzer
                 // a `mixed` argument binds the template to `mixed`, which no later bound can narrow, while a type
                 // variable would hide the template from reads (`class-string<T>` returns, `self<T&X>` assertions, the
                 // constraint clamp on later calls): keep the plain parameter, as for an explicit `Foo<mixed>`
-                if (!isset($unconstrainable_templates[$template_name])
-                    && !$generic_param_type->hasMixed()
+                // a template only the constructor names is pinned eagerly, unless the argument bound it to an int
+                // range, which is what the keys of an array are inferred as: it stays open, as `int` is accepted
+                // where the keys of `['a', 'b']` are asked for
+                if (!$generic_param_type->hasMixed()
+                    && (!isset($unconstrainable_templates[$template_name])
+                        || self::isIntRange($generic_param_type))
                 ) {
                     $generic_param_type = self::mintTypeVariable(
                         $statements_analyzer,
@@ -2313,6 +2300,16 @@ final class NewAnalyzer extends CallAnalyzer
         );
 
         if (isset($unconstrainable_templates[$template_name])) {
+            $template_offset = array_search($template_name, array_keys($storage->template_types ?? []), true);
+
+            // what nothing can constrain later is, for a covariant template, a subtype of every instantiation
+            if (!isset($storage->purity_templates[$template_name])
+                && $template_offset !== false
+                && ($storage->template_covariants[$template_offset] ?? false)
+            ) {
+                return Type::getNever();
+            }
+
             return $constraint;
         }
 

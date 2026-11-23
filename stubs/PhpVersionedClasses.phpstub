@@ -41,6 +41,15 @@ namespace {
         {
         }
 
+        /** @psalm-capabilities read-props */
+        public function inNamespace(): bool {}
+
+        /** @psalm-capabilities read-props */
+        public function getNamespaceName(): string {}
+
+        /** @psalm-capabilities read-props */
+        public function getShortName(): string {}
+
         /**
          * @psalm-capabilities read-props
          * @return Attribute::TARGET_*
@@ -323,12 +332,19 @@ namespace {
      */
     final class StreamPollHandle implements Io\Poll\Handle
     {
-        /** @param resource $stream */
+        /**
+         * @psalm-pure
+         * @param resource $stream
+         */
         public function __construct($stream) {}
 
-        /** @return resource */
+        /**
+         * @psalm-capabilities read-props
+         * @return resource
+         */
         public function getStream() {}
 
+        /** @psalm-capabilities read-props|io */
         public function isValid(): bool {}
     }
 }
@@ -400,44 +416,98 @@ namespace Io\Poll {
     /** @since 8.6 */
     interface Handle {}
 
-    /** @since 8.6 */
+    /**
+     * The handle a context watches for events, with the data it was added with
+     *
+     * @template-covariant THandle of Handle
+     * @template TData
+     * @since 8.6
+     */
     final class Watcher
     {
         final private function __construct() {}
 
+        /**
+         * @psalm-capabilities read-props
+         * @return THandle
+         */
         public function getHandle(): Handle {}
 
-        /** @return list<Event> */
+        /**
+         * @psalm-capabilities read-props
+         * @return list<Event>
+         */
         public function getWatchedEvents(): array {}
 
-        /** @return list<Event> */
+        /**
+         * @psalm-capabilities read-props
+         * @return list<Event>
+         */
         public function getTriggeredEvents(): array {}
 
+        /**
+         * @psalm-capabilities read-props
+         * @return TData
+         */
         public function getData(): mixed {}
 
+        /** @psalm-capabilities read-props */
         public function hasTriggered(Event $event): bool {}
 
+        /** @psalm-capabilities read-props */
         public function isActive(): bool {}
 
+        /**
+         * @psalm-capabilities read-props|write-this-props|io
+         * @template TNewData
+         * @param non-empty-list<Event> $events
+         * @param TNewData $data
+         * @psalm-this-out self<THandle, TNewData>
+         */
         public function modify(array $events, mixed $data = null): void {}
 
+        /**
+         * @psalm-capabilities read-props|write-this-props|io
+         * @param non-empty-list<Event> $events
+         */
         public function modifyEvents(array $events): void {}
 
+        /**
+         * @psalm-capabilities write-this-props
+         * @template TNewData
+         * @param TNewData $data
+         * @psalm-this-out self<THandle, TNewData>
+         */
         public function modifyData(mixed $data): void {}
 
+        /** @psalm-capabilities read-props|write-this-props|io */
         public function remove(): void {}
     }
 
     /** @since 8.6 */
     final class Context
     {
+        /** @psalm-capabilities io */
         public function __construct(Backend $backend = Backend::Auto) {}
 
+        /**
+         * @psalm-capabilities read-props|write-this-props|io
+         * @template T of Handle
+         * @template D
+         * @param T $handle
+         * @param non-empty-list<Event> $events
+         * @param D $data
+         * @return Watcher<T, D>
+         */
         public function add(Handle $handle, array $events, mixed $data = null): Watcher {}
 
-        /** @return list<Watcher> */
+        /**
+         * @psalm-capabilities read-props|write-this-props|io|time
+         * @return list<Watcher<Handle, mixed>>
+         */
         public function wait(?\Time\Duration $timeout = null, ?int $maxEvents = null): array {}
 
+        /** @psalm-capabilities read-props */
         public function getBackend(): Backend {}
     }
 
@@ -507,10 +577,13 @@ namespace {
     /** @since 8.6 */
     class StreamException extends Exception
     {
-        /** @var array<int, StreamError> */
+        /** @var list<StreamError> */
         private array $errors = [];
 
-        /** @return array<int, StreamError> */
+        /**
+         * @psalm-capabilities read-props
+         * @return list<StreamError>
+         */
         public function getErrors(): array {}
     }
 
@@ -528,6 +601,7 @@ namespace {
 
         private function __construct() {}
 
+        /** @psalm-pure */
         public static function createFromSkeleton(
             string $skeleton,
             string $locale,
@@ -535,10 +609,17 @@ namespace {
             int $identityFallback
         ): IntlNumberRangeFormatter {}
 
+        /**
+         * It records its error, which getErrorCode() and getErrorMessage() then give
+         *
+         * @psalm-capabilities read-props|write-this-props
+         */
         public function format(float|int $start, float|int $end): string {}
 
+        /** @psalm-capabilities read-props */
         public function getErrorCode(): int {}
 
+        /** @psalm-capabilities read-props */
         public function getErrorMessage(): string {}
     }
 
@@ -585,22 +666,31 @@ namespace Uri\Rfc3986 {
 
         private ?string $fragment = null;
 
+        /** @psalm-capabilities read-props|write-this-props */
         public function reset(): static {}
 
+        /** @psalm-capabilities read-props|write-this-props */
         public function setScheme(?string $scheme): static {}
 
+        /** @psalm-capabilities read-props|write-this-props */
         public function setUserInfo(#[\SensitiveParameter] ?string $userInfo): static {}
 
+        /** @psalm-capabilities read-props|write-this-props */
         public function setHost(?string $host): static {}
 
+        /** @psalm-capabilities read-props|write-this-props */
         public function setPort(?int $port): static {}
 
+        /** @psalm-capabilities read-props|write-this-props */
         public function setPath(string $path): static {}
 
+        /** @psalm-capabilities read-props|write-this-props */
         public function setQuery(?string $query): static {}
 
+        /** @psalm-capabilities read-props|write-this-props */
         public function setFragment(?string $fragment): static {}
 
+        /** @psalm-capabilities read-props */
         public function build(?\Uri\Rfc3986\Uri $baseUrl = null): \Uri\Rfc3986\Uri {}
     }
 }
@@ -625,25 +715,37 @@ namespace Uri\WhatWg {
 
         private ?string $fragment = null;
 
+        /** @psalm-capabilities read-props|write-this-props */
         public function reset(): static {}
 
+        /** @psalm-capabilities read-props|write-this-props */
         public function setScheme(string $scheme): static {}
 
+        /** @psalm-capabilities read-props|write-this-props */
         public function setUsername(?string $username): static {}
 
+        /** @psalm-capabilities read-props|write-this-props */
         public function setPassword(#[\SensitiveParameter] ?string $password): static {}
 
+        /** @psalm-capabilities read-props|write-this-props */
         public function setHost(?string $host): static {}
 
+        /** @psalm-capabilities read-props|write-this-props */
         public function setPort(?int $port): static {}
 
+        /** @psalm-capabilities read-props|write-this-props */
         public function setPath(string $path): static {}
 
+        /** @psalm-capabilities read-props|write-this-props */
         public function setQuery(?string $query): static {}
 
+        /** @psalm-capabilities read-props|write-this-props */
         public function setFragment(?string $fragment): static {}
 
-        /** @param array $softErrors */
+        /**
+         * @psalm-capabilities read-props|write-refs
+         * @param-out list<\Uri\WhatWg\UrlValidationError> $softErrors
+         */
         public function build(?\Uri\WhatWg\Url $baseUrl = null, &$softErrors = null): \Uri\WhatWg\Url {}
     }
 }
@@ -674,26 +776,37 @@ namespace Openssl {
         /** @readonly */
         public string $id;
 
+        /** @psalm-capabilities read-props */
         public function export(int $format = OPENSSL_ENCODING_PEM): string {}
 
+        /** @psalm-pure */
         public static function import(string $data, int $format = OPENSSL_ENCODING_PEM): Session {}
 
+        /** @psalm-capabilities read-props|time */
         public function isResumable(): bool {}
 
+        /** @psalm-capabilities read-props */
         public function getTimeout(): int {}
 
+        /** @psalm-capabilities read-props */
         public function getCreatedAt(): int {}
 
+        /** @psalm-capabilities read-props */
         public function getProtocol(): ?string {}
 
+        /** @psalm-capabilities read-props */
         public function getCipher(): ?string {}
 
+        /** @psalm-capabilities read-props */
         public function hasTicket(): bool {}
 
+        /** @psalm-capabilities read-props */
         public function getTicketLifetimeHint(): ?int {}
 
+        /** @psalm-capabilities read-props */
         public function __serialize(): array {}
 
+        /** @psalm-capabilities write-this-props */
         public function __unserialize(array $data): void {}
     }
 }
@@ -731,4 +844,419 @@ namespace PSpell {
     final class Config {}
     /** @since 8.1 */
     final class Dictionary {}
+}
+
+namespace {
+    /** @since 8.3 */
+    class DateError extends Error {}
+
+    /** @since 8.3 */
+    class DateObjectError extends DateError {}
+
+    /** @since 8.3 */
+    class DateRangeError extends DateError {}
+
+    /** @since 8.3 */
+    class DateException extends Exception {}
+
+    /** @since 8.3 */
+    class DateInvalidTimeZoneException extends DateException {}
+
+    /** @since 8.3 */
+    class DateInvalidOperationException extends DateException {}
+
+    /** @since 8.3 */
+    class DateMalformedStringException extends DateException {}
+
+    /** @since 8.3 */
+    class DateMalformedIntervalStringException extends DateException {}
+
+    /** @since 8.3 */
+    class DateMalformedPeriodStringException extends DateException {}
+
+    /** @since 8.4 */
+    class RequestParseBodyException extends Exception {}
+
+    /** @since 8.4 */
+    final class StreamBucket
+    {
+        /**
+         * @var resource
+         * @readonly
+         */
+        public $bucket;
+
+        /** @readonly */
+        public string $data;
+
+        /** @readonly */
+        public int $datalen;
+
+        /** @readonly */
+        public int $dataLength;
+    }
+
+    /** @since 8.4 */
+    class ReflectionConstant implements Reflector
+    {
+        /**
+         * @var non-empty-string
+         * @readonly
+         */
+        public string $name;
+
+        /** @psalm-pure */
+        public function __construct(string $name) {}
+
+        /**
+         * @psalm-capabilities read-props
+         * @return non-empty-string
+         */
+        public function getName(): string {}
+
+        /** @psalm-capabilities read-props */
+        public function getNamespaceName(): string {}
+
+        /**
+         * @psalm-capabilities read-props
+         * @return non-empty-string
+         */
+        public function getShortName(): string {}
+
+        /** @psalm-capabilities read-props */
+        public function getValue(): mixed {}
+
+        /** @psalm-capabilities read-props */
+        public function isDeprecated(): bool {}
+
+        /**
+         * @psalm-capabilities read-props
+         * @return non-empty-string|false
+         */
+        public function getFileName(): string|false {}
+
+        /** @psalm-capabilities read-props */
+        public function getExtension(): ?ReflectionExtension {}
+
+        /**
+         * @psalm-capabilities read-props
+         * @return non-empty-string|false
+         */
+        public function getExtensionName(): string|false {}
+
+        /** @psalm-capabilities read-props */
+        public function __toString(): string {}
+
+        /**
+         * @template TClass as object
+         * @param class-string<TClass>|null $name
+         * @return ($name is null ? list<ReflectionAttribute<object>> : list<ReflectionAttribute<TClass>>)
+         * @psalm-capabilities read-props
+         */
+        public function getAttributes(?string $name = null, int $flags = 0): array {}
+    }
+}
+
+namespace Uri {
+    /** @since 8.5 */
+    class UriException extends \Exception {}
+
+    /** @since 8.5 */
+    class UriError extends \Error {}
+
+    /** @since 8.5 */
+    class InvalidUriException extends UriException {}
+}
+
+namespace Uri\Rfc3986 {
+    /**
+     * @psalm-immutable
+     * @since 8.5
+     */
+    final class Uri
+    {
+        /** @psalm-pure */
+        public static function parse(string $uri, ?Uri $baseUrl = null): ?Uri {}
+
+        /**
+         * @psalm-pure
+         * @throws \Uri\InvalidUriException
+         */
+        public function __construct(string $uri, ?Uri $baseUrl = null) {}
+
+        public function getScheme(): ?string {}
+
+        public function getRawScheme(): ?string {}
+
+        public function withScheme(?string $scheme): Uri {}
+
+        public function getUserInfo(): ?string {}
+
+        public function getRawUserInfo(): ?string {}
+
+        public function withUserInfo(#[\SensitiveParameter] ?string $userinfo): Uri {}
+
+        public function getUsername(): ?string {}
+
+        public function getRawUsername(): ?string {}
+
+        public function getPassword(): ?string {}
+
+        public function getRawPassword(): ?string {}
+
+        public function getHost(): ?string {}
+
+        public function getRawHost(): ?string {}
+
+        public function withHost(?string $host): Uri {}
+
+        public function getPort(): ?int {}
+
+        public function withPort(?int $port): Uri {}
+
+        public function getPath(): string {}
+
+        public function getRawPath(): string {}
+
+        public function withPath(string $path): Uri {}
+
+        public function getQuery(): ?string {}
+
+        public function getRawQuery(): ?string {}
+
+        public function withQuery(?string $query): Uri {}
+
+        public function getFragment(): ?string {}
+
+        public function getRawFragment(): ?string {}
+
+        public function withFragment(?string $fragment): Uri {}
+
+        public function equals(
+            Uri $uri,
+            \Uri\UriComparisonMode $comparisonMode = \Uri\UriComparisonMode::ExcludeFragment
+        ): bool {}
+
+        public function toString(): string {}
+
+        public function toRawString(): string {}
+
+        public function resolve(string $uri): Uri {}
+
+        public function getUriType(): ?UriType {}
+
+        public function getHostType(): ?UriHostType {}
+
+        public function __serialize(): array {}
+
+        public function __unserialize(array $data): void {}
+
+        public function __debugInfo(): array {}
+    }
+}
+
+namespace Uri\WhatWg {
+    /** @since 8.5 */
+    class InvalidUrlException extends \Uri\InvalidUriException
+    {
+        /**
+         * @var list<UrlValidationError>
+         * @readonly
+         */
+        public array $errors;
+
+        /**
+         * @psalm-pure
+         * @param list<UrlValidationError> $errors
+         */
+        public function __construct(
+            string $message = "",
+            array $errors = [],
+            int $code = 0,
+            ?\Throwable $previous = null
+        ) {}
+    }
+
+    /**
+     * @psalm-immutable
+     * @since 8.5
+     */
+    final class UrlValidationError
+    {
+        public string $context;
+
+        public UrlValidationErrorType $type;
+
+        public bool $failure;
+
+        public function __construct(string $context, UrlValidationErrorType $type, bool $failure) {}
+    }
+
+    /**
+     * @psalm-immutable
+     * @since 8.5
+     */
+    final class Url
+    {
+        /**
+         * @psalm-pure
+         * @psalm-capabilities write-refs
+         * @param-out list<UrlValidationError> $errors
+         */
+        public static function parse(string $uri, ?Url $baseUrl = null, &$errors = null): ?Url {}
+
+        /**
+         * @psalm-capabilities write-refs
+         * @param-out list<UrlValidationError> $softErrors
+         * @throws InvalidUrlException
+         */
+        public function __construct(string $uri, ?Url $baseUrl = null, &$softErrors = null) {}
+
+        public function getScheme(): string {}
+
+        public function withScheme(string $scheme): Url {}
+
+        public function getUsername(): ?string {}
+
+        public function withUsername(?string $username): Url {}
+
+        public function getPassword(): ?string {}
+
+        public function withPassword(#[\SensitiveParameter] ?string $password): Url {}
+
+        public function getAsciiHost(): ?string {}
+
+        public function getUnicodeHost(): ?string {}
+
+        public function withHost(?string $host): Url {}
+
+        public function getPort(): ?int {}
+
+        public function withPort(?int $port): Url {}
+
+        public function getPath(): string {}
+
+        public function withPath(string $path): Url {}
+
+        public function getQuery(): ?string {}
+
+        public function withQuery(?string $query): Url {}
+
+        public function getFragment(): ?string {}
+
+        public function withFragment(?string $fragment): Url {}
+
+        public function equals(
+            Url $url,
+            \Uri\UriComparisonMode $comparisonMode = \Uri\UriComparisonMode::ExcludeFragment
+        ): bool {}
+
+        public function toAsciiString(): string {}
+
+        public function toUnicodeString(): string {}
+
+        /**
+         * @psalm-capabilities read-props|write-refs
+         * @param-out list<UrlValidationError> $softErrors
+         */
+        public function resolve(string $uri, &$softErrors = null): Url {}
+
+        public function getHostType(): ?UrlHostType {}
+
+        public function __serialize(): array {}
+
+        public function __unserialize(array $data): void {}
+
+        public function __debugInfo(): array {}
+    }
+}
+
+namespace Filter {
+    /** @since 8.5 */
+    class FilterException extends \Exception {}
+
+    /** @since 8.5 */
+    class FilterFailedException extends FilterException {}
+}
+
+namespace BcMath {
+    /**
+     * @psalm-immutable
+     * @since 8.4
+     */
+    final class Number implements \Stringable
+    {
+        /** @var numeric-string */
+        public string $value;
+
+        /** @var int<0, max> */
+        public int $scale;
+
+        /** @param numeric-string|int $num */
+        public function __construct(string|int $num) {}
+
+        /** @param Number|numeric-string|int $num */
+        public function add(Number|string|int $num, ?int $scale = null): Number {}
+
+        /** @param Number|numeric-string|int $num */
+        public function sub(Number|string|int $num, ?int $scale = null): Number {}
+
+        /** @param Number|numeric-string|int $num */
+        public function mul(Number|string|int $num, ?int $scale = null): Number {}
+
+        /** @param Number|numeric-string|int $num */
+        public function div(Number|string|int $num, ?int $scale = null): Number {}
+
+        /** @param Number|numeric-string|int $num */
+        public function mod(Number|string|int $num, ?int $scale = null): Number {}
+
+        /**
+         * @param Number|numeric-string|int $num
+         * @return array{Number, Number}
+         */
+        public function divmod(Number|string|int $num, ?int $scale = null): array {}
+
+        /**
+         * @param Number|numeric-string|int $exponent
+         * @param Number|numeric-string|int $modulus
+         */
+        public function powmod(Number|string|int $exponent, Number|string|int $modulus, ?int $scale = null): Number {}
+
+        /** @param Number|numeric-string|int $exponent */
+        public function pow(Number|string|int $exponent, ?int $scale = null): Number {}
+
+        public function sqrt(?int $scale = null): Number {}
+
+        public function floor(): Number {}
+
+        public function ceil(): Number {}
+
+        public function round(int $precision = 0, \RoundingMode $mode = \RoundingMode::HalfAwayFromZero): Number {}
+
+        /**
+         * @param Number|numeric-string|int $num
+         * @return -1|0|1
+         */
+        public function compare(Number|string|int $num, ?int $scale = null): int {}
+
+        /** @return numeric-string */
+        public function __toString(): string {}
+
+        public function __serialize(): array {}
+
+        public function __unserialize(array $data): void {}
+    }
+}
+
+namespace Dba {
+    /** @since 8.4 */
+    final class Connection {}
+}
+
+namespace Odbc {
+    /** @since 8.4 */
+    class Connection {}
+
+    /** @since 8.4 */
+    class Result {}
 }

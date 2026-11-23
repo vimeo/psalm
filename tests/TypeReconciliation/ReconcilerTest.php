@@ -38,6 +38,7 @@ use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TNumeric;
 use Psalm\Type\Atomic\TObject;
+use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTrue;
 use Psalm\Type\Union;
 
@@ -174,6 +175,8 @@ final class ReconcilerTest extends TestCase
             'classAssertionOnClassInterfaceUnion' => ['SomeClass|SomeClass&SomeInterface', new IsType(new TNamedObject('SomeClass')), 'SomeClass|SomeInterface'],
             'stringToNumericStringWithInt' => ['numeric-string', new IsLooselyEqual(new TInt()), 'string'],
             'stringToNumericStringWithFloat' => ['numeric-string', new IsLooselyEqual(new TFloat()), 'string'],
+            'numericLooselyEqualToAStringStaysNumeric' => ['numeric', new IsLooselyEqual(new TString()), 'numeric'],
+            'scalarsLooselyEqualToAStringStayScalars' => ['bool|float|int|null', new IsLooselyEqual(new TString()), 'bool|float|int|null'],
             'filterKeyedArrayWithIterable' => ['array{some: string}',new IsType(new TIterable([Type::getMixed(), Type::getString()])), 'array{some: mixed}'],
             'SimpleXMLElementNotAlwaysTruthy' => ['SimpleXMLElement', new Truthy(), 'SimpleXMLElement'],
             'SimpleXMLElementNotAlwaysTruthy2' => ['SimpleXMLElement', new Falsy(), 'SimpleXMLElement'],
