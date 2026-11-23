@@ -218,7 +218,95 @@ final class CallableTest extends TestCase
                      */
                     function dynamic(array $pair): array {
                         return $pair;
+                    }
+
+                    /**
+                     * @method static void pseudoStatic()
+                     * @method void pseudoInst()
+                     */
+                    final class WithMethodTag {}
+
+                    /** @return callable-array{string, string} */
+                    function pseudoStaticMethod(): array {
+                        return ["WithMethodTag", "pseudoStatic"];
+                    }
+
+                    /** @return callable-array{object, string} */
+                    function pseudoInstanceMethod(): array {
+                        return [new WithMethodTag(), "pseudoInst"];
+                    }
+
+                    final class Target {
+                        public function fromMixin(): void {}
+                    }
+
+                    /** @mixin Target */
+                    final class HasMixin {}
+
+                    /** @return callable-array{object, string} */
+                    function mixinMethod(): array {
+                        return [new HasMixin(), "fromMixin"];
+                    }
+
+                    /** @mixin Target */
+                    class ParentWithMixin {}
+
+                    final class KidOfMixin extends ParentWithMixin {}
+
+                    /** @return callable-array{object, string} */
+                    function inheritedMixinMethod(): array {
+                        return [new KidOfMixin(), "fromMixin"];
+                    }
+
+                    /** @mixin Target */
+                    trait TraitWithMixin {}
+
+                    final class UsesTraitWithMixin {
+                        use TraitWithMixin;
+                    }
+
+                    /** @return callable-array{object, string} */
+                    function mixinMethodOfATrait(): array {
+                        return [new UsesTraitWithMixin(), "fromMixin"];
+                    }
+
+                    enum MagicEnum {
+                        case A;
+                        public static function __callStatic(string $n, array $a): mixed { return 1; }
+                    }
+
+                    /** @return callable-array{string, string} */
+                    function magicOfAnEnum(): array {
+                        return ["MagicEnum", "anything"];
+                    }
+
+                    interface MagicInterface {
+                        public static function __callStatic(string $n, array $a): mixed;
+                    }
+
+                    /** @return callable-array{string, string} */
+                    function magicOfAnInterface(): array {
+                        return ["MagicInterface", "anything"];
+                    }
+
+                    /** @return callable-array{string, string} */
+                    function magicOfALeadingBackslash(): array {
+                        return ["\Magic", "anything"];
+                    }
+
+                    class ParentOfPm {
+                        public function pm(): void {}
+                    }
+
+                    final class KidOfPm extends ParentOfPm {}
+
+                    /** @return callable-array{string, string} */
+                    function methodNameWithAScope(): array {
+                        return ["KidOfPm", "parent::pm"];
                     }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
             ],
             'callableOfThisTakesTheTemplatesOfTheObject' => [
                 'code' => '<?php
