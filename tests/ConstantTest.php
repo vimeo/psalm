@@ -309,6 +309,150 @@ final class ConstantTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'lateStaticBoundConstantsKeepTheirDeclaredTypes' => [
+                'code' => '<?php
+                    class Service {
+                        public const int NATIVE = 10;
+                        public const int|string NATIVE_UNION = 10;
+                        /** @var positive-int */
+                        public const int DOCBLOCK = 5;
+
+                        public function viaStatic(): void {
+                            $x = static::NATIVE;
+                            /** @psalm-check-type-exact $x = int */
+                            echo $x;
+                        }
+                    }
+
+                    function service(): Service {
+                        return new Service();
+                    }
+
+                    $object = service();
+                    $native = $object::NATIVE;
+                    $native_union = $object::NATIVE_UNION;
+                    $docblock = $object::DOCBLOCK;',
+                'assertions' => [
+                    '$native===' => 'int',
+                    '$native_union===' => 'int|string',
+                    '$docblock===' => 'int<1, max>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
+            'staticConstantInATraitAllowsTheValueOfASubclass' => [
+                'code' => '<?php
+                    trait T {
+                        public function size(): int {
+                            if (static::SIZE === 20) {
+                                return 1;
+                            }
+                            return 0;
+                        }
+                    }
+
+                    class Base {
+                        use T;
+                        public const int SIZE = 10;
+                    }
+
+                    class Child extends Base {
+                        public const int SIZE = 20;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
+            'staticConstantInATraitUsedByAFinalAndANonFinalClassAllowsAnOverride' => [
+                'code' => '<?php
+                    trait T {
+                        public function size(): int {
+                            if (static::SIZE === 20) {
+                                return 1;
+                            }
+                            return 0;
+                        }
+                    }
+
+                    final class Closed {
+                        use T;
+                        public const int SIZE = 10;
+                    }
+
+                    class Open {
+                        use T;
+                        public const int SIZE = 10;
+                    }
+
+                    class Child extends Open {
+                        public const int SIZE = 20;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
+            'untypedStaticConstantInATraitUsedByAFinalAndANonFinalClassAllowsAnOverride' => [
+                'code' => '<?php
+                    trait T {
+                        public function size(): int {
+                            if (static::SIZE === 20) {
+                                return 1;
+                            }
+                            return 0;
+                        }
+                    }
+
+                    final class Closed {
+                        use T;
+                        public const SIZE = 10;
+                    }
+
+                    class Open {
+                        use T;
+                        public const SIZE = 10;
+                    }',
+            ],
+            'selfConstantInATraitUsedByAFinalAndANonFinalClassKeepsTheirValues' => [
+                'code' => '<?php
+                    trait T {
+                        public function size(): int {
+                            $size = self::SIZE;
+                            /** @psalm-check-type-exact $size = 10|11 */
+                            return $size;
+                        }
+                    }
+
+                    final class Closed {
+                        use T;
+                        public const int SIZE = 10;
+                    }
+
+                    class Open {
+                        use T;
+                        public const int SIZE = 11;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
+            'staticConstantInATraitOfAnAbstractClassHasItsNativeType' => [
+                'code' => '<?php
+                    trait T {
+                        public function size(): int {
+                            $size = static::SIZE;
+                            /** @psalm-check-type-exact $size = int */
+                            return $size;
+                        }
+                    }
+
+                    abstract class Base {
+                        use T;
+                        public const int SIZE = 10;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
             'lateStaticBoundConstantHasItsNativeType' => [
                 'code' => '<?php
                     abstract class Service {
@@ -2987,6 +3131,44 @@ final class ConstantTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'staticConstantInATraitOfAFinalClassKeepsItsValue' => [
+                'code' => '<?php
+                    trait T {
+                        public function size(): int {
+                            if (static::SIZE === 20) {
+                                return 1;
+                            }
+                            return 0;
+                        }
+                    }
+
+                    final class Closed {
+                        use T;
+                        public const int SIZE = 10;
+                    }',
+                'error_message' => 'TypeDoesNotContainType',
+                'error_levels' => [],
+                'php_version' => '8.3',
+            ],
+            'finalStaticConstantInATraitKeepsItsValue' => [
+                'code' => '<?php
+                    trait T {
+                        public function size(): int {
+                            if (static::SIZE === 20) {
+                                return 1;
+                            }
+                            return 0;
+                        }
+                    }
+
+                    class Open {
+                        use T;
+                        final public const int SIZE = 10;
+                    }',
+                'error_message' => 'TypeDoesNotContainType',
+                'error_levels' => [],
+                'php_version' => '8.3',
+            ],
             'overrideWideningTheNativeTypeOfTheParentConstant' => [
                 'code' => '<?php
                     class A {
