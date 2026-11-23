@@ -16,6 +16,7 @@ use Psalm\Plugin\EventHandler\Event\AfterAnalysisEvent;
 use Psalm\Progress\DebugProgress;
 use Psalm\Progress\Progress;
 use UnexpectedValueException;
+use stdClass;
 
 use function array_filter;
 use function array_key_exists;
@@ -94,22 +95,24 @@ final class Shepherd implements AfterAnalysisInterface
     }
 
     /**
+     * build and git are as loosely typed as AfterAnalysisEvent and SourceControlInfo::toArray() give them
+     *
      * @return array{
-     *     build: array,
-     *     git: array,
-     *     issues: array,
-     *     issue_counts: array{baselined: object, info: object},
+     *     build: array{CI_NAME: mixed, ...<array-key, mixed>},
+     *     git: array<array-key, mixed>,
+     *     issues: list<IssueData>,
+     *     issue_counts: array{baselined: stdClass, info: stdClass},
      *     baseline: array{entries: int},
      *     analysis: array{
      *         full: bool,
-     *         files: int,
+     *         files: int<0, max>,
      *         php_version: string,
      *         find_unused_code: bool,
      *         taint_analysis: bool
      *     },
-     *     coverage: list<int>,
+     *     coverage: array{int, int},
      *     level: int<1, 8>,
-     *     versions: array<string, string>
+     *     versions: array{psalm: string, parser: string, php: string}
      * }|null
      */
     private static function collectPayloadToSend(AfterAnalysisEvent $event): ?array
@@ -130,7 +133,7 @@ final class Shepherd implements AfterAnalysisInterface
         }
 
         // A pull request is checked out as a merge commit that is not part of it: its review is made on its head
-        /** @var array{head?: array{id?: string}}|null $event_git */
+        /** @var array{head?: array{id?: string|null}}|null $event_git */
         $event_git = $build_info['git'] ?? null;
         $pull_request_head = $event_git['head']['id'] ?? null;
         if (isset($build_info['CI_PR_NUMBER'])

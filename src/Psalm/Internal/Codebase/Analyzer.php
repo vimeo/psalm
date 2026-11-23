@@ -1178,6 +1178,7 @@ final class Analyzer
      * How many files the run reports on, the unchanged ones of a diff run included
      *
      * @internal
+     * @return int<0, max>
      * @psalm-mutation-free
      */
     public function getFileCountWithAnalysisResults(): int
