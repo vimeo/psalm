@@ -63,6 +63,7 @@ use Psalm\Type\Atomic\TConditional;
 use Psalm\Type\Atomic\TDependentGetClass;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TGenericObject;
+use Psalm\Type\Atomic\TIntRange;
 use Psalm\Type\Atomic\TLiteralClassString;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
@@ -281,7 +282,7 @@ final class NewAnalyzer extends CallAnalyzer
                     new CodeLocation($statements_analyzer->getSource(), $stmt->class),
                     $context,
                     $statements_analyzer->getSuppressedIssues(),
-                    new ClassLikeNameOptions(context: $context),
+                    new ClassLikeNameOptions(context: $context, required_at_runtime: true),
                 ) === false) {
                     ArgumentsAnalyzer::analyze(
                         $statements_analyzer,
@@ -688,6 +689,7 @@ final class NewAnalyzer extends CallAnalyzer
             }
 
             $template_result ??= new TemplateResult([], []);
+            $template_result->constructed_class = $storage->name;
 
             if (!self::isInTrait($statements_analyzer)) {
                 $template_result->static_class_type = $fq_class_name;
@@ -1919,6 +1921,20 @@ final class NewAnalyzer extends CallAnalyzer
     }
 
     /**
+     * @psalm-pure
+     */
+    private static function isIntRange(Union $type): bool
+    {
+        foreach ($type->getAtomicTypes() as $atomic_type) {
+            if (!$atomic_type instanceof TIntRange) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
      * Returns the set of class templates with no public channel that can constrain
      * them: a template named anywhere in a public non-constructor method parameter
      * or a public writable property type is one that later code can still
@@ -2100,8 +2116,12 @@ final class NewAnalyzer extends CallAnalyzer
                 // a `mixed` argument binds the template to `mixed`, which no later bound can narrow, while a type
                 // variable would hide the template from reads (`class-string<T>` returns, `self<T&X>` assertions, the
                 // constraint clamp on later calls): keep the plain parameter, as for an explicit `Foo<mixed>`
-                if (!isset($unconstrainable_templates[$template_name])
-                    && !$generic_param_type->hasMixed()
+                // a template only the constructor names is pinned eagerly, unless the argument bound it to an int
+                // range, which is what the keys of an array are inferred as: it stays open, as `int` is accepted
+                // where the keys of `['a', 'b']` are asked for
+                if (!$generic_param_type->hasMixed()
+                    && (!isset($unconstrainable_templates[$template_name])
+                        || self::isIntRange($generic_param_type))
                 ) {
                     $generic_param_type = self::mintTypeVariable(
                         $statements_analyzer,
