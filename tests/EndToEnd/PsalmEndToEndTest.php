@@ -114,6 +114,47 @@ final class PsalmEndToEndTest extends PsalmEndToEndTestCase
         $this->assertStringNotContainsString('Uncaught', $process->getErrorOutput());
     }
 
+    public function testEmptyComposerJsonIsAValidProject(): void
+    {
+        $project_dir = tempnam(sys_get_temp_dir(), 'PsalmEndToEndEmptyComposerJson_');
+        assert($project_dir !== false);
+        unlink($project_dir);
+        mkdir($project_dir);
+
+        try {
+            file_put_contents($project_dir . '/composer.json', '{}');
+            mkdir($project_dir . '/vendor');
+            file_put_contents($project_dir . '/vendor/autoload.php', "<?php\n");
+
+            $init = self::newProcess([PHP_BINARY, $this->psalm, '--init'], $project_dir, self::agentEnvVarsToUnset());
+            $init->run();
+
+            mkdir($project_dir . '/src');
+            file_put_contents($project_dir . '/src/a.php', "<?php\necho strlen('a');\n");
+            file_put_contents(
+                $project_dir . '/psalm.xml',
+                '<?xml version="1.0"?><psalm><projectFiles><directory name="src"/></projectFiles></psalm>',
+            );
+
+            $analysis = self::newProcess(
+                [PHP_BINARY, $this->psalm, '--no-cache', '--no-progress'],
+                $project_dir,
+                self::agentEnvVarsToUnset(),
+            );
+            $analysis->run();
+        } finally {
+            self::recursiveRemoveDirectory($project_dir);
+        }
+
+        $this->assertStringNotContainsString('Invalid composer.json', $init->getErrorOutput());
+        $this->assertStringContainsString(
+            'Could not located any PSR-0 or PSR-4-compatible paths',
+            $init->getErrorOutput(),
+        );
+        $this->assertSame(0, $analysis->getExitCode(), $analysis->getOutput() . $analysis->getErrorOutput());
+        $this->assertStringContainsString('No errors found!', $analysis->getOutput());
+    }
+
     /**
      * @param list<string> $args
      */
@@ -285,6 +326,31 @@ final class PsalmEndToEndTest extends PsalmEndToEndTestCase
             'Target PHP version: 8.6 (set by config file)',
             $result['STDERR'],
         );
+    }
+
+    public function testThePolyfillsPsalmRequiresDontDefineFunctionsForTheProject(): void
+    {
+        @unlink(self::$tmpDir . '/src/FileWithErrors.php');
+        file_put_contents(
+            self::$tmpDir . '/psalm.xml',
+            '<?xml version="1.0"?>
+            <psalm errorLevel="8" runTaintAnalysis="false" findUnusedCode="false">
+                <projectFiles><directory name="src"/></projectFiles>
+            </psalm>',
+        );
+        file_put_contents(
+            self::$tmpDir . '/src/Polyfilled.php',
+            "<?php\narray_find([1], fn(int \$x): bool => \$x > 0);\nclamp(5, 0, 10);\n"
+                . "echo RoundingMode::HalfEven->name;\n",
+        );
+
+        $process = $this->runPsalmInTheProject(['--no-cache', '--php-version=8.3', '--output-format=compact']);
+        @unlink(self::$tmpDir . '/src/Polyfilled.php');
+
+        $this->assertStringContainsString('UndefinedFunction: Function array_find ', $process->getOutput());
+        $this->assertStringContainsString('UndefinedFunction: Function clamp ', $process->getOutput());
+        $this->assertStringContainsString('RoundingMode is not defined', $process->getOutput());
+        $this->assertSame(2, $process->getExitCode());
     }
 
     /*

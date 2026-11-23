@@ -57,6 +57,7 @@ use Psalm\Type;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TCallable;
 use Psalm\Type\Atomic\TClosure;
+use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TNamedObject;
@@ -99,6 +100,16 @@ use function strtoupper;
  */
 final class ArgumentsAnalyzer
 {
+    /** The methods creating a lazy ghost from their `$initializer` */
+    private const LAZY_GHOST_METHODS = [
+        'reflectionclass::newlazyghost' => true,
+        'reflectionclass::resetaslazyghost' => true,
+        'reflectionobject::newlazyghost' => true,
+        'reflectionobject::resetaslazyghost' => true,
+        'reflectionenum::newlazyghost' => true,
+        'reflectionenum::resetaslazyghost' => true,
+    ];
+
     /**
      * @see self::getByRefFlowInputs()
      * @var array<lowercase-string, array<string, array<int|string, string>>>|null
@@ -158,6 +169,7 @@ final class ArgumentsAnalyzer
             );
 
             foreach ($written_var_ids as $var_id => $_) {
+                $context->releaseKeysBoundToList($var_id);
                 $context->removeVarFromConflictingClauses(
                     $var_id,
                     $context->vars_in_scope[$var_id] ?? null,
@@ -366,6 +378,13 @@ final class ArgumentsAnalyzer
                         $param,
                     );
                 }
+
+                if ($param
+                    && $param->name === 'initializer'
+                    && isset(self::LAZY_GHOST_METHODS[strtolower((string) $method_id)])
+                ) {
+                    $arg->value->setAttribute(ClosureAnalyzer::LAZY_GHOST_INITIALIZER_ATTRIBUTE, true);
+                }
             }
 
             if (($arg->value instanceof PhpParser\Node\Expr\MethodCall
@@ -573,6 +592,16 @@ final class ArgumentsAnalyzer
 
         $keys = array_keys($unpacked_atomic->properties);
 
+        // integer keys that are not a list's pass as many arguments as there are keys, in the order of the shape
+        if (array_all($keys, static fn(int|string $key): bool => is_int($key))
+            && array_all(
+                $unpacked_atomic->properties,
+                static fn(Union $property): bool => !$property->possibly_undefined,
+            )
+        ) {
+            return [null, count($keys)];
+        }
+
         return [
             array_all($keys, static fn(int|string $key): bool => is_string($key)) ? $keys : null,
             null,
@@ -676,9 +705,8 @@ final class ArgumentsAnalyzer
         $codebase = $statements_analyzer->getCodebase();
 
         $static_class_type = $template_result->static_class_type;
-        $expand_static = static fn(Union $type): Union => $static_class_type !== null
-            ? TypeExpander::expandStatic($codebase, $type, $static_class_type, $template_result->static_class_is_final)
-            : $type;
+        $expand_static = static fn(Union $type, string|TNamedObject|null $static_type, bool $final): Union =>
+            $static_type !== null ? TypeExpander::expandStatic($codebase, $type, $static_type, $final) : $type;
 
         if (($argument_offset === 1 && in_array($method_id, self::ARRAY_FILTERLIKE, true) && count($args) === 2)
             || ($argument_offset === 0 && $method_id === 'array_map' && count($args) >= 2)
@@ -782,24 +810,51 @@ final class ArgumentsAnalyzer
             );
         };
 
-        // an untyped param takes the declared types with `static` of the call, as the argument is checked against
-        // them, before the bounds, which may hold the `static` of the caller, are put in them; a typed param is
-        // narrowed to the hint, so it keeps the `static` it is declared with, the caller's
-        $untyped_bounds = $new_bounds;
-        foreach ($template_result->template_types as $k => $template_map) {
-            foreach ($template_map as $kk => $template_type) {
-                if (($new_bounds[$k][$kk] ?? null) === $template_type) {
-                    $untyped_bounds[$k][$kk] = $expand_static($template_type);
+        // a closure param takes the declared types with `static` of the call, as the argument is checked against
+        // them, before the bounds, which may hold the `static` of the caller, are put in them
+        $replace_static_of_call = static function (
+            string|TNamedObject|null $static_type,
+            bool $final,
+        ) use (
+            $template_result,
+            $new_bounds,
+            $replaced_type,
+            $expand_static,
+            $replace,
+        ): ?Union {
+            $bounds = $new_bounds;
+            foreach ($template_result->template_types as $k => $template_map) {
+                foreach ($template_map as $kk => $template_type) {
+                    if (($new_bounds[$k][$kk] ?? null) === $template_type) {
+                        $bounds[$k][$kk] = $expand_static($template_type, $static_type, $final);
+                    }
                 }
             }
-        }
 
-        $untyped_type = $expand_static($replaced_type);
-        $untyped_replaced_type = $untyped_type === $replaced_type && $untyped_bounds === $new_bounds
-            ? null
-            : $replace($untyped_type, $untyped_bounds);
+            $type = $expand_static($replaced_type, $static_type, $final);
+
+            return $type === $replaced_type && $bounds === $new_bounds ? null : $replace($type, $bounds);
+        };
+
+        $untyped_replaced_type = $replace_static_of_call($static_class_type, $template_result->static_class_is_final);
+        // a typed param is narrowed to the hint, where `static` is read as the closure's own: it takes the class of the
+        // call as final, unless the receiver is a `static` of the closure's class (`$this`, `static::make()`); a
+        // generic receiver gives the class without its type arguments, as the argument may be checked against others
+        $receiver_is_closure_static = $static_class_type instanceof TNamedObject
+            && $static_class_type->is_static
+            && $context->self !== null
+            && strtolower($static_class_type->value) === strtolower($context->self);
+        $typed_replaced_type = $receiver_is_closure_static && !$static_class_type instanceof TGenericObject
+            ? $untyped_replaced_type
+            : $replace_static_of_call(
+                $static_class_type instanceof TGenericObject
+                    ? new TNamedObject($static_class_type->value)
+                    : $static_class_type,
+                true,
+            );
         $replaced_type = $replace($replaced_type, $new_bounds);
         $untyped_replaced_type ??= $replaced_type;
+        $typed_replaced_type ??= $replaced_type;
 
         $closure_id = strtolower($statements_analyzer->getFilePath())
             . ':' . $arg->value->getLine()
@@ -828,9 +883,9 @@ final class ArgumentsAnalyzer
             }
 
             if (!$has_different_docblock_type) {
-                // a param declared with a type keeps master's hint also once it was narrowed by an earlier pass (type
+                // a param declared with a type takes the typed hint also once it was narrowed by an earlier pass (type
                 // inferred), as the closure's storage is shared by every class using a trait it is in
-                $hint_type = $param_storage->signature_type !== null ? $replaced_type : $untyped_replaced_type;
+                $hint_type = $param_storage->signature_type !== null ? $typed_replaced_type : $untyped_replaced_type;
 
                 foreach ($hint_type->getAtomicTypes() as $replaced_type_part) {
                     if ($replaced_type_part instanceof TCallable
@@ -2050,6 +2105,22 @@ final class ArgumentsAnalyzer
                 ? TypeExpander::expandUnion($codebase, $by_ref_out_type, $self_class, $static_class, null)
                 : $by_ref_type;
 
+            if ($argument_offset === 0
+                && ($method_id === 'array_walk' || $method_id === 'array_walk_recursive')
+                && ($array_type = $statements_analyzer->node_data->getType($arg->value))
+                && isset($function_params[1])
+                && ($callback_arg = self::getArgForParam($args, $function_params, $function_params[1]->name))
+                && ($callback_type = $statements_analyzer->node_data->getType($callback_arg->value))
+            ) {
+                $by_ref_out_type = ArrayFunctionArgumentsAnalyzer::getArrayWalkOutType(
+                    $statements_analyzer,
+                    $context,
+                    $array_type,
+                    $callback_type,
+                    $method_id === 'array_walk_recursive',
+                ) ?? $by_ref_out_type;
+            }
+
             // what the function-like leaves in the parameter (see FunctionLikeAnalyzer::taintByRefParamsOut())
             $out_type_holds_value = false;
             if ($function_storage !== null
@@ -2646,7 +2717,8 @@ final class ArgumentsAnalyzer
         );
 
         if (!$template_types) {
-            return null;
+            // the parameters are still written to through a `*`
+            return $template_result !== null && $template_result->star_bindings !== [] ? $template_result : null;
         }
 
         if (!$template_result) {
@@ -2786,6 +2858,11 @@ final class ArgumentsAnalyzer
                         if ($arg_value_type->isSingle()
                             && ($atomic_arg_type = $arg_value_type->getSingleAtomic()) instanceof TKeyedArray
                             && !$atomic_arg_type->is_list
+                            // integer keys name no parameter: they pass as many arguments as there are keys
+                            && !array_all(
+                                array_keys($atomic_arg_type->properties),
+                                static fn(int|string $key): bool => is_int($key),
+                            )
                         ) {
                             //if we have a single shape, we'll check param names
                             foreach ($atomic_arg_type->properties as $property_name => $_property_type) {

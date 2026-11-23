@@ -10,6 +10,7 @@ use Psalm\Plugin\EventHandler\FunctionReturnTypeProviderInterface;
 use Psalm\Type;
 use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\TInt;
+use Psalm\Type\Atomic\TIntRange;
 use Psalm\Type\Atomic\TLiteralFloat;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Union;
@@ -63,10 +64,21 @@ final class PowReturnTypeProvider implements FunctionReturnTypeProviderInterface
         $second_arg_literal = null;
         $second_arg_is_int = false;
         $second_arg_is_float = false;
+        $second_arg_is_negative = false;
+        $second_arg_can_be_negative = false;
         if ($second_arg !== null && $second_arg->isSingle()) {
             $second_atomic_type = $second_arg->getSingleAtomic();
             if ($second_atomic_type instanceof TInt) {
                 $second_arg_is_int = true;
+                if ($second_atomic_type instanceof TLiteralInt) {
+                    $second_arg_is_negative = $second_atomic_type->value < 0;
+                    $second_arg_can_be_negative = $second_arg_is_negative;
+                } elseif ($second_atomic_type instanceof TIntRange) {
+                    $second_arg_is_negative = $second_atomic_type->isNegative();
+                    $second_arg_can_be_negative = !$second_atomic_type->isPositiveOrZero();
+                } else {
+                    $second_arg_can_be_negative = true;
+                }
             } elseif ($second_atomic_type instanceof TFloat) {
                 $second_arg_is_float = true;
             }
@@ -77,17 +89,21 @@ final class PowReturnTypeProvider implements FunctionReturnTypeProviderInterface
             }
         }
 
-        if ($first_arg_literal === 0) {
+        if ($first_arg_literal === 0 && !$second_arg_can_be_negative) {
             return Type::getInt(true, 0);
         }
         if ($second_arg_literal === 0) {
             return Type::getInt(true, 1);
         }
-        if ($first_arg_literal !== null && $second_arg_literal !== null) {
+        if ($first_arg_literal !== 0 && $first_arg_literal !== null && $second_arg_literal !== null) {
             return Type::getFloat($first_arg_literal ** $second_arg_literal);
         }
         if ($first_arg_is_int && $second_arg_is_int) {
-            return Type::getInt();
+            if ($second_arg_is_negative) {
+                return Type::getFloat();
+            }
+
+            return $second_arg_can_be_negative ? new Union([new TInt(), new TFloat()]) : Type::getInt();
         }
         if ($first_arg_is_float || $second_arg_is_float) {
             return Type::getFloat();

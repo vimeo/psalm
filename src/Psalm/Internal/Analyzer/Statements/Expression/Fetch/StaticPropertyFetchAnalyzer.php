@@ -102,14 +102,16 @@ final class StaticPropertyFetchAnalyzer
                 return true;
             }
 
-            if ($context->check_classes) {
+            if ($context->check_classes
+                && !ClassLikeAnalyzer::checkTraitMemberAccess($statements_analyzer, $fq_class_name, $stmt->class)
+            ) {
                 if (ClassLikeAnalyzer::checkFullyQualifiedClassLikeName(
                     $statements_analyzer,
                     $fq_class_name,
                     new CodeLocation($statements_analyzer->getSource(), $stmt->class),
                     $context,
                     $statements_analyzer->getSuppressedIssues(),
-                    new ClassLikeNameOptions(context: $context),
+                    new ClassLikeNameOptions(context: $context, required_at_runtime: true),
                 ) !== true) {
                     return false;
                 }

@@ -3,7 +3,7 @@
 Emitted when a possible exception isn't caught in global scope
 
 ```php
-<?php
+<?php // checkForThrowsDocblock="true" checkForThrowsInGlobalScope="true"
 
 /**
  * @throws \Exception

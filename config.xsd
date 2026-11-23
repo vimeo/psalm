@@ -274,6 +274,7 @@
             <xs:element name="DeprecatedInterface" type="ClassIssueHandlerType" minOccurs="0" />
             <xs:element name="DeprecatedMethod" type="MethodIssueHandlerType" minOccurs="0" />
             <xs:element name="DeprecatedProperty" type="PropertyIssueHandlerType" minOccurs="0" />
+            <xs:element name="DeprecatedSyntax" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="DeprecatedTrait" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="DirectConstructorCall" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="DocblockTypeContradiction" type="IssueHandlerType" minOccurs="0" />
@@ -380,6 +381,7 @@
             <xs:element name="MissingClosureReturnType" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="MissingConstructor" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="MissingDependency" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="MissingExtensionRequirement" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="MissingDocblockType" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="MissingFile" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="MissingInterfaceImmutableAnnotation" type="IssueHandlerType" minOccurs="0" />
