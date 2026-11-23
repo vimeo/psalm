@@ -6,7 +6,6 @@ namespace Psalm;
 
 use Psalm\CodeLocation\Raw;
 use Psalm\Exception\CodeException;
-use Psalm\Internal\AnalysisRunSummary;
 use Psalm\Internal\Analyzer\FileAnalyzer;
 use Psalm\Internal\Analyzer\IssueData;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
@@ -159,7 +158,8 @@ final class IssueBuffer
     /** How many issues accepts() was given, suppressed ones included */
     private static int $accepted_issue_count = 0;
 
-    private static ?AnalysisRunSummary $run_summary = null;
+    /** @var array<string, int<1, max>> */
+    private static array $baselined_issue_counts = [];
 
     /**
      * This will add an issue to be emitted if it's not suppressed and return if it has been added
@@ -614,14 +614,15 @@ final class IssueBuffer
     }
 
     /**
-     * What the last finish() knows about its run
+     * How many issues the baseline covered in the last finish(), by issue type, sorted by type
      *
      * @internal
+     * @return array<string, int<1, max>>
      * @psalm-capabilities read-globals
      */
-    public static function getRunSummary(): ?AnalysisRunSummary
+    public static function getBaselinedIssueCounts(): array
     {
-        return self::$run_summary;
+        return self::$baselined_issue_counts;
     }
 
     /**
@@ -923,10 +924,7 @@ final class IssueBuffer
 
 
         ksort($baselined_issue_counts);
-        self::$run_summary = new AnalysisRunSummary(
-            $baselined_issue_counts,
-            $is_full,
-        );
+        self::$baselined_issue_counts = $baselined_issue_counts;
 
         if ($codebase->config->eventDispatcher->after_analysis) {
             $source_control_info = null;

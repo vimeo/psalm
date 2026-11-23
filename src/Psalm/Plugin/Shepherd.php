@@ -9,13 +9,13 @@ use Override;
 use Psalm\Codebase;
 use Psalm\Config;
 use Psalm\Internal\Analyzer\IssueData;
+use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\VersionUtils;
 use Psalm\IssueBuffer;
 use Psalm\Plugin\EventHandler\AfterAnalysisInterface;
 use Psalm\Plugin\EventHandler\Event\AfterAnalysisEvent;
 use Psalm\Progress\DebugProgress;
 use Psalm\Progress\Progress;
-use UnexpectedValueException;
 use stdClass;
 
 use function array_filter;
@@ -155,11 +155,7 @@ final class Shepherd implements AfterAnalysisInterface
 
         $codebase = $event->getCodebase();
 
-        // AfterAnalysisEvent is only made by IssueBuffer::finish(), which sets the summary first
-        $summary = IssueBuffer::getRunSummary();
-        if ($summary === null) {
-            throw new UnexpectedValueException('IssueBuffer::finish() has not summarised the run');
-        }
+        $baselined_issue_counts = IssueBuffer::getBaselinedIssueCounts();
 
         $info_issue_counts = [];
         foreach ($issues_grouped_by_filename as $file_issues) {
@@ -171,7 +167,7 @@ final class Shepherd implements AfterAnalysisInterface
         }
 
         // exact, as every issue the baseline covers reaches the event with severity info
-        foreach ($summary->baselined_issue_counts as $type => $count) {
+        foreach ($baselined_issue_counts as $type => $count) {
             $remaining = ($info_issue_counts[$type] ?? 0) - $count;
             if ($remaining > 0) {
                 $info_issue_counts[$type] = $remaining;
@@ -186,9 +182,9 @@ final class Shepherd implements AfterAnalysisInterface
             'build' => $build_info,
             'git' => $source_control_data,
             'issues' => $normalized_data,
-            'issue_counts' => ['baselined' => $summary->baselined_issue_counts, 'info' => $info_issue_counts],
+            'issue_counts' => ['baselined' => $baselined_issue_counts, 'info' => $info_issue_counts],
             'analysis' => [
-                'full' => $summary->is_full,
+                'full' => ProjectAnalyzer::getInstance()->full_run,
                 'file_count' => $codebase->analyzer->getFileCountWithAnalysisResults(),
                 'target_php_version' => Codebase::getPhpVersionString($codebase->analysis_php_version_id),
                 'find_unused_code' => $codebase->find_unused_code !== null,
