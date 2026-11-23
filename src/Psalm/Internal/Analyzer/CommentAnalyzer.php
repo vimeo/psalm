@@ -586,6 +586,7 @@ final class CommentAnalyzer
                     $e->getMessage(),
                     new CodeLocation($statements_analyzer, $var),
                 ),
+                $statements_analyzer->getSuppressedIssues(),
             );
         } catch (DocblockParseException $e) {
             IssueBuffer::maybeAdd(

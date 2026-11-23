@@ -1097,6 +1097,7 @@ final class AssignmentAnalyzer
                     $e->getMessage(),
                     new CodeLocation($statements_analyzer->getSource(), $assign_var),
                 ),
+                $statements_analyzer->getSuppressedIssues(),
             );
 
             return;
@@ -1492,6 +1493,7 @@ final class AssignmentAnalyzer
                         $e->getMessage(),
                         new CodeLocation($statements_analyzer->getSource(), $stmt),
                     ),
+                    $statements_analyzer->getSuppressedIssues(),
                 );
             } catch (DocblockParseException $e) {
                 IssueBuffer::maybeAdd(

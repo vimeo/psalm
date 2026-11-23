@@ -5254,6 +5254,88 @@ final class AssertAnnotationTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'instanceMethodOfAnotherClassCalledStaticallyDoesNotAssertTheCallersThis' => [
+                'code' => '<?php
+                    interface Marker {}
+
+                    class Other {
+                        public ?int $v = null;
+
+                        /** @psalm-assert int $this->v */
+                        public function set(): void {}
+
+                        /** @psalm-assert-if-true Marker $this */
+                        public function isMarker(): bool {
+                            return true;
+                        }
+                    }
+
+                    class Caller {
+                        public ?int $v = null;
+
+                        public function test(): void {
+                            $this->v = null;
+                            Other::set();
+                            /** @psalm-check-type-exact $this->v = null */;
+                            if (Other::isMarker()) {
+                                /** @psalm-check-type-exact $this = Caller&static */;
+                            }
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['NonStaticSelfCall', 'InvalidStaticInvocation'],
+            ],
+            'staticCallOnSeveralClassesAssertsWhatEachOfThemAsserts' => [
+                'code' => '<?php
+                    class Other {
+                        public static function isString(mixed $_x): bool {
+                            return true;
+                        }
+
+                        /** @psalm-assert-if-true int $x */
+                        public static function isInt(mixed $x): bool {
+                            return is_int($x);
+                        }
+                    }
+
+                    class Other2 {
+                        public static function isInt(mixed $_x): bool {
+                            return true;
+                        }
+                    }
+
+                    class Other3 {
+                        /** @psalm-assert-if-true int $x */
+                        public static function isInt(mixed $x): bool {
+                            return is_int($x);
+                        }
+                    }
+
+                    class Caller {
+                        /** @psalm-assert-if-true string $x */
+                        public function isString(mixed $x): bool {
+                            return is_string($x);
+                        }
+
+                        public function test(bool $flag, mixed $x): void {
+                            $class = $flag ? self::class : Other::class;
+                            if ($class::isString($x)) {
+                                /** @psalm-check-type-exact $x = mixed */;
+                            }
+                            $static = $flag ? Other2::class : Other::class;
+                            if ($static::isInt($x)) {
+                                /** @psalm-check-type-exact $x = mixed */;
+                            }
+                            $asserting = $flag ? Other3::class : Other::class;
+                            if ($asserting::isInt($x)) {
+                                /** @psalm-check-type-exact $x = int */;
+                            }
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
         ];
     }
 

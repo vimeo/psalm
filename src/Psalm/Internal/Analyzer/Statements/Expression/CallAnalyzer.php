@@ -74,6 +74,7 @@ use function array_filter;
 use function array_keys;
 use function array_map;
 use function array_merge;
+use function array_shift;
 use function array_unique;
 use function array_values;
 use function assert;
@@ -90,6 +91,7 @@ use function str_contains;
 use function str_starts_with;
 use function strrpos;
 use function strtolower;
+use function strval;
 use function substr;
 
 /**
@@ -979,6 +981,38 @@ abstract class CallAnalyzer
             static fn(Possibilities $assertion): bool => !is_string($assertion->var_id)
                 || ($assertion->var_id !== '$this' && !str_starts_with($assertion->var_id, '$this->')),
         );
+    }
+
+    /**
+     * The assertions made by every possible target of a call
+     *
+     * @param non-empty-list<array<int, Possibilities>> $targets_assertions
+     * @return list<Possibilities>
+     * @psalm-capabilities read-props
+     */
+    public static function getCommonAssertions(array $targets_assertions): array
+    {
+        $common = array_values(array_shift($targets_assertions));
+
+        foreach ($targets_assertions as $assertions) {
+            $ids = array_map(self::getPossibilitiesId(...), $assertions);
+
+            $common = array_values(array_filter(
+                $common,
+                static fn(Possibilities $possibilities): bool
+                    => in_array(self::getPossibilitiesId($possibilities), $ids, true),
+            ));
+        }
+
+        return $common;
+    }
+
+    /**
+     * @psalm-capabilities read-props
+     */
+    private static function getPossibilitiesId(Possibilities $possibilities): string
+    {
+        return $possibilities->var_id . ':' . implode('|', array_map(strval(...), $possibilities->rule));
     }
 
     /**

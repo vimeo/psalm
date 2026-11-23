@@ -714,6 +714,7 @@ final class StatementsAnalyzer extends SourceAnalyzer
                             $e->getMessage(),
                             new CodeLocation($statements_analyzer->getSource(), $stmt),
                         ),
+                        $statements_analyzer->getSuppressedIssues(),
                     );
                 } catch (DocblockParseException $e) {
                     IssueBuffer::maybeAdd(

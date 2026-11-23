@@ -229,6 +229,23 @@ final class AnnotationTest extends TestCase
                     function statement(): void {
                         /** @var array< $q */
                         echo 1;
+                    }
+
+                    /**
+                     * @param list<int> $list
+                     * @psalm-suppress InvalidDocblock
+                     * @psalm-suppress MissingDocblockType
+                     */
+                    function misplacedVariable(array $list): int {
+                        /** @var $a int */
+                        $a = 1;
+                        /** @var $v int */
+                        foreach ($list as $v) {
+                            echo $v;
+                        }
+                        /** @var $q int */
+                        echo 1;
+                        return $a;
                     }',
             ],
             'callableParamsWithTheSameInnerParameterNameAreNotDuplicated' => [
