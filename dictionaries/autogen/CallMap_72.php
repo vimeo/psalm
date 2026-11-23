@@ -39442,6 +39442,7 @@ return array (
     0 => 'mixed',
     -2 => 'none',
     'lob_descriptor' => 'mixed',
+    'lob_descriptor_2' => 'mixed',
   ),
   'oci_lob_load' => 
   array (
@@ -53749,7 +53750,7 @@ return array (
     -2 => 'none',
     '&state' => 'mixed',
     'string' => 'mixed',
-    'string=' => 'mixed',
+    'string_3=' => 'mixed',
   ),
   'sodium_crypto_secretstream_xchacha20poly1305_push' => 
   array (
@@ -53757,7 +53758,7 @@ return array (
     -2 => 'none',
     '&state' => 'mixed',
     'string' => 'mixed',
-    'string=' => 'mixed',
+    'string_3=' => 'mixed',
     'long=' => 'mixed',
   ),
   'sodium_crypto_secretstream_xchacha20poly1305_rekey' => 

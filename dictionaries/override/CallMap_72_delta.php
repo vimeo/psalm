@@ -598,13 +598,15 @@ return array (
     array (
       0 => 'array<array-key, mixed>|false',
       '&r state' => 'string',
-      'string=' => 'string',
+      'string' => 'string',
+      'string_3=' => 'mixed',
     ),
     'sodium_crypto_secretstream_xchacha20poly1305_push' => 
     array (
       0 => 'string',
       '&w state' => 'string',
-      'string=' => 'string',
+      'string' => 'string',
+      'string_3=' => 'string',
       'long=' => 'string',
     ),
     'sodium_crypto_secretstream_xchacha20poly1305_rekey' => 

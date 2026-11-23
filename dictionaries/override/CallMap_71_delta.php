@@ -543,8 +543,9 @@ return array (
       'old' => 
       array (
         0 => 'bool',
-        'context=' => 'resource',
+        'context' => 'resource',
         'filename' => 'string',
+        'context_3=' => 'mixed',
       ),
       'new' => 
       array (

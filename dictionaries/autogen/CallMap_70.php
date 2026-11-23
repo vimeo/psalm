@@ -22463,7 +22463,7 @@ return array (
     -2 => 'none',
     'context' => 'mixed',
     'filename' => 'mixed',
-    'context=' => 'mixed',
+    'context_3=' => 'mixed',
   ),
   'hash_update_stream' => 
   array (
@@ -37609,6 +37609,7 @@ return array (
     0 => 'mixed',
     -2 => 'none',
     'lob_descriptor' => 'mixed',
+    'lob_descriptor_2' => 'mixed',
   ),
   'oci_lob_load' => 
   array (

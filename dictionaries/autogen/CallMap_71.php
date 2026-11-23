@@ -38562,6 +38562,7 @@ return array (
     0 => 'mixed',
     -2 => 'none',
     'lob_descriptor' => 'mixed',
+    'lob_descriptor_2' => 'mixed',
   ),
   'oci_lob_load' => 
   array (

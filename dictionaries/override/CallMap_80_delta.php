@@ -14030,7 +14030,7 @@ return array (
         'mailbox' => 'string',
         'user' => 'string',
         'password' => 'string',
-        'options=' => 'array<array-key, mixed>',
+        'options=' => 'int',
         'n_retries=' => 'int',
         'params=' => 'array<array-key, mixed>',
       ),
@@ -22701,6 +22701,7 @@ return array (
       array (
         0 => 'bool',
         'lob_descriptor' => 'OCILob',
+        'lob_descriptor_2' => 'OCILob',
       ),
       'new' => 
       array (
@@ -32595,7 +32596,7 @@ return array (
         0 => 'false|resource',
         'key' => 'int',
         'flags' => 'string',
-        'mode' => 'string',
+        'mode' => 'int',
         'size' => 'int',
       ),
       'new' => 
@@ -34891,7 +34892,8 @@ return array (
       array (
         0 => 'array<array-key, mixed>|false',
         '&r state' => 'string',
-        'string=' => 'string',
+        'string' => 'string',
+        'string_3=' => 'mixed',
       ),
       'new' => 
       array (
@@ -34907,7 +34909,8 @@ return array (
       array (
         0 => 'string',
         '&w state' => 'string',
-        'string=' => 'string',
+        'string' => 'string',
+        'string_3=' => 'string',
         'long=' => 'string',
       ),
       'new' => 

@@ -137,9 +137,13 @@ function assertEntryParameters(string $func, array $baseParameters, array $custo
             }
             break;
         }
-        if (isset($customParameters[$name])) {
+        $positional = $customParametersByVal[$idx] ?? null;
+        // a name reflection lacks renames the parameter at this position, so a later one may share this name
+        if ($positional !== null && !isset($baseParameters[$positional['name']])) {
+            $final[$name] = assertParameter($func, $name, $positional, $parameter);
+        } elseif (isset($customParameters[$name])) {
             $final[$name] = assertParameter($func, $name, $customParameters[$name], $parameter);
-        } elseif (isset($customParametersByVal[$idx])) {
+        } elseif ($positional !== null) {
             $final[$name] = assertParameter($func, $name, $customParametersByVal[$idx], $parameter);
         } else {
             $final[$name] = $parameter;
