@@ -148,6 +148,8 @@ final class NamedFunctionCallHandler
     /**
      * the functions deprecated when called with more than ('>') or exactly ('===') this number of arguments,
      * by what is deprecated, since when, its replacement and what to append to the message
+     *
+     * @var array<lowercase-string, array{'>'|'===', int, string, int, ?string, string}>
      */
     private const DEPRECATED_CALL_SHAPES = [
         'mb_check_encoding' => ['===', 0, 'Calling mb_check_encoding() without arguments', 8_01_00, null, ''],
