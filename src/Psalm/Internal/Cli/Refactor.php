@@ -5,13 +5,13 @@ declare(strict_types=1);
 namespace Psalm\Internal\Cli;
 
 use AssertionError;
-use Composer\XdebugHandler\XdebugHandler;
 use Psalm\Exception\RefactorException;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\CliUtils;
 use Psalm\Internal\Composer;
 use Psalm\Internal\ErrorHandler;
 use Psalm\Internal\IncludeCollector;
+use Psalm\Internal\Preloader;
 use Psalm\Internal\Provider\ClassLikeStorageCacheProvider;
 use Psalm\Internal\Provider\FileProvider;
 use Psalm\Internal\Provider\FileStorageCacheProvider;
@@ -206,7 +206,9 @@ final class Refactor
         );
 
         // If Xdebug is enabled, restart without it
-        (new XdebugHandler('PSALTER'))->check();
+        CliUtils::createRestarter('PSALTER')->check();
+
+        Preloader::preload();
 
         $path_to_config = CliUtils::getPathToConfig($options);
 
