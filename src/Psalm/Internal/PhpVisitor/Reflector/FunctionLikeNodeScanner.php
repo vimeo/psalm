@@ -658,6 +658,7 @@ final class FunctionLikeNodeScanner
                 $property_storage->allow_private_mutation = $var_comment_allow_private_mutation;
                 $property_storage->suppressed_issues = $var_comment_suppressed_issues;
                 $property_storage->deprecated = $var_comment_deprecated;
+                $property_storage->attributes = $param_storage->attributes;
                 $param_storage->promoted_property = true;
                 $property_storage->is_promoted = true;
 
@@ -1410,11 +1411,12 @@ final class FunctionLikeNodeScanner
                 } else {
                     $storage->final = true;
                 }
+                $storage->final_from_docblock = $classlike_storage->final_from_docblock;
             } else {
                 $storage->final = $classlike_storage->final || $stmt->isFinal();
+                // a method declared final is final natively, even in a class that is final only in its docblock
+                $storage->final_from_docblock = $classlike_storage->final_from_docblock && !$stmt->isFinal();
             }
-
-            $storage->final_from_docblock = $classlike_storage->final_from_docblock;
 
             if ($stmt->isPrivate()) {
                 $storage->visibility = ClassLikeAnalyzer::VISIBILITY_PRIVATE;
