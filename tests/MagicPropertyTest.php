@@ -171,6 +171,54 @@ final class MagicPropertyTest extends TestCase
                 function f(A|int $a): void { $a->foo = "x"; }',
             ['6:PossiblyInvalidPropertyAssignment'],
         ];
+        yield 'phpDocPropertyReadOfFalsableReceiver' => [
+            '<?php
+                /** @property-read string $foo */
+                final class A {
+                    public function __get(string $n): mixed { return ""; }
+                }
+                function f(A|false $a): string { return $a->foo; }',
+            ['6:PossiblyInvalidPropertyFetch'],
+        ];
+        yield 'magicGetterOfIntersectionMember' => [
+            '<?php
+                /** @psalm-no-seal-properties */
+                class U {
+                    public function __get(string $n): bool { return true; }
+                }
+                /** @property int $foo */
+                class N {
+                    public function __get(string $n): mixed { return 0; }
+                }
+                /** @param U&N $x */
+                function f(object $x): int {
+                    $y = $x->foo;
+                    /** @psalm-check-type-exact $y = int */
+                    return $y;
+                }',
+            [],
+        ];
+        yield 'magicSetterOnUnionWithRealProperty' => [
+            '<?php
+                /** @psalm-no-seal-properties */
+                final class A {
+                    public function __set(string $n, mixed $v): void {}
+                }
+                final class B {
+                    public string $foo = "";
+                }
+                function f(A|B $a): void { $a->foo = "x"; }',
+            [],
+        ];
+        yield 'magicSetterOfFalsableReceiver' => [
+            '<?php
+                /** @psalm-no-seal-properties */
+                final class A {
+                    public function __set(string $n, mixed $v): void {}
+                }
+                function f(A|false $a): void { $a->foo = "x"; }',
+            ['6:PossiblyInvalidPropertyAssignment'],
+        ];
         yield 'magicSetterOfNullableReceiver' => [
             '<?php
                 /** @psalm-no-seal-properties */
