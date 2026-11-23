@@ -23,3 +23,24 @@ define('GEOSRELATE_BNR_OGC', 1);
 define('GEOSRELATE_BNR_ENDPOINT', 2);
 define('GEOSRELATE_BNR_MULTIVALENT_ENDPOINT', 3);
 define('GEOSRELATE_BNR_MONOVALENT_ENDPOINT', 4);
+
+// the methods of these classes are in the CallMap
+class GEOSGeometry
+{
+}
+
+class GEOSWKBReader
+{
+}
+
+class GEOSWKBWriter
+{
+}
+
+class GEOSWKTReader
+{
+}
+
+class GEOSWKTWriter
+{
+}
