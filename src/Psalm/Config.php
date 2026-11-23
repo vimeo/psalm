@@ -684,6 +684,7 @@ final class Config
         "mysqli" => null,
         "openssl" => null,
         "pdo" => null,
+        "pgsql" => null,
         "protobuf" => null,
         "random" => null,
         "rdkafka" => null,

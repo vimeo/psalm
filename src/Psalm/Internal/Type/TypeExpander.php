@@ -127,7 +127,7 @@ final class TypeExpander
 
         // combining can still simplify the parts, e.g. drop a subclass of another class of the union
         if (!$changed && count($new_return_type_parts) > 1) {
-            $fleshed_out_type = TypeCombiner::combine($new_return_type_parts, $codebase);
+            $fleshed_out_type = TypeCombiner::combineKeepingNeverBoundVariables($new_return_type_parts, $codebase);
             $changed = $fleshed_out_type->getAtomicTypes() !== $return_type->getAtomicTypes();
         }
 
@@ -148,7 +148,7 @@ final class TypeExpander
             ]);
         }
 
-        $fleshed_out_type ??= TypeCombiner::combine(
+        $fleshed_out_type ??= TypeCombiner::combineKeepingNeverBoundVariables(
             $new_return_type_parts,
             $codebase,
         );

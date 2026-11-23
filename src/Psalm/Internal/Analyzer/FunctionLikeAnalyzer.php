@@ -26,6 +26,7 @@ use Psalm\Internal\Analyzer\FunctionLike\ReturnTypeCollector;
 use Psalm\Internal\Analyzer\Statements\DeclareAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Assignment\InstancePropertyAssignmentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\CallPurityResolver;
+use Psalm\Internal\Analyzer\Statements\Expression\Call\ClassTemplateParamCollector;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\FunctionCallReturnTypeFetcher;
 use Psalm\Internal\Analyzer\Statements\Expression\DestructorAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
@@ -1839,6 +1840,79 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 $context,
             );
         }
+    }
+
+    /**
+     * A trait method is analyzed as a method of the class using the trait, where the templates of the trait
+     * are the types given to `@use`: an argument of such a template type fits the parameter of a call the
+     * concrete type fits.
+     */
+    public static function bindTraitTemplatesToUse(
+        Codebase $codebase,
+        FunctionLikeStorage $storage,
+        Context $context,
+        Union $type,
+    ): Union {
+        if (!$storage instanceof MethodStorage
+            || $storage->defining_fqcln === null
+            || $storage->cased_name === null
+            || $context->self === null
+            || strtolower($storage->defining_fqcln) === strtolower($context->self)
+        ) {
+            return $type;
+        }
+
+        $declaring_storage = $codebase->classlike_storage_provider->get($storage->defining_fqcln);
+
+        if (!$declaring_storage->is_trait || $declaring_storage->template_types === null) {
+            return $type;
+        }
+
+        $class_template_params = ClassTemplateParamCollector::collect(
+            $codebase,
+            $declaring_storage,
+            $codebase->classlike_storage_provider->get($context->self),
+            strtolower($storage->cased_name),
+        );
+
+        if ($class_template_params === null) {
+            return $type;
+        }
+
+        // a template narrowed by a check (`T as string` after `is_string($x)`) is not the type it is bound to
+        $bound_atomic_types = [];
+        $narrowed_atomic_types = [];
+
+        foreach ($type->getAtomicTypes() as $atomic_type) {
+            if ($atomic_type instanceof TTemplateParam
+                && isset($declaring_storage->template_types[$atomic_type->param_name][$atomic_type->defining_class])
+                && !$atomic_type->as->equals(
+                    $declaring_storage->template_types[$atomic_type->param_name][$atomic_type->defining_class],
+                )
+            ) {
+                $narrowed_atomic_types[] = $atomic_type;
+            } else {
+                $bound_atomic_types[] = $atomic_type;
+            }
+        }
+
+        if ($bound_atomic_types === []) {
+            return $type;
+        }
+
+        $bound_type = TemplateStandinTypeReplacer::replace(
+            $narrowed_atomic_types === [] ? $type : $type->getBuilder()->setTypes($bound_atomic_types)->freeze(),
+            new TemplateResult($class_template_params, []),
+            $codebase,
+            null,
+            null,
+            null,
+            $context->self,
+        );
+
+        return $narrowed_atomic_types === []
+            ? $bound_type
+            : Type::combineUnionTypes($bound_type, new Union($narrowed_atomic_types), $codebase);
     }
 
     /**
