@@ -1415,6 +1415,24 @@ final class ValueTest extends TestCase
                     '$i===' => 'Traversable<object, int>&Countable|array<never, never>',
                 ],
             ],
+            'templatedIterableMayBeCountableArray' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @template TKey
+                     * @template TValue
+                     * @param iterable<TKey, TValue> $i
+                     * @return list<TValue>
+                     */
+                    function f(iterable $i): array {
+                        if (is_countable($i) && is_array($i)) {
+                            return array_values($i);
+                        }
+
+                        return [];
+                    }
+                    PHP,
+            ],
             'emptyIterableMayBeCountableEmptyArray' => [
                 'code' => <<<'PHP'
                     <?php
