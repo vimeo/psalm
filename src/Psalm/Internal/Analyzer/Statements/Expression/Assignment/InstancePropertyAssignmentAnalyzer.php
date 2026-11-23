@@ -2105,12 +2105,10 @@ final class InstancePropertyAssignmentAnalyzer
         $statements_analyzer->node_data = clone $statements_analyzer->node_data;
 
         // `__set` is called on this part of the receiver's type only
+        $receiver_type = $old_data_provider->getType($stmt->var);
         $statements_analyzer->node_data->setType(
             $stmt->var,
-            new Union(
-                [$lhs_type_part],
-                ['parent_nodes' => $old_data_provider->getType($stmt->var)?->parent_nodes ?? []],
-            ),
+            $receiver_type?->setTypes([$lhs_type_part]) ?? new Union([$lhs_type_part]),
         );
 
         $fake_method_call = new VirtualMethodCall(

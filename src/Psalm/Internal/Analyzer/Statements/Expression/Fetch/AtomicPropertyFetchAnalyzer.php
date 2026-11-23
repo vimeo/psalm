@@ -846,7 +846,11 @@ final class AtomicPropertyFetchAnalyzer
 
             $statements_analyzer->node_data = clone $statements_analyzer->node_data;
 
-            $statements_analyzer->node_data->setType($stmt->var, new Union([$lhs_type_part]));
+            $receiver_type = $old_data_provider->getType($stmt->var);
+            $statements_analyzer->node_data->setType(
+                $stmt->var,
+                $receiver_type?->setTypes([$lhs_type_part]) ?? new Union([$lhs_type_part]),
+            );
 
             $fake_method_call = new VirtualMethodCall(
                 $stmt->var,

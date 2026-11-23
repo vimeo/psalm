@@ -94,6 +94,7 @@ final class MagicPropertyTest extends TestCase
 
     /**
      * @return iterable<string, array{0: string, 1: list<string>, 2?: bool}>
+     * @psalm-pure
      */
     public static function providerPseudoPropertyOnUnionWithNonObject(): iterable
     {
@@ -218,6 +219,30 @@ final class MagicPropertyTest extends TestCase
                 }
                 function f(A|false $a): void { $a->foo = "x"; }',
             ['6:PossiblyInvalidPropertyAssignment'],
+        ];
+        yield 'magicSetterOfFreshReceiverInPureFunction' => [
+            '<?php
+                /** @psalm-no-seal-properties */
+                final class A {
+                    public int $n = 0;
+                    /** @psalm-external-mutation-free */
+                    public function __set(string $k, mixed $v): void { $this->n = 1; }
+                }
+                /** @psalm-pure */
+                function f(): int { $a = new A(); $a->foo = 1; return 1; }',
+            [],
+        ];
+        yield 'magicGetterOfFreshReceiverInPureFunction' => [
+            '<?php
+                /** @psalm-no-seal-properties */
+                final class A {
+                    public int $n = 0;
+                    /** @psalm-mutation-free */
+                    public function __get(string $k): int { return $this->n; }
+                }
+                /** @psalm-pure */
+                function f(): int { $a = new A(); return $a->foo; }',
+            [],
         ];
         yield 'magicSetterOfNullableReceiver' => [
             '<?php
