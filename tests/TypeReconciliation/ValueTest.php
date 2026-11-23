@@ -1340,6 +1340,107 @@ final class ValueTest extends TestCase
                     '$c===' => 'callable-array{0: class-string|object, 1: non-empty-string}',
                 ],
             ],
+            'callableMayBeCountable' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @return callable */
+                    function c() {
+                        return 'strlen';
+                    }
+
+                    $c = c();
+
+                    if (!is_countable($c)) { // [new ArrayObject(), 'count']
+                        throw new RuntimeException();
+                    }
+                    PHP,
+                'assertions' => [
+                    '$c===' => 'Countable|callable-array{0: class-string|object, 1: non-empty-string}',
+                ],
+            ],
+            'iterableMayBeCountableArrayOrTraversable' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @return iterable<string, int> */
+                    function i() {
+                        return [];
+                    }
+
+                    $i = i();
+
+                    if (!is_countable($i)) {
+                        throw new RuntimeException();
+                    }
+                    PHP,
+                'assertions' => [
+                    '$i===' => 'Traversable<string, int>&Countable|array<string, int>',
+                ],
+            ],
+            'countableIterableIsCountableTraversable' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @return iterable<int, string>&Countable */
+                    function i() {
+                        return new ArrayObject([]);
+                    }
+
+                    $i = i();
+
+                    if (!is_countable($i)) {
+                        throw new RuntimeException();
+                    }
+                    PHP,
+                'assertions' => [
+                    '$i===' => 'Traversable<int, string>&Countable',
+                ],
+            ],
+            'isCountableKeepsOtherTypes' => [
+                'code' => <<<'PHP'
+                    <?php
+                    interface I {}
+
+                    /**
+                     * @template T
+                     * @param T $t
+                     */
+                    function f(mixed $m, $t, I $i, object $o, Countable|string $cs, array|string $as): void {
+                        if (is_countable($m)) {
+                            /** @psalm-check-type-exact $m = Countable|array<array-key, mixed> */
+                        }
+                        if (is_countable($t)) {
+                            /** @psalm-check-type-exact $t = Countable|array<array-key, mixed> */
+                        }
+                        if (is_countable($i)) {
+                            /** @psalm-check-type-exact $i = I&Countable */
+                        }
+                        if (is_countable($o)) {
+                            /** @psalm-check-type-exact $o = Countable */
+                        }
+                        if (is_countable($cs)) {
+                            /** @psalm-check-type-exact $cs = Countable */
+                        }
+                        if (!is_countable($as)) {
+                            /** @psalm-check-type-exact $as = string */
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'notCountableCallableOrIterable' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function f(callable $c, iterable $i): void {
+                        if (!is_countable($c)) { // 'strlen'
+                            /** @psalm-check-type-exact $c = callable */
+                        }
+                        if (!is_countable($i)) { // a Generator
+                            /** @psalm-check-type-exact $i = iterable<mixed, mixed> */
+                        }
+                    }
+                    PHP,
+            ],
             'arrayOfStringsMayBeCallable' => [
                 'code' => <<<'PHP'
                     <?php
@@ -1950,6 +2051,16 @@ final class ValueTest extends TestCase
                     }
                     PHP,
                 'error_message' => 'does not contain',
+            ],
+            'callableStringNeverCountable' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param callable-string $c */
+                    function f(string $c): void {
+                        if (is_countable($c)) {}
+                    }
+                    PHP,
+                'error_message' => 'DocblockTypeContradiction',
             ],
             'numericNeverIdenticalToCallableString' => [
                 'code' => <<<'PHP'

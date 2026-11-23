@@ -1715,10 +1715,30 @@ final class SimpleAssertionReconciler extends Reconciler
             } elseif ($type instanceof TObject) {
                 $iterable_types[] = new TNamedObject('Countable');
                 $redundant = false;
-            } elseif ($type instanceof TNamedObject || $type instanceof TIterable) {
+            } elseif ($type instanceof TNamedObject) {
                 $countable = new TNamedObject('Countable');
                 $type = $type->addIntersectionType($countable);
                 $iterable_types[] = $type;
+                $redundant = false;
+            } elseif (($parts = AtomicParts::split($type, Type::getArrayAtomic(), $codebase)) !== null) {
+                // e.g. the countable iterables are the arrays and the Countable Traversable objects
+                $parts_failed_reconciliation = Reconciler::RECONCILIATION_OK;
+                $countable_parts = self::reconcileCountable(
+                    $assertion,
+                    $codebase,
+                    new Union($parts),
+                    null,
+                    $negated,
+                    null,
+                    $suppressed_issues,
+                    $parts_failed_reconciliation,
+                    $is_equality,
+                );
+
+                if (!$countable_parts->isNever()) {
+                    $iterable_types = [...$iterable_types, ...array_values($countable_parts->getAtomicTypes())];
+                }
+
                 $redundant = false;
             } else {
                 $redundant = false;
