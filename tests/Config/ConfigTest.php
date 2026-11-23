@@ -6,6 +6,7 @@ namespace Psalm\Tests\Config;
 
 use Composer\Autoload\ClassLoader;
 use DOMDocument;
+use DOMElement;
 use DOMXPath;
 use ErrorException;
 use Override;
@@ -25,9 +26,17 @@ use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\ErrorHandler;
 use Psalm\Internal\Provider\Providers;
 use Psalm\Internal\Scanner\FileScanner;
+use Psalm\Issue\ArgumentIssue;
+use Psalm\Issue\ClassConstantIssue;
+use Psalm\Issue\ClassIssue;
+use Psalm\Issue\FunctionIssue;
+use Psalm\Issue\MethodIssue;
 use Psalm\Issue\PossiblyNullReference;
+use Psalm\Issue\PropertyIssue;
 use Psalm\Issue\TooManyArguments;
 use Psalm\Issue\UndefinedFunction;
+use Psalm\Issue\UnusedBaselineEntry;
+use Psalm\Issue\VariableIssue;
 use Psalm\Tests\Config\Plugin\FileTypeSelfRegisteringPlugin;
 use Psalm\Tests\Config\Plugin\TestPluginIssue;
 use Psalm\Tests\Config\Plugin\TestPluginIssueDefaultLevel;
@@ -61,6 +70,7 @@ use function is_array;
 use function is_dir;
 use function is_link;
 use function is_readable;
+use function is_subclass_of;
 use function json_encode;
 use function mkdir;
 use function preg_match;
@@ -1746,6 +1756,111 @@ final class ConfigTest extends DeferredAnalyzerTestCase
             '<?php
                 function seconds(): int|string {
                     return (new \\Google\\Protobuf\\Timestamp())->setSeconds(0)->getSeconds();
+                }',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+    }
+
+    /**
+     * The config narrows an issue of a class, method, property, ... to the ones it names, so the schema must allow
+     * naming them
+     */
+    public function testTheSchemaAllowsNamingWhatAnIssueIsAbout(): void
+    {
+        $schema = new DOMDocument();
+        $schema->load(dirname(__DIR__, 2) . '/config.xsd');
+        $xpath = new DOMXPath($schema);
+        $xpath->registerNamespace('xs', 'http://www.w3.org/2001/XMLSchema');
+
+        $handler_types = [
+            ClassIssue::class => 'ClassIssueHandlerType',
+            MethodIssue::class => 'MethodIssueHandlerType',
+            FunctionIssue::class => 'FunctionIssueHandlerType',
+            PropertyIssue::class => 'PropertyIssueHandlerType',
+            ArgumentIssue::class => 'ArgumentIssueHandlerType',
+            VariableIssue::class => 'VariableIssueHandlerType',
+            ClassConstantIssue::class => 'ClassConstantIssueHandlerType',
+        ];
+
+        $mismatches = [];
+        $checked = 0;
+
+        foreach ($xpath->query('//xs:complexType[@name="IssueHandlersType"]//xs:element') ?: [] as $element) {
+            if (!$element instanceof DOMElement) {
+                continue;
+            }
+
+            $issue_class = 'Psalm\\Issue\\' . $element->getAttribute('name');
+
+            // never instantiated: IssueBuffer::finish() reports it without a class or the config's filters
+            if (!class_exists($issue_class) || $issue_class === UnusedBaselineEntry::class) {
+                continue;
+            }
+
+            foreach ($handler_types as $issue_parent => $handler_type) {
+                if (is_subclass_of($issue_class, $issue_parent)) {
+                    $checked++;
+
+                    if ($element->getAttribute('type') !== $handler_type) {
+                        $mismatches[] = $element->getAttribute('name') . ' is not a ' . $handler_type;
+                    }
+
+                    break;
+                }
+            }
+        }
+
+        $this->assertGreaterThan(50, $checked);
+        $this->assertSame([], $mismatches);
+    }
+
+    public function testAMissingDependencyIsSuppressedByTheNameOfTheDependency(): void
+    {
+        $this->expectNotToPerformAssertions();
+
+        $this->analyzeClassWithAMissingDependency('Not\\Currently\\Installed');
+    }
+
+    public function testAMissingDependencyIsNotSuppressedByTheNameOfTheClassDependingOnIt(): void
+    {
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessage('MissingDependency');
+
+        $this->analyzeClassWithAMissingDependency('Layer');
+    }
+
+    private function analyzeClassWithAMissingDependency(string $referenced_class): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__, 2),
+                '<?xml version="1.0"?>
+                <psalm>
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+                    <issueHandlers>
+                        <MissingDependency>
+                            <errorLevel type="suppress">
+                                <referencedClass name="' . $referenced_class . '" />
+                            </errorLevel>
+                        </MissingDependency>
+                        <UndefinedClass errorLevel="suppress" />
+                    </issueHandlers>
+                </psalm>',
+            ),
+        );
+
+        $file_path = (string) getcwd() . '/src/somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                class Layer extends Not\Currently\Installed {}
+
+                function f(): void {
+                    new Layer();
                 }',
         );
 
