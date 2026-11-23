@@ -746,6 +746,24 @@ final class BinaryOperationTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'powOfIntsWithAnExponentThatMayBeNegativeIsAFloatOrInt' => [
+                'code' => '<?php
+                    /** @var int $base */
+                    $base = 2;
+                    /** @var int $exponent */
+                    $exponent = 3;
+
+                    $variable = $base ** $exponent;
+                    $literalBase = 2 ** $exponent;
+                    $literalExponent = $base ** 2;
+                    $negativeExponent = $base ** -1;',
+                'assertions' => [
+                    '$variable===' => 'float|int',
+                    '$literalBase===' => 'float|int',
+                    '$literalExponent===' => 'int',
+                    '$negativeExponent===' => 'float',
+                ],
+            ],
             'comparisonNarrowsTheBoundOfATemplateInTheTypeOfTheVariable' => [
                 'code' => '<?php
                     /** @param int<1, max> $n */

@@ -256,6 +256,7 @@ final class ReturnAnalyzer
                         $e->getMessage(),
                         new CodeLocation($source, $stmt),
                     ),
+                    $statements_analyzer->getSuppressedIssues(),
                 );
             }
 

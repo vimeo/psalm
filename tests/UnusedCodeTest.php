@@ -2470,6 +2470,51 @@ final class UnusedCodeTest extends TestCase
 
                     (new A())->foo()->bar();',
             ],
+            'fluentMethodDelegatingToAnotherFluentCallAllowed' => [
+                'code' => '<?php
+                    final class Query {
+                        /** @return $this */
+                        public function where(string $column): static {
+                            echo $column;
+                            return $this;
+                        }
+
+                        /** @return $this */
+                        public function active() {
+                            return $this->where("active");
+                        }
+                    }
+
+                    $query = new Query();
+                    $query->where("a");
+                    $query->active();',
+            ],
+            'overrideInheritingReturnsThisDelegatingToAnotherFluentCallAllowed' => [
+                'code' => '<?php
+                    class ParentQ {
+                        /** @return $this */
+                        public function a() {
+                            echo "p";
+                            return $this;
+                        }
+
+                        /** @return $this */
+                        public function b() {
+                            echo "b";
+                            return $this;
+                        }
+                    }
+
+                    final class ChildQ extends ParentQ {
+                        public function a(): static {
+                            return $this->b();
+                        }
+                    }
+
+                    (new ChildQ())->a();
+                    (new ParentQ())->a();
+                    (new ParentQ())->b();',
+            ],
             'unusedInterfaceReturnValueWithImplementingClassSuppressed' => [
                 'code' => '<?php
                     interface IWorker {
@@ -3372,6 +3417,20 @@ final class UnusedCodeTest extends TestCase
                     }
                     echo (new Foo())->name;',
             ],
+            'methodsNamedByCallablesGivenToAClosureParamAreUsed' => [
+                'code' => '<?php
+                    final class Handler
+                    {
+                        public function method(): void {}
+                        public static function named(): void {}
+                    }
+
+                    function takesClosure(Closure $closure): void { $closure(); }
+
+                    takesClosure([new Handler(), "method"]);
+                    takesClosure("Handler::named");',
+                'ignored_issues' => ['InvalidArgument', 'ArgumentTypeCoercion'],
+            ],
         ];
     }
 
@@ -4208,6 +4267,25 @@ final class UnusedCodeTest extends TestCase
                     $foo = new A();
                     echo $foo->a;',
                 'error_message' => 'PossiblyUnusedProperty',
+            ],
+            'delegatingMethodNotMarkedAsReturningThisIsReported' => [
+                'code' => '<?php
+                    final class Query {
+                        public function where(string $column): static {
+                            echo $column;
+                            return $this;
+                        }
+
+                        /** @return static */
+                        public function active() {
+                            return $this->where("active");
+                        }
+                    }
+
+                    $query = new Query();
+                    $query->where("a");
+                    $query->active();',
+                'error_message' => 'PossiblyUnusedReturnValue',
             ],
             'unusedInterfaceReturnValue' => [
                 'code' => '<?php
