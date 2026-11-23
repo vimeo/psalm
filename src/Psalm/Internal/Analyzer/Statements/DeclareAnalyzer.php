@@ -21,30 +21,13 @@ use function in_array;
 final class DeclareAnalyzer
 {
     /**
-     * Whether the code of a file runs under strict_types, which only the first statements of the file can declare
+     * Whether the code of a file runs under strict_types
      */
     public static function declaresStrictTypes(Codebase $codebase, string $file_path): bool
     {
-        if ($codebase->config->useStrictTypesForFile($file_path)) {
-            return true;
-        }
-
-        foreach ($codebase->getStatementsForFile($file_path) as $stmt) {
-            if (!$stmt instanceof PhpParser\Node\Stmt\Declare_) {
-                return false;
-            }
-
-            foreach ($stmt->declares as $declaration) {
-                if ((string) $declaration->key === 'strict_types'
-                    && $declaration->value instanceof PhpParser\Node\Scalar\LNumber
-                    && $declaration->value->value === 1
-                ) {
-                    return true;
-                }
-            }
-        }
-
-        return false;
+        return $codebase->config->useStrictTypesForFile($file_path)
+            || ($codebase->file_storage_provider->has($file_path)
+                && $codebase->file_storage_provider->get($file_path)->strict_types);
     }
 
     public static function analyze(

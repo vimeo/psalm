@@ -20,7 +20,6 @@ use Psalm\Exception\CircularReferenceException;
 use Psalm\Exception\DocblockParseException;
 use Psalm\FileManipulation;
 use Psalm\Internal\Analyzer\FunctionLike\ReturnTypeAnalyzer;
-use Psalm\Internal\Analyzer\Statements\DeclareAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\ClassTemplateParamCollector;
 use Psalm\Internal\Analyzer\Statements\Expression\ClassConstAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\AtomicPropertyFetchAnalyzer;
@@ -1900,13 +1899,6 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                 $trait_aliases,
             );
 
-            // the code of a trait runs under the strict_types of its own file
-            $class_strict_types = $class_context->strict_types;
-            $class_context->strict_types = DeclareAnalyzer::declaresStrictTypes(
-                $codebase,
-                $trait_file_analyzer->getFilePath(),
-            );
-
             foreach ($trait_node->stmts as $trait_stmt) {
                 if ($trait_stmt instanceof PhpParser\Node\Stmt\ClassMethod) {
                     $trait_method_analyzer = $this->analyzeClassMethod(
@@ -1931,14 +1923,10 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                         $constructor_analyzer,
                         $trait_analyzer,
                     ) === false) {
-                        $class_context->strict_types = $class_strict_types;
-
                         return false;
                     }
                 }
             }
-
-            $class_context->strict_types = $class_strict_types;
 
             $trait_file_analyzer->clearSourceBeforeDestruction();
         }

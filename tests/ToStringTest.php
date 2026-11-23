@@ -88,6 +88,12 @@ final class ToStringTest extends TestCase
                 declare(strict_types=1);
 
                 trait U {
+                    public string $s = "";
+
+                    public function __construct(S $o) {
+                        $this->s = $o;
+                    }
+
                     public function call(S $o): void {
                         takesString($o);
                     }
@@ -119,7 +125,7 @@ final class ToStringTest extends TestCase
         );
 
         self::assertSame(['ImplicitToStringCast', 'ImplicitToStringCast'], $types($trait_path));
-        self::assertSame(['InvalidArgument'], $types($strict_trait_path));
+        self::assertSame(['InvalidPropertyAssignmentValue', 'InvalidArgument'], $types($strict_trait_path));
     }
 
     /**
@@ -611,6 +617,30 @@ final class ToStringTest extends TestCase
                     }
                 ',
                 'error_message' => 'ImplicitToStringCast',
+            ],
+            'traitOfAStrictFileStartingWithAShebang' => [
+                'code' => '#!/usr/bin/env php
+<?php
+                    declare(strict_types=1);
+
+                    final class S {
+                        public function __toString(): string {
+                            return "s";
+                        }
+                    }
+
+                    function takesString(string $s): void {}
+
+                    trait T {
+                        public function call(S $o): void {
+                            takesString($o);
+                        }
+                    }
+
+                    final class A {
+                        use T;
+                    }',
+                'error_message' => 'InvalidArgument',
             ],
             'implicitCastInToString' => [
                 'code' => '<?php
