@@ -1653,6 +1653,36 @@ final class ArrayAccessTest extends TestCase
                     '$narrowedAfterIsset===' => 'string',
                 ],
             ],
+            'offsetOfAShapeIsRecomputedWhateverTheOrderOfItsNameAndOfTheConditions' => [
+                'code' => '<?php
+                    /** @return array{foo: string, bar: int} */
+                    function getShape(): array {
+                        return ["foo" => "a", "bar" => 1];
+                    }
+
+                    /** @return "foo"|"bar" */
+                    function getKey(): string {
+                        return "foo";
+                    }
+
+                    $z = getShape();
+                    $a = getKey();
+                    $indexSortedFirst = "";
+                    if (isset($z[$a]) && $a === "foo") {
+                        $indexSortedFirst = $z[$a];
+                    }
+
+                    $b = getShape();
+                    $l = getKey();
+                    $indexCheckedFirst = "";
+                    if ($l === "foo" && isset($b[$l])) {
+                        $indexCheckedFirst = $b[$l];
+                    }',
+                'assertions' => [
+                    '$indexSortedFirst===' => 'string',
+                    '$indexCheckedFirst===' => 'string',
+                ],
+            ],
             'issetOnAnIndexIsKeptWhenTheIndexIsNarrowedInALoop' => [
                 'code' => '<?php
                     /** @param string[] $in */

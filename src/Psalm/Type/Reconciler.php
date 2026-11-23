@@ -196,6 +196,7 @@ class Reconciler
 
         // make sure array keys come after base keys
         ksort($new_types);
+        $new_types = self::moveOffsetsAfterTheirIndexVars($new_types);
 
         $codebase = $statements_analyzer->getCodebase();
 
@@ -603,7 +604,7 @@ class Reconciler
                             continue;
                         }
 
-                        if (!isset($new_types[$new_key])
+                        if ((!isset($new_types[$new_key]) || str_contains($new_key, '[' . $key . ']'))
                             && self::dependsOnNarrowedVar($new_key, $key, $existing_types)
                             && $is_real
                         ) {
@@ -1036,9 +1037,38 @@ class Reconciler
     }
 
     /**
+     * An offset asserted along with its index variable is read under the narrowed index
+     *
+     * @param array<string, array<array<int, Assertion>>> $new_types
+     * @return array<string, array<array<int, Assertion>>>
+     * @psalm-pure
+     */
+    private static function moveOffsetsAfterTheirIndexVars(array $new_types): array
+    {
+        $offsets = [];
+
+        foreach ($new_types as $key => $type) {
+            if (!str_contains($key, '[$')) {
+                continue;
+            }
+
+            foreach ($new_types as $index_var => $_) {
+                if (str_contains($key, '[' . $index_var . ']')) {
+                    $offsets[$key] = $type;
+                    unset($new_types[$key]);
+                    break;
+                }
+            }
+        }
+
+        return $new_types + $offsets;
+    }
+
+    /**
      * Whether what is known about $var_id may be stale after $narrowed_var_id has been narrowed. It is not when
      * $narrowed_var_id is only an index of $var_id into an array whose value type is the same for every key.
      *
+     * @internal
      * @param array<string, Union> $types
      * @psalm-pure
      */
