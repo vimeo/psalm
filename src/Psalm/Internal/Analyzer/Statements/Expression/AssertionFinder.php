@@ -2659,14 +2659,16 @@ final class AssertionFinder
 
         [$base_conditional] = self::getOperands($conditional, $bool_position);
 
-        // a call Psalm remembers the result of has an id, but its `@psalm-assert-if-*` assertions say more
-        $var_name = self::hasConditionalAssertions($base_conditional, $source)
-            ? null
-            : ExpressionIdentifier::getExtendedVarId(
-                $base_conditional,
-                $this_class_name,
-                $source,
-            );
+        $call_var_id = ExpressionIdentifier::getExtendedVarId(
+            $base_conditional,
+            $this_class_name,
+            $source,
+        );
+
+        // a call Psalm remembers the result of has an id, but its `@psalm-assert-if-*` assertions say more: they are
+        // given, and the call's own assertion is added to them
+        $has_conditional_assertions = self::hasConditionalAssertions($base_conditional, $source);
+        $var_name = $has_conditional_assertions ? null : $call_var_id;
 
         if ($var_name) {
             if ($strict && !self::isBoolVariable($base_conditional, $source)) {
@@ -2687,6 +2689,12 @@ final class AssertionFinder
                 : [];
 
             $if_types = $operand_holds ? $base_assertions : self::getNegatedAssertions($base_assertions);
+            $if_types = self::addCallAssertion(
+                $if_types,
+                $has_conditional_assertions ? $call_var_id : null,
+                self::isBoolVariable($base_conditional, $source) ? new Falsy() : new IsType(new TFalse()),
+                $negated,
+            );
         } else {
             if ($base_conditional instanceof PhpParser\Node\Expr\FuncCall
                 && !$base_conditional->isFirstClassCallable()
@@ -2723,6 +2731,14 @@ final class AssertionFinder
             }
 
             $if_types = $operand_holds ? $base_assertions : self::getNegatedAssertions($base_assertions);
+            $if_types = self::addCallAssertion(
+                $if_types,
+                $has_conditional_assertions ? $call_var_id : null,
+                $strict && !self::isBoolVariable($base_conditional, $source)
+                    ? new IsType($value ? new TTrue() : new TFalse())
+                    : ($value ? new Truthy() : new Falsy()),
+                $negated,
+            );
         }
 
         if ($strict
@@ -2759,6 +2775,29 @@ final class AssertionFinder
         }
 
         /** @psalm-suppress LessSpecificReturnStatement */
+        return $if_types;
+    }
+
+    /**
+     * The assertion on a remembered call's own id, next to the `@psalm-assert-if-*` assertions of the call, when
+     * those are at most one conjunction
+     *
+     * @param list<array<string, non-empty-list<non-empty-list<Assertion>>>> $if_types
+     * @return list<array<string, non-empty-list<non-empty-list<Assertion>>>>
+     * @psalm-pure
+     */
+    private static function addCallAssertion(
+        array $if_types,
+        ?string $call_var_id,
+        Assertion $assertion,
+        bool $negated,
+    ): array {
+        if ($call_var_id === null || count($if_types) > 1) {
+            return $if_types;
+        }
+
+        $if_types[0][$call_var_id] = [[self::withPolarity($assertion, $negated)]];
+
         return $if_types;
     }
 

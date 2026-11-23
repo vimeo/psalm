@@ -294,6 +294,38 @@ final class AssertAnnotationTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'assertIfTrueOfAMethodNotReturningABoolComparedWithFalseKeepsTheMethodNarrowing' => [
+                'code' => '<?php
+                    final class Box {
+                        public ?int $v = null;
+
+                        /**
+                         * @psalm-assert-if-true !null $this->v
+                         * @psalm-capabilities read-props
+                         */
+                        public function get(): string|false {
+                            return $this->v === null ? false : (string) $this->v;
+                        }
+                    }
+
+                    /** @psalm-pure */
+                    function takesString(string $s): string {
+                        return $s;
+                    }
+
+                    function f(Box $b): int {
+                        if ($b->get() !== false) {
+                            echo takesString($b->get());
+
+                            return $b->v + 1;
+                        }
+
+                        return 0;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'assertIfFalseOfAMemoizedMethodComparedWithABool' => [
                 'code' => '<?php
                     final class Numbers {
@@ -5407,6 +5439,31 @@ final class AssertAnnotationTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'assertIfTrueOfAMemoizedMethodComparedWithFalseThenTheMethodIsNeverTrue' => [
+                'code' => '<?php
+                    final class Name {
+                        public string $s = "";
+
+                        /**
+                         * @psalm-assert-if-true non-empty-string $this->s
+                         * @psalm-capabilities read-props
+                         */
+                        public function isSet(): bool {
+                            return $this->s !== "";
+                        }
+                    }
+
+                    function g(Name $n): void {
+                        if (false === $n->isSet()) {
+                            if ($n->isSet()) {
+                                echo 1;
+                            }
+                        }
+                    }',
+                'error_message' => 'TypeDoesNotContainType',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
             'assertIfFalseOfAMemoizedMethodComparedWithTrue' => [
                 'code' => '<?php
                     final class Numbers {
