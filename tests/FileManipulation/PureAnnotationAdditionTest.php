@@ -450,6 +450,21 @@ final class PureAnnotationAdditionTest extends FileManipulationTestCase
                 'issues_to_fix' => ['MissingPureAnnotation'],
                 'safe_types' => true,
             ],
+            'dontAddPureAnnotationToAFunctionCallingEval' => [
+                'input' => '<?php
+                    function run(string $code): int {
+                        eval($code);
+                        return 1;
+                    }',
+                'output' => '<?php
+                    function run(string $code): int {
+                        eval($code);
+                        return 1;
+                    }',
+                'php_version' => '7.4',
+                'issues_to_fix' => ['MissingPureAnnotation'],
+                'safe_types' => true,
+            ],
             'dontAddPureAnnotationWhenParamDefaultIsImpure' => [
                 'input' => '<?php
                     final class Bus {
