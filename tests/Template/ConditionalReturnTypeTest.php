@@ -21,6 +21,37 @@ final class ConditionalReturnTypeTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'conditionalOnAnUnresolvedBoolClassTemplateKeepsBothBranches' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class Lazy {}
+                    final class Response {}
+
+                    /** @template TAsync of bool */
+                    final class Request {
+                        /** @param TAsync $async */
+                        public function __construct(public bool $async) {}
+
+                        /**
+                         * @return (TAsync is false ? Response : Lazy)
+                         */
+                        public function send(): Response|Lazy {
+                            return $this->async ? new Lazy() : new Response();
+                        }
+
+                        public function get(): ?Response {
+                            $r = $this->send();
+                            if ($r instanceof Response) {
+                                return $r;
+                            }
+                            return null;
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'conditionalOnClosureKeepsTheIfBranchForAnInterfaceNarrowedToClosure' => [
                 'code' => <<<'PHP'
                     <?php
@@ -48,6 +79,49 @@ final class ConditionalReturnTypeTest extends TestCase
                 'assertions' => [],
                 'ignored_issues' => [],
                 'php_version' => '8.1',
+            ],
+            'conditionalReturnTypeOnNonEmptyMixedTakesTheElseBranchOfAFalsyCondition' => [
+                'code' => '<?php
+                    /**
+                     * @param mixed $arg
+                     * @return ($arg is false ? string|false : int)
+                     */
+                    function bar($arg) {
+                        /** @var string|false|int $result */
+                        $result = $arg;
+
+                        return $result;
+                    }
+
+                    /** @var mixed $foo */
+                    if (empty($foo)) {
+                        exit;
+                    }
+
+                    $result = bar($foo);',
+                'assertions' => [
+                    '$result===' => 'int',
+                ],
+                'ignored_issues' => [],
+            ],
+            'conditionalReturnTypeOnNonEmptyMixedKeepsBothBranchesOfATruthyCondition' => [
+                'code' => '<?php
+                    /**
+                     * @param mixed $arg
+                     * @return ($arg is string ? string : int)
+                     */
+                    function bar($arg) { throw new Exception(); }
+
+                    /** @var mixed $foo */
+                    if (empty($foo)) {
+                        exit;
+                    }
+
+                    $result = bar($foo);',
+                'assertions' => [
+                    '$result===' => 'int|string',
+                ],
+                'ignored_issues' => [],
             ],
             'conditionalOnNeverOfAnOptionalKeyIsTheKeyTypeWhenSet' => [
                 'code' => '<?php
@@ -2605,6 +2679,30 @@ final class ConditionalReturnTypeTest extends TestCase
                         /** @psalm-check-type-exact $b = iterable<int, int> */
                         $d = pick(static fn(): int => 1);
                         /** @psalm-check-type-exact $d = 1 */
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'conditionalReturnOfAMixedTemplateArgumentKeepsBothBranches' => [
+                'code' => '<?php
+                    /**
+                     * @param mixed $arg
+                     * @return ($arg is (Countable|array<mixed>) ? string : int)
+                     */
+                    function inner($arg) {
+                        return 1;
+                    }
+
+                    /**
+                     * @param mixed $arg
+                     * @return ($arg is (Countable|array<mixed>) ? string : int)
+                     */
+                    function outer($arg) {
+                        $r = inner($arg);
+                        /** @psalm-check-type-exact $r = int|string */
+
+                        return $r;
                     }',
                 'assertions' => [],
                 'ignored_issues' => [],

@@ -3,7 +3,7 @@
 Emitted when a non-final, non-abstract class with no child classes is found.  
 
 ```php
-<?php
+<?php // findUnusedCode="true"
 
 class A {}
 ```

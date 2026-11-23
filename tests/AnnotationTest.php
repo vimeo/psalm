@@ -184,6 +184,70 @@ final class AnnotationTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'invalidInlineDocblockIsSuppressedByTheFunction' => [
+                'code' => '<?php
+                    /** @psalm-suppress InvalidDocblock */
+                    function assign(): int {
+                        /** @var array< */
+                        $a = 1;
+                        return $a;
+                    }
+
+                    /**
+                     * @param list<int> $list
+                     * @psalm-suppress InvalidDocblock
+                     */
+                    function iterate(array $list): void {
+                        /** @var array< $v */
+                        foreach ($list as $v) {
+                            echo $v;
+                        }
+                    }
+
+                    /** @psalm-suppress InvalidDocblock */
+                    function returned(): int {
+                        $r = 1;
+                        /** @var array< $r */
+                        return $r;
+                    }
+
+                    /** @psalm-suppress InvalidDocblock */
+                    function yielded(): Generator {
+                        /** @var array< $r */
+                        yield 1;
+                    }
+
+                    /** @psalm-suppress InvalidDocblock */
+                    function reference(): int {
+                        $b = 1;
+                        /** @var int */
+                        $a = &$b;
+                        return $a;
+                    }
+
+                    /** @psalm-suppress InvalidDocblock */
+                    function statement(): void {
+                        /** @var array< $q */
+                        echo 1;
+                    }
+
+                    /**
+                     * @param list<int> $list
+                     * @psalm-suppress InvalidDocblock
+                     * @psalm-suppress MissingDocblockType
+                     */
+                    function misplacedVariable(array $list): int {
+                        /** @var $a int */
+                        $a = 1;
+                        /** @var $v int */
+                        foreach ($list as $v) {
+                            echo $v;
+                        }
+                        /** @var $q int */
+                        echo 1;
+                        return $a;
+                    }',
+            ],
             'callableParamsWithTheSameInnerParameterNameAreNotDuplicated' => [
                 'code' => '<?php
                     /**
@@ -2210,6 +2274,22 @@ final class AnnotationTest extends TestCase
                     '$_p' => 'A|null',
                     '$_f' => 'A|null',
                 ],
+            ],
+            'phpstanParamWithStarProjectionNextToPsalmParam' => [
+                'code' => '<?php
+                    /**
+                     * @template TFirst
+                     * @template TSecond
+                     */
+                    final class Context {}
+
+                    /**
+                     * @psalm-param Context<int, string> $parent
+                     * @phpstan-param Context<*, *> $parent
+                     */
+                    function f(Context $parent): Context {
+                        return $parent;
+                    }',
             ],
             'paramNameWithTrailingSemicolon' => [
                 'code' => '<?php

@@ -14,27 +14,28 @@ Psalm reads docblocks of your classes and functions wherever it finds them, incl
 
 ```php
 <?php
-namespace Acme;
-
-/** @template T of object */
-final class Container
-{
-    /**
-     * @param class-string<T> $id
-     * @return T
-     */
-    public function get(string $id): object
+namespace Acme {
+    /** @template T of object */
+    final class Container
     {
-        return new $id();
+        /**
+         * @param class-string<T> $id
+         * @return T
+         */
+        public function get(string $id): object
+        {
+            return new $id();
+        }
     }
 }
-```
 
-```php
-<?php
-/** @param \Acme\Container<Foo> $container */
-function f(\Acme\Container $container): void {
-    $foo = $container->get(Foo::class); // Foo
+namespace { // the code of your users
+    final class Foo {}
+
+    /** @param \Acme\Container<Foo> $container */
+    function f(\Acme\Container $container): void {
+        $foo = $container->get(Foo::class); // Foo
+    }
 }
 ```
 
@@ -44,22 +45,21 @@ See [Templated annotations](templated_annotations.md).
 
 ```php
 <?php
-namespace Acme;
-
-final class Guard
-{
-    /** @psalm-assert non-empty-string $value */
-    public static function notEmpty(string $value): void
+namespace Acme {
+    final class Guard
     {
+        /** @psalm-assert non-empty-string $value */
+        public static function notEmpty(string $value): void
+        {
+        }
     }
 }
-```
 
-```php
-<?php
-function f(string $s): void {
-    \Acme\Guard::notEmpty($s);
-    $s; // non-empty-string
+namespace { // the code of your users
+    function f(string $s): void {
+        \Acme\Guard::notEmpty($s);
+        $s; // non-empty-string
+    }
 }
 ```
 
@@ -69,25 +69,24 @@ See [Adding assertions](adding_assertions.md) for `@psalm-assert-if-true`, `@psa
 
 ```php
 <?php
-namespace Acme;
-
-final class Reader
-{
-    /**
-     * @param 'int'|'string' $type
-     * @return ($type is 'int' ? int : string)
-     */
-    public static function read(string $type): int|string
+namespace Acme {
+    final class Reader
     {
-        return $type === 'int' ? 1 : 'x';
+        /**
+         * @param 'int'|'string' $type
+         * @return ($type is 'int' ? int : string)
+         */
+        public static function read(string $type): int|string
+        {
+            return $type === 'int' ? 1 : 'x';
+        }
     }
 }
-```
 
-```php
-<?php
-$a = \Acme\Reader::read('int'); // int
-$b = \Acme\Reader::read('string'); // string
+namespace { // the code of your users
+    $a = \Acme\Reader::read('int'); // int
+    $b = \Acme\Reader::read('string'); // string
+}
 ```
 
 See [Conditional types](type_syntax/conditional_types.md).
@@ -96,34 +95,33 @@ See [Conditional types](type_syntax/conditional_types.md).
 
 ```php
 <?php
-namespace Acme;
+namespace Acme {
+    /**
+     * @method string name()
+     * @psalm-property-read int $id
+     */
+    class Entity
+    {
+        public function __call(string $name, array $args): mixed { /* ... */ }
+        public function __get(string $name): mixed { /* ... */ }
+    }
 
-/**
- * @method string name()
- * @psalm-property-read int $id
- */
-class Entity
-{
-    public function __call(string $name, array $args): mixed { /* ... */ }
-    public function __get(string $name): mixed { /* ... */ }
+    final class Logger
+    {
+        public function info(string $message): void {}
+    }
+
+    /** @mixin Logger */
+    final class Facade {}
 }
 
-final class Logger
-{
-    public function info(string $message): void {}
-}
-
-/** @mixin Logger */
-final class Facade {}
-```
-
-```php
-<?php
-function f(\Acme\Entity $e, \Acme\Facade $f): void {
-    $e->name(); // string
-    $e->id; // int
-    $f->info('x'); // no issue, forwarded to Logger
-    $f->nope(); // UndefinedMethod
+namespace { // the code of your users
+    function f(\Acme\Entity $e, \Acme\Facade $f): void {
+        $e->name(); // string
+        $e->id; // int
+        $f->info('x'); // no issue, forwarded to Logger
+        $f->nope(); // UndefinedMethod
+    }
 }
 ```
 

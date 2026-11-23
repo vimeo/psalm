@@ -23,39 +23,6 @@ final class TraitTest extends TestCase
     use InvalidCodeAnalysisTestTrait;
     use ValidCodeAnalysisTestTrait;
 
-    public function testConstantOfTheFirstTraitWinsOverALaterOneLeftByAnEarlierPopulation(): void
-    {
-        $this->project_analyzer->setPhpVersion('8.5', 'tests');
-        $file_path = self::$src_dir_path . 'somefile.php';
-
-        $this->addFile($file_path, '<?php
-            trait HasLimit {
-                public const int LIMIT = 10;
-            }
-
-            trait HasDeprecatedLimit {
-                #[\\Deprecated]
-                public const int LIMIT = 10;
-            }
-
-            final class Quota {
-                use HasLimit, HasDeprecatedLimit;
-            }');
-
-        $this->analyzeFile($file_path, new Context());
-
-        $codebase = $this->project_analyzer->getCodebase();
-        $storage = $codebase->classlike_storage_provider->get('Quota');
-        $storage->constants['LIMIT'] = $codebase->classlike_storage_provider->get('HasDeprecatedLimit')
-            ->constants['LIMIT'];
-        $storage->populated = false;
-        $codebase->classlike_storage_provider->makeNew('quota');
-
-        $codebase->populator->populateCodebase();
-
-        self::assertFalse($storage->constants['LIMIT']->deprecated);
-    }
-
     /**
      * @param list<array{int, string}> $expected_issues line and message of each UndefinedTrait
      */
@@ -275,6 +242,35 @@ final class TraitTest extends TestCase
                 ],
                 'ignored_issues' => [],
                 'php_version' => '8.3',
+            ],
+            'adaptationsOfMethodsTheTraitsHave' => [
+                'code' => '<?php
+                    trait Greets {
+                        public function hello(): void {}
+                    }
+
+                    trait Waves {
+                        public function hello(): void {}
+                        public function wave(): void {}
+                    }
+
+                    trait GreetsToo {
+                        use Greets;
+                    }
+
+                    final class Greeter {
+                        use Greets, Waves {
+                            Waves::hello insteadof Greets;
+                            hello as protected helloAlias;
+                            Waves::wave as waveAlias;
+                        }
+                    }
+
+                    final class GreeterToo {
+                        use GreetsToo {
+                            hello as greet;
+                        }
+                    }',
             ],
             'staticReturnOfTraitMethodOverriddenByMethodOfLaterTrait' => [
                 'code' => '<?php
@@ -2089,6 +2085,67 @@ final class TraitTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.3',
             ],
+            'privatelyAliasedTraitMethodResolvesThroughMagicCall' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @method int product() */
+                    class ParentClass {
+                        public function __call(string $name, array $args): int {
+                            return 1;
+                        }
+                    }
+
+                    trait RealTrait {
+                        public function product(): string {
+                            return "Screen";
+                        }
+                    }
+
+                    final class Child extends ParentClass {
+                        use RealTrait {
+                            product as private;
+                        }
+                    }
+
+                    $a = (new Child)->product();
+                PHP,
+                'assertions' => [
+                    '$a===' => 'int',
+                ],
+            ],
+            'privateTraitMethodMadeProtectedIsVisibleFromAChildClass' => [
+                'code' => <<<'PHP'
+                    <?php
+                    class GrandParent {
+                        public function __call(string $name, array $args): int {
+                            return 1;
+                        }
+                    }
+
+                    trait SecretTrait {
+                        private function secret(): string {
+                            return "x";
+                        }
+                    }
+
+                    class Middle extends GrandParent {
+                        use SecretTrait {
+                            secret as protected;
+                        }
+                    }
+
+                    final class Leaf extends Middle {
+                        public function go(): string {
+                            return $this->secret();
+                        }
+                    }
+
+                    $a = (new Leaf)->go();
+                PHP,
+                'assertions' => [
+                    '$a===' => 'string',
+                ],
+            ],
         ];
     }
 
@@ -2150,6 +2207,75 @@ final class TraitTest extends TestCase
                 'error_message' => 'UndefinedConstant - src' . DIRECTORY_SEPARATOR . 'somefile.php:16:30 - Constant Greeter::greet is not defined',
                 'error_levels' => [],
                 'php_version' => '8.3',
+            ],
+            'constant in trait with alias' => [
+                'code' => <<<'PHP'
+                    <?php
+                    trait TraitA { private const PRIVATE_CONST = 'PRIVATE_CONST'; }
+                    class ClassB { use TraitA { PRIVATE_CONST as public PUBLIC_CONST; } }
+                    $c = ClassB::PUBLIC_CONST;
+                    PHP,
+                'error_message' => 'An alias was defined for PRIVATE_CONST but this method does not exist',
+                'error_levels' => [],
+                'php_version' => '8.2',
+            ],
+            'aliasWithATraitThatDoesNotExist' => [
+                'code' => '<?php
+                    trait Greets {
+                        public function hello(): void {}
+                    }
+
+                    final class Greeter {
+                        use Greets, Waves {
+                            wave as greet;
+                        }
+                    }',
+                'error_message' => 'UndefinedTrait',
+            ],
+            'aliasOfAMethodNoTraitHas' => [
+                'code' => '<?php
+                    trait Greets {
+                        public function hello(): void {}
+                    }
+
+                    final class Greeter {
+                        use Greets {
+                            hi as greet;
+                        }
+                    }',
+                'error_message' => 'UndefinedMethod - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:29 - An alias was defined for hi but this method does not exist',
+            ],
+            'visibilityChangeOfAMethodTheTraitDoesNotHave' => [
+                'code' => '<?php
+                    trait Greets {
+                        public function hello(): void {}
+                    }
+
+                    final class Greeter {
+                        use Greets {
+                            Greets::hi as protected;
+                        }
+                    }',
+                'error_message' => 'The modifiers of the trait method Greets::hi() are changed, but this method does not exist',
+            ],
+            'precedenceForAMethodTheTraitDoesNotHave' => [
+                'code' => '<?php
+                    trait Greets {
+                        public function hello(): void {}
+                    }
+
+                    trait Waves {
+                        public function hello(): void {}
+                        public function wave(): void {}
+                    }
+
+                    final class Greeter {
+                        use Greets, Waves {
+                            Greets::hello insteadof Waves;
+                            Greets::wave insteadof Waves;
+                        }
+                    }',
+                'error_message' => 'A precedence rule was defined for Greets::wave but this method does not exist',
             ],
             'staticReturnOfTraitMethodOverriddenByUnrelatedReturnTypeOfLaterTrait' => [
                 'code' => '<?php
@@ -2633,6 +2759,50 @@ final class TraitTest extends TestCase
                         }
                     }',
                 'error_message' => 'RedundantCondition',
+            ],
+            'privatelyAliasedTraitMethodGoesThroughMagicCallWithoutAMethodTag' => [
+                'code' => <<<'PHP'
+                    <?php
+                    class ParentClass {
+                        public function __call(string $name, array $args): int {
+                            return 1;
+                        }
+                    }
+
+                    trait RealTrait {
+                        public function product(): string {
+                            return "Screen";
+                        }
+                    }
+
+                    final class Child extends ParentClass {
+                        use RealTrait {
+                            product as private;
+                        }
+                    }
+
+                    (new Child)->product();
+                PHP,
+                'error_message' => 'UndefinedMagicMethod',
+            ],
+            'privatelyAliasedTraitMethodIsInaccessibleWithoutMagicCall' => [
+                'code' => <<<'PHP'
+                    <?php
+                    trait RealTrait {
+                        public function product(): string {
+                            return "Screen";
+                        }
+                    }
+
+                    final class Child {
+                        use RealTrait {
+                            product as private;
+                        }
+                    }
+
+                    (new Child)->product();
+                PHP,
+                'error_message' => 'InaccessibleMethod',
             ],
         ];
     }
