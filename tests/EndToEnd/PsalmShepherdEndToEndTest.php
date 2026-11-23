@@ -301,13 +301,13 @@ final class PsalmShepherdEndToEndTest extends PsalmEndToEndTestCase
             $this->assertSame($without_cache['fixable'], $report['fixable'], implode(' ', $args));
             $this->assertSame($without_cache['issues'], $report['issues'], implode(' ', $args));
 
-            /** @var array{seconds: mixed, peak_memory: mixed, threads: mixed} $run */
+            /** @var array{wall_seconds: mixed, peak_memory_bytes: mixed, threads: mixed} $run */
             $run = $report['run'];
             $this->assertSame($args[0] === '--threads=2' && $can_fork ? 2 : 1, $run['threads'], implode(' ', $args));
-            $this->assertIsFloat($run['seconds']);
-            $this->assertGreaterThanOrEqual(0, $run['seconds']);
-            $this->assertIsInt($run['peak_memory']);
-            $this->assertGreaterThan(0, $run['peak_memory']);
+            $this->assertIsFloat($run['wall_seconds']);
+            $this->assertGreaterThanOrEqual(0, $run['wall_seconds']);
+            $this->assertIsInt($run['peak_memory_bytes']);
+            $this->assertGreaterThan(0, $run['peak_memory_bytes']);
         }
 
         if ($can_fork) {

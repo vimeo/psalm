@@ -103,7 +103,7 @@ final class Shepherd implements AfterAnalysisInterface
      *     baselined: object,
      *     info: object,
      *     fixable: object,
-     *     run: array{seconds: float, peak_memory: int, threads: int},
+     *     run: array{wall_seconds: float, peak_memory_bytes: int, threads: int},
      *     coverage: list<int>,
      *     level: int<1, 8>,
      *     versions: array<string, string>
@@ -160,9 +160,9 @@ final class Shepherd implements AfterAnalysisInterface
             'info' => (object) IssueBuffer::getInfoIssueCounts(),
             'fixable' => (object) $fixable_issue_counts,
             'run' => [
-                'seconds' => round(microtime(true) - IssueBuffer::getFinishStartTime(), 2),
+                'wall_seconds' => round(microtime(true) - IssueBuffer::getFinishStartTime(), 2),
                 // of this process only, not of its forked workers
-                'peak_memory' => memory_get_peak_usage(),
+                'peak_memory_bytes' => memory_get_peak_usage(),
                 'threads' => ProjectAnalyzer::getInstance()->threads,
             ],
             'coverage' => $codebase->analyzer->getTotalTypeCoverage($codebase),
@@ -176,7 +176,7 @@ final class Shepherd implements AfterAnalysisInterface
 
     private static function sendPayload(string $endpoint, array $rawPayload, Progress $progress): void
     {
-        // so that `run.seconds` is always a float, 2.0 included
+        // so that `run.wall_seconds` is always a float, 2.0 included
         $payload = json_encode($rawPayload, JSON_THROW_ON_ERROR | JSON_PRESERVE_ZERO_FRACTION);
 
         // Prepare new cURL resource
