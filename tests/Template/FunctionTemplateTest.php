@@ -111,6 +111,23 @@ final class FunctionTemplateTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'isCallableLeavesOutATemplateOfAClassWithoutInvoke' => [
+                'code' => '<?php
+                    /**
+                     * @template E of Exception
+                     * @param E|(callable():E)|null $exception
+                     */
+                    function fail(callable|Exception|null $exception = null): never {
+                        if (is_callable($exception)) {
+                            $exception = $exception();
+                        }
+
+                        throw $exception ?? new RuntimeException("No value");
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'closureOfATemplateWithANullDefaultOfTheSameTemplate' => [
                 'code' => '<?php
                     /** @template T */
@@ -3535,6 +3552,19 @@ final class FunctionTemplateTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'isCallableOfATemplateOfAClassWithoutInvoke' => [
+                'code' => '<?php
+                    /**
+                     * @template E of Exception
+                     * @param E $exception
+                     */
+                    function check($exception): void {
+                        if (is_callable($exception)) {
+                            echo "never";
+                        }
+                    }',
+                'error_message' => 'DocblockTypeContradiction',
+            ],
             'methodTemplateBoundStillReportsTheClassStringOfANonFinalClassThatWasExcluded' => [
                 'code' => '<?php
                     interface StampInterface {}
