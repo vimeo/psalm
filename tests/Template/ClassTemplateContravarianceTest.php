@@ -680,6 +680,24 @@ final class ClassTemplateContravarianceTest extends TestCase
                 'error_levels' => [],
                 'php_version' => '8.0',
             ],
+            'subclassOfASinkWithoutTypeArgsIsACoercionFromMixed' => [
+                'code' => self::SINK . '
+                    /**
+                     * @template-contravariant T
+                     * @implements Sink<T>
+                     */
+                    final class IntoSink implements Sink {
+                        public function put(mixed $value): void {}
+                    }
+                    /** @param Sink<int> $sink */
+                    function takesIntSink(Sink $sink): void {}
+                    function f(IntoSink $sink): void {
+                        takesIntSink($sink);
+                    }',
+                'error_message' => 'MixedArgumentTypeCoercion',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
             'newThroughASinkArgTakesWhatTheSinkTakes' => [
                 'code' => self::SINK . '
                     /** @template-contravariant T */

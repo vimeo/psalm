@@ -14,7 +14,6 @@ use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TTypeVariable;
 
 use function count;
-use function strtolower;
 
 /**
  * @internal
@@ -59,6 +58,7 @@ final class GenericTypeComparator
         $container_type_params_covariant = [];
         $input_star_offsets = [];
         $container_type_params_contravariant = null;
+        $input_unbound_offsets = [];
 
         $input_type_params = TemplateStandinTypeReplacer::getMappedGenericTypeParams(
             $codebase,
@@ -67,12 +67,8 @@ final class GenericTypeComparator
             $container_type_params_covariant,
             $input_star_offsets,
             $container_type_params_contravariant,
+            $input_unbound_offsets,
         );
-
-        $input_without_type_args = $container_type_params_contravariant !== null
-            && !$input_type_part instanceof TGenericObject
-            && !$input_type_part instanceof TIterable
-            && strtolower($input_type_part->value) === strtolower($container_type_part->value);
 
         $atomic_comparison_result_type_params = null;
         if ($atomic_comparison_result) {
@@ -103,9 +99,9 @@ final class GenericTypeComparator
 
             $contravariant = false;
 
-            // the params of an input without type arguments (`Sink` for `Sink<T>`) are unknown, a coercion from mixed
-            // as for the other variances, not the constraint they stand for, which a contravariant param would fit
-            if (isset($container_type_params_contravariant[$i]) && !$input_without_type_args) {
+            // a param of an input without type arguments (`Sink` or `Impl` for `Sink<T>`) is unknown, a coercion from
+            // mixed as for the other variances, not the bound it stands for, which a contravariant param would fit
+            if (isset($container_type_params_contravariant[$i]) && !isset($input_unbound_offsets[$i])) {
                 if (!$input_is_star) {
                     // a contravariant param holds the params it fits, so the two are compared the other way round
                     [$input_param, $container_param] = [$container_param, $input_param];
