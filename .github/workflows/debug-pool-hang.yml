@@ -39,9 +39,9 @@ jobs:
 
       - name: Base Pool.php, the new test must fail
         run: |
+          set +e
           cp src/Psalm/Internal/Fork/Pool.php /tmp/Pool.fixed.php
-          git fetch -q --depth=1 origin master
-          git show FETCH_HEAD:src/Psalm/Internal/Fork/Pool.php > src/Psalm/Internal/Fork/Pool.php
+          cp debug/Pool.base.php src/Psalm/Internal/Fork/Pool.php
           for t in testEveryResultOfAFreshPoolReachesTheParent testATaskThatFailsIsReportedOnce; do
             timeout 90 vendor/bin/phpunit --filter "$t" tests/Internal/Fork/PoolTest.php > /tmp/base.txt 2>&1
             echo "BASE $t exit=$?"; tail -15 /tmp/base.txt
@@ -49,6 +49,7 @@ jobs:
           cp /tmp/Pool.fixed.php src/Psalm/Internal/Fork/Pool.php
 
       - name: Fixed Pool.php, the tests in 4 parallel loops
+        if: always()
         run: |
           loop() {
             for i in $(seq 1 40); do
