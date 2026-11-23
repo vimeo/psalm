@@ -382,9 +382,20 @@ final class CallableTypeComparator
             return $callable;
         }
 
+        // what the method returns from a `Box<*>` is as unknown as the receiver, and the parameters of the callable,
+        // which the replacement reads from the other side, are never
+        $receiver_template_result = new TemplateResult([], $receiver_template_types);
+        ClassTemplateParamCollector::markStarBindings(
+            $receiver_template_result,
+            $codebase,
+            $receiver_storage,
+            $receiver,
+            $receiver_template_types,
+        );
+
         $bound_callable = TemplateInferredTypeReplacer::replace(
             new Union([$callable]),
-            new TemplateResult([], $receiver_template_types),
+            $receiver_template_result,
             $codebase,
         )->getSingleAtomic();
 
@@ -428,7 +439,8 @@ final class CallableTypeComparator
 
             $callable = self::withoutPurityTemplates(
                 new TCallable(
-                    $method_storage->params,
+                    // the parameters an override leaves undocumented are those of the method it overrides
+                    $codebase->methods->getMethodParams($method_id),
                     $converted_return_type,
                     self::getCallableCapabilities($method_storage, $class_template_types),
                     callable_id: strtolower((string) $declaring_method_id),
@@ -813,10 +825,11 @@ final class CallableTypeComparator
         ) {
             return new TCallable();
         } elseif ($input_type_part instanceof TNamedObject
-            && $codebase->classExists($input_type_part->value, null, $context)
+            && ($invokable = self::getInvokeMember($codebase, $input_type_part)) !== null
+            && $codebase->classExists($invokable->value, null, $context)
         ) {
             $invoke_id = new MethodIdentifier(
-                $input_type_part->value,
+                $invokable->value,
                 '__invoke',
             );
 
@@ -824,7 +837,7 @@ final class CallableTypeComparator
                 $declaring_method_id = $codebase->methods->getDeclaringMethodId($invoke_id);
                 $template_result = null;
 
-                if ($input_type_part instanceof Atomic\TGenericObject) {
+                if ($invokable instanceof Atomic\TGenericObject) {
                     $invokable_storage = $codebase->methods->getClassLikeStorageForMethod(
                         $declaring_method_id ?? $invoke_id,
                     );
@@ -833,13 +846,13 @@ final class CallableTypeComparator
                     foreach ($invokable_storage->template_types ?? [] as $template => $for_class) {
                         foreach ($for_class as $type) {
                             $type_params[] = new Type\Union([
-                                new TTemplateParam($template, $type, $input_type_part->value),
+                                new TTemplateParam($template, $type, $invokable->value),
                             ]);
                         }
                     }
 
                     if (!empty($type_params)) {
-                        $input_with_templates = new Atomic\TGenericObject($input_type_part->value, $type_params);
+                        $input_with_templates = new Atomic\TGenericObject($invokable->value, $type_params);
                         $template_result = new TemplateResult($invokable_storage->template_types ?? [], []);
 
                         TemplateStandinTypeReplacer::fillTemplateResult(
@@ -847,7 +860,7 @@ final class CallableTypeComparator
                             $template_result,
                             $codebase,
                             null,
-                            new Type\Union([$input_type_part]),
+                            new Type\Union([$invokable]),
                         );
                     }
                 }
@@ -881,7 +894,7 @@ final class CallableTypeComparator
                     $callable = self::bindReceiverTemplates(
                         $codebase,
                         $callable,
-                        $input_type_part,
+                        $invokable,
                         $declaring_method_id,
                     );
 
@@ -1000,6 +1013,30 @@ final class CallableTypeComparator
             && isset(
                 $codebase->classlike_storage_provider->get($class_name)->declaring_method_ids[strtolower($method_name)],
             );
+    }
+
+    /**
+     * The member of an object type whose `__invoke` it has: the type itself, or else the first class of those it is
+     * intersected with
+     */
+    public static function getInvokeMember(Codebase $codebase, TNamedObject $object): ?TNamedObject
+    {
+        if ($codebase->classOrInterfaceExists($object->value)
+            && $codebase->methodExists(new MethodIdentifier($object->value, '__invoke'))
+        ) {
+            return $object;
+        }
+
+        foreach ($object->getIntersectionTypes() as $member) {
+            if ($member instanceof TNamedObject
+                && $codebase->classExists($member->value)
+                && $codebase->methodExists(new MethodIdentifier($member->value, '__invoke'))
+            ) {
+                return $member;
+            }
+        }
+
+        return null;
     }
 
     /**
