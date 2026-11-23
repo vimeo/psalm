@@ -223,18 +223,20 @@ final class PsalmEndToEndTest extends PsalmEndToEndTestCase
         };
 
         $plain = $run([]);
-        $with_stats = $run(['--stats']);
+        $with_stats = $run(['--stats', '--debug-performance']);
 
         $this->assertNotNull(json_decode($with_stats->getOutput(), true));
         $this->assertSame($plain->getOutput(), $with_stats->getOutput());
         $this->assertStringContainsString('Checks took', $with_stats->getErrorOutput());
         $this->assertStringContainsString('Psalm was able to infer types for', $with_stats->getErrorOutput());
         $this->assertStringContainsString("-----------------\n", $with_stats->getErrorOutput());
+        $this->assertStringContainsString("\nPerformance\n", $with_stats->getErrorOutput());
         $this->assertStringNotContainsString("\e[", $with_stats->getErrorOutput());
         $this->assertStringContainsString('Checks took', $plain->getErrorOutput());
         $this->assertStringNotContainsString("-----------------\n", $plain->getErrorOutput());
+        $this->assertStringNotContainsString('Performance', $plain->getErrorOutput());
 
-        $quiet = $run(['--no-progress', '--stats']);
+        $quiet = $run(['--no-progress', '--stats', '--debug-performance']);
 
         $this->assertSame($plain->getOutput(), $quiet->getOutput());
         $this->assertSame('', $quiet->getErrorOutput());

@@ -981,6 +981,7 @@ final class IssueBuffer
             [Report::TYPE_CONSOLE, Report::TYPE_PHP_STORM, Report::TYPE_GITHUB_ACTIONS],
         );
         $prints_performance_summary = false;
+        $performance_summary_to_stderr = false;
         $printed_peak_bytes = null;
 
         if ($prints_to_console && $codebase->alter_code && !$error_count) {
@@ -1071,6 +1072,8 @@ final class IssueBuffer
             }
 
             $project_analyzer->progress->write($statistics);
+            $prints_performance_summary = Perf\Collector::$enabled;
+            $performance_summary_to_stderr = true;
         }
 
         Perf\Collector::step('cache.write');
@@ -1100,7 +1103,12 @@ final class IssueBuffer
         // after everything that takes time, so that the report stage and the totals cover the whole run
         $performance = Perf\Collector::finish($error_count, $info_count, $printed_peak_bytes);
         if ($performance !== null) {
-            DumpWriter::emit($performance, $project_analyzer, $prints_performance_summary);
+            DumpWriter::emit(
+                $performance,
+                $project_analyzer,
+                $prints_performance_summary,
+                $performance_summary_to_stderr,
+            );
         }
 
         // a taint analysis run in GitHub Actions that writes a SARIF report exits successfully, so that a following
