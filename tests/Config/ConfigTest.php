@@ -3175,6 +3175,7 @@ final class ConfigTest extends DeferredAnalyzerTestCase
      */
     public static function providerLowestComposerPhpVersion(): iterable
     {
+        yield 'empty composer.json' => ['{}', null];
         yield 'no php requirement' => ['{"require": {}}', null];
         yield 'one major version' => ['{"require": {"php": "^8.2"}}', 8_02_00];
         yield 'several major versions' => ['{"require": {"php": "^7.3 || ^8.0"}}', 7_03_00];
