@@ -30,7 +30,9 @@ use function curl_exec;
 use function curl_getinfo;
 use function curl_init;
 use function curl_setopt;
+use function error_get_last;
 use function explode;
+use function file_put_contents;
 use function function_exists;
 use function is_array;
 use function is_string;
@@ -41,8 +43,10 @@ use function preg_replace;
 use function rawurldecode;
 use function sprintf;
 use function str_replace;
+use function str_starts_with;
 use function strip_tags;
 use function strlen;
+use function strtolower;
 use function usort;
 use function var_export;
 
@@ -57,6 +61,7 @@ use const CURLOPT_TIMEOUT;
 use const JSON_THROW_ON_ERROR;
 use const PHP_EOL;
 use const PHP_URL_HOST;
+use const PHP_URL_SCHEME;
 use const PHP_VERSION;
 
 /**
@@ -88,8 +93,10 @@ final class Shepherd implements AfterAnalysisInterface
         AfterAnalysisEvent $event,
     ): void {
         $progress = $event->getCodebase()->progress;
+        $endpoint = $event->getCodebase()->config->shepherd_endpoint;
+        $writes_a_file = strtolower((string) parse_url($endpoint, PHP_URL_SCHEME)) === 'file';
 
-        if (!function_exists('curl_init')) {
+        if (!$writes_a_file && !function_exists('curl_init')) {
             $progress->warning('Results not sent to Shepherd: ext-curl is missing');
 
             return;
@@ -105,9 +112,13 @@ final class Shepherd implements AfterAnalysisInterface
             return;
         }
 
-        $config = $event->getCodebase()->config;
+        if ($writes_a_file) {
+            self::writePayload($endpoint, $rawPayload, $progress);
 
-        self::sendPayload($config->shepherd_endpoint, $rawPayload, $progress);
+            return;
+        }
+
+        self::sendPayload($endpoint, $rawPayload, $progress);
     }
 
     /**
@@ -204,14 +215,50 @@ final class Shepherd implements AfterAnalysisInterface
     /**
      * @param ShepherdPayload $rawPayload
      */
-    private static function sendPayload(string $endpoint, array $rawPayload, Progress $progress): void
+    private static function writePayload(string $endpoint, array $rawPayload, Progress $progress): void
+    {
+        $path = (string) preg_replace('#^file://#i', '', $endpoint);
+        // file://name/... names a host
+        if (!str_starts_with($path, '/')) {
+            $progress->warning("Results not written to $path: the path must be absolute, as in file:///path");
+
+            return;
+        }
+
+        // PHP opens file:///C:/... as C:/... on Windows
+        if (@file_put_contents($endpoint, self::encodePayload($rawPayload)) === false) {
+            $error = error_get_last()['message'] ?? 'unknown error';
+            $progress->warning(
+                "Results not written to $path: " . str_replace("file_put_contents($endpoint): ", '', $error),
+            );
+
+            return;
+        }
+
+        $progress->write("Results written to $path" . PHP_EOL);
+    }
+
+    /**
+     * @param ShepherdPayload $rawPayload
+     * @psalm-pure
+     */
+    private static function encodePayload(array $rawPayload): string
     {
         // an empty group must encode as {}, not []
         $rawPayload['issue_counts'] = array_map(
             static fn(array $counts): stdClass => (object) $counts,
             $rawPayload['issue_counts'],
         );
-        $payload = json_encode($rawPayload, JSON_THROW_ON_ERROR);
+
+        return json_encode($rawPayload, JSON_THROW_ON_ERROR);
+    }
+
+    /**
+     * @param ShepherdPayload $rawPayload
+     */
+    private static function sendPayload(string $endpoint, array $rawPayload, Progress $progress): void
+    {
+        $payload = self::encodePayload($rawPayload);
 
         // Prepare new cURL resource
         $ch = curl_init($endpoint);
