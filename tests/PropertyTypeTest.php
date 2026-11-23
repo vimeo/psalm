@@ -4963,6 +4963,63 @@ final class PropertyTypeTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'nullOfAValueDoesNotMakeItPossiblyValidForANullableTemplateProperty' => [
+                'code' => '<?php
+                    final class Foo {}
+                    final class Bar {}
+
+                    /** @template T of ?Bar */
+                    final class Box {
+                        /** @var T */
+                        public $v;
+
+                        /** @param T $v */
+                        public function __construct($v) {
+                            $this->v = $v;
+                        }
+
+                        public function set(?Foo $foo): void {
+                            $this->v = $foo;
+                        }
+                    }',
+                'error_message' => 'InvalidPropertyAssignmentValue',
+            ],
+            'templateOfBoolMakesAValuePossiblyValidForABoolProperty' => [
+                'code' => '<?php
+                    final class Foo {}
+                    final class Bar {}
+
+                    final class A {
+                        public Bar|bool $p = false;
+
+                        /**
+                         * @template T of bool
+                         * @param Foo|T $foo
+                         */
+                        public function set($foo): void {
+                            $this->p = $foo;
+                        }
+                    }',
+                'error_message' => 'PossiblyInvalidPropertyAssignmentValue',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'falseOfAValueDoesNotMakeItPossiblyValidForABoolProperty' => [
+                'code' => '<?php
+                    final class Foo {}
+                    final class Bar {}
+
+                    final class A {
+                        public Bar|bool $p = false;
+
+                        public function set(Foo|false $foo): void {
+                            $this->p = $foo;
+                        }
+                    }',
+                'error_message' => 'InvalidPropertyAssignmentValue',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
             'writingAPropertyOfAnUndefinedDocblockClassIsADocblockIssue' => [
                 'code' => '<?php
                     /** @return mixed */
