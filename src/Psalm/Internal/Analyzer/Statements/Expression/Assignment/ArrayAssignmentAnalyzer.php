@@ -1757,6 +1757,18 @@ final class ArrayAssignmentAnalyzer
 
             $is_last = $i === count($child_stmts) - 1;
 
+            // an item that is an object (an ArrayAccess) is written through its offsetSet(), which reads the array
+            // holding it
+            if ($i > 0 && $array_type->hasObjectType() && $statements_analyzer->data_flow_graph) {
+                foreach ($root_type->parent_nodes as $parent_node) {
+                    $statements_analyzer->data_flow_graph->addPath(
+                        $parent_node,
+                        DataFlowNode::getForVariableUse(),
+                        'use-inside-call',
+                    );
+                }
+            }
+
             $child_stmt_dim_type_or_int = $child_stmt_dim_type ?? Type::getInt();
             $child_stmt_type = ArrayFetchAnalyzer::getArrayAccessTypeGivenOffset(
                 $statements_analyzer,

@@ -196,6 +196,22 @@ final class ArrayAssignmentTest extends TestCase
                     '$sealedAppended===' => 'array{a: int, ...<int<0, max>, \'v\'>}',
                 ],
             ],
+            'nestedWriteKeepsTheItemsTheArrayHeld' => [
+                'code' => '<?php
+                    /** @return array<string, list<int>> */
+                    function lists(): array { return []; }
+                    /** @return array<string, array<string, int>> */
+                    function maps(): array { return []; }
+
+                    $a = lists();
+                    $a["k"][] = 1;
+                    $b = maps();
+                    $b["x"]["y"] = 2;',
+                'assertions' => [
+                    '$a===' => 'array{k: non-empty-list<int>, ...<string, list<int>>}',
+                    '$b===' => 'array{x: array{y: 2, ...<string, int>}, ...<string, array<string, int>>}',
+                ],
+            ],
             'nestedWriteUnderAKeyTheListDoesNotHaveCreatesIt' => [
                 'code' => '<?php
                     $string_key = [1];

@@ -1290,6 +1290,10 @@ class Reconciler
                 return $existing_keys[$key] ?? Type::getString();
             }
 
+            if (str_starts_with($key, Context::PHP_EXTENSION_VAR_ID_PREFIX)) {
+                return $existing_keys[$key] ?? Type::getBool();
+            }
+
             if (!isset($existing_keys[$key_parts[0]]) && str_contains($key, '::') && !str_contains($key, '$')) {
                 return self::getClassConstantTypeOfKey($codebase, $key, $statements_analyzer);
             }
