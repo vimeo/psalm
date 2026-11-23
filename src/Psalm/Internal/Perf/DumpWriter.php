@@ -288,7 +288,8 @@ final class DumpWriter
                 . self::VIEWER . "\n\n";
         }
 
-        return $out . "\n" . ($written ? 'The full data is in ' . $path . ', open it in ' . self::VIEWER . "\n\n" : '');
+        return $out . "\n"
+            . ($written ? 'The full data is in ' . $path . ', open it in ' . self::VIEWER . "\n\n" : '');
     }
 
     /**
