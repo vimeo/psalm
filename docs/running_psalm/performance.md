@@ -27,7 +27,7 @@ Times are integer microseconds (`_us`), sizes integer bytes (`_bytes`).
 |`stages`|The main process, stage by stage|
 |`pools`, `workers`|The forked processes: tasks, busy time, CPU time, memory|
 |`files`|One record per file scanned or analysed|
-|`hot`, `top`|Statements and function-likes by place, with the number of `passes` over them (a constructor is analysed twice) and the time of all of them. Only a statement execution (own time) or a function-like pass of 1 ms or more is counted. `hot` holds those that add up to 50 ms or more, `top` the 20 slowest of each|
+|`hot`|The 50 statements and the 50 function-likes that took longest, per place, with the number of `passes` over them (a constructor is analysed twice) and the time of all of them. Only a statement execution (own time) or a function-like pass of 1 ms or more is counted|
 |`hooks`|Time per handler of a plugin or of Psalm, and per hook|
 |`counts`|Class-likes, functions, methods, parsed files, parser cache hits and misses|
 |`taint`|Size of the taint graph|

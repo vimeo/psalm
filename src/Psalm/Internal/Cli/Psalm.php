@@ -50,12 +50,10 @@ use function array_search;
 use function array_slice;
 use function array_sum;
 use function array_values;
-use function basename;
 use function chdir;
 use function count;
 use function ctype_digit;
 use function defined;
-use function dirname;
 use function extension_loaded;
 use function file_exists;
 use function file_get_contents;
@@ -64,7 +62,6 @@ use function function_exists;
 use function fwrite;
 use function gc_collect_cycles;
 use function gc_disable;
-use function getcwd;
 use function getenv;
 use function implode;
 use function ini_get;
@@ -81,12 +78,10 @@ use function opcache_get_status;
 use function parse_url;
 use function preg_match;
 use function preg_replace;
-use function realpath;
 use function setlocale;
 use function sort;
 use function str_starts_with;
 use function strlen;
-use function strtolower;
 use function strval;
 use function substr;
 use function trim;
@@ -96,7 +91,6 @@ use const DIRECTORY_SEPARATOR;
 use const JSON_THROW_ON_ERROR;
 use const LC_CTYPE;
 use const PHP_EOL;
-use const PHP_OS_FAMILY;
 use const PHP_URL_SCHEME;
 use const PHP_VERSION;
 use const STDERR;
@@ -406,8 +400,6 @@ final class Psalm
             $report_file_paths = [$report_file_paths];
         }
 
-        self::rejectPerformanceDumpCollision($options, $config, $report_file_paths);
-
         $project_analyzer = ProjectBootstrap::createProjectAnalyzer(
             $options,
             $config,
@@ -496,69 +488,6 @@ final class Psalm
         }
 
         Collector::start(is_string($path) ? $path : null, $given_option_names);
-    }
-
-    /**
-     * @param list<string>|string $report_file_paths
-     */
-    private static function rejectPerformanceDumpCollision(
-        array $options,
-        Config $config,
-        array|string $report_file_paths,
-    ): void {
-        $dump_path = Collector::dumpPath();
-
-        if ($dump_path === null) {
-            return;
-        }
-
-        $cwd = (string) getcwd();
-        $other_paths = is_string($report_file_paths) ? [$report_file_paths] : $report_file_paths;
-
-        if (isset($options['set-baseline'])) {
-            $other_paths[] = is_string($options['set-baseline'])
-                ? $options['set-baseline']
-                : $config->error_baseline ?? Config::DEFAULT_BASELINE_NAME;
-        }
-
-        if (isset($options['use-baseline']) && is_string($options['use-baseline'])) {
-            $other_paths[] = $options['use-baseline'];
-        }
-
-        if ($config->error_baseline !== null) {
-            $other_paths[] = $config->error_baseline;
-        }
-
-        // what Psalm writes in this run, for the dump writer to check again by file once they are written
-        Collector::protect(array_map(
-            static fn(string $other_path): string => Collector::absolutePath($other_path, $cwd),
-            $other_paths,
-        ));
-
-        foreach ($other_paths as $other_path) {
-            if (self::destination($other_path, $cwd) === self::destination($dump_path, $cwd)) {
-                fwrite(
-                    STDERR,
-                    '--debug-performance=' . $dump_path . ' would overwrite ' . $other_path . PHP_EOL,
-                );
-                exit(1);
-            }
-        }
-    }
-
-    /**
-     * Where a file written to $path ends up: in the real directory, and in lowercase if the file system may ignore
-     * the case. The dump writer checks again, before it writes, whether it is the file of a report.
-     */
-    private static function destination(string $path, string $cwd): string
-    {
-        // a `..` after a symlink is resolved by realpath() on the file system, not by the name
-        $absolute = Collector::absolutePath($path, $cwd);
-        $directory = realpath(dirname($absolute));
-        $destination = ($directory === false ? dirname($absolute) : Path::canonicalize($directory))
-            . '/' . basename($absolute);
-
-        return PHP_OS_FAMILY === 'Darwin' || PHP_OS_FAMILY === 'Windows' ? strtolower($destination) : $destination;
     }
 
     /** @return int<1, max> */

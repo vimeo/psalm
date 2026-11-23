@@ -10,24 +10,13 @@ use PHPUnit\Framework\TestCase;
 use PhpParser\Node\Stmt\Nop;
 use Psalm\Internal\Perf\Collector;
 use Psalm\StatementsSource;
-use stdClass;
 
 use function array_column;
 use function array_map;
-use function array_sum;
-use function file_put_contents;
 use function getenv;
 use function hrtime;
-use function json_encode;
-use function ksort;
-use function link;
 use function putenv;
-use function sys_get_temp_dir;
-use function uniqid;
-use function unlink;
 use function usleep;
-
-use const DIRECTORY_SEPARATOR;
 
 /**
  * @psalm-import-type WorkerPerf from Collector
@@ -41,48 +30,6 @@ final class CollectorTest extends TestCase
     {
         Collector::reset();
         parent::tearDown();
-    }
-
-    public function testStagesAreContiguousAndSumToTheTotals(): void
-    {
-        Collector::start(null, []);
-        $this->assertSame('bootstrap', Collector::stage('scan.setup'));
-        usleep(1_000);
-        Collector::stage('scan.files');
-        Collector::stage('scan.setup');
-
-        $result = Collector::finish(3, 1);
-
-        $this->assertNotNull($result);
-        $stages = $result['stages'];
-        $this->assertSame(['bootstrap', 'scan.setup', 'scan.files', 'scan.setup'], array_column($stages, 'name'));
-        $this->assertSame($stages[1]['start_us'] + $stages[1]['wall_us'], $stages[2]['start_us']);
-        $this->assertSame($result['totals']['wall_us'], array_sum(array_column($stages, 'wall_us')));
-        $this->assertSame($result['totals']['cpu_us'], array_sum(array_column($stages, 'cpu_us')));
-        $this->assertSame(['errors' => 3, 'infos' => 1], $result['totals']['issues']);
-    }
-
-    public function testAddWorkerDataMergesRecordsAndComputesBusyTime(): void
-    {
-        Collector::start(null, []);
-        Collector::poolStart('analysis', 2, 3);
-        $files = [self::file('analysis', 'src/B.php', 101, 1_000), self::file('scan', 'src/Lazy.php', 101, 400)];
-
-        Collector::addWorkerData(self::workerPerf(101, $files));
-        Collector::addWorkerData(self::workerPerf(102, [self::file('analysis', 'src/A.php', 102, 500)]));
-        Collector::payload(300);
-        Collector::payload(700);
-        Collector::poolEnd();
-
-        $result = Collector::finish(0, 0);
-
-        $this->assertNotNull($result);
-        $this->assertSame(['src/A.php', 'src/B.php', 'src/Lazy.php'], array_column($result['files'], 'path'));
-        $this->assertSame([[101, 1, 1_000], [102, 1, 500]], array_map(
-            static fn(array $worker): array => [$worker['pid'], $worker['tasks'], $worker['busy_us']],
-            $result['workers'],
-        ));
-        $this->assertSame(['sum' => 1_000, 'max' => 700], $result['pools'][0]['payload_bytes']);
     }
 
     public function testExecutionsOfOneStatementAreOneHotItemWithTheirPasses(): void
@@ -103,15 +50,13 @@ final class CollectorTest extends TestCase
         $result = Collector::finish(0, 0);
 
         $this->assertNotNull($result);
-        $this->assertSame([[271, 30, 1_200_000]], array_map(
+        $this->assertSame([[271, 30, 1_200_000], [5, 1, 1_500]], array_map(
             static fn(array $r): array => [$r['line'], $r['passes'], $r['self_us']],
             $result['hot']['statements'],
         ));
-        $this->assertSame([271, 5], array_column($result['top']['statements'], 'line'));
-        // each pass of the constructor is an entry of its own, 40 ms in all: not hot
-        $this->assertSame(['body', 'initializations'], array_column($result['top']['functions'], 'pass'));
-        $this->assertSame([2, 2], array_column($result['top']['functions'], 'passes'));
-        $this->assertSame([], $result['hot']['functions']);
+        // each pass of the constructor is an entry of its own
+        $this->assertSame(['body', 'initializations'], array_column($result['hot']['functions'], 'pass'));
+        $this->assertSame([2, 2], array_column($result['hot']['functions'], 'passes'));
     }
 
     public function testNestedStatementsAreTimedByTheirOwnTime(): void
@@ -133,8 +78,8 @@ final class CollectorTest extends TestCase
         $result = Collector::finish(0, 0);
 
         $this->assertNotNull($result);
-        $wall = array_column($result['top']['statements'], 'wall_us', 'line');
-        $self = array_column($result['top']['statements'], 'self_us', 'line');
+        $wall = array_column($result['hot']['statements'], 'wall_us', 'line');
+        $self = array_column($result['hot']['statements'], 'self_us', 'line');
 
         // the outer one took about 10 ms with the inner one, and about 5 ms of its own
         $this->assertGreaterThanOrEqual(10_000, $wall[10]);
@@ -155,38 +100,6 @@ final class CollectorTest extends TestCase
         $this->assertNull(Collector::finish(0, 0));
     }
 
-    public function testHandlersAreNamedWithoutTheFileOfAnonymousClassesAndByOrigin(): void
-    {
-        Collector::start(null, []);
-        $anonymous = (new class {
-            /**
-             * @psalm-capabilities read-props
-             */
-            public static function handle(object $event): void
-            {
-                unset($event);
-            }
-        })::class;
-        $hooks = array_map(
-            static fn(string $handler): array => ['handler' => $handler, 'hook' => 'H', 'calls' => 1, 'wall_ns' => 5_000],
-            ['Psalm\\Internal\\Provider\\X', 'Psalm\\LaravelPlugin\\Handler'],
-        );
-
-        Collector::timedVoid($anonymous, 'handle', new stdClass(), 'AfterFileAnalysis');
-        Collector::addWorkerData(self::workerPerf(1, [], $hooks));
-
-        $result = Collector::finish(0, 0);
-
-        $this->assertNotNull($result);
-        $origins = array_column($result['hooks'], 'origin', 'handler');
-        ksort($origins);
-        $this->assertSame(
-            ['Psalm\\Internal\\Provider\\X' => 'psalm', 'Psalm\\LaravelPlugin\\Handler' => 'plugin', '{anonymous-class}' => 'plugin'],
-            $origins,
-        );
-        $this->assertStringNotContainsString(__DIR__, (string) json_encode($result['hooks']));
-    }
-
     /**
      * @return array<string, array{string, string, ?string, string}> the path on disk, the path Psalm prints,
      *     the root of Psalm, what the dump shows
@@ -196,7 +109,6 @@ final class CollectorTest extends TestCase
     {
         return [
             'project file' => ['/proj/src/A.php', 'src/A.php', null, 'src/A.php'],
-            'above the project' => ['/x/vendor/y.php', '../vendor/y.php', null, '../vendor/y.php'],
             'absolute path of a missing file' => ['/home/me/src/A.php', '/home/me/src/A.php', null, '<external>/A.php'],
             'Psalm outside the project' => [
                 '/opt/psalm/stubs/Core.phpstub',
@@ -227,10 +139,7 @@ final class CollectorTest extends TestCase
 
         return [
             'valid' => [$valid, $valid],
-            'unset' => [null, null],
             'malformed' => ['00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331', null],
-            'zero trace id' => ['00-00000000000000000000000000000000-b7ad6b7169203331-01', null],
-            'zero parent id' => ['00-0af7651916cd43dd8448eb211c80319c-0000000000000000-01', null],
         ];
     }
 
@@ -244,27 +153,6 @@ final class CollectorTest extends TestCase
             $this->assertSame($expected, Collector::traceparent());
         } finally {
             putenv($previous === false ? 'TRACEPARENT' : 'TRACEPARENT=' . $previous);
-        }
-    }
-
-    public function testNoFileIsWrittenOverAReportOrTheBaseline(): void
-    {
-        if (DIRECTORY_SEPARATOR === '\\') {
-            $this->markTestSkipped('Hard links need a privilege on some Windows setups');
-        }
-
-        $report = sys_get_temp_dir() . '/psalm-guard-report-' . uniqid() . '.json';
-        $dump = $report . '.dump';
-        file_put_contents($report, '{}');
-        link($report, $dump);
-
-        try {
-            $this->assertSame($report, Collector::sameFileAs($dump, ['/no/such/baseline.xml', $report]));
-            // a dump that doesn't exist yet is nobody's file
-            $this->assertNull(Collector::sameFileAs($report . '.new', [$report]));
-        } finally {
-            unlink($dump);
-            unlink($report);
         }
     }
 

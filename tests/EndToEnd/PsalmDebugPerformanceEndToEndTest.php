@@ -23,7 +23,6 @@ use function json_decode;
 use function mkdir;
 use function preg_match_all;
 use function realpath;
-use function rmdir;
 use function sort;
 use function str_repeat;
 use function str_replace;
@@ -168,44 +167,6 @@ final class PsalmDebugPerformanceEndToEndTest extends PsalmEndToEndTestCase
         }
     }
 
-    public function testPathEqualToAReportPathExitsWithOne(): void
-    {
-        $this->setUpProject(0);
-        $path = self::$tmpDir . '/report.json';
-
-        $process = $this->runPsalmProcess(
-            ['--no-cache', '--report=' . $path, '--debug-performance=' . self::$tmpDir . '/src/../report.json'],
-        );
-
-        $this->assertSame(1, $process->getExitCode());
-        $this->assertStringContainsString('would overwrite ' . $path, $process->getErrorOutput());
-        $this->assertFileDoesNotExist($path);
-    }
-
-    public function testUnwritablePathWarnsAndKeepsTheExitCode(): void
-    {
-        $this->setUpProject(0);
-        // a directory cannot be overwritten with a file
-        $dump_path = self::$tmpDir . '/perf-dir';
-        mkdir($dump_path);
-
-        try {
-            $result = $this->runPsalm(
-                ['--no-cache', '--no-progress', '--debug-performance=' . $dump_path],
-                self::$tmpDir,
-                true,
-            );
-        } finally {
-            rmdir($dump_path);
-        }
-
-        $this->assertSame(2, $result['CODE']);
-        $this->assertStringContainsString('Warning: Could not write the performance dump ', $result['STDERR']);
-        $this->assertStringNotContainsString('Performance dump written', $result['STDERR']);
-        $this->assertSame([], glob(self::$tmpDir . '/perf-dir.*'));
-        $this->assertStringNotContainsString('The full data is in', $result['STDOUT']);
-    }
-
     public function testWithoutAValuePrintsTheSummaryAndWritesNoFile(): void
     {
         $this->setUpProject(2);
@@ -275,7 +236,7 @@ final class PsalmDebugPerformanceEndToEndTest extends PsalmEndToEndTestCase
             $this->assertSame(['AfterFileAnalysis', 'FunctionReturnType'], array_keys($calls), $threads);
             // once for each file analysed, and once for each call of strlen() that the project analyses
             $this->assertCount($calls['AfterFileAnalysis'], self::recordsOf($dump, 'analysis'), $threads);
-            $this->assertGreaterThanOrEqual(2, $calls['FunctionReturnType'], $threads);
+            $this->assertSame(2, $calls['FunctionReturnType'], $threads);
             $this->assertContains('psalm', array_column($dump['hooks'], 'origin'));
 
             // what the project defines in the second run: a class with 3 methods, 2 functions and 2 closures

@@ -7,10 +7,8 @@ namespace Psalm\Internal\Perf;
 use Closure;
 use PhpParser\Node\Stmt;
 use Psalm\StatementsSource;
-use Psalm\Type\Atomic\TLiteralString;
 use ReflectionFunction;
 
-use function array_filter;
 use function array_slice;
 use function array_values;
 use function basename;
@@ -22,14 +20,12 @@ use function getmypid;
 use function getrusage;
 use function hrtime;
 use function intdiv;
-use function is_file;
 use function is_string;
 use function max;
 use function memory_get_peak_usage;
 use function memory_get_usage;
 use function memory_reset_peak_usage;
 use function preg_match;
-use function stat;
 use function str_contains;
 use function str_replace;
 use function str_starts_with;
@@ -144,11 +140,10 @@ use const PHP_OS_FAMILY;
  *     pools: list<PoolRecord>,
  *     workers: list<WorkerRecord>,
  *     files: list<FileRecord>,
- *     taint: array{nodes: int, sources: int, sinks: int, specializations: int, resolver_tasks: int},
- *     hot: array{threshold_us: int, statements: list<StatementRecord>, functions: list<FunctionRecord>},
- *     top: array{statements: list<StatementRecord>, functions: list<FunctionRecord>},
+ *     taint: array{nodes: int, sources: int, sinks: int, specializations: int, resolver_rounds: int},
+ *     hot: array{statements: list<StatementRecord>, functions: list<FunctionRecord>},
  *     hooks: list<array{handler: string, hook: string, origin: string, calls: int, wall_us: int}>,
- *     counts: ParserCounts,
+ *     parser: ParserCounts,
  * }
  */
 final class Collector
@@ -157,22 +152,17 @@ final class Collector
     public static bool $enabled = false;
 
     /** Where the storage of the file being scanned came from, set by the scanner while collecting */
-    public static string $scan_storage = '';
+    private static string $scan_storage = '';
 
     /** Inclusive nanoseconds of the statements analysed inside the statement being timed */
     public static int $child_ns = 0;
 
-    public const HOT_THRESHOLD_US = 50_000;
-
-    private const TOP_COUNT = 20;
+    private const HOT_COUNT = 50;
 
     /** Statements and function-likes that take less than this are not recorded */
     private const MIN_RECORD_NS = 1_000_000;
 
     private static ?string $dump_path = null;
-
-    /** @var list<string> the absolute paths of the files Psalm writes in this run besides the dump */
-    private static array $protected_paths = [];
 
     /** @var list<string> */
     private static array $option_names = [];
@@ -230,9 +220,9 @@ final class Collector
 
     private static int $payload_max = 0;
 
-    /** @var array{nodes: int, sources: int, sinks: int, specializations: int, resolver_tasks: int} */
+    /** @var array{nodes: int, sources: int, sinks: int, specializations: int, resolver_rounds: int} */
     private static array $taint = ['nodes' => 0, 'sources' => 0, 'sinks' => 0, 'specializations' => 0,
-        'resolver_tasks' => 0];
+        'resolver_rounds' => 0];
 
     /** @var array{start_us: int, cpu_us: int, sys_us: int, bytes: int, role: string} */
     private static array $worker_start = ['start_us' => 0, 'cpu_us' => 0, 'sys_us' => 0, 'bytes' => 0, 'role' => ''];
@@ -263,7 +253,6 @@ final class Collector
         self::$stage = '';
         self::clearRecords();
         self::$dump_path = null;
-        self::$protected_paths = [];
         self::$option_names = [];
         self::$marks = [];
         self::$pools = [];
@@ -271,7 +260,7 @@ final class Collector
         self::$pool = null;
         self::$payload_sum = null;
         self::$payload_max = 0;
-        self::$taint = ['nodes' => 0, 'sources' => 0, 'sinks' => 0, 'specializations' => 0, 'resolver_tasks' => 0];
+        self::$taint = ['nodes' => 0, 'sources' => 0, 'sinks' => 0, 'specializations' => 0, 'resolver_rounds' => 0];
     }
 
     /** What a process records itself: a worker starts without what it inherited from the main process */
@@ -286,18 +275,6 @@ final class Collector
         self::$files_parsed = 0;
         self::$parser_cache_hits = 0;
         self::$parser_cache_misses = 0;
-    }
-
-    /** @param list<string> $paths */
-    public static function protect(array $paths): void
-    {
-        self::$protected_paths = $paths;
-    }
-
-    /** @return list<string> */
-    public static function protectedPaths(): array
-    {
-        return self::$protected_paths;
     }
 
     public static function dumpPath(): ?string
@@ -327,6 +304,16 @@ final class Collector
         self::$marks[] = self::mark($name);
 
         return $previous;
+    }
+
+    public static function setScanStorage(string $storage): void
+    {
+        self::$scan_storage = $storage;
+    }
+
+    public static function scanStorage(): string
+    {
+        return self::$scan_storage;
     }
 
     /** @return array{int, int, int, int} */
@@ -374,13 +361,19 @@ final class Collector
         }
     }
 
-    /** One execution of a statement, which took $self_us of its own and $wall_us with what it analysed */
-    public static function recordStatement(string $path, int $line, string $node, int $self_us, int $wall_us): void
-    {
+    /** $passes executions of a statement, which took $self_us of their own and $wall_us with what they analysed */
+    public static function recordStatement(
+        string $path,
+        int $line,
+        string $node,
+        int $self_us,
+        int $wall_us,
+        int $passes = 1,
+    ): void {
         $key = $path . ':' . $line . ':' . $node;
         $record = self::$statements[$key]
             ?? ['path' => $path, 'line' => $line, 'node' => $node, 'passes' => 0, 'self_us' => 0, 'wall_us' => 0];
-        $record['passes'] += 1;
+        $record['passes'] += $passes;
         $record['self_us'] += $self_us;
         $record['wall_us'] += $wall_us;
         self::$statements[$key] = $record;
@@ -407,13 +400,19 @@ final class Collector
         }
     }
 
-    /** One pass over a function-like, which took $wall_us */
-    public static function recordFunction(string $path, int $line, string $id, string $pass, int $wall_us): void
-    {
+    /** $passes passes over a function-like, which took $wall_us */
+    public static function recordFunction(
+        string $path,
+        int $line,
+        string $id,
+        string $pass,
+        int $wall_us,
+        int $passes = 1,
+    ): void {
         $key = $path . ':' . $line . ':' . $id . ':' . $pass;
         $record = self::$functions[$key]
             ?? ['path' => $path, 'line' => $line, 'id' => $id, 'pass' => $pass, 'passes' => 0, 'wall_us' => 0];
-        $record['passes'] += 1;
+        $record['passes'] += $passes;
         $record['wall_us'] += $wall_us;
         self::$functions[$key] = $record;
     }
@@ -537,29 +536,12 @@ final class Collector
             }
         }
 
-        foreach ($data['statements'] as $record) {
-            $key = $record['path'] . ':' . $record['line'] . ':' . $record['node'];
-            $total = self::$statements[$key] ?? $record;
-
-            if (isset(self::$statements[$key])) {
-                $total['passes'] += $record['passes'];
-                $total['self_us'] += $record['self_us'];
-                $total['wall_us'] += $record['wall_us'];
-            }
-
-            self::$statements[$key] = $total;
+        foreach ($data['statements'] as $r) {
+            self::recordStatement($r['path'], $r['line'], $r['node'], $r['self_us'], $r['wall_us'], $r['passes']);
         }
 
-        foreach ($data['functions'] as $record) {
-            $key = $record['path'] . ':' . $record['line'] . ':' . $record['id'] . ':' . $record['pass'];
-            $total = self::$functions[$key] ?? $record;
-
-            if (isset(self::$functions[$key])) {
-                $total['passes'] += $record['passes'];
-                $total['wall_us'] += $record['wall_us'];
-            }
-
-            self::$functions[$key] = $total;
+        foreach ($data['functions'] as $r) {
+            self::recordFunction($r['path'], $r['line'], $r['id'], $r['pass'], $r['wall_us'], $r['passes']);
         }
 
         foreach ($data['hooks'] as $hook) {
@@ -611,76 +593,18 @@ final class Collector
     /**
      * Calls a handler of an event as EventDispatcher does, and times the call
      *
-     * @param class-string $handler
+     * @template TEvent of object
+     * @template TResult
+     * @param callable(TEvent): TResult $handler
+     * @param TEvent $event
+     * @param class-string $class the class of the handler
+     * @return TResult
      */
-    public static function timedVoid(string $handler, string $method, object $event, string $hook): void
+    public static function timed(callable $handler, object $event, string $class, string $hook): mixed
     {
         $start = (int) hrtime(true);
-        [$handler, $method]($event);
-        $ns = (int) hrtime(true) - $start;
-
-        self::$hook_calls[$handler][$hook] ??= 0;
-        ++self::$hook_calls[$handler][$hook];
-        self::$hook_ns[$handler][$hook] ??= 0;
-        self::$hook_ns[$handler][$hook] += $ns;
-    }
-
-    /**
-     * Calls a handler of an event as EventDispatcher does, and times the call
-     *
-     * @param class-string $handler
-     */
-    public static function timedBool(string $handler, string $method, object $event, string $hook): ?bool
-    {
-        $start = (int) hrtime(true);
-        /** @var ?bool $result */
-        $result = [$handler, $method]($event);
-        $ns = (int) hrtime(true) - $start;
-
-        self::$hook_calls[$handler][$hook] ??= 0;
-        ++self::$hook_calls[$handler][$hook];
-        self::$hook_ns[$handler][$hook] ??= 0;
-        self::$hook_ns[$handler][$hook] += $ns;
-
-        return $result;
-    }
-
-    /**
-     * Calls a handler of an event as EventDispatcher does, and times the call
-     *
-     * @param class-string $handler
-     */
-    public static function timedInt(string $handler, string $method, object $event, string $hook): int
-    {
-        $start = (int) hrtime(true);
-        /** @var int $result */
-        $result = [$handler, $method]($event);
-        $ns = (int) hrtime(true) - $start;
-
-        self::$hook_calls[$handler][$hook] ??= 0;
-        ++self::$hook_calls[$handler][$hook];
-        self::$hook_ns[$handler][$hook] ??= 0;
-        self::$hook_ns[$handler][$hook] += $ns;
-
-        return $result;
-    }
-
-    /**
-     * Calls a handler of an event as EventDispatcher does, and times the call
-     *
-     * @param class-string $handler
-     */
-    public static function timedString(string $handler, string $method, object $event, string $hook): ?TLiteralString
-    {
-        $start = (int) hrtime(true);
-        /** @var ?TLiteralString $result */
-        $result = [$handler, $method]($event);
-        $ns = (int) hrtime(true) - $start;
-
-        self::$hook_calls[$handler][$hook] ??= 0;
-        ++self::$hook_calls[$handler][$hook];
-        self::$hook_ns[$handler][$hook] ??= 0;
-        self::$hook_ns[$handler][$hook] += $ns;
+        $result = $handler($event);
+        self::addHook($class, $hook, 1, (int) hrtime(true) - $start);
 
         return $result;
     }
@@ -702,12 +626,7 @@ final class Collector
         return static function (object $event) use ($handler, $class, $hook): mixed {
             $start = (int) hrtime(true);
             $result = $handler($event);
-            $ns = (int) hrtime(true) - $start;
-
-            self::$hook_calls[$class][$hook] ??= 0;
-            ++self::$hook_calls[$class][$hook];
-            self::$hook_ns[$class][$hook] ??= 0;
-            self::$hook_ns[$class][$hook] += $ns;
+            self::addHook($class, $hook, 1, (int) hrtime(true) - $start);
 
             return $result;
         };
@@ -733,7 +652,7 @@ final class Collector
                 'sources' => $sources,
                 'sinks' => $sinks,
                 'specializations' => $specializations,
-                'resolver_tasks' => 0,
+                'resolver_rounds' => 0,
             ];
         }
     }
@@ -741,7 +660,7 @@ final class Collector
     /** A round of the taint resolution */
     public static function taintRound(): void
     {
-        ++self::$taint['resolver_tasks'];
+        ++self::$taint['resolver_rounds'];
     }
 
     /**
@@ -812,22 +731,11 @@ final class Collector
             'files' => $files,
             'taint' => self::$taint,
             'hot' => [
-                'threshold_us' => self::HOT_THRESHOLD_US,
-                'statements' => array_values(array_filter(
-                    $statements,
-                    static fn(array $r): bool => $r['self_us'] >= self::HOT_THRESHOLD_US,
-                )),
-                'functions' => array_values(array_filter(
-                    $functions,
-                    static fn(array $r): bool => $r['wall_us'] >= self::HOT_THRESHOLD_US,
-                )),
-            ],
-            'top' => [
-                'statements' => array_slice($statements, 0, self::TOP_COUNT),
-                'functions' => array_slice($functions, 0, self::TOP_COUNT),
+                'statements' => array_slice($statements, 0, self::HOT_COUNT),
+                'functions' => array_slice($functions, 0, self::HOT_COUNT),
             ],
             'hooks' => self::hookRecords(),
-            'counts' => self::parserCounts(),
+            'parser' => self::parserCounts(),
         ];
     }
 
@@ -880,38 +788,6 @@ final class Collector
         }
 
         return self::isAbsolute($path) ? $path : $base . '/' . $path;
-    }
-
-    /** Whether two paths are one file that exists: a link, a hard link, or a name the file system maps to one */
-    public static function isSameFile(string $a, string $b): bool
-    {
-        if (!is_file($a) || !is_file($b)) {
-            return false;
-        }
-
-        $stat_a = @stat($a);
-        $stat_b = @stat($b);
-
-        return $stat_a !== false
-            && $stat_b !== false
-            && $stat_a['ino'] !== 0
-            && $stat_a['ino'] === $stat_b['ino']
-            && $stat_a['dev'] === $stat_b['dev'];
-    }
-
-    /**
-     * @param list<string> $others
-     * @return ?string the first of them that is the file at $path
-     */
-    public static function sameFileAs(string $path, array $others): ?string
-    {
-        foreach ($others as $other) {
-            if (self::isSameFile($path, $other)) {
-                return $other;
-            }
-        }
-
-        return null;
     }
 
     /**
@@ -1008,10 +884,10 @@ final class Collector
     {
         $end_ns = (int) hrtime(true);
         $start_us = intdiv($start[0] - self::$t0, 1_000);
-        $wall_us = intdiv($end_ns - $start[0], 1_000);
+        $end_us = intdiv($end_ns - self::$t0, 1_000);
 
         if (self::$worker) {
-            self::$worker_end_us = max(self::$worker_end_us, $start_us + $wall_us);
+            self::$worker_end_us = max(self::$worker_end_us, $end_us);
         }
 
         return [
@@ -1019,7 +895,7 @@ final class Collector
             'path' => self::displayPath($file_path, $file_name),
             'pid' => self::$pid,
             'start_us' => $start_us,
-            'wall_us' => $wall_us,
+            'wall_us' => $end_us - $start_us,
             'cpu_us' => self::cpuUs(0) - $start[1],
             'mem_bytes' => memory_get_usage() - $start[2],
             'peak_growth_bytes' => memory_get_peak_usage() - $start[3],

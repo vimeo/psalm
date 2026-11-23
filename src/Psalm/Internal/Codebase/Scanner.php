@@ -715,7 +715,7 @@ final class Scanner
         $from_cache = $this->file_storage_provider->has($file_path, $file_contents);
 
         if (Collector::$enabled) {
-            Collector::$scan_storage = $from_cache ? 'reused' : 'cold';
+            Collector::setScanStorage($from_cache ? 'reused' : 'cold');
         }
 
         if (!$from_cache) {
@@ -748,7 +748,7 @@ final class Scanner
                     $from_cache = false;
 
                     if (Collector::$enabled) {
-                        Collector::$scan_storage = 'reused_then_rescanned';
+                        Collector::setScanStorage('reused_then_rescanned');
                     }
 
                     $file_storage = $this->file_storage_provider->create($file_path);
@@ -1047,14 +1047,14 @@ final class Scanner
             $deep = isset($this->files_to_deep_scan[$file_path]);
             $perf_start = Collector::fileStart();
             // what it stays at if the file is not scanned at all
-            Collector::$scan_storage = 'cold';
+            Collector::setScanStorage('cold');
             $this->scanFile($file_path, $this->config->getFiletypeScanners(), $deep);
             Collector::scanEnd(
                 $file_path,
                 $this->config->shortenFileName($file_path),
                 $perf_start,
                 $deep,
-                Collector::$scan_storage,
+                Collector::scanStorage(),
             );
         } else {
             $this->scanFile(

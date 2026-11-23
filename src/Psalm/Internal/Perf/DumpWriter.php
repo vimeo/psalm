@@ -12,12 +12,13 @@ use Psalm\Internal\Provider\ClassLikeStorageProvider;
 use Psalm\Internal\Provider\FileStorageProvider;
 
 use function array_column;
+use function array_diff_key;
 use function array_slice;
 use function array_values;
 use function basename;
-use function chmod;
 use function count;
 use function dirname;
+use function error_clear_last;
 use function error_get_last;
 use function file_put_contents;
 use function function_exists;
@@ -35,16 +36,10 @@ use function mkdir;
 use function number_format;
 use function opcache_get_status;
 use function php_uname;
-use function rename;
 use function sort;
 use function sprintf;
-use function stat;
 use function str_ends_with;
 use function str_replace;
-use function strlen;
-use function tempnam;
-use function umask;
-use function unlink;
 use function usort;
 
 use const DIRECTORY_SEPARATOR;
@@ -83,7 +78,7 @@ final class DumpWriter
     {
         $path = Collector::dumpPath();
 
-        $counts = self::counts($measurements['counts']);
+        $counts = self::counts($measurements['parser']);
 
         $failure = $path === null
             ? null
@@ -95,7 +90,7 @@ final class DumpWriter
                     'traceEvents' => self::traceEvents($measurements),
                     'env' => self::env($project_analyzer),
                     'counts' => $counts,
-                ] + $measurements,
+                ] + array_diff_key($measurements, ['parser' => true]),
             );
 
         if ($print_summary) {
@@ -224,7 +219,7 @@ final class DumpWriter
         }
 
         $out .= "\n" . 'Hottest statements (own time)' . "\n";
-        foreach (array_slice($measurements['top']['statements'], 0, self::SUMMARY_ROWS) as $statement) {
+        foreach (array_slice($measurements['hot']['statements'], 0, self::SUMMARY_ROWS) as $statement) {
             $out .= sprintf(
                 "  %9s  %s:%d %s%s\n",
                 self::seconds($statement['self_us']),
@@ -236,7 +231,7 @@ final class DumpWriter
         }
 
         $out .= "\n" . 'Hottest functions and methods' . "\n";
-        foreach (array_slice($measurements['top']['functions'], 0, self::SUMMARY_ROWS) as $function) {
+        foreach (array_slice($measurements['hot']['functions'], 0, self::SUMMARY_ROWS) as $function) {
             $out .= sprintf(
                 "  %9s  %s (%s)  %s:%d%s\n",
                 self::seconds($function['wall_us']),
@@ -374,11 +369,7 @@ final class DumpWriter
                 'dur' => $file['wall_us'],
                 'pid' => $file['pid'],
                 'tid' => 0,
-                'args' => [
-                    'path' => $file['path'],
-                    'cpu_us' => $file['cpu_us'],
-                    'mem_bytes' => $file['mem_bytes'],
-                ],
+                'args' => ['path' => $file['path']],
             ];
         }
 
@@ -415,41 +406,19 @@ final class DumpWriter
      */
     private static function write(string $path, array $document): ?string
     {
-        // the reports and the baseline are written by now: the check at the start can't see them by a name that
-        // the file system maps to one file, such as a symlink or a Unicode name in another normalization
-        $same_file = Collector::sameFileAs($path, Collector::protectedPaths());
-
-        if ($same_file !== null) {
-            return 'The performance dump ' . $path . ' is the file ' . $same_file . ', which Psalm wrote: not written';
-        }
-
         $json = json_encode(
             $document,
             JSON_UNESCAPED_SLASHES | JSON_INVALID_UTF8_SUBSTITUTE | JSON_THROW_ON_ERROR,
         ) . "\n";
 
         $folder = dirname($path);
-        if (!is_dir($folder) && !@mkdir($folder, 0777, true) && !is_dir($folder)) {
-            return 'Could not create the directory of the performance dump ' . $path
-                . ': ' . (error_get_last()['message'] ?? 'unknown error');
-        }
+        error_clear_last();
 
-        // a reader never sees half a dump: write a file of this run's own, and rename it
-        $temporary = @tempnam($folder, basename($path) . '.');
-        $existing = @stat($path);
-
-        if ($temporary === false
-            || @file_put_contents($temporary, $json) !== strlen($json)
-            || !@chmod($temporary, $existing === false ? 0666 & ~umask() : $existing['mode'] & 0777)
-            || !@rename($temporary, $path)
+        if ((!is_dir($folder) && !@mkdir($folder, 0777, true) && !is_dir($folder))
+            || @file_put_contents($path, $json) === false
         ) {
-            $reason = error_get_last()['message'] ?? 'unknown error';
-
-            if ($temporary !== false) {
-                @unlink($temporary);
-            }
-
-            return 'Could not write the performance dump ' . $path . ': ' . $reason;
+            return 'Could not write the performance dump ' . $path
+                . ': ' . (error_get_last()['message'] ?? 'unknown error');
         }
 
         return null;
