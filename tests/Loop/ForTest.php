@@ -56,6 +56,34 @@ final class ForTest extends TestCase
                         return $item;
                     }',
             ],
+            'forWithoutAConditionIsOnlyLeftByABreak' => [
+                'code' => '<?php
+                    function withInit(): string {
+                        for ($i = 0;; $i++) {
+                            echo $i;
+
+                            if (rand(0, 1)) {
+                                $x = "s";
+                                break;
+                            }
+                        }
+
+                        return $x;
+                    }
+
+                    function withATrueCondition(): string {
+                        for ($i = 0; true; $i++) {
+                            echo $i;
+
+                            if (rand(0, 1)) {
+                                $x = "s";
+                                break;
+                            }
+                        }
+
+                        return $x;
+                    }',
+            ],
             'forCounterIncrementedThroughAReferenceIsWidened' => [
                 'code' => <<<'PHP'
                     <?php

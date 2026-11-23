@@ -73,6 +73,45 @@ final class ReturnTypeTest extends TestCase
         );
     }
 
+    public function testStringableReturnedForANativeStringUnderStrictTypes(): void
+    {
+        $this->project_analyzer->getConfig()->throw_exception = false;
+
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                declare(strict_types=1);
+
+                final class S {
+                    public function __toString(): string {
+                        return "s";
+                    }
+                }
+
+                function f(S $s): string {
+                    return $s;
+                }
+
+                final class A {
+                    public function __toString(): string {
+                        return new S();
+                    }
+                }',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+
+        $types = array_column(IssueBuffer::getIssuesDataForFile($file_path), 'type');
+        sort($types);
+
+        self::assertSame(
+            ['InvalidReturnStatement', 'InvalidReturnStatement', 'InvalidReturnType', 'InvalidToString'],
+            $types,
+        );
+    }
+
     public function testUnicodeEscapeOfADocblockStringLiteralIsNotTheInternalEncoding(): void
     {
         $encoding = mb_internal_encoding();
@@ -270,6 +309,55 @@ final class ReturnTypeTest extends TestCase
                     $class = (new Handler())->getClass();',
                 'assertions' => [
                     '$class===' => 'class-string',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
+            'returnTypeIsInheritedFromTwoGenericInterfacesResolvingToTheSameOne' => [
+                'code' => '<?php
+                    /** @template T */
+                    interface First {
+                        /** @return T */
+                        public function get(): mixed;
+                    }
+
+                    /** @template T */
+                    interface Second {
+                        /** @return T */
+                        public function get(): mixed;
+                    }
+
+                    /**
+                     * @implements First<int>
+                     * @implements Second<int>
+                     */
+                    final class IntHolder implements First, Second {
+                        #[Override]
+                        public function get(): mixed {
+                            return 1;
+                        }
+                    }
+
+                    /**
+                     * @template U
+                     * @implements First<U>
+                     * @implements Second<U>
+                     */
+                    final class Holder implements First, Second {
+                        /** @param U $value */
+                        public function __construct(private mixed $value) {}
+
+                        #[Override]
+                        public function get(): mixed {
+                            return $this->value;
+                        }
+                    }
+
+                    $int = (new IntHolder())->get();
+                    $string = (new Holder("a"))->get();',
+                'assertions' => [
+                    '$int===' => 'int',
+                    '$string===' => '\'a\'',
                 ],
                 'ignored_issues' => [],
                 'php_version' => '8.3',
@@ -2944,6 +3032,34 @@ final class ReturnTypeTest extends TestCase
                 'error_levels' => [],
                 'php_version' => '8.3',
             ],
+            'returnTypeOfTwoGenericInterfacesResolvingToDifferentOnesIsNotInherited' => [
+                'code' => '<?php
+                    /** @template T */
+                    interface First {
+                        /** @return T */
+                        public function get(): mixed;
+                    }
+
+                    /** @template T */
+                    interface Second {
+                        /** @return T */
+                        public function get(): mixed;
+                    }
+
+                    /**
+                     * @implements First<int>
+                     * @implements Second<string>
+                     */
+                    final class Holder implements First, Second {
+                        #[Override]
+                        public function get(): mixed {
+                            return 1;
+                        }
+                    }',
+                'error_message' => 'LessSpecificImplementedReturnType',
+                'error_levels' => [],
+                'php_version' => '8.3',
+            ],
             'doWhileBodyContinuingToAFalseCondition' => [
                 'code' => '<?php
                     function f(int $i): string {
@@ -4199,6 +4315,91 @@ final class ReturnTypeTest extends TestCase
                         }
                     }',
                 'error_message' => 'LessSpecificReturnStatement',
+            ],
+            'possiblyFalseReturnTypeForTrueOrInt' => [
+                'code' => '<?php
+                    /** @psalm-suppress FalsableReturnStatement */
+                    function f(int|false $i): true|int {
+                        return $i;
+                    }',
+                'error_message' => 'InvalidFalsableReturnType',
+                'error_levels' => [],
+                'php_version' => '8.2',
+            ],
+            'possiblyFalseReturnedForTrueOrInt' => [
+                'code' => '<?php
+                    function f(int|false $i): true|int {
+                        return $i;
+                    }',
+                'error_message' => 'FalsableReturnStatement',
+                'error_levels' => [],
+                'php_version' => '8.2',
+            ],
+            'stringableReturnTypeForANonEmptyStringUnderStrictTypes' => [
+                'code' => '<?php
+                    declare(strict_types=1);
+
+                    final class S {
+                        public function __toString(): string {
+                            return "s";
+                        }
+                    }
+
+                    /**
+                     * @return non-empty-string
+                     * @psalm-suppress InvalidReturnStatement
+                     */
+                    function f(S $s): string {
+                        return $s;
+                    }',
+                'error_message' => 'InvalidReturnType',
+            ],
+            'stringableReturnedForANonEmptyStringUnderStrictTypes' => [
+                'code' => '<?php
+                    declare(strict_types=1);
+
+                    final class S {
+                        public function __toString(): string {
+                            return "s";
+                        }
+                    }
+
+                    /** @return non-empty-string */
+                    function f(S $s): string {
+                        return $s;
+                    }',
+                'error_message' => 'InvalidReturnStatement',
+            ],
+            'falseReturnedThroughAnIgnoredFalsableReturnType' => [
+                'code' => '<?php
+                    /**
+                     * @return false
+                     * @psalm-ignore-falsable-return
+                     */
+                    function no(): bool {
+                        return false;
+                    }
+
+                    function f(): int {
+                        return no();
+                    }',
+                'error_message' => 'FalsableReturnStatement',
+            ],
+            'stringableReturnedForADocblockStringUnderStrictTypes' => [
+                'code' => '<?php
+                    declare(strict_types=1);
+
+                    final class S {
+                        public function __toString(): string {
+                            return "s";
+                        }
+                    }
+
+                    /** @return string */
+                    function f(S $s) {
+                        return $s;
+                    }',
+                'error_message' => 'ImplicitToStringCast',
             ],
         ];
     }

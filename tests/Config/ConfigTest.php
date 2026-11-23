@@ -44,6 +44,7 @@ use function array_keys;
 use function array_map;
 use function array_pop;
 use function basename;
+use function chmod;
 use function class_exists;
 use function dirname;
 use function error_get_last;
@@ -58,6 +59,8 @@ use function implode;
 use function in_array;
 use function is_array;
 use function is_dir;
+use function is_link;
+use function is_readable;
 use function json_encode;
 use function mkdir;
 use function preg_match;
@@ -389,6 +392,154 @@ final class ConfigTest extends DeferredAnalyzerTestCase
                     $last_error['line'],
                 );
             }
+        }
+    }
+
+    #[RequiresOperatingSystem('^(?!WIN)')]
+    #[DataProvider('providerSymlinkedDirectoryKeepsDirectoryOptions')]
+    public function testSymlinkedDirectoryKeepsDirectoryOptions(
+        string $directory_name,
+        string $link_path,
+        string $link_target,
+    ): void {
+        $root = (string) realpath(sys_get_temp_dir()) . '/psalm_symlink_options_' . uniqid();
+        mkdir($root . '/src', 0777, true);
+        mkdir($root . '/pkgs/a', 0777, true);
+        mkdir($root . '/outside');
+        file_put_contents($root . '/outside/a.php', '<?php');
+        mkdir($root . '/src-shared');
+        file_put_contents($root . '/src-shared/a.php', '<?php');
+
+        try {
+            if (!@symlink(str_replace('{root}', $root, $link_target), $root . '/' . $link_path)) {
+                $this->markTestSkipped('symlinks cannot be created');
+            }
+
+            $config = Config::loadFromXML(
+                $root,
+                '<?xml version="1.0"?>
+                <psalm>
+                    <projectFiles>
+                        <directory name="' . $directory_name . '" resolveSymlinks="true"
+                            useStrictTypes="true" ignoreTypeStats="true" />
+                    </projectFiles>
+                </psalm>',
+            );
+
+            $file_path = $root . '/' . basename($link_target) . '/a.php';
+
+            $this->assertTrue($config->isInProjectDirs($file_path));
+            $this->assertTrue($config->useStrictTypesForFile($file_path));
+            $this->assertFalse($config->reportTypeStatsForFile($file_path));
+        } finally {
+            if (is_link($root . '/' . $link_path)) {
+                unlink($root . '/' . $link_path);
+            }
+
+            unlink($root . '/outside/a.php');
+            rmdir($root . '/outside');
+            unlink($root . '/src-shared/a.php');
+            rmdir($root . '/src-shared');
+            rmdir($root . '/pkgs/a');
+            rmdir($root . '/pkgs');
+            rmdir($root . '/src');
+            rmdir($root);
+        }
+    }
+
+    /**
+     * @psalm-pure
+     * @return iterable<string, array{string, string, string}>
+     */
+    public static function providerSymlinkedDirectoryKeepsDirectoryOptions(): iterable
+    {
+        yield 'absolute link target' => ['src', 'src/lib', '{root}/outside'];
+        yield 'relative link target' => ['src', 'src/lib', '../outside'];
+        yield 'link in a wildcard directory' => ['pkgs/*', 'pkgs/a/lib', '{root}/outside'];
+        yield 'link target sharing the directory prefix' => ['src', 'src/lib', '{root}/src-shared'];
+    }
+
+    #[RequiresOperatingSystem('^(?!WIN)')]
+    #[DataProvider('providerResolveSymlinksSkipsUnreadableDirectories')]
+    public function testResolveSymlinksSkipsUnreadableDirectories(string $directory_name): void
+    {
+        $root = (string) realpath(sys_get_temp_dir()) . '/psalm_unreadable_' . uniqid();
+        mkdir($root . '/pkgs/a/private', 0777, true);
+        file_put_contents($root . '/pkgs/a/a.php', '<?php');
+        chmod($root . '/pkgs/a/private', 0);
+
+        try {
+            if (is_readable($root . '/pkgs/a/private')) {
+                $this->markTestSkipped('directory permissions are not enforced');
+            }
+
+            $config = Config::loadFromXML(
+                $root,
+                '<?xml version="1.0"?>
+                <psalm>
+                    <projectFiles>
+                        <directory name="' . $directory_name . '" resolveSymlinks="true" />
+                        <ignoreFiles>
+                            <directory name="pkgs/a/private" />
+                        </ignoreFiles>
+                    </projectFiles>
+                </psalm>',
+            );
+
+            $this->assertTrue($config->isInProjectDirs($root . '/pkgs/a/a.php'));
+        } finally {
+            chmod($root . '/pkgs/a/private', 0777);
+            rmdir($root . '/pkgs/a/private');
+            unlink($root . '/pkgs/a/a.php');
+            rmdir($root . '/pkgs/a');
+            rmdir($root . '/pkgs');
+            rmdir($root);
+        }
+    }
+
+    /**
+     * @psalm-pure
+     * @return iterable<string, array{string}>
+     */
+    public static function providerResolveSymlinksSkipsUnreadableDirectories(): iterable
+    {
+        yield 'directory' => ['pkgs'];
+        yield 'wildcard directory' => ['pkgs/*'];
+    }
+
+    public function testDirectoryOptionsDoNotApplyToSiblingDirectories(): void
+    {
+        $root = (string) realpath(sys_get_temp_dir()) . DIRECTORY_SEPARATOR . 'psalm_sibling_options_' . uniqid();
+        mkdir($root . '/src', 0777, true);
+        mkdir($root . '/src2');
+        file_put_contents($root . '/src/a.php', '<?php');
+        file_put_contents($root . '/src2/b.php', '<?php');
+
+        try {
+            $config = Config::loadFromXML(
+                $root,
+                '<?xml version="1.0"?>
+                <psalm>
+                    <projectFiles>
+                        <directory name="src" useStrictTypes="true" ignoreTypeStats="true" />
+                        <directory name="src2" />
+                    </projectFiles>
+                </psalm>',
+            );
+
+            $src_file = $root . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'a.php';
+            $src2_file = $root . DIRECTORY_SEPARATOR . 'src2' . DIRECTORY_SEPARATOR . 'b.php';
+
+            $this->assertTrue($config->useStrictTypesForFile($src_file));
+            $this->assertFalse($config->reportTypeStatsForFile($src_file));
+            $this->assertFalse($config->useStrictTypesForFile($src2_file));
+            $this->assertTrue($config->reportTypeStatsForFile($src2_file));
+        } finally {
+            unlink($root . '/src/a.php');
+            unlink($root . '/src2/b.php');
+            rmdir($root . '/src');
+            rmdir($root . '/src2');
+            rmdir($root);
         }
     }
 

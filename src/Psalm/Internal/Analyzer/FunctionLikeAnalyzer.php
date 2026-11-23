@@ -23,6 +23,7 @@ use Psalm\Exception\UnresolvableConstantException;
 use Psalm\FileManipulation;
 use Psalm\Internal\Analyzer\FunctionLike\ReturnTypeAnalyzer;
 use Psalm\Internal\Analyzer\FunctionLike\ReturnTypeCollector;
+use Psalm\Internal\Analyzer\Statements\DeclareAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Assignment\InstancePropertyAssignmentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\CallPurityResolver;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\FunctionCallReturnTypeFetcher;
@@ -314,6 +315,9 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
         array &$byref_vars = [],
     ): ?bool {
         $storage = $this->storage;
+
+        // the code runs under the strict_types of its own file, which for a trait is not the file of the class
+        $context->strict_types = DeclareAnalyzer::declaresStrictTypes($this->codebase, $this->getFilePath());
 
         $function_stmts = $this->function->getStmts() ?: [];
 

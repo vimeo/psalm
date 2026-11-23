@@ -8,6 +8,8 @@ use Override;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
+use const DIRECTORY_SEPARATOR;
+
 final class PureAnnotationTest extends TestCase
 {
     use InvalidCodeAnalysisTestTrait;
@@ -994,6 +996,28 @@ final class PureAnnotationTest extends TestCase
                     }
                 ',
                 'error_message' => 'ImpureFunctionCall',
+            ],
+            'evalIsImpure' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function foo(string $code): int {
+                        eval($code);
+                        return 1;
+                    }
+                ',
+                'error_message' => 'ImpureFunctionCall - src' . DIRECTORY_SEPARATOR
+                    . 'somefile.php:4:25 - The context is pure but eval requires impure',
+            ],
+            'evalIsImpureInAMutationFreeFunction' => [
+                'code' => '<?php
+                    /** @psalm-mutation-free */
+                    function foo(): int {
+                        eval(\'echo 1;\');
+                        return 1;
+                    }
+                ',
+                'error_message' => 'ImpureFunctionCall - src' . DIRECTORY_SEPARATOR
+                    . 'somefile.php:4:25 - The context is read-props but eval requires impure',
             ],
             'voidFunctionIsImpure' => [
                 'code' => '<?php
