@@ -1411,6 +1411,155 @@ final class AssertAnnotationTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'staticInAnAssertionOfAStaticMethodOfAGenericClassKeepsTheTypeArguments' => [
+                'code' => '<?php
+                    /** @template T */
+                    class Box {
+                        /** @psalm-assert-if-true static $value */
+                        public static function is(mixed $value): bool {
+                            return $value instanceof static;
+                        }
+                    }
+
+                    /**
+                     * @param Box<int>|string $value
+                     * @return Box<int>|null
+                     */
+                    function boxOrNull($value): ?Box {
+                        if (Box::is($value)) {
+                            return $value;
+                        }
+
+                        return null;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'staticWithTypeArgumentsInAnAssertionTakesThemOnlyOnAClassWithTemplates' => [
+                'code' => '<?php
+                    /** @template T */
+                    class Box {
+                        /** @psalm-assert-if-true static<int> $value */
+                        public function isIntBox(mixed $value): bool {
+                            return $value instanceof static;
+                        }
+
+                        /** @psalm-assert-if-true static<int> $value */
+                        public static function isAnIntBox(mixed $value): bool {
+                            return $value instanceof static;
+                        }
+                    }
+
+                    /** @return Box<int>|null */
+                    function intBox(mixed $value): ?Box {
+                        if (Box::isAnIntBox($value)) {
+                            return $value;
+                        }
+
+                        return null;
+                    }
+
+                    /** @extends Box<int> */
+                    class IntBox extends Box {
+                        public function same(mixed $value): static {
+                            if ($this->isIntBox($value)) {
+                                return $value;
+                            }
+
+                            throw new Exception();
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'staticATemplateOfAnAssertionIsBoundToIsTheCallers' => [
+                'code' => '<?php
+                    final class Guard {
+                        /**
+                         * @template T of object
+                         * @param class-string<T> $class
+                         * @psalm-assert-if-true T $value
+                         */
+                        public static function isInstanceOf(string $class, mixed $value): bool {
+                            return $value instanceof $class;
+                        }
+
+                        /**
+                         * @template T of object
+                         * @param class-string<T> $class
+                         * @psalm-assert-if-true T $value
+                         */
+                        public function isAnInstanceOf(string $class, mixed $value): bool {
+                            return $value instanceof $class;
+                        }
+                    }
+
+                    class Caller {
+                        public function viaStatic(mixed $value): ?static {
+                            if (Guard::isInstanceOf(static::class, $value)) {
+                                return $value;
+                            }
+
+                            return null;
+                        }
+
+                        public function viaInstance(Guard $guard, mixed $value): ?static {
+                            if ($guard->isAnInstanceOf(static::class, $value)) {
+                                return $value;
+                            }
+
+                            return null;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'staticInAnAssertionKeepsWhatItIsIntersectedWith' => [
+                'code' => '<?php
+                    interface Marker {
+                        public function mark(): void;
+                    }
+
+                    class Shape {
+                        /** @psalm-assert-if-true static&Marker $value */
+                        public static function isMarked(mixed $value): bool {
+                            return $value instanceof static && $value instanceof Marker;
+                        }
+
+                        /** @psalm-assert-if-true static&Marker $value */
+                        public function isAlsoMarked(mixed $value): bool {
+                            return $value instanceof static && $value instanceof Marker;
+                        }
+                    }
+
+                    function viaStatic(mixed $value): void {
+                        if (Shape::isMarked($value)) {
+                            $value->mark();
+                        }
+                    }
+
+                    function viaInstance(Shape $shape, mixed $value): void {
+                        if ($shape->isAlsoMarked($value)) {
+                            $value->mark();
+                        }
+                    }
+
+                    /**
+                     * @template T of Shape
+                     * @param T $shape
+                     */
+                    function viaTemplate(Shape $shape, mixed $value): void {
+                        if ($shape->isAlsoMarked($value)) {
+                            $value->mark();
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'staticInAnAssertionOfAnInheritedMethodIsTheCalledClass' => [
                 'code' => '<?php
                     interface Comparable {
