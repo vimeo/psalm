@@ -826,7 +826,8 @@ final class CallableTypeComparator
             return new TCallable();
         } elseif ($input_type_part instanceof TNamedObject
             && ($invokable = self::getInvokeMember($codebase, $input_type_part)) !== null
-            && $codebase->classExists($invokable->value, null, $context)
+            && ($codebase->classExists($invokable->value, null, $context)
+                || $codebase->classlikes->enumExists($invokable->value))
         ) {
             $invoke_id = new MethodIdentifier(
                 $invokable->value,
@@ -1047,7 +1048,7 @@ final class CallableTypeComparator
      */
     public static function getInvokeMember(Codebase $codebase, TNamedObject $object): ?TNamedObject
     {
-        if ($codebase->classOrInterfaceExists($object->value)
+        if ($codebase->classOrInterfaceOrEnumExists($object->value)
             && $codebase->methodExists(new MethodIdentifier($object->value, '__invoke'))
         ) {
             return $object;
@@ -1055,7 +1056,7 @@ final class CallableTypeComparator
 
         foreach ($object->getIntersectionTypes() as $member) {
             if ($member instanceof TNamedObject
-                && $codebase->classExists($member->value)
+                && ($codebase->classExists($member->value) || $codebase->classlikes->enumExists($member->value))
                 && $codebase->methodExists(new MethodIdentifier($member->value, '__invoke'))
             ) {
                 return $member;

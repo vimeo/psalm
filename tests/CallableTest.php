@@ -6013,7 +6013,7 @@ final class CallableTest extends TestCase
                     function f(Suit $suit): void {
                         takesIntCallback($suit);
                     }',
-                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:11:42',
+                'error_message' => 'InvalidScalarArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:11:42',
                 'error_levels' => [],
                 'php_version' => '8.1',
             ],
