@@ -931,6 +931,60 @@ final class PropertyTypeTest extends TestCase
                         }
                     }',
             ],
+            'finalClassInitialisesThePropertyThroughAnAliasedTraitMethod' => [
+                'code' => '<?php
+                    interface H {}
+
+                    trait T {
+                        private H $h;
+
+                        public function setH(H $h): void {
+                            $this->h = $h;
+                        }
+
+                        public function getH(): H {
+                            return $this->h;
+                        }
+                    }
+
+                    final class C {
+                        use T {
+                            setH as public init;
+                        }
+
+                        public function __construct(H $h) {
+                            $this->init($h);
+                        }
+                    }',
+            ],
+            'finalClassInitialisesThePropertyThroughAMethodOfANestedTrait' => [
+                'code' => '<?php
+                    interface H {}
+
+                    trait T {
+                        private H $h;
+
+                        public function setH(H $h): void {
+                            $this->h = $h;
+                        }
+
+                        public function getH(): H {
+                            return $this->h;
+                        }
+                    }
+
+                    trait T2 {
+                        use T;
+                    }
+
+                    final class C {
+                        use T2;
+
+                        public function __construct(H $h) {
+                            $this->setH($h);
+                        }
+                    }',
+            ],
             'finalClassInitialisesThePropertyThroughATraitMethodItCalls' => [
                 'code' => '<?php
                     interface ViewHandler {}
@@ -5188,6 +5242,33 @@ final class PropertyTypeTest extends TestCase
                         }
                     }',
                 'error_message' => 'UndefinedPropertyFetch',
+            ],
+            'finalClassFollowsItsOwnOverrideOfTheTraitMethod' => [
+                'code' => '<?php
+                    interface H {}
+
+                    trait T {
+                        private H $h;
+
+                        public function setH(H $h): void {
+                            $this->h = $h;
+                        }
+
+                        public function getH(): H {
+                            return $this->h;
+                        }
+                    }
+
+                    final class C {
+                        use T;
+
+                        public function setH(H $h): void {}
+
+                        public function __construct(H $h) {
+                            $this->setH($h);
+                        }
+                    }',
+                'error_message' => 'PropertyNotSetInConstructor',
             ],
             'finalClassFollowsItsOwnOverrideOfTheTraitMethod' => [
                 'code' => '<?php
