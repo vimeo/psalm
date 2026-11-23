@@ -5000,6 +5000,23 @@ final class PropertyTypeTest extends TestCase
                     }',
                 'error_message' => 'PossiblyInvalidPropertyAssignmentValue',
             ],
+            'nullableValueOfAnotherTypeToNullablePropertyOfSeveralClasses' => [
+                'code' => '<?php
+                    final class A {
+                        public ?string $p = null;
+                    }
+
+                    final class B {
+                        public ?array $p = null;
+                    }
+
+                    function set(A|B $o, ?int $i): void {
+                        $o->p = $i;
+                    }',
+                'error_message' => 'PossiblyInvalidPropertyAssignmentValue',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
             'nonNullValueOfAnotherTypeToNullableProperty' => [
                 'code' => '<?php
                     final class A {
