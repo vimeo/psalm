@@ -3322,6 +3322,137 @@ final class ForeachTest extends TestCase
                 'assertions' => [],
                 'ignored_issues' => ['PossiblyNullIterator'],
             ],
+            'foreachOverAUnionOfAnIteratorAggregateAndAnIteratorTakesTheValuesOfBoth' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @template TValue
+                     * @implements IteratorAggregate<int, TValue>
+                     */
+                    final class Bag implements IteratorAggregate {
+                        /** @return ArrayIterator<int, TValue> */
+                        public function getIterator(): ArrayIterator {
+                            throw new Exception();
+                        }
+                    }
+
+                    /**
+                     * @param Bag<string>|ArrayIterator<int, int> $aggregate_first
+                     * @param ArrayIterator<int, int>|Bag<string> $iterator_first
+                     * @param Generator<int, float>|Bag<string> $generator_first
+                     */
+                    function f($aggregate_first, $iterator_first, $generator_first): void {
+                        foreach ($aggregate_first as $v) {
+                            /** @psalm-check-type-exact $v = int|string */
+                        }
+
+                        foreach ($iterator_first as $v) {
+                            /** @psalm-check-type-exact $v = int|string */
+                        }
+
+                        foreach ($generator_first as $v) {
+                            /** @psalm-check-type-exact $v = float|string */
+                        }
+                    }
+                    PHP,
+            ],
+            'foreachOverAUnionTakesTheParamsOfAnIteratorWhoseCurrentIsUntyped' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @implements IteratorAggregate<int, string> */
+                    final class Strings implements IteratorAggregate {
+                        /** @return ArrayIterator<int, string> */
+                        public function getIterator(): ArrayIterator {
+                            throw new Exception();
+                        }
+                    }
+
+                    /** @implements Iterator<int, int> */
+                    final class Ints implements Iterator {
+                        public function current(): mixed { return 1; }
+                        public function key(): mixed { return 1; }
+                        public function next(): void {}
+                        public function rewind(): void {}
+                        public function valid(): bool { return false; }
+                    }
+
+                    function f(Strings|Ints $a): void {
+                        foreach ($a as $v) {
+                            /** @psalm-check-type-exact $v = int|string */
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'foreachOverAUnionOfImmutableIteratorAggregatesTakesTheValuesOfEach' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @template TValue
+                     * @implements IteratorAggregate<int, TValue>
+                     * @psalm-immutable
+                     */
+                    final class Bag implements IteratorAggregate {
+                        /** @return ArrayIterator<int, TValue> */
+                        public function getIterator(): ArrayIterator {
+                            throw new Exception();
+                        }
+                    }
+
+                    /** @param Bag<int>|Bag<string> $a */
+                    function f(Bag $a): void {
+                        foreach ($a as $v) {
+                            /** @psalm-check-type-exact $v = int|string */
+                        }
+
+                        foreach ($a as $v) {
+                            /** @psalm-check-type-exact $v = int|string */
+                        }
+                    }
+                    PHP,
+            ],
+            'foreachOverATemplateCallsGetIteratorOnTheTemplate' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @implements IteratorAggregate<int, static> */
+                    class Node implements IteratorAggregate {
+                        /** @return ArrayIterator<int, static> */
+                        public function getIterator(): ArrayIterator {
+                            throw new Exception();
+                        }
+                    }
+
+                    /**
+                     * @template T of Node
+                     * @param T $node
+                     * @return list<T>
+                     */
+                    function f(Node $node): array {
+                        $children = [];
+
+                        foreach ($node as $child) {
+                            $children[] = $child;
+                        }
+
+                        return $children;
+                    }
+                    PHP,
+            ],
+            'foreachOverANullableIteratorAggregateKeepsItNullable' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param IteratorAggregate<int, string>|null $a */
+                    function f(?IteratorAggregate $a): void {
+                        foreach ($a as $_) {}
+
+                        /** @psalm-check-type-exact $a = IteratorAggregate<int, string>|null */;
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => ['PossiblyNullIterator'],
+            ],
             'foreachOverANonEmptyArrayWithAContinueRunsAtLeastOnce' => [
                 'code' => '<?php
                     final class Flag {
