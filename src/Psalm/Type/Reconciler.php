@@ -57,6 +57,7 @@ use Psalm\Storage\Assertion\NonEmptyCountable;
 use Psalm\Storage\Assertion\NotNestedAssertions;
 use Psalm\Storage\Assertion\Truthy;
 use Psalm\Type;
+use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TArrayKey;
 use Psalm\Type\Atomic\TBool;
@@ -901,7 +902,9 @@ class Reconciler
                     if (($offset === 0 || count($assertions) === 1)
                         && ($assertion instanceof IsEqualIsset
                             || $assertion instanceof IsIsset
-                            || $assertion instanceof NonEmpty)
+                            || $assertion instanceof NonEmpty
+                            || ($assertion instanceof IsIdentical
+                                && self::isCharacterOfAString($nk, $assertion->type, $existing_types)))
                     ) {
                         $is_set = true;
                         break;
@@ -1009,6 +1012,26 @@ class Reconciler
         }
 
         return $new_types;
+    }
+
+    /**
+     * Whether an offset of a string is asserted to be a character, which it is only where the string has it
+     *
+     * @param array<string, Union> $existing_types
+     * @psalm-capabilities read-props|write-this-props
+     */
+    private static function isCharacterOfAString(string $offset_id, Atomic $type, array $existing_types): bool
+    {
+        if (!$type instanceof TLiteralString || $type->value === '') {
+            return false;
+        }
+
+        $key_parts = self::breakUpPathIntoParts($offset_id);
+
+        return count($key_parts) === 4
+            && $key_parts[1] === '['
+            && isset($existing_types[$key_parts[0]])
+            && $existing_types[$key_parts[0]]->isString();
     }
 
     /**
