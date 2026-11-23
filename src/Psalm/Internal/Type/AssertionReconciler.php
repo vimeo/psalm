@@ -92,6 +92,7 @@ use function is_nan;
 use function is_numeric;
 use function is_string;
 use function reset;
+use function rtrim;
 use function strtolower;
 
 /**
@@ -700,26 +701,38 @@ final class AssertionReconciler extends Reconciler
             $new_as_atomic = $new_type_part->as->getSingleAtomic();
 
             $acceptable_atomic_types = [];
+            $narrowed = false;
 
             foreach ($existing_var_type->getAtomicTypes() as $existing_var_type_part) {
                 if ($existing_var_type_part instanceof TNamedObject
                     || $existing_var_type_part instanceof TTemplateParam
                 ) {
                     $acceptable_atomic_types[] = $existing_var_type_part;
-                } else {
-                    if (AtomicTypeComparator::isContainedBy(
-                        $codebase,
-                        $existing_var_type_part,
-                        $new_as_atomic,
-                    )) {
-                        $acceptable_atomic_types[] = $existing_var_type_part;
+                } elseif (AtomicTypeComparator::isContainedBy(
+                    $codebase,
+                    $existing_var_type_part,
+                    $new_as_atomic,
+                )) {
+                    $acceptable_atomic_types[] = $existing_var_type_part;
+                } elseif (($overlap = Type::intersectUnionTypes(
+                    new Union([$existing_var_type_part]),
+                    new Union([$new_as_atomic]),
+                    $codebase,
+                )) !== null
+                    && !$overlap->isNever()
+                ) {
+                    // a string can be the value of a template of `numeric`: a numeric string
+                    $narrowed = true;
+
+                    foreach ($overlap->getAtomicTypes() as $overlap_atomic_type) {
+                        $acceptable_atomic_types[] = $overlap_atomic_type;
                     }
                 }
             }
 
             if ($acceptable_atomic_types) {
                 $acceptable_atomic_types =
-                    count($acceptable_atomic_types) === count($existing_var_type->getAtomicTypes())
+                    !$narrowed && count($acceptable_atomic_types) === count($existing_var_type->getAtomicTypes())
                         ? $existing_var_type
                         : new Union($acceptable_atomic_types);
                 return new Union([$new_type_part->replaceAs($acceptable_atomic_types)]);
@@ -1968,6 +1981,17 @@ final class AssertionReconciler extends Reconciler
     }
 
     /**
+     * What `is_numeric()` tells for the PHP version analysed: a trailing whitespace is allowed as of PHP 8
+     *
+     * @psalm-pure
+     */
+    public static function isNumericString(string $value, int $analysis_php_version_id): bool
+    {
+        return is_numeric($value)
+            && ($analysis_php_version_id >= 8_00_00 || rtrim($value, " \t\n\r\v\f") === $value);
+    }
+
+    /**
      * An object with a `__toString()` can be loosely equal to a string: it stays in the type next to the literal
      *
      * @param array<string, Atomic> $existing_var_atomic_types
@@ -2016,8 +2040,28 @@ final class AssertionReconciler extends Reconciler
     ): Union {
         $value = $assertion_type->value;
 
+        // PHP compares two numeric strings by their numbers: `"1" == "01"`
+        $loosely_equal_literals = [];
+
+        if ($assertion instanceof IsLooselyEqual
+            && self::isNumericString($value, $statements_analyzer->getCodebase()->analysis_php_version_id)
+        ) {
+            foreach ($existing_var_atomic_types as $key => $existing_var_atomic_type) {
+                if ($existing_var_atomic_type instanceof TLiteralString
+                    && $existing_var_atomic_type->value !== $value
+                    && self::isNumericString(
+                        $existing_var_atomic_type->value,
+                        $statements_analyzer->getCodebase()->analysis_php_version_id,
+                    )
+                    && $existing_var_atomic_type->value == $value
+                ) {
+                    $loosely_equal_literals[$key] = $existing_var_atomic_type;
+                }
+            }
+        }
+
         // we create the literal that is being asserted. We'll return this when we're sure this is the resulting type
-        $literal_asserted_type_string = new Union([$assertion_type], [
+        $literal_asserted_type_string = new Union([$assertion_type, ...array_values($loosely_equal_literals)], [
             'from_docblock' => $existing_var_type->from_docblock,
         ]);
 
@@ -2103,6 +2147,12 @@ final class AssertionReconciler extends Reconciler
                     return $existing_var_type;
                 }
             }
+        }
+
+        if ($loosely_equal_literals !== []) {
+            return new Union(array_values($loosely_equal_literals), [
+                'from_docblock' => $existing_var_type->from_docblock,
+            ]);
         }
 
         //if we're here, no type was eligible for the given literal. We'll emit an impossible error for this assertion
