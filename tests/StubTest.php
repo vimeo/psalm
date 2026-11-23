@@ -740,7 +740,7 @@ final class StubTest extends DeferredAnalyzerTestCase
         );
     }
 
-    public function testPhpStormMetaFunctionOverrideFallsBackToTemplatedReturnType(): void
+    public function testPhpStormMetaFunctionOverrideFallsBackToInferredReturnType(): void
     {
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             TestConfig::loadFromXML(
@@ -794,6 +794,13 @@ final class StubTest extends DeferredAnalyzerTestCase
                     return $a;
                 }
 
+                /**
+                 * @return ($s is "a" ? int : string)
+                 */
+                function pickConditional(string $s) {
+                    return $s === "a" ? 1 : $s;
+                }
+
                 /** @return class-string<Foo> */
                 function getFooClass(): string {
                     return Foo::class;
@@ -805,7 +812,9 @@ final class StubTest extends DeferredAnalyzerTestCase
                 $d = pickElement(new Foo());
                 $e = pickElement(new Foo(), [1]);
                 $f = ucfirst("object");
-                $g = ucfirst((string) rand(0, 1));',
+                $g = ucfirst((string) rand(0, 1));
+                $h = pickConditional("a");
+                $i = pickElement(new Foo(), []);',
         );
 
         $context = new Context();
@@ -820,6 +829,8 @@ final class StubTest extends DeferredAnalyzerTestCase
                 '$e===' => '1',
                 '$f===' => 'stdClass',
                 '$g' => 'string',
+                '$h===' => 'int',
+                '$i===' => 'Foo',
             ],
             $context,
         );

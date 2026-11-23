@@ -106,28 +106,29 @@ final class PhpStormMetaScanner
             return;
         }
 
-        $identifier_args = $identifier->getArgs();
+        $identifier_offset = 0;
 
-        if ($identifier_args !== [] && !$identifier_args[0]->value instanceof PhpParser\Node\Scalar\Int_) {
-            return;
+        if ($identifier->getArgs() !== []) {
+            $identifier_offset_arg = $identifier->getArgs()[0]->value;
+
+            if (!$identifier_offset_arg instanceof PhpParser\Node\Scalar\Int_) {
+                return;
+            }
+
+            $identifier_offset = $identifier_offset_arg->value;
         }
 
+        $override_name = $args[1]->value->name->toString();
         $override_args = $args[1]->value->getArgs();
-        $override_offset = $override_args && $override_args[0]->value instanceof PhpParser\Node\Scalar\Int_
-            ? $override_args[0]->value->value
-            : null;
 
         if ($map) {
-            $offset = $identifier_args ? $identifier_args[0]->value->value : 0;
-
-            $resolve = static fn(StatementsAnalyzer $statements_analyzer, array $call_args): ?Union
-                => self::resolveMapOverride($statements_analyzer, $call_args, $offset, $map);
-        } elseif ($override_offset !== null && $args[1]->value->name->getParts() === ['type']) {
-            $resolve = static fn(StatementsAnalyzer $statements_analyzer, array $call_args): ?Union
-                => self::resolveTypeOverride($statements_analyzer, $call_args, $override_offset);
-        } elseif ($override_offset !== null && $args[1]->value->name->getParts() === ['elementType']) {
-            $resolve = static fn(StatementsAnalyzer $statements_analyzer, array $call_args): ?Union
-                => self::resolveElementTypeOverride($statements_analyzer, $call_args, $override_offset);
+            $override_name = 'map';
+            $offset = $identifier_offset;
+        } elseif (($override_name === 'type' || $override_name === 'elementType')
+            && $override_args
+            && $override_args[0]->value instanceof PhpParser\Node\Scalar\Int_
+        ) {
+            $offset = $override_args[0]->value->value;
         } else {
             return;
         }
@@ -145,7 +146,9 @@ final class PhpStormMetaScanner
                 static function (
                     MethodReturnTypeProviderEvent $event,
                 ) use (
-                    $resolve,
+                    $override_name,
+                    $offset,
+                    $map,
                     $meta_fq_classlike_name,
                     $meta_method_name,
                 ): ?Union {
@@ -160,7 +163,13 @@ final class PhpStormMetaScanner
                         return null;
                     }
 
-                    return $resolve($statements_analyzer, $event->getCallArgs());
+                    return self::resolveOverride(
+                        $statements_analyzer,
+                        $event->getCallArgs(),
+                        $override_name,
+                        $offset,
+                        $map,
+                    );
                 },
             );
         }
@@ -172,32 +181,60 @@ final class PhpStormMetaScanner
                 strtolower($identifier->name->toString()),
                 static function (
                     FunctionReturnTypeProviderEvent $event,
-                ) use ($resolve): ?Union {
+                ) use (
+                    $override_name,
+                    $offset,
+                    $map,
+                ): ?Union {
                     $statements_analyzer = $event->getStatementsSource();
                     if (!$statements_analyzer instanceof StatementsAnalyzer) {
                         return Type::getMixed();
                     }
 
-                    return $resolve($statements_analyzer, $event->getCallArgs());
+                    return self::resolveOverride(
+                        $statements_analyzer,
+                        $event->getCallArgs(),
+                        $override_name,
+                        $offset,
+                        $map,
+                    );
                 },
             );
         }
     }
 
     /**
+     * Returns null when the override does not apply, so that the call's return type is inferred as usual.
+     *
      * @param list<PhpParser\Node\Arg> $call_args
      * @param array<string, Union|string> $map
      */
-    private static function resolveMapOverride(
+    private static function resolveOverride(
         StatementsAnalyzer $statements_analyzer,
         array $call_args,
+        string $override_name,
         int $offset,
         array $map,
     ): ?Union {
         if (!isset($call_args[$offset])
             || !($call_arg_type = $statements_analyzer->node_data->getType($call_args[$offset]->value))
-            || !$call_arg_type->isSingleStringLiteral()
         ) {
+            return null;
+        }
+
+        return match ($override_name) {
+            'map' => self::resolveMapOverride($call_arg_type, $map),
+            'type' => $call_arg_type,
+            default => self::resolveElementTypeOverride($call_arg_type),
+        };
+    }
+
+    /**
+     * @param array<string, Union|string> $map
+     */
+    private static function resolveMapOverride(Union $call_arg_type, array $map): ?Union
+    {
+        if (!$call_arg_type->isSingleStringLiteral()) {
             return null;
         }
 
@@ -207,7 +244,7 @@ final class PhpStormMetaScanner
             return $mapped_type;
         }
 
-        if (($mapped_type = $map[''] ?? null) && is_string($mapped_type) && str_contains($mapped_type, '@')) {
+        if (is_string($mapped_type = $map[''] ?? null) && str_contains($mapped_type, '@')) {
             $mapped_type = str_replace('@', $offset_arg_value, $mapped_type);
 
             if (!str_contains($mapped_type, '.')) {
@@ -218,33 +255,9 @@ final class PhpStormMetaScanner
         return null;
     }
 
-    /**
-     * @param list<PhpParser\Node\Arg> $call_args
-     */
-    private static function resolveTypeOverride(
-        StatementsAnalyzer $statements_analyzer,
-        array $call_args,
-        int $offset,
-    ): ?Union {
-        if (!isset($call_args[$offset])) {
-            return null;
-        }
-
-        return $statements_analyzer->node_data->getType($call_args[$offset]->value);
-    }
-
-    /**
-     * @param list<PhpParser\Node\Arg> $call_args
-     */
-    private static function resolveElementTypeOverride(
-        StatementsAnalyzer $statements_analyzer,
-        array $call_args,
-        int $offset,
-    ): ?Union {
-        if (!isset($call_args[$offset])
-            || !($call_arg_type = $statements_analyzer->node_data->getType($call_args[$offset]->value))
-            || !$call_arg_type->hasArray()
-        ) {
+    private static function resolveElementTypeOverride(Union $call_arg_type): ?Union
+    {
+        if (!$call_arg_type->hasArray()) {
             return null;
         }
 
@@ -253,10 +266,10 @@ final class PhpStormMetaScanner
          */
         $array_atomic_type = $call_arg_type->getArray();
 
-        if ($array_atomic_type instanceof TKeyedArray) {
-            return $array_atomic_type->getGenericValueType();
-        }
+        $element_type = $array_atomic_type instanceof TKeyedArray
+            ? $array_atomic_type->getGenericValueType()
+            : $array_atomic_type->type_params[1];
 
-        return $array_atomic_type->type_params[1];
+        return $element_type->isNever() ? null : $element_type;
     }
 }
