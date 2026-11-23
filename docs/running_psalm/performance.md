@@ -12,6 +12,8 @@
 ./vendor/bin/psalm --no-cache --debug-performance=psalm-perf.json
 ```
 
+Open the file in https://psalm.dev/perf/ to see it as charts and tables; the page reads it in your browser and sends it nowhere.
+
 The path needs the `=`: after a space it is a file to analyse. Use `--no-cache` to measure a cold run, and leave out `--debug`, which distorts the timings. Times per file are most reliable with `--threads=1`.
 
 Measuring costs some CPU itself, from 0 to about 10 %; the upper end is reached with plugins. Without the option Psalm measures nothing and runs as fast as before.

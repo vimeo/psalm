@@ -73,6 +73,9 @@ final class DumpWriter
 {
     private const SUMMARY_ROWS = 10;
 
+    /** A static page that reads the dump in the browser and sends it nowhere */
+    private const VIEWER = 'https://psalm.dev/perf/';
+
     /** A statement or function-like that took less of its own time is left out of the summary */
     private const MIN_ROW_US = 10_000;
 
@@ -107,7 +110,9 @@ final class DumpWriter
         }
 
         if ($failure === null) {
-            $project_analyzer->progress->write('Performance dump written to ' . $path . PHP_EOL);
+            $project_analyzer->progress->write(
+                'Performance dump written to ' . $path . ', open it in ' . self::VIEWER . PHP_EOL,
+            );
         } else {
             // not through the progress: that one says nothing with --no-progress
             fwrite(STDERR, 'Warning: ' . $failure . PHP_EOL);
@@ -279,10 +284,11 @@ final class DumpWriter
         }
 
         if ($path === null) {
-            return $out . "\n" . 'Run with --debug-performance=PATH to write all of it to a JSON file' . "\n\n";
+            return $out . "\n" . 'Run with --debug-performance=PATH to write all of it to a JSON file, and open that in '
+                . self::VIEWER . "\n\n";
         }
 
-        return $out . "\n" . ($written ? 'The full data is in ' . $path . "\n\n" : '');
+        return $out . "\n" . ($written ? 'The full data is in ' . $path . ', open it in ' . self::VIEWER . "\n\n" : '');
     }
 
     /**
