@@ -21,6 +21,29 @@ final class ClassStringMapTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'literalClassStringOffsetOfAClassStringMap' => [
+                'code' => '<?php
+                    abstract class Client {}
+                    final class StorageClient extends Client {}
+                    final class TokenClient extends Client {}
+
+                    final class Factory {
+                        /** @var class-string-map<T as Client, T> */
+                        private array $cache = [];
+
+                        public function storage(): StorageClient {
+                            if (!isset($this->cache[StorageClient::class])) {
+                                $this->cache[StorageClient::class] = new StorageClient();
+                            }
+
+                            return $this->cache[StorageClient::class];
+                        }
+
+                        public function cachedToken(): TokenClient {
+                            return $this->cache[TokenClient::class];
+                        }
+                    }',
+            ],
             'basicClassStringMap' => [
                 'code' => '<?php
                     namespace Bar;
@@ -138,6 +161,22 @@ final class ClassStringMapTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'literalClassStringOffsetOfAClassStringMapGivenAnotherClass' => [
+                'code' => '<?php
+                    abstract class Client {}
+                    final class StorageClient extends Client {}
+                    final class TokenClient extends Client {}
+
+                    final class Factory {
+                        /** @var class-string-map<T as Client, T> */
+                        private array $cache = [];
+
+                        public function storage(): void {
+                            $this->cache[StorageClient::class] = new TokenClient();
+                        }
+                    }',
+                'error_message' => 'InvalidPropertyAssignmentValue',
+            ],
             'assignInvalidClass' => [
                 'code' => '<?php
                     namespace Bar;
