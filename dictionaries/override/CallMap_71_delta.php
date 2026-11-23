@@ -363,6 +363,23 @@ return array (
         'iterator_class=' => 'class-string',
       ),
     ),
+    'bzcompress' => 
+    array (
+      'old' => 
+      array (
+        0 => 'int|string',
+        'source' => 'string',
+        'blocksize' => 'int',
+        'workfactor=' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'int|string',
+        'source' => 'string',
+        'blocksize=' => 'int',
+        'workfactor=' => 'int',
+      ),
+    ),
     'date_create' => 
     array (
       'old' => 
