@@ -112,110 +112,18 @@ final class ArithmeticOpAnalyzer
         }
 
         if ($left_type && $right_type) {
-            if ($left_type->isNull()) {
-                if ($statements_source) {
-                    IssueBuffer::maybeAdd(
-                        new NullOperand(
-                            'Left operand cannot be null',
-                            new CodeLocation($statements_source, $left),
-                        ),
-                        $statements_source->getSuppressedIssues(),
-                    );
-                }
+            if (self::reportNullOperand($statements_source, $left, $left_type, 'Left')
+                || self::reportNullOperand($statements_source, $right, $right_type, 'Right')
+            ) {
                 $result_type = Type::getMixed();
 
                 return;
             }
 
-            if ($left_type->isNullable() && !$left_type->ignore_nullable_issues) {
-                if ($statements_source) {
-                    IssueBuffer::maybeAdd(
-                        new PossiblyNullOperand(
-                            'Left operand cannot be nullable, got ' . $left_type,
-                            new CodeLocation($statements_source, $left),
-                        ),
-                        $statements_source->getSuppressedIssues(),
-                    );
-                }
-            }
-
-            if ($right_type->isNull()) {
-                if ($statements_source) {
-                    IssueBuffer::maybeAdd(
-                        new NullOperand(
-                            'Right operand cannot be null',
-                            new CodeLocation($statements_source, $right),
-                        ),
-                        $statements_source->getSuppressedIssues(),
-                    );
-                }
-                $result_type = Type::getMixed();
-
+            if (self::reportFalseOperand($statements_source, $left, $left_type, 'Left')
+                || self::reportFalseOperand($statements_source, $right, $right_type, 'Right')
+            ) {
                 return;
-            }
-
-            if ($right_type->isNullable() && !$right_type->ignore_nullable_issues) {
-                if ($statements_source) {
-                    IssueBuffer::maybeAdd(
-                        new PossiblyNullOperand(
-                            'Right operand cannot be nullable, got ' . $right_type,
-                            new CodeLocation($statements_source, $right),
-                        ),
-                        $statements_source->getSuppressedIssues(),
-                    );
-                }
-            }
-
-            if ($left_type->isFalse()) {
-                if ($statements_source) {
-                    IssueBuffer::maybeAdd(
-                        new FalseOperand(
-                            'Left operand cannot be false',
-                            new CodeLocation($statements_source, $left),
-                        ),
-                        $statements_source->getSuppressedIssues(),
-                    );
-                }
-
-                return;
-            }
-
-            if ($left_type->isFalsable() && !$left_type->ignore_falsable_issues) {
-                if ($statements_source) {
-                    IssueBuffer::maybeAdd(
-                        new PossiblyFalseOperand(
-                            'Left operand cannot be falsable, got ' . $left_type,
-                            new CodeLocation($statements_source, $left),
-                        ),
-                        $statements_source->getSuppressedIssues(),
-                    );
-                }
-            }
-
-            if ($right_type->isFalse()) {
-                if ($statements_source) {
-                    IssueBuffer::maybeAdd(
-                        new FalseOperand(
-                            'Right operand cannot be false',
-                            new CodeLocation($statements_source, $right),
-                        ),
-                        $statements_source->getSuppressedIssues(),
-                    );
-                }
-
-                return;
-            }
-
-            if ($right_type->isFalsable() && !$right_type->ignore_falsable_issues) {
-                if ($statements_source) {
-                    IssueBuffer::maybeAdd(
-                        new PossiblyFalseOperand(
-                            'Right operand cannot be falsable, got ' . $right_type,
-                            new CodeLocation($statements_source, $right),
-                        ),
-                        $statements_source->getSuppressedIssues(),
-                    );
-                }
             }
 
             $int_operation = self::getNameOfAnOperationOnInts($parent);
@@ -971,6 +879,11 @@ final class ArithmeticOpAnalyzer
                     && $right_type_part->value < 0
                 ) {
                     $result_type = Type::combineUnionTypes(Type::getFloat(), $result_type);
+                } elseif ($parent instanceof PhpParser\Node\Expr\BinaryOp\Pow
+                    && !$right_type_part instanceof TLiteralInt
+                ) {
+                    // a negative exponent gives a float
+                    $result_type = Type::combineUnionTypes(new Union([new TInt(), new TFloat()]), $result_type);
                 } else {
                     $left_is_positive = ($left_type_part instanceof TLiteralInt && $left_type_part->value > 0)
                         || ($left_type_part instanceof TIntRange && $left_type_part->isPositive());
@@ -1261,6 +1174,78 @@ final class ArithmeticOpAnalyzer
             || $operation instanceof PhpParser\Node\Expr\BinaryOp\ShiftRight
                 ? 'a bitwise operation'
                 : null;
+    }
+
+    /**
+     * Reports a null or nullable operand, and returns whether it is null
+     */
+    private static function reportNullOperand(
+        ?StatementsSource $statements_source,
+        PhpParser\Node\Expr $operand,
+        Union $operand_type,
+        string $side,
+    ): bool {
+        if ($operand_type->isNull()) {
+            if ($statements_source) {
+                IssueBuffer::maybeAdd(
+                    new NullOperand(
+                        $side . ' operand cannot be null',
+                        new CodeLocation($statements_source, $operand),
+                    ),
+                    $statements_source->getSuppressedIssues(),
+                );
+            }
+
+            return true;
+        }
+
+        if ($statements_source && $operand_type->isNullable() && !$operand_type->ignore_nullable_issues) {
+            IssueBuffer::maybeAdd(
+                new PossiblyNullOperand(
+                    $side . ' operand cannot be nullable, got ' . (string) $operand_type,
+                    new CodeLocation($statements_source, $operand),
+                ),
+                $statements_source->getSuppressedIssues(),
+            );
+        }
+
+        return false;
+    }
+
+    /**
+     * Reports a false or falsable operand, and returns whether it is false
+     */
+    private static function reportFalseOperand(
+        ?StatementsSource $statements_source,
+        PhpParser\Node\Expr $operand,
+        Union $operand_type,
+        string $side,
+    ): bool {
+        if ($operand_type->isFalse()) {
+            if ($statements_source) {
+                IssueBuffer::maybeAdd(
+                    new FalseOperand(
+                        $side . ' operand cannot be false',
+                        new CodeLocation($statements_source, $operand),
+                    ),
+                    $statements_source->getSuppressedIssues(),
+                );
+            }
+
+            return true;
+        }
+
+        if ($statements_source && $operand_type->isFalsable() && !$operand_type->ignore_falsable_issues) {
+            IssueBuffer::maybeAdd(
+                new PossiblyFalseOperand(
+                    $side . ' operand cannot be falsable, got ' . (string) $operand_type,
+                    new CodeLocation($statements_source, $operand),
+                ),
+                $statements_source->getSuppressedIssues(),
+            );
+        }
+
+        return false;
     }
 
     /**

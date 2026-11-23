@@ -539,17 +539,18 @@ final class ReportOutputTest extends TestCase
             |                                                                                        |
             |    The level at which issue is reported as an error is given in brackets - e.g.        |
             |    `ERROR (2): MissingReturnType` indicates that MissingReturnType is only reported    |
-            |    as an error when Psalm's level is set to 2 or below.                                |
+            |    as an error when Psalm's level is set to 2 or below. `(always)` marks the issues    |
+            |    reported as errors at every level, `(feature)` those of an enabled feature.         |
             |                                                                                        |
             |    Issues are shown or hidden in this report according to current settings. For        |
             |    the most complete report set Psalm's error level to 1 or use --show-info=true       |
             |    See https://psalm.dev/docs/running_psalm/error_levels/                              |
             |----------------------------------------------------------------------------------------|
 
-            ERROR: UndefinedConstant - somefile.php:9:6 - Const CHANGE_ME is not defined, consider enabling the allConstantsGlobal config option if scanning legacy codebases (see https://psalm.dev/020)
+            ERROR (always): UndefinedConstant - somefile.php:9:6 - Const CHANGE_ME is not defined, consider enabling the allConstantsGlobal config option if scanning legacy codebases (see https://psalm.dev/020)
             echo CHANGE_ME;
 
-            ERROR: UndefinedVariable - somefile.php:4:10 - Cannot find referenced variable $as_you_____type (see https://psalm.dev/024)
+            ERROR (always): UndefinedVariable - somefile.php:4:10 - Cannot find referenced variable $as_you_____type (see https://psalm.dev/024)
               return $as_you_____type;
 
             INFO (3): PossiblyUndefinedGlobalVariable - somefile.php:18:6 - Possibly undefined global variable $a, first seen on line 12 (see https://psalm.dev/126)

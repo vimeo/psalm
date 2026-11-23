@@ -23,6 +23,7 @@
         "ext-SimpleXML": "*",
         "ext-ctype": "*",
         "ext-dom": "*",
+        "ext-filter": "*",
         "ext-json": "*",
         "ext-libxml": "*",
         "ext-mbstring": "*",
@@ -73,7 +74,11 @@
     "suggest": {
         "ext-igbinary": "^2.0.5 is required, used to serialize caching data",
         "ext-zstd": ">=0.15.0 is required, used to compress caching data",
-        "ext-curl": "In order to send data to shepherd"
+        "ext-curl": "In order to send data to shepherd",
+        "ext-pcntl": "Used with ext-posix to analyse in parallel",
+        "ext-posix": "Used with ext-pcntl to analyse in parallel",
+        "ext-readline": "Used by psalm-review",
+        "ext-zlib": "Used to compress caching data when ext-zstd isn't available"
     },
     "config": {
         "allow-plugins": {
