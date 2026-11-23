@@ -35,7 +35,6 @@ use function substr_count;
  * Provides method handlers for all textDocument/* methods
  *
  * @internal
- * @psalm-suppress PossiblyUnusedProperty deps read only from reflection-invoked JSON-RPC handlers
  */
 final class TextDocument
 {
@@ -62,7 +61,7 @@ final class TextDocument
      */
     public function didOpen(TextDocumentItem $textDocument): void
     {
-        if (!$this->server->isFileUri($textDocument->uri)) {
+        if (!LanguageServer::isFileUri($textDocument->uri)) {
             return;
         }
 
@@ -89,7 +88,7 @@ final class TextDocument
      */
     public function didSave(TextDocumentIdentifier $textDocument, ?string $text = null): void
     {
-        if (!$this->server->isFileUri($textDocument->uri)) {
+        if (!LanguageServer::isFileUri($textDocument->uri)) {
             return;
         }
 
@@ -115,7 +114,7 @@ final class TextDocument
      */
     public function didChange(VersionedTextDocumentIdentifier $textDocument, array $contentChanges): void
     {
-        if (!$this->server->isFileUri($textDocument->uri)) {
+        if (!LanguageServer::isFileUri($textDocument->uri)) {
             return;
         }
 
@@ -154,7 +153,7 @@ final class TextDocument
      */
     public function didClose(TextDocumentIdentifier $textDocument): void
     {
-        if (!$this->server->isFileUri($textDocument->uri)) {
+        if (!LanguageServer::isFileUri($textDocument->uri)) {
             return;
         }
 
@@ -178,7 +177,7 @@ final class TextDocument
      */
     public function definition(TextDocumentIdentifier $textDocument, Position $position): ?Location
     {
-        if (!$this->server->isFileUri($textDocument->uri)) {
+        if (!LanguageServer::isFileUri($textDocument->uri)) {
             return null;
         }
 
@@ -233,7 +232,7 @@ final class TextDocument
      */
     public function hover(TextDocumentIdentifier $textDocument, Position $position): ?Hover
     {
-        if (!$this->server->isFileUri($textDocument->uri)) {
+        if (!LanguageServer::isFileUri($textDocument->uri)) {
             return null;
         }
 
@@ -292,7 +291,7 @@ final class TextDocument
      */
     public function completion(TextDocumentIdentifier $textDocument, Position $position): ?CompletionList
     {
-        if (!$this->server->isFileUri($textDocument->uri)) {
+        if (!LanguageServer::isFileUri($textDocument->uri)) {
             return null;
         }
 
@@ -358,7 +357,7 @@ final class TextDocument
      */
     public function signatureHelp(TextDocumentIdentifier $textDocument, Position $position): ?SignatureHelp
     {
-        if (!$this->server->isFileUri($textDocument->uri)) {
+        if (!LanguageServer::isFileUri($textDocument->uri)) {
             return null;
         }
 
@@ -434,7 +433,7 @@ final class TextDocument
      */
     public function codeAction(TextDocumentIdentifier $textDocument, CodeActionContext $context): ?array
     {
-        if (!$this->server->isFileUri($textDocument->uri)) {
+        if (!LanguageServer::isFileUri($textDocument->uri)) {
             return null;
         }
 

@@ -993,7 +993,7 @@ final class LanguageServer extends Dispatcher
      *
      * @psalm-pure
      */
-    public function isFileUri(string $uri): bool
+    public static function isFileUri(string $uri): bool
     {
         $fragments = parse_url($uri);
 
@@ -1033,7 +1033,7 @@ final class LanguageServer extends Dispatcher
     private function getPathPart(string $uri): string
     {
         $path = parse_url($uri, PHP_URL_PATH);
-        if (!$this->isFileUri($uri) || !is_string($path)) {
+        if (!self::isFileUri($uri) || !is_string($path)) {
             throw new InvalidArgumentException("Not a valid file URI: $uri");
         }
         return $path;
