@@ -1289,6 +1289,16 @@ final class AssertAnnotationTest extends TestCase
                         if ($shape->isAlsoMarked($value)) {
                             $value->mark();
                         }
+                    }
+
+                    /**
+                     * @template T of Shape
+                     * @param T $shape
+                     */
+                    function viaTemplate(Shape $shape, mixed $value): void {
+                        if ($shape->isAlsoMarked($value)) {
+                            $value->mark();
+                        }
                     }',
                 'assertions' => [],
                 'ignored_issues' => [],

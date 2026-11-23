@@ -119,16 +119,49 @@ final class Possibilities
 
         // `static&Marker` is `Marker` flagged as static: the class the call is on doesn't always implement it
         if ($codebase !== null
-            && $static_type instanceof TNamedObject
             && strtolower($asserted_type->value) !== 'static'
-            && strtolower($asserted_type->value) !== strtolower($static_type->value)
-            && $codebase->classlike_storage_provider->has($static_type->value)
-            && !$codebase->classExtendsOrImplements($static_type->value, $asserted_type->value)
+            && !self::isAlwaysA($static_type, $asserted_type->value, $codebase)
         ) {
             $intersected = new TNamedObject($asserted_type->value);
             $extra_types[$intersected->getKey()] = $intersected;
         }
 
         return $extra_types ? $static_type->setIntersectionTypes($extra_types) : $static_type;
+    }
+
+    /**
+     * Whether the object the method is called on is always a $class_name, the bound of a template receiver included
+     *
+     * @psalm-capabilities read-props
+     */
+    private static function isAlwaysA(
+        TNamedObject|TTemplateParam $receiver,
+        string $class_name,
+        Codebase $codebase,
+    ): bool {
+        $receiver_types = $receiver instanceof TTemplateParam ? $receiver->as->getAtomicTypes() : [$receiver];
+
+        foreach ($receiver_types as $receiver_type) {
+            if (!$receiver_type instanceof TNamedObject && !$receiver_type instanceof TTemplateParam) {
+                return false;
+            }
+
+            if ($receiver_type instanceof TTemplateParam) {
+                if (!self::isAlwaysA($receiver_type, $class_name, $codebase)) {
+                    return false;
+                }
+
+                continue;
+            }
+
+            if (strtolower($receiver_type->value) !== strtolower($class_name)
+                && (!$codebase->classlike_storage_provider->has($receiver_type->value)
+                    || !$codebase->classExtendsOrImplements($receiver_type->value, $class_name))
+            ) {
+                return false;
+            }
+        }
+
+        return true;
     }
 }
