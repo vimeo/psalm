@@ -1042,6 +1042,29 @@ final class ArgumentAnalyzer
 
         $method_identifier = $cased_method_id ? ' of ' . $cased_method_id : '';
 
+        $source = $statements_analyzer->getSource();
+        $unbound_input_type = $input_type;
+
+        if ($source instanceof FunctionLikeAnalyzer) {
+            // the parameter type the called function inferred from an argument of a trait template type is in
+            // the trait's terms as well
+            $source_storage = $source->getFunctionLikeStorage($statements_analyzer);
+            $input_type = FunctionLikeAnalyzer::bindTraitTemplatesToUse(
+                $codebase,
+                $source_storage,
+                $context,
+                $input_type,
+            );
+            $param_type = FunctionLikeAnalyzer::bindTraitTemplatesToUse(
+                $codebase,
+                $source_storage,
+                $context,
+                $param_type,
+            );
+        }
+
+        $input_type_is_bound = $input_type !== $unbound_input_type;
+
         if ($input_type->hasMixed()) {
             $statements_analyzer->countMixed($context, true);
 
@@ -1066,7 +1089,7 @@ final class ArgumentAnalyzer
                 ) {
                     self::coerceValueAfterGatekeeperArgument(
                         $statements_analyzer,
-                        $input_type,
+                        $input_type_is_bound ? $unbound_input_type : $input_type,
                         false,
                         $input_expr,
                         $param_type,
@@ -1479,9 +1502,10 @@ final class ArgumentAnalyzer
             && $cased_method_id !== 'print'
             && (!$in_call_map || $context->strict_types)
         ) {
+            // the variable keeps its type in the trait's terms, only the check uses the bound one
             self::coerceValueAfterGatekeeperArgument(
                 $statements_analyzer,
-                $input_type,
+                $input_type_is_bound && !$replace_input_type ? $unbound_input_type : $input_type,
                 $replace_input_type,
                 $input_expr,
                 $param_type,
