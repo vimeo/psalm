@@ -71,6 +71,7 @@ use function strrpos;
 use function strtolower;
 use function substr;
 
+use const INF;
 use const PHP_INT_MAX;
 use const PHP_INT_MIN;
 
@@ -1511,7 +1512,7 @@ final class ArithmeticOpAnalyzer
         }
 
         if ($parent instanceof PhpParser\Node\Expr\BinaryOp\Mul) {
-            self::analyzeMulBetweenIntRange($parent, $result_type, $left_type_part, $right_type_part);
+            self::analyzeMulBetweenIntRange($result_type, $left_type_part, $right_type_part);
             return;
         }
 
@@ -1590,180 +1591,48 @@ final class ArithmeticOpAnalyzer
      * @psalm-capabilities read-props|write-this-props|write-refs
      */
     private static function analyzeMulBetweenIntRange(
-        PhpParser\Node\Expr\BinaryOp\Mul $parent,
         ?Union &$result_type,
         TIntRange $left_type_part,
         TIntRange $right_type_part,
     ): void {
-        //Mul is a special case because of double negatives. We can only infer when we know both signs strictly
-        if ($right_type_part->min_bound !== null
-            && $right_type_part->max_bound !== null
-            && $left_type_part->min_bound !== null
-            && $left_type_part->max_bound !== null
-        ) {
-            //everything is known, we can do calculations
-            //[ x_1 , x_2 ] ⋆ [ y_1 , y_2 ] =
-            //      [
-            //          min(x_1 ⋆ y_1 , x_1 ⋆ y_2 , x_2 ⋆ y_1 , x_2 ⋆ y_2),
-            //          max(x_1 ⋆ y_1 , x_1 ⋆ y_2 , x_2 ⋆ y_1 , x_2 ⋆ y_2)
-            //      ]
-            $x_1 = $right_type_part->min_bound;
-            $x_2 = $right_type_part->max_bound;
-            $y_1 = $left_type_part->min_bound;
-            $y_2 = $left_type_part->max_bound;
-            $min_value = min($x_1 * $y_1, $x_1 * $y_2, $x_2 * $y_1, $x_2 * $y_2);
-            $max_value = max($x_1 * $y_1, $x_1 * $y_2, $x_2 * $y_1, $x_2 * $y_2);
+        // [x1, x2] * [y1, y2] = [min(x1*y1, x1*y2, x2*y1, x2*y2), max(x1*y1, x1*y2, x2*y1, x2*y2)]
+        $products = [
+            self::multiplyBounds($left_type_part->min_bound, -1, $right_type_part->min_bound, -1),
+            self::multiplyBounds($left_type_part->min_bound, -1, $right_type_part->max_bound, 1),
+            self::multiplyBounds($left_type_part->max_bound, 1, $right_type_part->min_bound, -1),
+            self::multiplyBounds($left_type_part->max_bound, 1, $right_type_part->max_bound, 1),
+        ];
 
-            $new_result_type = Type::getIntRange($min_value, $max_value);
-        } elseif ($right_type_part->isPositiveOrZero() && $left_type_part->isPositiveOrZero()) {
-            // both operands are positive, result will be only positive
-            $min_operand1 = $left_type_part->min_bound;
-            $min_operand2 = $right_type_part->min_bound;
+        $min_value = min($products);
+        $max_value = max($products);
 
-            $max_operand1 = $left_type_part->max_bound;
-            $max_operand2 = $right_type_part->max_bound;
-
-            $calculated_min_type = null;
-            if ($min_operand1 !== null && $min_operand2 !== null) {
-                // when there are two valid numbers, make any operation
-                $calculated_min_type = self::arithmeticOperation(
-                    $parent,
-                    $min_operand1,
-                    $min_operand2,
-                    false,
-                );
-            }
-
-            $calculated_max_type = null;
-            if ($max_operand1 !== null && $max_operand2 !== null) {
-                // when there are two valid numbers, make any operation
-                $calculated_max_type = self::arithmeticOperation(
-                    $parent,
-                    $max_operand1,
-                    $max_operand2,
-                    false,
-                );
-            }
-
-            $min_value = $calculated_min_type !== null ? $calculated_min_type->getSingleIntLiteral()->value : null;
-            $max_value = $calculated_max_type !== null ? $calculated_max_type->getSingleIntLiteral()->value : null;
-
-            $new_result_type = Type::getIntRange($min_value, $max_value);
-        } elseif ($right_type_part->isPositiveOrZero() && $left_type_part->isNegativeOrZero()) {
-            // one operand is negative, result will be negative and we have to check min vs max
-            $min_operand1 = $left_type_part->max_bound;
-            $min_operand2 = $right_type_part->min_bound;
-
-            $max_operand1 = $left_type_part->min_bound;
-            $max_operand2 = $right_type_part->max_bound;
-
-            $calculated_min_type = null;
-            if ($min_operand1 !== null && $min_operand2 !== null) {
-                // when there are two valid numbers, make any operation
-                $calculated_min_type = self::arithmeticOperation(
-                    $parent,
-                    $min_operand1,
-                    $min_operand2,
-                    false,
-                );
-            }
-
-            $calculated_max_type = null;
-            if ($max_operand1 !== null && $max_operand2 !== null) {
-                // when there are two valid numbers, make any operation
-                $calculated_max_type = self::arithmeticOperation(
-                    $parent,
-                    $max_operand1,
-                    $max_operand2,
-                    false,
-                );
-            }
-
-            $min_value = $calculated_min_type !== null ? $calculated_min_type->getSingleIntLiteral()->value : null;
-            $max_value = $calculated_max_type !== null ? $calculated_max_type->getSingleIntLiteral()->value : null;
-
-            if ($min_value > $max_value) {
-                [$min_value, $max_value] = [$max_value, $min_value];
-            }
-
-            $new_result_type = Type::getIntRange($min_value, $max_value);
-        } elseif ($right_type_part->isNegativeOrZero() && $left_type_part->isPositiveOrZero()) {
-            // one operand is negative, result will be negative and we have to check min vs max
-            $min_operand1 = $left_type_part->min_bound;
-            $min_operand2 = $right_type_part->max_bound;
-
-            $max_operand1 = $left_type_part->max_bound;
-            $max_operand2 = $right_type_part->min_bound;
-
-            $calculated_min_type = null;
-            if ($min_operand1 !== null && $min_operand2 !== null) {
-                // when there are two valid numbers, make any operation
-                $calculated_min_type = self::arithmeticOperation(
-                    $parent,
-                    $min_operand1,
-                    $min_operand2,
-                    false,
-                );
-            }
-
-            $calculated_max_type = null;
-            if ($max_operand1 !== null && $max_operand2 !== null) {
-                // when there are two valid numbers, make any operation
-                $calculated_max_type = self::arithmeticOperation(
-                    $parent,
-                    $max_operand1,
-                    $max_operand2,
-                    false,
-                );
-            }
-
-            $min_value = $calculated_min_type !== null ? $calculated_min_type->getSingleIntLiteral()->value : null;
-            $max_value = $calculated_max_type !== null ? $calculated_max_type->getSingleIntLiteral()->value : null;
-
-            if ($min_value > $max_value) {
-                [$min_value, $max_value] = [$max_value, $min_value];
-            }
-
-            $new_result_type = Type::getIntRange($min_value, $max_value);
-        } elseif ($right_type_part->isNegativeOrZero() && $left_type_part->isNegativeOrZero()) {
-            // both operand are negative, result will be positive
-            $min_operand1 = $left_type_part->max_bound;
-            $min_operand2 = $right_type_part->max_bound;
-
-            $max_operand1 = $left_type_part->min_bound;
-            $max_operand2 = $right_type_part->min_bound;
-
-            $calculated_min_type = null;
-            if ($min_operand1 !== null && $min_operand2 !== null) {
-                // when there are two valid numbers, make any operation
-                $calculated_min_type = self::arithmeticOperation(
-                    $parent,
-                    $min_operand1,
-                    $min_operand2,
-                    false,
-                );
-            }
-
-            $calculated_max_type = null;
-            if ($max_operand1 !== null && $max_operand2 !== null) {
-                // when there are two valid numbers, make any operation
-                $calculated_max_type = self::arithmeticOperation(
-                    $parent,
-                    $max_operand1,
-                    $max_operand2,
-                    false,
-                );
-            }
-
-            $min_value = $calculated_min_type !== null ? $calculated_min_type->getSingleIntLiteral()->value : null;
-            $max_value = $calculated_max_type !== null ? $calculated_max_type->getSingleIntLiteral()->value : null;
-
-            $new_result_type = Type::getIntRange($min_value, $max_value);
-        } else {
-            $new_result_type = Type::getInt(true);
-        }
+        // a float is an infinite bound or an overflow, so the result is unbounded on that side
+        $new_result_type = is_int($min_value) || is_int($max_value)
+            ? Type::getIntRange(is_int($min_value) ? $min_value : null, is_int($max_value) ? $max_value : null)
+            : Type::getInt(true);
 
         $result_type = Type::combineUnionTypes($new_result_type, $result_type);
+    }
+
+    /**
+     * Multiplies two range bounds, a null bound being the infinity of the given sign
+     *
+     * @param -1|1 $infinity_sign1
+     * @param -1|1 $infinity_sign2
+     * @psalm-pure
+     */
+    private static function multiplyBounds(
+        ?int $bound1,
+        int $infinity_sign1,
+        ?int $bound2,
+        int $infinity_sign2,
+    ): int|float {
+        // a range bound is a value the operand can take, and zero times any value is zero
+        if ($bound1 === 0 || $bound2 === 0) {
+            return 0;
+        }
+
+        return ($bound1 ?? $infinity_sign1 * INF) * ($bound2 ?? $infinity_sign2 * INF);
     }
 
     /**

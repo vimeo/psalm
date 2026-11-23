@@ -568,6 +568,132 @@ final class IntRangeTest extends TestCase
                     '$z===' => 'int<-4, 4>',
                 ],
             ],
+            'multiplicationOfMixedSignsWithUnboundedSide' => [
+                'code' => '<?php
+                    /** @return int<min, -1> */
+                    function a(): int { return -1; }
+                    /** @return int<0, 5> */
+                    function b(): int { return 0; }
+                    /** @return int<-5, -1> */
+                    function c(): int { return -1; }
+                    /** @return int<0, max> */
+                    function d(): int { return 0; }
+
+                    $x = a() * b();
+                    $y = c() * d();
+                    ',
+                'assertions' => [
+                    '$x===' => 'int<min, 0>',
+                    '$y===' => 'int<min, 0>',
+                ],
+            ],
+            'multiplicationOfOverflowingBounds' => [
+                'code' => '<?php
+                    /** @return int<4611686018427387904, 4611686018427387905> */
+                    function getHuge(): int { return 4611686018427387904; }
+                    /** @return int<-5, 4611686018427387904> */
+                    function getUpToHuge(): int { return 0; }
+                    /** @return int<2, 3> */
+                    function getSmall(): int { return 2; }
+
+                    $a = getHuge() * getSmall();
+                    $b = getUpToHuge() * getSmall();
+                    ',
+                'assertions' => [
+                    '$a===' => 'int',
+                    '$b===' => 'int<-15, max>',
+                ],
+            ],
+            'multiplicationSignMatrix' => [
+                'code' => '<?php
+                    /** @return int<0, 0> */
+                    function getZero(): int { return 0; }
+                    /** @return int<-3, 4> */
+                    function getMixed(): int { return 0; }
+                    /** @return positive-int */
+                    function getPos(): int { return 1; }
+                    /** @return negative-int */
+                    function getNeg(): int { return -1; }
+                    /** @return int<0, max> */
+                    function getNonNeg(): int { return 0; }
+                    /** @return int<min, 0> */
+                    function getNonPos(): int { return 0; }
+                    /** @return int<2, 5> */
+                    function getPosFinite(): int { return 2; }
+                    /** @return int<-5, -2> */
+                    function getNegFinite(): int { return -2; }
+
+                    $zero = getZero();
+                    $mixed = getMixed();
+                    $pos = getPos();
+                    $neg = getNeg();
+                    $nonNeg = getNonNeg();
+                    $nonPos = getNonPos();
+                    $posFinite = getPosFinite();
+                    $negFinite = getNegFinite();
+
+                    $posPos = $pos * $pos;
+                    $posPosFinite = $pos * $posFinite;
+                    $posNeg = $pos * $neg;
+                    $posNegFinite = $pos * $negFinite;
+                    $negNeg = $neg * $neg;
+                    $negNegFinite = $neg * $negFinite;
+                    $negPosFinite = $neg * $posFinite;
+                    $posFiniteNegFinite = $posFinite * $negFinite;
+                    $negFiniteNegFinite = $negFinite * $negFinite;
+                    $nonNegNeg = $nonNeg * $neg;
+                    $negNonNeg = $neg * $nonNeg;
+                    $nonPosNonNeg = $nonPos * $nonNeg;
+                    $nonNegNonNeg = $nonNeg * $nonNeg;
+                    $nonPosNonPos = $nonPos * $nonPos;
+                    $nonPosPos = $nonPos * $pos;
+                    $nonPosNeg = $nonPos * $neg;
+                    $zeroPos = $zero * $pos;
+                    $zeroNeg = $zero * $neg;
+                    $zeroMixed = $zero * $mixed;
+                    $mixedPos = $mixed * $pos;
+                    $mixedPosFinite = $mixed * $posFinite;
+                    $mixedNegFinite = $mixed * $negFinite;
+                    $mixedMixed = $mixed * $mixed;
+                    $posLiteral = $pos * 3;
+                    $negNegativeLiteral = $neg * -3;
+                    $nonNegNegativeLiteral = $nonNeg * -3;
+                    $negativeLiteralNonNeg = -3 * $nonNeg;
+                    $nonPosLiteral = $nonPos * 3;
+                    $negZeroLiteral = $neg * 0;
+                    ',
+                'assertions' => [
+                    '$posPos===' => 'int<1, max>',
+                    '$posPosFinite===' => 'int<2, max>',
+                    '$posNeg===' => 'int<min, -1>',
+                    '$posNegFinite===' => 'int<min, -2>',
+                    '$negNeg===' => 'int<1, max>',
+                    '$negNegFinite===' => 'int<2, max>',
+                    '$negPosFinite===' => 'int<min, -2>',
+                    '$posFiniteNegFinite===' => 'int<-25, -4>',
+                    '$negFiniteNegFinite===' => 'int<4, 25>',
+                    '$nonNegNeg===' => 'int<min, 0>',
+                    '$negNonNeg===' => 'int<min, 0>',
+                    '$nonPosNonNeg===' => 'int<min, 0>',
+                    '$nonNegNonNeg===' => 'int<0, max>',
+                    '$nonPosNonPos===' => 'int<0, max>',
+                    '$nonPosPos===' => 'int<min, 0>',
+                    '$nonPosNeg===' => 'int<0, max>',
+                    '$zeroPos===' => 'int<0, 0>',
+                    '$zeroNeg===' => 'int<0, 0>',
+                    '$zeroMixed===' => 'int<0, 0>',
+                    '$mixedPos===' => 'int',
+                    '$mixedPosFinite===' => 'int<-15, 20>',
+                    '$mixedNegFinite===' => 'int<-20, 15>',
+                    '$mixedMixed===' => 'int<-12, 16>',
+                    '$posLiteral===' => 'int<3, max>',
+                    '$negNegativeLiteral===' => 'int<3, max>',
+                    '$nonNegNegativeLiteral===' => 'int<min, 0>',
+                    '$negativeLiteralNonNeg===' => 'int<min, 0>',
+                    '$nonPosLiteral===' => 'int<min, 0>',
+                    '$negZeroLiteral===' => 'int<0, 0>',
+                ],
+            ],
             'intLoopPositive' => [
                 'code' => '<?php
                     for($i = 0; $i < 10; $i++){
