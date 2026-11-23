@@ -163,6 +163,16 @@ final class ArrayFunctionCallTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'arrayKeyExistsNotFindingALiteralFallbackKeyOfAnUnsealedShape' => [
+                'code' => '<?php
+                    /**
+                     * @param array{a: int, ...<"b", int>} $data
+                     * @param "b" $key
+                     */
+                    function f(string $key, array $data): void {
+                        if (!array_key_exists($key, $data)) {}
+                    }',
+            ],
             'arrayKeyExistsNotFindingAKeyOfAGenericArray' => [
                 'code' => '<?php
                     final class Settings {
@@ -5159,6 +5169,26 @@ final class ArrayFunctionCallTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'arrayKeyExistsOfAKeyTheArrayCantHaveIsNeverTrue' => [
+                'code' => '<?php
+                    /** @param array<"a"|"b", int> $data */
+                    function g(array $data): void {
+                        $key = "c";
+                        if (array_key_exists($key, $data)) {}
+                    }',
+                'error_message' => "TypeDoesNotContainType - src" . DIRECTORY_SEPARATOR . "somefile.php:5:29 - Type 'c' for \$key is never in-array-'a'|'b",
+            ],
+            'arrayKeyExistsOfADocblockKeyTheArrayCantHaveIsNeverTrue' => [
+                'code' => '<?php
+                    /**
+                     * @param array<"a"|"b", int> $data
+                     * @param "c" $key
+                     */
+                    function g(string $key, array $data): void {
+                        if (array_key_exists($key, $data)) {}
+                    }',
+                'error_message' => "DocblockTypeContradiction - src" . DIRECTORY_SEPARATOR . "somefile.php:7:29 - Docblock-defined type 'c' for \$key is never in-array-'a'|'b",
+            ],
             'keyOfAListTakenBeforeTheListShrinksIsNoKeyAnyMore' => [
                 'code' => '<?php
                     /**

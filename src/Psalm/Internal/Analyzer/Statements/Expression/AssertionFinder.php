@@ -3705,6 +3705,7 @@ final class AssertionFinder
                         $key_type = $atomic_type->getGenericKeyType(
                             !$atomic_type->allShapeKeysAlwaysDefined(),
                         );
+                        $keys_may_be_missing = $keys_may_be_missing || $atomic_type->fallback_params !== null;
                     } else {
                         $key_type = $atomic_type->type_params[0];
                         $keys_may_be_missing = true;
