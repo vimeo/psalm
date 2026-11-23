@@ -330,7 +330,7 @@ $searcher->count(1.5);                                    // InvalidArgument, To
 
 ### `@psalm-overload`
 
-Declares one signature a function or method can be called with, for one whose behaviour depends on the arguments. A call is checked against the first `@psalm-overload` whose parameters accept its arguments (by position and by name), or against the last one when none does (for a function, against its own signature when that accepts them, e.g. an `int|string` argument for separate `int` and `string` overloads). The function's own signature is not used for calls that have overloads, and it still is the one of a first-class callable (`search(...)`). A method that overrides one with overloads has its own signature unless it declares the overloads again. Not supported yet: constructors.
+Declares one signature a function or method can be called with, for one whose behaviour depends on the arguments. A call is checked against the first `@psalm-overload` whose parameters accept its arguments (by position and by name), or, when none does, against its own signature if that accepts them (an `int|string` argument for separate `int` and `string` overloads), else against the last overload. A first-class callable (`search(...)`) has the own signature. A method that overrides one with overloads has its own signature unless it declares the overloads again. Not supported yet: constructors.
 
 ```php
 <?php
@@ -346,6 +346,9 @@ search(new LimitedQuery())->getPageCount();    // no issue
 search(new LimitedQuery())->getAllRecords();   // UndefinedMethod
 search(new UnlimitedQuery())->getAllRecords(); // no issue
 
+/** @var LimitedQuery|UnlimitedQuery $query */
+search($query);                                // Result, from the function's own signature
+
 class Repository {
     /**
      * @psalm-overload (string $id): int
@@ -358,6 +361,19 @@ class Repository {
 
 Repository::find("a"); // int
 Repository::find(1);   // string
+```
+
+An overload has to fit the signature: the same parameter names at the same positions, and types the signature accepts. By-reference comes from the signature.
+
+```php
+<?php
+/**
+ * @psalm-overload (int $value): int
+ * @psalm-overload (string $other): string
+ */
+function pick(int|string $value): int|string { // InvalidDocblock: $other is at the position of $value
+    return $value;
+}
 ```
 
 ### `@psalm-seal-methods`, `@psalm-no-seal-methods`, `@seal-methods`, `@no-seal-methods`

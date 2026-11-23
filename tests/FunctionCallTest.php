@@ -146,7 +146,7 @@ final class FunctionCallTest extends TestCase
                      * @param int $id
                      * @return int|string
                      * @psalm-overload (string $name): int
-                     * @psalm-overload (int $id): string
+                     * @psalm-overload (string $name = "", int $id = 0): string
                      */
                     function pick($name = "", $id = 0) {
                         return 0;
@@ -158,6 +158,42 @@ final class FunctionCallTest extends TestCase
                     '$byName===' => 'int',
                     '$byId===' => 'string',
                 ],
+            ],
+            'psalmOverloadKeepsTheByReferenceOfTheRealParameter' => [
+                'code' => '<?php
+                    /**
+                     * @param-out list<int> $a
+                     * @psalm-overload (array $a): void
+                     * @psalm-overload (array $a, int $n): void
+                     */
+                    function fill(array &$a, int $n = 1): void {
+                        $a = [$n];
+                    }
+
+                    $x = ["a" => "b"];
+                    fill($x);',
+                'assertions' => [
+                    '$x===' => 'list<int>',
+                ],
+            ],
+            'psalmOverloadOfAVariadicParameterNamesItsParametersFreely' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-overload (int $first): int
+                     * @psalm-overload (int $first, int $second, int ...$others): string
+                     */
+                    function total(int ...$numbers): int|string {
+                        return 0;
+                    }
+
+                    $one = total(1);
+                    $many = total(1, 2, 3);',
+                'assertions' => [
+                    '$one===' => 'int',
+                    '$many===' => 'string',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'psalmOverloadOfNestedCallsOfTheSameFunction' => [
                 'code' => '<?php
@@ -242,7 +278,7 @@ final class FunctionCallTest extends TestCase
                     /**
                      * @return int|string
                      * @psalm-overload (string $a, int $b = 0): int
-                     * @psalm-overload (string $a, string $c): string
+                     * @psalm-overload (string $a, int|string $b = 0, string $c = ""): string
                      */
                     function pick(string $a, int|string $b = 0, string $c = "") {
                         return 0;
@@ -4663,8 +4699,8 @@ final class FunctionCallTest extends TestCase
                     }
 
                     /**
-                     * @psalm-overload (int $page): PagedResult
-                     * @psalm-overload (string $query): PlainResult
+                     * @psalm-overload (int $argument): PagedResult
+                     * @psalm-overload (string $argument): PlainResult
                      */
                     function search(int|string $argument): object {
                         return new PlainResult();
@@ -4695,7 +4731,7 @@ final class FunctionCallTest extends TestCase
                 'code' => '<?php
                     /**
                      * @psalm-overload (string $name): int
-                     * @psalm-overload (int $id): string
+                     * @psalm-overload (string $name = "", int $id = 0): string
                      */
                     function pick(string|int $name = "", int $id = 0): int|string {
                         return 0;
@@ -4705,6 +4741,58 @@ final class FunctionCallTest extends TestCase
                 'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:30',
                 'error_levels' => [],
                 'php_version' => '8.1',
+            ],
+            'psalmOverloadRenamingARealParameter' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-overload (int $page): int
+                     * @psalm-overload (string $query): string
+                     */
+                    function find(int|string $argument): int|string {
+                        return $argument;
+                    }',
+                'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:21 - '
+                    . 'Parameter $page of an @psalm-overload of find is at the position of $argument in its signature',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'psalmOverloadWithARealParameterAtAnotherPosition' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-overload (string $name): int
+                     * @psalm-overload (int $id): string
+                     */
+                    function pick(string $name = "", int $id = 0): int|string {
+                        return 0;
+                    }',
+                'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:21 - '
+                    . 'Parameter $id of an @psalm-overload of pick is at the position of $name in its signature',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'psalmOverloadWithoutTheAmpersandStillNeedsAVariable' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-overload (array $a): void
+                     */
+                    function fill(array &$a): void {
+                        $a = [];
+                    }
+
+                    fill([1]);',
+                'error_message' => 'InvalidPassByReference',
+            ],
+            'psalmOverloadVariadicWithATypeACoveredParameterRejects' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-overload (int ...$values): int
+                     */
+                    function pick(int $a = 0, string $b = ""): int {
+                        return 0;
+                    }',
+                'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:21 - '
+                    . 'The type int of parameter $values of an @psalm-overload of pick is not accepted by its '
+                    . 'signature, which declares string',
             ],
             'psalmOverloadWithAParameterTypeTheSignatureDoesNotAccept' => [
                 'code' => '<?php
