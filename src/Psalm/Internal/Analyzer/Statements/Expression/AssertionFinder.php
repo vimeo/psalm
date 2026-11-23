@@ -2829,8 +2829,7 @@ final class AssertionFinder
     }
 
     /**
-     * The assertion on a remembered call's own id, next to the `@psalm-assert-if-*` assertions of the call, when
-     * those are at most one conjunction
+     * The assertion on a remembered call's own id, as one more conjunct of the call's `@psalm-assert-if-*` assertions
      *
      * @param list<array<string, non-empty-list<non-empty-list<Assertion>>>> $if_types
      * @return list<array<string, non-empty-list<non-empty-list<Assertion>>>>
@@ -2842,11 +2841,11 @@ final class AssertionFinder
         Assertion $assertion,
         bool $negated,
     ): array {
-        if ($call_var_id === null || count($if_types) > 1) {
+        if ($call_var_id === null) {
             return $if_types;
         }
 
-        $if_types[0][$call_var_id] = [[self::withPolarity($assertion, $negated)]];
+        $if_types[] = [$call_var_id => [[self::withPolarity($assertion, $negated)]]];
 
         return $if_types;
     }

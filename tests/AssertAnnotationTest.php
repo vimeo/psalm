@@ -444,6 +444,38 @@ final class AssertAnnotationTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'callWithTwoAssertIfTrueTagsKeepsItsOwnAssertionWhenComparedToFalse' => [
+                'code' => '<?php
+                    final class Box {
+                        public ?int $v = null;
+                        public ?int $w = null;
+
+                        /**
+                         * @psalm-assert-if-true !null $this->v
+                         * @psalm-assert-if-true !null $this->w
+                         * @psalm-capabilities read-props
+                         */
+                        public function get(): string|false {
+                            return $this->v === null || $this->w === null ? false : (string) $this->v;
+                        }
+                    }
+
+                    /** @psalm-pure */
+                    function takesString(string $s): string {
+                        return $s;
+                    }
+
+                    function f(Box $b): string {
+                        if ($b->get() !== false) {
+                            return takesString($b->get());
+                        }
+
+                        return "";
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'parentCallKeepsTemplatedAssertIfTrueOfAnUndocumentedOverride' => [
                 'code' => '<?php
                     interface Item { public function name(): string; }
