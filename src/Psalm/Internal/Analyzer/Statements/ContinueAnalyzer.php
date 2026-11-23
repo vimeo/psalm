@@ -39,6 +39,19 @@ final class ContinueAnalyzer
             );
         }
 
+        // `continue N` that targets a switch leaves it like `break N`
+        $target_index = count($context->break_types) - $count;
+
+        if ($count > 1 && $target_index >= 0 && $context->break_types[$target_index] === 'switch') {
+            BreakAnalyzer::analyze(
+                $statements_analyzer,
+                new PhpParser\Node\Stmt\Break_($stmt->num, $stmt->getAttributes()),
+                $context,
+            );
+
+            return;
+        }
+
         $loop_scope = $context->loop_scope;
 
         if ($count === 2 && isset($loop_scope->loop_parent_context->loop_scope)) {
