@@ -26,7 +26,6 @@ use UnexpectedValueException;
 
 use function array_key_first;
 use function array_search;
-use function array_unique;
 use function arsort;
 use function assert;
 use function class_exists;
@@ -85,11 +84,11 @@ final class InternalCallMapHandler
     private static ?array $taint_sink_map = null;
 
     /**
-     * The callmap version, the extension of each function and method of its callmap, and of each class
+     * The extension of each function and method, and of each class, of the callmaps loaded, by version
      *
-     * @var array{int, array<string, string>, array<string, string>}|null
+     * @var array<int, array{array<string, string>, array<string, string>}>
      */
-    private static ?array $extensions = null;
+    private static array $extensions = [];
 
     /**
      * @var array<lowercase-string, array<int|non-empty-string, non-empty-string>>|null
@@ -464,59 +463,90 @@ final class InternalCallMapHandler
     }
 
     /**
-     * The extension declaring a builtin function (`mb_strlen`) or class (`PDO`) in the analysed PHP version, as
-     * reflection names it (`mbstring`, `zend opcache`), or null when the callmap doesn't know it. A class belongs to
-     * the extension of most of its methods: some come from others (`PDO::sqliteCreateFunction()` from `pdo_sqlite`).
-     * The stub image of a version may not build an extension yet (redis for PHP 8.6): its symbols then take their
-     * extension from the nearest version whose image builds it.
+     * The extensions declaring a builtin function (`mb_strlen`) or class (`PDO`) in the PHP versions from the lowest
+     * composer.json allows to the analysed one, as reflection names them (`mbstring`, `zend opcache`), each with the
+     * lowest of these versions (as an id) it is part of. A symbol can move: `random_int()` is part of `standard` until
+     * PHP 8.1, of `random` from 8.2. A class belongs to the extension of most of its methods: some come from others
+     * (`PDO::sqliteCreateFunction()` from `pdo_sqlite`). The stub image of the analysed version may not build an
+     * extension yet (zmq for PHP 8.6): its symbols then take their extension from the nearest version whose image
+     * builds it.
      *
-     * @psalm-suppress UnresolvableInclude
+     * @return array<string, int>
      */
-    public static function getExtension(string $function_or_class, bool $is_class): ?string
+    public static function getExtensions(string $function_or_class, bool $is_class): array
     {
         $codebase = ProjectAnalyzer::getInstance()->getCodebase();
-        $version = self::getCallMapVersion(
+        $analysis_version = self::getCallMapVersion(
             $codebase->getMajorAnalysisPhpVersion(),
             $codebase->getMinorAnalysisPhpVersion(),
         );
+        $lowest_version_id = min(
+            $codebase->analysis_php_version_id,
+            $codebase->config->lowest_composer_php_version_id ?? $codebase->analysis_php_version_id,
+        );
+        $lowest_version = self::getCallMapVersion(intdiv($lowest_version_id, 10_000), intdiv($lowest_version_id, 100) % 100);
 
-        if (self::$extensions === null || self::$extensions[0] !== $version) {
-            $index = (int) array_search($version, self::CALLMAP_VERSIONS, true);
-            $function_extensions = [];
-            for ($distance = 0; $distance < count(self::CALLMAP_VERSIONS); $distance++) {
-                foreach (array_unique([$index - $distance, $index + $distance]) as $other_index) {
-                    $other_version = self::CALLMAP_VERSIONS[$other_index] ?? null;
-                    if ($other_version === null) {
-                        continue;
+        $key = strtolower(ltrim($function_or_class, '\\'));
+        $map = $is_class ? 1 : 0;
+
+        $extensions = [];
+        foreach (self::CALLMAP_VERSIONS as $version) {
+            if ($version < $lowest_version || $version > $analysis_version) {
+                continue;
+            }
+
+            $extension = self::getVersionExtensions($version)[$map][$key] ?? null;
+            if ($extension === null && $version === $analysis_version) {
+                $index = (int) array_search($version, self::CALLMAP_VERSIONS, true);
+                for ($distance = 1; $extension === null && $distance < count(self::CALLMAP_VERSIONS); $distance++) {
+                    foreach ([$index - $distance, $index + $distance] as $other_index) {
+                        $other_version = self::CALLMAP_VERSIONS[$other_index] ?? null;
+                        if ($other_version !== null) {
+                            $extension ??= self::getVersionExtensions($other_version)[$map][$key] ?? null;
+                        }
                     }
-
-                    /** @var array<string, string> $other_extensions */
-                    $other_extensions = require(
-                        dirname(__DIR__, 4) . "/dictionaries/autogen/CallMapExtensions_$other_version.php"
-                    );
-                    $function_extensions += $other_extensions;
                 }
             }
 
-            $method_counts = [];
-            foreach ($function_extensions as $method_id => $extension) {
-                $separator = strpos($method_id, '::');
-                if ($separator !== false) {
-                    $class = substr($method_id, 0, $separator);
-                    $method_counts[$class][$extension] = ($method_counts[$class][$extension] ?? 0) + 1;
-                }
+            if ($extension !== null && !isset($extensions[$extension])) {
+                $extensions[$extension] = intdiv($version, 10) * 10_000 + $version % 10 * 100;
             }
-
-            $class_extensions = [];
-            foreach ($method_counts as $class => $counts) {
-                arsort($counts);
-                $class_extensions[$class] = (string) array_key_first($counts);
-            }
-
-            self::$extensions = [$version, $function_extensions, $class_extensions];
         }
 
-        return self::$extensions[$is_class ? 2 : 1][strtolower(ltrim($function_or_class, '\\'))] ?? null;
+        return $extensions;
+    }
+
+    /**
+     * The extension of each function and method, and of each class, of the callmap of a version
+     *
+     * @return array{array<string, string>, array<string, string>}
+     * @psalm-suppress UnresolvableInclude
+     */
+    private static function getVersionExtensions(int $version): array
+    {
+        if (isset(self::$extensions[$version])) {
+            return self::$extensions[$version];
+        }
+
+        /** @var array<string, string> $function_extensions */
+        $function_extensions = require(dirname(__DIR__, 4) . "/dictionaries/autogen/CallMapExtensions_$version.php");
+
+        $method_counts = [];
+        foreach ($function_extensions as $method_id => $extension) {
+            $separator = strpos($method_id, '::');
+            if ($separator !== false) {
+                $class = substr($method_id, 0, $separator);
+                $method_counts[$class][$extension] = ($method_counts[$class][$extension] ?? 0) + 1;
+            }
+        }
+
+        $class_extensions = [];
+        foreach ($method_counts as $class => $counts) {
+            arsort($counts);
+            $class_extensions[$class] = (string) array_key_first($counts);
+        }
+
+        return self::$extensions[$version] = [$function_extensions, $class_extensions];
     }
 
     /** The reflected native or tentative return type, independent of analysis overrides. */
