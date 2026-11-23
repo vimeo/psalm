@@ -8,6 +8,8 @@ use Psalm\Internal\Type\TemplateBound;
 use Psalm\Type\Atomic;
 use Psalm\Type\Union;
 
+use function array_merge;
+
 /**
  * @internal
  */
@@ -66,4 +68,42 @@ final class TypeComparisonResult
      * @var list<array{string, TemplateBound}>
      */
     public array $type_variable_upper_bounds = [];
+
+    /**
+     * Takes the type-variable bounds recorded by the comparison of a part (an array value, a shape entry).
+     *
+     * @psalm-external-mutation-free
+     */
+    public function addTypeVariableBounds(self $part_comparison_result): void
+    {
+        $this->type_variable_lower_bounds = array_merge(
+            $this->type_variable_lower_bounds,
+            $part_comparison_result->type_variable_lower_bounds,
+        );
+
+        $this->type_variable_upper_bounds = array_merge(
+            $this->type_variable_upper_bounds,
+            $part_comparison_result->type_variable_upper_bounds,
+        );
+    }
+
+    /**
+     * Takes the result of a failed comparison of a part (a type param, a key, a value): each of these flags holds
+     * only if it holds for every failed part.
+     *
+     * @psalm-external-mutation-free
+     */
+    public function mergeFailedPart(self $part_comparison_result): void
+    {
+        $this->type_coerced = $part_comparison_result->type_coerced === true
+            && $this->type_coerced !== false;
+        $this->type_coerced_from_mixed = $part_comparison_result->type_coerced_from_mixed === true
+            && $this->type_coerced_from_mixed !== false;
+        $this->type_coerced_from_as_mixed = $part_comparison_result->type_coerced_from_as_mixed === true
+            && $this->type_coerced_from_as_mixed !== false;
+        $this->type_coerced_from_scalar = $part_comparison_result->type_coerced_from_scalar === true
+            && $this->type_coerced_from_scalar !== false;
+        $this->scalar_type_match_found = $part_comparison_result->scalar_type_match_found === true
+            && $this->scalar_type_match_found !== false;
+    }
 }

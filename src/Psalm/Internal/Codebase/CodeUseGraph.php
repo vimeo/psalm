@@ -573,10 +573,8 @@ final class CodeUseGraph
         }
 
         foreach ($other->mutation_info as $node_id => $info) {
-            $this->mutation_info[$node_id] = self::combineMutationInfo($this->mutation_info[$node_id] ?? null, $info);
+            $this->addMutationInfo($node_id, $info);
         }
-
-        $this->mutation_levels = null;
     }
 
     /**
@@ -607,7 +605,15 @@ final class CodeUseGraph
      */
     public function addMutationInfo(string $node_id, array $info): void
     {
-        $this->mutation_info[$node_id] = self::combineMutationInfo($this->mutation_info[$node_id] ?? null, $info);
+        $existing = $this->mutation_info[$node_id] ?? null;
+
+        if ($existing !== null && $existing['fresh'] && !$info['fresh']) {
+            return;
+        }
+
+        $this->mutation_info[$node_id] = $existing !== null && $existing['fresh']
+            ? self::mergeMutationInfo($existing, $info)
+            : $info;
         $this->mutation_levels = null;
 
         if (!$this->record_edges) {
@@ -617,38 +623,45 @@ final class CodeUseGraph
     }
 
     /**
-     * A function-like analysed more than once in a run (e.g. an inherited method under the `$this`
-     * of each subclass) may have branches that are only reachable in some of those analyses: it
-     * does everything any of them does. Info from an earlier run is replaced.
+     * Two analyses of one function-like in the same run, e.g. of a trait method, analysed once per class using it,
+     * whose methods its calls on `$this` may reach. Annotating it must suit all of them.
      *
-     * @param MutationInfo|null $existing
-     * @param MutationInfo $info
+     * @param MutationInfo $a
+     * @param MutationInfo $b
      * @return MutationInfo
      * @psalm-pure
      */
-    private static function combineMutationInfo(?array $existing, array $info): array
+    private static function mergeMutationInfo(array $a, array $b): array
     {
-        if ($existing === null || !$existing['fresh'] || !$info['fresh']) {
-            return $info;
+        $wildcards = $a['wildcards'] ?? null;
+
+        foreach ($b['wildcards'] ?? [] as $param => $paths) {
+            $wildcards[$param] = array_values(array_unique([...$wildcards[$param] ?? [], ...$paths]));
         }
 
-        $info['intrinsic'] |= $existing['intrinsic'];
-        $info['default_intrinsic'] |= $existing['default_intrinsic'];
+        return [
+            'intrinsic' => $a['intrinsic'] | $b['intrinsic'],
+            'allowed' => $a['allowed'] & $b['allowed'],
+            'callees' => self::mergeCallees($a['callees'], $b['callees']),
+            'default_intrinsic' => $a['default_intrinsic'] | $b['default_intrinsic'],
+            'default_callees' => self::mergeCallees($a['default_callees'], $b['default_callees']),
+            'report' => $a['report'] && $b['report'],
+        ] + ($wildcards !== null ? ['wildcards' => $wildcards] : []) + $a;
+    }
 
-        foreach ($existing['callees'] as $callee_id => $internal_mutations_ok) {
-            $info['callees'][$callee_id] = ($info['callees'][$callee_id] ?? true) && $internal_mutations_ok;
+    /**
+     * @param array<string, bool> $a callee => whether its mutations of its own instance stay there
+     * @param array<string, bool> $b
+     * @return array<string, bool>
+     * @psalm-pure
+     */
+    private static function mergeCallees(array $a, array $b): array
+    {
+        foreach ($b as $callee_id => $internal_mutations_ok) {
+            $a[$callee_id] = $internal_mutations_ok && ($a[$callee_id] ?? true);
         }
 
-        foreach ($existing['default_callees'] as $callee_id => $internal_mutations_ok) {
-            $info['default_callees'][$callee_id]
-                = ($info['default_callees'][$callee_id] ?? true) && $internal_mutations_ok;
-        }
-
-        foreach ($existing['wildcards'] ?? [] as $param => $paths) {
-            $info['wildcards'][$param] = array_values(array_unique([...($info['wildcards'][$param] ?? []), ...$paths]));
-        }
-
-        return $info;
+        return $a;
     }
 
     /**

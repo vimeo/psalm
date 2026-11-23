@@ -210,6 +210,239 @@ final class ForeachTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'foreachOverAnIteratorAggregateGivenByACoalesceAssignment' => [
+                'code' => '<?php
+                    /** @implements IteratorAggregate<int, string> */
+                    final class Items implements IteratorAggregate {
+                        #[Override]
+                        public function getIterator(): Iterator {
+                            return new ArrayIterator(["a"]);
+                        }
+                    }
+
+                    final class Holder {
+                        private ?Items $items = null;
+
+                        public function names(): void {
+                            foreach (($this->items ??= new Items()) as $name) {
+                                echo $name;
+                            }
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
+            'yieldFromAnIteratorAggregateGivenByACoalesceAssignment' => [
+                'code' => '<?php
+                    /** @implements IteratorAggregate<int, string> */
+                    final class Items implements IteratorAggregate {
+                        #[Override]
+                        public function getIterator(): Iterator {
+                            return new ArrayIterator(["a"]);
+                        }
+                    }
+
+                    final class Holder {
+                        private ?Items $items = null;
+
+                        /** @return Generator<int, string, mixed, void> */
+                        public function names(): Generator {
+                            yield from ($this->items ??= new Items());
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
+            'foreachAndYieldFromAnAggregateOfARawIteratorGivenByACoalesceAssignment' => [
+                'code' => '<?php
+                    final class RawIt implements Iterator {
+                        #[Override]
+                        public function current(): string { return "a"; }
+                        #[Override]
+                        public function key(): int { return 0; }
+                        #[Override]
+                        public function next(): void {}
+                        #[Override]
+                        public function rewind(): void {}
+                        #[Override]
+                        public function valid(): bool { return false; }
+                    }
+
+                    final class AggRaw implements IteratorAggregate {
+                        #[Override]
+                        public function getIterator(): RawIt { return new RawIt(); }
+                    }
+
+                    final class H {
+                        private ?AggRaw $aggRaw = null;
+
+                        public function a(): void {
+                            foreach (($this->aggRaw ??= new AggRaw()) as $v) {
+                                echo $v;
+                            }
+                        }
+
+                        public function b(): Generator {
+                            yield from ($this->aggRaw ??= new AggRaw());
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MissingTemplateParam'],
+                'php_version' => '8.3',
+            ],
+            'methodCallOnArrayElementSetInLoop' => [
+                'code' => '<?php
+                    final class Box {
+                        public ?Box $next = null;
+
+                        public function merge(Box $other): Box {
+                            return $other;
+                        }
+                    }
+
+                    /** @var array<int, Box> */
+                    $values = [];
+                    $merged = [];
+                    foreach ($values as $key => $value) {
+                        $merged[$key] = isset($merged[$key]) ? $merged[$key]->merge($value) : $value;
+                    }',
+                'assertions' => [
+                    '$merged===' => 'array<int, Box>',
+                ],
+            ],
+            'propertyFetchOnArrayElementSetInLoop' => [
+                'code' => '<?php
+                    final class Box {
+                        public ?Box $next = null;
+
+                        public function merge(Box $other): Box {
+                            return $other;
+                        }
+                    }
+
+                    /** @var array<int, Box> */
+                    $values = [];
+                    $nexts = [];
+                    foreach ($values as $key => $value) {
+                        $nexts[$key] = isset($nexts[$key]) ? $nexts[$key]->next : $value;
+                    }',
+                'assertions' => [
+                    '$nexts===' => 'array<int, Box|null>',
+                ],
+            ],
+            'offsetFetchOnArrayElementSetInLoop' => [
+                'code' => '<?php
+                    final class Box {
+                        public ?Box $next = null;
+
+                        public function merge(Box $other): Box {
+                            return $other;
+                        }
+                    }
+
+                    /** @var array<int, Box> */
+                    $values = [];
+                    /** @var array<int, list<Box>> */
+                    $lists = [];
+                    $firsts = [];
+                    foreach ($lists as $key => $list) {
+                        $firsts[$key] = isset($firsts[$key]) ? $firsts[$key][0] : $list;
+                    }',
+                'assertions' => [
+                    '$firsts===' => 'array<int, Box|list<Box>>',
+                ],
+            ],
+            'methodCallOnLoopVariableStartingAsNull' => [
+                'code' => '<?php
+                    final class Box {
+                        public ?Box $next = null;
+
+                        public function merge(Box $other): Box {
+                            return $other;
+                        }
+                    }
+
+                    /** @var list<Box> */
+                    $values = [];
+                    $context = null;
+                    foreach ($values as $after) {
+                        $context = $context === null ? $after : $context->merge($after);
+                    }',
+                'assertions' => [
+                    '$context===' => 'Box|null',
+                ],
+            ],
+            'methodCallInElseOfLoopVariableStartingAsNull' => [
+                'code' => '<?php
+                    final class Box {
+                        public ?Box $next = null;
+
+                        public function merge(Box $other): Box {
+                            return $other;
+                        }
+                    }
+
+                    /** @var list<Box> */
+                    $values = [];
+                    $context = null;
+                    $merges = 0;
+                    foreach ($values as $after) {
+                        if ($context === null) {
+                            $context = $after;
+                        } else {
+                            $context = $context->merge($after);
+                            $merges++;
+                        }
+                    }',
+                'assertions' => [
+                    '$context===' => 'Box|null',
+                    '$merges===' => 'int<0, max>',
+                ],
+            ],
+            'propertyFetchOnLoopVariableStartingAsNull' => [
+                'code' => '<?php
+                    final class Box {
+                        public ?Box $next = null;
+
+                        public function merge(Box $other): Box {
+                            return $other;
+                        }
+                    }
+
+                    /** @var list<Box> */
+                    $values = [];
+                    $context = null;
+                    foreach ($values as $after) {
+                        $context = $context === null ? $after : $context->next;
+                    }',
+                'assertions' => [
+                    '$context===' => 'Box|null',
+                ],
+            ],
+            'methodCallOnWhileLoopVariableStartingAsNull' => [
+                'code' => '<?php
+                    final class Box {
+                        public ?Box $next = null;
+
+                        public function merge(Box $other): Box {
+                            return $other;
+                        }
+                    }
+
+                    /** @var list<Box> */
+                    $values = [];
+                    $context = null;
+                    $i = 0;
+                    while ($i < count($values)) {
+                        $after = $values[$i++];
+                        $context = $context === null ? $after : $context->merge($after);
+                    }',
+                'assertions' => [
+                    '$context===' => 'Box|null',
+                ],
+            ],
             'foreachIteratedExpressionIsAnalysedOnce' => [
                 'code' => '<?php
                     class Entity {
@@ -890,6 +1123,36 @@ final class ForeachTest extends TestCase
 
                     function iterate(AttributeReader $reader): void {
                         foreach ($reader->read() as $class => $attribute) {
+                            /** @psalm-check-type-exact $class = class-string<MappingAttribute> */
+                            /** @psalm-check-type-exact $attribute = MappingAttribute|RepeatableAttributeCollection<MappingAttribute> */
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'foreachOverAClassStringMapReturnedByAStaticMethodWithATemplateOfTheSameName' => [
+                'code' => <<<'PHP'
+                    <?php
+                    interface MappingAttribute {}
+
+                    /** @template T of MappingAttribute */
+                    final class RepeatableAttributeCollection {}
+
+                    final class AttributeReader {
+                        /**
+                         * @return class-string-map<T, T|RepeatableAttributeCollection<T>>
+                         *
+                         * @template T of MappingAttribute
+                         */
+                        public static function read(): array {
+                            return [];
+                        }
+                    }
+
+                    function iterate(): void {
+                        foreach (AttributeReader::read() as $class => $attribute) {
                             /** @psalm-check-type-exact $class = class-string<MappingAttribute> */
                             /** @psalm-check-type-exact $attribute = MappingAttribute|RepeatableAttributeCollection<MappingAttribute> */
                         }
@@ -1659,7 +1922,7 @@ final class ForeachTest extends TestCase
                       continue;
                     }',
                 'assertions' => [
-                    '$a' => 'bool',
+                    '$a' => 'true',
                 ],
             ],
             'falseToBoolInBreak' => [
@@ -3022,6 +3285,55 @@ final class ForeachTest extends TestCase
                     PHP,
                 'assertions' => [],
                 'ignored_issues' => ['PossiblyNullIterator'],
+            ],
+            'foreachOverANonEmptyArrayWithAContinueRunsAtLeastOnce' => [
+                'code' => '<?php
+                    final class Flag {
+                        public function equals(Flag $other): bool {
+                            return $this === $other;
+                        }
+                    }
+
+                    /** @param non-empty-array<Flag> $items */
+                    function withContinue(array $items): Flag {
+                        $last = null;
+                        foreach ($items as $item) {
+                            if ($last === null) {
+                                $last = $item;
+                                continue;
+                            }
+                            if (!$last->equals($item)) {
+                                return new Flag();
+                            }
+                        }
+                        return $last;
+                    }
+
+                    /** @param array<Flag> $items */
+                    function maybeEmpty(array $items): ?Flag {
+                        $last = null;
+                        foreach ($items as $item) {
+                            if ($last === null) {
+                                $last = $item;
+                                continue;
+                            }
+                        }
+                        /** @psalm-check-type-exact $last = Flag|null */;
+                        return $last;
+                    }
+
+                    /** @param non-empty-list<int> $items */
+                    function unchangedOnSomePaths(array $items): bool {
+                        $seen = false;
+                        foreach ($items as $item) {
+                            if ($item > 3) {
+                                $seen = true;
+                                continue;
+                            }
+                        }
+                        /** @psalm-check-type-exact $seen = bool */;
+                        return $seen;
+                    }',
             ],
         ];
     }

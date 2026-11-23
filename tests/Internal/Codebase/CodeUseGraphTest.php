@@ -9,6 +9,7 @@ use Psalm\CodeLocation\Raw;
 use Psalm\Context;
 use Psalm\Internal\Codebase\CodeUseGraph;
 use Psalm\Internal\Codebase\MutationLevelResolver;
+use Psalm\Storage\Capabilities;
 use Psalm\Tests\TestCase;
 use ReflectionProperty;
 
@@ -509,10 +510,10 @@ final class CodeUseGraphTest extends TestCase
 
         $info = $graph->getMutationInfo()[$method];
         self::assertSame(5, $info['intrinsic']);
-        self::assertSame(['k' => false, 'n' => true], $info['callees']);
+        self::assertSame(['n' => true, 'k' => false], $info['callees']);
         self::assertSame(2, $info['default_intrinsic']);
         self::assertSame(['d' => false], $info['default_callees']);
-        self::assertSame(['p' => ['y', 'x']], $info['wildcards'] ?? null);
+        self::assertSame(['p' => ['x', 'y']], $info['wildcards'] ?? null);
     }
 
     public function testMutationInfoOfAFunctionAnalysedInTwoProcessesIsCombined(): void
@@ -548,6 +549,64 @@ final class CodeUseGraphTest extends TestCase
         $info = $graph->getMutationInfo()[$method];
         self::assertSame(0, $info['intrinsic']);
         self::assertSame([], $info['callees']);
+    }
+
+    public function testMutationInfosOfOneRunAreMergedAcrossWorkers(): void
+    {
+        $method = CodeUseGraph::functionLikeNode('a\\t::m');
+
+        // a trait method as analysed for one class using it, in a worker...
+        $worker = new CodeUseGraph();
+        $worker->addMutationInfo($method, [
+            'intrinsic' => Capabilities::READ_PROPS,
+            'allowed' => Capabilities::ALL,
+            'callees' => ['a\\t::ref' => true, 'a\\t::shared' => true],
+            'wildcards' => ['f' => ['a']],
+        ] + self::mutationInfo('/t.php'));
+
+        // ...and for another class using it, in another process
+        $main = new CodeUseGraph();
+        $main->addMutationInfo($method, [
+            'intrinsic' => Capabilities::WRITE_THIS_PROPS,
+            'allowed' => Capabilities::EXTERNAL_MUTATION_FREE,
+            'callees' => ['a\\c::ref' => true, 'a\\t::shared' => false],
+            'default_intrinsic' => Capabilities::IO,
+            'report' => false,
+            'wildcards' => ['f' => ['a', 'b'], 'g' => ['c']],
+        ] + self::mutationInfo('/t.php'));
+
+        $main->addGraph($worker);
+
+        $info = $main->getMutationInfo()[$method];
+
+        self::assertSame(Capabilities::READ_PROPS | Capabilities::WRITE_THIS_PROPS, $info['intrinsic']);
+        self::assertSame(Capabilities::EXTERNAL_MUTATION_FREE, $info['allowed']);
+        self::assertSame(
+            ['a\\c::ref' => true, 'a\\t::shared' => false, 'a\\t::ref' => true],
+            $info['callees'],
+        );
+        self::assertSame(Capabilities::IO, $info['default_intrinsic']);
+        self::assertFalse($info['report']);
+        self::assertSame(['f' => ['a', 'b'], 'g' => ['c']], $info['wildcards'] ?? null);
+    }
+
+    public function testMutationInfoOfAPreviousRunIsReplacedAndNeverReplaces(): void
+    {
+        $method = CodeUseGraph::functionLikeNode('a\\c::m');
+        $cached_info = ['intrinsic' => Capabilities::IO, 'fresh' => false] + self::mutationInfo('/a.php');
+
+        $graph = new CodeUseGraph();
+        $graph->addMutationInfo($method, $cached_info);
+        $graph->addMutationInfo($method, self::mutationInfo('/a.php'));
+
+        self::assertSame(Capabilities::NONE, $graph->getMutationInfo()[$method]['intrinsic']);
+
+        $cached = new CodeUseGraph();
+        $cached->addMutationInfo($method, $cached_info);
+        $graph->addGraph($cached);
+
+        self::assertSame(Capabilities::NONE, $graph->getMutationInfo()[$method]['intrinsic']);
+        self::assertTrue($graph->getMutationInfo()[$method]['fresh']);
     }
 
     /**

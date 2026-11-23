@@ -23,6 +23,7 @@ use Psalm\Exception\UnresolvableConstantException;
 use Psalm\FileManipulation;
 use Psalm\Internal\Analyzer\FunctionLike\ReturnTypeAnalyzer;
 use Psalm\Internal\Analyzer\FunctionLike\ReturnTypeCollector;
+use Psalm\Internal\Analyzer\Statements\DeclareAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Assignment\InstancePropertyAssignmentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\CallPurityResolver;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\FunctionCallReturnTypeFetcher;
@@ -30,6 +31,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\DestructorAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Codebase\CliOutput;
 use Psalm\Internal\Codebase\CodeUseGraph;
+use Psalm\Internal\Codebase\PhpDeprecations;
 use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\Codebase\TaintStore;
 use Psalm\Internal\DataFlow\DataFlowNode;
@@ -48,6 +50,7 @@ use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Internal\Type\TypeExpander;
 use Psalm\Internal\TypeVisitor\TypeChecker;
+use Psalm\Issue\DeprecatedSyntax;
 use Psalm\Issue\ImpureFunctionCall;
 use Psalm\Issue\InvalidDocblockParamName;
 use Psalm\Issue\InvalidOverride;
@@ -313,6 +316,9 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
     ): ?bool {
         $storage = $this->storage;
 
+        // the code runs under the strict_types of its own file, which for a trait is not the file of the class
+        $context->strict_types = DeclareAnalyzer::declaresStrictTypes($this->codebase, $this->getFilePath());
+
         $function_stmts = $this->function->getStmts() ?: [];
 
         if ($this->function instanceof ArrowFunction
@@ -559,6 +565,8 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 $context->capabilities |= Capabilities::EXTERNAL_MUTATION_FREE;
             }
         }
+
+        $this->checkDeprecatedSignature();
 
         $check_stmts = $this->processParams(
             $statements_analyzer,
@@ -1011,10 +1019,16 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
         if ($this->function instanceof Closure
             || $this->function instanceof ArrowFunction
         ) {
+            $closure_declared_return_type = ClassAnalyzer::localizeClosureReturnType(
+                $codebase,
+                $storage->return_type,
+                $context,
+            );
+
             $this->verifyReturnType(
                 $function_stmts,
                 $statements_analyzer,
-                $storage->return_type,
+                $closure_declared_return_type,
                 $this->source->getFQCLN(),
                 $storage->return_type_location,
                 $context->has_returned,
@@ -1817,7 +1831,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 new VirtualPropertyFetch(
                     new VirtualVariable('this', $attributes),
                     new VirtualIdentifier($name, $attributes),
-                    $attributes,
+                    ['promoted_parameter' => true] + $attributes,
                 ),
                 $name,
                 new VirtualVariable($name, $var->getAttributes()),
@@ -1825,6 +1839,108 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 $context,
             );
         }
+    }
+
+    /**
+     * Reports the parameters and the by-reference void returns PHP deprecates, whatever PHP version is analysed
+     */
+    private function checkDeprecatedSignature(): void
+    {
+        $function = $this->function;
+
+        if ($function->byRef
+            && $function->returnType instanceof PhpParser\Node\Identifier
+            && $function->returnType->toLowerString() === 'void'
+        ) {
+            $this->reportDeprecatedSyntax(
+                PhpDeprecations::getDeprecatedSinceMessage(
+                    'Returning by reference from a void function',
+                    8_01_00,
+                    null,
+                ),
+                $function->returnType,
+            );
+        }
+
+        $last_required_param = null;
+
+        foreach ($function->params as $param) {
+            if ($param->default === null && !$param->variadic) {
+                $last_required_param = $param;
+            }
+        }
+
+        $before_required = $last_required_param !== null;
+
+        foreach ($function->params as $param) {
+            if ($param === $last_required_param) {
+                $before_required = false;
+            }
+
+            if ($param->default === null || !$param->var instanceof PhpParser\Node\Expr\Variable) {
+                continue;
+            }
+
+            $name = '$' . (is_string($param->var->name) ? $param->var->name : '');
+            $null_default = $param->default instanceof PhpParser\Node\Expr\ConstFetch
+                && $param->default->name->toLowerString() === 'null';
+
+            // a promoted parameter can't be implicitly nullable at all
+            if ($null_default && $param->type !== null && $param->flags === 0 && !self::typeAllowsNull($param->type)) {
+                $this->reportDeprecatedSyntax(
+                    PhpDeprecations::getDeprecatedSinceMessage(
+                        'Making the type of ' . $name . ' nullable with its null default',
+                        8_04_00,
+                        null,
+                    ) . ', declare the type nullable',
+                    $param->type,
+                );
+            }
+
+            if ($before_required
+                && $last_required_param !== null
+                && $last_required_param->var instanceof PhpParser\Node\Expr\Variable
+            ) {
+                $this->reportDeprecatedSyntax(
+                    PhpDeprecations::getDeprecatedSinceMessage(
+                        'Declaring the optional parameter ' . $name . ' before the required parameter $'
+                            . (is_string($last_required_param->var->name) ? $last_required_param->var->name : ''),
+                        // PHP 8.0 to 8.3 accepted a typed parameter whose default is null
+                        $null_default && $param->type !== null ? 8_04_00 : 8_00_00,
+                        null,
+                    ) . ', remove its default',
+                    $param,
+                );
+            }
+        }
+    }
+
+    private static function typeAllowsNull(
+        PhpParser\Node\ComplexType|PhpParser\Node\Identifier|PhpParser\Node\Name $type,
+    ): bool {
+        if ($type instanceof PhpParser\Node\NullableType) {
+            return true;
+        }
+
+        $types = $type instanceof PhpParser\Node\UnionType ? $type->types : [$type];
+
+        foreach ($types as $atomic_type) {
+            if ($atomic_type instanceof PhpParser\Node\Identifier
+                && in_array($atomic_type->toLowerString(), ['null', 'mixed'], true)
+            ) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private function reportDeprecatedSyntax(string $message, PhpParser\Node $node): void
+    {
+        IssueBuffer::maybeAdd(
+            new DeprecatedSyntax($message, new CodeLocation($this, $node)),
+            $this->getSuppressedIssues(),
+        );
     }
 
     /**
@@ -1952,16 +2068,23 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                     );
                 }
 
+                // `static` is what `$this` is, with the templates of the class, and the class itself in a final one
+                $this_type = $context->vars_in_scope['$this'] ?? null;
+                $this_object = $this_type !== null && $this_type->isSingle() ? $this_type->getSingleAtomic() : null;
+
                 try {
                     $param_type = TypeExpander::expandUnion(
                         $codebase,
                         $param_type,
                         $context->self,
-                        $context->self,
+                        $this_object instanceof TNamedObject ? $this_object : $context->self,
                         $this->getParentFQCLN(),
                         true,
                         $param_type->hasConditional(),
-                        false,
+                        ($this_object instanceof TNamedObject && !$this_object->is_static)
+                            || ($context->self !== null
+                                && $codebase->classlike_storage_provider->has($context->self)
+                                && $codebase->classlike_storage_provider->get($context->self)->final),
                         true,
                         false,
                         true,
@@ -3200,6 +3323,13 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             }
 
             MethodAnalyzer::checkMethodSignatureMustOmitReturnType($storage, $codeLocation);
+            MethodAnalyzer::checkDeprecatedMagicMethodSignature($storage, $codeLocation, $this->getSuppressedIssues());
+            MethodAnalyzer::checkSoftDeprecatedMagicMethod(
+                $storage,
+                $appearing_class_storage,
+                $codeLocation,
+                $this->getSuppressedIssues(),
+            );
 
             if ($appearing_class_storage->is_enum) {
                 MethodAnalyzer::checkForbiddenEnumMethod(
@@ -3214,6 +3344,15 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             }
         } elseif ($this instanceof FunctionAnalyzer) {
             $function_name = $this->function->name->name;
+
+            $name_message = PhpDeprecations::getFunctionNameMessage($function_name);
+
+            if ($name_message !== null) {
+                IssueBuffer::maybeAdd(
+                    new ReservedWord($name_message, new CodeLocation($this, $this->function->name), $function_name),
+                    $this->getSuppressedIssues(),
+                );
+            }
             $namespace_prefix = $this->getNamespace();
             $cased_method_id = ($namespace_prefix !== null ? $namespace_prefix . '\\' : '') . $function_name;
             $context->calling_function_id = strtolower($cased_method_id);
@@ -3256,6 +3395,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 callable_id: $this->getClosureId(),
                 byref_use_scopes: ClosureAnalyzer::getByRefUseScopes($this->source, $byref_uses),
             );
+            $this->closure_type = $closure_type;
 
             $type_provider->setType(
                 $this->function,

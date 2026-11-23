@@ -9,16 +9,16 @@ use Psalm\CodeLocation;
 use Psalm\Codebase;
 use Psalm\Config;
 use Psalm\Context;
-use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Assignment\ArrayAssignmentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
-use Psalm\Internal\Analyzer\TraitAnalyzer;
+use Psalm\Internal\Codebase\PhpDeprecations;
 use Psalm\Internal\Provider\NodeDataProvider;
 use Psalm\Internal\Type\LiteralCast;
 use Psalm\Internal\Type\TemplateBound;
 use Psalm\Internal\Type\TypeCombiner;
 use Psalm\Internal\Type\TypeExpander;
+use Psalm\Issue\DeprecatedSyntax;
 use Psalm\Issue\FalseOperand;
 use Psalm\Issue\ImplicitFloatToIntCast;
 use Psalm\Issue\InvalidOperand;
@@ -53,6 +53,7 @@ use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTypeVariable;
 use Psalm\Type\Union;
 
+use function abs;
 use function array_diff_key;
 use function array_values;
 use function count;
@@ -68,6 +69,7 @@ use function strrpos;
 use function strtolower;
 use function substr;
 
+use const INF;
 use const PHP_INT_MAX;
 use const PHP_INT_MIN;
 
@@ -109,110 +111,18 @@ final class ArithmeticOpAnalyzer
         }
 
         if ($left_type && $right_type) {
-            if ($left_type->isNull()) {
-                if ($statements_source) {
-                    IssueBuffer::maybeAdd(
-                        new NullOperand(
-                            'Left operand cannot be null',
-                            new CodeLocation($statements_source, $left),
-                        ),
-                        $statements_source->getSuppressedIssues(),
-                    );
-                }
+            if (self::reportNullOperand($statements_source, $left, $left_type, 'Left')
+                || self::reportNullOperand($statements_source, $right, $right_type, 'Right')
+            ) {
                 $result_type = Type::getMixed();
 
                 return;
             }
 
-            if ($left_type->isNullable() && !$left_type->ignore_nullable_issues) {
-                if ($statements_source) {
-                    IssueBuffer::maybeAdd(
-                        new PossiblyNullOperand(
-                            'Left operand cannot be nullable, got ' . $left_type,
-                            new CodeLocation($statements_source, $left),
-                        ),
-                        $statements_source->getSuppressedIssues(),
-                    );
-                }
-            }
-
-            if ($right_type->isNull()) {
-                if ($statements_source) {
-                    IssueBuffer::maybeAdd(
-                        new NullOperand(
-                            'Right operand cannot be null',
-                            new CodeLocation($statements_source, $right),
-                        ),
-                        $statements_source->getSuppressedIssues(),
-                    );
-                }
-                $result_type = Type::getMixed();
-
+            if (self::reportFalseOperand($statements_source, $left, $left_type, 'Left')
+                || self::reportFalseOperand($statements_source, $right, $right_type, 'Right')
+            ) {
                 return;
-            }
-
-            if ($right_type->isNullable() && !$right_type->ignore_nullable_issues) {
-                if ($statements_source) {
-                    IssueBuffer::maybeAdd(
-                        new PossiblyNullOperand(
-                            'Right operand cannot be nullable, got ' . $right_type,
-                            new CodeLocation($statements_source, $right),
-                        ),
-                        $statements_source->getSuppressedIssues(),
-                    );
-                }
-            }
-
-            if ($left_type->isFalse()) {
-                if ($statements_source) {
-                    IssueBuffer::maybeAdd(
-                        new FalseOperand(
-                            'Left operand cannot be false',
-                            new CodeLocation($statements_source, $left),
-                        ),
-                        $statements_source->getSuppressedIssues(),
-                    );
-                }
-
-                return;
-            }
-
-            if ($left_type->isFalsable() && !$left_type->ignore_falsable_issues) {
-                if ($statements_source) {
-                    IssueBuffer::maybeAdd(
-                        new PossiblyFalseOperand(
-                            'Left operand cannot be falsable, got ' . $left_type,
-                            new CodeLocation($statements_source, $left),
-                        ),
-                        $statements_source->getSuppressedIssues(),
-                    );
-                }
-            }
-
-            if ($right_type->isFalse()) {
-                if ($statements_source) {
-                    IssueBuffer::maybeAdd(
-                        new FalseOperand(
-                            'Right operand cannot be false',
-                            new CodeLocation($statements_source, $right),
-                        ),
-                        $statements_source->getSuppressedIssues(),
-                    );
-                }
-
-                return;
-            }
-
-            if ($right_type->isFalsable() && !$right_type->ignore_falsable_issues) {
-                if ($statements_source) {
-                    IssueBuffer::maybeAdd(
-                        new PossiblyFalseOperand(
-                            'Right operand cannot be falsable, got ' . $right_type,
-                            new CodeLocation($statements_source, $right),
-                        ),
-                        $statements_source->getSuppressedIssues(),
-                    );
-                }
             }
 
             $int_operation = self::getNameOfAnOperationOnInts($parent);
@@ -233,7 +143,7 @@ final class ArithmeticOpAnalyzer
             $invalid_right_messages = [];
             $has_valid_left_operand = false;
             $has_valid_right_operand = false;
-            $has_string_increment = false;
+            $string_increment_message = null;
 
             $right_type_parts = self::expandNumericTemplates($right_type);
             $left_type_parts = self::expandNumericTemplates($left_type);
@@ -261,7 +171,7 @@ final class ArithmeticOpAnalyzer
                         $invalid_right_messages,
                         $has_valid_left_operand,
                         $has_valid_right_operand,
-                        $has_string_increment,
+                        $string_increment_message,
                         $result_type,
                     );
 
@@ -316,10 +226,10 @@ final class ArithmeticOpAnalyzer
                 }
             }
 
-            if ($has_string_increment && $statements_source) {
+            if ($string_increment_message !== null && $statements_source) {
                 IssueBuffer::maybeAdd(
                     new StringIncrement(
-                        'Incrementing a non-numeric string is deprecated since PHP 8.5, use str_increment() instead',
+                        $string_increment_message,
                         new CodeLocation($statements_source, $left),
                     ),
                     $statements_source->getSuppressedIssues(),
@@ -429,7 +339,7 @@ final class ArithmeticOpAnalyzer
         array &$invalid_right_messages,
         bool &$has_valid_left_operand,
         bool &$has_valid_right_operand,
-        bool &$has_string_increment,
+        ?string &$string_increment_message,
         ?Union &$result_type = null,
     ): ?Union {
         if (($left_type_part instanceof TLiteralInt || $left_type_part instanceof TLiteralFloat)
@@ -518,23 +428,51 @@ final class ArithmeticOpAnalyzer
             return null;
         }
 
+        $is_increment = $parent instanceof PhpParser\Node\Expr\PostInc || $parent instanceof PhpParser\Node\Expr\PreInc;
         if ($left_type_part instanceof TString
             && $right_type_part instanceof TInt
-            && (
-                $parent instanceof PhpParser\Node\Expr\PostInc ||
-                $parent instanceof PhpParser\Node\Expr\PreInc
+            && ($is_increment
+                || $parent instanceof PhpParser\Node\Expr\PostDec
+                || $parent instanceof PhpParser\Node\Expr\PreDec
             )
         ) {
-            if ($left_type_part instanceof TNumericString ||
-                ($left_type_part instanceof TLiteralString && is_numeric($left_type_part->value))
-            ) {
+            $literal_value = $left_type_part instanceof TLiteralString ? $left_type_part->value : null;
+            if ($left_type_part instanceof TNumericString || ($literal_value !== null && is_numeric($literal_value))) {
                 $new_result_type = new Union(
                     [new TFloat(), new TInt()],
                     ['from_calculation' => true],
                 );
-            } else {
+            } elseif ($is_increment) {
                 $new_result_type = Type::getNonEmptyString();
-                $has_string_increment = true;
+                $string_increment_message ??= match (true) {
+                    $literal_value === '' => PhpDeprecations::getDeprecatedSinceMessage(
+                        'Incrementing an empty string',
+                        8_03_00,
+                        null,
+                    ),
+                    $literal_value !== null && !preg_match('/^[a-zA-Z0-9]+$/', $literal_value)
+                        => PhpDeprecations::getDeprecatedSinceMessage(
+                            'Incrementing a non-alphanumeric string',
+                            8_03_00,
+                            null,
+                        ),
+                    default => PhpDeprecations::getDeprecatedSinceMessage(
+                        'Incrementing a non-numeric string',
+                        8_05_00,
+                        'str_increment()',
+                    ),
+                };
+            } else {
+                // '' becomes -1, and the other non-numeric strings stay the same
+                $new_result_type = match (true) {
+                    $literal_value === '' => Type::getInt(false, -1),
+                    $literal_value !== null => new Union([$left_type_part]),
+                    default => new Union([$left_type_part, new TInt(), new TFloat()], ['from_calculation' => true]),
+                };
+                $string_increment_message ??= $literal_value === ''
+                    ? PhpDeprecations::getDeprecatedSinceMessage('Decrementing an empty string', 8_03_00, null)
+                    : PhpDeprecations::getDeprecatedSinceMessage('Decrementing a non-numeric string', 8_03_00, null)
+                        . ', as it has no effect';
             }
 
             $result_type = Type::combineUnionTypes($new_result_type, $result_type);
@@ -562,15 +500,8 @@ final class ArithmeticOpAnalyzer
         }
 
         if ($left_type_part instanceof TMixed || $right_type_part instanceof TMixed) {
-            if ($statements_source && $codebase && $context) {
-                if (!$context->collect_initializations
-                    && $statements_source->getFilePath() === $statements_source->getRootFilePath()
-                    && (!(($source = $statements_source->getSource())
-                            instanceof FunctionLikeAnalyzer)
-                        || !$source->getSource() instanceof TraitAnalyzer)
-                ) {
-                    $codebase->analyzer->incrementMixedCount($statements_source->getFilePath());
-                }
+            if ($statements_source instanceof StatementsAnalyzer && $context) {
+                $statements_source->countMixed($context, true);
             }
 
             if ($left_type_part instanceof TMixed) {
@@ -645,15 +576,8 @@ final class ArithmeticOpAnalyzer
             return null;
         }
 
-        if ($statements_source && $codebase && $context) {
-            if (!$context->collect_initializations
-                && $statements_source->getFilePath() === $statements_source->getRootFilePath()
-                && (!(($parent_source = $statements_source->getSource())
-                        instanceof FunctionLikeAnalyzer)
-                    || !$parent_source->getSource() instanceof TraitAnalyzer)
-            ) {
-                $codebase->analyzer->incrementNonMixedCount($statements_source->getFilePath());
-            }
+        if ($statements_source instanceof StatementsAnalyzer && $context) {
+            $statements_source->countMixed($context, false);
         }
 
         if ($left_type_part instanceof TArray
@@ -940,6 +864,11 @@ final class ArithmeticOpAnalyzer
                     && $right_type_part->value < 0
                 ) {
                     $result_type = Type::combineUnionTypes(Type::getFloat(), $result_type);
+                } elseif ($parent instanceof PhpParser\Node\Expr\BinaryOp\Pow
+                    && !$right_type_part instanceof TLiteralInt
+                ) {
+                    // a negative exponent gives a float
+                    $result_type = Type::combineUnionTypes(new Union([new TInt(), new TFloat()]), $result_type);
                 } else {
                     $left_is_positive = ($left_type_part instanceof TLiteralInt && $left_type_part->value > 0)
                         || ($left_type_part instanceof TIntRange && $left_type_part->isPositive());
@@ -975,7 +904,9 @@ final class ArithmeticOpAnalyzer
 
                     if ($parent instanceof PhpParser\Node\Expr\BinaryOp\Mod) {
                         if ($right_type_part instanceof TLiteralInt) {
-                            $literal_value_max = $right_type_part->value - 1;
+                            $literal_value_max = $right_type_part->value === PHP_INT_MIN
+                                ? PHP_INT_MAX
+                                : abs($right_type_part->value) - 1;
                             if ($always_positive) {
                                 $result_type = Type::getIntRange(0, $literal_value_max);
                             } else {
@@ -1228,6 +1159,78 @@ final class ArithmeticOpAnalyzer
             || $operation instanceof PhpParser\Node\Expr\BinaryOp\ShiftRight
                 ? 'a bitwise operation'
                 : null;
+    }
+
+    /**
+     * Reports a null or nullable operand, and returns whether it is null
+     */
+    private static function reportNullOperand(
+        ?StatementsSource $statements_source,
+        PhpParser\Node\Expr $operand,
+        Union $operand_type,
+        string $side,
+    ): bool {
+        if ($operand_type->isNull()) {
+            if ($statements_source) {
+                IssueBuffer::maybeAdd(
+                    new NullOperand(
+                        $side . ' operand cannot be null',
+                        new CodeLocation($statements_source, $operand),
+                    ),
+                    $statements_source->getSuppressedIssues(),
+                );
+            }
+
+            return true;
+        }
+
+        if ($statements_source && $operand_type->isNullable() && !$operand_type->ignore_nullable_issues) {
+            IssueBuffer::maybeAdd(
+                new PossiblyNullOperand(
+                    $side . ' operand cannot be nullable, got ' . (string) $operand_type,
+                    new CodeLocation($statements_source, $operand),
+                ),
+                $statements_source->getSuppressedIssues(),
+            );
+        }
+
+        return false;
+    }
+
+    /**
+     * Reports a false or falsable operand, and returns whether it is false
+     */
+    private static function reportFalseOperand(
+        ?StatementsSource $statements_source,
+        PhpParser\Node\Expr $operand,
+        Union $operand_type,
+        string $side,
+    ): bool {
+        if ($operand_type->isFalse()) {
+            if ($statements_source) {
+                IssueBuffer::maybeAdd(
+                    new FalseOperand(
+                        $side . ' operand cannot be false',
+                        new CodeLocation($statements_source, $operand),
+                    ),
+                    $statements_source->getSuppressedIssues(),
+                );
+            }
+
+            return true;
+        }
+
+        if ($statements_source && $operand_type->isFalsable() && !$operand_type->ignore_falsable_issues) {
+            IssueBuffer::maybeAdd(
+                new PossiblyFalseOperand(
+                    $side . ' operand cannot be falsable, got ' . (string) $operand_type,
+                    new CodeLocation($statements_source, $operand),
+                ),
+                $statements_source->getSuppressedIssues(),
+            );
+        }
+
+        return false;
     }
 
     /**
@@ -1493,7 +1496,7 @@ final class ArithmeticOpAnalyzer
         }
 
         if ($parent instanceof PhpParser\Node\Expr\BinaryOp\Mul) {
-            self::analyzeMulBetweenIntRange($parent, $result_type, $left_type_part, $right_type_part);
+            self::analyzeMulBetweenIntRange($result_type, $left_type_part, $right_type_part);
             return;
         }
 
@@ -1572,180 +1575,61 @@ final class ArithmeticOpAnalyzer
      * @psalm-capabilities read-props|write-this-props|write-refs
      */
     private static function analyzeMulBetweenIntRange(
-        PhpParser\Node\Expr\BinaryOp\Mul $parent,
         ?Union &$result_type,
         TIntRange $left_type_part,
         TIntRange $right_type_part,
     ): void {
-        //Mul is a special case because of double negatives. We can only infer when we know both signs strictly
-        if ($right_type_part->min_bound !== null
-            && $right_type_part->max_bound !== null
-            && $left_type_part->min_bound !== null
-            && $left_type_part->max_bound !== null
-        ) {
-            //everything is known, we can do calculations
-            //[ x_1 , x_2 ] ⋆ [ y_1 , y_2 ] =
-            //      [
-            //          min(x_1 ⋆ y_1 , x_1 ⋆ y_2 , x_2 ⋆ y_1 , x_2 ⋆ y_2),
-            //          max(x_1 ⋆ y_1 , x_1 ⋆ y_2 , x_2 ⋆ y_1 , x_2 ⋆ y_2)
-            //      ]
-            $x_1 = $right_type_part->min_bound;
-            $x_2 = $right_type_part->max_bound;
-            $y_1 = $left_type_part->min_bound;
-            $y_2 = $left_type_part->max_bound;
-            $min_value = min($x_1 * $y_1, $x_1 * $y_2, $x_2 * $y_1, $x_2 * $y_2);
-            $max_value = max($x_1 * $y_1, $x_1 * $y_2, $x_2 * $y_1, $x_2 * $y_2);
+        // [x1, x2] * [y1, y2] = [min(x1*y1, x1*y2, x2*y1, x2*y2), max(x1*y1, x1*y2, x2*y1, x2*y2)]
+        $products = [
+            self::multiplyBounds($left_type_part->min_bound, -1, $right_type_part->min_bound, -1),
+            self::multiplyBounds($left_type_part->min_bound, -1, $right_type_part->max_bound, 1),
+            self::multiplyBounds($left_type_part->max_bound, 1, $right_type_part->min_bound, -1),
+            self::multiplyBounds($left_type_part->max_bound, 1, $right_type_part->max_bound, 1),
+        ];
 
-            $new_result_type = Type::getIntRange($min_value, $max_value);
-        } elseif ($right_type_part->isPositiveOrZero() && $left_type_part->isPositiveOrZero()) {
-            // both operands are positive, result will be only positive
-            $min_operand1 = $left_type_part->min_bound;
-            $min_operand2 = $right_type_part->min_bound;
+        $min_value = min($products);
+        $max_value = max($products);
 
-            $max_operand1 = $left_type_part->max_bound;
-            $max_operand2 = $right_type_part->max_bound;
+        $min_bound = is_int($min_value) ? $min_value : null;
+        $max_bound = is_int($max_value) ? $max_value : null;
 
-            $calculated_min_type = null;
-            if ($min_operand1 !== null && $min_operand2 !== null) {
-                // when there are two valid numbers, make any operation
-                $calculated_min_type = self::arithmeticOperation(
-                    $parent,
-                    $min_operand1,
-                    $min_operand2,
-                    false,
-                );
-            }
-
-            $calculated_max_type = null;
-            if ($max_operand1 !== null && $max_operand2 !== null) {
-                // when there are two valid numbers, make any operation
-                $calculated_max_type = self::arithmeticOperation(
-                    $parent,
-                    $max_operand1,
-                    $max_operand2,
-                    false,
-                );
-            }
-
-            $min_value = $calculated_min_type !== null ? $calculated_min_type->getSingleIntLiteral()->value : null;
-            $max_value = $calculated_max_type !== null ? $calculated_max_type->getSingleIntLiteral()->value : null;
-
-            $new_result_type = Type::getIntRange($min_value, $max_value);
-        } elseif ($right_type_part->isPositiveOrZero() && $left_type_part->isNegativeOrZero()) {
-            // one operand is negative, result will be negative and we have to check min vs max
-            $min_operand1 = $left_type_part->max_bound;
-            $min_operand2 = $right_type_part->min_bound;
-
-            $max_operand1 = $left_type_part->min_bound;
-            $max_operand2 = $right_type_part->max_bound;
-
-            $calculated_min_type = null;
-            if ($min_operand1 !== null && $min_operand2 !== null) {
-                // when there are two valid numbers, make any operation
-                $calculated_min_type = self::arithmeticOperation(
-                    $parent,
-                    $min_operand1,
-                    $min_operand2,
-                    false,
-                );
-            }
-
-            $calculated_max_type = null;
-            if ($max_operand1 !== null && $max_operand2 !== null) {
-                // when there are two valid numbers, make any operation
-                $calculated_max_type = self::arithmeticOperation(
-                    $parent,
-                    $max_operand1,
-                    $max_operand2,
-                    false,
-                );
-            }
-
-            $min_value = $calculated_min_type !== null ? $calculated_min_type->getSingleIntLiteral()->value : null;
-            $max_value = $calculated_max_type !== null ? $calculated_max_type->getSingleIntLiteral()->value : null;
-
-            if ($min_value > $max_value) {
-                [$min_value, $max_value] = [$max_value, $min_value];
-            }
-
-            $new_result_type = Type::getIntRange($min_value, $max_value);
-        } elseif ($right_type_part->isNegativeOrZero() && $left_type_part->isPositiveOrZero()) {
-            // one operand is negative, result will be negative and we have to check min vs max
-            $min_operand1 = $left_type_part->min_bound;
-            $min_operand2 = $right_type_part->max_bound;
-
-            $max_operand1 = $left_type_part->max_bound;
-            $max_operand2 = $right_type_part->min_bound;
-
-            $calculated_min_type = null;
-            if ($min_operand1 !== null && $min_operand2 !== null) {
-                // when there are two valid numbers, make any operation
-                $calculated_min_type = self::arithmeticOperation(
-                    $parent,
-                    $min_operand1,
-                    $min_operand2,
-                    false,
-                );
-            }
-
-            $calculated_max_type = null;
-            if ($max_operand1 !== null && $max_operand2 !== null) {
-                // when there are two valid numbers, make any operation
-                $calculated_max_type = self::arithmeticOperation(
-                    $parent,
-                    $max_operand1,
-                    $max_operand2,
-                    false,
-                );
-            }
-
-            $min_value = $calculated_min_type !== null ? $calculated_min_type->getSingleIntLiteral()->value : null;
-            $max_value = $calculated_max_type !== null ? $calculated_max_type->getSingleIntLiteral()->value : null;
-
-            if ($min_value > $max_value) {
-                [$min_value, $max_value] = [$max_value, $min_value];
-            }
-
-            $new_result_type = Type::getIntRange($min_value, $max_value);
-        } elseif ($right_type_part->isNegativeOrZero() && $left_type_part->isNegativeOrZero()) {
-            // both operand are negative, result will be positive
-            $min_operand1 = $left_type_part->max_bound;
-            $min_operand2 = $right_type_part->max_bound;
-
-            $max_operand1 = $left_type_part->min_bound;
-            $max_operand2 = $right_type_part->min_bound;
-
-            $calculated_min_type = null;
-            if ($min_operand1 !== null && $min_operand2 !== null) {
-                // when there are two valid numbers, make any operation
-                $calculated_min_type = self::arithmeticOperation(
-                    $parent,
-                    $min_operand1,
-                    $min_operand2,
-                    false,
-                );
-            }
-
-            $calculated_max_type = null;
-            if ($max_operand1 !== null && $max_operand2 !== null) {
-                // when there are two valid numbers, make any operation
-                $calculated_max_type = self::arithmeticOperation(
-                    $parent,
-                    $max_operand1,
-                    $max_operand2,
-                    false,
-                );
-            }
-
-            $min_value = $calculated_min_type !== null ? $calculated_min_type->getSingleIntLiteral()->value : null;
-            $max_value = $calculated_max_type !== null ? $calculated_max_type->getSingleIntLiteral()->value : null;
-
-            $new_result_type = Type::getIntRange($min_value, $max_value);
-        } else {
-            $new_result_type = Type::getInt(true);
-        }
+        // an unbounded side may overflow to a float
+        $new_result_type = new Union(
+            [$min_bound === null && $max_bound === null ? new TInt() : new TIntRange($min_bound, $max_bound)],
+            ['from_calculation' => $min_bound === null || $max_bound === null],
+        );
 
         $result_type = Type::combineUnionTypes($new_result_type, $result_type);
+    }
+
+    /**
+     * Multiplies two range bounds, a null bound being the infinity of the given sign.
+     * Returns INF or -INF for an infinite or overflowing product.
+     *
+     * @param -1|1 $infinity_sign1
+     * @param -1|1 $infinity_sign2
+     * @psalm-pure
+     */
+    private static function multiplyBounds(
+        ?int $bound1,
+        int $infinity_sign1,
+        ?int $bound2,
+        int $infinity_sign2,
+    ): int|float {
+        // a range bound is a value the operand can take, and zero times any value is zero
+        if ($bound1 === 0 || $bound2 === 0) {
+            return 0;
+        }
+
+        if ($bound1 !== null && $bound2 !== null) {
+            $product = $bound1 * $bound2;
+
+            if (is_int($product)) {
+                return $product;
+            }
+        }
+
+        return (($bound1 ?? $infinity_sign1) > 0) === (($bound2 ?? $infinity_sign2) > 0) ? INF : -INF;
     }
 
     /**
@@ -1838,28 +1722,16 @@ final class ArithmeticOpAnalyzer
             if ($right_type_part->max_bound === 0) {
                 $new_result_type = Type::getNever();
             } else {
+                // the result takes the sign of the dividend and is less than the divisor in absolute value
+                $max = $right_type_part->min_bound === PHP_INT_MIN
+                    ? PHP_INT_MAX
+                    : abs($right_type_part->min_bound) - 1;
+
                 if ($left_type_part->isPositiveOrZero()) {
-                    if ($right_type_part->isPositive()) {
-                        $max = $right_type_part->min_bound - 1;
-                        $new_result_type = Type::getIntRange(0, $max);
-                    } else {
-                        $max = $right_type_part->min_bound + 1;
-                        $new_result_type = Type::getIntRange($max, 0);
-                    }
+                    $new_result_type = Type::getIntRange(0, $max);
                 } elseif ($left_type_part->isNegativeOrZero()) {
-                    if ($right_type_part->isPositive()) {
-                        $max = $right_type_part->min_bound - 1;
-                        $new_result_type = Type::getIntRange(-$max, 0);
-                    } else {
-                        $max = $right_type_part->min_bound + 1;
-                        $new_result_type = Type::getIntRange(-$max, 0);
-                    }
+                    $new_result_type = Type::getIntRange(-$max, 0);
                 } else {
-                    if ($right_type_part->isPositive()) {
-                        $max = $right_type_part->min_bound - 1;
-                    } else {
-                        $max = -$right_type_part->min_bound - 1;
-                    }
                     $new_result_type = Type::getIntRange(-$max, $max);
                 }
             }
@@ -1879,10 +1751,15 @@ final class ArithmeticOpAnalyzer
                 $new_result_type = Type::getInt(true);
             }
         } elseif ($right_type_part->isNegative()) {
+            // the result is less than the divisor in absolute value, which is at most the lower bound negated
+            $max = $right_type_part->min_bound === null || $right_type_part->min_bound === PHP_INT_MIN
+                ? null
+                : -$right_type_part->min_bound - 1;
+
             if ($left_type_part->isPositiveOrZero()) {
-                $new_result_type = Type::getIntRange(null, 0);
+                $new_result_type = Type::getIntRange(0, $max);
             } elseif ($left_type_part->isNegativeOrZero()) {
-                $new_result_type = Type::getIntRange(null, 0);
+                $new_result_type = Type::getIntRange($max === null ? null : -$max, 0);
             } else {
                 $new_result_type = Type::getInt(true);
             }
@@ -1894,5 +1771,32 @@ final class ArithmeticOpAnalyzer
             $new_result_type,
             $result_type,
         );
+    }
+
+    /**
+     * Reports raising 0 to a negative power, with `**` or pow(), which PHP deprecates whatever PHP version is analysed
+     */
+    public static function checkZeroToNegativePower(
+        StatementsAnalyzer $statements_analyzer,
+        Union $base,
+        Union $exponent,
+        PhpParser\Node $node,
+    ): void {
+        $base_value = $base->isSingleIntLiteral()
+            ? $base->getSingleIntLiteral()->value
+            : ($base->isSingleFloatLiteral() ? $base->getSingleFloatLiteral()->value : null);
+        $exponent_value = $exponent->isSingleIntLiteral()
+            ? $exponent->getSingleIntLiteral()->value
+            : ($exponent->isSingleFloatLiteral() ? $exponent->getSingleFloatLiteral()->value : null);
+
+        if ($base_value !== null && $exponent_value !== null && (float) $base_value === 0.0 && $exponent_value < 0) {
+            IssueBuffer::maybeAdd(
+                new DeprecatedSyntax(
+                    PhpDeprecations::getDeprecatedSinceMessage('Raising 0 to a negative power', 8_04_00, 'fpow()'),
+                    new CodeLocation($statements_analyzer, $node),
+                ),
+                $statements_analyzer->getSuppressedIssues(),
+            );
+        }
     }
 }
