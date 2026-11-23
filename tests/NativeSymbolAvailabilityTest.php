@@ -5,10 +5,12 @@ declare(strict_types=1);
 namespace Psalm\Tests;
 
 use Override;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Psalm\Context;
 use Psalm\IssueBuffer;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
+use ReflectionFunction;
 
 use function array_filter;
 use function array_map;
@@ -60,13 +62,15 @@ final class NativeSymbolAvailabilityTest extends TestCase
     }
 
     /**
-     * A polyfill of a native function Psalm has no signature of (the extension isn't loaded, and no stub declares it)
-     * stays known with allFunctionsGlobal.
+     * A polyfill of a native function Psalm has no signature of (the runtime doesn't have it natively, and no stub
+     * declares it) stays known with allFunctionsGlobal: imageavif() of ext-gd, and clamp() of PHP 8.6, which Psalm's
+     * own symfony/polyfill-php86 defines in this process.
      */
-    public function testPolyfillOfFunctionWithoutNativeSignatureIsGlobal(): void
+    #[DataProvider('providerPolyfilledFunctions')]
+    public function testPolyfillOfFunctionWithoutNativeSignatureIsGlobal(string $function): void
     {
-        if (function_exists('imageavif')) {
-            $this->markTestSkipped('imageavif() is defined in this process');
+        if (function_exists($function) && (new ReflectionFunction($function))->isInternal()) {
+            $this->markTestSkipped($function . '() is native in this process');
         }
 
         $this->project_analyzer->setPhpVersion('8.0', 'tests');
@@ -76,9 +80,9 @@ final class NativeSymbolAvailabilityTest extends TestCase
         $this->addFile(
             'polyfill.php',
             '<?php
-                if (!function_exists("imageavif")) {
-                    function imageavif(string $s): bool {
-                        return $s !== "";
+                if (!function_exists("' . $function . '")) {
+                    function ' . $function . '(int $i): int {
+                        return $i;
                     }
                 }
             ',
@@ -86,14 +90,23 @@ final class NativeSymbolAvailabilityTest extends TestCase
         $this->addFile(
             'somefile.php',
             '<?php
-                function f(): bool {
-                    return imageavif("x");
+                function f(): int {
+                    return ' . $function . '(1);
                 }
             ',
         );
         $codebase->addFilesToAnalyze(['polyfill.php' => 'polyfill.php']);
 
         $this->analyzeFile('somefile.php', new Context());
+    }
+
+    /**
+     * @return iterable<string, array{string}>
+     */
+    public static function providerPolyfilledFunctions(): iterable
+    {
+        yield 'imageavif' => ['imageavif'];
+        yield 'clamp' => ['clamp'];
     }
 
     /**
@@ -391,10 +404,26 @@ final class NativeSymbolAvailabilityTest extends TestCase
             'php_version' => '7.4',
         ];
 
+        yield 'subclassRetypesMethodOfLaterVersion' => [
+            'code' => '<?php
+                final class M extends mysqli {
+                    public function quote_string(int $i): int {
+                        return $i;
+                    }
+                }
+            ',
+            'assertions' => [],
+            'ignored_issues' => [],
+            'php_version' => '8.2',
+        ];
+
         yield 'subclassDeclaresMethodOfLaterVersion' => [
             'code' => '<?php
                 final class M extends mysqli {
-                    /** @return string */
+                    /**
+                     * @param string $string
+                     * @return string
+                     */
                     public function quote_string($string) {
                         return "\'" . $this->real_escape_string($string) . "\'";
                     }

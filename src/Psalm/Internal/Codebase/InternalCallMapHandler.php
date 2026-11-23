@@ -19,6 +19,7 @@ use Psalm\Type\Atomic\TCallable;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\TaintKind;
 use Psalm\Type\Union;
+use ReflectionFunction;
 use UnexpectedValueException;
 
 use function array_key_first;
@@ -830,9 +831,9 @@ final class InternalCallMapHandler
 
         $codebase = ProjectAnalyzer::getInstance()->getCodebase();
 
-        // without the runtime's reflection or a stub, Psalm only knows the function by its polyfills
+        // without a stub or the runtime having it natively, Psalm only knows the function by its polyfills
         if (!str_contains($key, '::')
-            && !function_exists($key)
+            && !(function_exists($key) && (new ReflectionFunction($key))->isInternal())
             && !$codebase->functions->hasStubbedFunction($key)
         ) {
             return null;
