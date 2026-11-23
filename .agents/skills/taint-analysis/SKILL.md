@@ -1,6 +1,8 @@
 ---
 name: taint-analysis
 description: Use when changing or debugging Psalm's taint analysis (TaintFlowGraph, TaintFlowResolution, TaintKind, taint sinks/sources/escapes, InternalTaintSinkMap), writing TaintTest cases, reproducing a taint false positive or negative, or reviewing a taint PR. Covers repro modes, test-harness pitfalls, graph invariants, resolver limits and hang debugging.
+metadata:
+  internal: "true"
 ---
 
 # Taint analysis

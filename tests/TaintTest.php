@@ -14059,6 +14059,19 @@ final class TaintTest extends TestCase
                     echo $matches[1];',
                 'error_message' => 'TaintedHtml',
             ],
+            'taintParseStrResultBeforeThePhpVersionNamingItsInput' => [
+                'code' => '<?php // --taint-analysis
+                    parse_str((string) $_GET["value"], $result);
+                    echo (string) $result["key"];',
+                'error_message' => 'TaintedHtml',
+                'php_version' => '7.4',
+            ],
+            'taintFlowsThroughAParameterPhp8Renamed' => [
+                'code' => '<?php // --taint-analysis
+                    echo count_chars((string) $_GET["value"], 3);',
+                'error_message' => 'TaintedHtml',
+                'php_version' => '7.4',
+            ],
             'taintParseStrResult' => [
                 'code' => '<?php // --taint-analysis
                     parse_str((string) $_GET["value"], $result);
