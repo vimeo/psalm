@@ -332,6 +332,15 @@ final class MissingExtensionRequirementTest extends TestCase
                 'error_levels' => [],
                 'php_version' => '8.6',
             ],
+            'bundledExtension' => [
+                'code' => '<?php
+                    function f(): Socket|false {
+                        return socket_create(AF_INET, SOCK_STREAM, SOL_TCP);
+                    }',
+                'error_message' => 'socket_create is part of the ext-sockets extension',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
             'composerNameOfOpcache' => [
                 'code' => '<?php
                     function f(): bool {
