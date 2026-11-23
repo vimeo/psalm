@@ -39,11 +39,11 @@ use function is_string;
 use function json_encode;
 use function ksort;
 use function parse_url;
+use function preg_match;
 use function preg_replace;
 use function rawurldecode;
 use function sprintf;
 use function str_replace;
-use function str_starts_with;
 use function strip_tags;
 use function strlen;
 use function strtolower;
@@ -218,9 +218,9 @@ final class Shepherd implements AfterAnalysisInterface
     private static function writePayload(string $endpoint, array $rawPayload, Progress $progress): void
     {
         $path = (string) preg_replace('#^file://#i', '', $endpoint);
-        // file://name/... names a host
-        if (!str_starts_with($path, '/')) {
-            $progress->warning("Results not written to $path: the path must be absolute, as in file:///path");
+        // file://name/... names a host, and /C:name is relative to the current directory of drive C on Windows
+        if (preg_match('#^(?:/?[A-Za-z]:[/\\\\]|/(?![A-Za-z]:))#', $path) !== 1) {
+            $progress->warning('Results not written: use an absolute path, as in file:///path/to/report.json');
 
             return;
         }
