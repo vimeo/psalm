@@ -658,6 +658,22 @@ final class ClassTemplateContravarianceTest extends TestCase
                 'error_levels' => [],
                 'php_version' => '8.0',
             ],
+            'preventContravariantTemplateInTheParamOutOfAnOverride' => [
+                'code' => '<?php
+                    interface Filler {
+                        /** @param mixed $value */
+                        public function fill(mixed &$value): void;
+                    }
+                    /** @template-contravariant T */
+                    abstract class C implements Filler {
+                        /** @param-out T $value */
+                        abstract public function fill(mixed &$value): void;
+                    }',
+                'error_message' => 'InvalidTemplateParam - src' . DIRECTORY_SEPARATOR . 'somefile.php:9:62'
+                    . ' - Template param T of C is marked contravariant and cannot be used here',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
             'preventContravariantTemplateInAnAssertion' => [
                 'code' => '<?php
                     /** @template-contravariant T */

@@ -2251,13 +2251,19 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                         $check_stmts = false;
                     }
 
-                    $output_type = $function_param->out_type ?? ($function_param->by_ref ? $param_type : null);
+                    // the method's own `@param-out` is checked here even if the type it takes is the overridden
+                    // method's, which checks only what it declares
+                    $own_param = $storage->params[$offset] ?? null;
+                    $output_type = $function_param->out_type
+                        ?? ($function_param->by_ref && $function_param === $own_param ? $param_type : null);
 
                     if ($output_type !== null
-                        && $function_param === ($storage->params[$offset] ?? null)
+                        && $own_param !== null
                         && !$this->checkOutputTypeTemplates(
                             $output_type,
-                            $function_param->type_location,
+                            $function_param === $own_param
+                                ? $function_param->type_location
+                                : $own_param->location ?? $function_param->type_location,
                             $storage,
                             $context,
                         )
