@@ -48,6 +48,7 @@ use function ltrim;
 use function min;
 use function realpath;
 use function str_ends_with;
+use function strlen;
 use function strtolower;
 use function substr;
 use function trait_exists;
@@ -618,6 +619,8 @@ final class Scanner
                 Perf\Collector::mergeDone();
             }
 
+            // the workers are reaped when the pool goes, and their CPU time is the pool's
+            unset($pool, $forked_pool_data, $pool_data);
             Perf\Collector::poolEnd();
         } else {
             foreach ($files_to_scan as $file_path => $_) {
@@ -715,7 +718,7 @@ final class Scanner
         $from_cache = $this->file_storage_provider->has($file_path, $file_contents);
 
         if (Perf\Collector::$enabled) {
-            Perf\Collector::setScanStorage($from_cache ? 'reused' : 'cold');
+            Perf\Collector::setScan($from_cache ? 'reused' : 'cold', strlen($file_contents));
         }
 
         if (!$from_cache) {
@@ -748,7 +751,7 @@ final class Scanner
                     $from_cache = false;
 
                     if (Perf\Collector::$enabled) {
-                        Perf\Collector::setScanStorage('reused_then_rescanned');
+                        Perf\Collector::setScan('reused_then_rescanned', strlen($file_contents));
                     }
 
                     $file_storage = $this->file_storage_provider->create($file_path);
@@ -1047,7 +1050,7 @@ final class Scanner
             $deep = isset($this->files_to_deep_scan[$file_path]);
             $perf_start = Perf\Collector::fileStart();
             // what it stays at if the file is not scanned at all
-            Perf\Collector::setScanStorage('cold');
+            Perf\Collector::setScan('cold', 0);
             $this->scanFile($file_path, $this->config->getFiletypeScanners(), $deep);
             Perf\Collector::scanEnd(
                 $file_path,
@@ -1055,6 +1058,7 @@ final class Scanner
                 $perf_start,
                 $deep,
                 Perf\Collector::scanStorage(),
+                Perf\Collector::scanBytes(),
             );
         } else {
             $this->scanFile(

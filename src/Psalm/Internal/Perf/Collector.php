@@ -53,6 +53,7 @@ use const PHP_OS_FAMILY;
  *     peak_growth_bytes: int,
  *     deep?: bool,
  *     storage?: string,
+ *     bytes?: int,
  *     issues?: int,
  * }
  * @psalm-type StatementRecord = array{
@@ -171,6 +172,8 @@ final class Collector
     /** Where the storage of the file being scanned came from, set by the scanner while collecting */
     private static string $scan_storage = '';
 
+    private static int $scan_bytes = 0;
+
     /** Inclusive nanoseconds of the statements analysed inside the statement being timed */
     public static int $child_ns = 0;
 
@@ -280,6 +283,7 @@ final class Collector
         self::$worker = false;
         self::$worker_end_us = 0;
         self::$scan_storage = '';
+        self::$scan_bytes = 0;
         self::$stage = '';
         self::clearRecords();
         self::$dump_path = null;
@@ -353,14 +357,21 @@ final class Collector
         }
     }
 
-    public static function setScanStorage(string $storage): void
+    /** Where the storage of the file being scanned came from, and how long its contents are */
+    public static function setScan(string $storage, int $bytes): void
     {
         self::$scan_storage = $storage;
+        self::$scan_bytes = $bytes;
     }
 
     public static function scanStorage(): string
     {
         return self::$scan_storage;
+    }
+
+    public static function scanBytes(): int
+    {
+        return self::$scan_bytes;
     }
 
     /** @return array{int, int, int} */
@@ -380,9 +391,10 @@ final class Collector
         array $start,
         bool $deep,
         string $storage,
+        int $bytes,
     ): void {
         self::$files[] = self::fileRecord('scan', $file_path, $file_name, $start)
-            + ['deep' => $deep, 'storage' => $storage];
+            + ['deep' => $deep, 'storage' => $storage, 'bytes' => $bytes];
     }
 
     /** @param array{int, int, int} $start */

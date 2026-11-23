@@ -35,7 +35,7 @@ use const PHP_BINARY;
 /**
  * Tests `--debug-performance[=PATH]` by launching a new process as if invoked by a real user.
  *
- * @psalm-type DumpFile = array{op: string, path: string, pid: int, start_us: int, wall_us: int}
+ * @psalm-type DumpFile = array{op: string, path: string, pid: int, start_us: int, wall_us: int, bytes?: int}
  * @psalm-type Dump = array{
  *     schema: int,
  *     totals: array{wall_us: int, cpu_us: int, children_cpu_us: int},
@@ -93,6 +93,9 @@ final class PsalmDebugPerformanceEndToEndTest extends PsalmEndToEndTestCase
             ['src/A0.php', 'src/A1.php', 'src/A2.php', 'src/Anon.php', 'src/FileWithErrors.php'],
             self::recordedPaths($dump, 'analysis'),
         );
+        // a scan record has the size of the file it read
+        $scanned = array_column(self::recordsOf($dump, 'scan'), 'bytes', 'path');
+        $this->assertGreaterThan(0, $scanned['src/A0.php'] ?? 0);
 
         // the stages add up to the run
         $this->assertSame($dump['totals']['wall_us'], array_sum(array_column($dump['stages'], 'wall_us')));
@@ -102,7 +105,7 @@ final class PsalmDebugPerformanceEndToEndTest extends PsalmEndToEndTestCase
         // the steps are named, lie in their stage and do not overlap
         $this->assertSame([], array_diff(
             ['config', 'restart.check', 'preload', 'providers', 'files.list', 'scan.stubs', 'scan.project',
-                'mutation_levels', 'output'],
+                'populate.classlikes', 'populate.files', 'mutation_levels', 'output'],
             array_column($dump['steps'], 'name'),
         ));
         // each file was analysed inside the stage that analyses files

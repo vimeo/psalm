@@ -1209,6 +1209,7 @@ final class TaintFlowGraph extends DataFlowGraph
     public function connectSinksAndSources(Progress $progress): void
     {
         $progress->startPhase(Phase::TAINT_GRAPH_RESOLUTION);
+        Perf\Collector::step('taint.prepare');
 
         // the graph is dumped in the same order whichever order the analysis of the files added it in
         ksort($this->forward_edges);
@@ -1237,6 +1238,7 @@ final class TaintFlowGraph extends DataFlowGraph
             }
         } unset($map);
 
+        Perf\Collector::step('taint.resolve');
         Perf\Collector::taint(
             count($this->nodes),
             count($this->sources),

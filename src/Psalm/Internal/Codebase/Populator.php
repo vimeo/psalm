@@ -8,6 +8,7 @@ use BackedEnum;
 use InvalidArgumentException;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\MethodIdentifier;
+use Psalm\Internal\Perf;
 use Psalm\Internal\PhpVisitor\Reflector\FunctionLikeDocblockScanner;
 use Psalm\Internal\Provider\ClassLikeStorageProvider;
 use Psalm\Internal\Provider\FileReferenceProvider;
@@ -95,6 +96,7 @@ final class Populator
     public function populateCodebase(): void
     {
         $this->progress->debug('ClassLikeStorage is populating' . "\n");
+        Perf\Collector::step('populate.classlikes');
 
         // before the members of the classes inherit their internal namespaces
         $this->classlikes->markUnshippedCodeInternal();
@@ -107,6 +109,8 @@ final class Populator
 
         // a class populated before its parents were scanned is populated again, and bound again
         $this->iteration_purity_bound = [];
+
+        Perf\Collector::step('populate.methods');
 
         // every method's capabilities are known now: bind what consuming the generators they
         // return, and iterating the iterators their classes are, may do
@@ -124,11 +128,15 @@ final class Populator
 
         $this->progress->debug('FileStorage is populating' . "\n");
 
+        Perf\Collector::step('populate.files');
+
         $all_file_storage = $this->file_storage_provider->getNew();
 
         foreach ($all_file_storage as $file_storage) {
             $this->populateFileStorage($file_storage);
         }
+
+        Perf\Collector::step('populate.dependents');
 
         foreach ($this->classlike_storage_provider->getNew() as $class_storage) {
             // `+=` on the typed property would copy the whole array on every merge

@@ -30,7 +30,7 @@ Times are integer microseconds (`_us`), sizes integer bytes (`_bytes`).
 |`steps`|Finer parts of some stages, in the main process; their names may change in any release|
 |`pools`, `workers`|The forked processes: tasks, busy time, CPU time, memory growth, and for analysis pools the size of the results|
 |`files`|One record per file scanned or analysed, with its time and how much it raised the memory peak|
-|`hot`|The 50 statements and the 50 function-likes that took longest, per place, with the number of `passes` over them (a constructor is analysed twice) and the time of all of them, a function-like's own time (`self_us`) as well as its total (`wall_us`) with the functions analysed meanwhile. Only a statement execution (own time) or a function-like pass of `min_us` or more is counted, and `limit` items of each kind are kept|
+|`hot`|The 50 statements and the 50 function-likes that took longest, per place, with the number of `passes` over them (a constructor is analysed twice) and the time of all of them, a function-like's own time (`self_us`) as well as its total (`wall_us`) with the functions analysed meanwhile. Only a statement execution (own time) or a function-like pass of `min_us` or more is counted, so `passes` counts the passes of 1 ms or more, and `limit` items of each kind are kept|
 |`hooks`|Time per handler of a plugin or of Psalm, and per hook, and the time each plugin took to register (`PluginInit`)|
 |`counts`|Class-likes, functions, methods and files in memory|
 |`parser`|Files parsed, and statements reused instead of parsed, in all processes|
@@ -39,6 +39,8 @@ Times are integer microseconds (`_us`), sizes integer bytes (`_bytes`).
 The page at https://psalm.dev/perf/ can also export a trace for https://ui.perfetto.dev.
 
 `schema` changes when a key is removed or changes its meaning.
+
+The names of stages and steps and the keys `taint`, `parser`, `peak_growth_bytes` and `storage` may change between releases.
 
 ## Privacy
 
