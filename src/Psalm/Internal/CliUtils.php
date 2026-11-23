@@ -42,6 +42,7 @@ use function is_scalar;
 use function is_string;
 use function json_decode;
 use function preg_last_error_msg;
+use function preg_match;
 use function preg_replace;
 use function preg_split;
 use function realpath;
@@ -86,7 +87,7 @@ final class CliUtils
 
         $psalm_dir = dirname(__DIR__, 3);
 
-        $in_phar = Phar::running() || strpos(__NAMESPACE__, 'HumbugBox');
+        $in_phar = (extension_loaded('phar') && Phar::running()) || strpos(__NAMESPACE__, 'HumbugBox');
 
         if ($in_phar) {
             require_once __DIR__ . '/../../../vendor/autoload.php';
@@ -178,6 +179,22 @@ final class CliUtils
     }
 
     /**
+     * The message of a -r/--root path that doesn't exist: a relative path is shown as it is resolved from the
+     * current directory, an absolute one as it was given
+     *
+     * @psalm-pure
+     */
+    public static function getRootDirectoryNotFoundMessage(string $current_dir, string $root): string
+    {
+        // runs before the autoloader is required, so symfony's Path isn't available
+        $is_absolute = str_starts_with($root, '/')
+            || str_starts_with($root, DIRECTORY_SEPARATOR)
+            || preg_match('/^[A-Za-z]:[\\\\\/]/', $root) === 1;
+
+        return 'Could not locate root directory ' . ($is_absolute ? $root : $current_dir . DIRECTORY_SEPARATOR . $root);
+    }
+
+    /**
      * @psalm-suppress MixedAssignment
      */
     public static function getVendorDir(string $current_dir): string
@@ -199,7 +216,7 @@ final class CliUtils
             exit(1);
         }
 
-        if (!$composer_json) {
+        if (!is_array($composer_json)) {
             fwrite(
                 STDERR,
                 'Invalid composer.json at ' . $composer_json_path . "\n",
@@ -207,8 +224,7 @@ final class CliUtils
             exit(1);
         }
 
-        if (is_array($composer_json)
-            && isset($composer_json['config'])
+        if (isset($composer_json['config'])
             && is_array($composer_json['config'])
             && isset($composer_json['config']['vendor-dir'])
             && is_string($composer_json['config']['vendor-dir'])

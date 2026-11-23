@@ -197,6 +197,11 @@ final class ExpressionResolver
                 return new ScalarValue($aliases->namespace);
             }
 
+            // `use const A\SOME;` makes the unqualified `SOME` the constant of A, whatever PHP constant it shadows
+            if ($stmt->name->isUnqualified() && isset($aliases->constants[$stmt->name->getFirst()])) {
+                return new Constant($aliases->constants[$stmt->name->getFirst()], true, $aliases->namespace ?? '');
+            }
+
             return new Constant(
                 $stmt->name->toString(),
                 $stmt->name instanceof PhpParser\Node\Name\FullyQualified,
