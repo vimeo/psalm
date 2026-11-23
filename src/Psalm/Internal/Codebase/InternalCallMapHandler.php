@@ -25,6 +25,8 @@ use ReflectionFunction;
 use UnexpectedValueException;
 
 use function array_key_first;
+use function array_search;
+use function array_unique;
 use function arsort;
 use function assert;
 use function class_exists;
@@ -57,6 +59,9 @@ final class InternalCallMapHandler
 {
     private const MIN_CALLMAP_VERSION = 70;
     private const MAX_CALLMAP_VERSION = 86;
+
+    /** The versions of the callmap, from MIN_CALLMAP_VERSION to MAX_CALLMAP_VERSION */
+    private const CALLMAP_VERSIONS = [70, 71, 72, 73, 74, 80, 81, 82, 83, 84, 85, 86];
 
     /** see keepsStateBetweenCalls() */
     private const STATEFUL_FUNCTIONS = ['strtok' => true, 'inflate_add' => true];
@@ -462,6 +467,8 @@ final class InternalCallMapHandler
      * The extension declaring a builtin function (`mb_strlen`) or class (`PDO`) in the analysed PHP version, as
      * reflection names it (`mbstring`, `zend opcache`), or null when the callmap doesn't know it. A class belongs to
      * the extension of most of its methods: some come from others (`PDO::sqliteCreateFunction()` from `pdo_sqlite`).
+     * The stub image of a version may not build an extension yet (redis for PHP 8.6): its symbols then take their
+     * extension from the nearest version whose image builds it.
      *
      * @psalm-suppress UnresolvableInclude
      */
@@ -474,10 +481,22 @@ final class InternalCallMapHandler
         );
 
         if (self::$extensions === null || self::$extensions[0] !== $version) {
-            /** @var array<string, string> $function_extensions */
-            $function_extensions = require(
-                dirname(__DIR__, 4) . "/dictionaries/autogen/CallMapExtensions_$version.php"
-            );
+            $index = (int) array_search($version, self::CALLMAP_VERSIONS, true);
+            $function_extensions = [];
+            for ($distance = 0; $distance < count(self::CALLMAP_VERSIONS); $distance++) {
+                foreach (array_unique([$index - $distance, $index + $distance]) as $other_index) {
+                    $other_version = self::CALLMAP_VERSIONS[$other_index] ?? null;
+                    if ($other_version === null) {
+                        continue;
+                    }
+
+                    /** @var array<string, string> $other_extensions */
+                    $other_extensions = require(
+                        dirname(__DIR__, 4) . "/dictionaries/autogen/CallMapExtensions_$other_version.php"
+                    );
+                    $function_extensions += $other_extensions;
+                }
+            }
 
             $method_counts = [];
             foreach ($function_extensions as $method_id => $extension) {
