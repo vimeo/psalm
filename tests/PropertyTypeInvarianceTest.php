@@ -678,6 +678,15 @@ final class PropertyTypeInvarianceTest extends TestCase
                 'error_levels' => [],
                 'php_version' => '8.6',
             ],
+            'typedRedeclarationOfAnUntypedPropertyOfAReflectedBuiltinClass' => [
+                'code' => '<?php
+                    final class TypedStream extends php_user_filter {
+                        public mixed $stream = null;
+                    }',
+                'error_message' => 'NonInvariantPropertyType',
+                'error_levels' => [],
+                'php_version' => '8.6',
+            ],
             'typedRedeclarationOfAnUntypedPropertyOfAStubbedBuiltinClass' => [
                 'code' => '<?php
                     final class E extends Exception {

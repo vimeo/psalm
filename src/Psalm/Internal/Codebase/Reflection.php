@@ -133,11 +133,15 @@ final class Reflection
             $storage->properties[$property_name]->type = $property_type;
 
             // the native type the running PHP declares holds for the PHP version analysed when it is not older
-            if ($class_property->hasType()
-                && $this->codebase->analysis_php_version_id >= PHP_MAJOR_VERSION * 10_000 + PHP_MINOR_VERSION * 100
-            ) {
-                $storage->properties[$property_name]->signature_type = $property_type;
+            if ($class_property->hasType()) {
+                if ($this->codebase->analysis_php_version_id >= PHP_MAJOR_VERSION * 10_000 + PHP_MINOR_VERSION * 100) {
+                    $storage->properties[$property_name]->signature_type = $property_type;
+                } else {
+                    $storage->properties[$property_name]->has_unrecorded_signature_type = true;
+                }
             }
+
+            $storage->properties[$property_name]->has_default = $class_property->hasDefaultValue();
 
             if ($class_property->isStatic()) {
                 $storage->properties[$property_name]->is_static = true;

@@ -5113,6 +5113,18 @@ final class PropertyTypeTest extends TestCase
                     }',
                 'error_message' => 'UndefinedPropertyFetch',
             ],
+            'issetOnATypedPropertyOfABuiltinClassWithADefault' => [
+                'code' => '<?php
+                    function f(php_user_filter $f): string {
+                        if (isset($f->filtername)) {
+                            return $f->filtername;
+                        }
+                        return "";
+                    }',
+                'error_message' => 'RedundantCondition',
+                'error_levels' => [],
+                'php_version' => '8.6',
+            ],
             'staticPropertyOfAStaticTypeInANonFinalClassIsNotTheClass' => [
                 'code' => '<?php
                     class Config {
