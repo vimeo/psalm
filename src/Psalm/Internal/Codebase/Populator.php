@@ -177,9 +177,11 @@ final class Populator
             return true;
         }
 
-        if (!$storage->final || $storage->parent_classes !== [] || $storage->declaring_property_ids === []) {
+        if (!$storage->final || $storage->parent_classes !== []) {
             return false;
         }
+
+        $has_instance_property = false;
 
         // A trait property is kept in the declaring trait's storage.
         foreach ($storage->declaring_property_ids as $name => $declaring_class) {
@@ -191,13 +193,14 @@ final class Populator
             if ($property->is_static) {
                 continue;
             }
+            $has_instance_property = true;
             $computed = $property->hook_get !== null && $property->hook_set === null && !$property->is_promoted;
             if ((!$property->readonly || $property->allow_private_mutation) && !$computed) {
                 return false;
             }
         }
 
-        return true;
+        return $has_instance_property;
     }
 
     /**
