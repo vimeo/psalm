@@ -103,6 +103,7 @@ use function array_keys;
 use function array_map;
 use function array_merge;
 use function array_search;
+use function array_slice;
 use function array_values;
 use function count;
 use function end;
@@ -1842,8 +1843,8 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
 
     /**
      * An `@psalm-overload` is a way to call the function, so what it declares has to be what the function accepts
-     * and returns: its parameters are parameters of the signature (a call by name has to work at run time) and
-     * their types fit those of the signature, and its return type fits the declared one
+     * and returns: each parameter is the real one at its position (arguments reach that one at run time, by position
+     * and by name), its type fits that one and every other a variadic covers, and its return type fits the declared one
      */
     private function checkOverloadsAgainstSignature(FunctionLikeStorage $storage): void
     {
@@ -1851,23 +1852,12 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
         $location = new CodeLocation($this, $this->function, null, true);
         $function_name = $storage->cased_name ?? $this->getId();
 
-        $real_params = [];
-
-        foreach ($storage->params as $real_param) {
-            $real_params[$real_param->name] = $real_param;
-        }
-
         $last_real_param = $storage->params === [] ? null : $storage->params[count($storage->params) - 1];
+        $real_variadic = $last_real_param !== null && $last_real_param->is_variadic ? $last_real_param : null;
 
         foreach ($storage->overloads as $overload) {
             foreach ($overload->params as $position => $param) {
-                // by name where the signature has it, else by position: an overload may name its parameters
-                // differently, which a call by name can't use
-                $real_param = $real_params[$param->name]
-                    ?? $storage->params[$position]
-                    ?? ($param->is_variadic && $last_real_param !== null && $last_real_param->is_variadic
-                        ? $last_real_param
-                        : null);
+                $real_param = $storage->params[$position] ?? $real_variadic;
 
                 if ($real_param === null) {
                     IssueBuffer::maybeAdd(
@@ -1882,16 +1872,38 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                     continue;
                 }
 
-                if (self::isOverloadTypeOutsideOfTheSignature($codebase, $param->type, $real_param->type)) {
+                if (!$param->is_variadic && !$real_param->is_variadic && $param->name !== $real_param->name) {
                     IssueBuffer::maybeAdd(
                         new InvalidDocblock(
-                            'The type ' . $param->type?->getId() . ' of parameter $' . $param->name
-                                . ' of an @psalm-overload of ' . $function_name
-                                . ' is not accepted by its signature, which declares ' . $real_param->type?->getId(),
+                            'Parameter $' . $param->name . ' of an @psalm-overload of ' . $function_name
+                                . ' is at the position of $' . $real_param->name . ' in its signature',
                             $location,
                         ),
                         $this->getSuppressedIssues(),
                     );
+
+                    continue;
+                }
+
+                $covered_params = $param->is_variadic
+                    ? (array_slice($storage->params, $position) ?: [$real_param])
+                    : [$real_param];
+
+                foreach ($covered_params as $covered_param) {
+                    if (self::isOverloadTypeOutsideOfTheSignature($codebase, $param->type, $covered_param->type)) {
+                        IssueBuffer::maybeAdd(
+                            new InvalidDocblock(
+                                'The type ' . $param->type?->getId() . ' of parameter $' . $param->name
+                                    . ' of an @psalm-overload of ' . $function_name
+                                    . ' is not accepted by its signature, which declares '
+                                    . $covered_param->type?->getId(),
+                                $location,
+                            ),
+                            $this->getSuppressedIssues(),
+                        );
+
+                        break;
+                    }
                 }
             }
 
