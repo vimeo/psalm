@@ -292,6 +292,19 @@ final class CloneTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'cloneWithNullableValueOfAnotherTypeForANullableProperty' => [
+                'code' => '<?php
+                    class Foo {
+                        public function __construct(public ?int $x) {}
+                    }
+
+                    function make(Foo $o, ?string $v): void {
+                        clone($o, ["x" => $v]);
+                    }',
+                'error_message' => 'PossiblyInvalidPropertyAssignmentValue',
+                'error_levels' => [],
+                'php_version' => '8.5',
+            ],
             'invalidIntClone' => [
                 'code' => '<?php
                     $a = 5;

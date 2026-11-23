@@ -578,7 +578,7 @@ final class CloneAnalyzer
             return;
         }
 
-        if (UnionTypeComparator::canBeContainedBy($codebase, $value_type, $declared_type, true, true)) {
+        if (UnionTypeComparator::canBeContainedBy($codebase, $value_type, $declared_type)) {
             IssueBuffer::maybeAdd(
                 new PossiblyInvalidPropertyAssignmentValue(
                     $property_id . ' with declared type \'' . $declared_type->getId()

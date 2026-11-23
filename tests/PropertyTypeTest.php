@@ -4963,6 +4963,54 @@ final class PropertyTypeTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'nullableValueOfAnotherTypeToNullableProperty' => [
+                'code' => '<?php
+                    final class A {
+                        public ?string $s = null;
+
+                        public function set(?int $i): void {
+                            $this->s = $i;
+                        }
+                    }',
+                'error_message' => 'PossiblyInvalidPropertyAssignmentValue',
+            ],
+            'nullableValueOfAnotherTypeToNullableStaticProperty' => [
+                'code' => '<?php
+                    final class A {
+                        public static ?string $s = null;
+
+                        public static function set(?int $i): void {
+                            self::$s = $i;
+                        }
+                    }',
+                'error_message' => 'PossiblyInvalidPropertyAssignmentValue - src' . DIRECTORY_SEPARATOR
+                    . 'somefile.php:6:40 - A::$s with declared type \'null|string\' cannot be assigned possibly'
+                    . ' different type \'int|null',
+            ],
+            'falsableValueOfAnotherTypeToFalsableStaticProperty' => [
+                'code' => '<?php
+                    final class A {
+                        /** @var string|false */
+                        public static $s = false;
+
+                        /** @param int|false $i */
+                        public static function set($i): void {
+                            self::$s = $i;
+                        }
+                    }',
+                'error_message' => 'PossiblyInvalidPropertyAssignmentValue',
+            ],
+            'nonNullValueOfAnotherTypeToNullableProperty' => [
+                'code' => '<?php
+                    final class A {
+                        public ?string $s = null;
+
+                        public function set(int $i): void {
+                            $this->s = $i;
+                        }
+                    }',
+                'error_message' => 'InvalidPropertyAssignmentValue',
+            ],
             'offsetWriteToAnUninitializedReadonlyArrayProperty' => [
                 'code' => '<?php
                     final class Bag

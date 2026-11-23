@@ -729,6 +729,44 @@ final class ArgTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'nullableArgumentOfAnotherTypeToNullableParam' => [
+                'code' => '<?php
+                    final class Foo {}
+                    final class Bar {}
+
+                    function takesNullableBar(?Bar $b): void {}
+
+                    function arg(?Foo $f): void {
+                        takesNullableBar($f);
+                    }',
+                'error_message' => 'PossiblyInvalidArgument',
+            ],
+            'falsableArgumentOfAnotherTypeToFalsableParam' => [
+                'code' => '<?php
+                    final class Foo {}
+                    final class Bar {}
+
+                    /** @param Bar|false $b */
+                    function takesBarOrFalse($b): void {}
+
+                    /** @param Foo|false $f */
+                    function arg($f): void {
+                        takesBarOrFalse($f);
+                    }',
+                'error_message' => 'PossiblyInvalidArgument',
+            ],
+            'nonNullArgumentOfAnotherTypeToNullableParam' => [
+                'code' => '<?php
+                    final class Foo {}
+                    final class Bar {}
+
+                    function takesNullableBar(?Bar $b): void {}
+
+                    function arg(Foo $f): void {
+                        takesNullableBar($f);
+                    }',
+                'error_message' => 'InvalidArgument',
+            ],
             'arrayObjectNamedArgumentsOfPhp7AreRejected' => [
                 'code' => '<?php
                     $o = new ArrayObject([3, 1, 2]);

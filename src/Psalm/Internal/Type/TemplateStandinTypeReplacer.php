@@ -1009,8 +1009,6 @@ final class TemplateStandinTypeReplacer
                         $codebase,
                         $input_type,
                         $atomic_type->as,
-                        false,
-                        false,
                         $matching_input_keys,
                     )
                 )
@@ -1137,8 +1135,6 @@ final class TemplateStandinTypeReplacer
                 $codebase,
                 $input_type,
                 $gate_replacement_type,
-                false,
-                false,
                 $matching_input_keys,
             )
             ) {

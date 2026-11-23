@@ -111,8 +111,6 @@ abstract class TypeMismatchReporter
             $this->statements_analyzer->getCodebase(),
             $this->value_type,
             $this->expected_type,
-            true,
-            true,
         );
     }
 

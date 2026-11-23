@@ -633,8 +633,6 @@ final class UnionTypeComparator
         Codebase $codebase,
         Union $input_type,
         Union $container_type,
-        bool $ignore_null = false,
-        bool $ignore_false = false,
         array &$matching_input_keys = [],
     ): bool {
         if ($container_type->hasMixed()) {
@@ -650,14 +648,6 @@ final class UnionTypeComparator
         }
 
         foreach (self::getTypeParts($codebase, $container_type) as $container_type_part) {
-            if ($container_type_part instanceof TNull && $ignore_null) {
-                continue;
-            }
-
-            if ($container_type_part instanceof TFalse && $ignore_false) {
-                continue;
-            }
-
             foreach (self::getTypeParts($codebase, $input_type) as $input_type_part) {
                 if ($input_type_part instanceof TTypeVariable) {
                     // an unresolved type variable can still become anything
