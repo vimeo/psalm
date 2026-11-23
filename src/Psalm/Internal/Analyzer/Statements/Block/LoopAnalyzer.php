@@ -1129,9 +1129,27 @@ final class LoopAnalyzer
         }
 
         foreach ($loop_scope->condition_written_vars as $var_id => $type) {
-            if (isset($context->vars_in_scope[$var_id])) {
-                $context->vars_in_scope[$var_id] = Type::combineUnionTypes($context->vars_in_scope[$var_id], $type);
+            if (!isset($context->vars_in_scope[$var_id])) {
+                continue;
             }
+
+            $type_at_breaks = $loop_scope->vars_at_breaks[$var_id] ?? null;
+
+            // a variable every evaluation of the condition writes holds what the breaks leave or what the condition
+            // wrote, not what it held before the loop or where an iteration ended
+            if ($type_at_breaks !== null
+                && isset($loop_scope->condition_always_written_var_ids[$var_id])
+                && !$loop_scope->breaks_through_finally
+                && !$type_at_breaks->isNever()
+                && !$type_at_breaks->possibly_undefined
+            ) {
+                $context->vars_in_scope[$var_id] = Type::combineUnionTypes($type_at_breaks, $type)
+                    ->addParentNodes($context->vars_in_scope[$var_id]->parent_nodes);
+
+                continue;
+            }
+
+            $context->vars_in_scope[$var_id] = Type::combineUnionTypes($context->vars_in_scope[$var_id], $type);
         }
     }
 

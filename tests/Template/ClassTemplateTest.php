@@ -6235,6 +6235,36 @@ final class ClassTemplateTest extends TestCase
                     '$r===' => 'string',
                 ],
             ],
+            'constructorListKeysGeneralize' => [
+                'code' => '<?php
+                    /** @template TKey */
+                    final class KeyedCollection {
+                        /** @param array<TKey, mixed> $items */
+                        public function __construct(array $items) {}
+                    }
+
+                    /** @param KeyedCollection<int> $c */
+                    function takesIntKeys(KeyedCollection $c): void {}
+
+                    $fromList = new KeyedCollection(["a", "b"]);
+                    takesIntKeys($fromList);',
+            ],
+            'constructorOfAListVariableGeneralizes' => [
+                'code' => '<?php
+                    /** @template TKey */
+                    final class KeyedCollection {
+                        /** @param array<TKey, mixed> $items */
+                        public function __construct(array $items) {}
+                    }
+
+                    /** @param KeyedCollection<int> $c */
+                    function takesIntKeys(KeyedCollection $c): void {}
+
+                    /** @param list<string> $items */
+                    function fromListVariable(array $items): void {
+                        takesIntKeys(new KeyedCollection($items));
+                    }',
+            ],
             'newOfTheClassItselfBindsItsTemplatesToTheArguments' => [
                 'code' => '<?php
                     interface Item {}
@@ -7780,6 +7810,25 @@ final class ClassTemplateTest extends TestCase
                     $map = new Map();
                     f($map, 5);',
                 'error_message' => 'InvalidArgument',
+            ],
+            'declaredClosedIntRangeIsStillInvariant' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class Box {
+                        /** @param T $value */
+                        public function __construct(public mixed $value) {}
+                    }
+
+                    /** @param Box<int> $box */
+                    function takesBox(Box $box): void {}
+
+                    /** @param Box<int<1, 12>> $box */
+                    function month(Box $box): void {
+                        takesBox($box);
+                    }',
+                'error_message' => 'InvalidArgument',
+                'error_levels' => [],
+                'php_version' => '8.0',
             ],
             'templateNestedInAnInvariantGenericParamConflictsWithAnEarlierArgument' => [
                 'code' => '<?php

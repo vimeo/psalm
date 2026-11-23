@@ -1629,9 +1629,9 @@ final class ValueTest extends TestCase
                     $rk = isset($a->k[0]) ? $a->k : null;
                     PHP,
                 'assertions' => [
-                    '$r===' => 'null|string',
-                    '$rn===' => 'null|string',
-                    '$rk===' => 'null|string',
+                    '$r===' => 'non-empty-string|null',
+                    '$rn===' => 'non-empty-string|null',
+                    '$rk===' => 'non-empty-string|null',
                 ],
                 'ignored_issues' => ['InvalidArrayAccess'],
             ],
