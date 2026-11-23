@@ -7,6 +7,7 @@ namespace Psalm\Tests\EndToEnd;
 use Override;
 use Symfony\Component\Process\Process;
 
+use function array_keys;
 use function defined;
 use function extension_loaded;
 use function fclose;
@@ -212,7 +213,7 @@ final class PsalmShepherdEndToEndTest extends PsalmEndToEndTestCase
             self::githubActions(),
         );
 
-        $this->assertStringContainsString('"php_version":"8.1","php_version_source":"cli"', $report);
+        $this->assertStringContainsString('"config":{"php_version":"8.1",', $report);
         $this->assertStringContainsString('"baselined":{}', $report);
         $this->assertStringContainsString('"baseline_entries":0', $report);
         $this->assertSame(
@@ -282,14 +283,10 @@ final class PsalmShepherdEndToEndTest extends PsalmEndToEndTestCase
         $this->assertSame(['src/B.php InvalidReturnStatement'], self::sentIssues($report));
         // all the issues Psalm can fix, whether reported as errors, as info or covered by the baseline
         $this->assertSame(['InvalidReturnType' => 3, 'MissingReturnType' => 1], self::decode($report)['fixable']);
-        // composer.json requires PHP >= 7.1, and the generated psalm.xml has no phpVersion
+        // composer.json requires PHP >= 7.1, and the generated psalm.xml has no phpVersion; the whole object, so
+        // that no key is added or removed unnoticed
         $this->assertSame(
-            [
-                'php_version' => '7.1',
-                'php_version_source' => 'composer',
-                'find_unused_code' => true,
-                'taint_analysis' => false,
-            ],
+            ['php_version' => '7.1', 'find_unused_code' => true, 'taint_analysis' => false],
             self::decode($report)['config'],
         );
         $this->assertStringContainsString('"php":"' . PHP_VERSION . '"', $report);
@@ -325,16 +322,15 @@ final class PsalmShepherdEndToEndTest extends PsalmEndToEndTestCase
             $this->assertSame($without_cache['fixable'], $report['fixable'], implode(' ', $args));
             $this->assertSame($without_cache['issues'], $report['issues'], implode(' ', $args));
 
-            /** @var array{wall_seconds: mixed, peak_memory_bytes: mixed, threads: mixed, full: mixed, files: mixed} $run */
+            /** @var array{wall_seconds: mixed, threads: mixed, full: mixed, files: mixed} $run */
             $run = $report['run'];
+            $this->assertSame(['wall_seconds', 'threads', 'full', 'files'], array_keys($run), implode(' ', $args));
             // Clean.php, FileWithErrors.php, A.php, B.php and C.php
             $this->assertSame(5, $run['files'], implode(' ', $args));
             $this->assertTrue($run['full'], implode(' ', $args));
             $this->assertSame($args[0] === '--threads=2' && $can_fork ? 2 : 1, $run['threads'], implode(' ', $args));
             $this->assertIsFloat($run['wall_seconds']);
             $this->assertGreaterThanOrEqual(0, $run['wall_seconds']);
-            $this->assertIsInt($run['peak_memory_bytes']);
-            $this->assertGreaterThan(0, $run['peak_memory_bytes']);
         }
 
         if ($can_fork) {

@@ -35,7 +35,6 @@ use function is_array;
 use function is_string;
 use function json_encode;
 use function ksort;
-use function memory_get_peak_usage;
 use function microtime;
 use function parse_url;
 use function preg_replace;
@@ -106,10 +105,9 @@ final class Shepherd implements AfterAnalysisInterface
      *     baseline_entries: int,
      *     info: object,
      *     fixable: object,
-     *     run: array{wall_seconds: float, peak_memory_bytes: int, threads: int, full: bool, files: int},
+     *     run: array{wall_seconds: float, threads: int, full: bool, files: int},
      *     config: array{
      *         php_version: string,
-     *         php_version_source: string,
      *         find_unused_code: bool,
      *         taint_analysis: bool
      *     },
@@ -171,8 +169,6 @@ final class Shepherd implements AfterAnalysisInterface
             'fixable' => (object) $fixable_issue_counts,
             'run' => [
                 'wall_seconds' => round(microtime(true) - IssueBuffer::getFinishStartTime(), 2),
-                // of this process only, not of its forked workers
-                'peak_memory_bytes' => memory_get_peak_usage(),
                 'threads' => ProjectAnalyzer::getInstance()->threads,
                 'full' => IssueBuffer::getFinishIsFull(),
                 'files' => $codebase->analyzer->getFileCountWithAnalysisResults(),
@@ -180,7 +176,6 @@ final class Shepherd implements AfterAnalysisInterface
             'config' => [
                 // the PHP version Psalm analyses for, not the one it runs on
                 'php_version' => Codebase::getPhpVersionString($codebase->analysis_php_version_id),
-                'php_version_source' => $codebase->php_version_source,
                 'find_unused_code' => $codebase->find_unused_code !== null,
                 // set exactly when the config or a CLI flag turns taint analysis on
                 'taint_analysis' => $codebase->taint_flow_graph !== null,
