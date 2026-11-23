@@ -2090,18 +2090,7 @@ final class ArrayFetchAnalyzer
             }
         }
 
-        $can_be_int = !$appends && ($key_type->hasInt() || $key_type->hasArrayKey());
-        $can_be_string = !$appends && ($key_type->hasString() || $key_type->hasArrayKey());
-
-        // PHP writes under the int key a string of a decimal int (`'0'`) names
-        foreach ($can_be_int || $appends ? [] : $key_type->getAtomicTypes() as $key_atomic_type) {
-            if ($key_atomic_type instanceof TString
-                && !$key_atomic_type instanceof TLiteralString
-                && !$key_atomic_type instanceof TClassString
-            ) {
-                $can_be_int = true;
-            }
-        }
+        [$can_be_int, $can_be_string] = $appends ? [false, false] : self::getKindsOfAWrittenKey($key_type);
 
         $properties = [];
 
@@ -2124,6 +2113,39 @@ final class ArrayFetchAnalyzer
         );
 
         return $shape instanceof TKeyedArray ? $shape : null;
+    }
+
+    /**
+     * Whether a written key can be an int and a string. PHP writes a string of a decimal int (`'0'`) under the int key,
+     * and a key type that isn't known to be only one of them can be both.
+     *
+     * @return array{bool, bool}
+     * @psalm-pure
+     */
+    private static function getKindsOfAWrittenKey(Union $key_type): array
+    {
+        $can_be_int = false;
+        $can_be_string = false;
+
+        foreach ($key_type->getAtomicTypes() as $key_atomic_type) {
+            if ($key_atomic_type instanceof TTemplateParam) {
+                [$bound_can_be_int, $bound_can_be_string] = self::getKindsOfAWrittenKey($key_atomic_type->as);
+                $can_be_int = $can_be_int || $bound_can_be_int;
+                $can_be_string = $can_be_string || $bound_can_be_string;
+            } elseif ($key_atomic_type instanceof TInt) {
+                $can_be_int = true;
+            } elseif ($key_atomic_type instanceof TLiteralString) {
+                $can_be_string = true;
+                $can_be_int = $can_be_int || (string) (int) $key_atomic_type->value === $key_atomic_type->value;
+            } elseif ($key_atomic_type instanceof TClassString) {
+                $can_be_string = true;
+            } else {
+                $can_be_int = true;
+                $can_be_string = true;
+            }
+        }
+
+        return [$can_be_int, $can_be_string];
     }
 
     /**

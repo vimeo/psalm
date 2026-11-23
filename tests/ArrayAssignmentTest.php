@@ -128,6 +128,18 @@ final class ArrayAssignmentTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'writeUnderATemplateKeyMayReachEveryItemOfItsBound' => [
+                'code' => '<?php
+                    /**
+                     * @template K of array-key
+                     * @param K $k
+                     */
+                    function overwrite($k): void {
+                        $a = ["a" => 1, 0 => 2];
+                        $a[$k] = "v";
+                        /** @psalm-check-type-exact $a = array{0: "v"|2, a: "v"|1, ...<K, "v">} */;
+                    }',
+            ],
             'writeUnderAStringKeyMayReachTheIntKeyOfItsDecimalString' => [
                 'code' => '<?php
                     /**
@@ -3654,6 +3666,19 @@ final class ArrayAssignmentTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'writeUnderATemplateKeyMayReplaceAStringItem' => [
+                'code' => '<?php
+                    /**
+                     * @template K of string
+                     * @param K $k
+                     */
+                    function readBack($k): int {
+                        $a = ["name" => 1];
+                        $a[$k] = "v";
+                        return $a["name"];
+                    }',
+                'error_message' => 'InvalidReturnStatement',
+            ],
             'byReferenceArgumentUnderAKeyTheListDoesNotHaveIsNull' => [
                 'code' => '<?php
                     function takesArray(array &$x): void {}
