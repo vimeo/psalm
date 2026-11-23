@@ -1464,7 +1464,6 @@ final class ClassLikeNodeScanner
         $counts = [];
 
         foreach ($union_type->getAtomicTypes() as $atomic_type) {
-            // a class-like the tag can't be about is reported as such, whether it is given type arguments or not
             if ($atomic_type instanceof TNamedObject
                 && !isset($related_classes[strtolower($atomic_type->value)])
             ) {
@@ -1486,15 +1485,6 @@ final class ClassLikeNodeScanner
             }
 
             $generic_class_lc = strtolower($atomic_type->value);
-
-            if (!isset($related_classes[$generic_class_lc])) {
-                $storage->docblock_issues[] = new InvalidDocblock(
-                    $tag . ' must include the name of ' . $related_name . ', got ' . $atomic_type->getId(),
-                    new CodeLocation($this->file_scanner, $node, null, true),
-                );
-
-                continue;
-            }
 
             if ($this->reportStarArgument($storage, $node, $atomic_type, $tag)) {
                 continue;

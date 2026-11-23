@@ -6542,6 +6542,30 @@ final class ClassTemplateExtendsTest extends TestCase
                     }',
                 'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:25 - @template-use must include the name of a used trait, got T2',
             ],
+            'useTagNamingAnotherTraitWithoutTypeArguments' => [
+                'code' => '<?php
+                    /** @template T */
+                    trait T1 {}
+
+                    trait T2 {}
+
+                    final class C {
+                        /** @use T2 */
+                        use T1;
+                    }',
+                'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR . 'somefile.php:9:25 - @template-use must include the name of a used trait, got T2',
+            ],
+            'extendsTagNamingAnotherClassWithoutTypeArguments' => [
+                'code' => '<?php
+                    /** @template T */
+                    class P {}
+
+                    final class Q {}
+
+                    /** @extends Q */
+                    final class C extends P {}',
+                'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:21 - @template-extends must include the name of an extended class, got Q',
+            ],
             'templatedMethodOfAMiddleParentDoesNotImplementTheInterfaceOfTheChildWithAnotherType' => [
                 'code' => '<?php
                     /** @template T of object */
