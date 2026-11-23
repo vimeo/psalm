@@ -52,14 +52,11 @@ use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
-use function array_filter;
 use function array_map;
 use function array_slice;
 use function count;
 use function explode;
 use function in_array;
-use function is_string;
-use function str_starts_with;
 use function strtolower;
 
 /**
@@ -582,12 +579,7 @@ final class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
                     ),
                 );
                 if ($lhs_var_id === null) {
-                    $possibilities = array_filter(
-                        $possibilities,
-                        static fn(Possibilities $assertion): bool => !(is_string($assertion->var_id)
-                            && str_starts_with($assertion->var_id, '$this->')
-                        ),
-                    );
+                    $possibilities = self::removeThisAssertions($possibilities);
                 }
                 $statements_analyzer->node_data->setIfTrueAssertions(
                     $stmt,
@@ -624,12 +616,7 @@ final class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
                     ),
                 );
                 if ($lhs_var_id === null) {
-                    $possibilities = array_filter(
-                        $possibilities,
-                        static fn(Possibilities $assertion): bool => !(is_string($assertion->var_id)
-                            && str_starts_with($assertion->var_id, '$this->')
-                        ),
-                    );
+                    $possibilities = self::removeThisAssertions($possibilities);
                 }
                 $statements_analyzer->node_data->setIfFalseAssertions(
                     $stmt,

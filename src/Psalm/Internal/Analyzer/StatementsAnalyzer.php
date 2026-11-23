@@ -714,6 +714,7 @@ final class StatementsAnalyzer extends SourceAnalyzer
                             $e->getMessage(),
                             new CodeLocation($statements_analyzer->getSource(), $stmt),
                         ),
+                        $statements_analyzer->getSuppressedIssues(),
                     );
                 } catch (DocblockParseException $e) {
                     IssueBuffer::maybeAdd(
@@ -721,6 +722,7 @@ final class StatementsAnalyzer extends SourceAnalyzer
                             $e->getMessage(),
                             new CodeLocation($statements_analyzer->getSource(), $stmt),
                         ),
+                        $statements_analyzer->getSuppressedIssues(),
                     );
                 }
 
@@ -972,6 +974,7 @@ final class StatementsAnalyzer extends SourceAnalyzer
                     $e->getMessage(),
                     new CodeLocation($this->getSource(), $stmt, null, true),
                 ),
+                $this->getSuppressedIssues(),
             );
 
             $this->parsed_docblock = null;
