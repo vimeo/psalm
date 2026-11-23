@@ -225,6 +225,240 @@ final class RedundantConditionTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'notIdenticalToAVariableOfSeveralLiteralsDoesNotExcludeThem' => [
+                'code' => '<?php
+                    /** @param 1|2|3|5 $old */
+                    function changeType(int $new, int $old): bool {
+                        if ($new === $old) {
+                            return true;
+                        }
+                        if (!in_array($new, [2, 3, 5], true)) {
+                            return false;
+                        }
+                        return true;
+                    }
+
+                    /** @param 1|2 $old */
+                    function same(int $new, int $old): int {
+                        if ($new !== $old) {
+                            return 0;
+                        }
+                        /** @psalm-check-type-exact $new = 1|2 */
+                        return $new;
+                    }',
+            ],
+            'assertionOfStaticOnAnInterfaceReceiverIsNotImplied' => [
+                'code' => '<?php
+                    interface Comparable {
+                        /** @psalm-assert-if-true static $object */
+                        public function equals(Comparable $object): bool;
+                    }
+
+                    function f(Comparable $left, Comparable $right): void {
+                        if ($left->equals($right)) {
+                            echo "yes";
+                        }
+                    }',
+            ],
+            'notIdenticalToABoolLiteralOfATemplateBoundedByMixed' => [
+                'code' => '<?php
+                    /**
+                     * @template U
+                     * @param U $u
+                     */
+                    function notTrue($u): int {
+                        if ($u !== true) {
+                            return 1;
+                        }
+
+                        return 2;
+                    }
+
+                    /**
+                     * @template U
+                     * @param U $u
+                     */
+                    function notFalse($u): int {
+                        if ($u !== false) {
+                            return 1;
+                        }
+
+                        return 2;
+                    }
+
+                    /**
+                     * @template U of scalar
+                     * @param U $u
+                     */
+                    function scalarBound($u): void {
+                        if ($u !== true) {
+                            echo 1;
+                        }
+                    }
+
+                    /**
+                     * @template T
+                     * @template U of T
+                     * @param U $u
+                     */
+                    function boundOfAMixedTemplate($u): void {
+                        if ($u !== true) {
+                            echo 1;
+                        }
+                    }',
+            ],
+            'coalesceInAnElseIfAfterACountCondition' => [
+                'code' => '<?php
+                    /** @param list<?int> $list */
+                    function first(array $list): ?int {
+                        if (count($list) > 2) {
+                            return null;
+                        } elseif (($list[0] ?? null) !== null) {
+                            return 0;
+                        }
+
+                        return null;
+                    }',
+            ],
+            'negatedIsResourceOnResourceOrTemplateIsNotRedundant' => [
+                'code' => '<?php
+                    /**
+                     * @template T of string
+                     * @param resource|T $x
+                     */
+                    function f($x): void {
+                        if (!is_resource($x)) {}
+                    }',
+            ],
+            'negatedIsResourceOnUnboundedTemplateIsNotRedundant' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @param T $x
+                     */
+                    function f($x): void {
+                        if (!is_resource($x)) {}
+                    }',
+            ],
+            'redundantNegatedAssertionOnATemplateKeepsTheTemplate' => [
+                'code' => '<?php
+                    /**
+                     * @template T of int
+                     * @param T $x
+                     * @return T
+                     */
+                    function f($x) {
+                        if (!is_bool($x)) {
+                            return $x;
+                        }
+
+                        throw new Exception();
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['RedundantConditionGivenDocblockType'],
+            ],
+            'redundantNegatedTypeCheckOnATemplateKeepsTheTemplate' => [
+                'code' => '<?php
+                    /**
+                     * @template T of int
+                     * @param T $x
+                     * @return T
+                     */
+                    function notArray($x) {
+                        if (!is_array($x)) {
+                            return $x;
+                        }
+                        throw new Exception();
+                    }
+
+                    /**
+                     * @template T of int
+                     * @param T $x
+                     * @return T
+                     */
+                    function notString($x) {
+                        if (!is_string($x)) {
+                            return $x;
+                        }
+                        throw new Exception();
+                    }
+
+                    /**
+                     * @template T of int
+                     * @param T $x
+                     * @return T
+                     */
+                    function notObject($x) {
+                        if (!is_object($x)) {
+                            return $x;
+                        }
+                        throw new Exception();
+                    }
+
+                    /**
+                     * @template T of string
+                     * @param T $x
+                     * @return T
+                     */
+                    function notInt($x) {
+                        if (!is_int($x)) {
+                            return $x;
+                        }
+                        throw new Exception();
+                    }
+
+                    /**
+                     * @template T of int
+                     * @param T $x
+                     * @return T
+                     */
+                    function notFloat($x) {
+                        if (!is_float($x)) {
+                            return $x;
+                        }
+                        throw new Exception();
+                    }
+
+                    /**
+                     * @template T of array
+                     * @param T $x
+                     * @return T
+                     */
+                    function notNumeric($x) {
+                        if (!is_numeric($x)) {
+                            return $x;
+                        }
+                        throw new Exception();
+                    }
+
+                    /**
+                     * @template T of array
+                     * @param T $x
+                     * @return T
+                     */
+                    function notScalar($x) {
+                        if (!is_scalar($x)) {
+                            return $x;
+                        }
+                        throw new Exception();
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['RedundantConditionGivenDocblockType'],
+            ],
+            'negatedTypeCheckOnAUnionWithATemplateKeepsTheTemplate' => [
+                'code' => '<?php
+                    /**
+                     * @template T of int
+                     * @param T|array<T> $x
+                     * @return T
+                     */
+                    function f($x) {
+                        if (!is_array($x)) {
+                            return $x;
+                        }
+                        throw new Exception();
+                    }',
+            ],
             'notNullAfterAnIssetOfAnArrayAccessOffsetOrAMagicPropertyIsNotRedundant' => [
                 'code' => '<?php
                     /** @implements ArrayAccess<string, mixed> */
@@ -398,6 +632,7 @@ final class RedundantConditionTest extends TestCase
                 'assertions' => [],
                 'ignored_issues' => [
                     'RiskyTruthyFalsyComparison',
+                    'DeprecatedSyntax',
                 ],
             ],
             'noRedundantConditionAfterAssignment' => [
@@ -1716,6 +1951,55 @@ final class RedundantConditionTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'notIdenticalToTrueOfATemplateBoundedByInt' => [
+                'code' => '<?php
+                    /**
+                     * @template U of int
+                     * @param U $u
+                     */
+                    function notTrue($u): int {
+                        if ($u !== true) {
+                            return 1;
+                        }
+
+                        return 2;
+                    }',
+                'error_message' => 'RedundantConditionGivenDocblockType',
+            ],
+            'ternaryReportsTheNegationOfItsOwnCondition' => [
+                'code' => '<?php
+                    function f(int $i): int {
+                        return $i !== 1 ? 1 : ($i === 1 ? 2 : 3);
+                    }',
+                'error_message' => 'TypeDoesNotContainType - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:63 - Type 1 for $i is always =int(1), so its negation can never be true',
+                'error_levels' => ['RedundantCondition'],
+            ],
+            'redundantNegatedAssertionOnATemplateIsReportedAsRedundant' => [
+                'code' => '<?php
+                    /**
+                     * @template T of int
+                     * @param T $x
+                     */
+                    function f($x): void {
+                        if (!is_bool($x)) {
+                            echo $x;
+                        }
+                    }',
+                'error_message' => 'RedundantConditionGivenDocblockType - src' . DIRECTORY_SEPARATOR
+                    . 'somefile.php:7:30 - Docblock-defined type T:fn-f as int for $x is never bool',
+            ],
+            'negatedIsResourceOnTemplateOfStringIsRedundant' => [
+                'code' => '<?php
+                    /**
+                     * @template T of string
+                     * @param T $x
+                     */
+                    function f($x): void {
+                        if (!is_resource($x)) {}
+                    }',
+                'error_message' => 'RedundantConditionGivenDocblockType - src' . DIRECTORY_SEPARATOR
+                    . 'somefile.php:7:30 - Docblock-defined type T:fn-f as string for $x is never resource',
+            ],
             'secondFalsyTwiceWithOffsetAdded' => [
                 'code' => '<?php
                     /**
@@ -2561,19 +2845,25 @@ final class RedundantConditionTest extends TestCase
                     }',
                 'error_message' => 'RedundantCondition',
             ],
-            'assertionOfAnInterfaceAlreadyImplied' => [
+            'assertionOfAFinalClassAlreadyImplied' => [
                 'code' => '<?php
                     interface Comparable {
                         /** @psalm-assert-if-true static $object */
                         public function equals(Comparable $object): bool;
                     }
 
-                    function f(Comparable $left, Comparable $right): void {
+                    final class Money implements Comparable {
+                        public function equals(Comparable $object): bool {
+                            return $object instanceof self;
+                        }
+                    }
+
+                    function f(Money $left, Money $right): void {
                         if ($left->equals($right)) {
                             echo "yes";
                         }
                     }',
-                'error_message' => 'RedundantCondition - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:29 - Type Comparable for $right is always Comparable',
+                'error_message' => 'RedundantCondition - src' . DIRECTORY_SEPARATOR . 'somefile.php:14:29 - Type Money for $right is always Money',
             ],
             'assignedArrayOffsetCheckedTwice' => [
                 'code' => '<?php

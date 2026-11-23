@@ -46,19 +46,6 @@ function show(QueryInput $input): void {
 }
 ```
 
-All that a PSR-7 message holds is a source: the methods of `Psr\Http\Message\ServerRequestInterface`,
-`ResponseInterface`, `UriInterface`, `StreamInterface` and `UploadedFileInterface`, and of the classes implementing them.
-Server params are only sources where the client sends them, as with `$_SERVER`:
-
-```php
-<?php
-function handle(Psr\Http\Message\ServerRequestInterface $request): void {
-    echo (string) $request->getUri()->getQuery(); // TaintedHtml
-    echo (string) ($request->getServerParams()["HTTP_REFERER"] ?? ""); // TaintedHtml
-    echo (string) ($request->getServerParams()["DOCUMENT_ROOT"] ?? ""); // no issue
-}
-```
-
 ## Custom taints declared in the configuration
 
 Custom taints can be declared in `psalm.xml`, so that the annotations can name them without a plugin registering

@@ -3,7 +3,7 @@
 Emitted when the config flag `ensureOverrideAttribute` is set to `true` and a method on a child class or interface overrides a method on a parent, but no `Override` attribute is present.
 
 ```php
-<?php
+<?php // ensureOverrideAttribute="true"
 
 class A {
     function receive(): void

@@ -57,6 +57,10 @@ return [
     ],
     'exclude-namespaces' => [
         'Psalm',
+        // PHP's own since 8.6 (Io\IoException, Io\Poll\*, used by revolt/event-loop's IoPollDriver): php-scoper only
+        // leaves alone the internal symbols it knows, and the phar is built on an older PHP. A regex: a plain name
+        // excludes every namespace containing it (str_contains), 'Io' would exclude Amp\Serialization too
+        '/^Io(\\\\|$)/i',
     ],
     'exclude-functions' => [
         '/array_/',

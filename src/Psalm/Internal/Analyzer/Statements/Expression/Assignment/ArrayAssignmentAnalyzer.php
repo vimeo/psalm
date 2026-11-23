@@ -24,6 +24,7 @@ use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\Codebase\TaintStore;
 use Psalm\Internal\Codebase\VariableUseGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
+use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Issue\ImpurePropertyAssignment;
@@ -40,6 +41,7 @@ use Psalm\Type\Atomic\TLiteralClassString;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TMixed;
+use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNever;
 use Psalm\Type\Atomic\TNonEmptyArray;
 use Psalm\Type\Atomic\TNull;
@@ -813,6 +815,41 @@ final class ArrayAssignmentAnalyzer
     }
 
     /**
+     * The shape with an item for a key it lists none of, which is one its rest type has: the items it has stay, and a
+     * list stays one when the key is the next one
+     *
+     * @psalm-pure
+     */
+    private static function writeKeyOfTheRestOfAShape(
+        TKeyedArray $type,
+        TLiteralInt|TLiteralString $key_value,
+        Union $value_type,
+    ): TKeyedArray {
+        $properties = $type->properties;
+        $properties[$key_value->value] = $value_type->setPossiblyUndefined(false);
+
+        $class_strings = $type->class_strings ?? [];
+
+        if ($key_value instanceof TLiteralClassString) {
+            $class_strings[$key_value->value] = true;
+        }
+
+        $is_list = $type->is_list
+            && $key_value instanceof TLiteralInt
+            && $key_value->value === count($type->properties);
+
+        $written = TKeyedArray::make(
+            $properties,
+            $class_strings ?: null,
+            $type->fallback_params,
+            $is_list,
+            $type->from_docblock,
+        );
+
+        return $written instanceof TKeyedArray ? $written : $type;
+    }
+
+    /**
      * @param non-empty-list<TLiteralInt|TLiteralString> $key_values
      */
     private static function updateTypeWithKeyValues(
@@ -845,7 +882,22 @@ final class ArrayAssignmentAnalyzer
                         $properties[$key_value->value] = $current_type;
                     }
                 }
-                $type = $type->setProperties($properties);
+
+                // a key the shape doesn't list is one of its rest keys: it is written there, the items stay
+                if (!$has_matching_objectlike_property
+                    && $type->fallback_params !== null
+                    && count($key_values) === 1
+                ) {
+                    $type = self::writeKeyOfTheRestOfAShape($type, $key_values[0], $current_type);
+                    $has_matching_objectlike_property = true;
+                } else {
+                    $type = $type->setProperties($properties);
+                }
+            } elseif ($type instanceof TClassStringMap
+                && self::isItemOfClassStringMap($codebase, $type, $key_values, $current_type)
+            ) {
+                // `$map[Foo::class] = new Foo()` is what the class-string-map holds
+                $has_matching_objectlike_property = true;
             } elseif ($type instanceof TString) {
                 foreach ($key_values as $key_value) {
                     if ($key_value instanceof TLiteralInt) {
@@ -906,6 +958,39 @@ final class ArrayAssignmentAnalyzer
         }
 
         return $child_stmt_type;
+    }
+
+    /**
+     * Whether the value is an item the class-string-map holds under each of the literal class-strings
+     *
+     * @param non-empty-list<TLiteralInt|TLiteralString> $key_values
+     */
+    private static function isItemOfClassStringMap(
+        Codebase $codebase,
+        TClassStringMap $map,
+        array $key_values,
+        Union $value_type,
+    ): bool {
+        foreach ($key_values as $key_value) {
+            if (!$key_value instanceof TLiteralClassString) {
+                return false;
+            }
+
+            $item_type = TemplateInferredTypeReplacer::replace(
+                $map->value_param,
+                new TemplateResult(
+                    [],
+                    [$map->param_name => ['class-string-map' => new Union([new TNamedObject($key_value->value)])]],
+                ),
+                $codebase,
+            );
+
+            if (!UnionTypeComparator::isContainedBy($codebase, $value_type, $item_type)) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /**
@@ -1190,6 +1275,17 @@ final class ArrayAssignmentAnalyzer
                     foreach ($child_stmt_type->parent_nodes as $child_parent_node) {
                         $taint_flow_graph->addPath($child_parent_node, $global_node, '=', 0, $removed_taints);
                     }
+                }
+            }
+
+            if ($expr->var instanceof Variable
+                && $expr->var->name === '_SESSION'
+                && ($taint_flow_graph = $statements_analyzer->getTaintFlowGraphWithSuppressed())
+            ) {
+                $session_node = GlobalAnalyzer::getSessionNode($taint_flow_graph);
+
+                foreach ($stmt_type->parent_nodes as $parent_node) {
+                    $taint_flow_graph->addPath($parent_node, $session_node, '=');
                 }
             }
 
@@ -1713,6 +1809,18 @@ final class ArrayAssignmentAnalyzer
             }
 
             $is_last = $i === count($child_stmts) - 1;
+
+            // an item that is an object (an ArrayAccess) is written through its offsetSet(), which reads the array
+            // holding it
+            if ($i > 0 && $array_type->hasObjectType() && $statements_analyzer->data_flow_graph) {
+                foreach ($root_type->parent_nodes as $parent_node) {
+                    $statements_analyzer->data_flow_graph->addPath(
+                        $parent_node,
+                        DataFlowNode::getForVariableUse(),
+                        'use-inside-call',
+                    );
+                }
+            }
 
             $child_stmt_dim_type_or_int = $child_stmt_dim_type ?? Type::getInt();
             $child_stmt_type = ArrayFetchAnalyzer::getArrayAccessTypeGivenOffset(
