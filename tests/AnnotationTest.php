@@ -1767,7 +1767,7 @@ final class AnnotationTest extends TestCase
                 'code' => '<?php
                     $_arr = ["foo\\bar\nbaz" => "literal"];',
                 'assertions' => [
-                    '$_arr' => 'array{\'foo\\\\bar\nbaz\': string}',
+                    '$_arr' => 'array{"foo\\\\bar\nbaz": string}',
                 ],
             ],
             'doubleSpaceBeforeAt' => [
