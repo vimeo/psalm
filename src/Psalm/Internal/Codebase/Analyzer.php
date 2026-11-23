@@ -1175,6 +1175,17 @@ final class Analyzer
     }
 
     /**
+     * How many files the run reports on, the unchanged ones of a diff run included
+     *
+     * @internal
+     * @psalm-mutation-free
+     */
+    public function getFileCountWithAnalysisResults(): int
+    {
+        return count($this->files_with_analysis_results);
+    }
+
+    /**
      * @psalm-external-mutation-free
      */
     public function markFileChanged(string $file_path): void

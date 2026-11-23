@@ -101,9 +101,10 @@ final class Shepherd implements AfterAnalysisInterface
      *     git: array,
      *     issues: array,
      *     baselined: object,
+     *     baseline_entries: int,
      *     info: object,
      *     fixable: object,
-     *     run: array{wall_seconds: float, peak_memory_bytes: int, threads: int},
+     *     run: array{wall_seconds: float, peak_memory_bytes: int, threads: int, full: bool, files: int},
      *     coverage: list<int>,
      *     level: int<1, 8>,
      *     versions: array<string, string>
@@ -155,8 +156,9 @@ final class Shepherd implements AfterAnalysisInterface
             'build' => $build_info,
             'git' => $source_control_data,
             'issues' => $normalized_data,
-            // objects even when empty, which PHP would encode as lists
+            // the counts by type are objects even when empty, which PHP would encode as lists
             'baselined' => (object) IssueBuffer::getBaselinedIssueCounts(),
+            'baseline_entries' => IssueBuffer::getBaselineEntryCount(),
             'info' => (object) IssueBuffer::getInfoIssueCounts(),
             'fixable' => (object) $fixable_issue_counts,
             'run' => [
@@ -164,6 +166,8 @@ final class Shepherd implements AfterAnalysisInterface
                 // of this process only, not of its forked workers
                 'peak_memory_bytes' => memory_get_peak_usage(),
                 'threads' => ProjectAnalyzer::getInstance()->threads,
+                'full' => IssueBuffer::getFinishIsFull(),
+                'files' => $codebase->analyzer->getFileCountWithAnalysisResults(),
             ],
             'coverage' => $codebase->analyzer->getTotalTypeCoverage($codebase),
             'level' => Config::getInstance()->level,

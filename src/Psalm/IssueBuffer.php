@@ -166,6 +166,10 @@ final class IssueBuffer
 
     private static float $finish_start_time = 0.0;
 
+    private static bool $finish_is_full = false;
+
+    private static int $baseline_entry_count = 0;
+
     /**
      * This will add an issue to be emitted if it's not suppressed and return if it has been added
      *
@@ -655,6 +659,28 @@ final class IssueBuffer
     }
 
     /**
+     * Whether the last finish() was for the whole project, not for given paths
+     *
+     * @internal
+     * @psalm-capabilities read-globals
+     */
+    public static function getFinishIsFull(): bool
+    {
+        return self::$finish_is_full;
+    }
+
+    /**
+     * How many entries the baseline applied in the last finish() holds, before it covered any issue
+     *
+     * @internal
+     * @psalm-capabilities read-globals
+     */
+    public static function getBaselineEntryCount(): int
+    {
+        return self::$baseline_entry_count;
+    }
+
+    /**
      * @return array<string, int>
      * @psalm-external-mutation-free
      */
@@ -813,6 +839,8 @@ final class IssueBuffer
         self::$baselined_issue_counts = [];
         self::$info_issue_counts = [];
         self::$finish_start_time = $start_time;
+        self::$finish_is_full = $is_full;
+        self::$baseline_entry_count = ErrorBaseline::countTotalIssues($issue_baseline);
 
         if (self::$issues_data) {
             if (in_array(

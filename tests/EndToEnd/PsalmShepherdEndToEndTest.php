@@ -191,6 +191,9 @@ final class PsalmShepherdEndToEndTest extends PsalmEndToEndTestCase
         $this->assertSame('psalm', $report['build']['CI_REPO_OWNER']);
         $this->assertSame('master', $report['build']['CI_BRANCH']);
         $this->assertArrayNotHasKey('CI_PR_NUMBER', $report['build']);
+        // a run on the path of Clean.php only
+        $this->assertFalse($report['run']['full']);
+        $this->assertSame(1, $report['run']['files']);
     }
 
     public function testPsalmSendsAnEmptyBaselinedObjectWhenNoIssueIsBaselined(): void
@@ -200,11 +203,13 @@ final class PsalmShepherdEndToEndTest extends PsalmEndToEndTestCase
         $report = $this->runPsalmAndReadTheRawReport(['--no-cache'], self::githubActions());
 
         $this->assertStringContainsString('"baselined":{}', $report);
+        $this->assertStringContainsString('"baseline_entries":0', $report);
 
         $this->runPsalm(['--set-baseline'], self::$tmpDir, true);
         $report = $this->runPsalmAndReadTheRawReport(['--no-cache', '--ignore-baseline'], self::githubActions());
 
         $this->assertStringContainsString('"baselined":{}', $report);
+        $this->assertStringContainsString('"baseline_entries":0', $report);
         $this->assertSame(
             ['src/FileWithErrors.php InvalidReturnStatement', 'src/FileWithErrors.php InvalidReturnType'],
             self::sentIssues($report),
@@ -215,6 +220,7 @@ final class PsalmShepherdEndToEndTest extends PsalmEndToEndTestCase
         $report = $this->runPsalmAndReadTheRawReport(['--no-cache'], self::githubActions());
 
         $this->assertStringContainsString('"baselined":{}', $report);
+        $this->assertStringContainsString('"baseline_entries":2', $report);
         $this->assertStringContainsString('"info":{}', $report);
         $this->assertSame(
             [
@@ -238,7 +244,9 @@ final class PsalmShepherdEndToEndTest extends PsalmEndToEndTestCase
 
         $report = $this->runPsalmAndReadTheRawReport(['--no-cache'], self::githubActions());
 
+        // 7 entries: the 6 issues the baseline covers, and the one of c() that is now unused
         $this->assertStringContainsString('"baselined":{"InvalidReturnStatement":3,"InvalidReturnType":3}', $report);
+        $this->assertStringContainsString('"baseline_entries":7', $report);
         $this->assertSame(
             ['src/B.php UnusedBaselineEntry', 'src/C.php InvalidReturnStatement', 'src/C.php InvalidReturnType'],
             self::sentIssues($report),
@@ -301,8 +309,11 @@ final class PsalmShepherdEndToEndTest extends PsalmEndToEndTestCase
             $this->assertSame($without_cache['fixable'], $report['fixable'], implode(' ', $args));
             $this->assertSame($without_cache['issues'], $report['issues'], implode(' ', $args));
 
-            /** @var array{wall_seconds: mixed, peak_memory_bytes: mixed, threads: mixed} $run */
+            /** @var array{wall_seconds: mixed, peak_memory_bytes: mixed, threads: mixed, full: mixed, files: mixed} $run */
             $run = $report['run'];
+            // Clean.php, FileWithErrors.php, A.php, B.php and C.php
+            $this->assertSame(5, $run['files'], implode(' ', $args));
+            $this->assertTrue($run['full'], implode(' ', $args));
             $this->assertSame($args[0] === '--threads=2' && $can_fork ? 2 : 1, $run['threads'], implode(' ', $args));
             $this->assertIsFloat($run['wall_seconds']);
             $this->assertGreaterThanOrEqual(0, $run['wall_seconds']);
@@ -383,13 +394,17 @@ final class PsalmShepherdEndToEndTest extends PsalmEndToEndTestCase
      * Runs Psalm with --shepherd on a local server that accepts one report
      *
      * @param array<string, string> $env
-     * @return array{build: array<string, string>, git: array{head: array{id: string}}}
+     * @return array{
+     *     build: array<string, string>,
+     *     git: array{head: array{id: string}},
+     *     run: array{full: bool, files: int},
+     * }
      */
     private function runPsalmAndReadTheReport(array $env): array
     {
         $this->initProject();
 
-        /** @var array{build: array<string, string>, git: array{head: array{id: string}}} */
+        /** @var array{build: array<string, string>, git: array{head: array{id: string}}, run: array{full: bool, files: int}} */
         return self::decode(
             $this->runPsalmAndReadTheRawReport(['--no-cache', self::$tmpDir . '/src/Clean.php'], $env),
         );
