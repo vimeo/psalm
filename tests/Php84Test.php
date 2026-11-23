@@ -653,6 +653,24 @@ final class Php84Test extends TestCase
                 'error_levels' => [],
                 'php_version' => '8.4',
             ],
+            'readingANativePropertyNewerThanTheAnalysedVersion' => [
+                'code' => '<?php
+                    function f(Dom\Element $e): string {
+                        return $e->outerHTML;
+                    }',
+                'error_message' => 'UndefinedPropertyFetch - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:32 - Dom\Element::$outerHTML is not defined for the analysed PHP version 8.4',
+                'error_levels' => [],
+                'php_version' => '8.4',
+            ],
+            'writingANativePropertyNewerThanTheAnalysedVersion' => [
+                'code' => '<?php
+                    function f(Dom\Element $e): void {
+                        $e->outerHTML = "<p></p>";
+                    }',
+                'error_message' => 'UndefinedPropertyAssignment - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:25 - Dom\Element::$outerHTML is not defined for the analysed PHP version 8.4',
+                'error_levels' => [],
+                'php_version' => '8.4',
+            ],
         ];
     }
 }

@@ -20,7 +20,6 @@ use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\Statements\GlobalAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
-use Psalm\Internal\Codebase\AssertionsFromInheritanceResolver;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Internal\MethodIdentifier;
@@ -40,9 +39,7 @@ use Psalm\Issue\UndefinedThisPropertyAssignment;
 use Psalm\Issue\UndefinedThisPropertyFetch;
 use Psalm\IssueBuffer;
 use Psalm\Node\Expr\VirtualFuncCall;
-use Psalm\Plugin\EventHandler\Event\AfterMethodCallAnalysisEvent;
 use Psalm\Storage\Capabilities;
-use Psalm\Storage\Possibilities;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TClosure;
@@ -51,14 +48,10 @@ use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
-use function array_filter;
-use function array_map;
 use function array_slice;
 use function count;
 use function explode;
 use function in_array;
-use function is_string;
-use function str_starts_with;
 use function strtolower;
 
 /**
@@ -164,17 +157,6 @@ final class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
             );
         }
 
-        if ($context->collect_initializations && $context->calling_method_id) {
-            $initialization_context = clone $context;
-            [$calling_method_class] = explode('::', $context->calling_method_id);
-            $initialization_context->calling_method_id = $calling_method_class . '::__construct';
-            $codebase->addReferenceToFunctionLike(
-                strtolower((string) $method_id),
-                new CodeLocation($statements_analyzer->getSource(), $stmt),
-                $initialization_context,
-            );
-        }
-
         if ($stmt->var instanceof PhpParser\Node\Expr\Variable
             && $context->collect_initializations
             && $stmt->var->name === 'this'
@@ -271,17 +253,14 @@ final class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
                 ->final;
         }
 
-        if ($codebase->store_node_types
-            && !$stmt->isFirstClassCallable()
-            && !$context->collect_initializations
-        ) {
-            ArgumentMapPopulator::recordArgumentPositions(
-                $statements_analyzer,
-                $stmt,
-                $codebase,
-                (string) $method_id,
-            );
-        }
+        // what is read from a `*` receiver is as unknown as the receiver, and what is written to it is never
+        ClassTemplateParamCollector::markStarBindings(
+            $template_result,
+            $codebase,
+            $class_storage,
+            $lhs_type_part,
+            $class_template_params,
+        );
 
         $is_first_class_callable = $stmt->isFirstClassCallable();
 
@@ -486,13 +465,6 @@ final class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
                 }
             }
 
-            $assertionsResolver = new AssertionsFromInheritanceResolver($codebase);
-            $assertions = $assertionsResolver->resolve($method_storage, $class_storage);
-
-            // `self` in the assertions of a method of a trait is the class using the trait, where it appears
-            $trait_self_class = $codebase->methods->getAppearingMethodId($method_id)?->fq_class_name
-                ?? $class_storage->name;
-
             // `static` in the called method: the caller's on `$this` or on an object of type `static`, the class of the
             // object when it has no subclass
             $assertion_static_class = $lhs_var_id === '$this'
@@ -500,116 +472,35 @@ final class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
                 ? 'static'
                 : ($class_storage->final || $class_storage->is_enum ? $fq_class_name : null);
 
-            if ($assertions) {
-                self::applyAssertionsToContext(
-                    $stmt_name,
-                    ExpressionIdentifier::getExtendedVarId($stmt->var, null, $statements_analyzer),
-                    self::resolveStaticPropertyAssertionClasses(
-                        self::getAssertionsOnArgs(
-                            $assertions,
-                            $method_storage,
-                            $args,
-                            $statements_analyzer->node_data,
-                            $context->strict_types,
-                        ),
-                        $codebase,
-                        $context,
-                        $trait_self_class,
-                        $assertion_static_class,
-                        $fq_class_name,
-                    ),
-                    $args,
-                    $template_result,
-                    $context,
-                    $statements_analyzer,
-                    $fq_class_name,
-                    $trait_self_class,
-                );
-            }
+            // what `static` is in the types of the assertions: the type of the object, late static when the object may
+            // be of a subclass
+            $assertion_static_type = $static_type;
 
-            $if_true_assertions = $assertionsResolver->resolveIfTrue($method_storage, $class_storage);
+            if ($static_type instanceof TNamedObject) {
+                $static_type_storage = $codebase->classlike_storage_provider->get($static_type->value);
 
-            if ($if_true_assertions) {
-                $possibilities = array_map(
-                    static fn(Possibilities $assertion): Possibilities => self::resolveTraitSelf(
-                        $assertion->getUntemplatedCopy(
-                            $template_result,
-                            $lhs_var_id,
-                            $codebase,
-                            $static_type,
-                        ),
-                        $trait_self_class,
-                    ),
-                    self::resolveStaticPropertyAssertionClasses(
-                        self::getAssertionsOnArgs(
-                            $if_true_assertions,
-                            $method_storage,
-                            $args,
-                            $statements_analyzer->node_data,
-                            $context->strict_types,
-                        ),
-                        $codebase,
-                        $context,
-                        $trait_self_class,
-                        $assertion_static_class,
-                        $fq_class_name,
-                    ),
-                );
-                if ($lhs_var_id === null) {
-                    $possibilities = array_filter(
-                        $possibilities,
-                        static fn(Possibilities $assertion): bool => !(is_string($assertion->var_id)
-                            && str_starts_with($assertion->var_id, '$this->')
-                        ),
-                    );
+                if (!$static_type_storage->final && !$static_type_storage->is_enum) {
+                    $assertion_static_type = $static_type->setIsStatic(true);
                 }
-                $statements_analyzer->node_data->setIfTrueAssertions(
-                    $stmt,
-                    $possibilities,
-                );
             }
 
-            $if_false_assertions = $assertionsResolver->resolveIfFalse($method_storage, $class_storage);
-
-            if ($if_false_assertions) {
-                $possibilities = array_map(
-                    static fn(Possibilities $assertion): Possibilities => self::resolveTraitSelf(
-                        $assertion->getUntemplatedCopy(
-                            $template_result,
-                            $lhs_var_id,
-                            $codebase,
-                            $static_type,
-                        ),
-                        $trait_self_class,
-                    ),
-                    self::resolveStaticPropertyAssertionClasses(
-                        self::getAssertionsOnArgs(
-                            $if_false_assertions,
-                            $method_storage,
-                            $args,
-                            $statements_analyzer->node_data,
-                            $context->strict_types,
-                        ),
-                        $codebase,
-                        $context,
-                        $trait_self_class,
-                        $assertion_static_class,
-                        $fq_class_name,
-                    ),
-                );
-                if ($lhs_var_id === null) {
-                    $possibilities = array_filter(
-                        $possibilities,
-                        static fn(Possibilities $assertion): bool => !(is_string($assertion->var_id)
-                            && str_starts_with($assertion->var_id, '$this->')
-                        ),
-                    );
-                }
-                $statements_analyzer->node_data->setIfFalseAssertions(
-                    $stmt,
-                    $possibilities,
-                );
-            }
+            self::applyMethodAssertions(
+                $statements_analyzer,
+                $stmt,
+                $stmt_name,
+                $args,
+                $method_id,
+                $method_storage,
+                $class_storage,
+                $template_result,
+                $context,
+                $fq_class_name,
+                $lhs_var_id,
+                ExpressionIdentifier::getExtendedVarId($stmt->var, null, $statements_analyzer),
+                $assertion_static_class,
+                $assertion_static_type,
+                $assertion_static_type ?? $fq_class_name,
+            );
         }
 
         if ($codebase->methods_to_rename) {
@@ -633,34 +524,13 @@ final class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
             }
         }
 
-        if ($config->eventDispatcher->hasAfterMethodCallAnalysisHandlers()) {
-            $file_manipulations = [];
-
-            $appearing_method_id = $codebase->methods->getAppearingMethodId($method_id);
-            $declaring_method_id = $codebase->methods->getDeclaringMethodId($method_id);
-
-            if ($appearing_method_id !== null && $declaring_method_id !== null) {
-                $event = new AfterMethodCallAnalysisEvent(
-                    $stmt,
-                    (string) $method_id,
-                    (string) $appearing_method_id,
-                    (string) $declaring_method_id,
-                    $context,
-                    $statements_analyzer,
-                    $codebase,
-                    $file_manipulations,
-                    $return_type_candidate,
-                );
-
-                $config->eventDispatcher->dispatchAfterMethodCallAnalysis($event);
-                $file_manipulations = $event->getFileReplacements();
-                $return_type_candidate = $event->getReturnTypeCandidate();
-            }
-
-            if ($file_manipulations) {
-                FileManipulationBuffer::add($statements_analyzer->getFilePath(), $file_manipulations);
-            }
-        }
+        $return_type_candidate = self::dispatchAfterMethodCallAnalysis(
+            $statements_analyzer,
+            $stmt,
+            $method_id,
+            $context,
+            $return_type_candidate,
+        );
 
         return $return_type_candidate ?? Type::getMixed();
     }

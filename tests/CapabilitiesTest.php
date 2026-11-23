@@ -37,6 +37,16 @@ final class CapabilitiesTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'decodingAWaitStatusIsPure' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function exitCode(int $status): int|false {
+                        return pcntl_wifexited($status) ? pcntl_wexitstatus($status) : false;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'aSodiumKeyPairFromASeedIsPure' => [
                 'code' => '<?php
                     /** @psalm-pure */
@@ -3472,6 +3482,45 @@ final class CapabilitiesTest extends TestCase
                 'error_message' => 'ImpureFunctionCall',
                 'error_levels' => [],
                 'php_version' => '8.4',
+            ],
+            'runningAPostgresQueryIsImpure' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function run(PgSql\\Connection $db): PgSql\\Result|false {
+                        return pg_query($db, "SELECT 1");
+                    }',
+                'error_message' => 'function call on pg_query requires io',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'escapingForPostgresIsImpure' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function quote(PgSql\\Connection $db, string $value): string {
+                        return pg_escape_literal($db, $value);
+                    }',
+                'error_message' => 'function call on pg_escape_literal requires io',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'lookingUpAUserIsImpure' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function home(string $name): array|false {
+                        return posix_getpwnam($name);
+                    }',
+                'error_message' => 'function call on posix_getpwnam requires io',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'waitingForAChildIsImpure' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function reap(int $pid): int {
+                        return pcntl_waitpid($pid, $status);
+                    }',
+                'error_message' => 'function call on pcntl_waitpid requires io',
+                'error_levels' => [],
             ],
             'runningAMysqliQueryIsImpure' => [
                 'code' => '<?php

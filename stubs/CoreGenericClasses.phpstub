@@ -30,6 +30,8 @@ interface Traversable {
  * the body costs and nothing else: its position is internal engine state, not an effect.
  */
 final class Generator implements Iterator {
+    private function __construct() {}
+
     /**
      * @psalm-pure
      * @psalm-purity-from-template TPurity
@@ -184,24 +186,24 @@ class ArrayObject implements IteratorAggregate, ArrayAccess, Serializable, Count
      * Construct a new array object
      * @link http://php.net/manual/en/arrayobject.construct.php
      *
-     * @param array<TKey, TValue>|object $input The input parameter accepts an array or an Object.
+     * @param array<TKey, TValue>|object $array The input parameter accepts an array or an Object.
      * @param int $flags Flags to control the behaviour of the ArrayObject object.
-     * @param string $iterator_class Specify the class that will be used for iteration of the ArrayObject object. ArrayIterator is the default class used.
-     * @psalm-param class-string<ArrayIterator<TKey,TValue>>|class-string<ArrayObject<TKey,TValue>> $iterator_class
-     * @return self[$input is array ? pure : write-props]<TKey, TValue>
+     * @param string $iteratorClass Specify the class that will be used for iteration of the ArrayObject object. ArrayIterator is the default class used.
+     * @psalm-param class-string<ArrayIterator<TKey,TValue>>|class-string<ArrayObject<TKey,TValue>> $iteratorClass
+     * @return self[$array is array ? pure : write-props]<TKey, TValue>
      *
      * @since 5.0.0
-     * @psalm-flow ($input) -> return
+     * @psalm-flow ($array) -> return
      *
      * @psalm-pure
      */
-    public function __construct($input = [], $flags = 0, $iterator_class = "ArrayIterator") { }
+    public function __construct($array = [], $flags = 0, $iteratorClass = "ArrayIterator") { }
 
     /**
      * Returns whether the requested index exists
      * @link http://php.net/manual/en/arrayobject.offsetexists.php
      *
-     * @param TKey $offset The index being checked.
+     * @param TKey $key The index being checked.
      * @return bool true if the requested index exists, otherwise false
      *
      * @since 5.0.0
@@ -209,13 +211,13 @@ class ArrayObject implements IteratorAggregate, ArrayAccess, Serializable, Count
      *
      * @psalm-mutation-free
      */
-    public function offsetExists($offset) { }
+    public function offsetExists($key) { }
 
     /**
      * Returns the value at the specified index
      * @link http://php.net/manual/en/arrayobject.offsetget.php
      *
-     * @param TKey $offset The index with the value.
+     * @param TKey $key The index with the value.
      * @return TValue The value at the specified index or false.
      *
      * @since 5.0.0
@@ -223,13 +225,13 @@ class ArrayObject implements IteratorAggregate, ArrayAccess, Serializable, Count
      *
      * @psalm-mutation-free
      */
-    public function offsetGet($offset) { }
+    public function offsetGet($key) { }
 
     /**
      * Sets the value at the specified index to newval
      * @link http://php.net/manual/en/arrayobject.offsetset.php
      *
-     * @param TKey $offset  The index being set.
+     * @param TKey $key  The index being set.
      * @param TValue $value The new value for the index.
      * @return void
      *
@@ -239,13 +241,13 @@ class ArrayObject implements IteratorAggregate, ArrayAccess, Serializable, Count
      * @psalm-capabilities read-props|write-this-props
      * @psalm-purity-from-template TStorage
      */
-    public function offsetSet($offset, $value) { }
+    public function offsetSet($key, $value) { }
 
     /**
      * Unsets the value at the specified index
      * @link http://php.net/manual/en/arrayobject.offsetunset.php
      *
-     * @param TKey $offset The index being unset.
+     * @param TKey $key The index being unset.
      * @return void
      *
      * @since 5.0.0
@@ -254,7 +256,7 @@ class ArrayObject implements IteratorAggregate, ArrayAccess, Serializable, Count
      * @psalm-capabilities read-props|write-this-props
      * @psalm-purity-from-template TStorage
      */
-    public function offsetUnset($offset) { }
+    public function offsetUnset($key) { }
 
     /**
      * Appends the value
@@ -388,7 +390,7 @@ class ArrayObject implements IteratorAggregate, ArrayAccess, Serializable, Count
      * second.
      *
      * @psalm-purity-template P
-     * @param callable[P](TValue, TValue):int $cmp_function
+     * @param callable[P](TValue, TValue):int $callback
      * @return true
      *
      * @psalm-capabilities read-props|write-this-props
@@ -396,7 +398,7 @@ class ArrayObject implements IteratorAggregate, ArrayAccess, Serializable, Count
      *
      * @since 5.2.0
      */
-    public function uasort($cmp_function) { }
+    public function uasort($callback) { }
 
     /**
      * Sort the entries by keys using a user-defined comparison function
@@ -410,7 +412,7 @@ class ArrayObject implements IteratorAggregate, ArrayAccess, Serializable, Count
      * second.
      *
      * @psalm-purity-template P
-     * @param callable[P](TKey, TKey):int $cmp_function The callable comparison function.
+     * @param callable[P](TKey, TKey):int $callback The callable comparison function.
      * @return true
      *
      * @psalm-capabilities read-props|write-this-props
@@ -418,7 +420,7 @@ class ArrayObject implements IteratorAggregate, ArrayAccess, Serializable, Count
      *
      * @since 5.2.0
      */
-    public function uksort($cmp_function) { }
+    public function uksort($callback) { }
 
     /**
      * Sort entries using a "natural order" algorithm
@@ -450,14 +452,14 @@ class ArrayObject implements IteratorAggregate, ArrayAccess, Serializable, Count
      * Unserialize an ArrayObject
      * @link http://php.net/manual/en/arrayobject.unserialize.php
      *
-     * @param string $serialized  The serialized ArrayObject
+     * @param string $data  The serialized ArrayObject
      * @return void The unserialized ArrayObject
      *
      * @since 5.3.0
      *
      * @psalm-impure
      */
-    public function unserialize($serialized) { }
+    public function unserialize($data) { }
 
     /**
      * Serialize an ArrayObject
@@ -490,28 +492,28 @@ class ArrayObject implements IteratorAggregate, ArrayAccess, Serializable, Count
      * It costs write-props whatever it is given, as it may be given an object, which the mutators
      * then write whatever TStorage says.
      *
-     * @param mixed $input The new array or object to exchange with the current array.
+     * @param mixed $array The new array or object to exchange with the current array.
      * @return array the old array.
      *
      * @since 5.1.0
      *
      * @psalm-capabilities read-props|write-this-props|write-props
      */
-    public function exchangeArray($input) { }
+    public function exchangeArray($array) { }
 
     /**
      * Sets the iterator classname for the ArrayObject.
      * @link http://php.net/manual/en/arrayobject.setiteratorclass.php
      *
-     * @param string $iterator_class The classname of the array iterator to use when iterating over this object.
-     * @psalm-param class-string<ArrayIterator<TKey,TValue>>|class-string<ArrayObject<TKey,TValue>> $iterator_class
+     * @param string $iteratorClass The classname of the array iterator to use when iterating over this object.
+     * @psalm-param class-string<ArrayIterator<TKey,TValue>>|class-string<ArrayObject<TKey,TValue>> $iteratorClass
      * @return void
      *
      * @since 5.1.0
      *
      * @psalm-capabilities read-props|write-this-props
      */
-    public function setIteratorClass($iterator_class) { }
+    public function setIteratorClass($iteratorClass) { }
 
     /**
      * Gets the iterator classname for the ArrayObject.
@@ -566,8 +568,7 @@ interface Serializable {
  */
 final class WeakReference
 {
-    // always fail
-    public function __construct() {}
+    private function __construct() {}
 
     /**
      * @template TIn as object

@@ -116,7 +116,7 @@ interface SeekableIterator extends Iterator {
      * Seeks to a position
      * @link https://php.net/manual/en/seekableiterator.seek.php
      *
-     * @param int $position The position to seek to.
+     * @param int $offset The position to seek to.
      * @return void
      *
      * @since 5.1.0
@@ -124,7 +124,7 @@ interface SeekableIterator extends Iterator {
      * @psalm-capabilities read-props
      * @psalm-purity-from-template TPurity
      */
-    public function seek($position);
+    public function seek($offset);
 }
 
 /**
@@ -305,40 +305,44 @@ class ArrayIterator implements SeekableIterator, ArrayAccess, Serializable, Coun
     public function __construct($array = array(), $flags = 0) { }
 
     /**
-     * @param TKey $offset The offset being checked.
+     * @param TKey $key The offset being checked.
      * @return bool true if the offset exists, otherwise false
+     * @no-named-arguments because of conflict with ArrayAccess
      *
      * @psalm-mutation-free
      */
-    public function offsetExists($offset) { }
+    public function offsetExists($key) { }
 
     /**
-     * @param TKey $offset The offset to get the value from.
+     * @param TKey $key The offset to get the value from.
      * @return TValue|null The value at offset index, null when accessing invalid indexes
      * @psalm-ignore-nullable-return
+     * @no-named-arguments because of conflict with ArrayAccess
      *
      * @psalm-mutation-free
      */
-    public function offsetGet($offset) { }
+    public function offsetGet($key) { }
 
     /**
-     * @param TKey $offset The index to set for.
+     * @param TKey $key The index to set for.
      * @param TValue $value The new value to store at the index.
      * @return void
+     * @no-named-arguments because of conflict with ArrayAccess
      *
      * @psalm-capabilities read-props|write-this-props
      * @psalm-purity-from-template TStorage
      */
-    public function offsetSet($offset, $value) { }
+    public function offsetSet($key, $value) { }
 
     /**
-     * @param TKey $offset The offset to unset.
+     * @param TKey $key The offset to unset.
      * @return void
+     * @no-named-arguments because of conflict with ArrayAccess
      *
      * @psalm-capabilities read-props|write-this-props
      * @psalm-purity-from-template TStorage
      */
-    public function offsetUnset($offset) { }
+    public function offsetUnset($key) { }
 
     /**
      * @param TValue $value The value to append.
@@ -398,23 +402,23 @@ class ArrayIterator implements SeekableIterator, ArrayAccess, Serializable, Coun
 
     /**
      * @psalm-purity-template P
-     * @param callable[P](TValue,TValue):int $cmp_function The compare function used for the sort.
+     * @param callable[P](TValue,TValue):int $callback The compare function used for the sort.
      * @return true
      *
      * @psalm-capabilities read-props|write-this-props
      * @psalm-purity-from-template P, TStorage
      */
-    public function uasort($cmp_function) { }
+    public function uasort($callback) { }
 
     /**
      * @psalm-purity-template P
-     * @param callable[P](TKey,TKey):int $cmp_function The compare function used for the sort.
+     * @param callable[P](TKey,TKey):int $callback The compare function used for the sort.
      * @return true
      *
      * @psalm-capabilities read-props|write-this-props
      * @psalm-purity-from-template P, TStorage
      */
-    public function uksort($cmp_function) { }
+    public function uksort($callback) { }
 
     /**
      * @return true
@@ -433,12 +437,12 @@ class ArrayIterator implements SeekableIterator, ArrayAccess, Serializable, Coun
     public function natcasesort() { }
 
     /**
-     * @param string $serialized The serialized ArrayIterator object to be unserialized.
+     * @param string $data The serialized ArrayIterator object to be unserialized.
      * @return void
      *
      * @psalm-impure
      */
-    public function unserialize($serialized) { }
+    public function unserialize($data) { }
 
     /**
      * @return string The serialized ArrayIterator
@@ -485,12 +489,12 @@ class ArrayIterator implements SeekableIterator, ArrayAccess, Serializable, Coun
     public function valid() { }
 
     /**
-     * @param int $position The position to seek to.
+     * @param int $offset The position to seek to.
      * @return void
      *
      * @psalm-capabilities read-props|write-this-props
      */
-    public function seek($position) { }
+    public function seek($offset) { }
 
     /**
      * @return array<array-key, mixed>

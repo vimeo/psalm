@@ -23,6 +23,7 @@ use Psalm\Exception\UnresolvableConstantException;
 use Psalm\FileManipulation;
 use Psalm\Internal\Analyzer\FunctionLike\ReturnTypeAnalyzer;
 use Psalm\Internal\Analyzer\FunctionLike\ReturnTypeCollector;
+use Psalm\Internal\Analyzer\Statements\DeclareAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Assignment\InstancePropertyAssignmentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\CallPurityResolver;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\FunctionCallReturnTypeFetcher;
@@ -314,6 +315,9 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
         array &$byref_vars = [],
     ): ?bool {
         $storage = $this->storage;
+
+        // the code runs under the strict_types of its own file, which for a trait is not the file of the class
+        $context->strict_types = DeclareAnalyzer::declaresStrictTypes($this->codebase, $this->getFilePath());
 
         $function_stmts = $this->function->getStmts() ?: [];
 
@@ -2077,7 +2081,10 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                         $this->getParentFQCLN(),
                         true,
                         $param_type->hasConditional(),
-                        $this_object instanceof TNamedObject && !$this_object->is_static,
+                        ($this_object instanceof TNamedObject && !$this_object->is_static)
+                            || ($context->self !== null
+                                && $codebase->classlike_storage_provider->has($context->self)
+                                && $codebase->classlike_storage_provider->get($context->self)->final),
                         true,
                         false,
                         true,
@@ -3388,6 +3395,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 callable_id: $this->getClosureId(),
                 byref_use_scopes: ClosureAnalyzer::getByRefUseScopes($this->source, $byref_uses),
             );
+            $this->closure_type = $closure_type;
 
             $type_provider->setType(
                 $this->function,
