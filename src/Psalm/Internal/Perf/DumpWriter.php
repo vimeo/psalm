@@ -284,7 +284,8 @@ final class DumpWriter
         }
 
         if ($path === null) {
-            return $out . "\n" . 'Run with --debug-performance=PATH to write all of it to a JSON file, and open that in '
+            return $out . "\n"
+                . 'Run with --debug-performance=PATH to write all of it to a JSON file, and open that in '
                 . self::VIEWER . "\n\n";
         }
 
