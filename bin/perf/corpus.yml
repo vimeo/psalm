@@ -29,6 +29,7 @@ jobs:
   phpunit-parser-tempest: [phpunit, php-parser, tempest]
   small: [amphp-amp, webmozarts-assert, guzzle-promises, monolog]
   drupal: [drupal]
+  wordpress: [wordpress]
 
 projects:
   laravel:
@@ -71,6 +72,18 @@ projects:
         - core/modules/*/src/Tests
         - core/lib/Drupal/Component/*/Tests
       extensions: [.php, .module, .inc, .install, .theme, .profile, .engine]
+
+  wordpress:
+    repo: https://github.com/WordPress/wordpress-develop
+    ref: "97382397b2bd7c85aef6d4cd1c10bafd397957fc"
+    tag: 6.8.3
+    timeout: 400
+    # Its require-dev holds only coding-standard tools; Psalm needs no more than an autoloader.
+    composer: false
+    before_install: composer dump-autoload --no-scripts --no-interaction
+    exercises: legacy procedural code without types (about 1600 files), long boolean and string-matching conditions, HTML built by concatenation, superglobals, large taint graph
+    psalm:
+      dirs: [src]
 
   doctrine-orm:
     repo: https://github.com/doctrine/orm

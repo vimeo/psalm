@@ -1745,6 +1745,22 @@ final class TaintTest extends TestCase
     public static function providerValidCodeParse(): array
     {
         return [
+            'otherItemsDestructuredFromAMixedValueAreNotTainted' => [
+                'code' => '<?php
+                    function get(): mixed {
+                        return ["safe", "k" => "safe", 2 => $_GET["x"]];
+                    }
+
+                    function show(): void {
+                        [$first] = get();
+                        echo (string) $first;
+                        ["k" => $keyed] = get();
+                        echo (string) $keyed;
+                        foreach ([get()] as [$item]) {
+                            echo (string) $item;
+                        }
+                    }',
+            ],
             'deprecatedPromotedPropertyIsNotUsedByItsOwnDeclaration' => [
                 'code' => '<?php
                     final class A {
@@ -3270,6 +3286,27 @@ final class TaintTest extends TestCase
                     // converted, an array is "Array": the elements are not in what a conversion of it gives
                     echo toString(["key" => $_GET["a"]]);
                     echo prefix(["key" => $_GET["b"]]);',
+            ],
+            'foreachOverAnIteratorAggregateSpecializedByObjectKeepsTheOthersApart' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-taint-specialize
+                     * @implements IteratorAggregate<int, string>
+                     */
+                    final class Items implements IteratorAggregate {
+                        /** @param list<string> $items */
+                        public function __construct(private array $items) {}
+
+                        /** @return ArrayIterator<int, string> */
+                        public function getIterator(): ArrayIterator {
+                            return new ArrayIterator($this->items);
+                        }
+                    }
+
+                    $tainted = new Items([(string) $_GET["value"]]);
+                    foreach (new Items(["literal"]) as $value) {
+                        echo $value;
+                    }',
             ],
             'dontTaintTheYieldResultOfALiteralSentToAGenerator' => [
                 'code' => '<?php // --taint-analysis
@@ -7399,6 +7436,54 @@ final class TaintTest extends TestCase
     public static function providerInvalidCodeParse(): array
     {
         return [
+            'itemDestructuredFromAMixedValueIsTainted' => [
+                'code' => '<?php
+                    function get(): mixed {
+                        return ["safe", $_GET["x"]];
+                    }
+
+                    [$first, $second] = get();
+                    echo (string) $second;',
+                'error_message' => 'TaintedHtml',
+            ],
+            'itemDestructuredByKeyFromAMixedValueIsTainted' => [
+                'code' => '<?php
+                    function get(): mixed {
+                        return ["k" => $_GET["x"]];
+                    }
+
+                    ["k" => $keyed] = get();
+                    echo (string) $keyed;',
+                'error_message' => 'TaintedHtml',
+            ],
+            'itemDestructuredFromAMixedParameterIsTainted' => [
+                'code' => '<?php
+                    function show(mixed $value): void {
+                        [$first] = $value;
+                        echo (string) $first;
+                    }
+
+                    show($_GET["x"]);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'itemDestructuredFromAMixedValueInAForeachIsTainted' => [
+                'code' => '<?php
+                    function get(): mixed {
+                        return ["safe", $_GET["x"]];
+                    }
+
+                    foreach ([get()] as [$first, $second]) {
+                        echo (string) $second;
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'itemDestructuredFromAnArrayAccessObjectIsTainted' => [
+                'code' => '<?php
+                    $values = new ArrayObject($_GET);
+                    [$first] = $values;
+                    echo (string) $first;',
+                'error_message' => 'TaintedHtml',
+            ],
             'superglobalIsStillTaintedAfterEval' => [
                 'code' => '<?php // --taint-analysis
                     eval("return 1;");
@@ -7412,6 +7497,67 @@ final class TaintTest extends TestCase
                     /** @psalm-suppress PossiblyNullIterator */
                     foreach ($a as $v) {
                         echo $v;
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'foreachOverAnIteratorAggregateGivesWhatGetIteratorReturns' => [
+                'code' => '<?php
+                    /** @implements IteratorAggregate<string, string> */
+                    final class Query implements IteratorAggregate {
+                        /**
+                         * @psalm-taint-source input
+                         * @return ArrayIterator<string, string>
+                         */
+                        public function getIterator(): ArrayIterator {
+                            return new ArrayIterator([]);
+                        }
+                    }
+
+                    foreach (new Query() as $value) {
+                        echo $value;
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'foreachOverAnIteratorAggregateGivesTheKeysOfWhatGetIteratorReturns' => [
+                'code' => '<?php
+                    /** @implements IteratorAggregate<string, string> */
+                    final class Items implements IteratorAggregate {
+                        /** @param array<string, string> $items */
+                        public function __construct(private array $items) {}
+
+                        /** @return ArrayIterator<string, string> */
+                        public function getIterator(): ArrayIterator {
+                            return new ArrayIterator($this->items);
+                        }
+                    }
+
+                    foreach (new Items([(string) $_GET["key"] => "value"]) as $key => $_) {
+                        echo $key;
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'foreachOverAnIteratorAggregateReturningAnotherOneGivesWhatItsGetIteratorReturns' => [
+                'code' => '<?php
+                    /** @implements IteratorAggregate<int, string> */
+                    final class Inner implements IteratorAggregate {
+                        /**
+                         * @psalm-taint-source input
+                         * @return ArrayIterator<int, string>
+                         */
+                        public function getIterator(): ArrayIterator {
+                            return new ArrayIterator([]);
+                        }
+                    }
+
+                    /** @implements IteratorAggregate<int, string> */
+                    final class Outer implements IteratorAggregate {
+                        public function getIterator(): Inner {
+                            return new Inner();
+                        }
+                    }
+
+                    foreach (new Outer() as $value) {
+                        echo $value;
                     }',
                 'error_message' => 'TaintedHtml',
             ],

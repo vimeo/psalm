@@ -266,7 +266,14 @@ final class StaticCallAnalyzer extends CallAnalyzer
                             ? $context
                             : null,
                         $statements_analyzer->getSuppressedIssues(),
-                        new ClassLikeNameOptions(false, false, false, true, context: $context),
+                        new ClassLikeNameOptions(
+                            false,
+                            false,
+                            false,
+                            true,
+                            context: $context,
+                            required_at_runtime: true,
+                        ),
                         $context->check_classes,
                     );
                 }
@@ -357,7 +364,13 @@ final class StaticCallAnalyzer extends CallAnalyzer
             ? NullsafeChainState::of($stmt->class)
             : NullsafeChainState::None;
 
-        foreach ($lhs_type->getAtomicTypes() as $lhs_type_part) {
+        $lhs_type_parts = $lhs_type->getAtomicTypes();
+
+        // a call to one of several classes asserts only what each of them asserts
+        $targets_if_true_assertions = [];
+        $targets_if_false_assertions = [];
+
+        foreach ($lhs_type_parts as $lhs_type_part) {
             AtomicStaticCallAnalyzer::analyze(
                 $statements_analyzer,
                 $stmt,
@@ -369,6 +382,25 @@ final class StaticCallAnalyzer extends CallAnalyzer
                 $has_existing_method,
                 $args_analyzed,
                 $template_result,
+            );
+
+            if (count($lhs_type_parts) > 1) {
+                $targets_if_true_assertions[] = $statements_analyzer->node_data->getIfTrueAssertions($stmt) ?? [];
+                $targets_if_false_assertions[] = $statements_analyzer->node_data->getIfFalseAssertions($stmt) ?? [];
+
+                $statements_analyzer->node_data->setIfTrueAssertions($stmt, []);
+                $statements_analyzer->node_data->setIfFalseAssertions($stmt, []);
+            }
+        }
+
+        if ($targets_if_true_assertions && $targets_if_false_assertions) {
+            $statements_analyzer->node_data->setIfTrueAssertions(
+                $stmt,
+                self::getCommonAssertions($targets_if_true_assertions),
+            );
+            $statements_analyzer->node_data->setIfFalseAssertions(
+                $stmt,
+                self::getCommonAssertions($targets_if_false_assertions),
             );
         }
 
