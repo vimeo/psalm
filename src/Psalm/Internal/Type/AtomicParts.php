@@ -163,8 +163,13 @@ final class AtomicParts
         $array_key = Type::intersectUnionTypes($type->type_params[0], Type::getArrayKey(), $codebase);
 
         // an iterable intersected with another type is an object
-        if ($type->extra_types || $array_key === null || $array_key->isNever()) {
+        if ($type->extra_types) {
             return [$traversable];
+        }
+
+        // an iterable whose keys can't be array keys may still be the empty array
+        if ($array_key === null || $array_key->isNever()) {
+            return [Type::getEmptyArrayAtomic(), $traversable];
         }
 
         return [new TArray([$array_key, $type->type_params[1]], $from_docblock), $traversable];

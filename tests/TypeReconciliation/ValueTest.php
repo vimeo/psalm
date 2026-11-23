@@ -1353,9 +1353,84 @@ final class ValueTest extends TestCase
                     if (!is_countable($c)) { // [new ArrayObject(), 'count']
                         throw new RuntimeException();
                     }
+
+                    $c();
+                    echo count($c);
                     PHP,
                 'assertions' => [
-                    '$c===' => 'Countable|callable-array{0: class-string|object, 1: non-empty-string}',
+                    '$c===' => 'callable-array{0: class-string|object, 1: non-empty-string}',
+                ],
+            ],
+            'arrayOrCallableMayBeCountableArray' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @return array<int, string>|callable */
+                    function c() {
+                        return [];
+                    }
+
+                    $c = c();
+
+                    if (!is_countable($c)) {
+                        throw new RuntimeException();
+                    }
+                    PHP,
+                'assertions' => [
+                    '$c===' => 'array<int, object|string>',
+                ],
+            ],
+            'arrayOrCallableMayBeIterableArray' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @return array<int, string>|callable */
+                    function c() {
+                        return [];
+                    }
+
+                    $c = c();
+
+                    if (!is_iterable($c)) {
+                        throw new RuntimeException();
+                    }
+                    PHP,
+                'assertions' => [
+                    '$c===' => 'array<int, object|string>',
+                ],
+            ],
+            'iterableWithoutArrayKeysMayBeCountableEmptyArray' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @return iterable<object, int> */
+                    function i() {
+                        return [];
+                    }
+
+                    $i = i();
+
+                    if (!is_countable($i)) {
+                        throw new RuntimeException();
+                    }
+                    PHP,
+                'assertions' => [
+                    '$i===' => 'Traversable<object, int>&Countable|array<never, never>',
+                ],
+            ],
+            'emptyIterableMayBeCountableEmptyArray' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @return iterable<never, never> */
+                    function i() {
+                        return [];
+                    }
+
+                    $i = i();
+
+                    if (!is_countable($i) || !is_array($i)) {
+                        throw new RuntimeException();
+                    }
+                    PHP,
+                'assertions' => [
+                    '$i===' => 'array<never, never>',
                 ],
             ],
             'iterableMayBeCountableArrayOrTraversable' => [

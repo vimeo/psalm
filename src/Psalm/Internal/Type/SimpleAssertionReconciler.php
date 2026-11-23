@@ -1720,8 +1720,10 @@ final class SimpleAssertionReconciler extends Reconciler
                 $type = $type->addIntersectionType($countable);
                 $iterable_types[] = $type;
                 $redundant = false;
-            } elseif (($parts = AtomicParts::split($type, Type::getArrayAtomic(), $codebase)) !== null) {
-                // e.g. the countable iterables are the arrays and the Countable Traversable objects
+            } elseif (($parts = AtomicParts::split($type, new TIterable(), $codebase)) !== null) {
+                // e.g. the countable iterables are the arrays and the Countable Traversable objects, and as with
+                // is_iterable() the countable callables are the callable-arrays
+                // (a `callable-object&Countable` would lose its `Countable`)
                 $parts_failed_reconciliation = Reconciler::RECONCILIATION_OK;
                 $countable_parts = self::reconcileCountable(
                     $assertion,
@@ -1746,7 +1748,7 @@ final class SimpleAssertionReconciler extends Reconciler
         }
 
         return self::finishReconciliation(
-            $iterable_types ? new Union($iterable_types) : null,
+            $iterable_types ? TypeCombiner::combine($iterable_types) : null,
             $redundant,
             !$is_equality,
             false,
@@ -1819,7 +1821,7 @@ final class SimpleAssertionReconciler extends Reconciler
         }
 
         return self::finishReconciliation(
-            $iterable_types ? new Union($iterable_types) : null,
+            $iterable_types ? TypeCombiner::combine($iterable_types) : null,
             $redundant,
             !$is_equality,
             false,
