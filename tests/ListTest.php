@@ -22,6 +22,30 @@ final class ListTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'destructuringInAConditionLeavesOutTheNullOfANullValue' => [
+                'code' => '<?php
+                    /** @return list{int, int}|null */
+                    function pair(int $c): ?array {
+                        return $c ? [$c, $c] : null;
+                    }
+
+                    /** @return array{x: int}|null */
+                    function point(int $c): ?array {
+                        return $c ? ["x" => $c] : null;
+                    }
+
+                    if ([$a, $b] = pair(1)) {
+                        echo $a + $b;
+                    }
+
+                    if (["x" => $x] = point(1)) {
+                        echo $x + 1;
+                    }
+
+                    while ([$c, $d] = pair(rand(0, 1))) {
+                        echo $c + $d;
+                    }',
+            ],
             'keyedDestructuringOfATypedValueIsNotAMixedAssignment' => [
                 'code' => '<?php
                     /** @return array{name: string, tags: list<string>} */
@@ -247,6 +271,18 @@ final class ListTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'destructuringInAConditionKeepsTheNullOfANullableItem' => [
+                'code' => '<?php
+                    /** @return list{?int, int}|null */
+                    function pair(int $c): ?array {
+                        return $c ? [null, $c] : null;
+                    }
+
+                    if ([$a, $b] = pair(1)) {
+                        echo $a + $b;
+                    }',
+                'error_message' => 'PossiblyNullOperand - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:30 - Left operand',
+            ],
             'keyedDestructuringOfAMixedValueIsAMixedAssignment' => [
                 'code' => '<?php
                     /** @return array{name: mixed} */
