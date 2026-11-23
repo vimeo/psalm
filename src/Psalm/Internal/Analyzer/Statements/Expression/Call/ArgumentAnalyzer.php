@@ -21,7 +21,6 @@ use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\Statements\TypeMismatch\ArgumentTypeMismatchReporter;
 use Psalm\Internal\Analyzer\Statements\TypeMismatch\TypeMismatchReporter;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
-use Psalm\Internal\Analyzer\TraitAnalyzer;
 use Psalm\Internal\Codebase\CliOutput;
 use Psalm\Internal\Codebase\ConstantTypeResolver;
 use Psalm\Internal\Codebase\PhpDeprecations;
@@ -208,14 +207,7 @@ final class ArgumentAnalyzer
 
         if (!$arg_value_type) {
             if ($function_param && !$function_param->by_ref) {
-                if (!$context->collect_initializations
-                    && $statements_analyzer->getFilePath() === $statements_analyzer->getRootFilePath()
-                    && (!(($parent_source = $statements_analyzer->getSource())
-                            instanceof FunctionLikeAnalyzer)
-                        || !$parent_source->getSource() instanceof TraitAnalyzer)
-                ) {
-                    $codebase->analyzer->incrementMixedCount($statements_analyzer->getFilePath());
-                }
+                $statements_analyzer->countMixed($context, true);
 
                 $param_type = $function_param->type;
 
@@ -547,46 +539,21 @@ final class ArgumentAnalyzer
 
         if ($arg->unpack) {
             if ($arg_value_type->hasMixed()) {
-                if (!$context->collect_initializations
-                    && $statements_analyzer->getFilePath() === $statements_analyzer->getRootFilePath()
-                    && (!(($parent_source = $statements_analyzer->getSource())
-                            instanceof FunctionLikeAnalyzer)
-                        || !$parent_source->getSource() instanceof TraitAnalyzer)
-                ) {
-                    $codebase->analyzer->incrementMixedCount($statements_analyzer->getFilePath());
-                }
-
-                IssueBuffer::maybeAdd(
-                    new MixedArgument(
-                        'Argument ' . ($argument_offset + 1) . ' of ' . $cased_method_id
-                            . ' cannot unpack ' . $arg_value_type->getId() . ', expecting iterable',
-                        new CodeLocation($statements_analyzer->getSource(), $arg->value),
-                        $cased_method_id,
-                    ),
-                    $statements_analyzer->getSuppressedIssues(),
+                self::analyzeMixedUnpackedArgument(
+                    $statements_analyzer,
+                    $cased_method_id,
+                    $method_id,
+                    $function_call_location,
+                    $function_storage,
+                    $function_param,
+                    $arg_value_type,
+                    $argument_offset,
+                    $unpacked_argument_offset,
+                    $arg,
+                    $context,
+                    $specialize_taint,
+                    $in_call_map,
                 );
-
-                if ($cased_method_id) {
-                    $arg_location = new CodeLocation($statements_analyzer->getSource(), $arg->value);
-
-                    self::processTaintedness(
-                        $statements_analyzer,
-                        $cased_method_id,
-                        $method_id,
-                        $argument_offset,
-                        $arg_location,
-                        $function_call_location,
-                        $function_storage,
-                        $function_param,
-                        $arg_value_type,
-                        $arg->value,
-                        $context,
-                        $specialize_taint,
-                        $in_call_map,
-                        null,
-                        $unpacked_argument_offset,
-                    );
-                }
 
                 return null;
             }
@@ -812,6 +779,56 @@ final class ArgumentAnalyzer
         return null;
     }
 
+    private static function analyzeMixedUnpackedArgument(
+        StatementsAnalyzer $statements_analyzer,
+        ?string $cased_method_id,
+        ?MethodIdentifier $method_id,
+        CodeLocation $function_call_location,
+        ?FunctionLikeStorage $function_storage,
+        FunctionLikeParameter $function_param,
+        Union $arg_value_type,
+        int $argument_offset,
+        int $unpacked_argument_offset,
+        PhpParser\Node\Arg $arg,
+        Context $context,
+        bool $specialize_taint,
+        bool $in_call_map,
+    ): void {
+        $statements_analyzer->countMixed($context, true);
+
+        IssueBuffer::maybeAdd(
+            new MixedArgument(
+                'Argument ' . ($argument_offset + 1) . ' of ' . $cased_method_id
+                    . ' cannot unpack ' . $arg_value_type->getId() . ', expecting iterable',
+                new CodeLocation($statements_analyzer->getSource(), $arg->value),
+                $cased_method_id,
+            ),
+            $statements_analyzer->getSuppressedIssues(),
+        );
+
+        if ($cased_method_id) {
+            $arg_location = new CodeLocation($statements_analyzer->getSource(), $arg->value);
+
+            self::processTaintedness(
+                $statements_analyzer,
+                $cased_method_id,
+                $method_id,
+                $argument_offset,
+                $arg_location,
+                $function_call_location,
+                $function_storage,
+                $function_param,
+                $arg_value_type,
+                $arg->value,
+                $context,
+                $specialize_taint,
+                $in_call_map,
+                null,
+                $unpacked_argument_offset,
+            );
+        }
+    }
+
     /**
      * Gives each template the argument did not bind its constraint (or the upper bound the argument gave it) as a
      * stand-in lower bound, and sets {@see TemplateBound::$from_template_free_argument} on its lower bounds, those of
@@ -1026,14 +1043,7 @@ final class ArgumentAnalyzer
         $method_identifier = $cased_method_id ? ' of ' . $cased_method_id : '';
 
         if ($input_type->hasMixed()) {
-            if (!$context->collect_initializations
-                && $statements_analyzer->getFilePath() === $statements_analyzer->getRootFilePath()
-                && (!(($parent_source = $statements_analyzer->getSource())
-                        instanceof FunctionLikeAnalyzer)
-                    || !$parent_source->getSource() instanceof TraitAnalyzer)
-            ) {
-                $codebase->analyzer->incrementMixedCount($statements_analyzer->getFilePath());
-            }
+            $statements_analyzer->countMixed($context, true);
 
             IssueBuffer::maybeAdd(
                 new MixedArgument(
@@ -1108,14 +1118,7 @@ final class ArgumentAnalyzer
             return null;
         }
 
-        if (!$context->collect_initializations
-            && $statements_analyzer->getFilePath() === $statements_analyzer->getRootFilePath()
-            && (!(($parent_source = $statements_analyzer->getSource())
-                    instanceof FunctionLikeAnalyzer)
-                || !$parent_source->getSource() instanceof TraitAnalyzer)
-        ) {
-            $codebase->analyzer->incrementNonMixedCount($statements_analyzer->getFilePath());
-        }
+        $statements_analyzer->countMixed($context, false);
 
         if ($function_param->by_ref || $function_param->is_optional) {
             //if the param is optional or a ref, we'll allow the input to be possibly_undefined

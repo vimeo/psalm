@@ -534,12 +534,7 @@ final class ReturnAnalyzer
                             }
                         }
 
-                        if (!$context->collect_initializations
-                            && $statements_analyzer->getFilePath() === $statements_analyzer->getRootFilePath()
-                            && !($source->getSource() instanceof TraitAnalyzer)
-                        ) {
-                            $codebase->analyzer->incrementMixedCount($statements_analyzer->getFilePath());
-                        }
+                        $statements_analyzer->countMixed($context, true);
 
                         if ($stmt_type->isMixed()) {
                             $return_location = new CodeLocation($source, $stmt->expr);
@@ -573,12 +568,7 @@ final class ReturnAnalyzer
                         return;
                     }
 
-                    if (!$context->collect_initializations
-                        && $statements_analyzer->getFilePath() === $statements_analyzer->getRootFilePath()
-                        && !($source->getSource() instanceof TraitAnalyzer)
-                    ) {
-                        $codebase->analyzer->incrementNonMixedCount($statements_analyzer->getFilePath());
-                    }
+                    $statements_analyzer->countMixed($context, false);
 
                     if ($local_return_type->isVoid()) {
                         IssueBuffer::maybeAdd(

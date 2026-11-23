@@ -491,13 +491,7 @@ final class Psalter
 
             $project_analyzer->check($current_dir);
         } elseif ($paths_to_check) {
-            foreach ($paths_to_check as $path_to_check) {
-                if (is_dir($path_to_check)) {
-                    $project_analyzer->checkDir($path_to_check);
-                } else {
-                    $project_analyzer->checkFile($path_to_check);
-                }
-            }
+            $project_analyzer->checkPaths($paths_to_check);
         }
 
         IssueBuffer::finish($project_analyzer, false, $start_time);
