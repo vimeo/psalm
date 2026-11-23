@@ -1759,13 +1759,12 @@ final class ForeachAnalyzer
                     ))
             ) {
                 // what iterating this object alone gives: the iterator methods are called on it, not on the whole
-                // iterated expression
+                // iterated expression, whose type still says the rest about it (whether it is fresh, its taints)
                 $iterated_key_type = null;
                 $iterated_value_type = null;
-                $receiver_type = new Union(
-                    [$bounded_template?->replaceAs(new Union([$iterator_atomic_type])) ?? $iterator_atomic_type],
-                    ['parent_nodes' => $statements_analyzer->node_data->getType($foreach_expr)?->parent_nodes ?? []],
-                );
+                $receiver = $bounded_template?->replaceAs(new Union([$iterator_atomic_type])) ?? $iterator_atomic_type;
+                $receiver_type = $statements_analyzer->node_data->getType($foreach_expr)?->setTypes([$receiver])
+                    ?? new Union([$receiver]);
 
                 if (strtolower($iterator_atomic_type->value) === 'iteratoraggregate'
                     || $codebase->classImplements(
