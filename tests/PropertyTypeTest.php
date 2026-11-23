@@ -276,6 +276,56 @@ final class PropertyTypeTest extends TestCase
         $this->analyzeFile('somefile.php', new Context());
     }
 
+    public function testReadonlyPropertySeenAsUninitializedIsForgottenAfterCall(): void
+    {
+        Config::getInstance()->remember_property_assignments_after_call = false;
+        Config::getInstance()->setCustomErrorLevel('RedundantPropertyInitializationCheck', Config::REPORT_SUPPRESS);
+        Config::getInstance()->setCustomErrorLevel('InaccessibleProperty', Config::REPORT_SUPPRESS);
+        Config::getInstance()->setCustomErrorLevel('MissingConstructor', Config::REPORT_SUPPRESS);
+        $this->project_analyzer->setPhpVersion('8.1', 'tests');
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                final class L {
+                    public readonly int $x;
+                    public readonly ?string $s;
+
+                    public function get(): int {
+                        if (!isset($this->x)) {
+                            $this->init();
+                            return $this->x;
+                        }
+                        return $this->x;
+                    }
+
+                    public function str(): string {
+                        if (!isset($this->s)) {
+                            $this->init();
+                            $s = $this->s;
+                            return $s ?? "";
+                        }
+                        return $this->s;
+                    }
+
+                    public function viaVariable(L $l): int {
+                        if (!isset($l->x)) {
+                            $l->get();
+                            return $l->x;
+                        }
+                        return $l->x;
+                    }
+
+                    private function init(): void {
+                        $this->x = 5;
+                        $this->s = "a";
+                    }
+                }',
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
     public function testRememberReadonlyPropertiesAfterCall(): void
     {
         Config::getInstance()->remember_property_assignments_after_call = false;

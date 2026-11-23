@@ -567,8 +567,12 @@ class Reconciler
                 $result_type = $result_type->setProperties(['reference_free' => true]);
             }
 
-            // nor what can change it: a readonly property stays unchanged by calls
-            if ($before_adjustment && !$before_adjustment->has_mutations) {
+            // nor what can change it: a readonly property stays unchanged by calls, unless it may be uninitialized
+            if ($before_adjustment
+                && !$before_adjustment->has_mutations
+                && !$has_inverted_isset
+                && !$has_empty
+            ) {
                 $result_type = $result_type->setProperties(['has_mutations' => false]);
             }
 
