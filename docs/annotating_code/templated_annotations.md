@@ -614,29 +614,6 @@ function h(Cell $cell): void {
 
 The parameters of a closure that is a parameter are read again: `each(Closure(T): void $callback)` of a `Box<*>` expects a `Closure(object): void`. A `Box<T>` parameter is `never` too, as the argument may be any `Box`. A `Pair<int, *>` writes its `int` as usual.
 
-Iterating a `Bag<*>` gives the bound too, while a `*` that a method introduces in an invariant argument of what it returns holds the bound of that class's own template:
-
-```php
-<?php
-/**
- * @template T of object
- * @implements IteratorAggregate<int, T>
- */
-final class Bag implements IteratorAggregate {
-    /** @return ArrayIterator<int, T> */
-    public function getIterator(): ArrayIterator { throw new Exception(); }
-}
-
-/** @param Bag<*> $bag */
-function i(Bag $bag): void {
-    foreach ($bag as $item) {
-        $item; // object
-    }
-    $bag->getIterator(); // ArrayIterator<int, *>
-    $bag->getIterator()->current(); // mixed
-}
-```
-
 A `Box<*>` also fits a `Box` written without arguments, and a covariant argument that holds the whole bound:
 
 ```php
