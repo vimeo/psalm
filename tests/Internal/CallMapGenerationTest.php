@@ -13,7 +13,7 @@ use Psalm\Tests\TestConfig;
 use Symfony\Component\Filesystem\Filesystem;
 use Symfony\Component\Process\Process;
 
-use function assertEntryParameters;
+use function Psalm\Internal\Stubs\assertEntryParameters;
 use function chmod;
 use function dirname;
 use function file_put_contents;
