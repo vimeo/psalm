@@ -61,6 +61,42 @@ final class SwitchTypeTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'groupedCaseIsComparedWhereTheCaseBeforeItDidNotMatch' => [
+                'code' => '<?php
+                    final class O {
+                        public function isEmpty(): bool {
+                            return true;
+                        }
+                    }
+
+                    function grouped(?O $v): void {
+                        switch (true) {
+                            case $v === null:
+                            case $v->isEmpty():
+                                return;
+                        }
+                    }',
+            ],
+            'caseAfterOneFallingThroughItsStatementsIsComparedWhereThatOneDidNotMatch' => [
+                'code' => '<?php
+                    final class O {
+                        public function f(): int {
+                            return rand(0, 5);
+                        }
+                    }
+
+                    function fallsThrough(?O $v, bool $b): void {
+                        switch (true) {
+                            case $v === null:
+                                if ($b) {
+                                    break;
+                                }
+                                echo "x";
+                            case $v->f() > 1:
+                                echo "y";
+                        }
+                    }',
+            ],
             'caseOfASwitchTrueIsComparedWhereTheCasesBeforeItDidNotMatch' => [
                 'code' => '<?php
                     final class O {
@@ -1974,6 +2010,45 @@ final class SwitchTypeTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'bodySharedByGroupedCasesIsNotNarrowedByTheCaseBeforeIt' => [
+                'code' => '<?php
+                    final class O {
+                        public function f(): int {
+                            return rand(0, 5);
+                        }
+                    }
+
+                    function grouped(?O $v): void {
+                        switch (true) {
+                            case $v === null:
+                            case rand(0, 1) === 1:
+                                echo $v->f();
+                                break;
+                        }
+                    }',
+                'error_message' => 'PossiblyNullReference',
+            ],
+            'conditionAfterACaseAssigningTheVariableIsNotNarrowedByIt' => [
+                'code' => '<?php
+                    final class O {
+                        public function isEmpty(): bool {
+                            return true;
+                        }
+                    }
+
+                    function g(): ?O {
+                        return rand(0, 1) ? new O() : null;
+                    }
+
+                    function assigned(?O $v): void {
+                        switch (true) {
+                            case ($v = g()) === null:
+                            case $v->isEmpty():
+                                return;
+                        }
+                    }',
+                'error_message' => 'PossiblyNullReference',
+            ],
             'bodyReachedThroughAFallThroughIsNotNarrowedByTheCaseBeforeIt' => [
                 'code' => '<?php
                     final class O {
