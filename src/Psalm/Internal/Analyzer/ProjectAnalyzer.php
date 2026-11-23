@@ -16,7 +16,7 @@ use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Internal\LanguageServer\LanguageServer;
 use Psalm\Internal\MethodIdentifier;
-use Psalm\Internal\Perf\Collector;
+use Psalm\Internal\Perf;
 use Psalm\Internal\Provider\ClassLikeStorageProvider;
 use Psalm\Internal\Provider\FileProvider;
 use Psalm\Internal\Provider\FileReferenceProvider;
@@ -477,9 +477,9 @@ final class ProjectAnalyzer
         }
         $this->progress->write($this->generateAnalysisSetupMessage());
         $this->progress->startPhase(Phase::SCAN, $this->scanThreads);
-        Collector::stage('scan.setup');
+        Perf\Collector::stage('scan.setup');
 
-        Collector::step('files.list');
+        Perf\Collector::step('files.list');
         $project_files = $this->initProjectFiles();
         $this->initExtraFiles();
 
@@ -493,7 +493,7 @@ final class ProjectAnalyzer
             || $this->codebase->find_unused_code !== null
             || $this->codebase->collect_locations;
 
-        Collector::step('reference_cache.load');
+        Perf\Collector::step('reference_cache.load');
         $reference_cache = $this->file_reference_provider->loadReferenceCache(true);
 
         $this->codebase->diff_methods = $is_diff;
@@ -513,11 +513,11 @@ final class ProjectAnalyzer
             || $deleted_files === null
             || count($diff_files) > 200
         ) {
-            Collector::step('stubs.preloaded');
+            Perf\Collector::step('stubs.preloaded');
             $this->config->visitPreloadedStubFiles($this->codebase, $this->progress);
-            Collector::step('plugins.init');
+            Perf\Collector::step('plugins.init');
             $this->config->initializePlugins($this);
-            Collector::step('autoload');
+            Perf\Collector::step('autoload');
             $this->visitAutoloadFiles();
 
             $this->codebase->scanner->addFilesToShallowScan($this->extra_files);
@@ -559,7 +559,7 @@ final class ProjectAnalyzer
         if (!$diff_no_files) {
             $this->config->visitStubFiles($this->codebase, $this->progress);
 
-            Collector::step('plugins.after_populated');
+            Perf\Collector::step('plugins.after_populated');
             $event = new AfterCodebasePopulatedEvent($this->codebase);
 
             $this->config->eventDispatcher->dispatchAfterCodebasePopulated($event);
@@ -992,8 +992,8 @@ final class ProjectAnalyzer
     {
         $this->progress->write($this->generateAnalysisSetupMessage());
         $this->progress->startPhase(Phase::SCAN, $this->scanThreads);
-        Collector::stage('scan.setup');
-        Collector::step('files.list');
+        Perf\Collector::stage('scan.setup');
+        Perf\Collector::step('files.list');
 
         if (!$this->project_files_initialized) {
             $file_extensions = $this->config->getFileExtensions();
@@ -1013,13 +1013,13 @@ final class ProjectAnalyzer
         }
         $this->initExtraFiles();
 
-        Collector::step('stubs.preloaded');
+        Perf\Collector::step('stubs.preloaded');
         $this->config->visitPreloadedStubFiles($this->codebase, $this->progress);
 
-        Collector::step('plugins.init');
+        Perf\Collector::step('plugins.init');
         $this->config->initializePlugins($this);
 
-        Collector::step('autoload');
+        Perf\Collector::step('autoload');
         $this->visitAutoloadFiles();
 
         $this->codebase->scanner->addFilesToShallowScan($this->extra_files);
@@ -1036,14 +1036,14 @@ final class ProjectAnalyzer
             }
         }
 
-        Collector::step('reference_cache.load');
+        Perf\Collector::step('reference_cache.load');
         $this->file_reference_provider->loadReferenceCache();
 
         $this->codebase->scanFiles($this->scanThreads, 'scan.project');
 
         $this->config->visitStubFiles($this->codebase, $this->progress);
 
-        Collector::step('plugins.after_populated');
+        Perf\Collector::step('plugins.after_populated');
         $event = new AfterCodebasePopulatedEvent($this->codebase);
 
         $this->config->eventDispatcher->dispatchAfterCodebasePopulated($event);

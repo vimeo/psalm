@@ -8,7 +8,7 @@ use Closure;
 use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Context;
-use Psalm\Internal\Perf\Collector;
+use Psalm\Internal\Perf;
 use Psalm\Plugin\EventHandler\Event\MethodCapabilitiesProviderEvent;
 use Psalm\Plugin\EventHandler\MethodCapabilitiesProviderInterface;
 use Psalm\StatementsSource;
@@ -52,8 +52,8 @@ final class MethodCapabilitiesProvider
      */
     public function registerClosure(string $fq_classlike_name, Closure $c): void
     {
-        self::$handlers[strtolower($fq_classlike_name)][] = Collector::$enabled
-            ? Collector::wrap($c, 'MethodCapabilities')
+        self::$handlers[strtolower($fq_classlike_name)][] = Perf\Collector::$enabled
+            ? Perf\Collector::wrap($c, 'MethodCapabilities')
             : $c;
     }
 

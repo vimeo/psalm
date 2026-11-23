@@ -12,7 +12,7 @@ use Psalm\Internal\Fork\InitScannerTask;
 use Psalm\Internal\Fork\Pool;
 use Psalm\Internal\Fork\ScannerTask;
 use Psalm\Internal\Fork\ShutdownScannerTask;
-use Psalm\Internal\Perf\Collector;
+use Psalm\Internal\Perf;
 use Psalm\Internal\Provider\ClassLikeStorageProvider;
 use Psalm\Internal\Provider\FileProvider;
 use Psalm\Internal\Provider\FileReferenceProvider;
@@ -93,7 +93,7 @@ use const SORT_STRING;
  *
  * Contains methods that aid in the scanning of Psalm's codebase
  * @psalm-import-type ClassLikesThreadData from ClassLikes
- * @psalm-import-type WorkerPerf from Collector
+ * @psalm-import-type WorkerPerf from Perf\Collector
  */
 final class Scanner
 {
@@ -560,9 +560,9 @@ final class Scanner
                 $this->progress,
             );
 
-            Collector::poolStart('scan', $pool_size, $file_count);
+            Perf\Collector::poolStart('scan', $pool_size, $file_count);
             await($pool->runAll(new InitScannerTask));
-            Collector::poolStep('init_us');
+            Perf\Collector::poolStep('init_us');
             $pool->run(
                 $files_to_scan,
                 ScannerTask::class,
@@ -574,7 +574,7 @@ final class Scanner
                 fn(string $taint_type): array => $this->codebase->registerTaintFromWorker($taint_type),
             );
 
-            Collector::poolStep('run_us');
+            Perf\Collector::poolStep('run_us');
 
             // Wait for all tasks to complete and collect the results.
             $forked_pool_data = $pool->runAll(new ShutdownScannerTask);
@@ -582,7 +582,7 @@ final class Scanner
             foreach ($forked_pool_data as $pool_data) {
                 $pool_data = $pool_data->await();
 
-                Collector::addWorkerData($pool_data['perf'] ?? null);
+                Perf\Collector::addWorkerData($pool_data['perf'] ?? null);
 
                 IssueBuffer::addIssues($pool_data['issues']);
 
@@ -615,10 +615,10 @@ final class Scanner
                 $this->codebase->addUnresolvedGlobalConstants($pool_data['unresolved_global_constants']);
                 $this->codebase->functions->addGlobalFunctions($pool_data['global_functions']);
 
-                Collector::mergeDone();
+                Perf\Collector::mergeDone();
             }
 
-            Collector::poolEnd();
+            Perf\Collector::poolEnd();
         } else {
             foreach ($files_to_scan as $file_path => $_) {
                 $this->scanAPath($file_path);
@@ -714,8 +714,8 @@ final class Scanner
 
         $from_cache = $this->file_storage_provider->has($file_path, $file_contents);
 
-        if (Collector::$enabled) {
-            Collector::setScanStorage($from_cache ? 'reused' : 'cold');
+        if (Perf\Collector::$enabled) {
+            Perf\Collector::setScanStorage($from_cache ? 'reused' : 'cold');
         }
 
         if (!$from_cache) {
@@ -747,8 +747,8 @@ final class Scanner
 
                     $from_cache = false;
 
-                    if (Collector::$enabled) {
-                        Collector::setScanStorage('reused_then_rescanned');
+                    if (Perf\Collector::$enabled) {
+                        Perf\Collector::setScanStorage('reused_then_rescanned');
                     }
 
                     $file_storage = $this->file_storage_provider->create($file_path);
@@ -1043,18 +1043,18 @@ final class Scanner
 
     public function scanAPath(string $file_path): void
     {
-        if (Collector::$enabled) {
+        if (Perf\Collector::$enabled) {
             $deep = isset($this->files_to_deep_scan[$file_path]);
-            $perf_start = Collector::fileStart();
+            $perf_start = Perf\Collector::fileStart();
             // what it stays at if the file is not scanned at all
-            Collector::setScanStorage('cold');
+            Perf\Collector::setScanStorage('cold');
             $this->scanFile($file_path, $this->config->getFiletypeScanners(), $deep);
-            Collector::scanEnd(
+            Perf\Collector::scanEnd(
                 $file_path,
                 $this->config->shortenFileName($file_path),
                 $perf_start,
                 $deep,
-                Collector::scanStorage(),
+                Perf\Collector::scanStorage(),
             );
         } else {
             $this->scanFile(

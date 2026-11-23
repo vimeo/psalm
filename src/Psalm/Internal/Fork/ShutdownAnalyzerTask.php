@@ -12,7 +12,7 @@ use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Codebase\Analyzer;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Internal\FileManipulation\FunctionDocblockManipulator;
-use Psalm\Internal\Perf\Collector;
+use Psalm\Internal\Perf;
 use Psalm\IssueBuffer;
 
 /**
@@ -35,7 +35,7 @@ final class ShutdownAnalyzerTask implements Task
 
         $project_analyzer->progress->debug('Gathering data for forked process'."\n");
 
-        $perf = Collector::workerData();
+        $perf = Perf\Collector::workerData();
 
         // @codingStandardsIgnoreStart
         return [

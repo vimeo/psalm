@@ -20,7 +20,7 @@ use Psalm\Internal\Codebase\ReferenceMapGenerator;
 use Psalm\Internal\Composer;
 use Psalm\Internal\ErrorHandler;
 use Psalm\Internal\IncludeCollector;
-use Psalm\Internal\Perf\Collector;
+use Psalm\Internal\Perf;
 use Psalm\Internal\Preloader;
 use Psalm\Internal\Provider\ClassLikeStorageCacheProvider;
 use Psalm\Internal\Provider\FileProvider;
@@ -279,7 +279,7 @@ final class Psalm
 
         $output_format = self::initOutputFormat($options);
 
-        Collector::step('config');
+        Perf\Collector::step('config');
 
         [$config, $init_source_dir] = self::initConfig(
             $current_dir,
@@ -312,7 +312,7 @@ final class Psalm
         $progress = self::initProgress($options, $config, $in_ci);
 
         $force_jit = $config->force_jit || isset($options['force-jit']);
-        Collector::step('restart.check');
+        Perf\Collector::step('restart.check');
         self::restart($options, $force_jit, $threads, $scanThreads, $progress);
 
         // after the restart: the process that restarts would print them too
@@ -393,7 +393,7 @@ final class Psalm
             self::clearGlobalCache($config);
         }
 
-        Collector::step('providers');
+        Perf\Collector::step('providers');
         $providers = ProjectBootstrap::initProviders($options, $config, $current_dir);
 
         $stdout_report_options = self::initStdoutReportOptions($options, $show_info, $output_format, $in_ci);
@@ -438,7 +438,7 @@ final class Psalm
             $project_analyzer->checkPaths($paths_to_check);
         }
 
-        Collector::stage('post');
+        Perf\Collector::stage('post');
 
         if ($find_references_to) {
             $project_analyzer->findReferencesTo($find_references_to);
@@ -454,8 +454,8 @@ final class Psalm
             self::generateStubs($options, $providers, $project_analyzer);
         }
 
-        Collector::stage('report');
-        Collector::step('baseline');
+        Perf\Collector::stage('report');
+        Perf\Collector::step('baseline');
 
         if (!isset($options['i'])) {
             IssueBuffer::finish(
@@ -492,7 +492,7 @@ final class Psalm
             exit(1);
         }
 
-        Collector::start(is_string($path) ? $path : null, $given_option_names);
+        Perf\Collector::start(is_string($path) ? $path : null, $given_option_names);
     }
 
     /** @return int<1, max> */
@@ -1086,7 +1086,7 @@ final class Psalm
             }
         }
 
-        Collector::step('preload');
+        Perf\Collector::step('preload');
         Preloader::preload($progress, $hasJit);
     }
 

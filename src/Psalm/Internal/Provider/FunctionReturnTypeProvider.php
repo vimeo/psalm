@@ -8,7 +8,7 @@ use Closure;
 use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Context;
-use Psalm\Internal\Perf\Collector;
+use Psalm\Internal\Perf;
 use Psalm\Internal\Provider\ReturnTypeProvider\ArrayChunkReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\ArrayColumnReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\ArrayCombineReturnTypeProvider;
@@ -170,8 +170,8 @@ final class FunctionReturnTypeProvider
      */
     public function registerClosure(string $function_id, Closure $c): void
     {
-        self::$handlers[$function_id][] = Collector::$enabled
-            ? Collector::wrap($c, 'FunctionReturnType')
+        self::$handlers[$function_id][] = Perf\Collector::$enabled
+            ? Perf\Collector::wrap($c, 'FunctionReturnType')
             : $c;
     }
 

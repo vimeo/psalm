@@ -38,7 +38,7 @@ use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Internal\FileManipulation\FunctionDocblockManipulator;
 use Psalm\Internal\MethodIdentifier;
-use Psalm\Internal\Perf\Collector;
+use Psalm\Internal\Perf;
 use Psalm\Internal\Provider\NodeDataProvider;
 use Psalm\Internal\Type\Comparator\TypeComparisonResult;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
@@ -774,7 +774,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             ]);
         }
 
-        $perf_start = Collector::$enabled ? Collector::functionStart() : null;
+        $perf_start = Perf\Collector::$enabled ? Perf\Collector::functionStart() : null;
 
         $project_analyzer = $statements_analyzer->getProjectAnalyzer();
 
@@ -958,7 +958,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
 
         if ($perf_start !== null) {
             // the id of a method of an anonymous class names the file, and so does the path of the record
-            Collector::functionEnd(
+            Perf\Collector::functionEnd(
                 $this->getFilePath(),
                 $this->getFileName(),
                 $this->function->getLine(),

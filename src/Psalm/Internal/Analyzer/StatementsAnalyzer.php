@@ -46,7 +46,7 @@ use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\Codebase\VariableUseGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
-use Psalm\Internal\Perf\Collector;
+use Psalm\Internal\Perf;
 use Psalm\Internal\Provider\NodeDataProvider;
 use Psalm\Internal\Provider\TypeVariableResolvingNodeTypeProvider;
 use Psalm\Internal\ReferenceConstraint;
@@ -296,12 +296,12 @@ final class StatementsAnalyzer extends SourceAnalyzer
             }
 
             foreach ($stmts as $stmt) {
-                if (Collector::$enabled) {
-                    $perf_outer_child_ns = Collector::$child_ns;
-                    Collector::$child_ns = 0;
+                if (Perf\Collector::$enabled) {
+                    $perf_outer_child_ns = Perf\Collector::$child_ns;
+                    Perf\Collector::$child_ns = 0;
                     $perf_start_ns = (int) hrtime(true);
                     $analysis_result = self::analyzeStatement($this, $stmt, $context, $global_context);
-                    Collector::statementEnd($this, $stmt, $perf_start_ns, $perf_outer_child_ns);
+                    Perf\Collector::statementEnd($this, $stmt, $perf_start_ns, $perf_outer_child_ns);
 
                     if ($analysis_result === false) {
                         return false;

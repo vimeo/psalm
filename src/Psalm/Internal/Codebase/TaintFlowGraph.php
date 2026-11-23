@@ -13,7 +13,7 @@ use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\DataFlow\NodeTable;
 use Psalm\Internal\DataFlow\Path;
-use Psalm\Internal\Perf\Collector;
+use Psalm\Internal\Perf;
 use Psalm\Issue\TaintedCallable;
 use Psalm\Issue\TaintedCookie;
 use Psalm\Issue\TaintedCustom;
@@ -1237,7 +1237,7 @@ final class TaintFlowGraph extends DataFlowGraph
             }
         } unset($map);
 
-        Collector::taint(
+        Perf\Collector::taint(
             count($this->nodes),
             count($this->sources),
             count($this->sinks),

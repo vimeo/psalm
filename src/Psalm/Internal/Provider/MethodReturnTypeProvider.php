@@ -8,7 +8,7 @@ use Closure;
 use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Context;
-use Psalm\Internal\Perf\Collector;
+use Psalm\Internal\Perf;
 use Psalm\Internal\Provider\ReturnTypeProvider\ClosureReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\DateTimeModifyReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\DomNodeAppendChild;
@@ -67,8 +67,8 @@ final class MethodReturnTypeProvider
      */
     public function registerClosure(string $fq_classlike_name, Closure $c): void
     {
-        self::$handlers[strtolower($fq_classlike_name)][] = Collector::$enabled
-            ? Collector::wrap($c, 'MethodReturnType')
+        self::$handlers[strtolower($fq_classlike_name)][] = Perf\Collector::$enabled
+            ? Perf\Collector::wrap($c, 'MethodReturnType')
             : $c;
     }
 

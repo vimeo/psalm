@@ -7,7 +7,7 @@ namespace Psalm\Internal\Provider;
 use Closure;
 use Psalm\CodeLocation;
 use Psalm\Context;
-use Psalm\Internal\Perf\Collector;
+use Psalm\Internal\Perf;
 use Psalm\Plugin\EventHandler\Event\MethodVisibilityProviderEvent;
 use Psalm\Plugin\EventHandler\MethodVisibilityProviderInterface;
 use Psalm\StatementsSource;
@@ -55,8 +55,8 @@ final class MethodVisibilityProvider
      */
     public function registerClosure(string $fq_classlike_name, Closure $c): void
     {
-        self::$handlers[strtolower($fq_classlike_name)][] = Collector::$enabled
-            ? Collector::wrap($c, 'MethodVisibility')
+        self::$handlers[strtolower($fq_classlike_name)][] = Perf\Collector::$enabled
+            ? Perf\Collector::wrap($c, 'MethodVisibility')
             : $c;
     }
 

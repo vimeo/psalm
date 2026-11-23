@@ -12,7 +12,7 @@ use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\BaselineMatcher;
 use Psalm\Internal\ExecutionEnvironment\BuildInfoCollector;
 use Psalm\Internal\ExecutionEnvironment\GitInfoCollector;
-use Psalm\Internal\Perf\Collector;
+use Psalm\Internal\Perf;
 use Psalm\Internal\Perf\DumpWriter;
 use Psalm\Internal\Provider\FileProvider;
 use Psalm\Issue\CodeIssue;
@@ -903,7 +903,7 @@ final class IssueBuffer
             }
         }
 
-        Collector::step('output');
+        Perf\Collector::step('output');
 
         // The report is written to the terminal, not into a web page, so it goes to STDOUT rather than through echo.
         fwrite(
@@ -929,7 +929,7 @@ final class IssueBuffer
         ksort($baselined_issue_counts);
         self::$baselined_issue_counts = $baselined_issue_counts;
 
-        Collector::step('plugins.after_analysis');
+        Perf\Collector::step('plugins.after_analysis');
 
         if ($codebase->config->eventDispatcher->after_analysis) {
             $source_control_info = null;
@@ -953,7 +953,7 @@ final class IssueBuffer
             $codebase->config->eventDispatcher->dispatchAfterAnalysis($event);
         }
 
-        Collector::step('report_files');
+        Perf\Collector::step('report_files');
 
         foreach ($project_analyzer->generated_report_options as $report_options) {
             if (!$report_options->output_path) {
@@ -974,7 +974,7 @@ final class IssueBuffer
             );
         }
 
-        Collector::step('summary');
+        Perf\Collector::step('summary');
 
         $prints_to_console = in_array(
             $project_analyzer->stdout_report_options->format,
@@ -1048,7 +1048,7 @@ final class IssueBuffer
                     echo "\n";
                 }
 
-                $prints_performance_summary = Collector::$enabled;
+                $prints_performance_summary = Perf\Collector::$enabled;
             }
 
             if ($codebase->config->find_unused_issue_handler_suppression && (!$is_full || $codebase->diff_run)) {
@@ -1061,7 +1061,7 @@ final class IssueBuffer
             }
         }
 
-        Collector::step('cache.write');
+        Perf\Collector::step('cache.write');
 
         if ($is_full && $start_time) {
             $project_analyzer->finish($start_time, PSALM_VERSION);
@@ -1086,7 +1086,7 @@ final class IssueBuffer
         }
 
         // after everything that takes time, so that the report stage and the totals cover the whole run
-        $performance = Collector::finish($error_count, $info_count, $printed_peak_bytes);
+        $performance = Perf\Collector::finish($error_count, $info_count, $printed_peak_bytes);
         if ($performance !== null) {
             DumpWriter::emit($performance, $project_analyzer, $prints_performance_summary);
         }

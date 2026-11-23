@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Psalm\Internal\Provider;
 
 use Closure;
-use Psalm\Internal\Perf\Collector;
+use Psalm\Internal\Perf;
 use Psalm\Plugin\EventHandler\Event\FunctionExistenceProviderEvent;
 use Psalm\Plugin\EventHandler\FunctionExistenceProviderInterface;
 use Psalm\StatementsSource;
@@ -54,8 +54,8 @@ final class FunctionExistenceProvider
      */
     public function registerClosure(string $function_id, Closure $c): void
     {
-        self::$handlers[$function_id][] = Collector::$enabled
-            ? Collector::wrap($c, 'FunctionExistence')
+        self::$handlers[$function_id][] = Perf\Collector::$enabled
+            ? Perf\Collector::wrap($c, 'FunctionExistence')
             : $c;
     }
 

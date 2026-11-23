@@ -22,7 +22,7 @@ use Psalm\Internal\Fork\InitAnalyzerTask;
 use Psalm\Internal\Fork\Pool;
 use Psalm\Internal\Fork\ShutdownAnalyzerTask;
 use Psalm\Internal\MethodIdentifier;
-use Psalm\Internal\Perf\Collector;
+use Psalm\Internal\Perf;
 use Psalm\Internal\Provider\FileProvider;
 use Psalm\Internal\Provider\FileStorageProvider;
 use Psalm\Internal\Provider\StatementsProvider;
@@ -97,7 +97,7 @@ use const PHP_INT_MAX;
  *
  * @internal
  * @psalm-import-type CapabilitySet from Capabilities
- * @psalm-import-type WorkerPerf from Collector
+ * @psalm-import-type WorkerPerf from Perf\Collector
  */
 final class Analyzer
 {
@@ -239,7 +239,7 @@ final class Analyzer
         bool $alter_code,
         bool $consolidate_analyzed_data = false,
     ): void {
-        Collector::stage('analysis.setup');
+        Perf\Collector::stage('analysis.setup');
 
         $this->loadCachedResults($project_analyzer);
 
@@ -254,29 +254,29 @@ final class Analyzer
             $this->file_provider->fileExists(...),
         );
 
-        Collector::stage('analysis.files');
+        Perf\Collector::stage('analysis.files');
         $this->doAnalysis($project_analyzer, $pool_size);
 
         $scanned_files = $codebase->scanner->getScannedFiles();
 
         if ($codebase->taint_flow_graph) {
-            Collector::stage('taint');
+            Perf\Collector::stage('taint');
             $codebase->taint_flow_graph->connectSinksAndSources($codebase->progress);
         }
 
-        Collector::stage('analysis.finish');
-        Collector::step('mutation_levels');
+        Perf\Collector::stage('analysis.finish');
+        Perf\Collector::step('mutation_levels');
         MutationLevelResolver::resolve($project_analyzer);
 
         $this->progress->finish();
 
-        Collector::step('unused_code');
+        Perf\Collector::step('unused_code');
 
         if ($consolidate_analyzed_data) {
             $project_analyzer->consolidateAnalyzedData();
         }
 
-        Collector::step('reference_cache.write');
+        Perf\Collector::step('reference_cache.write');
 
         foreach (IssueBuffer::getAllIssuesData() as $file_path => $file_issues) {
             $codebase->file_reference_provider->clearExistingIssuesForFile($file_path);
@@ -291,7 +291,7 @@ final class Analyzer
         $codebase->file_reference_provider->setTypeCoverage($this->mixed_counts);
         $codebase->file_reference_provider->updateReferenceCache($codebase, $scanned_files);
 
-        Collector::step('unused_suppressions');
+        Perf\Collector::step('unused_suppressions');
 
         if ($codebase->track_unused_suppressions) {
             IssueBuffer::processUnusedSuppressions($codebase->file_provider);
@@ -344,18 +344,18 @@ final class Analyzer
             $this->progress->debug('Forking analysis' . "\n");
 
             // Wait for all tasks to complete and collect the results.
-            Collector::poolStart('analysis', $pool_size, count($this->files_to_analyze));
+            Perf\Collector::poolStart('analysis', $pool_size, count($this->files_to_analyze));
             await($pool->runAll(new InitAnalyzerTask));
-            Collector::poolStep('init_us');
+            Perf\Collector::poolStep('init_us');
             $pool->run($this->files_to_analyze, AnalyzerTask::class, $task_done_closure);
-            Collector::poolStep('run_us');
-            Collector::stage('analysis.merge');
+            Perf\Collector::poolStep('run_us');
+            Perf\Collector::stage('analysis.merge');
             $this->progress->debug('Collecting forked analysis results' . "\n");
             $this->progress->startPhase(Phase::MERGING_THREAD_RESULTS);
             $this->progress->expand($pool->threads);
 
             foreach ($pool->runAllThenKill(new ShutdownAnalyzerTask) as $pool_data) {
-                Collector::addWorkerData($pool_data['perf'] ?? null);
+                Perf\Collector::addWorkerData($pool_data['perf'] ?? null);
 
                 IssueBuffer::addIssues($pool_data['issues']);
                 IssueBuffer::addFixableIssues($pool_data['fixable_issue_counts']);
@@ -430,10 +430,10 @@ final class Analyzer
 
                 $this->progress->taskDone(0);
 
-                Collector::mergeDone();
+                Perf\Collector::mergeDone();
             }
 
-            Collector::poolEnd();
+            Perf\Collector::poolEnd();
         } else {
             foreach ($this->files_to_analyze as $file_path => $_) {
                 $task_done_closure(self::analysisWorker($this->config, $this->progress, $file_path));
@@ -1535,7 +1535,7 @@ final class Analyzer
 
         $progress->debug('Analyzing ' . $file_analyzer->getFilePath() . "\n");
 
-        $perf_start = Collector::$enabled ? Collector::fileStart() : null;
+        $perf_start = Perf\Collector::$enabled ? Perf\Collector::fileStart() : null;
 
         $file_analyzer->analyze();
         $file_analyzer->context = null;
@@ -1546,7 +1546,7 @@ final class Analyzer
         $has_info = false;
 
         if ($perf_start !== null) {
-            Collector::analysisEnd(
+            Perf\Collector::analysisEnd(
                 $file_path,
                 $file_name,
                 $perf_start,

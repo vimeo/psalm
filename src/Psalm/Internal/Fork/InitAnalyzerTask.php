@@ -10,7 +10,7 @@ use Amp\Sync\Channel;
 use Override;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Codebase\TaintFlowGraph;
-use Psalm\Internal\Perf\Collector;
+use Psalm\Internal\Perf;
 
 /**
  * @internal
@@ -21,7 +21,7 @@ final class InitAnalyzerTask implements Task
     #[Override]
     public function run(Channel $channel, Cancellation $cancellation): mixed
     {
-        Collector::workerStart('analysis');
+        Perf\Collector::workerStart('analysis');
         $project_analyzer = ProjectAnalyzer::getInstance();
         $codebase = $project_analyzer->getCodebase();
 
