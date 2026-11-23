@@ -185,8 +185,7 @@ final class MethodComparator
 
         // a trait method takes the docblock of the parent method per using class (see Populator), not per storage
         $inherits_return_type = $implementer_method_storage->inherited_return_type
-            || (!$implementer_method_storage->has_docblock_param_types
-                && !$implementer_method_storage->has_docblock_return_type
+            || (!$implementer_method_storage->has_docblock_return_type
                 && isset($codebase->classlike_storage_provider->get($implementer_called_class_name)
                     ->documenting_method_ids[strtolower($guide_method_storage->cased_name ?? '')]));
 
@@ -992,50 +991,6 @@ final class MethodComparator
                     : $guide_classlike_storage->parent_class,
             )
             : null;
-
-        // CallMapHandler needed due to https://github.com/vimeo/psalm/issues/10378
-        if (!$guide_param->signature_type
-            && $guide_param->type
-            && InternalCallMapHandler::inCallMap($cased_guide_method_id)) {
-            $guide_method_storage_param_type = TypeExpander::expandUnion(
-                $codebase,
-                $guide_param->type,
-                $guide_classlike_storage->is_trait && $guide_method_storage->abstract
-                    ? $implementer_classlike_storage->name
-                    : $guide_classlike_storage->name,
-                $guide_classlike_storage->is_trait && $guide_method_storage->abstract
-                    ? $implementer_classlike_storage->name
-                    : $guide_classlike_storage->name,
-                $guide_classlike_storage->is_trait && $guide_method_storage->abstract
-                    ? $implementer_classlike_storage->parent_class
-                    : $guide_classlike_storage->parent_class,
-            );
-
-            $builder = $guide_method_storage_param_type->getBuilder();
-            foreach ($builder->getAtomicTypes() as $k => $t) {
-                if ($t instanceof TTemplateParam) {
-                    $builder->removeType($k);
-
-                    foreach ($t->as->getAtomicTypes() as $as_t) {
-                        $builder->addType($as_t);
-                    }
-                }
-            }
-
-            if ($builder->hasMixed()) {
-                foreach ($builder->getAtomicTypes() as $k => $_) {
-                    if ($k !== 'mixed') {
-                        $builder->removeType($k);
-                    }
-                }
-            }
-            $guide_method_storage_param_type = $builder->freeze();
-            unset($builder);
-
-            if (!$guide_method_storage_param_type->hasMixed() || $codebase->analysis_php_version_id >= 8_00_00) {
-                $guide_param_signature_type = $guide_method_storage_param_type;
-            }
-        }
 
         $implementer_param_signature_type = TypeExpander::expandUnion(
             $codebase,
