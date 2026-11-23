@@ -32,8 +32,11 @@ use Psalm\Type\Atomic\TNumeric;
 use Psalm\Type\Atomic\TNumericString;
 use Psalm\Type\Atomic\TScalar;
 use Psalm\Type\Atomic\TString;
+use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTrue;
 use Psalm\Type\Union;
+
+use function array_values;
 
 /**
  * The disjoint types that a type standing for values of several kinds is made of, so that it can be intersected with
@@ -160,13 +163,46 @@ final class AtomicParts
         $from_docblock = $type->from_docblock;
         $traversable = self::getTraversable($type);
 
-        $array_key = Type::intersectUnionTypes($type->type_params[0], Type::getArrayKey(), $codebase);
-
         // an iterable intersected with another type is an object
-        if ($type->extra_types || $array_key === null || $array_key->isNever()) {
+        if ($type->extra_types) {
             return [$traversable];
         }
 
+        $array_key = self::getArrayKeys($type->type_params[0], $codebase);
+
+        // an iterable whose keys can't be array keys may still be the empty array
+        if ($array_key === null) {
+            return [Type::getEmptyArrayAtomic(), $traversable];
+        }
+
         return [new TArray([$array_key, $type->type_params[1]], $from_docblock), $traversable];
+    }
+
+    /**
+     * The keys of a type that can be array keys, a template keeping its name, or null if there are none
+     */
+    private static function getArrayKeys(Union $key, Codebase $codebase): ?Union
+    {
+        $array_keys = [];
+
+        foreach ($key->getAtomicTypes() as $atomic) {
+            if ($atomic instanceof TTemplateParam) {
+                $as = self::getArrayKeys($atomic->as, $codebase);
+
+                if ($as !== null) {
+                    $array_keys[] = $atomic->replaceAs($as);
+                }
+
+                continue;
+            }
+
+            $atomic_array_keys = Type::intersectUnionTypes(new Union([$atomic]), Type::getArrayKey(), $codebase);
+
+            if ($atomic_array_keys !== null && !$atomic_array_keys->isNever()) {
+                $array_keys = [...$array_keys, ...array_values($atomic_array_keys->getAtomicTypes())];
+            }
+        }
+
+        return $array_keys ? TypeCombiner::combine($array_keys) : null;
     }
 }
