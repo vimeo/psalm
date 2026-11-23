@@ -14,11 +14,13 @@ use Psalm\Internal\Algebra\FormulaGenerator;
 use Psalm\Internal\Analyzer\ScopeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\VariableFetchAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\SimpleTypeInferer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Clause;
 use Psalm\Internal\PhpVisitor\AssignmentMapVisitor;
 use Psalm\Internal\PhpVisitor\NodeCleanerVisitor;
+use Psalm\Internal\Provider\NodeDataProvider;
 use Psalm\Internal\Scope\LoopScope;
 use Psalm\IssueBuffer;
 use Psalm\Node\Expr\BinaryOp\VirtualBooleanAnd;
@@ -940,6 +942,22 @@ final class LoopAnalyzer
         }
 
         return false;
+    }
+
+    /**
+     * Whether a loop condition is a literal that is always truthy (`true`, `1`): the loop is then only left by a break
+     */
+    public static function isAlwaysTruthyCondition(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr $condition,
+    ): bool {
+        return SimpleTypeInferer::infer(
+            $statements_analyzer->getCodebase(),
+            new NodeDataProvider(),
+            $condition,
+            $statements_analyzer->getAliases(),
+            $statements_analyzer,
+        )?->isAlwaysTruthy() ?? false;
     }
 
     /**
