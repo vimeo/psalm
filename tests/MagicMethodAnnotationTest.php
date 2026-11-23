@@ -450,6 +450,46 @@ final class MagicMethodAnnotationTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'intersectionTypeOfAMethodParam' => [
+                'code' => '<?php
+                    interface I1 {}
+                    interface I2 {}
+                    interface I3 {}
+
+                    /**
+                     * @method int m(I1&I2 $x)
+                     * @method int n(I1 & I2 $x)
+                     * @method int o(I1&I2&I3 $x, int $y)
+                     * @method int p(I1&I2 &$x)
+                     * @method int q(I1&I2 ...$x)
+                     * @method int r(I1&I2 &...$x)
+                     * @method int s(I1 &$x)
+                     * @method int t(I1 &...$x)
+                     */
+                    final class C {
+                        public function __call(string $name, array $args): int {
+                            return 1;
+                        }
+                    }
+
+                    function f(I1&I2 $a, I1&I2&I3 $b, I1 $c): void {
+                        $byRef = $a;
+                        $byRefVariadic = $a;
+                        $plain = $c;
+                        $o = new C();
+                        $o->m($a);
+                        $o->n($a);
+                        $o->o($b, 1);
+                        $o->p($byRef);
+                        $o->q($a, $a);
+                        $o->r($byRefVariadic);
+                        $o->s($plain);
+                        $o->t($plain);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'returnTypeAfterParamsWithTrailingSemicolon' => [
                 'code' => '<?php
                     /**
@@ -2420,6 +2460,25 @@ final class MagicMethodAnnotationTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'intersectionTypeOfAMethodParamIsEnforced' => [
+                'code' => '<?php
+                    interface I1 {}
+                    interface I2 {}
+
+                    /**
+                     * @method int m(I1&I2 $x)
+                     */
+                    final class C {
+                        public function __call(string $name, array $args): int {
+                            return 1;
+                        }
+                    }
+
+                    function f(I1 $a): void {
+                        (new C())->m($a);
+                    }',
+                'error_message' => 'InvalidArgument',
+            ],
             'methodParamOfAShapeIsEnforced' => [
                 'code' => <<<'PHP'
                     <?php
@@ -2800,6 +2859,90 @@ final class MagicMethodAnnotationTest extends TestCase
                     /** @method D foo(int $s) */
                     class B extends A {}',
                 'error_message' => 'ImplementedParamTypeMismatch - src' . DIRECTORY_SEPARATOR . 'somefile.php:11:33',
+            ],
+            'magicMethodRepeatedInTheDocblockIsReportedOnItsFirstLine' => [
+                'code' => '<?php
+                    class C {}
+                    class D {}
+
+                    class A {
+                        public function foo(string $s) : C {
+                            return new C;
+                        }
+                    }
+
+                    /**
+                     * @method C bar()
+                     * @method D foo(string $s)
+                     * @method C baz()
+                     * @method D foo(string $s)
+                     */
+                    class B extends A {}',
+                'error_message' => 'ImplementedReturnTypeMismatch - src' . DIRECTORY_SEPARATOR . 'somefile.php:13:',
+            ],
+            'magicMethodMismatchIsReportedOnItsOwnDocblockOfASecondClass' => [
+                'code' => '<?php
+                    class C {}
+                    class D {}
+
+                    class A {
+                        public function foo(string $s) : C {
+                            return new C;
+                        }
+                    }
+
+                    /**
+                     * @method C foo(string $s)
+                     * @method C bar()
+                     * @method C baz()
+                     * @method C qux()
+                     */
+                    class B extends A {}
+
+                    /**
+                     * @method C one()
+                     * @method D foo(string $s)
+                     */
+                    class E extends A {}',
+                'error_message' => 'ImplementedReturnTypeMismatch - src' . DIRECTORY_SEPARATOR . 'somefile.php:21:',
+            ],
+            'magicMethodTextAlsoInTheDescriptionIsReportedOnTheDescriptionLine' => [
+                'code' => '<?php
+                    class C {}
+                    class D {}
+
+                    class A {
+                        public function foo(string $s) : C {
+                            return new C;
+                        }
+                    }
+
+                    /**
+                     * Calls D foo(string $s) under the hood.
+                     *
+                     * @method C bar()
+                     * @method D foo(string $s)
+                     */
+                    class B extends A {}',
+                'error_message' => 'ImplementedReturnTypeMismatch - src' . DIRECTORY_SEPARATOR . 'somefile.php:12:',
+            ],
+            'magicMethodWithExtraSpacesIsReportedOnTheFirstDocblockLine' => [
+                'code' => '<?php
+                    class C {}
+                    class D {}
+
+                    class A {
+                        public function foo(string $s) : C {
+                            return new C;
+                        }
+                    }
+
+                    /**
+                     * @method C bar()
+                     * @method D   foo(string  $s)
+                     */
+                    class B extends A {}',
+                'error_message' => 'ImplementedReturnTypeMismatch - src' . DIRECTORY_SEPARATOR . 'somefile.php:11:',
             ],
             'parseBadMethodAnnotation' => [
                 'code' => '<?php

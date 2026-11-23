@@ -1827,7 +1827,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 new VirtualPropertyFetch(
                     new VirtualVariable('this', $attributes),
                     new VirtualIdentifier($name, $attributes),
-                    $attributes,
+                    ['promoted_parameter' => true] + $attributes,
                 ),
                 $name,
                 new VirtualVariable($name, $var->getAttributes()),
@@ -2077,7 +2077,10 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                         $this->getParentFQCLN(),
                         true,
                         $param_type->hasConditional(),
-                        $this_object instanceof TNamedObject && !$this_object->is_static,
+                        ($this_object instanceof TNamedObject && !$this_object->is_static)
+                            || ($context->self !== null
+                                && $codebase->classlike_storage_provider->has($context->self)
+                                && $codebase->classlike_storage_provider->get($context->self)->final),
                         true,
                         false,
                         true,
@@ -3388,6 +3391,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 callable_id: $this->getClosureId(),
                 byref_use_scopes: ClosureAnalyzer::getByRefUseScopes($this->source, $byref_uses),
             );
+            $this->closure_type = $closure_type;
 
             $type_provider->setType(
                 $this->function,

@@ -1582,6 +1582,8 @@ final class StubTest extends DeferredAnalyzerTestCase
             ),
         );
         $this->project_analyzer->setPhpVersion($php_version, 'tests');
+        // the config comes from Psalm's own composer.json, which doesn't declare the extensions of these stubs
+        $this->project_analyzer->getConfig()->declared_extensions = null;
     }
 
     public function testStubPropertyDocblockTypeWinsOverPropertyMap(): void

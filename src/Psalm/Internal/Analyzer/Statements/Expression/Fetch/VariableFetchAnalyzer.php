@@ -138,7 +138,8 @@ final class VariableFetchAnalyzer
             return true;
         }
 
-        if (!$context->check_variables) {
+        // a superglobal is always defined, and what it holds is tainted whether the other variables are known or not
+        if (!$context->check_variables && !(is_string($stmt->name) && self::isSuperGlobal('$' . $stmt->name))) {
             if (is_string($stmt->name)) {
                 $var_name = '$' . $stmt->name;
 

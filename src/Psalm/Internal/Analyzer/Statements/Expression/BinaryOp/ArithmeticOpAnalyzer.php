@@ -55,6 +55,7 @@ use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTypeVariable;
 use Psalm\Type\Union;
 
+use function abs;
 use function array_diff_key;
 use function array_values;
 use function count;
@@ -111,110 +112,18 @@ final class ArithmeticOpAnalyzer
         }
 
         if ($left_type && $right_type) {
-            if ($left_type->isNull()) {
-                if ($statements_source) {
-                    IssueBuffer::maybeAdd(
-                        new NullOperand(
-                            'Left operand cannot be null',
-                            new CodeLocation($statements_source, $left),
-                        ),
-                        $statements_source->getSuppressedIssues(),
-                    );
-                }
+            if (self::reportNullOperand($statements_source, $left, $left_type, 'Left')
+                || self::reportNullOperand($statements_source, $right, $right_type, 'Right')
+            ) {
                 $result_type = Type::getMixed();
 
                 return;
             }
 
-            if ($left_type->isNullable() && !$left_type->ignore_nullable_issues) {
-                if ($statements_source) {
-                    IssueBuffer::maybeAdd(
-                        new PossiblyNullOperand(
-                            'Left operand cannot be nullable, got ' . $left_type,
-                            new CodeLocation($statements_source, $left),
-                        ),
-                        $statements_source->getSuppressedIssues(),
-                    );
-                }
-            }
-
-            if ($right_type->isNull()) {
-                if ($statements_source) {
-                    IssueBuffer::maybeAdd(
-                        new NullOperand(
-                            'Right operand cannot be null',
-                            new CodeLocation($statements_source, $right),
-                        ),
-                        $statements_source->getSuppressedIssues(),
-                    );
-                }
-                $result_type = Type::getMixed();
-
+            if (self::reportFalseOperand($statements_source, $left, $left_type, 'Left')
+                || self::reportFalseOperand($statements_source, $right, $right_type, 'Right')
+            ) {
                 return;
-            }
-
-            if ($right_type->isNullable() && !$right_type->ignore_nullable_issues) {
-                if ($statements_source) {
-                    IssueBuffer::maybeAdd(
-                        new PossiblyNullOperand(
-                            'Right operand cannot be nullable, got ' . $right_type,
-                            new CodeLocation($statements_source, $right),
-                        ),
-                        $statements_source->getSuppressedIssues(),
-                    );
-                }
-            }
-
-            if ($left_type->isFalse()) {
-                if ($statements_source) {
-                    IssueBuffer::maybeAdd(
-                        new FalseOperand(
-                            'Left operand cannot be false',
-                            new CodeLocation($statements_source, $left),
-                        ),
-                        $statements_source->getSuppressedIssues(),
-                    );
-                }
-
-                return;
-            }
-
-            if ($left_type->isFalsable() && !$left_type->ignore_falsable_issues) {
-                if ($statements_source) {
-                    IssueBuffer::maybeAdd(
-                        new PossiblyFalseOperand(
-                            'Left operand cannot be falsable, got ' . $left_type,
-                            new CodeLocation($statements_source, $left),
-                        ),
-                        $statements_source->getSuppressedIssues(),
-                    );
-                }
-            }
-
-            if ($right_type->isFalse()) {
-                if ($statements_source) {
-                    IssueBuffer::maybeAdd(
-                        new FalseOperand(
-                            'Right operand cannot be false',
-                            new CodeLocation($statements_source, $right),
-                        ),
-                        $statements_source->getSuppressedIssues(),
-                    );
-                }
-
-                return;
-            }
-
-            if ($right_type->isFalsable() && !$right_type->ignore_falsable_issues) {
-                if ($statements_source) {
-                    IssueBuffer::maybeAdd(
-                        new PossiblyFalseOperand(
-                            'Right operand cannot be falsable, got ' . $right_type,
-                            new CodeLocation($statements_source, $right),
-                        ),
-                        $statements_source->getSuppressedIssues(),
-                    );
-                }
             }
 
             $int_operation = self::getNameOfAnOperationOnInts($parent);
@@ -970,6 +879,11 @@ final class ArithmeticOpAnalyzer
                     && $right_type_part->value < 0
                 ) {
                     $result_type = Type::combineUnionTypes(Type::getFloat(), $result_type);
+                } elseif ($parent instanceof PhpParser\Node\Expr\BinaryOp\Pow
+                    && !$right_type_part instanceof TLiteralInt
+                ) {
+                    // a negative exponent gives a float
+                    $result_type = Type::combineUnionTypes(new Union([new TInt(), new TFloat()]), $result_type);
                 } else {
                     $left_is_positive = ($left_type_part instanceof TLiteralInt && $left_type_part->value > 0)
                         || ($left_type_part instanceof TIntRange && $left_type_part->isPositive());
@@ -1005,7 +919,9 @@ final class ArithmeticOpAnalyzer
 
                     if ($parent instanceof PhpParser\Node\Expr\BinaryOp\Mod) {
                         if ($right_type_part instanceof TLiteralInt) {
-                            $literal_value_max = $right_type_part->value - 1;
+                            $literal_value_max = $right_type_part->value === PHP_INT_MIN
+                                ? PHP_INT_MAX
+                                : abs($right_type_part->value) - 1;
                             if ($always_positive) {
                                 $result_type = Type::getIntRange(0, $literal_value_max);
                             } else {
@@ -1258,6 +1174,78 @@ final class ArithmeticOpAnalyzer
             || $operation instanceof PhpParser\Node\Expr\BinaryOp\ShiftRight
                 ? 'a bitwise operation'
                 : null;
+    }
+
+    /**
+     * Reports a null or nullable operand, and returns whether it is null
+     */
+    private static function reportNullOperand(
+        ?StatementsSource $statements_source,
+        PhpParser\Node\Expr $operand,
+        Union $operand_type,
+        string $side,
+    ): bool {
+        if ($operand_type->isNull()) {
+            if ($statements_source) {
+                IssueBuffer::maybeAdd(
+                    new NullOperand(
+                        $side . ' operand cannot be null',
+                        new CodeLocation($statements_source, $operand),
+                    ),
+                    $statements_source->getSuppressedIssues(),
+                );
+            }
+
+            return true;
+        }
+
+        if ($statements_source && $operand_type->isNullable() && !$operand_type->ignore_nullable_issues) {
+            IssueBuffer::maybeAdd(
+                new PossiblyNullOperand(
+                    $side . ' operand cannot be nullable, got ' . (string) $operand_type,
+                    new CodeLocation($statements_source, $operand),
+                ),
+                $statements_source->getSuppressedIssues(),
+            );
+        }
+
+        return false;
+    }
+
+    /**
+     * Reports a false or falsable operand, and returns whether it is false
+     */
+    private static function reportFalseOperand(
+        ?StatementsSource $statements_source,
+        PhpParser\Node\Expr $operand,
+        Union $operand_type,
+        string $side,
+    ): bool {
+        if ($operand_type->isFalse()) {
+            if ($statements_source) {
+                IssueBuffer::maybeAdd(
+                    new FalseOperand(
+                        $side . ' operand cannot be false',
+                        new CodeLocation($statements_source, $operand),
+                    ),
+                    $statements_source->getSuppressedIssues(),
+                );
+            }
+
+            return true;
+        }
+
+        if ($statements_source && $operand_type->isFalsable() && !$operand_type->ignore_falsable_issues) {
+            IssueBuffer::maybeAdd(
+                new PossiblyFalseOperand(
+                    $side . ' operand cannot be falsable, got ' . (string) $operand_type,
+                    new CodeLocation($statements_source, $operand),
+                ),
+                $statements_source->getSuppressedIssues(),
+            );
+        }
+
+        return false;
     }
 
     /**
@@ -1868,28 +1856,16 @@ final class ArithmeticOpAnalyzer
             if ($right_type_part->max_bound === 0) {
                 $new_result_type = Type::getNever();
             } else {
+                // the result takes the sign of the dividend and is less than the divisor in absolute value
+                $max = $right_type_part->min_bound === PHP_INT_MIN
+                    ? PHP_INT_MAX
+                    : abs($right_type_part->min_bound) - 1;
+
                 if ($left_type_part->isPositiveOrZero()) {
-                    if ($right_type_part->isPositive()) {
-                        $max = $right_type_part->min_bound - 1;
-                        $new_result_type = Type::getIntRange(0, $max);
-                    } else {
-                        $max = $right_type_part->min_bound + 1;
-                        $new_result_type = Type::getIntRange($max, 0);
-                    }
+                    $new_result_type = Type::getIntRange(0, $max);
                 } elseif ($left_type_part->isNegativeOrZero()) {
-                    if ($right_type_part->isPositive()) {
-                        $max = $right_type_part->min_bound - 1;
-                        $new_result_type = Type::getIntRange(-$max, 0);
-                    } else {
-                        $max = $right_type_part->min_bound + 1;
-                        $new_result_type = Type::getIntRange(-$max, 0);
-                    }
+                    $new_result_type = Type::getIntRange(-$max, 0);
                 } else {
-                    if ($right_type_part->isPositive()) {
-                        $max = $right_type_part->min_bound - 1;
-                    } else {
-                        $max = -$right_type_part->min_bound - 1;
-                    }
                     $new_result_type = Type::getIntRange(-$max, $max);
                 }
             }
@@ -1909,10 +1885,15 @@ final class ArithmeticOpAnalyzer
                 $new_result_type = Type::getInt(true);
             }
         } elseif ($right_type_part->isNegative()) {
+            // the result is less than the divisor in absolute value, which is at most the lower bound negated
+            $max = $right_type_part->min_bound === null || $right_type_part->min_bound === PHP_INT_MIN
+                ? null
+                : -$right_type_part->min_bound - 1;
+
             if ($left_type_part->isPositiveOrZero()) {
-                $new_result_type = Type::getIntRange(null, 0);
+                $new_result_type = Type::getIntRange(0, $max);
             } elseif ($left_type_part->isNegativeOrZero()) {
-                $new_result_type = Type::getIntRange(null, 0);
+                $new_result_type = Type::getIntRange($max === null ? null : -$max, 0);
             } else {
                 $new_result_type = Type::getInt(true);
             }
