@@ -11326,6 +11326,46 @@ final class TaintTest extends TestCase
                 'error_message' => 'TaintedHtml',
                 'php_version' => '8.2',
             ],
+            'taintAMutableTraitPropertyAcrossInstances' => [
+                'code' => '<?php // --taint-analysis
+                    trait HasText {
+                        public string $text = "Hello";
+                    }
+
+                    final class Greeting {
+                        use HasText;
+
+                        public function __construct(public readonly int $id) {}
+                    }
+
+                    $first = new Greeting(1);
+                    $second = new Greeting(2);
+                    $first->text = (string) $_GET["text"];
+                    echo $second->text;',
+                'error_message' => 'TaintedHtml',
+                'php_version' => '8.1',
+            ],
+            'taintAMutableObjectHeldByAReadonlyObject' => [
+                'code' => '<?php // --taint-analysis
+                    final class Text {
+                        public string $value = "Hello";
+                    }
+
+                    final readonly class Greeting {
+                        public function __construct(public Text $text) {}
+
+                        public function printText(): void {
+                            echo $this->text->value;
+                        }
+                    }
+
+                    $text = new Text();
+                    $greeting = new Greeting($text);
+                    $text->value = (string) $_GET["text"];
+                    $greeting->printText();',
+                'error_message' => 'TaintedHtml',
+                'php_version' => '8.2',
+            ],
             'taintWhatAReadonlyObjectKeepsInAStaticArray' => [
                 // A readonly class cannot declare a static property, so the array is in another class
                 'code' => '<?php // --taint-analysis

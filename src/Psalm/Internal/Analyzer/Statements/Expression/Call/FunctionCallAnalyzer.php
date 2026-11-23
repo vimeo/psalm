@@ -1633,6 +1633,78 @@ final class FunctionCallAnalyzer extends CallAnalyzer
         );
     }
 
+    private static function analyzeClosureCallPurity(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr\FuncCall $stmt,
+        PhpParser\Node\Expr $function_name,
+        Context $context,
+        TClosure|TCallable $var_type_part,
+        FunctionCallInfo $function_call_info,
+    ): void {
+        // the purity of the closure, where a purity template the enclosing function-like
+        // inherits its purity from requires nothing: that is deferred to its callers
+        $closure_capabilities = CallPurityResolver::resolvePurity(
+            $var_type_part->purity,
+            $statements_analyzer,
+        );
+
+        // a closure created in this scope: what it does to the variables it captured
+        // by reference, and through its by-reference parameters, stays in this scope
+        if ($statements_analyzer->node_data->isPureCompatible($function_name)) {
+            $closure_capabilities &= ~Capabilities::RECEIVER_LOCAL;
+        }
+
+        $closure_capabilities = ByRefArgumentAnalyzer::adjustCapabilities(
+            $statements_analyzer,
+            $context,
+            $closure_capabilities,
+            $var_type_part->params,
+            $stmt->isFirstClassCallable() ? [] : $stmt->getArgs(),
+        );
+
+        if (!$stmt->isFirstClassCallable()) {
+            if (($closure_capabilities & Capabilities::READ_GLOBALS) !== 0) {
+                $stmt->setAttribute(GlobalStateAnalyzer::ATTRIBUTE, true);
+            }
+
+            GlobalStateAnalyzer::checkArguments(
+                $statements_analyzer,
+                $context,
+                $stmt->getArgs(),
+                $closure_capabilities,
+                ImpureFunctionCall::class,
+                'the closure',
+            );
+        }
+
+        $source = $statements_analyzer->getSource();
+
+        if ($function_name instanceof PhpParser\Node\Expr\Variable
+            && is_string($function_name->name)
+            && $source instanceof ClosureAnalyzer
+            && $source->getRecursiveVarId() === '$' . $function_name->name
+        ) {
+            // a recursive call of the closure being analysed: not a mutation of its own
+        } elseif ($statements_analyzer->signalMutation(
+            $closure_capabilities,
+            $context,
+            'function call on ' . $var_type_part->getId(),
+            ImpureFunctionCall::class,
+            $stmt,
+            self::isPurityWildcardCandidate($statements_analyzer, $function_name, $var_type_part)
+                ? Capabilities::NONE
+                : null,
+            false,
+            $function_call_info->function_storage,
+        )) {
+            if (!$function_call_info->function_storage) {
+                $function_call_info->function_storage = new FunctionStorage();
+            }
+
+            $function_call_info->function_storage->capabilities |= $closure_capabilities;
+        }
+    }
+
     private static function getAnalyzeNamedExpression(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\FuncCall $stmt,
@@ -1689,8 +1761,6 @@ final class FunctionCallAnalyzer extends CallAnalyzer
 
             $var_atomic_types = $stmt_name_type->getAtomicTypes();
 
-            $source = $statements_analyzer->getSource();
-
             while ($var_atomic_types) {
                 $var_type_part = array_shift($var_atomic_types);
 
@@ -1706,66 +1776,14 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                 }
 
                 if ($var_type_part instanceof TClosure || $var_type_part instanceof TCallable) {
-                    // the purity of the closure, where a purity template the enclosing function-like
-                    // inherits its purity from requires nothing: that is deferred to its callers
-                    $closure_capabilities = CallPurityResolver::resolvePurity(
-                        $var_type_part->purity,
+                    self::analyzeClosureCallPurity(
                         $statements_analyzer,
-                    );
-
-                    // a closure created in this scope: what it does to the variables it captured
-                    // by reference, and through its by-reference parameters, stays in this scope
-                    if ($statements_analyzer->node_data->isPureCompatible($function_name)) {
-                        $closure_capabilities &= ~Capabilities::RECEIVER_LOCAL;
-                    }
-
-                    $closure_capabilities = ByRefArgumentAnalyzer::adjustCapabilities(
-                        $statements_analyzer,
-                        $context,
-                        $closure_capabilities,
-                        $var_type_part->params,
-                        $stmt->isFirstClassCallable() ? [] : $stmt->getArgs(),
-                    );
-
-                    if (!$stmt->isFirstClassCallable()) {
-                        if (($closure_capabilities & Capabilities::READ_GLOBALS) !== 0) {
-                            $stmt->setAttribute(GlobalStateAnalyzer::ATTRIBUTE, true);
-                        }
-
-                        GlobalStateAnalyzer::checkArguments(
-                            $statements_analyzer,
-                            $context,
-                            $stmt->getArgs(),
-                            $closure_capabilities,
-                            ImpureFunctionCall::class,
-                            'the closure',
-                        );
-                    }
-
-                    if ($function_name instanceof PhpParser\Node\Expr\Variable
-                        && is_string($function_name->name)
-                        && $source instanceof ClosureAnalyzer
-                        && $source->getRecursiveVarId() === '$' . $function_name->name
-                    ) {
-                        // a recursive call of the closure being analysed: not a mutation of its own
-                    } elseif ($statements_analyzer->signalMutation(
-                        $closure_capabilities,
-                        $context,
-                        'function call on ' . $var_type_part->getId(),
-                        ImpureFunctionCall::class,
                         $stmt,
-                        self::isPurityWildcardCandidate($statements_analyzer, $function_name, $var_type_part)
-                            ? Capabilities::NONE
-                            : null,
-                        false,
-                        $function_call_info->function_storage,
-                    )) {
-                        if (!$function_call_info->function_storage) {
-                            $function_call_info->function_storage = new FunctionStorage();
-                        }
-
-                        $function_call_info->function_storage->capabilities |= $closure_capabilities;
-                    }
+                        $function_name,
+                        $context,
+                        $var_type_part,
+                        $function_call_info,
+                    );
 
                     $function_call_info->function_params = $var_type_part->params;
 

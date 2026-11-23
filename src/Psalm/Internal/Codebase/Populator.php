@@ -165,9 +165,9 @@ final class Populator
      * A readonly class (whose subclasses PHP requires to be readonly too), or a final class without a parent
      * whose properties are all readonly or computed by a get hook.
      *
-     * @psalm-pure
+     * @psalm-capabilities read-props
      */
-    private static function cannotChangeOnceConstructed(ClassLikeStorage $storage): bool
+    private function cannotChangeOnceConstructed(ClassLikeStorage $storage): bool
     {
         if ($storage->is_interface || $storage->is_trait || $storage->is_enum) {
             return false;
@@ -177,13 +177,22 @@ final class Populator
             return true;
         }
 
-        if (!$storage->final || $storage->parent_classes !== [] || $storage->properties === []) {
+        if (!$storage->final || $storage->parent_classes !== [] || $storage->declaring_property_ids === []) {
             return false;
         }
 
-        foreach ($storage->properties as $property) {
+        // A trait property is kept in the declaring trait's storage.
+        foreach ($storage->declaring_property_ids as $name => $declaring_class) {
+            $property = $this->classlike_storage_provider->get($declaring_class)->properties[$name] ?? null;
+            if ($property === null) {
+                return false;
+            }
+
+            if ($property->is_static) {
+                continue;
+            }
             $computed = $property->hook_get !== null && $property->hook_set === null && !$property->is_promoted;
-            if (!$property->is_static && !$property->readonly && !$computed) {
+            if ((!$property->readonly || $property->allow_private_mutation) && !$computed) {
                 return false;
             }
         }
@@ -757,7 +766,7 @@ final class Populator
 
         // A readonly object cannot change once constructed: its properties hold the taints of its own
         // construction rather than those of every object of its class
-        if (!$storage->specialize_instance && self::cannotChangeOnceConstructed($storage)) {
+        if (!$storage->specialize_instance && $this->cannotChangeOnceConstructed($storage)) {
             $storage->specialize_instance = true;
         }
 
