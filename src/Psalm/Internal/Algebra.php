@@ -664,6 +664,9 @@ final class Algebra
         }
 
         $clauses = [];
+        // operands with several clauses give the same clause for several pairs: an || chain of k such operands
+        // would otherwise grow to 2^k clauses
+        $clause_hashes = [];
 
         $all_wedges = true;
         $has_wedge = false;
@@ -740,7 +743,7 @@ final class Algebra
                     ? $right_clause->creating_conditional_id
                     : $conditional_object_id;
 
-                $clauses[] = new Clause(
+                $clause = new Clause(
                     $possibilities,
                     $creating_conditional_id,
                     $creating_conditional_id,
@@ -752,6 +755,11 @@ final class Algebra
                         || count($right_clauses) > 1,
                     [],
                 );
+
+                if (!isset($clause_hashes[$clause->hash])) {
+                    $clause_hashes[$clause->hash] = true;
+                    $clauses[] = $clause;
+                }
             }
         }
 

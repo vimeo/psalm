@@ -176,6 +176,23 @@ final class ClosureTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'instanceofAnInterfaceExcludesTheFinalClosure' => [
+                'code' => '<?php
+                    interface K {}
+                    /** @return K|Closure */
+                    function getC() {
+                        return function (): void {};
+                    }
+                    $c = getC();
+                    if ($c instanceof K) {
+                        $d = $c;
+                    } else {
+                        $d = null;
+                    }',
+                'assertions' => [
+                    '$d===' => 'K|null',
+                ],
+            ],
             'closureGetCurrentSinceEightFive' => [
                 'code' => '<?php
                     $fib = static function (int $n): int {
@@ -3359,6 +3376,11 @@ final class ClosureTest extends TestCase
                 'error_message' => 'MixedReturnTypeCoercion',
                 'error_levels' => [],
                 'php_version' => '8.0',
+            ],
+            'closureIsFinal' => [
+                'code' => '<?php
+                    class C extends Closure {}',
+                'error_message' => 'InvalidExtendClass',
             ],
             'closureGetCurrentBeforeEightFive' => [
                 'code' => '<?php

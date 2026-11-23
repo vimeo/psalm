@@ -210,6 +210,88 @@ final class ForeachTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'foreachOverAnIteratorAggregateGivenByACoalesceAssignment' => [
+                'code' => '<?php
+                    /** @implements IteratorAggregate<int, string> */
+                    final class Items implements IteratorAggregate {
+                        #[Override]
+                        public function getIterator(): Iterator {
+                            return new ArrayIterator(["a"]);
+                        }
+                    }
+
+                    final class Holder {
+                        private ?Items $items = null;
+
+                        public function names(): void {
+                            foreach (($this->items ??= new Items()) as $name) {
+                                echo $name;
+                            }
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
+            'yieldFromAnIteratorAggregateGivenByACoalesceAssignment' => [
+                'code' => '<?php
+                    /** @implements IteratorAggregate<int, string> */
+                    final class Items implements IteratorAggregate {
+                        #[Override]
+                        public function getIterator(): Iterator {
+                            return new ArrayIterator(["a"]);
+                        }
+                    }
+
+                    final class Holder {
+                        private ?Items $items = null;
+
+                        /** @return Generator<int, string, mixed, void> */
+                        public function names(): Generator {
+                            yield from ($this->items ??= new Items());
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
+            'foreachAndYieldFromAnAggregateOfARawIteratorGivenByACoalesceAssignment' => [
+                'code' => '<?php
+                    final class RawIt implements Iterator {
+                        #[Override]
+                        public function current(): string { return "a"; }
+                        #[Override]
+                        public function key(): int { return 0; }
+                        #[Override]
+                        public function next(): void {}
+                        #[Override]
+                        public function rewind(): void {}
+                        #[Override]
+                        public function valid(): bool { return false; }
+                    }
+
+                    final class AggRaw implements IteratorAggregate {
+                        #[Override]
+                        public function getIterator(): RawIt { return new RawIt(); }
+                    }
+
+                    final class H {
+                        private ?AggRaw $aggRaw = null;
+
+                        public function a(): void {
+                            foreach (($this->aggRaw ??= new AggRaw()) as $v) {
+                                echo $v;
+                            }
+                        }
+
+                        public function b(): Generator {
+                            yield from ($this->aggRaw ??= new AggRaw());
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MissingTemplateParam'],
+                'php_version' => '8.3',
+            ],
             'methodCallOnArrayElementSetInLoop' => [
                 'code' => '<?php
                     final class Box {
@@ -1041,6 +1123,36 @@ final class ForeachTest extends TestCase
 
                     function iterate(AttributeReader $reader): void {
                         foreach ($reader->read() as $class => $attribute) {
+                            /** @psalm-check-type-exact $class = class-string<MappingAttribute> */
+                            /** @psalm-check-type-exact $attribute = MappingAttribute|RepeatableAttributeCollection<MappingAttribute> */
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'foreachOverAClassStringMapReturnedByAStaticMethodWithATemplateOfTheSameName' => [
+                'code' => <<<'PHP'
+                    <?php
+                    interface MappingAttribute {}
+
+                    /** @template T of MappingAttribute */
+                    final class RepeatableAttributeCollection {}
+
+                    final class AttributeReader {
+                        /**
+                         * @return class-string-map<T, T|RepeatableAttributeCollection<T>>
+                         *
+                         * @template T of MappingAttribute
+                         */
+                        public static function read(): array {
+                            return [];
+                        }
+                    }
+
+                    function iterate(): void {
+                        foreach (AttributeReader::read() as $class => $attribute) {
                             /** @psalm-check-type-exact $class = class-string<MappingAttribute> */
                             /** @psalm-check-type-exact $attribute = MappingAttribute|RepeatableAttributeCollection<MappingAttribute> */
                         }

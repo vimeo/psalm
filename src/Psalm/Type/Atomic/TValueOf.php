@@ -39,19 +39,14 @@ final class TValueOf extends Atomic
     ): Union {
         if ($atomic_type instanceof TEnumCase) {
             assert(isset($cases[$atomic_type->case_name]), 'Should\'ve been verified in TValueOf#getValueType');
+            // the value of a case in a cycle or of an undefined constant is not known
             $value = $cases[$atomic_type->case_name]->getValue($codebase->classlikes);
-            assert($value !== null, 'Backed enum must have a value.');
 
-            return new Union([$value]);
+            return new Union([$value ?? new TMixed()]);
         }
 
         return new Union(array_map(
-            static function (EnumCaseStorage $case) use ($codebase): Atomic {
-                $case_value = $case->getValue($codebase->classlikes);
-                // Backed enum must have a value
-                assert($case_value !== null);
-                return $case_value;
-            },
+            static fn(EnumCaseStorage $case): Atomic => $case->getValue($codebase->classlikes) ?? new TMixed(),
             array_values($cases),
         ));
     }

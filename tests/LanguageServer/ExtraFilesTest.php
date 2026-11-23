@@ -114,6 +114,27 @@ final class ExtraFilesTest extends TestCase
         $this->assertTrue($this->codebase->classExists(self::EXTRA_FILES_CLASS));
     }
 
+    public function testExtraFilesAreShallowScannedWhenCheckingADir(): void
+    {
+        $this->project_analyzer->checkDir(self::fixturePath('src'));
+
+        $this->assertExtraFilesAreShallowScanned();
+    }
+
+    public function testExtraFilesAreShallowScannedWhenCheckingAFile(): void
+    {
+        $this->project_analyzer->checkFile(self::fixturePath('src/ConsumesExtraFiles.php'));
+
+        $this->assertExtraFilesAreShallowScanned();
+    }
+
+    private function assertExtraFilesAreShallowScanned(): void
+    {
+        $scanned_files = $this->codebase->scanner->getScannedFiles();
+
+        $this->assertFalse($scanned_files[self::fixturePath('dependency/unreferenced_extra_function.php')] ?? null);
+    }
+
     private function enterServerMode(): void
     {
         $clientConfiguration = new ClientConfiguration();

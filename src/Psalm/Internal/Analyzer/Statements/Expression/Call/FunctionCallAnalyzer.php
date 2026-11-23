@@ -12,6 +12,7 @@ use Psalm\Internal\Algebra;
 use Psalm\Internal\Algebra\FormulaGenerator;
 use Psalm\Internal\Analyzer\AlgebraAnalyzer;
 use Psalm\Internal\Analyzer\ClosureAnalyzer;
+use Psalm\Internal\Analyzer\ExtensionRequirementAnalyzer;
 use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\PurityWildcardInference;
 use Psalm\Internal\Analyzer\Statements\Expression\ArrayAnalyzer;
@@ -26,7 +27,6 @@ use Psalm\Internal\Analyzer\Statements\Expression\IntMaskComparisonAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\Statements\GlobalAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
-use Psalm\Internal\Analyzer\TraitAnalyzer;
 use Psalm\Internal\Codebase\CliOutput;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Internal\Codebase\PhpDeprecations;
@@ -304,6 +304,21 @@ final class FunctionCallAnalyzer extends CallAnalyzer
         }
 
         $function_storage = $function_call_info->function_storage;
+
+        // record the call sites of user functions, as Methods::methodExists() does for methods
+        if ($codebase->collect_locations
+            && $function_storage !== null
+            && $function_storage->location !== null
+            && $function_call_info->function_id !== null
+        ) {
+            $codebase->addReferenceToFunctionLike(
+                strtolower($function_call_info->function_id),
+                new CodeLocation($statements_analyzer->getSource(), $stmt->name),
+                $context,
+                $context->insideUse(),
+                $statements_analyzer->getFilePath(),
+            );
+        }
 
         // a function requiring an instance of a class with @psalm-cli-only-instances is called with one: from the
         // command line
@@ -969,6 +984,17 @@ final class FunctionCallAnalyzer extends CallAnalyzer
 
         $function_call_info->function_exists
             = $function_call_info->is_stubbed || $function_call_info->in_call_map || $namespaced_function_exists;
+
+        if ($function_call_info->in_call_map || $function_call_info->is_stubbed) {
+            ExtensionRequirementAnalyzer::check(
+                $codebase,
+                $function_call_info->function_id,
+                false,
+                new CodeLocation($statements_analyzer->getSource(), $function_name),
+                $context,
+                $statements_analyzer->getSuppressedIssues(),
+            );
+        }
 
         if ($function_call_info->function_exists
             && !$stmt->isFirstClassCallable()
@@ -1850,13 +1876,8 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                 } elseif ($var_type_part instanceof TNull) {
                     // handled above
                 } elseif (!$var_type_part instanceof TNamedObject
-                    || !$codebase->classlikes->classOrInterfaceExists($var_type_part->value, null, $context)
-                    || !$codebase->methodExists(
-                        new MethodIdentifier(
-                            $var_type_part->value,
-                            '__invoke',
-                        ),
-                    )
+                    || ($invoke_member = CallableTypeComparator::getInvokeMember($codebase, $var_type_part)) === null
+                    || !$codebase->classlikes->classOrInterfaceExists($invoke_member->value, null, $context)
                 ) {
                     $invalid_function_call_types[] = (string)$var_type_part;
                 } else {
@@ -1954,6 +1975,12 @@ final class FunctionCallAnalyzer extends CallAnalyzer
         Context $context,
         Atomic $atomic_type,
     ): void {
+        // a first-class callable of a method is looked up in the first member of an intersection only
+        if ($stmt->isFirstClassCallable() && $atomic_type instanceof TNamedObject) {
+            $atomic_type = CallableTypeComparator::getInvokeMember($statements_analyzer->getCodebase(), $atomic_type)
+                ?? $atomic_type;
+        }
+
         $old_data_provider = $statements_analyzer->node_data;
 
         $statements_analyzer->node_data = clone $statements_analyzer->node_data;
@@ -2061,12 +2088,7 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                     && isset($context->vars_in_scope[$var_id])
                     && $context->vars_in_scope[$var_id]->hasMixed()
                 ) {
-                    if (!$context->collect_initializations
-                        && $statements_analyzer->getFilePath() === $statements_analyzer->getRootFilePath()
-                        && (!(($parent_source = $statements_analyzer->getSource())
-                                    instanceof FunctionLikeAnalyzer)
-                                || !$parent_source->getSource() instanceof TraitAnalyzer)
-                    ) {
+                    if ($statements_analyzer->shouldCountMixed($context)) {
                         $codebase->analyzer->decrementMixedCount($statements_analyzer->getFilePath());
                     }
 

@@ -87,6 +87,7 @@ final class InterfaceAnalyzer extends ClassLikeAnalyzer
                     $parent_reference_location,
                     $class_context,
                     $class_storage->suppressed_issues + $this->getSuppressedIssues(),
+                    new ClassLikeNameOptions(required_at_runtime: true),
                 ) === false) {
                     continue;
                 }

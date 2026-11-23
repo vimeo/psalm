@@ -24,6 +24,7 @@ use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\Codebase\TaintStore;
 use Psalm\Internal\Codebase\VariableUseGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
+use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Issue\ImpurePropertyAssignment;
@@ -40,6 +41,7 @@ use Psalm\Type\Atomic\TLiteralClassString;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TMixed;
+use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNever;
 use Psalm\Type\Atomic\TNonEmptyArray;
 use Psalm\Type\Atomic\TNull;
@@ -846,6 +848,11 @@ final class ArrayAssignmentAnalyzer
                     }
                 }
                 $type = $type->setProperties($properties);
+            } elseif ($type instanceof TClassStringMap
+                && self::isItemOfClassStringMap($codebase, $type, $key_values, $current_type)
+            ) {
+                // `$map[Foo::class] = new Foo()` is what the class-string-map holds
+                $has_matching_objectlike_property = true;
             } elseif ($type instanceof TString) {
                 foreach ($key_values as $key_value) {
                     if ($key_value instanceof TLiteralInt) {
@@ -906,6 +913,39 @@ final class ArrayAssignmentAnalyzer
         }
 
         return $child_stmt_type;
+    }
+
+    /**
+     * Whether the value is an item the class-string-map holds under each of the literal class-strings
+     *
+     * @param non-empty-list<TLiteralInt|TLiteralString> $key_values
+     */
+    private static function isItemOfClassStringMap(
+        Codebase $codebase,
+        TClassStringMap $map,
+        array $key_values,
+        Union $value_type,
+    ): bool {
+        foreach ($key_values as $key_value) {
+            if (!$key_value instanceof TLiteralClassString) {
+                return false;
+            }
+
+            $item_type = TemplateInferredTypeReplacer::replace(
+                $map->value_param,
+                new TemplateResult(
+                    [],
+                    [$map->param_name => ['class-string-map' => new Union([new TNamedObject($key_value->value)])]],
+                ),
+                $codebase,
+            );
+
+            if (!UnionTypeComparator::isContainedBy($codebase, $value_type, $item_type)) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /**
@@ -1724,6 +1764,18 @@ final class ArrayAssignmentAnalyzer
             }
 
             $is_last = $i === count($child_stmts) - 1;
+
+            // an item that is an object (an ArrayAccess) is written through its offsetSet(), which reads the array
+            // holding it
+            if ($i > 0 && $array_type->hasObjectType() && $statements_analyzer->data_flow_graph) {
+                foreach ($root_type->parent_nodes as $parent_node) {
+                    $statements_analyzer->data_flow_graph->addPath(
+                        $parent_node,
+                        DataFlowNode::getForVariableUse(),
+                        'use-inside-call',
+                    );
+                }
+            }
 
             $child_stmt_dim_type_or_int = $child_stmt_dim_type ?? Type::getInt();
             $child_stmt_type = ArrayFetchAnalyzer::getArrayAccessTypeGivenOffset(

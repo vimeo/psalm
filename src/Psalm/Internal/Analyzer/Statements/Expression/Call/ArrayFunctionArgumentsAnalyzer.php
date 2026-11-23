@@ -612,36 +612,18 @@ final class ArrayFunctionArgumentsAnalyzer
         }
 
         if (!isset($args[2])) {
-            if ($offset_arg_is_zero) {
-                $array_type = Type::getEmptyArray();
-                AssignmentAnalyzer::assignByRefParam(
-                    $statements_analyzer,
-                    $array_arg,
-                    $array_type,
-                    $array_type,
-                    $context,
-                    false,
-                );
-            } elseif ($array_type) {
-                AssignmentAnalyzer::assignByRefParam(
-                    $statements_analyzer,
-                    $array_arg,
-                    new Union([$array_type]),
-                    new Union([$array_type]),
-                    $context,
-                    false,
-                );
-            } else {
-                $default_array_type = Type::getArray();
-                AssignmentAnalyzer::assignByRefParam(
-                    $statements_analyzer,
-                    $array_arg,
-                    $default_array_type,
-                    $default_array_type,
-                    $context,
-                    false,
-                );
-            }
+            $spliced_type = $offset_arg_is_zero
+                ? Type::getEmptyArray()
+                : ($array_type ? new Union([$array_type]) : Type::getArray());
+
+            AssignmentAnalyzer::assignByRefParam(
+                $statements_analyzer,
+                $array_arg,
+                $spliced_type,
+                $spliced_type,
+                $context,
+                false,
+            );
 
             return null;
         }
@@ -687,36 +669,18 @@ final class ArrayFunctionArgumentsAnalyzer
         }
 
         if (!isset($args[3])) {
-            if ($cover_whole_arr) {
-                $array_type = Type::getEmptyArray();
-                AssignmentAnalyzer::assignByRefParam(
-                    $statements_analyzer,
-                    $array_arg,
-                    $array_type,
-                    $array_type,
-                    $context,
-                    false,
-                );
-            } elseif ($array_type) {
-                AssignmentAnalyzer::assignByRefParam(
-                    $statements_analyzer,
-                    $array_arg,
-                    new Union([$array_type]),
-                    new Union([$array_type]),
-                    $context,
-                    false,
-                );
-            } else {
-                $default_array_type = Type::getArray();
-                AssignmentAnalyzer::assignByRefParam(
-                    $statements_analyzer,
-                    $array_arg,
-                    $default_array_type,
-                    $default_array_type,
-                    $context,
-                    false,
-                );
-            }
+            $spliced_type = $cover_whole_arr
+                ? Type::getEmptyArray()
+                : ($array_type ? new Union([$array_type]) : Type::getArray());
+
+            AssignmentAnalyzer::assignByRefParam(
+                $statements_analyzer,
+                $array_arg,
+                $spliced_type,
+                $spliced_type,
+                $context,
+                false,
+            );
 
             return null;
         }
@@ -843,6 +807,7 @@ final class ArrayFunctionArgumentsAnalyzer
         );
 
         if ($var_id) {
+            $context->releaseKeysBoundToList($var_id);
             $context->removeVarFromConflictingClauses($var_id, null, $statements_analyzer);
 
             if (isset($context->vars_in_scope[$var_id])) {

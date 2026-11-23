@@ -18,8 +18,9 @@ use Psalm\Internal\Analyzer\Statements\Block\ForeachAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\CastAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
+use Psalm\Internal\Analyzer\Statements\TypeMismatch\ArgumentTypeMismatchReporter;
+use Psalm\Internal\Analyzer\Statements\TypeMismatch\TypeMismatchReporter;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
-use Psalm\Internal\Analyzer\TraitAnalyzer;
 use Psalm\Internal\Codebase\CliOutput;
 use Psalm\Internal\Codebase\ConstantTypeResolver;
 use Psalm\Internal\Codebase\PhpDeprecations;
@@ -30,27 +31,22 @@ use Psalm\Internal\Type\Comparator\CallableTypeComparator;
 use Psalm\Internal\Type\Comparator\TypeComparisonResult;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\TemplateBound;
+use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
+use Psalm\Internal\Type\TypeArgumentProjection;
 use Psalm\Internal\Type\TypeExpander;
 use Psalm\Internal\TypeVisitor\TypeVariableResolver;
-use Psalm\Issue\ArgumentTypeCoercion;
 use Psalm\Issue\CallableByReferenceMismatch;
 use Psalm\Issue\DeprecatedSyntax;
-use Psalm\Issue\ImplicitToStringCast;
 use Psalm\Issue\InvalidArgument;
 use Psalm\Issue\InvalidLiteralArgument;
-use Psalm\Issue\InvalidScalarArgument;
 use Psalm\Issue\MixedArgument;
-use Psalm\Issue\MixedArgumentTypeCoercion;
 use Psalm\Issue\NamedArgumentNotAllowed;
 use Psalm\Issue\NoValue;
-use Psalm\Issue\NullArgument;
 use Psalm\Issue\ParentNotFound;
 use Psalm\Issue\PositionalArgumentNotAllowed;
-use Psalm\Issue\PossiblyFalseArgument;
 use Psalm\Issue\PossiblyInvalidArgument;
-use Psalm\Issue\PossiblyNullArgument;
 use Psalm\IssueBuffer;
 use Psalm\Node\VirtualArg;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
@@ -76,7 +72,6 @@ use Psalm\Type\Atomic\TObjectWithProperties;
 use Psalm\Type\Atomic\TScalar;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateParam;
-use Psalm\Type\Atomic\TTypeVariable;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
@@ -87,7 +82,6 @@ use function array_shift;
 use function array_values;
 use function count;
 use function explode;
-use function implode;
 use function in_array;
 use function is_int;
 use function is_numeric;
@@ -95,7 +89,6 @@ use function is_string;
 use function max;
 use function mb_ord;
 use function preg_split;
-use function reset;
 use function str_contains;
 use function str_starts_with;
 use function strpos;
@@ -214,14 +207,7 @@ final class ArgumentAnalyzer
 
         if (!$arg_value_type) {
             if ($function_param && !$function_param->by_ref) {
-                if (!$context->collect_initializations
-                    && $statements_analyzer->getFilePath() === $statements_analyzer->getRootFilePath()
-                    && (!(($parent_source = $statements_analyzer->getSource())
-                            instanceof FunctionLikeAnalyzer)
-                        || !$parent_source->getSource() instanceof TraitAnalyzer)
-                ) {
-                    $codebase->analyzer->incrementMixedCount($statements_analyzer->getFilePath());
-                }
+                $statements_analyzer->countMixed($context, true);
 
                 $param_type = $function_param->type;
 
@@ -459,44 +445,16 @@ final class ArgumentAnalyzer
         // what the argument says about each template is read from the declared type, before class templates are bound
         $declared_param_type = $param_type;
 
-        if ($class_generic_params) {
-            // here we're replacing the param types and arg types with the bound
-            // class template params.
-            //
-            // For example, if we're operating on a class Foo with params TKey and TValue,
-            // and we're calling a method "add(TKey $key, TValue $value)" on an instance
-            // of that class where we know that TKey is int and TValue is string, then we
-            // want to substitute the expected parameters so it's as if we were actually
-            // calling "add(int $key, string $value)"
-            $readonly_template_result = new TemplateResult($class_generic_params, []);
-
-            // This flag ensures that the template results will never be written to
-            // It also supersedes the `$add_lower_bounds` flag so that closure params
-            // don’t get overwritten
-            $readonly_template_result->readonly = true;
-
-            $param_type = TemplateStandinTypeReplacer::replace(
-                $param_type,
-                $readonly_template_result,
-                $codebase,
-                $statements_analyzer,
-                $arg_value_type,
-                $argument_offset,
-                $context->self,
-                $context->calling_function_id ?: $context->calling_method_id,
-            );
-
-            $arg_value_type = TemplateStandinTypeReplacer::replace(
-                $arg_value_type,
-                $readonly_template_result,
-                $codebase,
-                $statements_analyzer,
-                $arg_value_type,
-                $argument_offset,
-                $context->self,
-                $context->calling_function_id ?: $context->calling_method_id,
-            );
-        }
+        [$param_type, $arg_value_type] = self::bindClassTemplates(
+            $statements_analyzer,
+            $codebase,
+            $context,
+            $param_type,
+            $arg_value_type,
+            $argument_offset,
+            $class_generic_params,
+            $template_result,
+        );
 
         if ($template_result && $template_result->template_types) {
             $arg_type_param = $arg_value_type;
@@ -581,46 +539,21 @@ final class ArgumentAnalyzer
 
         if ($arg->unpack) {
             if ($arg_value_type->hasMixed()) {
-                if (!$context->collect_initializations
-                    && $statements_analyzer->getFilePath() === $statements_analyzer->getRootFilePath()
-                    && (!(($parent_source = $statements_analyzer->getSource())
-                            instanceof FunctionLikeAnalyzer)
-                        || !$parent_source->getSource() instanceof TraitAnalyzer)
-                ) {
-                    $codebase->analyzer->incrementMixedCount($statements_analyzer->getFilePath());
-                }
-
-                IssueBuffer::maybeAdd(
-                    new MixedArgument(
-                        'Argument ' . ($argument_offset + 1) . ' of ' . $cased_method_id
-                            . ' cannot unpack ' . $arg_value_type->getId() . ', expecting iterable',
-                        new CodeLocation($statements_analyzer->getSource(), $arg->value),
-                        $cased_method_id,
-                    ),
-                    $statements_analyzer->getSuppressedIssues(),
+                self::analyzeMixedUnpackedArgument(
+                    $statements_analyzer,
+                    $cased_method_id,
+                    $method_id,
+                    $function_call_location,
+                    $function_storage,
+                    $function_param,
+                    $arg_value_type,
+                    $argument_offset,
+                    $unpacked_argument_offset,
+                    $arg,
+                    $context,
+                    $specialize_taint,
+                    $in_call_map,
                 );
-
-                if ($cased_method_id) {
-                    $arg_location = new CodeLocation($statements_analyzer->getSource(), $arg->value);
-
-                    self::processTaintedness(
-                        $statements_analyzer,
-                        $cased_method_id,
-                        $method_id,
-                        $argument_offset,
-                        $arg_location,
-                        $function_call_location,
-                        $function_storage,
-                        $function_param,
-                        $arg_value_type,
-                        $arg->value,
-                        $context,
-                        $specialize_taint,
-                        $in_call_map,
-                        null,
-                        $unpacked_argument_offset,
-                    );
-                }
 
                 return null;
             }
@@ -846,6 +779,56 @@ final class ArgumentAnalyzer
         return null;
     }
 
+    private static function analyzeMixedUnpackedArgument(
+        StatementsAnalyzer $statements_analyzer,
+        ?string $cased_method_id,
+        ?MethodIdentifier $method_id,
+        CodeLocation $function_call_location,
+        ?FunctionLikeStorage $function_storage,
+        FunctionLikeParameter $function_param,
+        Union $arg_value_type,
+        int $argument_offset,
+        int $unpacked_argument_offset,
+        PhpParser\Node\Arg $arg,
+        Context $context,
+        bool $specialize_taint,
+        bool $in_call_map,
+    ): void {
+        $statements_analyzer->countMixed($context, true);
+
+        IssueBuffer::maybeAdd(
+            new MixedArgument(
+                'Argument ' . ($argument_offset + 1) . ' of ' . $cased_method_id
+                    . ' cannot unpack ' . $arg_value_type->getId() . ', expecting iterable',
+                new CodeLocation($statements_analyzer->getSource(), $arg->value),
+                $cased_method_id,
+            ),
+            $statements_analyzer->getSuppressedIssues(),
+        );
+
+        if ($cased_method_id) {
+            $arg_location = new CodeLocation($statements_analyzer->getSource(), $arg->value);
+
+            self::processTaintedness(
+                $statements_analyzer,
+                $cased_method_id,
+                $method_id,
+                $argument_offset,
+                $arg_location,
+                $function_call_location,
+                $function_storage,
+                $function_param,
+                $arg_value_type,
+                $arg->value,
+                $context,
+                $specialize_taint,
+                $in_call_map,
+                null,
+                $unpacked_argument_offset,
+            );
+        }
+    }
+
     /**
      * Gives each template the argument did not bind its constraint (or the upper bound the argument gave it) as a
      * stand-in lower bound, and sets {@see TemplateBound::$from_template_free_argument} on its lower bounds, those of
@@ -1025,13 +1008,12 @@ final class ArgumentAnalyzer
                 $declaring_method_id = $codebase->methods->getDeclaringMethodId($method_id);
 
                 if ($declaring_method_id) {
-                    $id_lc = strtolower((string) $declaring_method_id);
-                    $codebase->analyzer->possible_method_param_types[$id_lc][$argument_offset]
-                        = Type::combineUnionTypes(
-                            $codebase->analyzer->possible_method_param_types[$id_lc][$argument_offset] ?? null,
-                            $input_type,
-                            $codebase,
-                        );
+                    $codebase->analyzer->addPossibleMethodParamType(
+                        $codebase,
+                        $declaring_method_id,
+                        $argument_offset,
+                        $input_type,
+                    );
                 }
             }
 
@@ -1061,31 +1043,7 @@ final class ArgumentAnalyzer
         $method_identifier = $cased_method_id ? ' of ' . $cased_method_id : '';
 
         if ($input_type->hasMixed()) {
-            if (!$context->collect_initializations
-                && $statements_analyzer->getFilePath() === $statements_analyzer->getRootFilePath()
-                && (!(($parent_source = $statements_analyzer->getSource())
-                        instanceof FunctionLikeAnalyzer)
-                    || !$parent_source->getSource() instanceof TraitAnalyzer)
-            ) {
-                $codebase->analyzer->incrementMixedCount($statements_analyzer->getFilePath());
-            }
-
-            $origin_locations = [];
-
-            if ($statements_analyzer->variable_use_graph) {
-                foreach ($input_type->parent_nodes as $parent_node) {
-                    $origin_locations = [
-                        ...$origin_locations,
-                        ...$statements_analyzer->variable_use_graph->getOriginLocations($parent_node),
-                    ];
-                }
-            }
-
-            $origin_location = count($origin_locations) === 1 ? reset($origin_locations) : null;
-
-            if ($origin_location && $origin_location->getHash() === $arg_location->getHash()) {
-                $origin_location = null;
-            }
+            $statements_analyzer->countMixed($context, true);
 
             IssueBuffer::maybeAdd(
                 new MixedArgument(
@@ -1094,7 +1052,7 @@ final class ArgumentAnalyzer
                         . $param_type->getId(),
                     $arg_location,
                     $cased_method_id,
-                    $origin_location,
+                    TypeMismatchReporter::getOriginLocation($statements_analyzer, $input_type, $arg_location),
                 ),
                 $statements_analyzer->getSuppressedIssues(),
             );
@@ -1160,14 +1118,7 @@ final class ArgumentAnalyzer
             return null;
         }
 
-        if (!$context->collect_initializations
-            && $statements_analyzer->getFilePath() === $statements_analyzer->getRootFilePath()
-            && (!(($parent_source = $statements_analyzer->getSource())
-                    instanceof FunctionLikeAnalyzer)
-                || !$parent_source->getSource() instanceof TraitAnalyzer)
-        ) {
-            $codebase->analyzer->incrementNonMixedCount($statements_analyzer->getFilePath());
-        }
+        $statements_analyzer->countMixed($context, false);
 
         if ($function_param->by_ref || $function_param->is_optional) {
             //if the param is optional or a ref, we'll allow the input to be possibly_undefined
@@ -1191,6 +1142,10 @@ final class ArgumentAnalyzer
                 $container_callable_type = $container_callable_type instanceof TCallable
                     ? $container_callable_type
                     : null;
+
+                // only a closure is a Closure: an invokable object, a function name or an array is not
+                $replaces = !$param_type->getSingleAtomic() instanceof TClosure
+                    || ($atomic_type instanceof TNamedObject && $atomic_type->value === 'Closure');
 
                 $candidate_callable = CallableTypeComparator::getCallableFromAtomic(
                     $codebase,
@@ -1248,8 +1203,10 @@ final class ArgumentAnalyzer
                         }
                     }
 
-                    $input_type->removeType($key);
-                    $input_type->addType($candidate_callable);
+                    if ($replaces) {
+                        $input_type->removeType($key);
+                        $input_type->addType($candidate_callable);
+                    }
                 }
             }
             $input_type = $input_type->freeze();
@@ -1469,63 +1426,6 @@ final class ArgumentAnalyzer
             }
         }
 
-        if ($context->strict_types
-            && !$input_type->hasArray()
-            && !$param_type->from_docblock
-            && $cased_method_id !== 'echo'
-            && $cased_method_id !== 'print'
-            && $cased_method_id !== 'sprintf'
-        ) {
-            $union_comparison_results->scalar_type_match_found = false;
-
-            if ($union_comparison_results->to_string_cast) {
-                $union_comparison_results->to_string_cast = false;
-                $type_match_found = false;
-            }
-        }
-
-        if ($union_comparison_results->type_coerced && !$input_type->hasMixed()) {
-            if ($union_comparison_results->type_coerced_from_mixed) {
-                $origin_locations = [];
-
-                if ($statements_analyzer->variable_use_graph) {
-                    foreach ($input_type->parent_nodes as $parent_node) {
-                        $origin_locations = [
-                            ...$origin_locations,
-                            ...$statements_analyzer->variable_use_graph->getOriginLocations($parent_node),
-                        ];
-                    }
-                }
-
-                $origin_location = count($origin_locations) === 1 ? reset($origin_locations) : null;
-
-                if ($origin_location && $origin_location->getHash() === $arg_location->getHash()) {
-                    $origin_location = null;
-                }
-
-                IssueBuffer::maybeAdd(
-                    new MixedArgumentTypeCoercion(
-                        'Argument ' . ($argument_offset + 1) . $method_identifier . ' expects ' . $param_type->getId() .
-                            ', but parent type ' . $input_type->getId() . ' provided',
-                        $arg_location,
-                        $cased_method_id,
-                        $origin_location,
-                    ),
-                    $statements_analyzer->getSuppressedIssues(),
-                );
-            } elseif ($cased_method_id !== 'echo' && $cased_method_id !== 'print') {
-                IssueBuffer::maybeAdd(
-                    new ArgumentTypeCoercion(
-                        'Argument ' . ($argument_offset + 1) . $method_identifier . ' expects ' . $param_type->getId() .
-                            ', but parent type ' . $input_type->getId() . ' provided',
-                        $arg_location,
-                        $cased_method_id,
-                    ),
-                    $statements_analyzer->getSuppressedIssues(),
-                );
-            }
-        }
-
         if ($union_comparison_results->callable_by_reference_mismatch) {
             IssueBuffer::maybeAdd(
                 new CallableByReferenceMismatch(
@@ -1539,67 +1439,17 @@ final class ArgumentAnalyzer
             );
         }
 
-        if ($union_comparison_results->to_string_cast && $cased_method_id !== 'echo' && $cased_method_id !== 'print') {
-            IssueBuffer::maybeAdd(
-                new ImplicitToStringCast(
-                    'Argument ' . ($argument_offset + 1) . $method_identifier . ' expects ' .
-                        $param_type->getId() . ', but ' . $input_type->getId() . ' provided with a __toString method',
-                    $arg_location,
-                ),
-                $statements_analyzer->getSuppressedIssues(),
-            );
-        }
+        $mismatch_reporter = new ArgumentTypeMismatchReporter(
+            $statements_analyzer,
+            $input_type,
+            $param_type,
+            $arg_location,
+            $argument_offset,
+            $cased_method_id,
+            $context->strict_types,
+        );
 
-        if (!$type_match_found && !$union_comparison_results->type_coerced) {
-            $types_can_be_identical = UnionTypeComparator::canBeContainedBy(
-                $codebase,
-                $input_type,
-                $param_type,
-                true,
-                true,
-            );
-
-            $type = ($input_type->possibly_undefined ? 'possibly undefined ' : '') . $input_type->getId();
-            if ($union_comparison_results->scalar_type_match_found) {
-                if ($cased_method_id !== 'echo' && $cased_method_id !== 'print') {
-                    IssueBuffer::maybeAdd(
-                        new InvalidScalarArgument(
-                            'Argument ' . ($argument_offset + 1) . $method_identifier . ' expects ' .
-                                $param_type->getId() . ', but ' . $type . ' provided',
-                            $arg_location,
-                            $cased_method_id,
-                        ),
-                        $statements_analyzer->getSuppressedIssues(),
-                    );
-                }
-            } elseif ($types_can_be_identical) {
-                IssueBuffer::maybeAdd(
-                    new PossiblyInvalidArgument(
-                        'Argument ' . ($argument_offset + 1) . $method_identifier . ' expects ' . $param_type->getId() .
-                            ', but possibly different type ' . $type . ' provided',
-                        $arg_location,
-                        $cased_method_id,
-                    ),
-                    $statements_analyzer->getSuppressedIssues(),
-                );
-            } else {
-                IssueBuffer::maybeAdd(
-                    new InvalidArgument(
-                        'Argument ' . ($argument_offset + 1) . $method_identifier . ' expects ' . $param_type->getId()
-                            . ', but ' . $type
-                            . ($union_comparison_results->missing_shape_fields
-                                ? ' with additional array shape fields ('
-                                    . implode(', ', $union_comparison_results->missing_shape_fields)
-                                    . ') was'
-                                : '')
-                            . ' provided',
-                        $arg_location,
-                        $cased_method_id,
-                    ),
-                    $statements_analyzer->getSuppressedIssues(),
-                );
-            }
-
+        if (!$mismatch_reporter->reportComparison($type_match_found, $union_comparison_results)) {
             return null;
         }
 
@@ -1618,80 +1468,8 @@ final class ArgumentAnalyzer
             return null;
         }
 
-        $param_has_type_variable = false;
-
-        foreach ($param_type->getAtomicTypes() as $param_atomic_type) {
-            if ($param_atomic_type instanceof TTypeVariable) {
-                // a null argument against a type variable records a bound
-                // like any other value, rather than being rejected up front
-                $param_has_type_variable = true;
-                break;
-            }
-        }
-
-        if (!$param_type->isNullable()
-            && !$param_has_type_variable
-            && $cased_method_id !== 'echo'
-            && $cased_method_id !== 'print'
-        ) {
-            if ($input_type->isNull()) {
-                IssueBuffer::maybeAdd(
-                    new NullArgument(
-                        'Argument ' . ($argument_offset + 1) . $method_identifier . ' cannot be null, ' .
-                            'null value provided to parameter with type ' . $param_type->getId(),
-                        $arg_location,
-                        $cased_method_id,
-                    ),
-                    $statements_analyzer->getSuppressedIssues(),
-                );
-
-                return null;
-            }
-
-            if ($input_type->isNullable() && !$input_type->ignore_nullable_issues) {
-                IssueBuffer::maybeAdd(
-                    new PossiblyNullArgument(
-                        'Argument ' . ($argument_offset + 1) . $method_identifier . ' cannot be null, possibly ' .
-                            'null value provided',
-                        $arg_location,
-                        $cased_method_id,
-                    ),
-                    $statements_analyzer->getSuppressedIssues(),
-                );
-            }
-        }
-
-        if (!$param_type->isFalsable() &&
-            !$param_type->hasBool() &&
-            !$param_type->hasScalar() &&
-            $cased_method_id !== 'echo' &&
-            $cased_method_id !== 'print'
-        ) {
-            if ($input_type->isFalse()) {
-                IssueBuffer::maybeAdd(
-                    new InvalidArgument(
-                        'Argument ' . ($argument_offset + 1) . $method_identifier . ' cannot be false, ' .
-                        $param_type->getId() . ' value expected',
-                        $arg_location,
-                        $cased_method_id,
-                    ),
-                    $statements_analyzer->getSuppressedIssues(),
-                );
-
-                return null;
-            }
-
-            if ($input_type->isFalsable() && !$input_type->ignore_falsable_issues) {
-                IssueBuffer::maybeAdd(
-                    new PossiblyFalseArgument(
-                        'Argument ' . ($argument_offset + 1) . $method_identifier . ' cannot be false, possibly ' .
-                        $param_type->getId() . ' value expected',
-                        $arg_location,
-                        $cased_method_id,
-                    ),
-                    $statements_analyzer->getSuppressedIssues(),
-                );
-            }
+        if ($mismatch_reporter->reportNullAndFalse()) {
+            return null;
         }
 
         if (($type_match_found || $input_type->hasMixed())
@@ -1733,7 +1511,7 @@ final class ArgumentAnalyzer
         return $potential_method_id->fq_class_name !== $context->self
             || ($cased_method_id !== null
                 && !$method_id
-                && !in_array($cased_method_id, self::PHP_NATIVE_NON_PUBLIC_CB, true))
+                && !in_array(strtolower($cased_method_id), self::PHP_NATIVE_NON_PUBLIC_CB, true))
             || ($method_id
                 && $method_id->fq_class_name !== $context->self
                 && $method_id->fq_class_name !== 'Closure');
@@ -2128,20 +1906,24 @@ final class ArgumentAnalyzer
                         ) {
                             $new_type_params = [];
                             foreach ($input_atomic_type->type_params as $i => $type_param) {
-                                if ($type_param->isNever() && isset($param_atomic_type->type_params[$i])) {
+                                // a `*` param says nothing about what the value holds
+                                if ($type_param->isNever()
+                                    && isset($param_atomic_type->type_params[$i])
+                                    && $param_atomic_type->getProjection($i) !== TypeArgumentProjection::Star
+                                ) {
                                     $input_type_changed = true;
 
                                     $new_type_params[$i] = $param_atomic_type->type_params[$i];
                                 }
                             }
                             if ($new_type_params) {
-                                $input_atomic_type = new TGenericObject(
+                                $input_atomic_type = (new TGenericObject(
                                     $input_atomic_type->value,
                                     [...$input_atomic_type->type_params, ...$new_type_params],
                                     $input_atomic_type->remapped_params,
                                     false,
                                     $input_atomic_type->extra_types,
-                                );
+                                ))->setProjections($input_atomic_type->getProjections());
                             }
                         }
                     }
@@ -3088,5 +2870,78 @@ final class ArgumentAnalyzer
             ),
             $statements_analyzer->getSuppressedIssues(),
         );
+    }
+
+    /**
+     * The type of the parameter, and of the argument, with the templates of the class the method is called on
+     * replaced by what the object binds them to, and those bound to a `*` by `never`: the argument is written to it
+     *
+     * @param array<string, array<string, Union>>|null $class_generic_params
+     * @return array{Union, Union}
+     */
+    private static function bindClassTemplates(
+        StatementsAnalyzer $statements_analyzer,
+        Codebase $codebase,
+        Context $context,
+        Union $param_type,
+        Union $arg_value_type,
+        int $argument_offset,
+        ?array $class_generic_params,
+        ?TemplateResult $template_result,
+    ): array {
+        if ($template_result && $template_result->star_bindings !== []) {
+            $param_type = TemplateInferredTypeReplacer::replace(
+                $param_type,
+                $template_result->getStarInputs(),
+                $codebase,
+            );
+        }
+
+        if ($class_generic_params === null || $class_generic_params === []) {
+            return [$param_type, $arg_value_type];
+        }
+
+        // here we're replacing the param types and arg types with the bound
+        // class template params.
+        //
+        // For example, if we're operating on a class Foo with params TKey and TValue,
+        // and we're calling a method "add(TKey $key, TValue $value)" on an instance
+        // of that class where we know that TKey is int and TValue is string, then we
+        // want to substitute the expected parameters so it's as if we were actually
+        // calling "add(int $key, string $value)"
+        $readonly_template_result = new TemplateResult($class_generic_params, []);
+
+        // This flag ensures that the template results will never be written to
+        // It also supersedes the `$add_lower_bounds` flag so that closure params
+        // don’t get overwritten
+        $readonly_template_result->readonly = true;
+
+        $receiver_template_result = new TemplateResult($class_generic_params, []);
+        $receiver_template_result->readonly = true;
+        $receiver_template_result->of_receiver = true;
+
+        $bound_param_type = TemplateStandinTypeReplacer::replace(
+            $param_type,
+            $receiver_template_result,
+            $codebase,
+            $statements_analyzer,
+            $arg_value_type,
+            $argument_offset,
+            $context->self,
+            $context->calling_function_id ?: $context->calling_method_id,
+        );
+
+        $bound_arg_value_type = TemplateStandinTypeReplacer::replace(
+            $arg_value_type,
+            $readonly_template_result,
+            $codebase,
+            $statements_analyzer,
+            $arg_value_type,
+            $argument_offset,
+            $context->self,
+            $context->calling_function_id ?: $context->calling_method_id,
+        );
+
+        return [$bound_param_type, $bound_arg_value_type];
     }
 }
