@@ -24,6 +24,7 @@ use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Internal\Type\TypeExpander;
+use Psalm\Internal\TypeVisitor\TemplateTypeCollector;
 use Psalm\Issue\DocblockTypeContradiction;
 use Psalm\Issue\PsalmInternalError;
 use Psalm\Issue\RedundantCondition;
@@ -1160,6 +1161,20 @@ class Reconciler
             }
 
             $declaring_class = $declaring;
+        }
+
+        // narrowing a template of the class gives its property a more precise type
+        $property_type = $declaring_class !== null
+            ? $codebase->classlike_storage_provider->get($declaring_class)->properties[$match[1]]->type ?? null
+            : null;
+
+        if ($property_type !== null) {
+            $template_collector = new TemplateTypeCollector(true);
+            $template_collector->traverse($property_type);
+
+            if ($template_collector->getTemplateTypes() !== []) {
+                return false;
+            }
         }
 
         foreach ($before->getAtomicTypes() as $before_part) {

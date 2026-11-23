@@ -96,6 +96,23 @@ final class TypeAlgebraTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'instanceofNarrowingATemplateOfTheClassGivesItsPropertyAMorePreciseType' => [
+                'code' => '<?php
+                    interface I {
+                        public static function foo(): array;
+                    }
+
+                    function h(ReflectionClass $c): array {
+                        echo $c->name;
+                        if ($c->isSubclassOf(I::class)) {
+                            return $c->name::foo();
+                        }
+                        return [];
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'instanceofNarrowingAUnionOfClassesReadsThePropertyOfTheClassKept' => [
                 'code' => '<?php
                     final class IntValue {
