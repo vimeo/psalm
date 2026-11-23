@@ -184,6 +184,25 @@ final class CliUtilsTest extends TestCase
         self::assertEquals($expected, $result);
     }
 
+    public function testSyncShortOptionsCopiesGivenLongOptionsOntoTheirShortAliases(): void
+    {
+        $options = ['help' => false, 'config' => 'psalm.xml', 'root' => ['a', 'b'], 'c' => 'ignored.xml'];
+
+        CliUtils::syncShortOptions($options, ['help' => 'h', 'monochrome' => 'm', 'config' => 'c', 'root' => 'r']);
+
+        self::assertSame(
+            [
+                'help' => false,
+                'config' => 'psalm.xml',
+                'root' => ['a', 'b'],
+                'c' => 'psalm.xml',
+                'h' => false,
+                'r' => ['a', 'b'],
+            ],
+            $options,
+        );
+    }
+
     public function testUseColorWithoutAnyEnvironmentHintFollowsTheTtyRule(): void
     {
         $this->withEnv([], static function (): void {

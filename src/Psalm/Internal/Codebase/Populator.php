@@ -19,6 +19,7 @@ use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TypeAlias\ClassTypeAlias;
 use Psalm\Internal\TypeVisitor\ContainsTemplateExpressionVisitor;
+use Psalm\Internal\TypeVisitor\TypeLocalizer;
 use Psalm\Issue\CircularReference;
 use Psalm\Issue\UndefinedTrait;
 use Psalm\IssueBuffer;
@@ -796,28 +797,54 @@ final class Populator
     /**
      * Whether two methods document the same return type and parameter types, so that either of them may document
      * a method implementing both
-     *
-     * @psalm-mutation-free
      */
-    private static function documentSameSignature(MethodStorage $first, ?MethodStorage $second): bool
-    {
+    private static function documentSameSignature(
+        MethodStorage $first,
+        string $first_class,
+        ?MethodStorage $second,
+        string $second_class,
+        ClassLikeStorage $implementing_class_storage,
+    ): bool {
         if ($second === null) {
             return false;
         }
 
-        if ($first->return_type?->getId() !== $second->return_type?->getId()
+        $extends = $implementing_class_storage->template_extended_params;
+
+        if (self::getLocalizedTypeId($first->return_type, $first_class, $extends)
+                !== self::getLocalizedTypeId($second->return_type, $second_class, $extends)
             || count($first->params) !== count($second->params)
         ) {
             return false;
         }
 
         foreach ($first->params as $i => $param) {
-            if ($param->type?->getId() !== $second->params[$i]->type?->getId()) {
+            if (self::getLocalizedTypeId($param->type, $first_class, $extends)
+                !== self::getLocalizedTypeId($second->params[$i]->type, $second_class, $extends)
+            ) {
                 return false;
             }
         }
 
         return true;
+    }
+
+    /**
+     * The id of a type of a method declared in $declaring_class, as seen from a class extending it
+     *
+     * @param array<string, array<string, Union>>|null $extends
+     */
+    private static function getLocalizedTypeId(?Union $type, string $declaring_class, ?array $extends): ?string
+    {
+        if ($type === null) {
+            return null;
+        }
+
+        if ($extends !== null) {
+            (new TypeLocalizer($extends, $declaring_class))->traverse($type);
+        }
+
+        return $type->getId();
     }
 
     private function populateOverriddenMethods(
@@ -971,9 +998,12 @@ final class Populator
                                 ) && $documenting_class_storage->is_interface
                                     && !self::documentSameSignature(
                                         $declaring_method_storage,
+                                        $declaring_class,
                                         $documenting_class_storage->methods[
                                             $storage->documenting_method_ids[$method_name]->method_name
                                         ] ?? null,
+                                        $documenting_class_storage->name,
+                                        $storage,
                                     )
                                 ) {
                                     unset($storage->documenting_method_ids[$method_name]);
