@@ -129,6 +129,53 @@ final class ClosureTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'closureFromAnAssertionOfAClassStringIsAClosure' => [
+                'code' => '<?php
+                    /**
+                     * @template T of object
+                     * @param class-string<T> $class
+                     * @psalm-assert T $value
+                     */
+                    function assertInstanceOf(mixed $value, string $class): void {
+                        if (!$value instanceof $class) {
+                            throw new InvalidArgumentException();
+                        }
+                    }
+
+                    function makesClosure(mixed $thing): Closure {
+                        assertInstanceOf($thing, Closure::class);
+
+                        return $thing;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'closureFromAnAssertionOfAClassStringIsAClosureAsAnArgument' => [
+                'code' => '<?php
+                    /**
+                     * @template T of object
+                     * @param class-string<T> $class
+                     * @psalm-assert T $value
+                     */
+                    function assertInstanceOf(mixed $value, string $class): void {
+                        if (!$value instanceof $class) {
+                            throw new InvalidArgumentException();
+                        }
+                    }
+
+                    function takesClosure(Closure $c): void {}
+                    function takesObj(object $o): void {}
+
+                    function f(mixed $t): void {
+                        assertInstanceOf($t, Closure::class);
+                        takesClosure($t);
+                        takesObj($t);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'instanceofAnInterfaceExcludesTheFinalClosure' => [
                 'code' => '<?php
                     interface K {}
@@ -3379,6 +3426,29 @@ final class ClosureTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'closureFromAnAssertionIsCoercedToASpecificClosure' => [
+                'code' => '<?php
+                    /**
+                     * @template T of object
+                     * @param class-string<T> $class
+                     * @psalm-assert T $value
+                     */
+                    function assertInstanceOf(mixed $value, string $class): void {
+                        if (!$value instanceof $class) {
+                            throw new InvalidArgumentException();
+                        }
+                    }
+
+                    /** @return Closure(int): int */
+                    function makesClosure(mixed $thing): Closure {
+                        assertInstanceOf($thing, Closure::class);
+
+                        return $thing;
+                    }',
+                'error_message' => 'MixedReturnTypeCoercion',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
             'closureIsFinal' => [
                 'code' => '<?php
                     class C extends Closure {}',

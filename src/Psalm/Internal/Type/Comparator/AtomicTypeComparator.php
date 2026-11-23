@@ -335,6 +335,19 @@ final class AtomicTypeComparator
                 }
             }
 
+            // a closure of unknown signature (narrowed by an assertion) is any closure
+            if ($input_type_part instanceof TNamedObject
+                && !$input_type_part instanceof TClosure
+                && strtolower($input_type_part->value) === 'closure'
+            ) {
+                return CallableTypeComparator::isContainedBy(
+                    $codebase,
+                    new TClosure(),
+                    $container_type_part,
+                    $atomic_comparison_result,
+                );
+            }
+
             return false;
         }
 

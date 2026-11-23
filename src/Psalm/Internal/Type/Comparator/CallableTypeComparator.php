@@ -823,7 +823,7 @@ final class CallableTypeComparator
         } elseif ($input_type_part instanceof TNamedObject
             && $input_type_part->value === 'Closure'
         ) {
-            return new TCallable();
+            return new TClosure();
         } elseif ($input_type_part instanceof TNamedObject
             && ($invokable = self::getInvokeMember($codebase, $input_type_part)) !== null
             && ($codebase->classExists($invokable->value, null, $context)
