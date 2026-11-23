@@ -11,6 +11,7 @@ use Psalm\CodeLocation\DocblockTypeLocation;
 use Psalm\Codebase;
 use Psalm\Context;
 use Psalm\Exception\UnpreparedAnalysisException;
+use Psalm\Internal\Analyzer\Statements\DeclareAnalyzer;
 use Psalm\Internal\Codebase\Functions;
 use Psalm\Internal\Codebase\Reflection;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
@@ -144,7 +145,8 @@ class FileAnalyzer extends SourceAnalyzer
             $this->context = new Context();
         }
 
-        if ($codebase->config->useStrictTypesForFile($this->file_path)) {
+        // the statements of a namespace are analysed before the declare statement that precedes it
+        if (DeclareAnalyzer::declaresStrictTypes($codebase, $this->file_path)) {
             $this->context->strict_types = true;
         }
 

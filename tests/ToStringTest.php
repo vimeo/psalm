@@ -669,6 +669,42 @@ final class ToStringTest extends TestCase
                 ',
                 'error_message' => 'ImplicitToStringCast',
             ],
+            'stringableArgumentAtTheTopLevelOfANamespacedStrictFile' => [
+                'code' => '<?php
+                    declare(strict_types=1);
+
+                    namespace N;
+
+                    final class S {
+                        public function __toString(): string {
+                            return "s";
+                        }
+                    }
+
+                    function takesString(string $s): void {}
+
+                    takesString(new S());',
+                'error_message' => 'InvalidArgument',
+            ],
+            'stringableArgumentInAFunctionOfANamespacedStrictFile' => [
+                'code' => '<?php
+                    declare(strict_types=1);
+
+                    namespace N;
+
+                    final class S {
+                        public function __toString(): string {
+                            return "s";
+                        }
+                    }
+
+                    function takesString(string $s): void {}
+
+                    function f(S $s): void {
+                        takesString($s);
+                    }',
+                'error_message' => 'InvalidArgument',
+            ],
             'traitOfAStrictFileStartingWithAShebang' => [
                 'code' => '#!/usr/bin/env php
 <?php
