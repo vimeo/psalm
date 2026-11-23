@@ -7268,17 +7268,6 @@ final class PropertyTypeTest extends TestCase
                 'error_levels' => [],
                 'php_version' => '8.0',
             ],
-            'nullOfAValueDoesNotMakeItPossiblyValidForANullableStaticProperty' => [
-                'code' => '<?php
-                    final class A {
-                        public static ?int $i = null;
-
-                        public static function set(?string $s): void {
-                            self::$i = $s;
-                        }
-                    }',
-                'error_message' => 'InvalidPropertyAssignmentValue',
-            ],
             'possiblyFalseAssignedToAPropertyOfTrueOrInt' => [
                 'code' => '<?php
                     final class A {

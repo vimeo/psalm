@@ -2061,9 +2061,9 @@
     </PossiblyUndefinedIntArrayOffset>
   </file>
   <file src="src/Psalm/Internal/Provider/ReturnTypeProvider/ArrayMergeReturnTypeProvider.php">
-    <InvalidArgument>
+    <PossiblyInvalidArgument>
       <code><![CDATA[$class_strings ?: null]]></code>
-    </InvalidArgument>
+    </PossiblyInvalidArgument>
   </file>
   <file src="src/Psalm/Internal/Provider/ReturnTypeProvider/ArrayReduceReturnTypeProvider.php">
     <ImplicitToStringCast>
@@ -2278,9 +2278,9 @@
     <ComplexMethod>
       <code><![CDATA[expandConditional]]></code>
     </ComplexMethod>
-    <InvalidArgument>
+    <PossiblyInvalidArgument>
       <code><![CDATA[$fallback_params]]></code>
-    </InvalidArgument>
+    </PossiblyInvalidArgument>
     <RiskyTruthyFalsyComparison>
       <code><![CDATA[$container_class_storage->template_types]]></code>
       <code><![CDATA[$params]]></code>
@@ -2302,11 +2302,13 @@
     <InvalidArgument>
       <code><![CDATA[$class_strings]]></code>
       <code><![CDATA[$class_strings]]></code>
+    </InvalidArgument>
+    <PossiblyInvalidArgument>
       <code><![CDATA[$extra_params ?? ($sealed
                     ? null
                     : [$is_list ? Type::getListKey() : Type::getArrayKey(), Type::getMixed()]
                 )]]></code>
-    </InvalidArgument>
+    </PossiblyInvalidArgument>
     <PossiblyUndefinedIntArrayOffset>
       <code><![CDATA[$const_name]]></code>
       <code><![CDATA[$const_name]]></code>
