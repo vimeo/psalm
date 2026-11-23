@@ -12,17 +12,16 @@ use Psalm\CodeLocation;
 use Psalm\Codebase;
 use Psalm\Config;
 use Psalm\Context;
-use Psalm\FileManipulation;
 use Psalm\Internal\Analyzer\ClassAnalyzer;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\InheritedMethodTaints;
 use Psalm\Internal\Analyzer\MethodAnalyzer;
-use Psalm\Internal\Analyzer\NamespaceAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\ClassTemplateParamCollector;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\MethodCallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\AtomicPropertyFetchAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\InstancePropertyFetchAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\PropertyAccessAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\Statements\TypeMismatch\PropertyTypeMismatchReporter;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
@@ -30,18 +29,14 @@ use Psalm\Internal\Codebase\DataFlowGraph;
 use Psalm\Internal\Codebase\Methods;
 use Psalm\Internal\Codebase\VariableUseGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
-use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\Comparator\TypeComparisonResult;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Internal\Type\TypeExpander;
-use Psalm\Issue\DeprecatedProperty;
 use Psalm\Issue\ImpurePropertyAssignment;
 use Psalm\Issue\InaccessibleProperty;
-use Psalm\Issue\InternalClass;
-use Psalm\Issue\InternalProperty;
 use Psalm\Issue\InvalidPropertyAssignment;
 use Psalm\Issue\LoopInvalidation;
 use Psalm\Issue\MixedAssignment;
@@ -50,10 +45,6 @@ use Psalm\Issue\NoInterfaceProperties;
 use Psalm\Issue\NullPropertyAssignment;
 use Psalm\Issue\PossiblyInvalidPropertyAssignment;
 use Psalm\Issue\PossiblyNullPropertyAssignment;
-use Psalm\Issue\UndefinedClass;
-use Psalm\Issue\UndefinedMagicPropertyAssignment;
-use Psalm\Issue\UndefinedPropertyAssignment;
-use Psalm\Issue\UndefinedThisPropertyAssignment;
 use Psalm\IssueBuffer;
 use Psalm\Node\Expr\VirtualMethodCall;
 use Psalm\Node\Scalar\VirtualString;
@@ -1196,16 +1187,14 @@ final class InstancePropertyAssignmentAnalyzer
         $interface_exists = false;
         $interface_setter = false;
 
-        // a private property of the current class, assigned on an object of a child class
-        $is_recovered_by_self = static fn(string $class_name): bool => $context->self !== null
-            && $class_name !== $context->self
-            && $codebase->classlikes->classExtends($class_name, $context->self)
-            && $codebase->propertyExists(
-                $context->self . '::$' . $prop_name,
-                false,
-                $statements_analyzer,
-                $context,
-            );
+        $is_recovered_by_self = static fn(string $class_name): bool => PropertyAccessAnalyzer::isPropertyOfSelfOnChild(
+            $statements_analyzer,
+            $stmt,
+            $context,
+            $class_name,
+            $prop_name,
+            true,
+        );
 
         if (!$codebase->classExists($lhs_type_part->value, null, $context)) {
             if ($codebase->interfaceExists($lhs_type_part->value, null, $context)) {
@@ -1285,14 +1274,7 @@ final class InstancePropertyAssignmentAnalyzer
             }
 
             if (!$class_exists && !$interface_exists) {
-                IssueBuffer::maybeAdd(
-                    new UndefinedClass(
-                        'Cannot set properties of undefined class ' . $lhs_type_part->value,
-                        new CodeLocation($statements_analyzer->getSource(), $stmt),
-                        $lhs_type_part->value,
-                    ),
-                    $statements_analyzer->getSuppressedIssues(),
-                );
+                PropertyAccessAnalyzer::reportUndefinedClass($statements_analyzer, $stmt, $lhs_type_part, true);
 
                 return null;
             }
@@ -1352,30 +1334,17 @@ final class InstancePropertyAssignmentAnalyzer
             );
 
         if ((!$property_exists
-                || ($lhs_var_id !== '$this'
-                    && $fq_class_name !== $context->self
-                    && ClassLikeAnalyzer::checkPropertyVisibility(
-                        $property_id,
-                        $context,
-                        $statements_analyzer,
-                        new CodeLocation($statements_analyzer->getSource(), $stmt),
-                        $statements_analyzer->getSuppressedIssues(),
-                        false,
-                        true,
-                    ) !== true)
-            )
-            && ($has_pseudo_property_without_magic_setter
-                || $codebase->methodExists(
-                    $set_method_id,
-                    $context->calling_method_id,
-                    $codebase->collect_locations
-                        ? new CodeLocation($statements_analyzer->getSource(), $stmt)
-                        : null,
-                    !$context->collect_initializations
-                        ? $statements_analyzer
-                        : null,
-                    $statements_analyzer->getFilePath(),
+                || PropertyAccessAnalyzer::isInaccessibleFromOutside(
+                    $statements_analyzer,
+                    $stmt,
+                    $context,
+                    $property_id,
+                    $fq_class_name,
+                    $lhs_var_id,
+                    true,
                 ))
+            && ($has_pseudo_property_without_magic_setter
+                || PropertyAccessAnalyzer::magicMethodExists($statements_analyzer, $stmt, $context, $set_method_id))
         ) {
             $has_magic_setter = true;
             $class_storage = $codebase->classlike_storage_provider->get($fq_class_name);
@@ -1445,13 +1414,12 @@ final class InstancePropertyAssignmentAnalyzer
             }
 
             if (!$class_exists) {
-                IssueBuffer::maybeAdd(
-                    new UndefinedMagicPropertyAssignment(
-                        'Magic instance property ' . $property_id . ' is not defined',
-                        new CodeLocation($statements_analyzer->getSource(), $stmt),
-                        $property_id,
-                    ),
-                    $statements_analyzer->getSuppressedIssues(),
+                PropertyAccessAnalyzer::reportUndefinedProperty(
+                    $statements_analyzer,
+                    $stmt,
+                    $property_id,
+                    true,
+                    through_magic_method: true,
                 );
             }
         }
@@ -1484,16 +1452,16 @@ final class InstancePropertyAssignmentAnalyzer
             }
         }
 
-        // a private property of the current class, assigned on an object of a child class
         if ($context->self !== null
             && $fq_class_name !== $context->self
             && !$codebase->propertyExists($property_id, false, $statements_analyzer, $context)
-            && $codebase->classlikes->classExtends($fq_class_name, $context->self)
-            && $codebase->propertyExists(
-                $context->self . '::$' . $prop_name,
-                false,
+            && PropertyAccessAnalyzer::isPropertyOfSelfOnChild(
                 $statements_analyzer,
+                $stmt,
                 $context,
+                $fq_class_name,
+                $prop_name,
+                true,
             )
         ) {
             $property_id = $context->self . '::$' . $prop_name;
@@ -1526,36 +1494,14 @@ final class InstancePropertyAssignmentAnalyzer
             && $codebase->properties->getStorage($property_id)->is_static
         )
         ) {
-            if ($stmt->var instanceof PhpParser\Node\Expr\Variable && $stmt->var->name === 'this') {
-                IssueBuffer::maybeAdd(
-                    new UndefinedThisPropertyAssignment(
-                        'Instance property ' . $property_id . ' is not defined',
-                        new CodeLocation($statements_analyzer->getSource(), $stmt),
-                        $property_id,
-                    ),
-                    $statements_analyzer->getSuppressedIssues(),
-                );
-            } else {
-                if ($has_magic_setter) {
-                    IssueBuffer::maybeAdd(
-                        new UndefinedMagicPropertyAssignment(
-                            'Magic instance property ' . $property_id . ' is not defined',
-                            new CodeLocation($statements_analyzer->getSource(), $stmt),
-                            $property_id,
-                        ),
-                        $statements_analyzer->getSuppressedIssues(),
-                    );
-                } else {
-                    IssueBuffer::maybeAdd(
-                        new UndefinedPropertyAssignment(
-                            'Instance property ' . $property_id . ' is not defined',
-                            new CodeLocation($statements_analyzer->getSource(), $stmt),
-                            $property_id,
-                        ),
-                        $statements_analyzer->getSuppressedIssues(),
-                    );
-                }
-            }
+            PropertyAccessAnalyzer::reportUndefinedProperty(
+                $statements_analyzer,
+                $stmt,
+                $property_id,
+                true,
+                $stmt->var instanceof PhpParser\Node\Expr\Variable && $stmt->var->name === 'this',
+                $has_magic_setter,
+            );
 
             return null;
         }
@@ -1589,44 +1535,33 @@ final class InstancePropertyAssignmentAnalyzer
             false,
         );
 
-        self::handlePropertyRenames(
-            $codebase,
-            $declaring_property_class,
-            $prop_name,
-            $stmt,
-            $statements_analyzer->getFilePath(),
-        );
+        PropertyAccessAnalyzer::handleRename($statements_analyzer, $stmt, $declaring_property_class, $prop_name);
 
         $declaring_class_storage = $codebase->classlike_storage_provider->get($declaring_property_class);
 
         $property_storage = $declaring_class_storage->properties[$prop_name] ?? null;
+
+        // a promoted property is initialized from its own parameter, which is not a use of it
+        if ($property_storage !== null && $stmt->getAttribute('promoted_parameter') !== true) {
+            PropertyAccessAnalyzer::checkDeprecation(
+                $statements_analyzer,
+                $stmt,
+                $prop_name,
+                $declaring_class_storage,
+            );
+        }
+
+        PropertyAccessAnalyzer::checkDeclaredProperty(
+            $statements_analyzer,
+            $stmt,
+            $context,
+            $prop_name,
+            $property_id,
+            $declaring_class_storage,
+            true,
+        );
+
         if ($property_storage !== null) {
-            // a promoted property is initialized from its own parameter, which is not a use of it
-            if ($property_storage->deprecated && $stmt->getAttribute('promoted_parameter') !== true) {
-                IssueBuffer::maybeAdd(
-                    new DeprecatedProperty(
-                        $property_id . ' is marked deprecated',
-                        new CodeLocation($statements_analyzer->getSource(), $stmt),
-                        $property_id,
-                    ),
-                    $statements_analyzer->getSuppressedIssues(),
-                );
-            }
-
-            $caller_identifier = $statements_analyzer->getFullyQualifiedFunctionMethodOrNamespaceName() ?? '';
-
-            if (!NamespaceAnalyzer::isWithinAny($caller_identifier, $property_storage->internal)) {
-                IssueBuffer::maybeAdd(
-                    new InternalProperty(
-                        $property_id . ' is internal to ' . InternalClass::listToPhrase($property_storage->internal)
-                            . ' but called from ' . ($caller_identifier ?: 'root namespace'),
-                        new CodeLocation($statements_analyzer->getSource(), $stmt),
-                        $property_id,
-                    ),
-                    $statements_analyzer->getSuppressedIssues(),
-                );
-            }
-
             if (self::trackPropertyImpurity(
                 $statements_analyzer,
                 $stmt,
@@ -1786,37 +1721,6 @@ final class InstancePropertyAssignmentAnalyzer
             $interface_setter,
             $read_type,
         );
-    }
-
-    private static function handlePropertyRenames(
-        Codebase $codebase,
-        string $declaring_property_class,
-        string $prop_name,
-        PropertyFetch $stmt,
-        string $file_path,
-    ): void {
-        if (!$codebase->properties_to_rename) {
-            return;
-        }
-
-        $declaring_property_id = strtolower($declaring_property_class) . '::$' . $prop_name;
-
-        foreach ($codebase->properties_to_rename as $original_property_id => $new_property_name) {
-            if ($declaring_property_id === $original_property_id) {
-                $file_manipulations = [
-                    new FileManipulation(
-                        (int)$stmt->name->getAttribute('startFilePos'),
-                        (int)$stmt->name->getAttribute('endFilePos') + 1,
-                        $new_property_name,
-                    ),
-                ];
-
-                FileManipulationBuffer::add(
-                    $file_path,
-                    $file_manipulations,
-                );
-            }
-        }
     }
 
     public static function getExpandedPropertyType(

@@ -27,7 +27,6 @@ use function is_string;
 use function preg_match;
 use function preg_replace;
 use function preg_split;
-use function readlink;
 use function realpath;
 use function restore_error_handler;
 use function rtrim;
@@ -161,6 +160,8 @@ class FileFilter
                         );
                     }
 
+                    $directory_paths = [];
+
                     foreach ($globs as $glob_index => $glob_directory_path) {
                         if (!$glob_directory_path) {
                             if ($allow_missing_files) {
@@ -173,77 +174,60 @@ class FileFilter
                             );
                         }
 
-                        if ($ignore_type_stats && $filter instanceof ProjectFileFilter) {
-                            $filter->ignore_type_stats[$glob_directory_path] = true;
+                        $directory_paths[] = $glob_directory_path;
+                    }
+                } else {
+                    $directory_path = realpath($prospective_directory_path);
+
+                    if (!$directory_path) {
+                        if ($allow_missing_files) {
+                            continue;
                         }
 
-                        if ($declare_strict_types && $filter instanceof ProjectFileFilter) {
-                            $filter->declare_strict_types[$glob_directory_path] = true;
-                        }
-
-                        $filter->addDirectory($glob_directory_path);
-                    }
-                    continue;
-                }
-
-                $directory_path = realpath($prospective_directory_path);
-
-                if (!$directory_path) {
-                    if ($allow_missing_files) {
-                        continue;
+                        throw new ConfigException(
+                            'Could not resolve config path to ' . $prospective_directory_path,
+                        );
                     }
 
-                    throw new ConfigException(
-                        'Could not resolve config path to ' . $prospective_directory_path,
-                    );
+                    if (!is_dir($directory_path)) {
+                        throw new ConfigException($directory_path . ' is not a directory');
+                    }
+
+                    $directory_paths = [$directory_path];
                 }
 
-                if (!is_dir($directory_path)) {
-                    throw new ConfigException(
-                        $base_dir . DIRECTORY_SEPARATOR . $directory_path
-                        . ' is not a directory',
-                    );
-                }
+                foreach ($directory_paths as $directory_path) {
+                    if ($resolve_symlinks) {
+                        /** @var RecursiveDirectoryIterator */
+                        $iterator = new RecursiveIteratorIterator(
+                            new RecursiveDirectoryIterator($directory_path, FilesystemIterator::SKIP_DOTS),
+                            RecursiveIteratorIterator::LEAVES_ONLY,
+                            RecursiveIteratorIterator::CATCH_GET_CHILD,
+                        );
+                        $iterator->rewind();
 
-                if ($resolve_symlinks) {
-                    /** @var RecursiveDirectoryIterator */
-                    $iterator = new RecursiveIteratorIterator(
-                        new RecursiveDirectoryIterator($directory_path, FilesystemIterator::SKIP_DOTS),
-                    );
-                    $iterator->rewind();
+                        while ($iterator->valid()) {
+                            if ($iterator->isLink()) {
+                                $linked_path = realpath($iterator->getPathname());
 
-                    while ($iterator->valid()) {
-                        if ($iterator->isLink()) {
-                            $linked_path = (string) readlink($iterator->getPathname());
-
-                            if (stripos($linked_path, $directory_path) !== 0) {
-                                if ($ignore_type_stats && $filter instanceof ProjectFileFilter) {
-                                    $filter->ignore_type_stats[$directory_path] = true;
-                                }
-
-                                if ($declare_strict_types && $filter instanceof ProjectFileFilter) {
-                                    $filter->declare_strict_types[$directory_path] = true;
-                                }
-
-                                if (is_dir($linked_path)) {
-                                    $filter->addDirectory($linked_path);
+                                if ($linked_path !== false
+                                    && stripos(self::slashify($linked_path), self::slashify($directory_path)) !== 0
+                                    && is_dir($linked_path)
+                                ) {
+                                    $filter->addConfiguredDirectory(
+                                        $linked_path,
+                                        $ignore_type_stats,
+                                        $declare_strict_types,
+                                    );
                                 }
                             }
+
+                            $iterator->next();
                         }
-
-                        $iterator->next();
                     }
-                }
 
-                if ($ignore_type_stats && $filter instanceof ProjectFileFilter) {
-                    $filter->ignore_type_stats[$directory_path] = true;
+                    $filter->addConfiguredDirectory($directory_path, $ignore_type_stats, $declare_strict_types);
                 }
-
-                if ($declare_strict_types && $filter instanceof ProjectFileFilter) {
-                    $filter->declare_strict_types[$directory_path] = true;
-                }
-
-                $filter->addDirectory($directory_path);
             }
         }
 
@@ -689,5 +673,28 @@ class FileFilter
     public function addDirectory(string $dir_name): void
     {
         $this->directories[] = self::slashify($dir_name);
+    }
+
+    /**
+     * @psalm-external-mutation-free
+     */
+    private function addConfiguredDirectory(
+        string $dir_name,
+        bool $ignore_type_stats,
+        bool $declare_strict_types,
+    ): void {
+        $dir_name = self::slashify($dir_name);
+
+        if ($this instanceof ProjectFileFilter) {
+            if ($ignore_type_stats) {
+                $this->ignore_type_stats[$dir_name] = true;
+            }
+
+            if ($declare_strict_types) {
+                $this->declare_strict_types[$dir_name] = true;
+            }
+        }
+
+        $this->addDirectory($dir_name);
     }
 }

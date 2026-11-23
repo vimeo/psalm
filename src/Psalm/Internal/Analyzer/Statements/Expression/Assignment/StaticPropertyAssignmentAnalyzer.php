@@ -12,6 +12,7 @@ use Psalm\Internal\Analyzer\ClassAnalyzer;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\StaticPropertyFetchAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\PropertyAccessAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\Statements\TypeMismatch\PropertyTypeMismatchReporter;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
@@ -19,8 +20,6 @@ use Psalm\Internal\Type\Comparator\TypeComparisonResult;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\TypeExpander;
 use Psalm\Issue\ImpureStaticProperty;
-use Psalm\Issue\UndefinedPropertyAssignment;
-use Psalm\IssueBuffer;
 use Psalm\Storage\Capabilities;
 use Psalm\Type;
 use Psalm\Type\Atomic\TNamedObject;
@@ -126,13 +125,12 @@ final class StaticPropertyAssignmentAnalyzer
             }
 
             if (!$codebase->propertyExists($property_id, false, $statements_analyzer, $context)) {
-                IssueBuffer::maybeAdd(
-                    new UndefinedPropertyAssignment(
-                        'Static property ' . $property_id . ' is not defined',
-                        new CodeLocation($statements_analyzer->getSource(), $stmt),
-                        $property_id,
-                    ),
-                    $statements_analyzer->getSuppressedIssues(),
+                PropertyAccessAnalyzer::reportUndefinedProperty(
+                    $statements_analyzer,
+                    $stmt,
+                    $property_id,
+                    true,
+                    is_static_property: true,
                 );
 
                 return null;
