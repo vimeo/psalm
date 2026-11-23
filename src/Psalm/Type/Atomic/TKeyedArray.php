@@ -19,7 +19,6 @@ use Psalm\Type\Atomic;
 use Psalm\Type\Union;
 use Throwable;
 
-use function addslashes;
 use function array_key_first;
 use function assert;
 use function count;
@@ -27,9 +26,12 @@ use function implode;
 use function is_int;
 use function is_string;
 use function ksort;
+use function ord;
 use function preg_match;
+use function preg_replace_callback;
 use function sort;
-use function str_replace;
+use function sprintf;
+use function strtr;
 
 /**
  * Represents an 'object-like array' - an array with known keys.
@@ -781,7 +783,27 @@ final class TKeyedArray extends Atomic
             }
 
             if ($quote) {
-                $name = '\'' . str_replace("\n", '\n', addslashes($name)) . '\'';
+                // a literal that reads back as the same key: only a double-quoted one can hold control characters
+                $name = preg_match('/[\x00-\x1f\x7f]/', $name)
+                    ? '"' . (string) preg_replace_callback(
+                        '/[\x00-\x1f\x7f\\\\"$]/',
+                        static function (array $match): string {
+                            $char = $match[0] ?? '';
+
+                            return match ($char) {
+                                "\n" => '\n',
+                                "\r" => '\r',
+                                "\t" => '\t',
+                                "\v" => '\v',
+                                "\e" => '\e',
+                                "\f" => '\f',
+                                '\\', '"', '$' => '\\' . $char,
+                                default => sprintf('\\%03o', ord($char)),
+                            };
+                        },
+                        $name,
+                    ) . '"'
+                    : '\'' . strtr($name, ['\\' => '\\\\', '\'' => '\\\'']) . '\'';
             }
         }
 

@@ -36,6 +36,65 @@ final class FunctionCallTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'filterVarThrowOnFailureHasNoFailureValue' => [
+                'code' => '<?php
+                    $input = (string) rand();
+
+                    $int = filter_var($input, FILTER_VALIDATE_INT, FILTER_THROW_ON_FAILURE);
+                    $bool = filter_var($input, FILTER_VALIDATE_BOOLEAN, FILTER_THROW_ON_FAILURE);
+                    $ignoredDefault = filter_var(
+                        $input,
+                        FILTER_VALIDATE_INT,
+                        ["flags" => FILTER_THROW_ON_FAILURE, "options" => ["default" => "x"]],
+                    );
+                    $failureValue = filter_var($input, FILTER_VALIDATE_INT);
+                    $fromInput = filter_input(INPUT_GET, "x", FILTER_VALIDATE_INT, FILTER_THROW_ON_FAILURE);',
+                'assertions' => [
+                    '$fromInput===' => 'int',
+                    '$int===' => 'int',
+                    '$bool===' => 'bool',
+                    '$ignoredDefault===' => 'int',
+                    '$failureValue===' => 'false|int',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.5',
+            ],
+            'filterVarGlobalRangeBeforePhp85KeepsTheFailureValue' => [
+                'code' => '<?php
+                    /** @var string */
+                    $input = $_GET["ip"];
+                    $ip = filter_var($input, FILTER_VALIDATE_IP, FILTER_FLAG_GLOBAL_RANGE);
+                    $fromInput = filter_input(INPUT_GET, "x", FILTER_VALIDATE_IP, FILTER_FLAG_GLOBAL_RANGE);',
+                'assertions' => [
+                    '$ip===' => 'false|non-falsy-string',
+                    '$fromInput===' => 'false|non-falsy-string|null',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.4',
+            ],
+            'filterVarGlobalRangeFromPhp85KeepsTheFailureValue' => [
+                'code' => '<?php
+                    /** @var string */
+                    $input = $_GET["ip"];
+                    $ip = filter_var($input, FILTER_VALIDATE_IP, FILTER_FLAG_GLOBAL_RANGE);
+                    $fromInput = filter_input(INPUT_GET, "x", FILTER_VALIDATE_IP, FILTER_FLAG_GLOBAL_RANGE);
+
+                    function ip(string $s): string {
+                        $ip = filter_var($s, FILTER_VALIDATE_IP, FILTER_FLAG_GLOBAL_RANGE);
+
+                        if ($ip === false) {
+                            return "not global";
+                        }
+
+                        return $ip;
+                    }',
+                'assertions' => [
+                    '$ip===' => 'false|non-falsy-string',
+                    '$fromInput===' => 'false|non-falsy-string|null',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.5',
+            ],
             'ignoredNullableReturnInAnExtraEntryOfAnUnsealedShape' => [
                 'code' => '<?php
                     /** @psalm-ignore-nullable-return */
@@ -4567,6 +4626,28 @@ final class FunctionCallTest extends TestCase
                 'error_message' => 'RedundantFlag',
                 'error_levels' => [],
                 'php_version' => '8.1',
+            ],
+            'filterVarNullOnFailureWithThrowOnFailureIsAValueError' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function filter(string $s): void {
+                        filter_var($s, FILTER_VALIDATE_INT, FILTER_NULL_ON_FAILURE | FILTER_THROW_ON_FAILURE);
+                    }
+                    PHP,
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:5 - FILTER_NULL_ON_FAILURE cannot be combined with FILTER_THROW_ON_FAILURE, it is a ValueError',
+                'error_levels' => [],
+                'php_version' => '8.5',
+            ],
+            'filterVarGlobalRangeBeforePhp85IsNotAFlagOfEveryFilter' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function filter(string $s): void {
+                        filter_var($s, FILTER_VALIDATE_INT, 268435456); // FILTER_FLAG_GLOBAL_RANGE up to PHP 8.4
+                    }
+                    PHP,
+                'error_message' => 'RedundantFlag - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:5 - Not all flags used are supported by the filter used',
+                'error_levels' => [],
+                'php_version' => '8.4',
             ],
             'classExistsIdenticalToFalseDoesNotGuardTheRightOperandOfAnd' => [
                 'code' => '<?php
