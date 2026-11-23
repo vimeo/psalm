@@ -4,12 +4,10 @@ declare(strict_types=1);
 
 namespace Psalm\Internal\Cli;
 
-use Composer\Autoload\ClassLoader;
 use LanguageServerProtocol\MessageType;
 use Psalm\Config;
 use Psalm\Internal\CliUtils;
 use Psalm\Internal\ErrorHandler;
-use Psalm\Internal\Fork\PsalmRestarter;
 use Psalm\Internal\IncludeCollector;
 use Psalm\Internal\LanguageServer\ClientConfiguration;
 use Psalm\Internal\LanguageServer\LanguageServer as LanguageServerLanguageServer;
@@ -22,11 +20,9 @@ use function chdir;
 use function explode;
 use function fwrite;
 use function gc_disable;
-use function getcwd;
 use function is_array;
 use function is_numeric;
 use function is_string;
-use function realpath;
 use function setlocale;
 use function str_contains;
 use function strlen;
@@ -107,17 +103,12 @@ final class LanguageServer
 
         CliUtils::setMemoryLimit($options, '1');
 
-        if (array_key_exists('help', $options)) {
-            $options['h'] = false;
-        }
-
-        if (array_key_exists('version', $options)) {
-            $options['v'] = false;
-        }
-
-        if (isset($options['config'])) {
-            $options['c'] = $options['config'];
-        }
+        CliUtils::syncShortOptions($options, [
+            'help' => 'h',
+            'version' => 'v',
+            'config' => 'c',
+            'root' => 'r',
+        ]);
 
         if (isset($options['c']) && is_array($options['c'])) {
             fwrite(STDERR, 'Too many config files provided' . PHP_EOL);
@@ -213,46 +204,18 @@ final class LanguageServer
             exit;
         }
 
-        if (getcwd() === false) {
-            fwrite(STDERR, 'Cannot get current working directory' . PHP_EOL);
-            exit(1);
-        }
-
-        if (isset($options['root'])) {
-            $options['r'] = $options['root'];
-        }
-
-        $current_dir = (string) getcwd();
-
-        if (isset($options['r']) && is_string($options['r'])) {
-            $root_path = realpath($options['r']);
-
-            if ($root_path === false) {
-                fwrite(
-                    STDERR,
-                    CliUtils::getRootDirectoryNotFoundMessage($current_dir, $options['r']) . PHP_EOL,
-                );
-                exit(1);
-            }
-
-            $current_dir = $root_path;
-        }
+        $current_dir = CliUtils::getCurrentDir($options);
 
         $vendor_dir = CliUtils::getVendorDir($current_dir);
 
         $include_collector = new IncludeCollector();
 
-        $autoloaders = $include_collector->runAndCollect(
-            // we ignore the FQN because of a hack in scoper.inc that needs full path
-            // phpcs:ignore SlevomatCodingStandard.Namespaces.ReferenceUsedNamesOnly.ReferenceViaFullyQualifiedName
-            /** @return list<ClassLoader> */
-            static fn(): array =>
-                CliUtils::requireAutoloaders(
-                    $current_dir,
-                    isset($options['r']),
-                    $vendor_dir,
-                    !array_key_exists('v', $options),
-                ),
+        $autoloaders = CliUtils::loadAutoloaders(
+            $include_collector,
+            $current_dir,
+            isset($options['r']),
+            $vendor_dir,
+            !array_key_exists('v', $options),
         );
 
         if (array_key_exists('v', $options)) {
@@ -260,17 +223,7 @@ final class LanguageServer
             exit;
         }
 
-        $ini_handler = new PsalmRestarter('PSALM');
-
-        $ini_handler->disableExtensions([
-            'grpc',
-            'uopz',
-            // extensions bellow are incompatible with JIT
-            'pcov',
-            'blackfire',
-            // Issues w/ parallel forking
-            'uv',
-        ]);
+        $ini_handler = CliUtils::createRestarter('PSALM');
 
         $disableXdebug = !isset($options['disable-xdebug'])
             || !is_string($options['disable-xdebug'])
