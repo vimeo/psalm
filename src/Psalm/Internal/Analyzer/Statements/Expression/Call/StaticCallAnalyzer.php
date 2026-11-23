@@ -266,7 +266,7 @@ final class StaticCallAnalyzer extends CallAnalyzer
                             ? $context
                             : null,
                         $statements_analyzer->getSuppressedIssues(),
-                        new ClassLikeNameOptions(false, false, false, true, context: $context),
+                        new ClassLikeNameOptions(false, false, false, true, context: $context, required_at_runtime: true),
                         $context->check_classes,
                     );
                 }

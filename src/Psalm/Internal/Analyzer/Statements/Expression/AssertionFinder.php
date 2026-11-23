@@ -917,6 +917,8 @@ final class AssertionFinder
             if ($first_var_name) {
                 $if_types[$first_var_name] = [[new IsType(new TCallableString())]];
             }
+        } elseif ($function_id === 'extension_loaded') {
+            // see getCheckedExtension()
         } elseif ($function_id === 'method_exists'
             && isset($expr->getArgs()[1])
             && $expr->getArgs()[1]->value instanceof PhpParser\Node\Scalar\String_
@@ -973,6 +975,25 @@ final class AssertionFinder
             return self::processCustomAssertion($expr, $this_class_name, $source);
         }
 
+        $if_types += self::getGuardAssertions($expr, $function_id, $source, $codebase, $first_var_type);
+
+        return $if_types ? [$if_types] : [];
+    }
+
+    /**
+     * The assertions on the pseudo-variables of a check that a native symbol or an extension is available
+     *
+     * @return array<string, non-empty-list<non-empty-list<Assertion>>>
+     */
+    private static function getGuardAssertions(
+        PhpParser\Node\Expr\FuncCall $expr,
+        ?string $function_id,
+        FileSource $source,
+        ?Codebase $codebase,
+        ?Union $first_var_type,
+    ): array {
+        $if_types = [];
+
         $native_symbol_guard = self::getNativeSymbolGuardAssertion(
             $expr,
             $function_id,
@@ -984,7 +1005,44 @@ final class AssertionFinder
             $if_types[Context::PHP_SYMBOL_GUARD_VAR_ID] = [[$native_symbol_guard]];
         }
 
-        return $if_types ? [$if_types] : [];
+        $checked_extension = self::getCheckedExtension($expr, $function_id);
+        if ($checked_extension !== null) {
+            $if_types[Context::getExtensionVarId($checked_extension)] = [[new IsType(new TTrue())]];
+        }
+
+        return $if_types;
+    }
+
+    /**
+     * The extension an `extension_loaded()` call checks, or the extension of the builtin function or class a
+     * `function_exists()`, `class_exists()`, `interface_exists()` or `enum_exists()` call checks
+     */
+    private static function getCheckedExtension(
+        PhpParser\Node\Expr\FuncCall $expr,
+        ?string $function_id,
+    ): ?string {
+        $first_arg = $expr->isFirstClassCallable() ? null : ($expr->getArgs()[0] ?? null);
+        if ($first_arg === null) {
+            return null;
+        }
+
+        if ($function_id === 'extension_loaded') {
+            return $first_arg->value instanceof PhpParser\Node\Scalar\String_ ? $first_arg->value->value : null;
+        }
+
+        if ($function_id === 'function_exists') {
+            return $first_arg->value instanceof PhpParser\Node\Scalar\String_
+                ? InternalCallMapHandler::getExtension($first_arg->value->value, false)
+                : null;
+        }
+
+        if (in_array($function_id, ['class_exists', 'interface_exists', 'enum_exists'], true)) {
+            $class = self::getLiteralClassName($first_arg->value);
+
+            return $class !== null ? InternalCallMapHandler::getExtension($class, true) : null;
+        }
+
+        return null;
     }
 
     /**

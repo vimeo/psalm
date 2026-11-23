@@ -2548,6 +2548,7 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                 $interface_location,
                 $class_context,
                 $this->getSuppressedIssues(),
+                new ClassLikeNameOptions(required_at_runtime: true),
             ) === false) {
                 return false;
             }
@@ -2860,6 +2861,7 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
             $parent_reference_location,
             $class_context,
             $storage->suppressed_issues + $this->getSuppressedIssues(),
+            new ClassLikeNameOptions(required_at_runtime: true),
         ) === false) {
             return;
         }

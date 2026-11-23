@@ -24,6 +24,8 @@ use ReflectionException;
 use ReflectionFunction;
 use UnexpectedValueException;
 
+use function array_key_first;
+use function arsort;
 use function assert;
 use function class_exists;
 use function count;
@@ -34,6 +36,7 @@ use function intdiv;
 use function interface_exists;
 use function is_int;
 use function is_string;
+use function ltrim;
 use function max;
 use function min;
 use function str_contains;
@@ -75,6 +78,13 @@ final class InternalCallMapHandler
      * @var non-empty-array<string, non-empty-list<int>>|null
      */
     private static ?array $taint_sink_map = null;
+
+    /**
+     * The callmap version, the extension of each function and method of its callmap, and of each class
+     *
+     * @var array{int, array<string, string>, array<string, string>}|null
+     */
+    private static ?array $extensions = null;
 
     /**
      * @var array<lowercase-string, array<int|non-empty-string, non-empty-string>>|null
@@ -410,13 +420,7 @@ final class InternalCallMapHandler
             return self::$call_map;
         }
 
-        $analyzer_version_int = min(
-            self::MAX_CALLMAP_VERSION,
-            max(
-                self::MIN_CALLMAP_VERSION,
-                (int) ($analyzer_major_version . $analyzer_minor_version),
-            ),
-        );
+        $analyzer_version_int = self::getCallMapVersion($analyzer_major_version, $analyzer_minor_version);
 
         /** @var non-empty-array<lowercase-string, array<int|string, string>> */
         $call_map = require(dirname(__DIR__, 4) . "/dictionaries/CallMap_$analyzer_version_int.php");
@@ -444,6 +448,56 @@ final class InternalCallMapHandler
         self::$taint_sink_map = $taint_map;
 
         return self::$call_map;
+    }
+
+    /**
+     * @psalm-pure
+     */
+    private static function getCallMapVersion(int $major_version, int $minor_version): int
+    {
+        return min(self::MAX_CALLMAP_VERSION, max(self::MIN_CALLMAP_VERSION, (int) ($major_version . $minor_version)));
+    }
+
+    /**
+     * The extension declaring a builtin function (`mb_strlen`) or class (`PDO`) in the analysed PHP version, as
+     * reflection names it (`mbstring`, `zend opcache`), or null when the callmap doesn't know it. A class belongs to
+     * the extension of most of its methods: some come from others (`PDO::sqliteCreateFunction()` from `pdo_sqlite`).
+     *
+     * @psalm-suppress UnresolvableInclude
+     */
+    public static function getExtension(string $function_or_class, bool $is_class): ?string
+    {
+        $codebase = ProjectAnalyzer::getInstance()->getCodebase();
+        $version = self::getCallMapVersion(
+            $codebase->getMajorAnalysisPhpVersion(),
+            $codebase->getMinorAnalysisPhpVersion(),
+        );
+
+        if (self::$extensions === null || self::$extensions[0] !== $version) {
+            /** @var array<string, string> $function_extensions */
+            $function_extensions = require(
+                dirname(__DIR__, 4) . "/dictionaries/autogen/CallMapExtensions_$version.php"
+            );
+
+            $method_counts = [];
+            foreach ($function_extensions as $method_id => $extension) {
+                $separator = strpos($method_id, '::');
+                if ($separator !== false) {
+                    $class = substr($method_id, 0, $separator);
+                    $method_counts[$class][$extension] = ($method_counts[$class][$extension] ?? 0) + 1;
+                }
+            }
+
+            $class_extensions = [];
+            foreach ($method_counts as $class => $counts) {
+                arsort($counts);
+                $class_extensions[$class] = (string) array_key_first($counts);
+            }
+
+            self::$extensions = [$version, $function_extensions, $class_extensions];
+        }
+
+        return self::$extensions[$is_class ? 2 : 1][strtolower(ltrim($function_or_class, '\\'))] ?? null;
     }
 
     /** The reflected native or tentative return type, independent of analysis overrides. */
