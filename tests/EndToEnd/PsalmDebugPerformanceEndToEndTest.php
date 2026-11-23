@@ -9,6 +9,7 @@ use PHPUnit\Framework\Attributes\RequiresPhpExtension;
 use Symfony\Component\Process\Process;
 
 use function array_column;
+use function array_diff;
 use function array_filter;
 use function array_keys;
 use function array_sum;
@@ -38,11 +39,12 @@ use const PHP_BINARY;
  * @psalm-type Dump = array{
  *     schema: int,
  *     totals: array{wall_us: int, cpu_us: int, children_cpu_us: int},
- *     stages: list<array{name: string, wall_us: int, cpu_us: int}>,
+ *     stages: list<array{name: string, start_us: int, wall_us: int, cpu_us: int}>,
+ *     steps: list<array{name: string, stage: string, start_us: int, wall_us: int}>,
  *     pools: list<array{payload_bytes: array{sum: ?int}}>,
  *     workers: list<array{role: string, pid: int, start_us: int, end_us: int, tasks: int, busy_us: int, cpu_us: int}>,
  *     files: list<DumpFile>,
- *     traceEvents: list<array<string, mixed>>,
+ *     traceEvents: list<array{ph: string, name: string, pid: int}>,
  *     hooks: list<array{handler: string, hook: string, origin: string, calls: int, wall_us: int}>,
  *     counts: array<string, int>,
  * }
@@ -97,8 +99,30 @@ final class PsalmDebugPerformanceEndToEndTest extends PsalmEndToEndTestCase
         $this->assertSame($dump['totals']['cpu_us'], array_sum(array_column($dump['stages'], 'cpu_us')));
         $this->assertSame([], $dump['workers']);
 
-        // a Trace Event Format object: an event for each stage and file, and the name of the process
-        $this->assertCount(count($dump['stages']) + count($dump['files']) + 1, $dump['traceEvents']);
+        // a Trace Event Format object: an event for each stage, step and file
+        $spans = array_filter($dump['traceEvents'], static fn(array $event): bool => $event['ph'] === 'X');
+        $this->assertCount(count($dump['stages']) + count($dump['steps']) + count($dump['files']), $spans);
+
+        // the steps are named, lie in their stage and do not overlap
+        $this->assertSame([], array_diff(
+            ['config', 'restart', 'preload', 'providers', 'files.list', 'scan.stubs', 'scan.project', 'populate',
+                'analysis.files', 'mutation_levels', 'output'],
+            array_column($dump['steps'], 'name'),
+        ));
+        $step_end = 0;
+
+        foreach ($dump['steps'] as $step) {
+            $this->assertGreaterThanOrEqual($step_end, $step['start_us']);
+            $step_end = $step['start_us'] + $step['wall_us'];
+
+            $in_stage = array_filter(
+                $dump['stages'],
+                static fn(array $stage): bool => $stage['name'] === $step['stage']
+                    && $stage['start_us'] <= $step['start_us']
+                    && $step_end <= $stage['start_us'] + $stage['wall_us'],
+            );
+            $this->assertNotSame([], $in_stage, $step['name']);
+        }
 
         // no record names the directory of the project, nor the way up to Psalm, nor the file of an anonymous class
         $this->assertStringNotContainsString(self::$tmpDir, $json);
@@ -141,6 +165,13 @@ final class PsalmDebugPerformanceEndToEndTest extends PsalmEndToEndTestCase
         foreach (self::recordsOf($dump, 'analysis') as $record) {
             $this->assertContains($record['pid'], $pids);
         }
+
+        // each worker shows as a span of its own in the trace
+        $worked = array_column(
+            array_filter($dump['traceEvents'], static fn(array $e): bool => $e['ph'] === 'X' && $e['name'] === 'worker'),
+            'pid',
+        );
+        $this->assertSame([], array_diff(array_column($dump['workers'], 'pid'), $worked));
 
         $this->assertGreaterThan(0, $dump['pools'][0]['payload_bytes']['sum']);
     }

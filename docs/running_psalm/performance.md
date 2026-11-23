@@ -25,6 +25,7 @@ Times are integer microseconds (`_us`), sizes integer bytes (`_bytes`).
 |`env`|Psalm, PHP and OS versions, extensions, thread counts, cache mode, plugin classes, the names of the options given, and `traceparent` when the `TRACEPARENT` environment variable holds a valid W3C trace context|
 |`totals`|Wall and CPU time, peak memory, file and issue counts|
 |`stages`|The main process, stage by stage|
+|`steps`|Named parts of a stage, in the main process: `config`, `restart`, `preload`, `providers`, `files.list`, `reference_cache.load`, `stubs.preloaded`, `plugins.init`, `autoload`, `scan.stubs`, `scan.project`, `scan.extra`, `populate`, `plugins.after_populated`, `analysis.files`, `pool.merge`, `taint.resolve`, `mutation_levels`, `unused_code`, `reference_cache.write`, `unused_suppressions`, `baseline`, `output`, `plugins.after_analysis`, `report_files`, `summary`, `cache.write`. A step lasts until the next one or the end of its stage; what comes before the first step of a stage belongs to no step|
 |`pools`, `workers`|The forked processes: tasks, busy time, CPU time, memory|
 |`files`|One record per file scanned or analysed|
 |`hot`|The 50 statements and the 50 function-likes that took longest, per place, with the number of `passes` over them (a constructor is analysed twice) and the time of all of them, a function-like's own time (`self_us`) as well as its total (`wall_us`) with the functions analysed meanwhile. Only a statement execution (own time) or a function-like pass of 1 ms or more is counted|
@@ -32,7 +33,7 @@ Times are integer microseconds (`_us`), sizes integer bytes (`_bytes`).
 |`counts`|Class-likes, functions, methods, parsed files, parser cache hits and misses|
 |`taint`|Size of the taint graph|
 
-The file is also a Trace Event Format file (`traceEvents`: the stages and the files, in one lane per process): open it in https://ui.perfetto.dev or https://www.speedscope.app to see what the workers did when.
+The file is also a Trace Event Format file (`traceEvents`: the stages and the files, in one lane per process): open it in https://ui.perfetto.dev or https://www.speedscope.app to see the stages, the steps, the phases of the pools, and what each worker did and when it waited.
 
 `schema` changes when a key is removed or changes its meaning.
 

@@ -1051,8 +1051,11 @@ final class Codebase
 
     /**
      * Scans all files their related files
+     *
+     * @param string $step what the round scans, for the performance summary: `scan.project`, `scan.stubs` or
+     *        `scan.extra`
      */
-    public function scanFiles(int $threads = 1): void
+    public function scanFiles(int $threads = 1, string $step = 'scan.extra'): void
     {
         // the classes of the global variables of the config are named nowhere else
         foreach ($this->config->globals as $global_type) {
@@ -1062,6 +1065,7 @@ final class Codebase
         }
 
         $previous_stage = Collector::stage('scan.files');
+        Collector::step($step);
         $has_changes = $this->scanner->scanFiles($this->classlikes, $threads);
 
         // a taint analysis analyzes the bodies of inherited methods again, for the classes inheriting them (see
@@ -1073,6 +1077,7 @@ final class Codebase
         }
 
         Collector::stage('scan.populate');
+        Collector::step('populate');
 
         if ($has_changes) {
             // the classes scanned again may make other `new`

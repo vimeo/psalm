@@ -255,23 +255,30 @@ final class Analyzer
         );
 
         Collector::stage('analysis.files');
+        Collector::step('analysis.files');
         $this->doAnalysis($project_analyzer, $pool_size);
 
         $scanned_files = $codebase->scanner->getScannedFiles();
 
         if ($codebase->taint_flow_graph) {
             Collector::stage('taint');
+            Collector::step('taint.resolve');
             $codebase->taint_flow_graph->connectSinksAndSources($codebase->progress);
         }
 
         Collector::stage('analysis.finish');
+        Collector::step('mutation_levels');
         MutationLevelResolver::resolve($project_analyzer);
 
         $this->progress->finish();
 
+        Collector::step('unused_code');
+
         if ($consolidate_analyzed_data) {
             $project_analyzer->consolidateAnalyzedData();
         }
+
+        Collector::step('reference_cache.write');
 
         foreach (IssueBuffer::getAllIssuesData() as $file_path => $file_issues) {
             $codebase->file_reference_provider->clearExistingIssuesForFile($file_path);
@@ -285,6 +292,8 @@ final class Analyzer
         $codebase->file_reference_provider->setFileMaps($this->getFileMaps());
         $codebase->file_reference_provider->setTypeCoverage($this->mixed_counts);
         $codebase->file_reference_provider->updateReferenceCache($codebase, $scanned_files);
+
+        Collector::step('unused_suppressions');
 
         if ($codebase->track_unused_suppressions) {
             IssueBuffer::processUnusedSuppressions($codebase->file_provider);
@@ -343,6 +352,7 @@ final class Analyzer
             $pool->run($this->files_to_analyze, AnalyzerTask::class, $task_done_closure);
             Collector::poolStep('run_us');
             Collector::stage('analysis.merge');
+            Collector::step('pool.merge');
             $this->progress->debug('Collecting forked analysis results' . "\n");
             $this->progress->startPhase(Phase::MERGING_THREAD_RESULTS);
             $this->progress->expand($pool->threads);

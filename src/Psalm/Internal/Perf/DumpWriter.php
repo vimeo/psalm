@@ -140,6 +140,25 @@ final class DumpWriter
                 self::seconds($stage['cpu_us']),
                 $share,
             );
+
+            // what a stage did in steps that took at least 1 % of the run
+            $steps = [];
+            foreach ($measurements['steps'] as $step) {
+                if ($step['stage'] === $name) {
+                    $steps[$step['name']] = ($steps[$step['name']] ?? 0) + $step['wall_us'];
+                }
+            }
+
+            foreach ($steps as $step_name => $wall_us) {
+                if ($totals['wall_us'] > 0 && 100 * $wall_us >= $totals['wall_us']) {
+                    $out .= sprintf(
+                        "    %-20s %9s wall %5.1f%%\n",
+                        $step_name,
+                        self::seconds($wall_us),
+                        100.0 * (float) $wall_us / (float) $totals['wall_us'],
+                    );
+                }
+            }
         }
 
         $out .= sprintf(
@@ -349,16 +368,49 @@ final class DumpWriter
             $events[] = ['ph' => 'M', 'name' => 'process_name', 'pid' => $pid, 'tid' => 0, 'args' => ['name' => $name]];
         }
 
+        // in the main process the stages, steps and pools are lanes of their own; a worker has the lane of its
+        // files and one for when it worked and when it waited
+        foreach (['stages', 'steps', 'pools'] as $tid => $lane) {
+            $events[] = self::threadName($main_pid, $tid, $lane);
+        }
+
+        foreach ($measurements['workers'] as $worker) {
+            $events[] = self::threadName($worker['pid'], 0, 'files');
+            $events[] = self::threadName($worker['pid'], 1, 'worker');
+        }
+
         foreach ($measurements['stages'] as $stage) {
-            $events[] = [
-                'name' => $stage['name'],
-                'cat' => 'stage',
-                'ph' => 'X',
-                'ts' => $stage['start_us'],
-                'dur' => $stage['wall_us'],
-                'pid' => $main_pid,
-                'tid' => 0,
-            ];
+            $events[] = self::span($stage['name'], 'stage', $stage['start_us'], $stage['wall_us'], $main_pid, 0);
+        }
+
+        foreach ($measurements['steps'] as $step) {
+            $events[] = self::span($step['name'], 'step', $step['start_us'], $step['wall_us'], $main_pid, 1);
+        }
+
+        $collect_starts = [];
+        foreach ($measurements['pools'] as $pool) {
+            $at = $pool['start_us'];
+
+            $phases = ['init' => $pool['init_us'], 'run' => $pool['run_us'], 'collect' => $pool['collect_us'],
+                'merge' => $pool['merge_us']];
+
+            foreach ($phases as $phase => $wall_us) {
+                if ($phase === 'collect') {
+                    $collect_starts[$pool['id']] = $at;
+                }
+
+                $events[] = self::span($pool['role'] . ' ' . $phase, 'pool', $at, $wall_us, $main_pid, 2);
+                $at += $wall_us;
+            }
+        }
+
+        foreach ($measurements['workers'] as $worker) {
+            $pid = $worker['pid'];
+            $worked_us = $worker['end_us'] - $worker['start_us'];
+            $idle_us = max(0, ($collect_starts[$worker['pool']] ?? $worker['end_us']) - $worker['end_us']);
+
+            $events[] = self::span('worker', 'worker', $worker['start_us'], $worked_us, $pid, 1);
+            $events[] = self::span('idle', 'worker', $worker['end_us'], $idle_us, $pid, 1);
         }
 
         foreach ($measurements['files'] as $file) {
@@ -375,6 +427,32 @@ final class DumpWriter
         }
 
         return $events;
+    }
+
+    /**
+     * @return array<string, mixed>
+     * @psalm-pure
+     */
+    private static function span(string $name, string $category, int $start_us, int $wall_us, int $pid, int $tid): array
+    {
+        return [
+            'name' => $name,
+            'cat' => $category,
+            'ph' => 'X',
+            'ts' => $start_us,
+            'dur' => $wall_us,
+            'pid' => $pid,
+            'tid' => $tid,
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     * @psalm-pure
+     */
+    private static function threadName(int $pid, int $tid, string $name): array
+    {
+        return ['ph' => 'M', 'name' => 'thread_name', 'pid' => $pid, 'tid' => $tid, 'args' => ['name' => $name]];
     }
 
     /**

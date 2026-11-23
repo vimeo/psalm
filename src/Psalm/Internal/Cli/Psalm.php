@@ -279,6 +279,8 @@ final class Psalm
 
         $output_format = self::initOutputFormat($options);
 
+        Collector::step('config');
+
         [$config, $init_source_dir] = self::initConfig(
             $current_dir,
             $args,
@@ -310,6 +312,7 @@ final class Psalm
         $progress = self::initProgress($options, $config, $in_ci);
 
         $force_jit = $config->force_jit || isset($options['force-jit']);
+        Collector::step('restart');
         self::restart($options, $force_jit, $threads, $scanThreads, $progress);
 
         // after the restart: the process that restarts would print them too
@@ -390,6 +393,7 @@ final class Psalm
             self::clearGlobalCache($config);
         }
 
+        Collector::step('providers');
         $providers = ProjectBootstrap::initProviders($options, $config, $current_dir);
 
         $stdout_report_options = self::initStdoutReportOptions($options, $show_info, $output_format, $in_ci);
@@ -451,6 +455,7 @@ final class Psalm
         }
 
         Collector::stage('report');
+        Collector::step('baseline');
 
         if (!isset($options['i'])) {
             IssueBuffer::finish(
@@ -1081,6 +1086,7 @@ final class Psalm
             }
         }
 
+        Collector::step('preload');
         Preloader::preload($progress, $hasJit);
     }
 

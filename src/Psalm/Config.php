@@ -3044,7 +3044,7 @@ final class Config
 
         $codebase->register_stub_files = true;
 
-        $codebase->scanFiles();
+        $codebase->scanFiles(1, 'scan.stubs');
 
         $codebase->register_stub_files = false;
 
@@ -3088,7 +3088,7 @@ final class Config
         }
 
         if ($library_stubs !== []) {
-            $codebase->scanFiles();
+            $codebase->scanFiles(1, 'scan.stubs');
         }
 
         $codebase->register_stub_files = true;
@@ -3196,7 +3196,7 @@ final class Config
 
         $progress->debug('Registering stub files' . "\n");
 
-        $codebase->scanFiles();
+        $codebase->scanFiles(1, 'scan.stubs');
 
         $progress->debug('Finished registering stub files' . "\n");
 

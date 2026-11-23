@@ -98,6 +98,14 @@ use const PHP_OS_FAMILY;
  *     php_bytes: int,
  *     php_peak_bytes: int,
  * }
+ * @psalm-type StepRecord = array{
+ *     name: string,
+ *     stage: string,
+ *     start_us: int,
+ *     wall_us: int,
+ *     cpu_us: int,
+ *     php_bytes: int,
+ * }
  * @psalm-type PoolRecord = array{
  *     id: int,
  *     role: string,
@@ -138,6 +146,7 @@ use const PHP_OS_FAMILY;
  *         issues: array{errors: int, infos: int},
  *     },
  *     stages: list<StageRecord>,
+ *     steps: list<StepRecord>,
  *     pools: list<PoolRecord>,
  *     workers: list<WorkerRecord>,
  *     files: list<FileRecord>,
@@ -187,6 +196,15 @@ final class Collector
 
     /** @var list<array{name: string, t_us: int, cpu_us: int, children_cpu_us: int, bytes: int, peak: int}> */
     private static array $marks = [];
+
+    /**
+     * Where a step starts, or, with no name, where the step before it ends because a stage starts
+     *
+     * @var list<array{name: ?string, stage: string, mark: array{
+     *     name: string, t_us: int, cpu_us: int, children_cpu_us: int, bytes: int, peak: int
+     * }}>
+     */
+    private static array $step_marks = [];
 
     /** @var list<FileRecord> */
     private static array $files = [];
@@ -259,6 +277,7 @@ final class Collector
         self::$dump_path = null;
         self::$option_names = [];
         self::$marks = [];
+        self::$step_marks = [];
         self::$pools = [];
         self::$workers = [];
         self::$pool = null;
@@ -308,7 +327,23 @@ final class Collector
         self::$stage = $name;
         self::$marks[] = self::mark($name);
 
+        // the step that is open ends with the stage it is in
+        if (self::$step_marks !== [] && self::$step_marks[count(self::$step_marks) - 1]['name'] !== null) {
+            self::$step_marks[] = ['name' => null, 'stage' => $name, 'mark' => self::$marks[count(self::$marks) - 1]];
+        }
+
         return $previous;
+    }
+
+    /**
+     * Starts a named step of the current stage of the main process. A step lasts until the next step, or until the
+     * stage ends; what a stage does before its first step belongs to no step.
+     */
+    public static function step(string $name): void
+    {
+        if (self::$enabled && !self::$worker) {
+            self::$step_marks[] = ['name' => $name, 'stage' => self::$stage, 'mark' => self::mark($name)];
+        }
     }
 
     public static function setScanStorage(string $storage): void
@@ -726,6 +761,23 @@ final class Collector
             ];
         }
 
+        $steps = [];
+        foreach (self::$step_marks as $i => $entry) {
+            if ($entry['name'] === null) {
+                continue;
+            }
+
+            $next = self::$step_marks[$i + 1]['mark'] ?? $end;
+            $steps[] = [
+                'name' => $entry['name'],
+                'stage' => $entry['stage'],
+                'start_us' => $entry['mark']['t_us'],
+                'wall_us' => $next['t_us'] - $entry['mark']['t_us'],
+                'cpu_us' => $next['cpu_us'] - $entry['mark']['cpu_us'],
+                'php_bytes' => $next['bytes'],
+            ];
+        }
+
         $files = self::$files;
         usort(
             $files,
@@ -759,6 +811,7 @@ final class Collector
                 'issues' => ['errors' => $errors, 'infos' => $infos],
             ],
             'stages' => $stages,
+            'steps' => $steps,
             'pools' => self::$pools,
             'workers' => self::$workers,
             'files' => $files,

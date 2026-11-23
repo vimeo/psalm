@@ -903,6 +903,8 @@ final class IssueBuffer
             }
         }
 
+        Collector::step('output');
+
         // The report is written to the terminal, not into a web page, so it goes to STDOUT rather than through echo.
         fwrite(
             STDOUT,
@@ -927,6 +929,8 @@ final class IssueBuffer
         ksort($baselined_issue_counts);
         self::$baselined_issue_counts = $baselined_issue_counts;
 
+        Collector::step('plugins.after_analysis');
+
         if ($codebase->config->eventDispatcher->after_analysis) {
             $source_control_info = null;
 
@@ -949,6 +953,8 @@ final class IssueBuffer
             $codebase->config->eventDispatcher->dispatchAfterAnalysis($event);
         }
 
+        Collector::step('report_files');
+
         foreach ($project_analyzer->generated_report_options as $report_options) {
             if (!$report_options->output_path) {
                 throw new UnexpectedValueException('Output path should not be null here');
@@ -967,6 +973,8 @@ final class IssueBuffer
                 ),
             );
         }
+
+        Collector::step('summary');
 
         $prints_to_console = in_array(
             $project_analyzer->stdout_report_options->format,
@@ -1052,6 +1060,8 @@ final class IssueBuffer
                 );
             }
         }
+
+        Collector::step('cache.write');
 
         if ($is_full && $start_time) {
             $project_analyzer->finish($start_time, PSALM_VERSION);
