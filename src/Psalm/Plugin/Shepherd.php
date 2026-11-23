@@ -16,6 +16,7 @@ use Psalm\Plugin\EventHandler\AfterAnalysisInterface;
 use Psalm\Plugin\EventHandler\Event\AfterAnalysisEvent;
 use Psalm\Progress\DebugProgress;
 use Psalm\Progress\Progress;
+use UnexpectedValueException;
 
 use function array_filter;
 use function array_key_exists;
@@ -158,19 +159,46 @@ final class Shepherd implements AfterAnalysisInterface
         $fixable_issue_counts = IssueBuffer::getFixableIssues();
         ksort($fixable_issue_counts);
 
+        // AfterAnalysisEvent is only made by IssueBuffer::finish(), which sets the summary first
+        $summary = IssueBuffer::getRunSummary();
+        if ($summary === null) {
+            throw new UnexpectedValueException('IssueBuffer::finish() has not summarised the run');
+        }
+
+        $info_issue_counts = [];
+        foreach ($issues_grouped_by_filename as $file_issues) {
+            foreach ($file_issues as $issue) {
+                if ($issue->severity === IssueData::SEVERITY_INFO) {
+                    $info_issue_counts[$issue->type] = ($info_issue_counts[$issue->type] ?? 0) + 1;
+                }
+            }
+        }
+
+        // exact, as every issue the baseline covers reaches the event with severity info
+        foreach ($summary->baselined_issue_counts as $type => $count) {
+            $remaining = ($info_issue_counts[$type] ?? 0) - $count;
+            if ($remaining > 0) {
+                $info_issue_counts[$type] = $remaining;
+            } else {
+                unset($info_issue_counts[$type]);
+            }
+        }
+
+        ksort($info_issue_counts);
+
         return [
             'build' => $build_info,
             'git' => $source_control_data,
             'issues' => $normalized_data,
             // the counts by type are objects even when empty, which PHP would encode as lists
-            'baselined' => (object) IssueBuffer::getBaselinedIssueCounts(),
-            'baseline_entries' => IssueBuffer::getBaselineEntryCount(),
-            'info' => (object) IssueBuffer::getInfoIssueCounts(),
+            'baselined' => (object) $summary->baselined_issue_counts,
+            'baseline_entries' => $summary->baseline_entry_count,
+            'info' => (object) $info_issue_counts,
             'fixable' => (object) $fixable_issue_counts,
             'run' => [
-                'wall_seconds' => round(microtime(true) - IssueBuffer::getFinishStartTime(), 2),
+                'wall_seconds' => round(microtime(true) - $summary->start_time, 2),
                 'threads' => ProjectAnalyzer::getInstance()->threads,
-                'full' => IssueBuffer::getFinishIsFull(),
+                'full' => $summary->is_full,
                 'files' => $codebase->analyzer->getFileCountWithAnalysisResults(),
             ],
             'config' => [

@@ -6,6 +6,7 @@ namespace Psalm;
 
 use Psalm\CodeLocation\Raw;
 use Psalm\Exception\CodeException;
+use Psalm\Internal\AnalysisRunSummary;
 use Psalm\Internal\Analyzer\FileAnalyzer;
 use Psalm\Internal\Analyzer\IssueData;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
@@ -158,17 +159,7 @@ final class IssueBuffer
     /** How many issues accepts() was given, suppressed ones included */
     private static int $accepted_issue_count = 0;
 
-    /** @var array<string, int<1, max>> */
-    private static array $baselined_issue_counts = [];
-
-    /** @var array<string, int<1, max>> */
-    private static array $info_issue_counts = [];
-
-    private static float $finish_start_time = 0.0;
-
-    private static bool $finish_is_full = false;
-
-    private static int $baseline_entry_count = 0;
+    private static ?AnalysisRunSummary $run_summary = null;
 
     /**
      * This will add an issue to be emitted if it's not suppressed and return if it has been added
@@ -623,61 +614,14 @@ final class IssueBuffer
     }
 
     /**
-     * How many issues the baseline covered in the last finish(), by issue type, sorted by type
-     *
-     * @internal
-     * @return array<string, int<1, max>>
-     * @psalm-capabilities read-globals
-     */
-    public static function getBaselinedIssueCounts(): array
-    {
-        return self::$baselined_issue_counts;
-    }
-
-    /**
-     * How many issues the config reports as info and the baseline didn't cover in the last finish(), by issue type,
-     * sorted by type
-     *
-     * @internal
-     * @return array<string, int<1, max>>
-     * @psalm-capabilities read-globals
-     */
-    public static function getInfoIssueCounts(): array
-    {
-        return self::$info_issue_counts;
-    }
-
-    /**
-     * The start time given to the last finish(), as microtime(true)
+     * What the last finish() knows about its run
      *
      * @internal
      * @psalm-capabilities read-globals
      */
-    public static function getFinishStartTime(): float
+    public static function getRunSummary(): ?AnalysisRunSummary
     {
-        return self::$finish_start_time;
-    }
-
-    /**
-     * Whether the last finish() was for the whole project, not for given paths
-     *
-     * @internal
-     * @psalm-capabilities read-globals
-     */
-    public static function getFinishIsFull(): bool
-    {
-        return self::$finish_is_full;
-    }
-
-    /**
-     * How many entries the baseline applied in the last finish() holds, before it covered any issue
-     *
-     * @internal
-     * @psalm-capabilities read-globals
-     */
-    public static function getBaselineEntryCount(): int
-    {
-        return self::$baseline_entry_count;
+        return self::$run_summary;
     }
 
     /**
@@ -836,11 +780,6 @@ final class IssueBuffer
 
 
         $issues_data = [];
-        self::$baselined_issue_counts = [];
-        self::$info_issue_counts = [];
-        self::$finish_start_time = $start_time;
-        self::$finish_is_full = $is_full;
-        self::$baseline_entry_count = ErrorBaseline::countTotalIssues($issue_baseline);
 
         if (self::$issues_data) {
             if (in_array(
@@ -867,32 +806,30 @@ final class IssueBuffer
             $issues_data = self::$issues_data;
         }
 
-        foreach ($issues_data as $file_path => $file_issues) {
-            foreach ($file_issues as $key => $issue_data) {
-                // Set severity for issues in baseline to INFO
-                if ($issue_baseline && BaselineMatcher::consume(
-                    $codebase->config,
-                    $issue_baseline,
-                    $issue_data->file_name,
-                    $issue_data->type,
-                    $issue_data->selected_text,
-                )) {
-                    $issue_data->severity = IssueData::SEVERITY_INFO;
-                    self::$baselined_issue_counts[$issue_data->type]
-                        = (self::$baselined_issue_counts[$issue_data->type] ?? 0) + 1;
-                } elseif ($issue_data->severity === IssueData::SEVERITY_INFO) {
-                    self::$info_issue_counts[$issue_data->type]
-                        = (self::$info_issue_counts[$issue_data->type] ?? 0) + 1;
-                }
-
-                $issues_data[$file_path][$key] = $issue_data;
-            }
-        }
-
-        ksort(self::$baselined_issue_counts);
-        ksort(self::$info_issue_counts);
+        // counted before the baseline covers any issue, which uses up its entries
+        $baseline_entry_count = ErrorBaseline::countTotalIssues($issue_baseline);
+        $baselined_issue_counts = [];
 
         if (!empty($issue_baseline)) {
+            // Set severity for issues in baseline to INFO
+            foreach ($issues_data as $file_path => $file_issues) {
+                foreach ($file_issues as $key => $issue_data) {
+                    if (BaselineMatcher::consume(
+                        $codebase->config,
+                        $issue_baseline,
+                        $issue_data->file_name,
+                        $issue_data->type,
+                        $issue_data->selected_text,
+                    )) {
+                        $issue_data->severity = IssueData::SEVERITY_INFO;
+                        $baselined_issue_counts[$issue_data->type]
+                            = ($baselined_issue_counts[$issue_data->type] ?? 0) + 1;
+                    }
+
+                    $issues_data[$file_path][$key] = $issue_data;
+                }
+            }
+
             if ($codebase->config->find_unused_baseline_entry) {
                 foreach ($issue_baseline as $file_path => $issues) {
                     foreach ($issues as $issue_name => $issue) {
@@ -986,6 +923,14 @@ final class IssueBuffer
             }
         }
 
+
+        ksort($baselined_issue_counts);
+        self::$run_summary = new AnalysisRunSummary(
+            $baselined_issue_counts,
+            $baseline_entry_count,
+            $start_time,
+            $is_full,
+        );
 
         if ($codebase->config->eventDispatcher->after_analysis) {
             $source_control_info = null;
