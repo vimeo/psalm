@@ -39,7 +39,7 @@ Because of the code snippets, don't use `--shepherd` for code that must not leav
 
 ## Sending reports to your own endpoint
 
-Pass a URL instead, and Psalm posts the same JSON there:
+Pass a URL instead, and Psalm posts the same JSON there. The URL must use `http` or `https`.
 
 ```bash
 ./vendor/bin/psalm --shepherd=https://example.com/psalm-report
