@@ -155,6 +155,22 @@ final class CallableTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'nonPublicCallbackOfANativeFunctionWrittenInAnotherCase' => [
+                'code' => '<?php
+                    final class A {
+                        private function twice(int $i): int {
+                            return $i * 2;
+                        }
+                        /** @return list<int> */
+                        public function upper(): array {
+                            return ARRAY_MAP([$this, "twice"], [1, 2]);
+                        }
+                        /** @return list<int> */
+                        public function mixed(): array {
+                            return \\Array_Map([$this, "twice"], [1, 2]);
+                        }
+                    }',
+            ],
             'callableOfThisTakesTheTemplatesOfTheObject' => [
                 'code' => '<?php
                     /**
@@ -4126,6 +4142,21 @@ final class CallableTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'nonPublicCallbackOfANativeFunctionWrittenInAnotherCaseFromAnotherClass' => [
+                'code' => '<?php
+                    final class A {
+                        private function twice(int $i): int {
+                            return $i * 2;
+                        }
+                    }
+                    final class B {
+                        /** @return list<int> */
+                        public function other(A $a): array {
+                            return ARRAY_MAP([$a, "twice"], [1, 2]);
+                        }
+                    }',
+                'error_message' => 'InvalidArgument',
+            ],
             'callableOfStaticChecksTheTemplatesOfTheObject' => [
                 'code' => '<?php
                     /** @template T */
