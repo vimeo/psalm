@@ -76,8 +76,6 @@ use function file_exists;
 use function fwrite;
 use function implode;
 use function in_array;
-use function is_dir;
-use function is_file;
 use function max;
 use function memory_get_usage;
 use function microtime;
@@ -756,6 +754,12 @@ final class ProjectAnalyzer
             );
 
             if (isset($source_class_constants[$source_parts[1]])) {
+                if (strtolower($destination_parts[1]) === 'class') {
+                    throw new RefactorException(
+                        'A class constant must not be called class, it is reserved for class name fetching',
+                    );
+                }
+
                 if (!$this->codebase->classlikes->hasFullyQualifiedClassName($destination_parts[0])) {
                     throw new RefactorException(
                         'Destination class ' . $destination_parts[0] . ' doesn’t exist',
@@ -907,44 +911,7 @@ final class ProjectAnalyzer
 
     public function checkDir(string $dir_name): void
     {
-        $this->progress->write($this->generateAnalysisSetupMessage());
-        $this->progress->startPhase(Phase::SCAN, $this->scanThreads);
-
-        if (!$this->project_files_initialized) {
-            // issues raised while scanning need to know which files are being checked
-            $this->project_files = [];
-            foreach ($this->file_provider->getFilesInDir(
-                $dir_name,
-                $this->config->getFileExtensions(),
-            ) as $file_path) {
-                $this->project_files[$file_path] = $file_path;
-            }
-        }
-
-        $this->file_reference_provider->loadReferenceCache();
-
-        $this->config->visitPreloadedStubFiles($this->codebase, $this->progress);
-
-        $this->checkDirWithConfig($dir_name, $this->config, true);
-
-        $this->config->initializePlugins($this);
-
-        $this->codebase->scanFiles($this->scanThreads);
-
-        $this->config->visitStubFiles($this->codebase, $this->progress);
-
-        $event = new AfterCodebasePopulatedEvent($this->codebase);
-
-        $this->config->eventDispatcher->dispatchAfterCodebasePopulated($event);
-
-        $this->progress->startPhase(Phase::ANALYSIS, $this->threads);
-
-        $this->codebase->analyzer->analyzeFiles(
-            $this,
-            $this->threads,
-            $this->codebase->alter_code,
-            $this->codebase->find_unused_code === 'always',
-        );
+        $this->checkPaths([$dir_name]);
     }
 
     private function checkDirWithConfig(string $dir_name, Config $config, bool $allow_non_project_files = false): void
@@ -1015,42 +982,7 @@ final class ProjectAnalyzer
 
     public function checkFile(string $file_path): void
     {
-        $this->progress->write($this->generateAnalysisSetupMessage());
-        $this->progress->startPhase(Phase::SCAN, $this->scanThreads);
-
-        $this->progress->debug('Checking ' . $file_path . PHP_EOL);
-
-        if (!$this->project_files_initialized) {
-            // issues raised while scanning need to know which files are being checked
-            $this->project_files = [$file_path => $file_path];
-        }
-
-        $this->config->visitPreloadedStubFiles($this->codebase, $this->progress);
-
-        $this->config->hide_external_errors = $this->config->isInProjectDirs($file_path);
-
-        $this->codebase->addFilesToAnalyze([$file_path => $file_path]);
-
-        $this->file_reference_provider->loadReferenceCache();
-
-        $this->config->initializePlugins($this);
-
-        $this->codebase->scanFiles($this->scanThreads);
-
-        $this->config->visitStubFiles($this->codebase, $this->progress);
-
-        $event = new AfterCodebasePopulatedEvent($this->codebase);
-
-        $this->config->eventDispatcher->dispatchAfterCodebasePopulated($event);
-
-        $this->progress->startPhase(Phase::ANALYSIS, $this->threads);
-
-        $this->codebase->analyzer->analyzeFiles(
-            $this,
-            $this->threads,
-            $this->codebase->alter_code,
-            $this->codebase->find_unused_code === 'always',
-        );
+        $this->checkPaths([$file_path]);
     }
 
     /**
@@ -1065,14 +997,14 @@ final class ProjectAnalyzer
             $file_extensions = $this->config->getFileExtensions();
             $this->project_files = [];
             foreach ($paths_to_check as $file_path) {
-                if (is_dir($file_path)) {
+                if ($this->file_provider->isDirectory($file_path)) {
                     foreach ($this->file_provider->getFilesInDir(
                         $file_path,
                         $file_extensions,
                     ) as $file_path) {
                         $this->project_files[$file_path] = $file_path;
                     }
-                } elseif (is_file($file_path)) {
+                } elseif ($this->file_provider->fileExists($file_path)) {
                     $this->project_files[$file_path] = $file_path;
                 }
             }
@@ -1090,9 +1022,9 @@ final class ProjectAnalyzer
         foreach ($paths_to_check as $path) {
             $this->progress->debug('Checking ' . $path . PHP_EOL);
 
-            if (is_dir($path)) {
+            if ($this->file_provider->isDirectory($path)) {
                 $this->checkDirWithConfig($path, $this->config, true);
-            } elseif (is_file($path)) {
+            } elseif ($this->file_provider->fileExists($path)) {
                 $this->check_paths_files[] = $path;
                 $this->codebase->addFilesToAnalyze([$path => $path]);
                 $this->config->hide_external_errors = $this->config->isInProjectDirs($path);
