@@ -14,6 +14,7 @@ use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TTypeVariable;
 
 use function count;
+use function strtolower;
 
 /**
  * @internal
@@ -68,6 +69,11 @@ final class GenericTypeComparator
             $container_type_params_contravariant,
         );
 
+        $input_without_type_args = $container_type_params_contravariant !== null
+            && !$input_type_part instanceof TGenericObject
+            && !$input_type_part instanceof TIterable
+            && strtolower($input_type_part->value) === strtolower($container_type_part->value);
+
         $atomic_comparison_result_type_params = null;
         if ($atomic_comparison_result) {
             if (!$atomic_comparison_result->replacement_atomic_type) {
@@ -97,7 +103,9 @@ final class GenericTypeComparator
 
             $contravariant = false;
 
-            if (isset($container_type_params_contravariant[$i])) {
+            // the params of an input without type arguments (`Sink` for `Sink<T>`) are unknown, a coercion from mixed
+            // as for the other variances, not the constraint they stand for, which a contravariant param would fit
+            if (isset($container_type_params_contravariant[$i]) && !$input_without_type_args) {
                 if (!$input_is_star) {
                     // a contravariant param holds the params it fits, so the two are compared the other way round
                     [$input_param, $container_param] = [$container_param, $input_param];
@@ -194,7 +202,8 @@ final class GenericTypeComparator
                     $all_types_contain = false;
                 }
             } elseif ($input_is_star) {
-                // `*` stands for one unknown type: an invariant argument holds it only when it is `*` too, or left out
+                // `*` stands for one unknown type: an invariant or contravariant argument holds it only when it is `*`
+                // too, or left out
                 if (!$input_type_part instanceof TIterable
                     && !$container_type_part instanceof TIterable
                     && (isset($container_type_params_contravariant[$i])
