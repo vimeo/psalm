@@ -12,6 +12,7 @@ use Psalm\Internal\Algebra;
 use Psalm\Internal\Algebra\FormulaGenerator;
 use Psalm\Internal\Analyzer\AlgebraAnalyzer;
 use Psalm\Internal\Analyzer\ClosureAnalyzer;
+use Psalm\Internal\Analyzer\ExtensionRequirementAnalyzer;
 use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\PurityWildcardInference;
 use Psalm\Internal\Analyzer\Statements\Expression\ArrayAnalyzer;
@@ -984,6 +985,17 @@ final class FunctionCallAnalyzer extends CallAnalyzer
 
         $function_call_info->function_exists
             = $function_call_info->is_stubbed || $function_call_info->in_call_map || $namespaced_function_exists;
+
+        if ($function_call_info->in_call_map || $function_call_info->is_stubbed) {
+            ExtensionRequirementAnalyzer::check(
+                $codebase,
+                $function_call_info->function_id,
+                false,
+                new CodeLocation($statements_analyzer->getSource(), $function_name),
+                $context,
+                $statements_analyzer->getSuppressedIssues(),
+            );
+        }
 
         if ($function_call_info->function_exists
             && !$stmt->isFirstClassCallable()

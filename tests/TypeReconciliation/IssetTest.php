@@ -81,6 +81,46 @@ final class IssetTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'stringWithACharacterAtAnOffsetIsNonEmpty' => [
+                'code' => '<?php
+                    /** @return non-empty-string */
+                    function firstIsA(string $s): string {
+                        if ($s[0] === "a") {
+                            return $s;
+                        }
+                        return "a";
+                    }
+
+                    /** @return non-empty-string */
+                    function secondIsSet(string $s): string {
+                        if (isset($s[1])) {
+                            return $s;
+                        }
+                        return "a";
+                    }
+
+                    /**
+                     * @param lowercase-string $s
+                     * @return non-empty-lowercase-string
+                     */
+                    function lowercase(string $s): string {
+                        if (isset($s[1])) {
+                            return $s;
+                        }
+                        return "a";
+                    }
+
+                    /**
+                     * @param ""|"ab" $s
+                     * @return "ab"
+                     */
+                    function literal(string $s): string {
+                        if (isset($s[1])) {
+                            return $s;
+                        }
+                        return "ab";
+                    }',
+            ],
             'issetOnListOffsetDefinesTheOffsetsBeforeIt' => [
                 'code' => <<<'PHP'
                     <?php
