@@ -28,6 +28,25 @@ final class InternalAnnotationTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'instancePropertyReadAsStaticIsOnlyUndefined' => [
+                'code' => '<?php
+                    namespace A\B {
+                        class Foo {
+                            /** @psalm-internal A\B */
+                            public ?int $foo = null;
+                        }
+                    }
+
+                    namespace A\C {
+                        function f(): void {
+                            if (\A\B\Foo::$foo !== null) {
+                                echo \A\B\Foo::$foo;
+                            }
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['UndefinedPropertyFetch'],
+            ],
             'psalmInternalMethodCalledFromFunctionInSameNamespace' => [
                 'code' => '<?php
                     namespace A\B {

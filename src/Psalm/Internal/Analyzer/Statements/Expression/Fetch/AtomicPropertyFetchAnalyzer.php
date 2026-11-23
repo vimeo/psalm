@@ -6,7 +6,6 @@ namespace Psalm\Internal\Analyzer\Statements\Expression\Fetch;
 
 use PhpParser;
 use PhpParser\Node\Expr\PropertyFetch;
-use PhpParser\Node\Expr\StaticPropertyFetch;
 use Psalm\CodeLocation;
 use Psalm\Codebase;
 use Psalm\Config;

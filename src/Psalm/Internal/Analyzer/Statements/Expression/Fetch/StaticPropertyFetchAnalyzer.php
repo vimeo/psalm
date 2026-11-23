@@ -241,15 +241,17 @@ final class StaticPropertyFetchAnalyzer
                     $declaring_class_storage,
                 );
 
-                PropertyAccessAnalyzer::checkDeclaredProperty(
-                    $statements_analyzer,
-                    $stmt,
-                    $context,
-                    $prop_name,
-                    $property_id,
-                    $declaring_class_storage,
-                    false,
-                );
+                if ($declaring_class_storage->properties[$prop_name]->is_static ?? false) {
+                    PropertyAccessAnalyzer::checkDeclaredProperty(
+                        $statements_analyzer,
+                        $stmt,
+                        $context,
+                        $prop_name,
+                        $property_id,
+                        $declaring_class_storage,
+                        false,
+                    );
+                }
 
                 if ($codebase->alter_code) {
                     self::handleMigration(
