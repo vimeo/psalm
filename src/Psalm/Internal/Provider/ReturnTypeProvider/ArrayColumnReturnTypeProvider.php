@@ -513,8 +513,13 @@ final class ArrayColumnReturnTypeProvider implements FunctionReturnTypeProviderI
             return strtolower($context->self) === strtolower($declaring_class);
         }
 
+        // from a parent of the declaring class, a protected property is visible only when that parent has it too: the
+        // declaring class redeclares it, and a property the child introduces can't be read there
         return $codebase->classExtendsOrImplements($context->self, $declaring_class)
-            || $codebase->classExtendsOrImplements($declaring_class, $context->self)
+            || ($codebase->classExtendsOrImplements($declaring_class, $context->self)
+                && isset(
+                    $codebase->classlike_storage_provider->get($context->self)->declaring_property_ids[$property_name],
+                ))
             || strtolower($context->self) === strtolower($declaring_class);
     }
 }

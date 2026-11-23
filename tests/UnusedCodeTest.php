@@ -3415,6 +3415,29 @@ final class UnusedCodeTest extends TestCase
                     echo count(secrets([new Row(1, "a")]));',
                 'error_message' => 'UnusedProperty',
             ],
+            'protectedPropertyOfAChildNotDeclaredByTheParentIsUnusedForAParentScopeArrayColumn' => [
+                'code' => '<?php
+                    class Row {
+                        public function __construct(public int $id) {}
+
+                        /**
+                         * @param list<ChildRow> $rows
+                         * @return array<int, mixed>
+                         */
+                        public function notes(array $rows): array {
+                            return array_column($rows, "note", "id");
+                        }
+                    }
+
+                    final class ChildRow extends Row {
+                        public function __construct(int $id, protected string $note) {
+                            parent::__construct($id);
+                        }
+                    }
+
+                    echo count((new Row(1))->notes([new ChildRow(1, "a")]));',
+                'error_message' => 'PossiblyUnusedProperty',
+            ],
             'propertyNotReadAsAColumnByArrayColumnIsUnused' => [
                 'code' => '<?php
                     final class Row {
