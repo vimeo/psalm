@@ -14,15 +14,8 @@ use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\StaticPropertyFetchAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
-use Psalm\Internal\Type\Comparator\TypeComparisonResult;
-use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\TypeExpander;
-use Psalm\Issue\ImplicitToStringCast;
 use Psalm\Issue\ImpureStaticProperty;
-use Psalm\Issue\InvalidPropertyAssignmentValue;
-use Psalm\Issue\MixedPropertyTypeCoercion;
-use Psalm\Issue\PossiblyInvalidPropertyAssignmentValue;
-use Psalm\Issue\PropertyTypeCoercion;
 use Psalm\Issue\UndefinedPropertyAssignment;
 use Psalm\IssueBuffer;
 use Psalm\Storage\Capabilities;
@@ -236,120 +229,14 @@ final class StaticPropertyAssignmentAnalyzer
                 )->final,
             );
 
-            $union_comparison_results = new TypeComparisonResult();
-
-            $type_match_found = UnionTypeComparator::isContainedBy(
-                $codebase,
+            InstancePropertyAssignmentAnalyzer::checkAssignedPropertyTypes(
+                $statements_analyzer,
+                $assignment_value ?? $stmt,
+                $var_id,
+                [new AssignedProperty($class_property_type, $property_id, $assignment_value_type)],
                 $assignment_value_type,
-                $class_property_type,
-                true,
-                true,
-                $union_comparison_results,
+                $context,
             );
-
-            if ($type_match_found
-                && ($union_comparison_results->type_variable_lower_bounds
-                    || $union_comparison_results->type_variable_upper_bounds)
-            ) {
-                $statements_analyzer->type_variable_tracker->addPropertyAssignmentBounds(
-                    $union_comparison_results,
-                    $property_id,
-                    new CodeLocation(
-                        $statements_analyzer->getSource(),
-                        $assignment_value ?? $stmt,
-                        $context->include_location,
-                    ),
-                    $statements_analyzer->getSuppressedIssues(),
-                );
-            }
-
-            if ($union_comparison_results->type_coerced) {
-                if ($union_comparison_results->type_coerced_from_mixed) {
-                    IssueBuffer::maybeAdd(
-                        new MixedPropertyTypeCoercion(
-                            ($var_id ?? $property_id) . ' expects \'' . $class_property_type->getId() . '\', '
-                                . ' parent type `' . $assignment_value_type->getId() . '` provided',
-                            new CodeLocation(
-                                $statements_analyzer->getSource(),
-                                $assignment_value ?? $stmt,
-                                $context->include_location,
-                            ),
-                            $property_id,
-                        ),
-                        $statements_analyzer->getSuppressedIssues(),
-                    );
-                } else {
-                    IssueBuffer::maybeAdd(
-                        new PropertyTypeCoercion(
-                            ($var_id ?? $property_id) . ' expects \'' . $class_property_type->getId() . '\', '
-                                . ' parent type \'' . $assignment_value_type->getId() . '\' provided',
-                            new CodeLocation(
-                                $statements_analyzer->getSource(),
-                                $assignment_value ?? $stmt,
-                                $context->include_location,
-                            ),
-                            $property_id,
-                        ),
-                        $statements_analyzer->getSuppressedIssues(),
-                    );
-                }
-            }
-
-            if ($union_comparison_results->to_string_cast) {
-                IssueBuffer::maybeAdd(
-                    new ImplicitToStringCast(
-                        ($var_id ?? $property_id) . ' expects \'' . $class_property_type . '\', '
-                            . '\'' . $assignment_value_type . '\' provided with a __toString method',
-                        new CodeLocation(
-                            $statements_analyzer->getSource(),
-                            $assignment_value ?? $stmt,
-                            $context->include_location,
-                        ),
-                    ),
-                    $statements_analyzer->getSuppressedIssues(),
-                );
-            }
-
-            if (!$type_match_found && !$union_comparison_results->type_coerced) {
-                if (UnionTypeComparator::canBeContainedBy($codebase, $assignment_value_type, $class_property_type)) {
-                    if (IssueBuffer::accepts(
-                        new PossiblyInvalidPropertyAssignmentValue(
-                            ($var_id ?? $property_id) . ' with declared type \''
-                                . $class_property_type->getId() . '\' cannot be assigned type \''
-                                . $assignment_value_type->getId() . '\'',
-                            new CodeLocation(
-                                $statements_analyzer->getSource(),
-                                $assignment_value ?? $stmt,
-                            ),
-                            $property_id,
-                        ),
-                        $statements_analyzer->getSuppressedIssues(),
-                    )) {
-                        return false;
-                    }
-                } else {
-                    if (IssueBuffer::accepts(
-                        new InvalidPropertyAssignmentValue(
-                            ($var_id ?? $property_id) . ' with declared type \'' . $class_property_type->getId()
-                                . '\' cannot be assigned type \''
-                                . $assignment_value_type->getId() . '\'',
-                            new CodeLocation(
-                                $statements_analyzer->getSource(),
-                                $assignment_value ?? $stmt,
-                            ),
-                            $property_id,
-                        ),
-                        $statements_analyzer->getSuppressedIssues(),
-                    )) {
-                        return false;
-                    }
-                }
-            }
-
-            if ($var_id) {
-                self::forgetAliasesOfStaticProperty($codebase, $context, $var_id);
-                $context->vars_in_scope[$var_id] = $assignment_value_type;
-            }
         }
 
         return null;

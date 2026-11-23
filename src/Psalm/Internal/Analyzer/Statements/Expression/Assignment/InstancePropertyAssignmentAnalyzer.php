@@ -192,10 +192,6 @@ final class InstancePropertyAssignmentAnalyzer
             return;
         }
 
-        $invalid_assignment_value_types = [];
-
-        $has_valid_assignment_value_type = false;
-
         if ($codebase->store_node_types
             && !$context->collect_initializations
             && count($assigned_properties) === 1
@@ -206,6 +202,36 @@ final class InstancePropertyAssignmentAnalyzer
                 $assigned_properties[0]->property_type->getId(),
             );
         }
+
+        self::checkAssignedPropertyTypes(
+            $statements_analyzer,
+            $assignment_value ?? $stmt,
+            $var_id,
+            $assigned_properties,
+            $assignment_value_type,
+            $context,
+        );
+    }
+
+    /**
+     * Reports an assigned value that doesn't fit the type of the property, and narrows `$var_id` to the type the
+     * property gets
+     *
+     * @param non-empty-list<AssignedProperty> $assigned_properties
+     */
+    public static function checkAssignedPropertyTypes(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node $location_node,
+        ?string $var_id,
+        array $assigned_properties,
+        Union $assignment_value_type,
+        Context $context,
+    ): void {
+        $codebase = $statements_analyzer->getCodebase();
+
+        $invalid_assignment_value_types = [];
+
+        $has_valid_assignment_value_type = false;
 
         $can_narrow_property = true;
         foreach ($assigned_properties as $assigned_property) {
@@ -218,6 +244,7 @@ final class InstancePropertyAssignmentAnalyzer
         foreach ($assigned_properties as $assigned_property) {
             $class_property_type = $assigned_property->property_type;
             $assignment_type = $assigned_property->assignment_type;
+            $property_name = $var_id ?? $assigned_property->id;
 
             if ($class_property_type->hasMixed()) {
                 continue;
@@ -252,7 +279,7 @@ final class InstancePropertyAssignmentAnalyzer
                     $assigned_property->id,
                     new CodeLocation(
                         $statements_analyzer->getSource(),
-                        $assignment_value ?? $stmt,
+                        $location_node,
                         $context->include_location,
                     ),
                     $statements_analyzer->getSuppressedIssues(),
@@ -263,11 +290,11 @@ final class InstancePropertyAssignmentAnalyzer
                 if ($union_comparison_results->type_coerced_from_mixed) {
                     IssueBuffer::maybeAdd(
                         new MixedPropertyTypeCoercion(
-                            $var_id . ' expects \'' . $class_property_type->getId() . '\', '
+                            $property_name . ' expects \'' . $class_property_type->getId() . '\', '
                                 . ' parent type `' . $assignment_type->getId() . '` provided',
                             new CodeLocation(
                                 $statements_analyzer->getSource(),
-                                $assignment_value ?? $stmt,
+                                $location_node,
                                 $context->include_location,
                             ),
                             $assigned_property->id,
@@ -277,11 +304,11 @@ final class InstancePropertyAssignmentAnalyzer
                 } else {
                     IssueBuffer::maybeAdd(
                         new PropertyTypeCoercion(
-                            $var_id . ' expects \'' . $class_property_type->getId() . '\', '
+                            $property_name . ' expects \'' . $class_property_type->getId() . '\', '
                                 . ' parent type \'' . $assignment_type->getId() . '\' provided',
                             new CodeLocation(
                                 $statements_analyzer->getSource(),
-                                $assignment_value ?? $stmt,
+                                $location_node,
                                 $context->include_location,
                             ),
                             $assigned_property->id,
@@ -294,11 +321,11 @@ final class InstancePropertyAssignmentAnalyzer
             if ($union_comparison_results->to_string_cast) {
                 IssueBuffer::maybeAdd(
                     new ImplicitToStringCast(
-                        $var_id . ' expects \'' . $class_property_type . '\', '
+                        $property_name . ' expects \'' . $class_property_type . '\', '
                             . '\'' . $assignment_type . '\' provided with a __toString method',
                         new CodeLocation(
                             $statements_analyzer->getSource(),
-                            $assignment_value ?? $stmt,
+                            $location_node,
                             $context->include_location,
                         ),
                     ),
@@ -329,11 +356,11 @@ final class InstancePropertyAssignmentAnalyzer
                 ) {
                     if (IssueBuffer::accepts(
                         new PossiblyNullPropertyAssignmentValue(
-                            $var_id . ' with non-nullable declared type \'' . $class_property_type .
+                            $property_name . ' with non-nullable declared type \'' . $class_property_type .
                                 '\' cannot be assigned nullable type \'' . $assignment_type . '\'',
                             new CodeLocation(
                                 $statements_analyzer->getSource(),
-                                $assignment_value ?? $stmt,
+                                $location_node,
                                 $context->include_location,
                             ),
                             $assigned_property->id,
@@ -351,11 +378,11 @@ final class InstancePropertyAssignmentAnalyzer
                 ) {
                     if (IssueBuffer::accepts(
                         new PossiblyFalsePropertyAssignmentValue(
-                            $var_id . ' with non-falsable declared type \'' . $class_property_type .
+                            $property_name . ' with non-falsable declared type \'' . $class_property_type .
                                 '\' cannot be assigned possibly false type \'' . $assignment_type . '\'',
                             new CodeLocation(
                                 $statements_analyzer->getSource(),
-                                $assignment_value ?? $stmt,
+                                $location_node,
                                 $context->include_location,
                             ),
                             $assigned_property->id,
@@ -372,11 +399,11 @@ final class InstancePropertyAssignmentAnalyzer
             if (!$has_valid_assignment_value_type) {
                 if (IssueBuffer::accepts(
                     new InvalidPropertyAssignmentValue(
-                        $var_id . ' with declared type \'' . $invalid_class_property_type .
+                        ($var_id ?? $property_id) . ' with declared type \'' . $invalid_class_property_type .
                             '\' cannot be assigned type \'' . $assignment_value_type->getId() . '\'',
                         new CodeLocation(
                             $statements_analyzer->getSource(),
-                            $assignment_value ?? $stmt,
+                            $location_node,
                             $context->include_location,
                         ),
                         $property_id,
@@ -388,12 +415,12 @@ final class InstancePropertyAssignmentAnalyzer
             } else {
                 if (IssueBuffer::accepts(
                     new PossiblyInvalidPropertyAssignmentValue(
-                        $var_id . ' with declared type \'' . $invalid_class_property_type .
+                        ($var_id ?? $property_id) . ' with declared type \'' . $invalid_class_property_type .
                             '\' cannot be assigned possibly different type \'' .
                             $assignment_value_type->getId() . '\'',
                         new CodeLocation(
                             $statements_analyzer->getSource(),
-                            $assignment_value ?? $stmt,
+                            $location_node,
                             $context->include_location,
                         ),
                         $property_id,
