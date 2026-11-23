@@ -1270,6 +1270,19 @@ final class AssertionFinder
     }
 
     /**
+     * The assertions a call declares for where it returns true or false, as recorded on its node
+     *
+     * @return list<non-empty-array<string, non-empty-list<non-empty-list<Assertion>>>>
+     */
+    public static function getCustomAssertions(
+        PhpParser\Node\Expr\NullsafeMethodCall $expr,
+        ?string $this_class_name,
+        FileSource $source,
+    ): array {
+        return self::processCustomAssertion($expr, $this_class_name, $source);
+    }
+
+    /**
      * What a destructuring a condition assigns says of the variables when it is truthy. A null or false value, which
      * gives each variable null, is not truthy, so a variable whose item each array the value may be surely has, and
      * not as null, is then not null.
@@ -1329,11 +1342,10 @@ final class AssertionFinder
     }
 
     /**
-     * @param  PhpParser\Node\Expr\FuncCall|PhpParser\Node\Expr\MethodCall|PhpParser\Node\Expr\StaticCall $expr
      * @return list<non-empty-array<string, non-empty-list<non-empty-list<Assertion>>>>
      */
     private static function processCustomAssertion(
-        PhpParser\Node\Expr $expr,
+        PhpParser\Node\Expr\CallLike $expr,
         ?string $this_class_name,
         FileSource $source,
     ): array {
@@ -1392,6 +1404,7 @@ final class AssertionFinder
 
                     // a static call keeps its assertions on `$this` only when it is called on `$this`
                     $var_id = $expr instanceof PhpParser\Node\Expr\MethodCall
+                        || $expr instanceof PhpParser\Node\Expr\NullsafeMethodCall
                         ? ExpressionIdentifier::getExtendedVarId($expr->var, $this_class_name, $source)
                         : '$this';
 
