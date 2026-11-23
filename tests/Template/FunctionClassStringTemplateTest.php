@@ -330,6 +330,28 @@ final class FunctionClassStringTemplateTest extends TestCase
                     '$y' => 'A&B',
                 ],
             ],
+            'intersectionWithTemplateKeptAfterAMixedClassString' => [
+                'code' => '<?php
+                    interface Stub {}
+                    interface A {}
+
+                    /**
+                     * @template T of object
+                     * @param class-string<T> $className
+                     * @return T&Stub
+                     */
+                    function createStub(string $className): Stub {
+                        throw new RuntimeException();
+                    }
+
+                    /** @psalm-suppress MixedArgument */
+                    $x = createStub($GLOBALS["className"]);
+                    $y = createStub(A::class);',
+                'assertions' => [
+                    '$x' => 'Stub',
+                    '$y' => 'A&Stub',
+                ],
+            ],
             'unionTOrClassStringTPassedClassString' => [
                 'code' => '<?php
                     /**
