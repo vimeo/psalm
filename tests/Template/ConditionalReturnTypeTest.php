@@ -88,7 +88,7 @@ final class ConditionalReturnTypeTest extends TestCase
                         $plain = kind($factory);
 
                         if ($factory instanceof Closure) {
-                            /** @psalm-check-type-exact $narrowed = 'closure'|'other' */
+                            /** @psalm-check-type-exact $narrowed = 'closure' */
                             $narrowed = kind($factory);
                         }
                     }
