@@ -25,6 +25,7 @@ use Psalm\Storage\Assertion\MatchesPattern;
 use Psalm\Storage\Assertion\NotInArray;
 use Psalm\Storage\Assertion\Truthy;
 use Psalm\Type\Atomic;
+use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TTypeVariable;
 use Psalm\Type\Reconciler;
@@ -44,6 +45,8 @@ use function reset;
 use function sort;
 use function spl_object_id;
 use function strpbrk;
+use function strpos;
+use function substr;
 
 /**
  * @internal
@@ -218,6 +221,49 @@ final class AlgebraAnalyzer
         return count($clause->possibilities[$var_id]) === 1
             ? [$var_id, reset($clause->possibilities[$var_id])]
             : null;
+    }
+
+    /**
+     * Whether what is known about a variable is forgotten when a condition narrows another one: an item or property
+     * of it, or an item it is the key of in an array with known keys, which a fetch with the narrower key may know
+     * better. Narrowing a key doesn't change the item it points to: an item of an array without known keys keeps what
+     * is known about it, what was written to it included.
+     *
+     * @param array<string, Union> $vars_in_scope
+     * @psalm-pure
+     */
+    public static function isForgottenOnNarrowing(
+        string $narrowed_var_id,
+        string $var_id,
+        array $vars_in_scope,
+    ): bool {
+        if (preg_match('/' . preg_quote($narrowed_var_id, '/') . '[\[\-]/', $var_id)) {
+            return true;
+        }
+
+        $offset = 0;
+
+        while (($position = strpos($var_id, $narrowed_var_id . ']', $offset)) !== false) {
+            if ($position === 0 || $var_id[$position - 1] !== '[') {
+                return true;
+            }
+
+            $array_type = $vars_in_scope[substr($var_id, 0, $position - 1)] ?? null;
+
+            if ($array_type === null) {
+                return true;
+            }
+
+            foreach ($array_type->getAtomicTypes() as $atomic_type) {
+                if (!$atomic_type instanceof TArray) {
+                    return true;
+                }
+            }
+
+            $offset = $position + 1;
+        }
+
+        return false;
     }
 
     /**

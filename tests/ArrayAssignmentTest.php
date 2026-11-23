@@ -3615,6 +3615,104 @@ final class ArrayAssignmentTest extends TestCase
                     }
                 PHP,
             ],
+            'itemWrittenUnderANarrowedKeyInALoop' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param array<string, array<int, mixed>> $r */
+                    function f(bool $b, array $r, string $k, int $i, string $s): array {
+                        while ($b) {
+                            $r[$k][$i] = ['offset' => 1];
+                            if ($k === 'scot') {
+                                $r[$k][$i]['data'] = $s;
+                            }
+                            $b = false;
+                        }
+                        return $r;
+                    }
+                PHP,
+            ],
+            'itemWrittenUnderAKeyNarrowedInElse' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param array<string, array<int, mixed>> $r */
+                    function f(array $r, string $k, int $i, string $s): array {
+                        $r[$k][$i] = ['offset' => 1];
+                        if ($k !== 'scot') {
+                        } else {
+                            $r[$k][$i]['data'] = $s;
+                        }
+                        return $r;
+                    }
+                PHP,
+            ],
+            'itemWrittenUnderAKeyNarrowedInElseIf' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param array<string, array<int, mixed>> $r */
+                    function f(array $r, string $k, int $i, string $s, bool $b): array {
+                        $r[$k][$i] = ['offset' => 1];
+                        if ($b) {
+                        } elseif ($k === 'scot') {
+                            $r[$k][$i]['data'] = $s;
+                        }
+                        return $r;
+                    }
+                PHP,
+            ],
+            'itemWrittenUnderAKeyNarrowedByAnAssertion' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param array<string, array<int, mixed>> $r */
+                    function f(array $r, string $k, int $i, string $s): array {
+                        $r[$k][$i] = ['offset' => 1];
+                        assert($k === 'scot');
+                        $r[$k][$i]['data'] = $s;
+                        return $r;
+                    }
+                PHP,
+            ],
+            'itemNarrowedUnderANarrowedKey' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param array<string, int|string> $r */
+                    function f(array $r, string $k): void {
+                        if (is_int($r[$k])) {
+                            if ($k === 'a') {
+                                $y = $r[$k];
+                                /** @psalm-check-type-exact $y = int */;
+                            }
+                        }
+                    }
+                PHP,
+            ],
+            'itemOfAShapeFetchedAgainUnderANarrowedKey' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @param array{a: int, b: string} $r
+                     * @param 'a'|'b' $k
+                     */
+                    function f(array $r, string $k): void {
+                        $x = $r[$k];
+                        if ($k === 'a') {
+                            $y = $r[$k];
+                            /** @psalm-check-type-exact $y = int */;
+                        }
+                    }
+                PHP,
+            ],
+            'itemUnderAReassignedKeyIsForgotten' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param array<string, int|string> $r */
+                    function f(array $r, string $k): void {
+                        $r[$k] = 1;
+                        $k = 'b';
+                        $y = $r[$k];
+                        /** @psalm-check-type-exact $y = int|string */;
+                    }
+                PHP,
+            ],
         ];
     }
 

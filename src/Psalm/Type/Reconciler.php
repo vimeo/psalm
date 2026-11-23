@@ -8,6 +8,7 @@ use InvalidArgumentException;
 use Psalm\CodeLocation;
 use Psalm\Codebase;
 use Psalm\Context;
+use Psalm\Internal\Analyzer\AlgebraAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ArrayAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Assignment\ArrayAssignmentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\BinaryOp\CoalesceAnalyzer;
@@ -95,7 +96,6 @@ use function is_string;
 use function key;
 use function ksort;
 use function preg_match;
-use function preg_quote;
 use function reset;
 use function sort;
 use function str_contains;
@@ -603,7 +603,7 @@ class Reconciler
                         }
 
                         if (!isset($new_types[$new_key])
-                            && preg_match('/' . preg_quote($key, '/') . '[\]\[\-]/', $new_key)
+                            && AlgebraAnalyzer::isForgottenOnNarrowing($key, $new_key, $existing_types)
                             && $is_real
                         ) {
                             // Fix any references to the type before removing it.
