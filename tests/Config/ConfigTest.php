@@ -35,6 +35,7 @@ use Psalm\Tests\DeferredAnalyzerTestCase;
 use Psalm\Tests\Internal\Provider\FakeParserCacheProvider;
 use Psalm\Tests\TestConfig;
 use RuntimeException;
+use Symfony\Component\Filesystem\Filesystem;
 use Throwable;
 use UnexpectedValueException;
 
@@ -3301,6 +3302,28 @@ final class ConfigTest extends DeferredAnalyzerTestCase
         $config = $this->project_analyzer->getConfig();
 
         $this->assertFalse($config->reportIssueInFile('MixedAssignment', (string) realpath('src/Psalm/Type.php')));
+    }
+
+    public function testTheCacheIdentityCoversTheFilesTheConfigIncludes(): void
+    {
+        $filesystem = new Filesystem();
+        $dir = sys_get_temp_dir() . '/PsalmIncludedConfig_' . uniqid();
+        $filesystem->dumpFile($dir . '/A.php', '<?php');
+        $filesystem->dumpFile($dir . '/included.xml', '<projectFiles><file name="A.php"/></projectFiles>');
+        $filesystem->dumpFile(
+            $dir . '/psalm.xml',
+            '<psalm xmlns:xi="http://www.w3.org/2001/XInclude"><xi:include href="included.xml"/></psalm>',
+        );
+
+        try {
+            $hash = Config::loadFromXMLFile($dir . '/psalm.xml', $dir)->computeHash();
+
+            $filesystem->dumpFile($dir . '/included.xml', '<projectFiles><file name="./A.php"/></projectFiles>');
+
+            $this->assertNotSame($hash, Config::loadFromXMLFile($dir . '/psalm.xml', $dir)->computeHash());
+        } finally {
+            $filesystem->remove($dir);
+        }
     }
 
     public function testConfigFileWithWildcardPathIssueHandler(): void

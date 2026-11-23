@@ -693,6 +693,35 @@ final class PsalmEndToEndTest extends PsalmEndToEndTestCase
 
     /**
      * @param list<string> $args
+     */
+    #[DataProvider('provideRecordingReferencesWithoutWritingTheCache')]
+    public function testRecordingReferencesWithoutWritingTheCacheIsAnError(string $attributes, array $args): void
+    {
+        $this->writeAProjectWithTypeCoverage($attributes);
+        $process = $this->runPsalmInTheProject(['--record-references', ...$args]);
+
+        $this->assertSame(1, $process->getExitCode(), $process->getOutput() . $process->getErrorOutput());
+        $this->assertSame(
+            '--record-references needs a full run that writes the cache: no paths, no --init, no --no-cache or'
+                . ' --no-reference-cache, no noCache="true" in the config' . PHP_EOL,
+            $process->getErrorOutput(),
+        );
+    }
+
+    /**
+     * @return iterable<string, array{string, list<string>}>
+     * @psalm-pure
+     */
+    public static function provideRecordingReferencesWithoutWritingTheCache(): iterable
+    {
+        yield 'paths' => ['', ['src/Typed.php']];
+        yield '--no-cache' => ['', ['--no-cache']];
+        yield '--no-reference-cache' => ['', ['--no-reference-cache']];
+        yield 'noCache in the config' => ['noCache="true"', []];
+    }
+
+    /**
+     * @param list<string> $args
      * @param array<string, string|false> $env
      */
     private function runPsalmOnAProjectWithTypeCoverage(string $attributes, array $args, array $env = []): Process

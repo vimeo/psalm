@@ -1667,6 +1667,12 @@ final class ClassLikeNodeScanner
                 continue;
             }
 
+            ExpressionResolver::registerConstantExpressionDependencies(
+                $const->value,
+                $this->aliases,
+                $this->file_storage,
+            );
+
             $inferred_type = SimpleTypeInferer::infer(
                 $this->codebase,
                 new NodeDataProvider(),
@@ -1831,6 +1837,12 @@ final class ClassLikeNodeScanner
         $case_location = new CodeLocation($this->file_scanner, $stmt);
 
         if ($stmt->expr !== null) {
+            ExpressionResolver::registerConstantExpressionDependencies(
+                $stmt->expr,
+                $this->aliases,
+                $this->file_storage,
+            );
+
             $case_type = SimpleTypeInferer::infer(
                 $this->codebase,
                 new NodeDataProvider(),
@@ -2430,6 +2442,8 @@ final class ClassLikeNodeScanner
 
             $this->codebase->scanner->queueClassLikeForScanning($declaring_fq_classlike_name);
             $this->file_storage->referenced_classlikes[strtolower($declaring_fq_classlike_name)]
+                = $declaring_fq_classlike_name;
+            $this->file_storage->classlikes_used_in_declarations[strtolower($declaring_fq_classlike_name)]
                 = $declaring_fq_classlike_name;
 
             $results[$as_alias_name] = new LinkableTypeAlias(

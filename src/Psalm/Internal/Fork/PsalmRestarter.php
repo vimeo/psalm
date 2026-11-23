@@ -6,6 +6,7 @@ namespace Psalm\Internal\Fork;
 
 use Composer\XdebugHandler\XdebugHandler;
 use Override;
+use Psalm\Internal\Cli\OverlayExitGuard;
 
 use function array_merge;
 use function array_splice;
@@ -205,6 +206,9 @@ final class PsalmRestarter extends XdebugHandler
             $additional_options,
         );
         assert(count($command) > 1);
+
+        // the restarted process answers, this one exits with its status
+        OverlayExitGuard::answered();
 
         parent::restart($command);
     }

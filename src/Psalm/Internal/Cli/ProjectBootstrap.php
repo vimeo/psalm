@@ -28,7 +28,8 @@ use function is_numeric;
 use function is_string;
 
 /**
- * The config, the providers and a configured ProjectAnalyzer, as `psalm` builds them from its options
+ * The config, the providers and a configured ProjectAnalyzer, as `psalm` builds them from its options. Overlay
+ * analysis builds them again in the same process where it cannot fork.
  *
  * @internal
  */
@@ -67,8 +68,15 @@ final class ProjectBootstrap
         return $config;
     }
 
-    public static function initProviders(array $options, Config $config, string $current_dir): Providers
-    {
+    /**
+     * @param CacheMode $mode of the caches the options keep in the cache directory
+     */
+    public static function initProviders(
+        array $options,
+        Config $config,
+        string $current_dir,
+        CacheMode $mode = CacheMode::Persistent,
+    ): Providers {
         if ($config->cache_directory === null || isset($options['i'])) {
             $providers = new Providers(
                 new FileProvider,
@@ -78,9 +86,9 @@ final class ProjectBootstrap
                 new FileReferenceCacheProvider($config, Composer::getLockFile($current_dir), CacheMode::Memory),
             );
         } else {
-            $file_cache = isset($options['no-file-cache']) ? CacheMode::Memory : CacheMode::Persistent;
-            $reflection_cache = isset($options['no-reflection-cache']) ? CacheMode::Memory : CacheMode::Persistent;
-            $reference_cache = isset($options['no-reference-cache']) ? CacheMode::Memory : CacheMode::Persistent;
+            $file_cache = isset($options['no-file-cache']) ? CacheMode::Memory : $mode;
+            $reflection_cache = isset($options['no-reflection-cache']) ? CacheMode::Memory : $mode;
+            $reference_cache = isset($options['no-reference-cache']) ? CacheMode::Memory : $mode;
 
             $providers = new Providers(
                 new FileProvider,
@@ -88,7 +96,7 @@ final class ProjectBootstrap
                 new FileStorageCacheProvider($config, Composer::getLockFile($current_dir), $reflection_cache),
                 new ClassLikeStorageCacheProvider($config, Composer::getLockFile($current_dir), $reflection_cache),
                 new FileReferenceCacheProvider($config, Composer::getLockFile($current_dir), $reference_cache),
-                new ProjectCacheProvider(),
+                new ProjectCacheProvider($mode),
             );
         }
         return $providers;
@@ -143,6 +151,29 @@ final class ProjectBootstrap
         }
 
         return $project_analyzer;
+    }
+
+    /**
+     * The baseline that applies to a run: the one `--use-baseline` names or the config's, unless `--ignore-baseline`
+     *
+     * @return array<string,array<string,array{o:int, s: list<string>}>>
+     * @throws ProjectBootstrapException if the option is not a path or the file is not a baseline
+     */
+    public static function readBaseline(array $options, Config $config): array
+    {
+        if (isset($options['use-baseline'])) {
+            if (!is_string($options['use-baseline'])) {
+                throw new ProjectBootstrapException('--use-baseline must be a string');
+            }
+
+            $config->error_baseline = $options['use-baseline'];
+        }
+
+        if ($config->error_baseline === null || $config->error_baseline === '' || isset($options['ignore-baseline'])) {
+            return [];
+        }
+
+        return self::readBaselineFile($config->error_baseline);
     }
 
     /**

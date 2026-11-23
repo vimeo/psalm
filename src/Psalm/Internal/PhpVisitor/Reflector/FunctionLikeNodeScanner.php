@@ -1074,6 +1074,12 @@ final class FunctionLikeNodeScanner
         $default_type = null;
 
         if ($param->default) {
+            ExpressionResolver::registerConstantExpressionDependencies(
+                $param->default,
+                $this->aliases,
+                $this->file_storage,
+            );
+
             $default_type = SimpleTypeInferer::infer(
                 $this->codebase,
                 new NodeDataProvider(),

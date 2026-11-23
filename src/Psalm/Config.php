@@ -845,7 +845,6 @@ final class Config
 
         try {
             $config = self::loadFromXML($base_dir, $file_contents, $current_dir, $file_path);
-            $config->hash = hash('xxh3', $file_contents . PSALM_VERSION);
         } catch (ConfigException $e) {
             throw new ConfigException(
                 'Problem parsing ' . $file_path . ":\n" . '  ' . $e->getMessage(),
@@ -1158,6 +1157,9 @@ final class Config
         $dom_document = self::loadDomDocument($base_dir, $file_contents);
 
         if (null !== $config_path) {
+            // with what it includes through XInclude
+            $config->hash = hash('xxh3', $dom_document->saveXML() . PSALM_VERSION);
+
             self::processConfigDeprecations(
                 $config,
                 $dom_document,
@@ -2883,7 +2885,10 @@ final class Config
         return $this->mock_classes;
     }
 
-    public function visitPreloadedStubFiles(Codebase $codebase, ?Progress $progress = null): void
+    /**
+     * @param bool $populate false for overlay analysis, where each pass populates what it scanned
+     */
+    public function visitPreloadedStubFiles(Codebase $codebase, ?Progress $progress = null, bool $populate = true): void
     {
         if ($progress === null) {
             $progress = new VoidProgress();
@@ -2944,7 +2949,11 @@ final class Config
 
         $codebase->register_stub_files = true;
 
-        $codebase->scanFiles();
+        if ($populate) {
+            $codebase->scanFiles();
+        } else {
+            $codebase->scanFilesWithoutPopulating();
+        }
 
         $codebase->register_stub_files = false;
 
@@ -3314,6 +3323,33 @@ final class Config
         }
         foreach ($defined_functions['internal'] as $function_name) {
             $this->predefined_functions[$function_name] = true;
+        }
+    }
+
+    /**
+     * Functions and constants this process defines, which the analysed code no longer declares: they are not taken
+     * from the process
+     *
+     * @param list<string> $functions lowercase ids
+     * @param list<string> $constants
+     * @internal
+     * @psalm-capabilities read-props|write-this-props|write-refs
+     */
+    public function forgetPredefined(array $functions, array $constants): void
+    {
+        foreach ($functions as $function) {
+            unset($this->predefined_functions[$function]);
+        }
+
+        foreach ($constants as $constant) {
+            // the namespace of a constant is case-insensitive
+            $separator = strrpos($constant, '\\');
+            unset(
+                $this->predefined_constants[$constant],
+                $this->predefined_constants[$separator === false
+                    ? $constant
+                    : strtolower(substr($constant, 0, $separator)) . substr($constant, $separator)],
+            );
         }
     }
 
@@ -3821,6 +3857,15 @@ final class Config
     public function addPreloadedStubFile(string $stub_file): void
     {
         $this->preloaded_stub_files[$stub_file] = $stub_file;
+    }
+
+    /**
+     * @return array<string, string>
+     * @internal
+     */
+    public function getPreloadedStubFiles(): array
+    {
+        return $this->preloaded_stub_files;
     }
 
     public function getPhpVersion(): ?string
