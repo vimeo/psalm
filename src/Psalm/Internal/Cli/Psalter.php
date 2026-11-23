@@ -11,7 +11,6 @@ use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\CliUtils;
 use Psalm\Internal\Composer;
 use Psalm\Internal\ErrorHandler;
-use Psalm\Internal\Fork\PsalmRestarter;
 use Psalm\Internal\IncludeCollector;
 use Psalm\Internal\Preloader;
 use Psalm\Internal\Provider\ClassLikeStorageCacheProvider;
@@ -21,10 +20,6 @@ use Psalm\Internal\Provider\ProjectCacheProvider;
 use Psalm\Internal\Provider\Providers;
 use Psalm\Internal\Scanner\ParsedDocblock;
 use Psalm\IssueBuffer;
-use Psalm\Progress\DebugProgress;
-use Psalm\Progress\DefaultProgress;
-use Psalm\Progress\LongProgress;
-use Psalm\Progress\VoidProgress;
 use Psalm\Report;
 use Psalm\Report\ReportOptions;
 
@@ -44,7 +39,6 @@ use function filter_var;
 use function fwrite;
 use function gc_collect_cycles;
 use function gc_disable;
-use function getcwd;
 use function implode;
 use function in_array;
 use function is_array;
@@ -93,6 +87,7 @@ final class Psalter
         'no-cache',
         'no-progress',
         'memory-limit:',
+        'use-ini-defaults',
     ];
 
     /** @param array<int,string> $argv */
@@ -115,7 +110,13 @@ final class Psalter
 
         CliUtils::setMemoryLimit($options);
 
-        self::syncShortOptions($options);
+        CliUtils::syncShortOptions($options, [
+            'help' => 'h',
+            'monochrome' => 'm',
+            'config' => 'c',
+            'root' => 'r',
+            'file' => 'f',
+        ]);
 
         if (isset($options['c']) && is_array($options['c'])) {
             fwrite(STDERR, 'Too many config files provided' . PHP_EOL);
@@ -140,8 +141,11 @@ final class Psalter
                 -c, --config=psalm.xml
                     Path to a psalm.xml configuration file. Run psalm --init to create one.
 
+                --use-ini-defaults
+                    Use PHP-provided ini defaults for memory and error display
+
                 --memory-limit=LIMIT
-                    Use a specific memory limit.
+                    Use a specific memory limit. Cannot be combined with --use-ini-defaults
 
                 -m, --monochrome
                     Enable monochrome output.
@@ -223,21 +227,7 @@ final class Psalter
             exit(1);
         }
 
-        $current_dir = (string) getcwd();
-
-        if (isset($options['r']) && is_string($options['r'])) {
-            $root_path = realpath($options['r']);
-
-            if ($root_path === false) {
-                fwrite(
-                    STDERR,
-                    CliUtils::getRootDirectoryNotFoundMessage($current_dir, $options['r']) . PHP_EOL,
-                );
-                exit(1);
-            }
-
-            $current_dir = $root_path;
-        }
+        $current_dir = CliUtils::getCurrentDir($options);
 
         $vendor_dir = CliUtils::getVendorDir($current_dir);
 
@@ -245,25 +235,15 @@ final class Psalter
         IssueBuffer::captureServer($_SERVER);
 
         $include_collector = new IncludeCollector();
-        $autoloaders = $include_collector->runAndCollect(
-            // we ignore the FQN because of a hack in scoper.inc that needs full path
-            // phpcs:ignore SlevomatCodingStandard.Namespaces.ReferenceUsedNamesOnly.ReferenceViaFullyQualifiedName
-            /** @return list<ClassLoader> */
-            static fn(): array =>
-                CliUtils::requireAutoloaders($current_dir, isset($options['r']), $vendor_dir),
+        $autoloaders = CliUtils::loadAutoloaders(
+            $include_collector,
+            $current_dir,
+            isset($options['r']),
+            $vendor_dir,
         );
-        $ini_handler = new PsalmRestarter('PSALTER');
-        $ini_handler->disableExtensions([
-            'grpc',
-            'uopz',
-            'pcov',
-            'blackfire',
-            // Issues w/ parallel forking
-            'uv',
-        ]);
 
         // If Xdebug is enabled, restart without it
-        $ini_handler->check();
+        CliUtils::createRestarter('PSALTER')->check();
 
         Preloader::preload();
 
@@ -309,22 +289,7 @@ final class Psalter
             );
         }
 
-        $debug = array_key_exists('debug', $options) || array_key_exists('debug-by-line', $options);
-        // CI takes precedence over AI detection: persistent CI logs still want
-        // per-phase breadcrumbs for humans reviewing the build.
-        $no_progress = isset($options['no-progress'])
-            || (!$in_ci && CliUtils::runningUnderAiAgent());
-        if ($debug) {
-            $progress = new DebugProgress();
-        } elseif ($no_progress) {
-            $progress = new VoidProgress();
-        } elseif ($in_ci || !CliUtils::streamIsInteractive(STDERR)) {
-            // Same rationale as in Psalm.php: a `\r`-based progress bar on a
-            // piped stderr just floods the log with every intermediate update.
-            $progress = new LongProgress(true, false, true);
-        } else {
-            $progress = new DefaultProgress();
-        }
+        $progress = CliUtils::getAlterProgress($options, $in_ci);
 
         $stdout_report_options = new ReportOptions();
         $stdout_report_options->use_color = CliUtils::useColor($options, true);
@@ -491,44 +456,10 @@ final class Psalter
 
             $project_analyzer->check($current_dir);
         } elseif ($paths_to_check) {
-            foreach ($paths_to_check as $path_to_check) {
-                if (is_dir($path_to_check)) {
-                    $project_analyzer->checkDir($path_to_check);
-                } else {
-                    $project_analyzer->checkFile($path_to_check);
-                }
-            }
+            $project_analyzer->checkPaths($paths_to_check);
         }
 
         IssueBuffer::finish($project_analyzer, false, $start_time);
-    }
-
-    /**
-     * @param array<string, false|list<mixed>|string> $options
-     * @param-out array<string, false|list<mixed>|string> $options
-     * @psalm-capabilities write-refs|read-props
-     */
-    private static function syncShortOptions(array &$options): void
-    {
-        if (array_key_exists('help', $options)) {
-            $options['h'] = false;
-        }
-
-        if (array_key_exists('monochrome', $options)) {
-            $options['m'] = false;
-        }
-
-        if (isset($options['config'])) {
-            $options['c'] = $options['config'];
-        }
-
-        if (isset($options['root'])) {
-            $options['r'] = $options['root'];
-        }
-
-        if (isset($options['file'])) {
-            $options['f'] = $options['file'];
-        }
     }
 
     /** @return array<string, array<int, string>> */

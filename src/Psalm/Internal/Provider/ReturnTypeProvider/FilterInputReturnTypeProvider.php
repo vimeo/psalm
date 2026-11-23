@@ -148,8 +148,13 @@ final class FilterInputReturnTypeProvider implements FunctionReturnTypeProviderI
             return null;
         }
 
-        if (!$default) {
-            [$fails_type, $not_set_type, $fails_or_not_set_type] = FilterUtils::getFailsNotSetType($flags_int_used);
+        $throws_on_failure = FilterUtils::throwsOnFailure($codebase, $flags_int_used);
+
+        if (!$default || $throws_on_failure) {
+            [$fails_type, $not_set_type, $fails_or_not_set_type] = FilterUtils::getFailsNotSetType(
+                $flags_int_used,
+                $throws_on_failure,
+            );
         } else {
             $fails_type = $default;
             $not_set_type = $default;
