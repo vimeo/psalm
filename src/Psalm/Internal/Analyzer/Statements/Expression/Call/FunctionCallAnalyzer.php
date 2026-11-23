@@ -27,7 +27,6 @@ use Psalm\Internal\Analyzer\Statements\Expression\IntMaskComparisonAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\Statements\GlobalAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
-use Psalm\Internal\Analyzer\TraitAnalyzer;
 use Psalm\Internal\Codebase\CliOutput;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Internal\Codebase\PhpDeprecations;
@@ -2089,12 +2088,7 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                     && isset($context->vars_in_scope[$var_id])
                     && $context->vars_in_scope[$var_id]->hasMixed()
                 ) {
-                    if (!$context->collect_initializations
-                        && $statements_analyzer->getFilePath() === $statements_analyzer->getRootFilePath()
-                        && (!(($parent_source = $statements_analyzer->getSource())
-                                    instanceof FunctionLikeAnalyzer)
-                                || !$parent_source->getSource() instanceof TraitAnalyzer)
-                    ) {
+                    if ($statements_analyzer->shouldCountMixed($context)) {
                         $codebase->analyzer->decrementMixedCount($statements_analyzer->getFilePath());
                     }
 
