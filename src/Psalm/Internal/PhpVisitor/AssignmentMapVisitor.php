@@ -420,6 +420,17 @@ final class AssignmentMapVisitor extends PhpParser\NodeVisitorAbstract
     }
 
     /**
+     * The variables the loop writes, not counting the calls it gives them to
+     *
+     * @return array<string, true>
+     * @psalm-capabilities read-props
+     */
+    public function getWrittenVarIds(): array
+    {
+        return $this->written_var_ids + $this->defined_var_ids;
+    }
+
+    /**
      * @return array<string, true>
      */
     public function getDefinedVarIds(): array
