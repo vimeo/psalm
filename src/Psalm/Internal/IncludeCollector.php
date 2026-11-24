@@ -7,6 +7,7 @@ namespace Psalm\Internal;
 use Composer\Autoload\ClassLoader;
 
 use function array_diff;
+use function array_filter;
 use function array_keys;
 use function array_unique;
 use function array_values;
@@ -18,12 +19,10 @@ use function get_included_files;
 use function in_array;
 use function is_file;
 use function method_exists;
-use function preg_grep;
 use function str_contains;
 use function str_starts_with;
 
 use const DIRECTORY_SEPARATOR;
-use const PREG_GREP_INVERT;
 
 /**
  * Include collector
@@ -89,7 +88,10 @@ final class IncludeCollector
      */
     public function getFilteredIncludedFiles(): array
     {
-        $included_files = preg_grep('@^phar://@', $this->getIncludedFiles(), PREG_GREP_INVERT);
+        $included_files = array_filter(
+            $this->getIncludedFiles(),
+            static fn(string $file): bool => !str_starts_with($file, 'phar://'),
+        );
 
         $composer_dirs = [];
         if (class_exists(ClassLoader::class, false) && method_exists(ClassLoader::class, 'getRegisteredLoaders')) {

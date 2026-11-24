@@ -47,7 +47,6 @@ use Psalm\Type\Atomic\TScalar;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateKeyOf;
 use Psalm\Type\Atomic\TTemplateParam;
-use Psalm\Type\Atomic\TTemplateParamClass;
 use Psalm\Type\Atomic\TTemplateValueOf;
 use Psalm\Type\Atomic\TTypeVariable;
 use Psalm\Type\Atomic\TValueOf;
@@ -263,7 +262,7 @@ final class AtomicTypeComparator
             }
 
             if ($container_type_part instanceof TTemplateParam
-                && ($container_type_part->as->isNullable() || $container_type_part->as->isMixed())
+                && $container_type_part->as->isNullable()
             ) {
                 return true;
             }
@@ -334,6 +333,19 @@ final class AtomicTypeComparator
                 if ($atomic_comparison_result) {
                     $atomic_comparison_result->type_coerced = true;
                 }
+            }
+
+            // a closure of unknown signature (narrowed by an assertion) is any closure
+            if ($input_type_part instanceof TNamedObject
+                && !$input_type_part instanceof TClosure
+                && strtolower($input_type_part->value) === 'closure'
+            ) {
+                return CallableTypeComparator::isContainedBy(
+                    $codebase,
+                    new TClosure(),
+                    $container_type_part,
+                    $atomic_comparison_result,
+                );
             }
 
             return false;
@@ -1185,8 +1197,7 @@ final class AtomicTypeComparator
             return $type1_part->value === $type2_part->value;
         }
 
-        if (($type1_part instanceof TClassString && !$type1_part instanceof TTemplateParamClass
-                || $type1_part instanceof TDependentGetClass)
+        if (($type1_part instanceof TClassString || $type1_part instanceof TDependentGetClass)
             && $type2_part::class === TLiteralString::class
         ) {
             return ClassLikeStringComparator::canLiteralNameBeClassString(
@@ -1197,8 +1208,7 @@ final class AtomicTypeComparator
             );
         }
 
-        if (($type2_part instanceof TClassString && !$type2_part instanceof TTemplateParamClass
-                || $type2_part instanceof TDependentGetClass)
+        if (($type2_part instanceof TClassString || $type2_part instanceof TDependentGetClass)
             && $type1_part::class === TLiteralString::class
         ) {
             return ClassLikeStringComparator::canLiteralNameBeClassString(
@@ -1207,6 +1217,28 @@ final class AtomicTypeComparator
                 $type2_part,
                 $allow_interface_equality,
             );
+        }
+
+        // a value of a template is a value of its bound: `T of numeric` can be a numeric string
+        foreach ([[$type1_part, $type2_part], [$type2_part, $type1_part]] as [$template_part, $other_part]) {
+            // null is not contained by a template without a bound, but can be its value
+            if ($template_part instanceof TTemplateParam
+                && $other_part instanceof TNull
+                && $template_part->as->isMixed()
+            ) {
+                return true;
+            }
+
+            if ($template_part instanceof TTemplateParam
+                && !$other_part instanceof TTemplateParam
+                && !$template_part->as->isMixed()
+            ) {
+                foreach ($template_part->as->getAtomicTypes() as $bound_part) {
+                    if (self::canBeIdentical($codebase, $bound_part, $other_part, $allow_interface_equality)) {
+                        return true;
+                    }
+                }
+            }
         }
 
         $first_comparison_result = new TypeComparisonResult();

@@ -82,11 +82,47 @@ final class MissingMethodCallHandler
                     $context,
                     $stmt,
                     $method_id,
-                    $found_method_and_class_storage[0],
+                    new TClosure(
+                        $found_method_and_class_storage[0]->params,
+                        $found_method_and_class_storage[0]->return_type,
+                        $found_method_and_class_storage[0]->capabilities,
+                    ),
+                    $found_method_and_class_storage[0]->template_types ?? [],
                     $found_method_and_class_storage[1],
                     $pseudo_method_class_storage,
                     $mixin_type ?? $lhs_type_part,
                 );
+            } elseif (!$class_storage->hasSealedMethods($config)) {
+                // PHP creates the callable of a method the class forwards to `__call`
+                $result->has_valid_method_call_type = true;
+                $result->existent_method_ids[$method_id->__toString()] = true;
+
+                $call_method_id = new MethodIdentifier($fq_class_name, '__call');
+                $call_declaring_id = $codebase->methods->getDeclaringMethodId($call_method_id);
+
+                if ($call_declaring_id !== null && $codebase->methods->hasStorage($call_declaring_id)) {
+                    $call_storage = $codebase->methods->getStorage($call_declaring_id);
+                    $call_self_class = $fq_class_name;
+
+                    $result->return_type = self::createFirstClassCallableReturnType(
+                        $statements_analyzer,
+                        $codebase,
+                        $context,
+                        $stmt,
+                        $call_method_id,
+                        new TClosure(
+                            null,
+                            $codebase->getMethodReturnType($call_method_id, $call_self_class),
+                            $call_storage->capabilities,
+                        ),
+                        $call_storage->template_types ?? [],
+                        $codebase->classlike_storage_provider->get($call_declaring_id->fq_class_name),
+                        $class_storage,
+                        $lhs_type_part,
+                    );
+                } else {
+                    $result->return_type = Type::getClosure();
+                }
             } else {
                 $result->non_existent_magic_method_ids[] = $method_id->__toString();
                 $result->return_type = Type::getClosure();
@@ -422,7 +458,12 @@ final class MissingMethodCallHandler
                     $context,
                     $stmt,
                     $method_id,
-                    $pseudo_method_storage,
+                    new TClosure(
+                        $pseudo_method_storage->params,
+                        $pseudo_method_storage->return_type,
+                        $pseudo_method_storage->capabilities,
+                    ),
+                    $pseudo_method_storage->template_types ?? [],
                     $defining_class_storage,
                     $class_storage,
                     $lhs_type_part,
@@ -568,6 +609,8 @@ final class MissingMethodCallHandler
     /**
      * The closure of a first-class callable of a pseudo-method, typed as the call (see
      * MethodCallReturnTypeFetcher::getFirstClassCallableType())
+     *
+     * @param array<string, non-empty-array<string, Union>> $method_template_types
      */
     private static function createFirstClassCallableReturnType(
         StatementsAnalyzer $statements_analyzer,
@@ -575,7 +618,8 @@ final class MissingMethodCallHandler
         Context $context,
         PhpParser\Node\Expr\MethodCall $stmt,
         MethodIdentifier $method_id,
-        MethodStorage $pseudo_method_storage,
+        TClosure $closure,
+        array $method_template_types,
         ClassLikeStorage $defining_class_storage,
         ClassLikeStorage $class_storage,
         ?Atomic $lhs_type_part,
@@ -601,13 +645,9 @@ final class MissingMethodCallHandler
         return MethodCallReturnTypeFetcher::getFirstClassCallableType(
             $codebase,
             $stmt,
-            new TClosure(
-                $pseudo_method_storage->params,
-                $pseudo_method_storage->return_type,
-                $pseudo_method_storage->capabilities,
-            ),
+            $closure,
             $template_result,
-            $pseudo_method_storage->template_types ?? [],
+            $method_template_types,
             $defining_class_storage->name,
             $lhs_type_part instanceof Atomic\TNamedObject ? $lhs_type_part : $method_id->fq_class_name,
             $defining_class_storage->parent_class,

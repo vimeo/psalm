@@ -1070,6 +1070,44 @@ final class UnusedCodeTest extends TestCase
     public static function providerValidCodeParse(): array
     {
         return [
+            'protectedPropertyOfAChildReadAsAColumnFromAParentScopeIsUsed' => [
+                'code' => '<?php
+                    class Row {
+                        public function __construct(public int $id) {}
+
+                        /**
+                         * @param list<ChildRow> $rows
+                         * @return array<int, mixed>
+                         */
+                        public function notes(array $rows): array {
+                            return array_column($rows, "note", "id");
+                        }
+                    }
+
+                    final class ChildRow extends Row {
+                        public function __construct(int $id, protected string $note) {
+                            parent::__construct($id);
+                        }
+                    }
+
+                    echo count((new Row(1))->notes([new ChildRow(1, "a")]));',
+            ],
+            'propertiesReadAsColumnsByArrayColumnAreUsed' => [
+                'code' => '<?php
+                    final class Row {
+                        public function __construct(public int $id, public string $name) {}
+                    }
+
+                    /**
+                     * @param list<Row> $rows
+                     * @return array<int, string>
+                     */
+                    function names(array $rows): array {
+                        return array_column($rows, "name", "id");
+                    }
+
+                    echo count(names([new Row(1, "a")]));',
+            ],
             'preIncrementAsArrayAssignmentKey' => [
                 'code' => '<?php
                     /** @psalm-api */
@@ -2470,6 +2508,51 @@ final class UnusedCodeTest extends TestCase
 
                     (new A())->foo()->bar();',
             ],
+            'fluentMethodDelegatingToAnotherFluentCallAllowed' => [
+                'code' => '<?php
+                    final class Query {
+                        /** @return $this */
+                        public function where(string $column): static {
+                            echo $column;
+                            return $this;
+                        }
+
+                        /** @return $this */
+                        public function active() {
+                            return $this->where("active");
+                        }
+                    }
+
+                    $query = new Query();
+                    $query->where("a");
+                    $query->active();',
+            ],
+            'overrideInheritingReturnsThisDelegatingToAnotherFluentCallAllowed' => [
+                'code' => '<?php
+                    class ParentQ {
+                        /** @return $this */
+                        public function a() {
+                            echo "p";
+                            return $this;
+                        }
+
+                        /** @return $this */
+                        public function b() {
+                            echo "b";
+                            return $this;
+                        }
+                    }
+
+                    final class ChildQ extends ParentQ {
+                        public function a(): static {
+                            return $this->b();
+                        }
+                    }
+
+                    (new ChildQ())->a();
+                    (new ParentQ())->a();
+                    (new ParentQ())->b();',
+            ],
             'unusedInterfaceReturnValueWithImplementingClassSuppressed' => [
                 'code' => '<?php
                     interface IWorker {
@@ -3396,6 +3479,65 @@ final class UnusedCodeTest extends TestCase
     public static function providerInvalidCodeParse(): array
     {
         return [
+            'privatePropertyNamedAsAColumnOutsideItsClassIsUnused' => [
+                'code' => '<?php
+                    final class Row {
+                        public function __construct(public int $id, private string $secret) {}
+                    }
+
+                    /**
+                     * @param list<Row> $rows
+                     * @return array<int, mixed>
+                     */
+                    function secrets(array $rows): array {
+                        return array_column($rows, "secret", "id");
+                    }
+
+                    echo count(secrets([new Row(1, "a")]));',
+                'error_message' => 'UnusedProperty',
+            ],
+            'protectedPropertyOfAChildReadAsAColumnFromASiblingScopeIsUnused' => [
+                'code' => '<?php
+                    class Row {
+                        public function __construct(public int $id) {}
+                    }
+
+                    final class ChildRow extends Row {
+                        public function __construct(int $id, protected string $note) {
+                            parent::__construct($id);
+                        }
+                    }
+
+                    final class Sibling extends Row {
+                        /**
+                         * @param list<ChildRow> $rows
+                         * @return array<int, mixed>
+                         */
+                        public function notes(array $rows): array {
+                            return array_column($rows, "note", "id");
+                        }
+                    }
+
+                    echo count((new Sibling(1))->notes([new ChildRow(1, "a")]));',
+                'error_message' => 'Cannot find any references to property ChildRow::$note',
+            ],
+            'propertyNotReadAsAColumnByArrayColumnIsUnused' => [
+                'code' => '<?php
+                    final class Row {
+                        public function __construct(public int $id, public string $name, public string $unused) {}
+                    }
+
+                    /**
+                     * @param list<Row> $rows
+                     * @return list<string>
+                     */
+                    function names(array $rows): array {
+                        return array_column($rows, "name");
+                    }
+
+                    echo count(names([new Row(1, "a", "b")]));',
+                'error_message' => 'PossiblyUnusedProperty',
+            ],
             'variableAssignedAfterAVariableVariableIsStillChecked' => [
                 'code' => <<<'PHP'
                     <?php
@@ -4222,6 +4364,25 @@ final class UnusedCodeTest extends TestCase
                     $foo = new A();
                     echo $foo->a;',
                 'error_message' => 'PossiblyUnusedProperty',
+            ],
+            'delegatingMethodNotMarkedAsReturningThisIsReported' => [
+                'code' => '<?php
+                    final class Query {
+                        public function where(string $column): static {
+                            echo $column;
+                            return $this;
+                        }
+
+                        /** @return static */
+                        public function active() {
+                            return $this->where("active");
+                        }
+                    }
+
+                    $query = new Query();
+                    $query->where("a");
+                    $query->active();',
+                'error_message' => 'PossiblyUnusedReturnValue',
             ],
             'unusedInterfaceReturnValue' => [
                 'code' => '<?php
