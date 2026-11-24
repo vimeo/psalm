@@ -332,6 +332,29 @@ final class MissingExtensionRequirementTest extends TestCase
                     }',
                 'error_message' => 'iconv_strlen is part of the ext-iconv extension',
             ],
+            'functionOfTheExtensionIdenticalToFalseSaysNothingOfAnotherOne' => [
+                'code' => '<?php
+                    function f(): void {
+                        if (function_exists("iconv") && function_exists("iconv_strlen") === false) {
+                            echo (string) iconv("a", "b", "c");
+                        }
+                        echo (int) iconv_strlen("a");
+                    }',
+                'error_message' => 'MissingExtensionRequirement - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:36',
+            ],
+            'functionOfTheExtensionNotIdenticalToTrueSaysNothingOfAnotherOne' => [
+                'code' => '<?php
+                    function f(): void {
+                        if (!function_exists("iconv")) {
+                            return;
+                        }
+                        if (function_exists("iconv_strlen") !== true) {
+                            echo (string) iconv("a", "b", "c");
+                        }
+                        echo mb_strlen("a");
+                    }',
+                'error_message' => 'mb_strlen is part of the ext-mbstring extension',
+            ],
             'afterTheGuardedBranch' => [
                 'code' => '<?php
                     function f(string $s): int {

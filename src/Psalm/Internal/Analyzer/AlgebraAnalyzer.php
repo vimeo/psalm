@@ -266,6 +266,8 @@ final class AlgebraAnalyzer
     }
 
     /**
+     * Whether the clause tests a pseudo-variable of a symbol or extension check (see Context::isSymbolCheckVarId())
+     *
      * @psalm-pure
      */
     private static function testsSymbolCheckVar(Clause $clause): bool
