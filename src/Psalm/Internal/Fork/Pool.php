@@ -25,6 +25,7 @@ use Closure;
 use Generator;
 use Override;
 use Psalm\Config;
+use Psalm\Internal\Perf;
 use Psalm\Progress\Progress;
 use Revolt\EventLoop;
 use Revolt\EventLoop\Driver\StreamSelectDriver;
@@ -41,6 +42,7 @@ use function file_get_contents;
 use function gc_collect_cycles;
 use function is_file;
 use function ksort;
+use function strlen;
 use function unlink;
 
 use const PHP_EOL;
@@ -287,6 +289,8 @@ final class Pool
                 if ($serialized === false) {
                     throw new RuntimeException("Could not read the worker result from $path");
                 }
+
+                Perf\Collector::payload(strlen($serialized));
 
                 /** @var T */
                 $result = $serializer->unserialize($serialized);
