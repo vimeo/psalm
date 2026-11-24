@@ -45,11 +45,13 @@ final class NumericCastFunctionReturnTypeProvider implements FunctionReturnTypeP
 
         $value_type = TypeExpander::expandTemplateKeyOfAndValueOf($statements_source->getCodebase(), $value_type);
 
-        if ($event->getFunctionId() === 'intval') {
-            CastAnalyzer::castIntAttempt($statements_source, $value_type, $call_args[0]->value, true);
-        } else {
-            CastAnalyzer::castFloatAttempt($statements_source, $value_type, $call_args[0]->value, true);
-        }
+        CastAnalyzer::castNumericAttempt(
+            $statements_source,
+            $value_type,
+            $call_args[0]->value,
+            $event->getFunctionId() === 'intval' ? 'int' : 'float',
+            true,
+        );
 
         return null;
     }
