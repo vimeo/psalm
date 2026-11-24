@@ -21,6 +21,97 @@ final class ConditionalReturnTypeTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'conditionalReturnOnAnArgumentWithoutTypeTakesBothBranches' => [
+                'code' => '<?php
+                    /** @return ($value is object ? true : false) */
+                    function isObjectValue(mixed $value): bool {
+                        return is_object($value);
+                    }
+
+                    /**
+                     * @template T
+                     * @param T $v
+                     * @return list<T>
+                     */
+                    function wrap($v): array {
+                        return [$v];
+                    }
+
+                    function getCountable(): Countable {
+                        throw new Exception();
+                    }
+
+                    /**
+                     * @template T
+                     * @param list<T> $list
+                     * @return list<T>
+                     */
+                    function same(array $list): array {
+                        return $list;
+                    }
+
+                    /**
+                     * @template T
+                     * @param T ...$values
+                     * @return list<T>
+                     */
+                    function variadic(...$values): array {
+                        return array_values($values);
+                    }
+
+                    $c = getCountable();
+                    $inline = isObjectValue($c->missing());
+                    $wrapped = wrap($c->missing());
+                    $nested = same($c->missing());
+                    $unpacked = variadic($c->missing());',
+                'assertions' => [
+                    '$inline===' => 'bool',
+                    '$wrapped===' => 'list<mixed>',
+                    '$nested===' => 'list<mixed>',
+                    '$unpacked===' => 'list<mixed>',
+                ],
+                'ignored_issues' => ['MixedArgument', 'UndefinedInterfaceMethod'],
+                'php_version' => '8.0',
+            ],
+            'argumentWithoutTypeKeepsTheClassTemplateOfTheObject' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class Box {
+                        /** @param T $v */
+                        public function __construct(public mixed $v) {}
+
+                        /**
+                         * @param T $v
+                         * @return Box<T>
+                         */
+                        public function with(mixed $v): Box {
+                            return new Box($v);
+                        }
+
+                        /**
+                         * @param list<T> $v
+                         * @return Box<T>
+                         */
+                        public function withList(array $v): Box {
+                            return $this;
+                        }
+                    }
+
+                    function getCountable(): Countable {
+                        throw new Exception();
+                    }
+
+                    /** @var Box<int> $bi */
+                    $bi = new Box(1);
+                    $b = $bi->with(getCountable()->missing());
+                    $l = $bi->withList(getCountable()->missing());',
+                'assertions' => [
+                    '$b===' => 'Box<int>',
+                    '$l===' => 'Box<int>',
+                ],
+                'ignored_issues' => ['MixedArgument', 'UndefinedInterfaceMethod'],
+                'php_version' => '8.0',
+            ],
             'conditionalOnAnUnresolvedBoolClassTemplateKeepsBothBranches' => [
                 'code' => <<<'PHP'
                     <?php
