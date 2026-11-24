@@ -5846,6 +5846,18 @@ final class CallableTest extends TestCase
                     }',
                 'error_message' => 'ArgumentTypeCoercion',
             ],
+            'getTypeIsNotCallableString' => [
+                'code' => '<?php
+                    /**
+                     * @param callable-string $c
+                     */
+                    function takesCallableString(string $c): void {}
+
+                    function f(int $x): void {
+                        takesCallableString(gettype($x));
+                    }',
+                'error_message' => 'ArgumentTypeCoercion',
+            ],
             'mismatchParamTypeFromDocblock' => [
                 'code' => '<?php
                     /**

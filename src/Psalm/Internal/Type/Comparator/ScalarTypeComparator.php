@@ -630,11 +630,6 @@ final class ScalarTypeComparator
             return true;
         }
 
-        if ($input_type_part instanceof TLowercaseString
-            && $container_type_part::class === TNonEmptyString::class) {
-            return false;
-        }
-
         if ($container_type_part::class === TNonEmptyString::class
             && $input_type_part instanceof TNonEmptyNonspecificLiteralString
         ) {
