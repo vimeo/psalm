@@ -34,6 +34,34 @@ final class IntersectionTypeTest extends TestCase
                         return $o->id;
                     }',
             ],
+            'objectShapesIntersectedByAnAssertionAreMerged' => [
+                'code' => '<?php
+                    class Card {}
+
+                    /** @psalm-assert Card&object{brand: string} $c */
+                    function assertBrand(object $c): void {}
+
+                    /** @psalm-assert object{brand: string} $c */
+                    function assertBareBrand(object $c): void {}
+
+                    /** @param Card&object{last4: string} $card */
+                    function named(object $card): string {
+                        assertBrand($card);
+                        return $card->last4 . $card->brand;
+                    }
+
+                    /** @param object{last4: string} $card */
+                    function bare(object $card): string {
+                        assertBareBrand($card);
+                        return $card->last4 . $card->brand;
+                    }
+
+                    /** @param Card&object{last4: string} $card */
+                    function namedThenBare(object $card): string {
+                        assertBareBrand($card);
+                        return $card->last4 . $card->brand;
+                    }',
+            ],
             'genericWithoutArgumentsInIntersectionGetsItsDefaultsLikeAlone' => [
                 'code' => '<?php
                     interface I {}

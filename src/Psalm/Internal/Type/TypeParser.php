@@ -2615,7 +2615,7 @@ final class TypeParser
      *
      * @throws TypeParseTreeException when no value has both types of a property
      */
-    private static function mergeObjectShapes(
+    public static function mergeObjectShapes(
         Codebase $codebase,
         TObjectWithProperties $first,
         TObjectWithProperties $second,
@@ -2632,7 +2632,11 @@ final class TypeParser
             $intersected_type = Type::intersectUnionTypes($properties[$name], $type, $codebase);
 
             if ($intersected_type === null) {
-                throw new TypeParseTreeException('No value has all the types of the property ' . $name);
+                throw new TypeParseTreeException(
+                    'Incompatible intersection types for "' . $name . '", '
+                    . $properties[$name]->getId() . ' and ' . $type->getId()
+                    . ' provided',
+                );
             }
 
             $properties[$name] = $intersected_type;

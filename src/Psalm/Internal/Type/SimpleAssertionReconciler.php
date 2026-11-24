@@ -1533,7 +1533,12 @@ final class SimpleAssertionReconciler extends Reconciler
                 && self::areIntersectionTypesAllowed($codebase, $type)
             ) {
                 /** @var TNamedObject|TTemplateParam|TIterable|TObjectWithProperties|TCallableObject $assertion_type */
-                $object_types[] = $type->addIntersectionType($assertion_type);
+                $intersected_type = AssertionReconciler::addIntersectionPart($codebase, $type, $assertion_type);
+
+                if ($intersected_type !== null) {
+                    $object_types[] = $intersected_type;
+                }
+
                 $redundant = false;
             } elseif ($type instanceof TCallable) {
                 $callable_object = new TCallableObject($type->from_docblock, $type);

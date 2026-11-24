@@ -6,6 +6,7 @@ namespace Psalm\Internal\Type;
 
 use Psalm\CodeLocation;
 use Psalm\Codebase;
+use Psalm\Exception\TypeParseTreeException;
 use Psalm\Internal\Analyzer\Statements\Expression\BinaryOp\CoalesceAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\VariableFetchAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
@@ -41,6 +42,7 @@ use Psalm\Type\Atomic\Scalar;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TArrayKey;
 use Psalm\Type\Atomic\TCallable;
+use Psalm\Type\Atomic\TCallableObject;
 use Psalm\Type\Atomic\TCallableString;
 use Psalm\Type\Atomic\TClassConstant;
 use Psalm\Type\Atomic\TClassString;
@@ -68,6 +70,7 @@ use Psalm\Type\Atomic\TNonEmptyString;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TNumeric;
 use Psalm\Type\Atomic\TObject;
+use Psalm\Type\Atomic\TObjectWithProperties;
 use Psalm\Type\Atomic\TScalar;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateKeyOf;
@@ -786,13 +789,29 @@ final class AssertionReconciler extends Reconciler
                         );
                     }
 
-                    $existing_var_type_part = $existing_var_type_part->addIntersectionType($intersected_type_part);
-                    $acceptable_atomic_types[] = $existing_var_type_part;
+                    $intersected_var_type_part = self::addIntersectionPart(
+                        $codebase,
+                        $existing_var_type_part,
+                        $intersected_type_part,
+                    );
+
+                    if ($intersected_var_type_part !== null) {
+                        $acceptable_atomic_types[] = $intersected_var_type_part;
+                    }
+
+                    continue;
                 }
 
                 if ($existing_var_type_part instanceof TTemplateParam) {
-                    $existing_var_type_part = $existing_var_type_part->addIntersectionType($new_type_part);
-                    $acceptable_atomic_types[] = $existing_var_type_part;
+                    $intersected_var_type_part = self::addIntersectionPart(
+                        $codebase,
+                        $existing_var_type_part,
+                        $new_type_part,
+                    );
+
+                    if ($intersected_var_type_part !== null) {
+                        $acceptable_atomic_types[] = $intersected_var_type_part;
+                    }
                 }
             }
 
@@ -1562,6 +1581,20 @@ final class AssertionReconciler extends Reconciler
             }
 
             return $type_1_atomic->replaceAs($type_1_as);
+        } elseif ($type_1_atomic instanceof TNamedObject
+            && $type_2_atomic instanceof TNamedObject
+            && $type_1_atomic->value === $type_2_atomic->value
+            && ($type_1_atomic->extra_types['object'] ?? null) instanceof TObjectWithProperties
+            && ($type_2_atomic->extra_types['object'] ?? null) instanceof TObjectWithProperties
+        ) {
+            // contained by the other's class, but each has properties the other doesn't
+            $intersection = Type::intersectUnionTypes(
+                new Union([$type_1_atomic]),
+                new Union([$type_2_atomic]),
+                $codebase,
+            );
+
+            return $intersection !== null && $intersection->isSingle() ? $intersection->getSingleAtomic() : null;
         } else {
             return $type_2_atomic;
         }
@@ -2484,6 +2517,27 @@ final class AssertionReconciler extends Reconciler
         } else {
             return [new TMixed()];
         }
+    }
+
+    /**
+     * @template T of TNamedObject|TTemplateParam|TObjectWithProperties|TCallableObject
+     * @param T $type
+     * @param TNamedObject|TTemplateParam|TIterable|TObjectWithProperties|TCallableObject $part
+     * @return T|null null when no value has both types of a property of two object shapes
+     */
+    public static function addIntersectionPart(Codebase $codebase, Atomic $type, Atomic $part): ?Atomic
+    {
+        $shape = $type->extra_types['object'] ?? null;
+
+        if ($part instanceof TObjectWithProperties && $shape instanceof TObjectWithProperties) {
+            try {
+                $part = TypeParser::mergeObjectShapes($codebase, $shape, $part);
+            } catch (TypeParseTreeException) {
+                return null;
+            }
+        }
+
+        return $type->addIntersectionType($part);
     }
 
     /**
