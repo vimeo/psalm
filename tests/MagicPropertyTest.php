@@ -9,10 +9,13 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use Psalm\Config;
 use Psalm\Context;
 use Psalm\Exception\CodeException;
+use Psalm\Internal\Analyzer\IssueData;
 use Psalm\IssueBuffer;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\InvalidCodeAnalysisWithIssuesTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
+
+use function array_map;
 
 use const DIRECTORY_SEPARATOR;
 
@@ -549,6 +552,66 @@ final class MagicPropertyTest extends TestCase
 
                         return $bag->known;
                     }',
+            ],
+            'propertyAnnotationWithATemplateOfAUsedTraitIsLocalizedInTheClass' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @property T|null $at
+                     */
+                    trait Tr {
+                        public function __get(string $name): mixed {
+                            return null;
+                        }
+                        public function __set(string $name, mixed $value): void {}
+                    }
+
+                    final class C {
+                        /** @use Tr<int> */
+                        use Tr;
+
+                        public function fill(): void {
+                            $this->at = 5;
+                        }
+                    }
+
+                    $at = (new C())->at;',
+                'assertions' => [
+                    '$at===' => 'int|null',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'propertyAnnotationWithATemplateOfTheParentIsLocalizedInTheChild' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @property T|null $at
+                     */
+                    abstract class Base {
+                        public function __get(string $name): mixed {
+                            return null;
+                        }
+                        public function __set(string $name, mixed $value): void {}
+                    }
+
+                    /** @extends Base<int> */
+                    class Child extends Base {
+                        public function fill(): void {
+                            $this->at = 5;
+                        }
+                    }
+
+                    final class GrandChild extends Child {}
+
+                    $at = (new Child())->at;
+                    $grandChildAt = (new GrandChild())->at;',
+                'assertions' => [
+                    '$at===' => 'int|null',
+                    '$grandChildAt===' => 'int|null',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'valueOfPseudoPropertyIsNarrowedByAnEqualityCheck' => [
                 'code' => '<?php
@@ -1612,6 +1675,54 @@ final class MagicPropertyTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'propertyAnnotationWithATemplateOfTheParentRejectsAnotherTypeInTheChild' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @property T|null $at
+                     */
+                    abstract class Base {
+                        public function __get(string $name): mixed {
+                            return null;
+                        }
+                        public function __set(string $name, mixed $value): void {}
+                    }
+
+                    /** @extends Base<int> */
+                    final class Child extends Base {
+                        public function fill(): void {
+                            $this->at = "x";
+                        }
+                    }',
+                'error_message' => "declared type 'int|null' cannot be assigned type",
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'propertyAnnotationWithATemplateOfAUsedTraitRejectsAnotherTypeInTheClass' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @property T|null $at
+                     */
+                    trait Tr {
+                        public function __get(string $name): mixed {
+                            return null;
+                        }
+                        public function __set(string $name, mixed $value): void {}
+                    }
+
+                    final class C {
+                        /** @use Tr<int> */
+                        use Tr;
+
+                        public function fill(): void {
+                            $this->at = "x";
+                        }
+                    }',
+                'error_message' => "declared type 'int|null' cannot be assigned type",
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
             'explicitSetCallSharingOnlyNullWithThePropertyIsInvalid' => [
                 'code' => '<?php
                     final class Foo {}
@@ -1627,6 +1738,23 @@ final class MagicPropertyTest extends TestCase
                         $a->__set("p", $foo);
                     }',
                 'error_message' => 'InvalidPropertyAssignmentValue',
+            ],
+            'explicitSetCallWithParentTypeAndInvalidTypeIsPossiblyInvalid' => [
+                'code' => '<?php
+                    final class Foo {}
+
+                    /** @property Foo $p */
+                    final class A {
+                        /** @param mixed $value */
+                        public function __set(string $name, $value): void {}
+                    }
+
+                    function f(A $a, object|int $o): void {
+                        $a->__set("p", $o);
+                    }',
+                'error_message' => 'PossiblyInvalidPropertyAssignmentValue',
+                'error_levels' => [],
+                'php_version' => '8.0',
             ],
             'explicitSetCallSharingAnObjectWithThePropertyIsPossiblyInvalid' => [
                 'code' => '<?php
@@ -1658,6 +1786,54 @@ final class MagicPropertyTest extends TestCase
                         }
                     }',
                 'error_message' => 'UndefinedThisPropertyFetch',
+            ],
+            'annotationWithoutGetterSaysHowToReadItThroughThis' => [
+                'code' => '<?php
+                    /**
+                     * @property int $y
+                     */
+                    final class Page {
+                        public function get(): int {
+                            return $this->y;
+                        }
+                    }',
+                'error_message' => 'UndefinedThisPropertyFetch - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:36 - Instance property Page::$y is not defined, but a docblock of Page declares it: add __get() to Page, or set usePhpDocPropertiesWithoutMagicCall="true" in the config',
+            ],
+            'annotationWithoutSetterSaysHowToWriteItThroughThis' => [
+                'code' => '<?php
+                    /**
+                     * @property int $y
+                     */
+                    final class Page {
+                        public function set(): void {
+                            $this->y = 1;
+                        }
+                    }',
+                'error_message' => 'UndefinedThisPropertyAssignment - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:29 - Instance property Page::$y is not defined, but a docblock of Page declares it: add __set() to Page, or set usePhpDocPropertiesWithoutMagicCall="true" in the config',
+            ],
+            'annotationWithoutGetterSaysHowToReadIt' => [
+                'code' => '<?php
+                    /**
+                     * @property bool $is_protected
+                     */
+                    final class Page {}
+
+                    function isProtected(Page $page): bool {
+                        return $page->is_protected;
+                    }',
+                'error_message' => 'UndefinedPropertyFetch - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:32 - Instance property Page::$is_protected is not defined, but a docblock of Page declares it: add __get() to Page, or set usePhpDocPropertiesWithoutMagicCall="true" in the config',
+            ],
+            'annotationWithoutSetterSaysHowToWriteIt' => [
+                'code' => '<?php
+                    /**
+                     * @property-write bool $is_protected
+                     */
+                    final class Page {}
+
+                    function protect(Page $page): void {
+                        $page->is_protected = true;
+                    }',
+                'error_message' => 'UndefinedPropertyAssignment - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:25 - Instance property Page::$is_protected is not defined, but a docblock of Page declares it: add __set() to Page, or set usePhpDocPropertiesWithoutMagicCall="true" in the config',
             ],
             'propertyWithSelfWildcardConstantNonMatchingString' => [
                 'code' => '<?php
@@ -2201,5 +2377,31 @@ final class MagicPropertyTest extends TestCase
         );
 
         $this->analyzeFile('somefile.php', new Context());
+    }
+
+    public function testAReadOnlyAnnotationIsNoHintForAWrite(): void
+    {
+        $this->testConfig->throw_exception = false;
+
+        $file_path = self::$src_dir_path . 'somefile.php';
+        $this->addFile($file_path, '<?php
+            /**
+             * @property-read bool $is_protected
+             */
+            final class Page {}
+
+            function protect(Page $page): void {
+                $page->is_protected = true;
+            }');
+
+        $this->analyzeFile($file_path, new Context(), false);
+
+        $this->assertSame(
+            ['Instance property Page::$is_protected is not defined'],
+            array_map(
+                static fn(IssueData $issue): string => $issue->message,
+                IssueBuffer::getIssuesDataForFile($file_path),
+            ),
+        );
     }
 }

@@ -22,6 +22,7 @@ use Psalm\Node\VirtualIdentifier;
 use Psalm\Node\VirtualPropertyItem;
 use Psalm\Storage\ClassConstantStorage;
 use Psalm\Storage\ClassLikeStorage;
+use Psalm\Storage\TemplateVariance;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Scanner\ParsedDocblock;
 use Psalm\Type;
@@ -73,16 +74,21 @@ final class ClassLikeStubGenerator
             ]
         ];
 
-        $docblock = new ParsedDocblock('', []);
+        // one line for each template in the declared order, which is the order of the type arguments
+        $template_lines = [];
 
         $template_offset = 0;
 
         foreach ($storage->template_types ?: [] as $template_name => $map) {
             $type = array_values($map)[0];
 
-            $key = isset($storage->template_covariants[$template_offset]) ? 'template-covariant' : 'template';
+            $key = match ($storage->getTemplateVariance($template_offset)) {
+                TemplateVariance::Invariant => 'template',
+                TemplateVariance::Covariant => 'template-covariant',
+                TemplateVariance::Contravariant => 'template-contravariant',
+            };
 
-            $docblock->tags[$key][] = $template_name . ' as ' . $type->toNamespacedString(
+            $template_lines[] = ' * @' . $key . ' ' . $template_name . ' as ' . $type->toNamespacedString(
                 null,
                 [],
                 null,
@@ -93,12 +99,8 @@ final class ClassLikeStubGenerator
         }
 
         $attrs = [
-            'comments' => $docblock->tags
-                ? [
-                    new PhpParser\Comment\Doc(
-                        rtrim($docblock->render('        '))
-                    )
-                ]
+            'comments' => $template_lines
+                ? [new PhpParser\Comment\Doc("/**\n" . implode("\n", $template_lines) . "\n */")]
                 : []
         ];
 

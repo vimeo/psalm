@@ -55,6 +55,7 @@ use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Storage\Capabilities;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\MethodStorage;
+use Psalm\Storage\TemplateVariance;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TAnonymousClassInstance;
@@ -137,6 +138,49 @@ final class NewAnalyzer extends CallAnalyzer
         }
 
         return false;
+    }
+
+    /**
+     * The bounds the constructor arguments put on the template and on each parent template the class gives it to
+     * (`@extends Parent<T, T>`), which an inherited constructor binds.
+     *
+     * @template TBound
+     * @param array<string, array<string, Union>>|null $template_extended_params
+     * @param array<string, array<string, TBound>> $bounds
+     * @return list<TBound>
+     * @psalm-pure
+     */
+    private static function getTemplateBounds(
+        string $fq_class_name,
+        string $template_name,
+        ?array $template_extended_params,
+        array $bounds,
+    ): array {
+        $found_bounds = isset($bounds[$template_name][$fq_class_name])
+            ? [$bounds[$template_name][$fq_class_name]]
+            : [];
+
+        foreach ($template_extended_params ?? [] as $extended_class_name => $type_map) {
+            foreach ($type_map as $extended_template_name => $extended_type) {
+                foreach ($extended_type->getAtomicTypes() as $atomic_type) {
+                    if ($atomic_type instanceof TTemplateParam
+                        && $atomic_type->param_name === $template_name
+                        && $atomic_type->defining_class === $fq_class_name
+                    ) {
+                        $found_bounds = [...$found_bounds, ...self::getTemplateBounds(
+                            $extended_class_name,
+                            $extended_template_name,
+                            $template_extended_params,
+                            $bounds,
+                        )];
+
+                        break;
+                    }
+                }
+            }
+        }
+
+        return $found_bounds;
     }
 
     /**
@@ -697,7 +741,7 @@ final class NewAnalyzer extends CallAnalyzer
             $template_result ??= new TemplateResult([], []);
             $template_result->constructed_class = $storage->name;
 
-            if (!self::isInTrait($statements_analyzer)) {
+            if (!self::isStaticOfTraitUser($statements_analyzer, $context, $fq_class_name)) {
                 $template_result->static_class_type = $fq_class_name;
                 $template_result->static_class_is_final = $storage->final;
             }
@@ -843,7 +887,9 @@ final class NewAnalyzer extends CallAnalyzer
     /**
      * The type variable a template of a constructed class is carried as: the
      * bounds the constructor arguments inferred are its lower bounds, and the
-     * template's declared constraint its upper bound.
+     * template's declared constraint and what the arguments bound it by from
+     * above (a callback's parameter, a contravariant argument's type) its upper
+     * bounds.
      *
      * @param non-empty-list<TemplateBound> $arg_bounds
      * @param bool $bound_through_class_string whether an argument binds the template through a
@@ -853,6 +899,7 @@ final class NewAnalyzer extends CallAnalyzer
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\New_ $stmt,
         array $arg_bounds,
+        ?TemplateBound $arg_upper_bound,
         Union $constraint,
         bool $bound_through_class_string,
     ): Union {
@@ -877,6 +924,17 @@ final class NewAnalyzer extends CallAnalyzer
         }
 
         $upper_bounds = [new TemplateBound($constraint, 0, null, null, $new_location)];
+
+        // `Holder<T>` built from a `Sink<int>` (`@param Sink<T>`) may only ever take ints
+        if ($arg_upper_bound !== null) {
+            $upper_bounds[] = new TemplateBound(
+                $arg_upper_bound->type,
+                0,
+                $arg_upper_bound->arg_offset,
+                null,
+                $new_location,
+            );
+        }
 
         // A constructor argument that binds this template through a
         // `class-string<T>` position names the type exactly
@@ -1851,13 +1909,10 @@ final class NewAnalyzer extends CallAnalyzer
                 $offset++;
             }
 
+            $bound_template_result->static_class_type = $template_result->static_class_type;
             $template_result = $bound_template_result;
         } else {
             return null;
-        }
-
-        if (!self::isInTrait($statements_analyzer)) {
-            $template_result->static_class_type = $fq_class_name;
         }
 
         $self_out_candidate = MethodCallReturnTypeFetcher::replaceTemplateTypes(
@@ -1945,7 +2000,8 @@ final class NewAnalyzer extends CallAnalyzer
      * them: a template named anywhere in a public non-constructor method parameter
      * or a public writable property type is one that later code can still
      * constrain, anything else can only have been fixed at the construction site and
-     * so is pinned eagerly rather than minted as a type variable.
+     * so is pinned eagerly rather than minted as a type variable. A contravariant
+     * template is always in the set: what later code gives the object never narrows it.
      *
      * Any appearance in such a parameter constrains the variable, whichever way the
      * position points, so `getTemplateTypes()` finding it in *any* nested position is
@@ -2028,6 +2084,16 @@ final class NewAnalyzer extends CallAnalyzer
             }
         }
 
+        // a contravariant template only takes values: nothing later code gives the object narrows it, so it is
+        // what the constructor makes it, or else its default or constraint
+        $template_offset = 0;
+
+        foreach ($storage->template_types ?? [] as $template_name => $_) {
+            if (isset($storage->template_contravariants[$template_offset++])) {
+                $unconstrainable[$template_name] = true;
+            }
+        }
+
         return $unconstrainable;
     }
 
@@ -2104,7 +2170,51 @@ final class NewAnalyzer extends CallAnalyzer
                     ? $inferred_lower_bounds
                     : $template_result->lower_bounds;
 
-            if (isset($lower_bounds[$template_name][$fq_class_name])) {
+            if (isset($storage->template_contravariants[count($generic_param_types)])) {
+                // a contravariant template is the most general type the arguments allow: what all of them let it
+                // take, the type an invariant argument pins it to (`Box<T>`) and the parameter of each callback, or
+                // else what it stands for unbound. A value it takes doesn't narrow it
+                $equality_bounds = [];
+
+                foreach (self::getTemplateBounds(
+                    $fq_class_name,
+                    $template_name,
+                    $storage->template_extended_params,
+                    $template_result->lower_bounds,
+                ) as $template_lower_bounds) {
+                    foreach ($template_lower_bounds as $lower_bound) {
+                        if ($lower_bound->equality_bound_classlike !== null) {
+                            $equality_bounds[] = $lower_bound;
+                        }
+                    }
+                }
+
+                $generic_param_type = $equality_bounds
+                    ? TemplateStandinTypeReplacer::getMostSpecificTypeFromBounds($equality_bounds, $codebase)
+                    : null;
+
+                foreach (self::getTemplateBounds(
+                    $fq_class_name,
+                    $template_name,
+                    $storage->template_extended_params,
+                    $template_result->upper_bounds,
+                ) as $upper_bound) {
+                    $generic_param_type = $generic_param_type === null
+                        ? $upper_bound->type
+                        : Type::intersectUnionTypes($generic_param_type, $upper_bound->type, $codebase)
+                            ?? Type::getNever();
+                }
+
+                $generic_param_type ??= self::getUninferredTemplateParam(
+                    $statements_analyzer,
+                    $stmt,
+                    $storage,
+                    $template_name,
+                    $base_type,
+                    $generic_param_types,
+                    $unconstrainable_templates,
+                );
+            } elseif (isset($lower_bounds[$template_name][$fq_class_name])) {
                 $generic_param_type = TemplateStandinTypeReplacer::getMostSpecificTypeFromBounds(
                     $lower_bounds[$template_name][$fq_class_name],
                     $codebase,
@@ -2133,6 +2243,7 @@ final class NewAnalyzer extends CallAnalyzer
                         $statements_analyzer,
                         $stmt,
                         $lower_bounds[$template_name][$fq_class_name],
+                        $template_result->upper_bounds[$template_name][$fq_class_name] ?? null,
                         $constraint,
                         $method_storage
                             && self::templateBoundThroughClassString($method_storage, $template_name),
@@ -2246,8 +2357,9 @@ final class NewAnalyzer extends CallAnalyzer
     /**
      * What a template the constructor arguments did not bind stands for. Later code may still constrain it (Hack's
      * `new Foo<_>()`), so it gets a type variable bounded above by its constraint and reconciled once the enclosing
-     * function-like is analyzed, unless only the constructor names it: then it is a type template's default, with
-     * the earlier templates bound as in the new object, or else its constraint.
+     * function-like is analyzed, unless nothing later can constrain it (only the constructor names it, or it is
+     * contravariant): then it is a type template's default, with the earlier templates bound as in the new object,
+     * or else `never` for a covariant template (a subtype of every instantiation), or else its constraint.
      *
      * @param non-empty-array<string, Union> $type_map the constraint of the template, by its class
      * @param list<Union> $generic_param_types those of the templates before it
@@ -2311,7 +2423,7 @@ final class NewAnalyzer extends CallAnalyzer
             // what nothing can constrain later is, for a covariant template, a subtype of every instantiation
             if (!isset($storage->purity_templates[$template_name])
                 && $template_offset !== false
-                && ($storage->template_covariants[$template_offset] ?? false)
+                && $storage->getTemplateVariance($template_offset) === TemplateVariance::Covariant
             ) {
                 return Type::getNever();
             }

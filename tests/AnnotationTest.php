@@ -1975,6 +1975,26 @@ final class AnnotationTest extends TestCase
 
                     takesFlags(FileFlag::MODIFIED | FileFlag::NEW);',
             ],
+            'intMaskOfClassWildcardIgnoresConstantsThatAreNotIntegers' => [
+                'code' => '<?php
+                    final class FileFlag {
+                        public const OPEN = 1;
+                        public const MODIFIED = 2;
+                        public const NEW = 4;
+                        public const NAME = "flags";
+                        public const RATIO = 1.5;
+                        public const NOTHING = null;
+                    }
+
+                    /**
+                     * @param int-mask-of<FileFlag::*> $flags
+                     */
+                    function takesFlags(int $flags) : void {
+                        echo $flags;
+                    }
+
+                    takesFlags(FileFlag::MODIFIED | FileFlag::NEW);',
+            ],
             'intMaskOfWithZero' => [
                 'code' => '<?php
                     class FileFlag {
@@ -2671,6 +2691,62 @@ final class AnnotationTest extends TestCase
                     }',
                 'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:14:27 - '
                     . 'Argument 1 of Foo\f expects 0|4, but 1 provided',
+            ],
+            'intMaskOfClassWildcardMatchingAnEnumConstantStillChecksTheArgument' => [
+                'code' => '<?php
+                    enum E { case X; }
+
+                    final class A {
+                        public const F_ONE = 1;
+                        public const F_TWO = 2;
+                        public const F_ENUM = E::X;
+
+                        /** @param int-mask-of<self::F_*> $a */
+                        public static function a(int $a): void {
+                            echo $a;
+                        }
+                    }
+
+                    A::a(1234);',
+                'error_message' => 'InvalidArgument',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'intMaskOfClassWildcardMatchingAnArrayConstantStillChecksTheArgument' => [
+                'code' => '<?php
+                    final class A {
+                        public const F_ONE = 1;
+                        public const F_TWO = 2;
+                        public const F_LIST = [];
+
+                        /** @param int-mask-of<self::F_*> $a */
+                        public static function a(int $a): void {
+                            echo $a;
+                        }
+                    }
+
+                    A::a(1234);',
+                'error_message' => 'InvalidArgument',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'intMaskOfClassWildcardMatchingAStringConstantStillChecksTheArgument' => [
+                'code' => '<?php
+                    final class FileFlag {
+                        public const OPEN = 1;
+                        public const MODIFIED = 2;
+                        public const NEW = 4;
+                        public const MISTAKE = "string";
+                    }
+
+                    /** @param int-mask-of<FileFlag::*> $flags */
+                    function takesFlags(int $flags): void {
+                        echo $flags;
+                    }
+
+                    takesFlags(1234);',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:14:32 - '
+                    . 'Argument 1 of takesFlags expects 0|1|2|3|4|5|6|7, but 1234 provided',
             ],
             'intMaskOfANonIntegerConstantOfTheNamespace' => [
                 'code' => '<?php

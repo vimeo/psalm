@@ -217,6 +217,19 @@ final class WhileTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'varAssignedRightOfLogicalAndInTheConditionIsDefinedInTheBody' => [
+                'code' => '<?php
+                    /** @return int|false */
+                    function h() {
+                        return rand(0, 1) ? 3 : false;
+                    }
+                    function f(bool $b): void {
+                        while ($b and false !== ($j = h())) {
+                            echo $j;
+                            $b = (bool) rand(0, 1);
+                        }
+                    }',
+            ],
             'varUnsetBeforeContinueAndAssignedByTheConditionStaysDefined' => [
                 'code' => '<?php
                     function nextRow(): ?array {
@@ -2589,6 +2602,105 @@ final class WhileTest extends TestCase
                         return $z;
                     }',
             ],
+            'whileWhoseConditionHoldsOnEntryRunsAtLeastOnce' => [
+                'code' => '<?php
+                    final class Link {
+                        public function __construct(public Link|string $inner) {}
+                    }
+
+                    /** @param non-empty-list<Link> $links */
+                    function take(array $links): void {}
+
+                    function f(Link|string $value): void {
+                        if ($value instanceof Link) {
+                            $stack = [];
+                            while ($value instanceof Link) {
+                                $stack[] = $value;
+                                $value = $value->inner;
+                            }
+                            take($stack);
+                        }
+                    }
+
+                    function nullable(?int $x): void {
+                        if ($x !== null) {
+                            $seen = [];
+                            while ($x !== null) {
+                                $seen[] = $x;
+                                $x = rand(0, 1) ? null : $x + 1;
+                            }
+                            /** @psalm-check-type-exact $seen = non-empty-list<int> */;
+                        }
+                    }
+
+                    function bothOperandsHold(?int $x, ?int $y): void {
+                        if ($x !== null && $y !== null) {
+                            $seen = [];
+                            while ($x !== null && $y !== null) {
+                                $seen[] = $x;
+                                $x = rand(0, 1) ? null : $x + 1;
+                                $y = rand(0, 1) ? null : $y;
+                            }
+                            /** @psalm-check-type-exact $seen = non-empty-list<int> */;
+                        }
+                    }
+
+                    function oneOperandMayNotHold(Link|string $value, bool $flag): void {
+                        if ($value instanceof Link) {
+                            $stack = [];
+                            while ($flag && $value instanceof Link) {
+                                $stack[] = $value;
+                                $value = $value->inner;
+                            }
+                            /** @psalm-check-type-exact $stack = list<Link> */;
+                        }
+                    }
+
+                    function notEntered(Link|string $value): void {
+                        $stack = [];
+                        while ($value instanceof Link) {
+                            $stack[] = $value;
+                            $value = $value->inner;
+                        }
+                        /** @psalm-check-type-exact $stack = list<Link> */;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'whileWithACallInItsConditionMayNotRunEvenIfTheOtherOperandHolds' => [
+                'code' => '<?php
+                    function foo(): bool {
+                        return (bool) rand(0, 1);
+                    }
+
+                    function f(?int $x): void {
+                        if ($x !== null) {
+                            $seen = [];
+                            while ($x !== null && foo()) {
+                                $seen[] = $x;
+                                $x = null;
+                            }
+                            /** @psalm-check-type-exact $seen = list<int> */;
+                        }
+                    }',
+            ],
+            'whileThatAssignsInItsConditionMayNotRun' => [
+                'code' => '<?php
+                    function next_val(): ?int {
+                        return rand(0, 1) ? 1 : null;
+                    }
+
+                    function f(?int $n): void {
+                        if ($n !== null) {
+                            $seen = [];
+                            while (($n = next_val()) !== null) {
+                                $seen[] = $n;
+                            }
+                            /** @psalm-check-type-exact $seen = list<int> */;
+                        }
+                    }',
+            ],
             'variableAssignedInTheRightOperandOfOrIsDefinedAfterTheLoop' => [
                 'code' => <<<'PHP'
                     <?php
@@ -2630,6 +2742,24 @@ final class WhileTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'forWhoseEarlierConditionChangesTheVariableMayNotRun' => [
+                'code' => '<?php
+                    /** @param non-empty-list<int> $l */
+                    function take(array $l): void {}
+
+                    function setNull(?int &$x): void { $x = null; }
+
+                    function f(?int $x): void {
+                        if ($x !== null) {
+                            $seen = [];
+                            for (; setNull($x), $x !== null;) {
+                                $seen[] = $x;
+                            }
+                            take($seen);
+                        }
+                    }',
+                'error_message' => 'InvalidArgument',
+            ],
             'varUnsetBeforeContinueIsPossiblyUndefinedAfterTheLoop' => [
                 'code' => '<?php
                     function f(int $n): void {
