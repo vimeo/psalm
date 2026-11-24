@@ -194,7 +194,7 @@ final class SymbolLookupTest extends TestCase
             ),
         );
         $this->assertNotNull($information);
-        $this->assertSame("array<string, mixed>", $information->code);
+        $this->assertSame("array<non-empty-string, mixed>", $information->code);
         $this->assertSame('$_SESSION', $information->title);
         $this->assertNull($information->description);
 
@@ -234,7 +234,7 @@ final class SymbolLookupTest extends TestCase
             ),
         );
         $this->assertNotNull($information);
-        $this->assertSame("const APPLE string", $information->code);
+        $this->assertSame("const APPLE '🍏'", $information->code);
         $this->assertSame("APPLE", $information->title);
         $this->assertNull($information->description);
 
@@ -246,7 +246,7 @@ final class SymbolLookupTest extends TestCase
             ),
         );
         $this->assertNotNull($information);
-        $this->assertSame("const BANANA string", $information->code);
+        $this->assertSame("const BANANA '🍌'", $information->code);
         $this->assertSame("BANANA", $information->title);
         $this->assertNull($information->description);
     }
