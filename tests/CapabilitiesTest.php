@@ -5329,7 +5329,7 @@ final class CapabilitiesTest extends TestCase
                         $a["k"] = 1;
                         return 1;
                     }',
-                'error_message' => 'ImpureFunctionCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:29 - The context is read-props but function call on sort requires write-this-props',
+                'error_message' => 'ImpureByReferenceAssignment',
             ],
             'legacyPurityLevelsAreNotCapabilities' => [
                 'code' => '<?php
@@ -6913,7 +6913,7 @@ final class CapabilitiesTest extends TestCase
                         };
                         $write();
                     }',
-                'error_message' => 'ImpureFunctionCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:29 - The context is read-props but function call on sort requires write-this-props',
+                'error_message' => 'ImpureByReferenceAssignment',
             ],
             'closureMutatingCapturedObjectNeedsWriteProps' => [
                 'code' => '<?php
