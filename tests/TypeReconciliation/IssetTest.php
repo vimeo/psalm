@@ -81,6 +81,33 @@ final class IssetTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'issetInALoopOverLiteralKeysOfAnIntersectionShape' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-type HttpOptions = array{
+                     *   headers?: array<string, string | list<string>>,
+                     * }
+                     *
+                     * @psalm-type SerializedAccount = HttpOptions & array{discoveryUri: string, baseUrl?: ?string}
+                     */
+                    final class Account {
+                        /**
+                         * @psalm-param SerializedAccount $props
+                         */
+                        public static function constructFromArray(array $props): string
+                        {
+                            $requiredProps = [\'discoveryUri\'];
+
+                            foreach ($requiredProps as $prop) {
+                                if (!isset($props[$prop])) {
+                                    throw new \\Exception("x");
+                                }
+                            }
+
+                            return $props["discoveryUri"];
+                        }
+                    }',
+            ],
             'coalesceToNullComparedWithNullNarrowsTheCoalescedOffset' => [
                 'code' => '<?php
                     final class Item {
