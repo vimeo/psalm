@@ -108,4 +108,6 @@ The practical differences:
   `Box<1>` or `Foo<A>` rather than `` `_0 ``.
 - Callables validate against the construction-site inference with ordinary
   `InvalidArgument` messages, since a structural signature mismatch is clearer reported
-  in full than deferred to reconciliation.
+  in full than deferred to reconciliation. Once values were added after the
+  construction, a callable that accepts what the constructor got but not what was
+  added is reported by reconciliation instead, as `IncompatibleTypeParameters`.

@@ -170,6 +170,7 @@ These issues become info (non-blocking) at level 3 and higher.
  - [MissingClosureParamType](issues/MissingClosureParamType.md)
  - [MissingClosureReturnType](issues/MissingClosureReturnType.md)
  - [MissingConstructor](issues/MissingConstructor.md)
+ - [MissingExtensionRequirement](issues/MissingExtensionRequirement.md)
  - [MissingParamType](issues/MissingParamType.md)
  - [MissingPropertyType](issues/MissingPropertyType.md)
  - [MissingReturnType](issues/MissingReturnType.md)

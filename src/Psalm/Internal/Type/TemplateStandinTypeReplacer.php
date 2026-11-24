@@ -241,10 +241,7 @@ final class TemplateStandinTypeReplacer
             }
 
             if (count($atomic_types) > 1) {
-                return TypeCombiner::combine(
-                    $atomic_types,
-                    $codebase,
-                )->setProperties([
+                return TypeCombiner::combineKeepingNeverBoundVariables($atomic_types, $codebase)->setProperties([
                     'ignore_nullable_issues' => $union_type->ignore_nullable_issues,
                     'ignore_falsable_issues' => $union_type->ignore_falsable_issues,
                     'possibly_undefined' => $union_type->possibly_undefined,
@@ -310,8 +307,12 @@ final class TemplateStandinTypeReplacer
             );
         }
 
+        // a template of the class being analysed here is the caller's own: a call's bindings of the receiver's class
+        // templates were applied to the declared type before
         if ($atomic_type instanceof TTemplateParam
             && isset($template_result->lower_bounds[$atomic_type->param_name][$atomic_type->defining_class])
+            && ($atomic_type->defining_class !== $calling_class
+                || $template_result->isForAnotherObject($calling_class))
         ) {
             $most_specific_type = self::getMostSpecificTypeFromBounds(
                 $template_result->lower_bounds[$atomic_type->param_name][$atomic_type->defining_class],
@@ -798,7 +799,12 @@ final class TemplateStandinTypeReplacer
         bool $was_single,
         bool &$had_template,
     ): array {
-        if ($atomic_type->defining_class === $calling_class) {
+        // the templates of the class being analysed are the types of the object the code runs for, unless the
+        // result is for another object: the receiver of a call (`$other->add()` inside the class of `$other`) or
+        // the object a `new` constructs
+        if ($atomic_type->defining_class === $calling_class
+            && !$template_result->isForAnotherObject($calling_class)
+        ) {
             return [$atomic_type];
         }
 
@@ -869,7 +875,8 @@ final class TemplateStandinTypeReplacer
                     null,
                 );
 
-                if ($depth < 10) {
+                // the receiver's type arguments are in the caller's terms already: their templates are the caller's
+                if ($depth < 10 && !$template_result->of_receiver) {
                     $replacement_type = self::replace(
                         $replacement_type,
                         $template_result,
@@ -1110,14 +1117,14 @@ final class TemplateStandinTypeReplacer
 
             // a class template already standing for a type variable (minted at
             // the construction site, e.g. `new Table($items)`) cannot answer
-            // this structural question itself: it is resolved to its
-            // construction-site inference for the gate, while the upper bound
-            // recorded below still reconciles against the variable's bounds
+            // this structural question itself: it is resolved to every value
+            // that flowed into it for the gate, while the upper bound recorded
+            // below still reconciles against the variable's bounds
             $gate_replacement_type = $replacement_type;
 
             foreach ($replacement_type->getAtomicTypes() as $replacement_atomic_type) {
                 if ($replacement_atomic_type instanceof TTypeVariable) {
-                    $gate_resolver = new TypeVariableResolver($codebase);
+                    $gate_resolver = new TypeVariableResolver($codebase, construction_site_only: false);
                     $gate_resolver->traverse($gate_replacement_type);
                     break;
                 }

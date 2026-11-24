@@ -9,6 +9,7 @@ use Amp\Parallel\Worker\Task;
 use Amp\Sync\Channel;
 use Override;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
+use Psalm\Internal\Perf;
 use Psalm\Internal\Provider\ClassLikeStorageProvider;
 use Psalm\Internal\Provider\FileStorageProvider;
 
@@ -41,6 +42,7 @@ final class InitScannerTask implements Task
     #[Override]
     final public function run(Channel $channel, Cancellation $cancellation): mixed
     {
+        Perf\Collector::workerStart('scan');
         $analyzer = ProjectAnalyzer::getInstance();
         $analyzer->progress->debug('Initialising forked process for scanning' . PHP_EOL);
 

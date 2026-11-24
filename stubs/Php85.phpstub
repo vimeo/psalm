@@ -1,5 +1,8 @@
 <?php
 namespace {
+    const FILTER_THROW_ON_FAILURE = 268435456;
+    const FILTER_FLAG_GLOBAL_RANGE = 536870912;
+
     final class Closure {
         /**
          * @psalm-pure

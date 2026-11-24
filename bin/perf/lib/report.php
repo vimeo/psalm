@@ -20,7 +20,7 @@ const VERDICT_ORDER = ['fail' => 0, 'warn' => 1, 'skip' => 2, 'pass' => 3];
 const TABLE_LEGEND = "<details><summary>How to read this table</summary>\n\n"
     . "- **Memory**: Psalm's own peak figure, `threads=1`. More than +5 % fails, unless the PR changes "
     . "`composer.json`.\n"
-    . '- **Wall**: base and head run on the same runner; ±10 % is noise. Above +20 % warns, never fails. '
+    . '- **Wall**: base and head run on the same runner; ±10 % is noise. Above +10 % warns, never fails. '
     . "*re-run*: a reversed second run was taken and the faster kept.\n"
     . '- **Issues**: head count over all categories, then $\color{red}{\textsf{+added}}$ '
     . '$\color{green}{\textsf{-removed}}$ against base.' . "\n"
@@ -33,7 +33,10 @@ const TABLE_LEGEND = "<details><summary>How to read this table</summary>\n\n"
     . "be new detection or false positives, fewer can be fixed false positives or lost detection.\n"
     . "- **Dead code**: head count of unused-code issues, shown only when a run reported some (`findUnusedCode`). "
     . "More is red, fewer is green.\n"
-    . "- **Total**: sum over the projects compared on both sides. Thresholds apply per project, not to the total.\n"
+    . "- **Total**: sum over the projects compared on both sides. Its wall time warns above +5 % (±5 % is noise); "
+    . "the other thresholds apply per project.\n"
+    . '- **Profiling**: when both sides support it, the measured runs use `--debug-performance=PATH` for the hot-files '
+    . "block, which adds the same small CPU and memory cost to both sides.\n"
     . '- **Colors**: $\color{red}{\textsf{red}}$ past a fail or warn threshold (or more issues), '
     . '$\color{green}{\textsf{green}}$ an improvement past noise (or fewer issues), '
     . '$\color{orange}{\textsf{orange}}$ needs review, '
@@ -318,7 +321,7 @@ function totalRow(array $projects, bool $deadCode): ?string
         '**Total**',
         fmtInt((int) round($mb['head'])) . pctBadge(pctDelta($mb['base'], $mb['head']), MB_FAIL_PCT, MB_FAIL_PCT),
         sprintf('%.1f', $wall['head'])
-            . pctBadge(pctDelta($wall['base'], $wall['head']), WALL_WARN_PCT, WALL_NOISE_PCT),
+            . pctBadge(pctDelta($wall['base'], $wall['head']), TOTAL_WALL_WARN_PCT, TOTAL_WALL_WARN_PCT),
         fmtInt($issues['head']) . addedRemovedBadge($issues['added'], $issues['removed']),
         fmtInt($weighted['head']) . countBadge($weighted['delta']),
         $category('taint'),
@@ -353,7 +356,16 @@ function performanceWord(array $projects): string
         $improved = $improved || $mb < -MB_FAIL_PCT || $wall < -WALL_NOISE_PCT;
     }
 
-    return $compared ? ($improved ? 'improved' : 'unchanged') : 'not compared';
+    if (!$compared) {
+        return 'not compared';
+    }
+
+    $totalWall = totalWallDelta($projects) ?? 0.0;
+    if ($totalWall > TOTAL_WALL_WARN_PCT) {
+        return 'regressed';
+    }
+
+    return $improved || $totalWall < -TOTAL_WALL_WARN_PCT ? 'improved' : 'unchanged';
 }
 
 /**
@@ -604,7 +616,7 @@ function detailsTitle(array $p): string
 }
 
 /**
- * @param array<string, mixed> $summary result of compareAll() plus base_sha and head_sha
+ * @param array<string, mixed> $summary result of compareAll() plus base_sha, head_sha and hot_files
  */
 function renderReport(array $summary, ?string $runUrl): string
 {
@@ -639,7 +651,7 @@ function renderReport(array $summary, ?string $runUrl): string
     }
 
     $out .= totalRow($projects, $deadCode) ?? '';
-    $out .= "\n" . TABLE_LEGEND . "\n";
+    $out .= "\n" . TABLE_LEGEND . "\n" . renderHotFiles($summary['hot_files']);
 
     $footer = $summary['deps_changed']
         ? "\ncomposer.json changed in this PR, so head dependencies were re-resolved; "
@@ -706,8 +718,14 @@ function runCompare(array $args): int
     $names = ['plan', 'in', 'base-sha', 'head-sha', 'deps-changed', 'out-md', 'out-json', 'run-url'];
     $options = parseOptions($args, $names);
     requireOptions($options, array_slice($names, 0, 7));
-    $summary = compareAll(readJsonFile($options['plan']), $options['in'], $options['deps-changed'] === '1');
+    $plan = readJsonFile($options['plan']);
+    $summary = compareAll($plan, $options['in'], $options['deps-changed'] === '1');
     $summary += ['base_sha' => $options['base-sha'], 'head_sha' => $options['head-sha']];
+    try {
+        $summary['hot_files'] = collectHotFiles($plan, $options['in'], $summary['projects']);
+    } catch (Throwable $e) {
+        $summary['hot_files'] = ['failed' => $e->getMessage()]; // informational: never lose the report or the verdict
+    }
     writeJsonFile($options['out-json'], ['schema' => 2] + $summary);
     if (file_put_contents($options['out-md'], renderReport($summary, $options['run-url'] ?? null)) === false) {
         throw new RuntimeException("cannot write {$options['out-md']}");
