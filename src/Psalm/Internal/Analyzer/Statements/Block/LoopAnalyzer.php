@@ -69,10 +69,8 @@ final class LoopAnalyzer
      * Checks an array of statements in a loop
      *
      * @param  list<PhpParser\Node\Stmt>    $stmts
-     * @param  list<PhpParser\Node\Expr>    $pre_conditions the `&&` operands of the condition, after the comma
-     *                                                      separated conditions of a for that don't decide
+     * @param  list<PhpParser\Node\Expr>    $pre_conditions
      * @param  PhpParser\Node\Expr[]        $post_expressions
-     * @param  int                          $deciding_conditions_start the offset of the first `&&` operand
      * @return false|null
      */
     public static function analyze(
@@ -84,7 +82,7 @@ final class LoopAnalyzer
         ?Context &$continue_context = null,
         bool $is_do = false,
         bool $always_enters_loop = false,
-        int $deciding_conditions_start = 0,
+        bool $only_last_condition_decides = false,
     ): ?bool {
         $traverser = new PhpParser\NodeTraverser;
 
@@ -116,10 +114,12 @@ final class LoopAnalyzer
         // the variables evaluating the condition writes, with what they hold once it is evaluated
         $condition_written_var_ids = [];
 
+        // only the last of the comma separated conditions of a for decides whether the loop goes on
+        $first_deciding_condition = $only_last_condition_decides ? count($pre_conditions) - 1 : 0;
+
         if ($pre_conditions) {
             foreach ($pre_conditions as $i => $pre_condition) {
-                // only the last of the comma separated conditions of a for decides whether the loop goes on
-                if ($i < $deciding_conditions_start) {
+                if ($i < $first_deciding_condition) {
                     $pre_condition_clauses[$i] = [];
 
                     continue;
@@ -178,6 +178,7 @@ final class LoopAnalyzer
                         $loop_parent_context,
                         $is_do,
                         written_var_ids: $condition_written_var_ids,
+                        decides: $condition_offset >= $first_deciding_condition,
                     );
                 }
             }
@@ -257,6 +258,7 @@ final class LoopAnalyzer
                         $loop_parent_context,
                         $is_do,
                         written_var_ids: $first_condition_written_var_ids,
+                        decides: $condition_offset >= $first_deciding_condition,
                     );
                 }
             }
@@ -500,6 +502,7 @@ final class LoopAnalyzer
                             $loop_parent_context,
                             false,
                             written_var_ids: $condition_written_var_ids,
+                            decides: $condition_offset >= $first_deciding_condition,
                         );
                     }
                 }
@@ -793,8 +796,8 @@ final class LoopAnalyzer
             $post_expressions,
         );
 
-        // all the comma separated conditions of a for are evaluated, but only the first operand of the `&&`
-        foreach (array_slice($pre_conditions, 0, $deciding_conditions_start + 1) as $evaluated) {
+        // all the comma separated conditions of a for are evaluated, but only the first operand of the && of a while
+        foreach ($only_last_condition_decides ? $pre_conditions : array_slice($pre_conditions, 0, 1) as $evaluated) {
             self::addAlwaysWrittenVarIds(
                 $evaluated,
                 $loop_context->self,
@@ -810,7 +813,7 @@ final class LoopAnalyzer
             $deciding_condition = null;
 
             foreach ($pre_conditions as $i => $pre_condition) {
-                if ($i >= $deciding_conditions_start) {
+                if (!$only_last_condition_decides || $i === count($pre_conditions) - 1) {
                     $deciding_condition = $deciding_condition
                         ? new VirtualBooleanAnd($deciding_condition, $pre_condition, $pre_condition->getAttributes())
                         : $pre_condition;
@@ -1067,9 +1070,6 @@ final class LoopAnalyzer
             $context->protected_var_ids,
         );
 
-        // the operands of the `&&` of the last condition of a for are the ones that decide
-        $deciding_conditions_start = $stmt instanceof PhpParser\Node\Stmt\For_ ? max(0, count($stmt->cond) - 1) : 0;
-
         if (self::analyze(
             $statements_analyzer,
             $stmt->stmts,
@@ -1079,7 +1079,7 @@ final class LoopAnalyzer
             $inner_loop_context,
             false,
             false,
-            $deciding_conditions_start,
+            $stmt instanceof PhpParser\Node\Stmt\For_,
         ) === false) {
             return false;
         }
@@ -1114,8 +1114,10 @@ final class LoopAnalyzer
             self::addVarsWrittenByTheExitingCondition($context, $loop_scope);
 
             // the condition is evaluated before the loop is left, whatever happens in the body: all the
-            // comma separated expressions of a for, but only the first operand of the `&&`
-            $evaluated_conditions = array_slice($pre_conditions, 0, $deciding_conditions_start + 1);
+            // comma separated expressions of a for, but only the first operand of the && of a while
+            $evaluated_conditions = $stmt instanceof PhpParser\Node\Stmt\For_
+                ? $pre_conditions
+                : array_slice($pre_conditions, 0, 1);
 
             $defined_here = [];
 
@@ -1838,6 +1840,8 @@ final class LoopAnalyzer
      * @param  array<string, Union> $vars_after_condition the variables the condition changes, for a do-while
      * @param  array<string, Union> $written_var_ids gets the variables evaluating the condition writes, with what they
      *                                               hold once it is evaluated
+     * @param  bool $decides whether the body only runs where the condition is true (not a comma separated condition
+     *                       of a for before the last one)
      * @return list<string>
      */
     private static function applyPreConditionToLoopContext(
@@ -1849,22 +1853,37 @@ final class LoopAnalyzer
         bool $is_do,
         array &$vars_after_condition = [],
         array &$written_var_ids = [],
+        bool $decides = true,
     ): array {
         $vars_before_condition = self::copyWithoutReferences($loop_context->vars_in_scope);
         $pre_referenced_var_ids = $loop_context->cond_referenced_var_ids;
         $loop_context->cond_referenced_var_ids = [];
 
+        $condition_start = (int) $pre_condition->getAttribute('startFilePos');
+        $condition_end = (int) $pre_condition->getAttribute('endFilePos');
+
+        // what the condition assigned in a previous pass is assigned again, not before it (see vars_assigned_in_and)
+        $assigned_by_previous_evaluation = array_filter(
+            $loop_context->assigned_var_ids,
+            static fn(int $offset): bool => $offset >= $condition_start && $offset <= $condition_end,
+        );
+        $loop_context->assigned_var_ids = array_diff_key(
+            $loop_context->assigned_var_ids,
+            $assigned_by_previous_evaluation,
+        );
+
         $was_inside_conditional = $loop_context->inside_conditional;
 
         $loop_context->inside_conditional = true;
 
-        if (ExpressionAnalyzer::analyze($statements_analyzer, $pre_condition, $loop_context) === false) {
-            $loop_context->inside_conditional = $was_inside_conditional;
+        $analysed = ExpressionAnalyzer::analyze($statements_analyzer, $pre_condition, $loop_context);
 
+        $loop_context->assigned_var_ids += $assigned_by_previous_evaluation;
+        $loop_context->inside_conditional = $was_inside_conditional;
+
+        if ($analysed === false) {
             return [];
         }
-
-        $loop_context->inside_conditional = $was_inside_conditional;
 
         if ($pre_condition_clauses !== []) {
             // not cached: the types of the operands can change from one pass to the next
@@ -1890,9 +1909,6 @@ final class LoopAnalyzer
 
         // a variable is assigned at the position of the assignment; what it holds once the condition is evaluated,
         // before the condition is assumed true, is what the loop is left with, whichever pass evaluated it
-        $condition_start = (int) $pre_condition->getAttribute('startFilePos');
-        $condition_end = (int) $pre_condition->getAttribute('endFilePos');
-
         foreach ($loop_context->assigned_var_ids as $written_var_id => $assigned_offset) {
             if ($assigned_offset >= $condition_start && $assigned_offset <= $condition_end) {
                 foreach ($loop_context->vars_in_scope as $var_id => $type) {
@@ -1902,6 +1918,20 @@ final class LoopAnalyzer
                     ) {
                         $written_var_ids[$var_id] = Type::combineUnionTypes($written_var_ids[$var_id] ?? null, $type);
                     }
+                }
+            }
+        }
+
+        // where an `&&` is true, both of its operands ran: what they assigned is defined, even if it was not where the
+        // right one may have been skipped
+        if ($decides
+            && ($pre_condition instanceof PhpParser\Node\Expr\BinaryOp\BooleanAnd
+                || $pre_condition instanceof PhpParser\Node\Expr\BinaryOp\LogicalAnd)
+        ) {
+            foreach ($loop_context->vars_assigned_in_and as $var_id => $_) {
+                if (isset($loop_context->vars_in_scope[$var_id])) {
+                    $loop_context->vars_in_scope[$var_id] = $loop_context->vars_in_scope[$var_id]
+                        ->setPossiblyUndefined(false);
                 }
             }
         }

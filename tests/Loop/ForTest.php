@@ -48,6 +48,17 @@ final class ForTest extends TestCase
                         echo $x;
                     }',
             ],
+            'clauseOfTheLeftOperandOfTheAndOfTheConditionHoldsInTheBody' => [
+                'code' => '<?php
+                    function f(?string $a, ?string $b, bool $more): void {
+                        for (; ($a !== null || $b !== null) && $more;) {
+                            if ($a === null) {
+                                echo strlen($b);
+                            }
+                            $more = (bool) rand(0, 1);
+                        }
+                    }',
+            ],
             'varUnsetBeforeContinueAndAssignedByThePostExpressionStaysDefined' => [
                 'code' => '<?php
                     function f(): int {
@@ -676,12 +687,30 @@ final class ForTest extends TestCase
                     }',
                 'error_message' => 'RiskyTruthyFalsyComparison - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:49',
             ],
-            'operandOfTheAndOfTheConditionIsRedundant' => [
+            'varAssignedRightOfAndInACommaSeparatedConditionBeforeTheLastIsPossiblyUndefinedInTheBody' => [
                 'code' => '<?php
-                    function f(stdClass $o): void {
-                        for ($i = 0; $o && $i < 3; $i++) {}
+                    function f(string $s, bool $b): void {
+                        for ($i = 0; $b && false !== $j = strpos($s, ":"), $i < 3; $i++) {
+                            echo $j;
+                        }
                     }',
-                'error_message' => 'RedundantCondition - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:38',
+                'error_message' => 'PossiblyUndefinedVariable - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:34',
+            ],
+            'varAssignedInTheBodyIsPossiblyUndefinedAfterALoopWhoseLastConditionIsAnAnd' => [
+                'code' => '<?php
+                    function f(bool $a, bool $b): void {
+                        for (; true, $a && $b;) {
+                            $x = 1;
+                            break;
+                        }
+                        echo $x;
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:30',
+            ],
+            'classCheckedMissingOnTheLeftOfAndInTheConditionIsUndefinedOnTheRight' => [
+                'code' => '<?php
+                    for (; class_exists(Optional::class) === false && Optional::available();) {}',
+                'error_message' => 'UndefinedClass',
             ],
             'forBreakBeforeDefinitionAndBreakAfter' => [
                 'code' => '<?php

@@ -10,7 +10,6 @@ use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 
 use function array_merge;
-use function array_slice;
 use function count;
 use function is_string;
 
@@ -57,29 +56,15 @@ final class ForAnalyzer
         $while_true = !$stmt->cond
             || LoopAnalyzer::isAlwaysTruthyCondition($statements_analyzer, $stmt->cond[count($stmt->cond) - 1]);
 
-        // the operands of the `&&` of the last condition are analysed one after the other, like those of a while
-        $and_operands = $stmt->cond ? WhileAnalyzer::getAndExpressions($stmt->cond[count($stmt->cond) - 1]) : [];
-
-        if (LoopAnalyzer::analyzeForOrWhile(
+        return LoopAnalyzer::analyzeForOrWhile(
             $statements_analyzer,
             $stmt,
             $context,
             $while_true,
             $init_var_types,
             $assigned_var_ids,
-            [...array_slice($stmt->cond, 0, -1), ...$and_operands],
+            $stmt->cond,
             $stmt->loop,
-        ) === false) {
-            return false;
-        }
-
-        // with the types of the last pass, as the `&&` would check them
-        if (count($and_operands) > 1) {
-            foreach ($and_operands as $and_operand) {
-                IfConditionalAnalyzer::handleParadoxicalCondition($statements_analyzer, $and_operand);
-            }
-        }
-
-        return null;
+        );
     }
 }
