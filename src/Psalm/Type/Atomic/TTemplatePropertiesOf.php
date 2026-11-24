@@ -41,7 +41,7 @@ final class TTemplatePropertiesOf extends Atomic
     }
 
     #[Override]
-    public function getId(bool $exact = true, bool $nested = false): string
+    public function getId(bool $exact = true): string
     {
         if (!$exact) {
             return $this->getKey();
