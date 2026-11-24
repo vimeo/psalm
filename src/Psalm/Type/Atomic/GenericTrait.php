@@ -97,7 +97,7 @@ trait GenericTrait
     }
 
     #[Override]
-    public function getId(bool $exact = true, bool $nested = false): string
+    public function getId(bool $exact = true): string
     {
         [$type_params, $purity_args] = $this->getTypeParamsAndPurityArgs();
 
@@ -111,15 +111,7 @@ trait GenericTrait
         $extra_types = '';
 
         if ($this instanceof TNamedObject) {
-            if ($this->extra_types) {
-                $extra_types = '&' . implode(
-                    '&',
-                    array_map(
-                        static fn(Atomic $type): string => $type->getId($exact, true),
-                        $this->extra_types,
-                    ),
-                );
-            }
+            $extra_types = $this->getIntersectionTypesId($exact);
 
             if ($this->is_static) {
                 $extra_types .= '&static';

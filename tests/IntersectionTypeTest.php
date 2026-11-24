@@ -603,6 +603,19 @@ final class IntersectionTypeTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'objectIntersectedWithTemplateShowsTemplateInParentheses' => [
+                'code' => '<?php
+                    interface I {}
+
+                    /**
+                     * @template T of object
+                     * @param I&T $x
+                     */
+                    function f(object $x): int {
+                        return strlen($x);
+                    }',
+                'error_message' => 'but I&(T:fn-f as object) provided',
+            ],
             'missingPropertyOfAnIntersectionWithAnInterface' => [
                 'code' => '<?php
                     interface I {}

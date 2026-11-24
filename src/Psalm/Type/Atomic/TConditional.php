@@ -79,7 +79,7 @@ final class TConditional extends Atomic
     }
 
     #[Override]
-    public function getId(bool $exact = true, bool $nested = false): string
+    public function getId(bool $exact = true): string
     {
         return '('
             . ($this->subject_type !== null ? $this->subject_type->getId($exact) : $this->param_name)

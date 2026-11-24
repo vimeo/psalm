@@ -130,7 +130,7 @@ final class TIterable extends Atomic
     }
 
     #[Override]
-    public function getId(bool $exact = true, bool $nested = false): string
+    public function getId(bool $exact = true): string
     {
         [$type_params, $purity_args] = $this->getTypeParamsAndPurityArgs();
 

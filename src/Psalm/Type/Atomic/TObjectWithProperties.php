@@ -102,7 +102,7 @@ final class TObjectWithProperties extends TObject
     }
 
     #[Override]
-    public function getId(bool $exact = true, bool $nested = false): string
+    public function getId(bool $exact = true): string
     {
         $extra_types = '';
 
