@@ -48,6 +48,9 @@ final class EmptyAnalyzer
             if ($expr_type->hasBool()
                 && $expr_type->isSingle()
                 && !$expr_type->from_docblock
+                // empty() is how a possibly undefined variable or offset is tested
+                && !$expr_type->possibly_undefined
+                && !$expr_type->possibly_undefined_from_try
             ) {
                 IssueBuffer::maybeAdd(
                     new InvalidArgument(

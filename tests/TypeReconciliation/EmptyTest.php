@@ -102,6 +102,44 @@ final class EmptyTest extends TestCase
                 'assertions' => [],
                 'ignored_issues' => ['RiskyTruthyFalsyComparison'],
             ],
+            'emptyOnBoolDefinedInSomeBranches' => [
+                'code' => '<?php
+                    function f(bool $c): bool {
+                        if ($c) {
+                            $distinct = true;
+                        }
+                        return empty($distinct);
+                    }',
+            ],
+            'emptyOnBoolDefinedInALoop' => [
+                'code' => '<?php
+                    /** @param list<int> $l */
+                    function f(array $l): bool {
+                        foreach ($l as $_) {
+                            $seen = true;
+                        }
+                        return !empty($seen);
+                    }',
+            ],
+            'emptyOnBoolDefinedInATry' => [
+                'code' => '<?php
+                    function g(): void {}
+                    function f(): bool {
+                        try {
+                            $done = true;
+                            g();
+                        } catch (Exception $e) {
+                        }
+                        return empty($done);
+                    }',
+            ],
+            'emptyOnOptionalBoolShapeKey' => [
+                'code' => '<?php
+                    /** @param array{k?: bool} $a */
+                    function f(array $a): bool {
+                        return empty($a["k"]);
+                    }',
+            ],
             'ifNotUndefinedAndEmpty' => [
                 'code' => '<?php
                     $a = !empty($b) ? $b : null;',
@@ -879,6 +917,18 @@ final class EmptyTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'emptyOnDefinedBool' => [
+                'code' => '<?php
+                    function f(bool $c): bool {
+                        if ($c) {
+                            $distinct = true;
+                        } else {
+                            $distinct = false;
+                        }
+                        return empty($distinct);
+                    }',
+                'error_message' => 'InvalidArgument',
+            ],
             'emptyOnOptionalShapeKeyIsRisky' => [
                 'code' => '<?php
                     /** @param array{foo?: string} $arg */
