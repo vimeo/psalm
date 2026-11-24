@@ -584,7 +584,6 @@ final class ClassLikeNodeScanner
                             );
                         }
                     } else {
-                        /** @psalm-suppress PropertyTypeCoercion due to a Psalm bug */
                         $storage->template_types[$template_name][$fq_classlike_name] = Type::getMixed();
                     }
 
