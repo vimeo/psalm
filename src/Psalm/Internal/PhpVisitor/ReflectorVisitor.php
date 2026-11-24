@@ -52,8 +52,10 @@ use function is_string;
 use function preg_match;
 use function reset;
 use function spl_object_id;
+use function str_contains;
 use function strpos;
 use function strtolower;
+use function trim;
 
 /**
  * @internal
@@ -497,6 +499,23 @@ final class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements Fi
                 $var_type = $var_comment->type;
                 /** @psalm-suppress UnusedMethodCall */
                 $var_type->queueClassLikesForScanning($this->codebase, $this->file_storage);
+            }
+
+            // the class of `@psalm-scope-this` is needed to analyse the code it scopes, as the class of a `@var` is
+            if (str_contains($doc_comment->getText(), '@psalm-scope-this')) {
+                try {
+                    $scope_this = DocComment::parsePreservingLength($doc_comment, true)->tags['psalm-scope-this'] ?? [];
+                } catch (DocblockParseException) {
+                    $scope_this = [];
+                }
+
+                $scope_class = $scope_this !== [] ? trim(reset($scope_this)) : '';
+                $scope_fqcn = $scope_class !== '' ? Type::getFQCLNFromString($scope_class, $this->aliases) : '';
+
+                if ($scope_fqcn !== '') {
+                    $this->codebase->scanner->queueClassLikeForScanning($scope_fqcn, false, false);
+                    $this->file_storage->referenced_classlikes[strtolower($scope_fqcn)] = $scope_fqcn;
+                }
             }
         }
 

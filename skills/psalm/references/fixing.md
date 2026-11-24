@@ -11,7 +11,8 @@ vendor/bin/psalter --issues=MissingReturnType,MissingParamType --dry-run src/Foo
 vendor/bin/psalter --issues=MissingReturnType,MissingParamType src/Foo.php
 ```
 
-1. Run with `--dry-run` and read the diff.
+1. Run with `--dry-run` and read the diff. Exit code `2` there means it would change files, not that it
+   failed.
 2. Apply, then rerun Psalm on the same files.
 3. Review types Psalter took from usage, such as `MissingParamType`: they describe how the code is called
    today, which may be narrower or wider than the intent.

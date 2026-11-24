@@ -31,13 +31,18 @@ Fix the flow at the sink, for the kind of sink:
 |---|---|
 | `TaintedSql` | prepared statement with bound parameters (`$pdo->prepare('… WHERE name = ?')`, `execute([$name])`) |
 | `TaintedHtml`, `TaintedTextWithQuotes` | `htmlspecialchars($value)` where the value is put into HTML |
+| `TaintedHtmlAttribute` | quote the attribute value: `src="' . htmlspecialchars($v, ENT_QUOTES) . '"` |
+| `TaintedUrlScheme` | start the URL with a literal path or origin, or check `str_starts_with($url, 'https://')` |
+| `TaintedRedirect` | redirect to a path of the application or a fixed server, or check against an allow-list |
 | `TaintedShell` | `escapeshellarg()` per argument, or pass an array command to `proc_open()` |
 | `TaintedFile`, `TaintedInclude` | resolve against a fixed directory and check the result, or map input to a whitelist |
 | `TaintedHeader`, `TaintedCookie` | validate the value against the expected format |
 | `TaintedSSRF` | check the URL's host against an allow-list |
 
 A value can only carry the taints its type can hold: `(int) $_GET['id']` carries no SQL or HTML, and after
-`in_array($sort, ['name', 'date'], true)` the value is one of the literals and carries nothing.
+`in_array($sort, ['name', 'date'], true)` the value is one of the literals and carries nothing. A pattern
+anchored at both ends works the same way: after `preg_match('/^[a-z0-9_]+$/', $id)`, `$id` carries no taint
+that needs quotes, spaces or slashes.
 
 A check Psalm can't follow still needs declaring. A path kept inside a directory:
 
@@ -99,10 +104,12 @@ Psalm doesn't analyse. More forms: `docs/security_analysis/taint_flow.md`.
 ## False positives
 
 - Output of command-line code reported as `TaintedHtml`: `@psalm-cli-only` on the function, method or class.
+  A caller that may run in a web request then gets `CliOnlyCall`: mark it `@psalm-cli-only` too, or guard
+  the call with `PHP_SAPI === 'cli'`.
 - One helper mixes the taints of all its callers: `@psalm-taint-specialize` on it tracks each call
   separately.
 - Paths through test code: `<taintAnalysis><ignoreFiles><directory name="tests"/></ignoreFiles></taintAnalysis>`.
 - Details and the remaining cases: `docs/security_analysis/index.md`.
 
-Missing findings (a sink you expected is not reported): check that the extension is enabled (`ext-pdo`,
-`ext-mysqli` in `composer.json`, see [config.md](config.md)), then `--dump-taint-graph=taints.dot`.
+Missing findings (a sink you expected is not reported): `--dump-taint-graph=taints.dot` shows the paths
+Psalm followed.

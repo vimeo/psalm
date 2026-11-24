@@ -29,6 +29,71 @@ final class MatchTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'matchFalseNarrowsTheVariablesOfItsConditions' => [
+                'code' => '<?php
+                    function narrowed(int|string $x): int {
+                        return match (false) {
+                            is_string($x) => $x,
+                            default => 0,
+                        };
+                    }
+
+                    function narrowedByTheArmBeforeIt(int|string $x): int {
+                        return match (false) {
+                            is_int($x) => 1,
+                            default => $x,
+                        };
+                    }
+
+                    function comparison(int $i): string {
+                        return match (false) {
+                            $i > 3 => "small",
+                            default => "big",
+                        };
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'matchFalseOverExhaustiveTypeChecksHasNoImpossibleArm' => [
+                'code' => '<?php
+                    function f(int|string $x): int|string {
+                        return match (false) {
+                            is_string($x) => $x,
+                            is_int($x) => $x,
+                        };
+                    }
+
+                    function g(int|string $x): int|string {
+                        return match (true) {
+                            !is_string($x) => $x,
+                            !is_int($x) => $x,
+                        };
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'matchFalseArmWithSeveralConditions' => [
+                'code' => '<?php
+                    function f(int $a, int $b): int {
+                        return match (false) {
+                            $a > 0, $b > 0 => 1,
+                            default => 2,
+                        };
+                    }
+
+                    /** @param int|string $x */
+                    function g($x, bool $flag): string {
+                        return match (false) {
+                            is_int($x), $flag => (string) $x,
+                            default => "",
+                        };
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'exhaustiveMatchOverAnEnumWithMoreCasesThanTheMaximumShapedArraySize' => [
                 'code' => '<?php
                     enum Id: string {
@@ -407,6 +472,48 @@ final class MatchTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'matchFalseArmDoesNotNarrowTheOtherCases' => [
+                'code' => '<?php
+                    function f(int|string $x): int {
+                        return match (false) {
+                            is_string($x) => $x,
+                            default => $x,
+                        };
+                    }',
+                'error_message' => 'InvalidReturnStatement',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'falseComparedToACallOutsideAConditionReportsTheCall' => [
+                'code' => '<?php
+                    function f(int $x): void {
+                        $ok = false === is_int($x);
+                    }',
+                'error_message' => 'RedundantCondition',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'falseComparedToAnImpossibleCallOutsideAConditionReportsTheCall' => [
+                'code' => '<?php
+                    function g(string $x): void {
+                        $ok = false === is_int($x);
+                    }',
+                'error_message' => 'TypeDoesNotContainType',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'matchFalseImpossibleArmIsReported' => [
+                'code' => '<?php
+                    function f(int $x): int {
+                        return match (false) {
+                            is_int($x) => $x,
+                            default => 0,
+                        };
+                    }',
+                'error_message' => 'TypeDoesNotContainType - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:29',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
             'matchOverAnEnumWithMoreCasesThanTheMaximumShapedArraySizeMissingOne' => [
                 'code' => '<?php
                     enum Id: string {

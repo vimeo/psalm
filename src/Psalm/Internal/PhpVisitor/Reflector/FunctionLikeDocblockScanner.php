@@ -64,16 +64,20 @@ use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
 
 use function array_any;
+use function array_column;
 use function array_diff;
 use function array_fill_keys;
 use function array_filter;
+use function array_map;
 use function array_merge;
 use function array_values;
 use function count;
 use function explode;
+use function implode;
 use function in_array;
 use function is_string;
 use function preg_match;
+use function preg_quote;
 use function preg_replace;
 use function str_contains;
 use function str_ends_with;
@@ -2080,6 +2084,15 @@ final class FunctionLikeDocblockScanner
     ): array {
         $storage->template_types = [];
 
+        // a bound may name a template declared after it
+        $declared_template_types = [];
+
+        foreach ($docblock_info->templates as $template_map) {
+            $declared_template_types[$template_map[0]] = ['fn-' . strtolower($cased_function_id) => Type::getMixed()];
+        }
+
+        $dependent_bounds = [];
+
         foreach ($docblock_info->templates as $template_map) {
             $template_name = $template_map[0];
 
@@ -2092,16 +2105,28 @@ final class FunctionLikeDocblockScanner
                         throw new DocblockParseException($type_string . ' is not a valid type: '.$e->getMessage());
                     }
                     $type_string = CommentAnalyzer::sanitizeDocblockType($type_string);
+
+                    $other_templates = array_map(
+                        preg_quote(...),
+                        array_diff(array_column($docblock_info->templates, 0), [$template_name]),
+                    );
+
+                    if ($other_templates !== []
+                        && preg_match('/\\b(?:' . implode('|', $other_templates) . ')\\b/', $type_string)
+                    ) {
+                        $dependent_bounds[$template_name] = $type_string;
+                    }
+
                     try {
                         $template_type = TypeParser::parseTokens(
                             TypeTokenizer::getFullyQualifiedTokens(
                                 $type_string,
                                 $aliases,
-                                $storage->template_types + ($template_types ?: []),
+                                $storage->template_types + ($template_types ?: []) + $declared_template_types,
                                 $type_aliases,
                             ),
                             null,
-                            $storage->template_types + ($template_types ?: []),
+                            $storage->template_types + ($template_types ?: []) + $declared_template_types,
                             $type_aliases,
                         );
                     } catch (TypeParseTreeException $e) {
@@ -2134,6 +2159,46 @@ final class FunctionLikeDocblockScanner
                 $storage->template_types[$template_name] = [
                     'fn-' . strtolower($cased_function_id) => $template_type,
                 ];
+            }
+        }
+
+        // a bound read another template before that template's own bound was final
+        for ($pass = count($dependent_bounds); $pass > 0; $pass--) {
+            $settled = true;
+
+            foreach ($dependent_bounds as $template_name => $type_string) {
+                if (!isset($storage->template_types[$template_name])) {
+                    continue;
+                }
+
+                $known_template_types = $storage->template_types + ($template_types ?? []);
+
+                try {
+                    $bound = TypeParser::parseTokens(
+                        TypeTokenizer::getFullyQualifiedTokens(
+                            $type_string,
+                            $aliases,
+                            $known_template_types,
+                            $type_aliases,
+                        ),
+                        null,
+                        $known_template_types,
+                        $type_aliases,
+                    );
+                } catch (TypeParseTreeException) {
+                    continue;
+                }
+
+                $defining_id = 'fn-' . strtolower($cased_function_id);
+
+                if ($bound->getId() !== $storage->template_types[$template_name][$defining_id]->getId()) {
+                    $storage->template_types[$template_name][$defining_id] = $bound;
+                    $settled = false;
+                }
+            }
+
+            if ($settled) {
+                break;
             }
         }
 

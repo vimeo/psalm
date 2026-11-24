@@ -53,6 +53,7 @@ use Psalm\IssueBuffer;
 use Psalm\StatementsSource;
 use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Storage\MethodStorage;
+use Psalm\Storage\TemplateVariance;
 use Psalm\Type;
 use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TNamedObject;
@@ -121,6 +122,42 @@ final class ReturnTypeAnalyzer
                 $return_type_parts[] = new Union([new TNull(true)]);
                 break;
             }
+        }
+
+        return $return_type_parts;
+    }
+
+    /**
+     * Replaces the never found when the end of the body is reachable and every return type found is never
+     * (a body whose only early exit is a throw) with the void returned by the end of the body.
+     *
+     * @param list<Union> $return_type_parts
+     * @param array<PhpParser\Node\Stmt> $function_stmts
+     * @return list<Union>
+     */
+    public static function addImplicitVoidReturn(
+        array $return_type_parts,
+        bool $has_yield,
+        array $function_stmts,
+        NodeDataProvider $type_provider,
+        bool $did_explicitly_return,
+    ): array {
+        if (!$return_type_parts || $has_yield || $did_explicitly_return) {
+            return $return_type_parts;
+        }
+
+        foreach ($return_type_parts as $return_type_part) {
+            if (!$return_type_part->isNever()) {
+                return $return_type_parts;
+            }
+        }
+
+        if (in_array(
+            ScopeAnalyzer::ACTION_NONE,
+            ScopeAnalyzer::getControlActions($function_stmts, $type_provider, [], true, true),
+            true,
+        )) {
+            return [Type::getVoid()];
         }
 
         return $return_type_parts;
@@ -1213,9 +1250,8 @@ final class ReturnTypeAnalyzer
             [],
             false,
             $inherited,
-            false,
+            $function_like_analyzer instanceof MethodAnalyzer ? TemplateVariance::Covariant : null,
             $context,
-            $function_like_analyzer instanceof MethodAnalyzer,
         );
 
         return $checker->check($type);

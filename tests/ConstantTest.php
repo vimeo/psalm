@@ -548,6 +548,60 @@ final class ConstantTest extends TestCase
                 'ignored_issues' => ['MissingClassConstType'],
                 'php_version' => '8.3',
             ],
+            'constantOfANullableObjectCheckedForNullIsTheConstantOfItsClass' => [
+                'code' => '<?php
+                    final class A {
+                        public const NAME = "a";
+                    }
+
+                    /** @var A|null $a */
+                    $a = rand(0, 1) ? new A() : null;
+                    $name = $a === null ? "" : $a::NAME;',
+                'assertions' => [
+                    '$name===' => "''|'a'",
+                ],
+            ],
+            'constantOfAnObjectOfSeveralClassesIsTheConstantOfEach' => [
+                'code' => '<?php
+                    final class A {
+                        const NAME = 10;
+                    }
+
+                    final class D {
+                        const NAME = "x";
+                    }
+
+                    function object(): A|D {
+                        return new A();
+                    }
+
+                    $object = object();
+                    $name = $object::NAME;',
+                'assertions' => [
+                    '$name===' => '\'x\'|10',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'constantOfAnObjectWithAnUnknownClassIsNotTheConstantOfTheOthers' => [
+                'code' => '<?php
+                    final class A {
+                        const NAME = 10;
+                    }
+
+                    /** @return Missing */
+                    function missing() {
+                        throw new Exception();
+                    }
+
+                    $object = rand(0, 1) ? new A() : missing();
+                    $name = $object::NAME;',
+                'assertions' => [
+                    '$name===' => 'mixed',
+                ],
+                'ignored_issues' => ['UndefinedDocblockClass', 'MixedAssignment', 'InvalidReturnType', 'InvalidReturnStatement'],
+                'php_version' => '8.0',
+            ],
             'importedConstantShadowsAPhpConstantInAParameterDefault' => [
                 'code' => '<?php
                     namespace One {
@@ -3192,6 +3246,22 @@ final class ConstantTest extends TestCase
                     }
                 ',
             ],
+            'constantInheritedThroughParentClassAndInterfaceIsNotAmbiguous' => [
+                'code' => <<<'PHP'
+                    <?php
+                    interface NodeInterface {
+                        public const KEY = 'key';
+                    }
+
+                    interface FieldInterface extends NodeInterface {}
+                    interface RootInterface extends NodeInterface {}
+                    interface PaginationInterface extends RootInterface {}
+
+                    abstract class Field implements FieldInterface {}
+
+                    abstract class Pagination extends Field implements PaginationInterface {}
+                    PHP,
+            ],
         ];
     }
 
@@ -3239,6 +3309,46 @@ final class ConstantTest extends TestCase
                 'error_message' => 'TypeDoesNotContainType',
                 'error_levels' => [],
                 'php_version' => '8.3',
+            ],
+            'constantOfAPossiblyNullObjectIsAnUndefinedClass' => [
+                'code' => '<?php
+                    final class A {
+                        public const NAME = "a";
+                    }
+
+                    function name(?A $a): string {
+                        return $a::NAME;
+                    }',
+                'error_message' => 'UndefinedClass - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:32 - Type null cannot be used as a class',
+            ],
+            'constantOfAnObjectOfANonFinalClassWithAnUntypedConstantIsMixed' => [
+                'code' => '<?php
+                    class A {
+                        const N = "a";
+                    }
+
+                    function concat(A $a): string {
+                        return "<" . $a::N;
+                    }',
+                'error_message' => 'MixedOperand',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'constantMissingFromOneClassOfAnObjectIsUndefined' => [
+                'code' => '<?php
+                    final class A {
+                        const NAME = 10;
+                    }
+
+                    final class B {}
+
+                    /** @param A|B $object */
+                    function name($object): int {
+                        return $object::NAME;
+                    }',
+                'error_message' => 'UndefinedConstant - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:32 - Constant B::NAME is not defined',
+                'error_levels' => [],
+                'php_version' => '8.0',
             ],
             'overrideWideningTheNativeTypeOfTheParentConstant' => [
                 'code' => '<?php
@@ -3796,6 +3906,23 @@ final class ConstantTest extends TestCase
                     {
                     }
                 ',
+                'error_message' => 'AmbiguousConstantInheritance',
+            ],
+            'constantInheritedThroughParentClassFromAnotherInterfaceIsAmbiguous' => [
+                'code' => <<<'PHP'
+                    <?php
+                    interface FieldInterface {
+                        public const KEY = 'field';
+                    }
+
+                    interface PaginationInterface {
+                        public const KEY = 'pagination';
+                    }
+
+                    abstract class Field implements FieldInterface {}
+
+                    abstract class Pagination extends Field implements PaginationInterface {}
+                    PHP,
                 'error_message' => 'AmbiguousConstantInheritance',
             ],
             'overrideClassConstFromInterface' => [
