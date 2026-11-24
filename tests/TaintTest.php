@@ -2216,6 +2216,13 @@ final class TaintTest extends TestCase
 
                     remember((string) $_GET["user"]);',
             ],
+            'partTheAnalysisDoesntKnowIsAValueWhenKnownTextOrANumberFollows' => [
+                'code' => '<?php
+                    function run(PDO $pdo, int $id): void {
+                        $pdo->exec("UPDATE users SET bio = " . $pdo->quote($_GET["bio"]) . " WHERE id = " . $id);
+                        echo (string) $pdo->query("SELECT name FROM users")->fetch()["name"];
+                    }',
+            ],
             'rowOfATableNothingStoresIntoIsNoSource' => [
                 'code' => '<?php
                     function show(PDO $pdo, mysqli_result $result): void {
@@ -2302,7 +2309,7 @@ final class TaintTest extends TestCase
                     }
 
                     function show(PDO $pdo, string $table): void {
-                        echo (string) $pdo->query("SELECT * FROM $table")->fetch()["name"];
+                        echo (string) $pdo->query("SELECT * FROM $table LIMIT 1")->fetch()["name"];
                     }',
             ],
             'columnsStoredFromOneValueStayApartInAllColumns' => [
@@ -8909,6 +8916,25 @@ final class TaintTest extends TestCase
 
                     function show(PDO $pdo): void {
                         echo (string) $pdo->query("SELECT name FROM users")->fetch()["name"];
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'statementEndingWithAPartTheAnalysisDoesntKnowCantBeParsed' => [
+                'code' => '<?php
+                    function run(PDO $pdo, string $id): void {
+                        $pdo->exec("UPDATE users SET bio = " . $pdo->quote($_GET["bio"]) . " WHERE id = " . $id);
+                        echo (string) $pdo->query("SELECT name FROM users")->fetch()["name"];
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'selectOfATableNotKnownEndingTheQueryCanReadAnyColumn' => [
+                'code' => '<?php
+                    function store(PDO $pdo): void {
+                        $pdo->prepare("INSERT INTO users (name, bio) VALUES (?, ?)")->execute(["admin", $_GET["bio"]]);
+                    }
+
+                    function show(PDO $pdo, string $table): void {
+                        echo (string) $pdo->query("SELECT * FROM $table")->fetch()["name"];
                     }',
                 'error_message' => 'TaintedHtml',
             ],

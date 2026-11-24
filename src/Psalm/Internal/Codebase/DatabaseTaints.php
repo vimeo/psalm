@@ -16,7 +16,11 @@ use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Type\Atomic\TArray;
+use Psalm\Type\Atomic\TBool;
+use Psalm\Type\Atomic\TFloat;
+use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TKeyedArray;
+use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Union;
 
 use function count;
@@ -349,11 +353,12 @@ final class DatabaseTaints
 
         $holes = [];
         $sql = self::getText($statements_analyzer, $sql_arg->value, $holes);
-        $parsed = SqlStatement::parse($sql);
+        $parsed = SqlStatement::parse($sql, self::getNumberHoles($statements_analyzer, $holes));
 
         $statement = self::getStatementNode($statements_analyzer, $graph, $spec, $args, $call_location);
 
-        // a query that can't be parsed can store and read anything
+        // a query that can't be parsed can store and read anything: any column, and the rows of any table as a
+        // `SELECT *` reads them
 
         if (isset($spec['params'])) {
             foreach ($args[$spec['params']] ?? [] as $params_arg) {
@@ -380,7 +385,7 @@ final class DatabaseTaints
                 'reads' => [[
                     'keys' => [],
                     'any_key' => true,
-                    'all_columns' => false,
+                    'all_columns' => true,
                     'value' => ['holes' => [], 'placeholders' => [], 'columns' => [[null, null]]],
                 ]],
             ];
@@ -445,10 +450,6 @@ final class DatabaseTaints
                 }
             }
 
-            if ($read['any_key']) {
-                $graph->addPath($read_node, $row_node, 'arrayvalue-assignment');
-            }
-
             foreach ($read['keys'] as $key) {
                 // a node of its own for each key: there is one edge between two nodes
                 $key_node = DataFlowNode::getForAssignment('database column #' . $offset . ' ' . $key, $call_location);
@@ -471,6 +472,11 @@ final class DatabaseTaints
                     'database column #' . $offset,
                     $call_location,
                 );
+            }
+
+            // after the columns by position: it replaces their edge, as any key holds them
+            if ($read['any_key']) {
+                $graph->addPath($read_node, $row_node, 'arrayvalue-assignment');
             }
         }
 
@@ -1075,6 +1081,36 @@ final class DatabaseTaints
         $holes[] = $expr;
 
         return SqlStatement::HOLE_MARKER . (count($holes) - 1) . SqlStatement::HOLE_MARKER;
+    }
+
+    /**
+     * The holes whose text is a number (an int, a float, a bool or null): they can't hold SQL
+     *
+     * @param list<Expr> $holes
+     * @return list<int>
+     * @psalm-capabilities read-props
+     */
+    private static function getNumberHoles(StatementsAnalyzer $statements_analyzer, array $holes): array
+    {
+        $number_holes = [];
+        foreach ($holes as $offset => $hole) {
+            $type = $statements_analyzer->node_data->getType($hole);
+            if ($type === null) {
+                continue;
+            }
+
+            foreach ($type->getAtomicTypes() as $atomic) {
+                if (!$atomic instanceof TInt && !$atomic instanceof TFloat && !$atomic instanceof TBool
+                    && !$atomic instanceof TNull
+                ) {
+                    continue 2;
+                }
+            }
+
+            $number_holes[] = $offset;
+        }
+
+        return $number_holes;
     }
 
     /**
