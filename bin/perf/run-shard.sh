@@ -69,6 +69,31 @@ while IFS= read -r setting; do
     PHP_FLAGS+=(-d "$setting")
 done < <(jq -r '.php_ini | to_entries[] | "\(.key)=\(.value)"' "$CORPUS")
 
+# profile_blocker <psalm dir>: why that side cannot profile its runs, empty if it can. It needs a successful
+# `--help` that declares the option (a 6.x PR or an old merge-base may not); a bare `--debug-performance` is an
+# older, other option.
+profile_blocker() {
+    local help
+    help="$(php "${PHP_FLAGS[@]}" "$1/psalm" --help 2>&1)" || { echo "--help failed"; return 0; }
+    grep -qE '^[[:space:]]+--debug-performance\[=PATH\]' <<< "$help" || echo "no --debug-performance[=PATH]"
+}
+
+# Both sides profile their measured runs, or neither does (the cost must be the same). A PR that changes the
+# profiler itself would be judged on its own cost, so it is not profiled; the checkouts are compared as directories
+# because the head checkout is shallow. profile-support.json tells the report why a run was not profiled.
+BASE_REASON="$(profile_blocker "$BASE_DIR")"
+HEAD_REASON="$(profile_blocker "$HEAD_DIR")"
+if [ -z "$BASE_REASON$HEAD_REASON" ] \
+    && ! diff -rq "$BASE_DIR/src/Psalm/Internal/Perf" "$HEAD_DIR/src/Psalm/Internal/Perf" > /dev/null 2>&1; then
+    HEAD_REASON='src/Psalm/Internal/Perf changed'
+fi
+PROFILE_REASONS="$(jq -nc --arg b "$BASE_REASON" --arg h "$HEAD_REASON" \
+    '{base: $b, head: $h} | with_entries(select(.value != ""))')"
+PROFILING=''
+if [ "$PROFILE_REASONS" = '{}' ]; then PROFILING=1; else echo "run-shard: runs are not profiled: $PROFILE_REASONS" >&2; fi
+jq -nc --argjson r "$PROFILE_REASONS" --argjson p "$([ -n "$PROFILING" ] && echo true || echo false)" \
+    '{profiled: $p, reasons: $r}' > "$OUT/profile-support.json"
+
 cpu_model() {
     if [ "$(uname -s)" = Darwin ]; then sysctl -n machdep.cpu.brand_string
     else sed -n 's/^model name[[:space:]]*: //p' /proc/cpuinfo | sed -n '1p'
@@ -199,7 +224,7 @@ classify() {
     fi
 }
 
-# run_once <base|head> <n>: one analysis, recorded as $RUNDIR/<rev>-<n>.json (+ .log, .report.json).
+# run_once <base|head> <n>: one analysis, recorded as $RUNDIR/<rev>-<n>.json (+ .log, .report.json, .profile.json).
 run_once() {
     local rev=$1 n=$2 psalm_dir prefix rc=0 start end wall mb='' tail_text=''
     psalm_dir=$BASE_DIR
@@ -210,7 +235,7 @@ run_once() {
     (cd "$PROJ" && /usr/bin/time "$TIME_FLAG" -o "$prefix.time" "$TIMEOUT_BIN" -k 20 "$TIMEOUT" \
         php "${PHP_FLAGS[@]}" "$psalm_dir/psalm" --root="$PROJ" -c "$PROJ/psalm-perf.xml" --no-cache --no-progress \
         --ignore-baseline --threads=1 --output-format=console --report="$prefix.report.json" \
-        --memory-limit="$MEMORY_LIMIT") > "$prefix.log" 2>&1 < /dev/null || rc=$?
+        --memory-limit="$MEMORY_LIMIT" ${PROFILING:+"--debug-performance=$prefix.profile.json"}) > "$prefix.log" 2>&1 < /dev/null || rc=$?
     end="$(now)"
     wall="$(elapsed "$start" "$end")"
 
@@ -260,7 +285,8 @@ aggregate() {
         }' "$RUNDIR/$1"-[0-9].json
 }
 
-# write_result <base|head> <sha>: <out>/<rev>/<project>.json and, for an ok run, .issues.json.
+# write_result <base|head> <sha>: <out>/<rev>/<project>.json and, for an ok run, .issues.json and .profile.json
+# (from the first run, like the status).
 write_result() {
     local rev=$1 sha=$2 result report count
     result="$(aggregate "$rev" "$sha")"
@@ -268,6 +294,12 @@ write_result() {
     if [ "$(jq -r '.status' <<< "$result")" = ok ]; then
         if count="$(php "$SCRIPT_DIR/perf.php" normalize "$report" "$PROJ" "$OUT/$rev/$NAME.issues.json")"; then
             result="$(jq --argjson c "$count" '.issue_count = $c' <<< "$result")"
+            if [ -s "$RUNDIR/$rev-1.profile.json" ]; then
+                cp "$RUNDIR/$rev-1.profile.json" "$OUT/$rev/$NAME.profile.json" \
+                    || echo "run-shard: $NAME: cannot keep the $rev profile" >&2
+            elif [ -n "$PROFILING" ]; then
+                echo "run-shard: $NAME: Psalm wrote no $rev profile" >&2
+            fi
         else
             rm -f "$OUT/$rev/$NAME.issues.json"
             result="$(jq '.status = "error" | .reason = "issue normalisation failed" | .psalm_mb = null' <<< "$result")"

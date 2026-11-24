@@ -155,6 +155,21 @@ final class CallableTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'callableOfATemplatedReturnMayBeAClosure' => [
+                'code' => '<?php
+                    /**
+                     * @template TReturn
+                     * @param (callable(mixed...): TReturn) $callable
+                     */
+                    function parallel(callable $callable): bool
+                    {
+                        if ($callable instanceof \\Closure) {
+                            return true;
+                        }
+
+                        return false;
+                    }',
+            ],
             'callableOfThisInATraitIsTheObjectTheMethodIsCalledOn' => [
                 'code' => '<?php
                     final class Str {
