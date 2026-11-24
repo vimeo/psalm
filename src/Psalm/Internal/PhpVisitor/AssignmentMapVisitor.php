@@ -464,6 +464,9 @@ final class AssignmentMapVisitor extends PhpParser\NodeVisitorAbstract
         return $this->loop_written_var_ids;
     }
 
+    /**
+     * @psalm-capabilities read-props|write-this-props|write-refs
+     */
     #[Override]
     public function leaveNode(PhpParser\Node $node): null
     {
@@ -480,18 +483,27 @@ final class AssignmentMapVisitor extends PhpParser\NodeVisitorAbstract
         return null;
     }
 
+    /**
+     * @psalm-capabilities read-props|write-this-props|write-refs
+     */
     private function addWrittenVarId(string $var_id): void
     {
         $this->written_var_ids[$var_id] = true;
         $this->addLoopWrittenVarId($var_id);
     }
 
+    /**
+     * @psalm-capabilities read-props|write-this-props|write-refs
+     */
     private function addDefinedVarId(string $var_id): void
     {
         $this->defined_var_ids[$var_id] = true;
         $this->addLoopWrittenVarId($var_id);
     }
 
+    /**
+     * @psalm-capabilities read-props|write-this-props|write-refs
+     */
     private function addLoopWrittenVarId(string $var_id): void
     {
         // a function declared in the loop has its own variables, but the objects are shared, and so is `$this` with a
