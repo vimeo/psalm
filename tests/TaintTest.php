@@ -2323,6 +2323,13 @@ final class TaintTest extends TestCase
                         echo (string) $pdo->query("SELECT * FROM accounts")->fetch()["email"];
                     }',
             ],
+            'insertFormatStoresItsDataInTheListedColumns' => [
+                'code' => '<?php
+                    function run(PDO $pdo): void {
+                        $pdo->exec("INSERT INTO users (bio) FORMAT JSONEachRow " . $pdo->quote($_GET["bio"]));
+                        echo (string) $pdo->query("SELECT name FROM users")->fetch()["name"];
+                    }',
+            ],
             'columnOfAnyCaseStaysApartInAllColumns' => [
                 'code' => '<?php
                     function store(PDO $pdo): void {

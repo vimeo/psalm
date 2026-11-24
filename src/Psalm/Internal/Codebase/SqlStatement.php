@@ -78,6 +78,9 @@ final class SqlStatement
 
     private int $placeholder_count = 0;
 
+    /** Whether the statement ends with the data of an INSERT ... FORMAT (ClickHouse), which can't hold SQL */
+    private bool $ends_with_data = false;
+
     /**
      * @param list<Token> $tokens
      */
@@ -129,7 +132,7 @@ final class SqlStatement
             $result = $parser->parseStatement();
             $statement = [];
 
-            if ($result === null || $ends_with_hole) {
+            if ($result === null || ($ends_with_hole && !$parser->ends_with_data)) {
                 return null;
             }
 
@@ -149,6 +152,7 @@ final class SqlStatement
      */
     private function parseStatement(): ?array
     {
+        $this->ends_with_data = false;
         $first = $this->peekWord();
 
         if ($first === 'select' || (($this->tokens[0][0] ?? '') === '(' && $this->containsWordAtDepth('select', 1))) {
@@ -274,6 +278,18 @@ final class SqlStatement
             }
         } elseif ($word === 'default') {
             $this->position += 2;
+        } elseif ($word === 'format') {
+            // INSERT INTO t (a, b) FORMAT JSONEachRow ... (ClickHouse): the parts of the data (up to the end: nothing
+            // follows it) the analysis doesn't know can be in any of the columns, and the data names no column of a
+            // table. A name of the format the analysis doesn't know the text of can hold the data.
+            $value = $this->getValue(array_slice($this->tokens, $this->position + 1), []);
+            $value['columns'] = [];
+            $this->position = count($this->tokens);
+            $this->ends_with_data = true;
+
+            foreach ($columns ?? [null] as $column) {
+                $writes[] = ['table' => $table_name, 'column' => $column, 'value' => $value];
+            }
         } else {
             return null;
         }

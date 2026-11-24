@@ -72,6 +72,14 @@ final class SqlStatementTest extends TestCase
             'W users.name <- h[] p[name] c[]; W users.email <- h[] p[email] c[]; '
                 . 'W users.name <- h[] p[] c[]; W users.email <- h[0] p[] c[]',
         ];
+        yield 'the data after FORMAT, which can be in any of the columns' => [
+            'INSERT INTO t (a, b) FORMAT JSONEachRow {"a": %0%}',
+            'W t.a <- h[0] p[] c[]; W t.b <- h[0] p[] c[]',
+        ];
+        yield 'a name of the format the analysis doesn\'t know the text of, which can hold the data' => [
+            'INSERT INTO t (a, b) FORMAT %0%',
+            'W t.a <- h[0] p[] c[]; W t.b <- h[0] p[] c[]',
+        ];
         yield 'INSERT SET' => [
             'INSERT INTO users SET name = ?, bio = CONCAT(?, bio)',
             'W users.name <- h[] p[0] c[]; W users.bio <- h[] p[1] c[users.bio]',

@@ -294,6 +294,7 @@ Psalm reads a part of the SQL it doesn't know the text of as a value when known 
 <?php // --taint-analysis
 function store(PDO $pdo, int $id): void {
     $bio = $pdo->quote($_GET['bio'] ?? '');
+    $pdo->exec("INSERT INTO users (bio) FORMAT JSONEachRow $bio");  // ClickHouse
     $pdo->exec("UPDATE users SET bio = $bio WHERE id = 1");
     $pdo->exec("UPDATE users SET bio = $bio WHERE id = $id");
 }
