@@ -86,6 +86,7 @@ use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNever;
+use Psalm\Type\Atomic\TNonDecimalIntString;
 use Psalm\Type\Atomic\TNonEmptyArray;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TObject;
@@ -98,6 +99,7 @@ use Psalm\Type\Atomic\TTemplateKeyOf;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTemplateParamClass;
 use Psalm\Type\Atomic\TTemplateValueOf;
+use Psalm\Type\Atomic\TTraitString;
 use Psalm\Type\Atomic\TTrue;
 use Psalm\Type\Atomic\TTypeVariable;
 use Psalm\Type\MutableUnion;
@@ -2095,9 +2097,12 @@ final class ArrayFetchAnalyzer
         $has_string = false;
 
         foreach ($offset_type->getAtomicTypes() as $offset_atomic_type) {
+            // a string Psalm knows stays a string key can never be read as an int one
             if ($offset_atomic_type instanceof TString
                 && !$offset_atomic_type instanceof TLiteralString
                 && !$offset_atomic_type instanceof TClassString
+                && !$offset_atomic_type instanceof TNonDecimalIntString
+                && !$offset_atomic_type instanceof TTraitString
             ) {
                 $has_string = true;
             } else {

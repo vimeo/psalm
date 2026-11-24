@@ -4229,6 +4229,19 @@ final class ArrayAccessTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'issetOfANonDecimalIntStringOffsetOfIntKeys' => [
+                'code' => '<?php
+                    /**
+                     * @param array<int, string> $names
+                     * @param non-decimal-int-string $id
+                     */
+                    function has(array $names, string $id): bool {
+                        return isset($names[$id]);
+                    }',
+                'error_message' => 'InvalidArrayOffset',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
             'issetOfAMixedOrStringOffsetIsStillACoercion' => [
                 'code' => '<?php
                     /** @param array<array-key, string> $names */
