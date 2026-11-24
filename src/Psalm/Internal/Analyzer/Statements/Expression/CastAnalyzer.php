@@ -1260,7 +1260,7 @@ final class CastAnalyzer
         $file_manipulation = null;
         if ($maybe_type->from_docblock) {
             $issue = new RedundantCastGivenDocblockType(
-                'Redundant cast to ' . $maybe_type->getKey() . ' given docblock-provided type',
+                'Redundant cast to ' . $maybe_type->getId() . ' given docblock-provided type',
                 new CodeLocation($statements_analyzer->getSource(), $stmt),
             );
 
@@ -1275,7 +1275,7 @@ final class CastAnalyzer
             }
         } else {
             $issue = new RedundantCast(
-                'Redundant cast to ' . $maybe_type->getKey(),
+                'Redundant cast to ' . $maybe_type->getId(),
                 new CodeLocation($statements_analyzer->getSource(), $stmt),
             );
 

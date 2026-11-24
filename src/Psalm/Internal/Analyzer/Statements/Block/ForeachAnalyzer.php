@@ -1469,7 +1469,7 @@ final class ForeachAnalyzer
 
                 $has_valid_iterator = true;
             } elseif ($iterator_atomic_type instanceof Scalar || $iterator_atomic_type instanceof TVoid) {
-                $invalid_iterator_types[] = $iterator_atomic_type->getKey();
+                $invalid_iterator_types[] = $iterator_atomic_type->getId();
 
                 // what the other types of the iterated value hold is still iterated
                 $value_type = Type::getMixed()->setParentNodes($value_type?->parent_nodes ?? []);
@@ -1869,7 +1869,7 @@ final class ForeachAnalyzer
                         && !$type_params[2]->isVoid()
                         && !$type_params[2]->isMixed()
                     ) {
-                        $invalid_iterator_types[] = $iterator_atomic_type->getKey();
+                        $invalid_iterator_types[] = $iterator_atomic_type->getId();
                     } else {
                         $has_valid_iterator = true;
                     }

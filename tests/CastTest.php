@@ -573,6 +573,26 @@ final class CastTest extends TestCase
     #[Override]
     public static function providerInvalidCodeParse(): iterable
     {
+        yield 'redundantCastShowsTheRefinedType' => [
+            'code' => '<?php
+                function f(string $s): string {
+                    if ($s === "") {
+                        return "";
+                    }
+                    return (string) $s;
+                }',
+            'error_message' => 'Redundant cast to non-empty-string',
+        ];
+
+        yield 'redundantCastGivenDocblockTypeShowsTheRefinedType' => [
+            'code' => '<?php
+                /** @param non-empty-string $s */
+                function f($s): string {
+                    return (string) $s;
+                }',
+            'error_message' => 'Redundant cast to non-empty-string given docblock-provided type',
+        ];
+
         yield 'unsetCastIsRemovedInPhpEight' => [
             'code' => '<?php
                 $foo = 1;

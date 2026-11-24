@@ -3977,6 +3977,11 @@ final class ArrayAssignmentTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'invalidArrayOffsetShowsTheFullKeyType' => [
+                'code' => '<?php
+                    $a = [[1] => 2];',
+                'error_message' => 'Cannot create offset of type list{1}, expecting array-key',
+            ],
             'writeUnderATemplateKeyMayReplaceAStringItem' => [
                 'code' => '<?php
                     /**
