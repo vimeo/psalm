@@ -93,6 +93,14 @@ final class UnionTypeComparator
         $container_has_template = $container_type->hasTemplateOrStatic();
         $container_type_parts = self::getTypeParts($codebase, $container_type);
         $compare_iterable_directly = self::hasIterableOrSymbolicPart($container_type_parts);
+        $container_has_type_variable = false;
+
+        foreach ($container_type_parts as $container_type_part) {
+            if ($container_type_part instanceof TTypeVariable) {
+                $container_has_type_variable = true;
+                break;
+            }
+        }
 
         // the container's int and string literals by key and its other parts, split once an input literal needs them
         $container_literals = null;
@@ -118,9 +126,11 @@ final class UnionTypeComparator
                 continue;
             }
 
+            // a type variable of the container is bound by the template itself rather than by what it stands for
             if ($input_type_part instanceof TTemplateParam
                 && !$container_has_template
                 && !$input_type_part->extra_types
+                && !$container_has_type_variable
             ) {
                 $input_atomic_types = array_merge($input_type_part->as->getAtomicTypes(), $input_atomic_types);
                 continue;

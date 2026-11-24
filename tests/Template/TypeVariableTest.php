@@ -1459,13 +1459,14 @@ final class TypeVariableTest extends TestCase
                         public function all(): array { return []; }
                     }
 
-                    function dump(): void {
-                        $map = new Map(["a" => 1.5]);
+                    /** @param array<string, float> $data */
+                    function dump(array $data): void {
+                        $map = new Map($data);
                         foreach ($map->all() as $k => $v) {
-                            echo (string) $k;
+                            echo (int) $k;
                             echo "key: {$k}";
                             echo (int) $v;
-                            echo (float) $v;
+                            echo (string) $v;
                         }
                     }',
             ],
@@ -2173,6 +2174,157 @@ final class TypeVariableTest extends TestCase
                 'assertions' => [
                     '$c===' => '1|null',
                 ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'typeVariableResolvedByIssetCoalesceAndArrayKeyExists' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class Box {
+                        /** @param T $value */
+                        public function __construct(private mixed $value) {}
+
+                        /** @param T $value */
+                        public function set(mixed $value): void { $this->value = $value; }
+
+                        /** @return array<string, T> */
+                        public function byName(): array { return ["a" => $this->value]; }
+                    }
+
+                    final class Foo { const C = 1; }
+
+                    $foos = (new Box(new Foo()))->byName();
+                    $by_isset = null;
+                    $by_key_exists = null;
+                    if (isset($foos["a"])) {
+                        $foo = $foos["a"];
+                        $by_isset = $foo::C;
+                    }
+                    if (array_key_exists("b", $foos)) {
+                        $foo = $foos["b"];
+                        $by_key_exists = $foo::C;
+                    }
+                    $maybe_foo = $foos["c"] ?? null;',
+                'assertions' => [
+                    '$by_isset===' => '1|null',
+                    '$by_key_exists===' => '1|null',
+                    '$maybe_foo===' => 'Foo|null',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'typeVariableResolvedByDestructuringAnArrayAccess' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @implements ArrayAccess<int, T>
+                     */
+                    final class Vec implements ArrayAccess {
+                        /** @param list<T> $items */
+                        public function __construct(private array $items) {}
+
+                        /** @param T $item */
+                        public function push(mixed $item): void { $this->items[] = $item; }
+
+                        public function offsetExists(mixed $offset): bool { return isset($this->items[$offset]); }
+
+                        /** @return T */
+                        public function offsetGet(mixed $offset): mixed { return $this->items[$offset]; }
+
+                        public function offsetSet(mixed $offset, mixed $value): void {}
+
+                        public function offsetUnset(mixed $offset): void {}
+                    }
+
+                    final class Foo { const C = 1; }
+
+                    $vec = new Vec([new Foo()]);
+                    [$first] = $vec;
+                    $c = $first::C;',
+                'assertions' => [
+                    '$c===' => '1',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'itemOfAVariableAndAnArrayArmCombinesBoth' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class Box {
+                        /** @param T $value */
+                        public function __construct(private mixed $value) {}
+
+                        /** @param T $value */
+                        public function set(mixed $value): void { $this->value = $value; }
+
+                        /** @return non-empty-list<T|array<int, string>> */
+                        public function items(): array { return [$this->value]; }
+                    }
+
+                    /** @var array<int, int> $ints */
+                    $ints = [];
+                    $box = new Box($ints);
+                    $item = $box->items()[0];',
+                'assertions' => [
+                    '$item===' => 'array<int, int|string>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'templateGivenToAConstructionIsItsBound' => [
+                'code' => '<?php
+                    /**
+                     * @template Tk
+                     * @template Tv
+                     */
+                    final class Queue {
+                        /**
+                         * @param Tk $key
+                         * @param Tv $value
+                         */
+                        public function enqueue(mixed $key, mixed $value): void {}
+
+                        /** @return Tk */
+                        public function firstKey(): mixed { throw new Exception(); }
+
+                        /** @return null|array{0: Tk, 1: Tv} */
+                        public function consume(): ?array { return null; }
+                    }
+
+                    /**
+                     * @template Tk
+                     * @template Tv
+                     * @param iterable<Tk, Tv> $values
+                     * @return Tk
+                     */
+                    function firstKey(iterable $values): mixed {
+                        $queue = new Queue();
+                        foreach ($values as $key => $value) {
+                            $queue->enqueue($key, $value);
+                        }
+
+                        return $queue->firstKey();
+                    }
+
+                    /**
+                     * @template Tk
+                     * @template Tv
+                     * @param iterable<Tk, Tv> $values
+                     * @return Generator<Tk, Tv, null, void>
+                     */
+                    function inOrder(iterable $values): Generator {
+                        $queue = new Queue();
+                        if (is_array($values)) {
+                            foreach ($values as $key => $value) {
+                                $queue->enqueue($key, $value);
+                            }
+                        }
+
+                        while ($item = $queue->consume()) {
+                            yield $item[0] => $item[1];
+                        }
+                    }',
+                'assertions' => [],
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
@@ -3747,6 +3899,35 @@ final class TypeVariableTest extends TestCase
                 'error_message' => 'PossiblyInvalidArrayOffset - src' . DIRECTORY_SEPARATOR
                     . 'somefile.php:19:34 - Cannot access value on variable $counts using a 42|string offset, '
                     . 'expecting string',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'itemReadInALoopSeesWhatALaterIterationAdds' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class Bag {
+                        /** @param iterable<T> $items */
+                        public function __construct(iterable $items) {}
+
+                        /** @param T $item */
+                        public function add(mixed $item): void {}
+
+                        /** @return list<T> */
+                        public function all(): array { return []; }
+                    }
+
+                    function takesString(string $s): void {}
+
+                    /** @param list<string> $names */
+                    function f(array $names): void {
+                        $bag = new Bag($names);
+                        for ($i = 0; $i < 2; $i++) {
+                            takesString($bag->all()[0]);
+                            $bag->add(42);
+                        }
+                    }',
+                'error_message' => 'InvalidScalarArgument - src' . DIRECTORY_SEPARATOR
+                    . 'somefile.php:20:41 - Argument 1 of takesString expects string, but 42|string provided',
                 'error_levels' => [],
                 'php_version' => '8.1',
             ],

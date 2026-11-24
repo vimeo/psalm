@@ -330,15 +330,6 @@ final class ForeachAnalyzer
                 $key_type,
                 $value_type,
             );
-
-            // the items of `list<`_0>` are the type the variable stands for, as what a call returns is
-            if ($key_type !== null) {
-                $key_type = TypeVariableResolver::resolveTopLevel($key_type, $codebase);
-            }
-
-            if ($value_type !== null) {
-                $value_type = TypeVariableResolver::resolveTopLevel($value_type, $codebase);
-            }
         }
 
         $foreach_context = clone $context;
@@ -1704,6 +1695,9 @@ final class ForeachAnalyzer
                 );
             }
         }
+
+        $key_type = $key_type ? TypeVariableResolver::resolveTopLevel($key_type, $codebase) : null;
+        $value_type = $value_type ? TypeVariableResolver::resolveTopLevel($value_type, $codebase) : null;
 
         return null;
     }

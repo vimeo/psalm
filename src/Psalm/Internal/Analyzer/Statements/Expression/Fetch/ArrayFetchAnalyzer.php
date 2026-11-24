@@ -317,7 +317,6 @@ final class ArrayFetchAnalyzer
                 $stmt_var_type = $non_null_var_type->freeze();
             }
 
-            // an item of `list<`_0>` is the type the variable stands for, as what a call returns is
             $stmt_type = TypeVariableResolver::resolveTopLevel(
                 self::getArrayAccessTypeGivenOffset(
                     $statements_analyzer,
