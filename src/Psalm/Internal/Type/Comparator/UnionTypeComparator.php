@@ -93,16 +93,6 @@ final class UnionTypeComparator
         $container_has_template = $container_type->hasTemplateOrStatic();
         $container_type_parts = self::getTypeParts($codebase, $container_type);
         $compare_iterable_directly = self::hasIterableOrSymbolicPart($container_type_parts);
-        $container_type_variable = null;
-        $concrete_container_parts = [];
-
-        foreach ($container_type_parts as $container_type_part) {
-            if (!$container_type_part instanceof TTypeVariable) {
-                $concrete_container_parts[] = $container_type_part;
-            } elseif ($container_type_variable === null) {
-                $container_type_variable = $container_type_part;
-            }
-        }
 
         // the container's int and string literals by key and its other parts, split once an input literal needs them
         $container_literals = null;
@@ -132,27 +122,15 @@ final class UnionTypeComparator
                 && !$container_has_template
                 && !$input_type_part->extra_types
             ) {
-                // what the other parts of the container don't all take, a type variable of it is bound to: the
-                // template itself rather than what it stands for
-                if ($container_type_variable !== null
-                    && (!$concrete_container_parts
-                        || !self::isContainedBy(
-                            $codebase,
-                            $input_type_part->as,
-                            new Union($concrete_container_parts),
-                        ))
-                ) {
-                    if ($union_comparison_result) {
-                        $union_comparison_result->type_variable_lower_bounds[] = [
-                            $container_type_variable->name,
-                            new TemplateBound(new Union([$input_type_part])),
-                        ];
-                    }
-
-                    continue;
+                if (!self::bindTypeVariableToTemplate(
+                    $codebase,
+                    $input_type_part,
+                    $container_type_parts,
+                    $union_comparison_result,
+                )) {
+                    $input_atomic_types = array_merge($input_type_part->as->getAtomicTypes(), $input_atomic_types);
                 }
 
-                $input_atomic_types = array_merge($input_type_part->as->getAtomicTypes(), $input_atomic_types);
                 continue;
             }
 
@@ -600,6 +578,45 @@ final class UnionTypeComparator
 
         if ($failed_parts) {
             return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * What the other parts of the container don't all take, a type variable of it is bound to: the template itself
+     * rather than what it stands for. Whether the template was so bound, or is to be compared through its `as`
+     *
+     * @param list<Atomic> $container_parts
+     */
+    private static function bindTypeVariableToTemplate(
+        Codebase $codebase,
+        TTemplateParam $template,
+        array $container_parts,
+        ?TypeComparisonResult $union_comparison_result,
+    ): bool {
+        $type_variable = null;
+        $concrete_parts = [];
+
+        foreach ($container_parts as $container_part) {
+            if (!$container_part instanceof TTypeVariable) {
+                $concrete_parts[] = $container_part;
+            } elseif ($type_variable === null) {
+                $type_variable = $container_part;
+            }
+        }
+
+        if ($type_variable === null
+            || ($concrete_parts && self::isContainedBy($codebase, $template->as, new Union($concrete_parts)))
+        ) {
+            return false;
+        }
+
+        if ($union_comparison_result) {
+            $union_comparison_result->type_variable_lower_bounds[] = [
+                $type_variable->name,
+                new TemplateBound(new Union([$template])),
+            ];
         }
 
         return true;
