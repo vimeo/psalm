@@ -1212,7 +1212,7 @@ final class AssertionFinder
             return false;
         }
 
-        return $type->getId() === 'bool' && !$type->possibly_undefined;
+        return $type->isBool() && !$type->possibly_undefined;
     }
 
     /**

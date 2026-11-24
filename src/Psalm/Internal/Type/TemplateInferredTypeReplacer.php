@@ -678,7 +678,7 @@ final class TemplateInferredTypeReplacer
                 )
                     && !$comparison_result->to_string_cast
                     && (!$candidate_atomic_type instanceof TInt
-                        || $conditional_type->getId() !== 'float')
+                        || !$conditional_type->isFloat())
                 ) {
                     $matching_if_types[] = $candidate_atomic_type;
 
