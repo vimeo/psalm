@@ -42,6 +42,14 @@ final class TypeAnnotationTest extends TestCase
                         /** @var Size $size */
                         $size = array_replace(["width" => 1], ["height" => 1]);
                         $this->draw($size);
+
+                        /** @var list<Size> $sizes */
+                        $sizes = [array_replace(["width" => 1], ["height" => 1])];
+
+                        /** @var Size $s */
+                        foreach ($sizes as $s) {
+                            $this->draw($s);
+                        }
                     }
 
                     /** @param Size $size */
