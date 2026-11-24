@@ -2769,6 +2769,32 @@ final class CapabilitiesTest extends TestCase
                         }
                     }',
             ],
+            'changingAnArrayPropertyOfATernaryOfThisOnlyMutatesThis' => [
+                'code' => '<?php
+                    final class Counter {
+                        /** @var list<int> */
+                        public array $a = [];
+
+                        /**
+                         * @return $this
+                         * @psalm-external-mutation-free
+                         */
+                        public function add(): static {
+                            $this->a[] = 0;
+                            return $this;
+                        }
+
+                        /** @psalm-external-mutation-free */
+                        public function addIf(bool $v): void {
+                            ($v ? $this->add() : $this)->a[] = 1;
+                        }
+
+                        /** @psalm-external-mutation-free */
+                        public function sortIf(bool $v): void {
+                            sort(($v ? $this->add() : $this)->a);
+                        }
+                    }',
+            ],
             'purityTemplatesComeAfterTypeTemplates' => [
                 'code' => '<?php
                     /**
@@ -5303,7 +5329,7 @@ final class CapabilitiesTest extends TestCase
                         $a["k"] = 1;
                         return 1;
                     }',
-                'error_message' => 'ImpureByReferenceAssignment',
+                'error_message' => 'ImpureFunctionCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:29 - The context is read-props but function call on sort requires write-this-props',
             ],
             'legacyPurityLevelsAreNotCapabilities' => [
                 'code' => '<?php
@@ -6887,7 +6913,7 @@ final class CapabilitiesTest extends TestCase
                         };
                         $write();
                     }',
-                'error_message' => 'ImpureByReferenceAssignment',
+                'error_message' => 'ImpureFunctionCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:29 - The context is read-props but function call on sort requires write-this-props',
             ],
             'closureMutatingCapturedObjectNeedsWriteProps' => [
                 'code' => '<?php
@@ -7523,6 +7549,65 @@ final class CapabilitiesTest extends TestCase
                 'error_message' => 'InvalidReturnStatement - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:36 - The declared return type \'$this\' for Counter::copyIf requires returning $this, but this may return another object',
                 'error_levels' => [],
                 'php_version' => '8.0',
+            ],
+            'assigningToAPropertyOfATernaryOfThisWritesThisProps' => [
+                'code' => '<?php
+                    final class Counter {
+                        public int $n = 0;
+
+                        /** @psalm-mutation-free */
+                        public function reset(bool $v): void {
+                            ($v ? $this : $this)->n = 0;
+                        }
+                    }',
+                'error_message' => 'ImpurePropertyAssignment - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:29 - The context is read-props but property assignment requires write-this-props',
+            ],
+            'appendingToAPropertyOfATernaryOfThisWritesThisProps' => [
+                'code' => '<?php
+                    final class Counter {
+                        /** @var list<int> */
+                        public array $a = [];
+
+                        /** @psalm-mutation-free */
+                        public function add(bool $v): void {
+                            ($v ? $this : $this)->a[] = 0;
+                        }
+                    }',
+                'error_message' => 'ImpurePropertyAssignment - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:29 - The context is read-props but property assignment requires write-this-props',
+            ],
+            'passingAPropertyOfATernaryOfThisByReferenceWritesThisProps' => [
+                'code' => '<?php
+                    final class Counter {
+                        /** @var list<int> */
+                        public array $a = [];
+
+                        /** @psalm-mutation-free */
+                        public function sortIt(bool $v): void {
+                            sort(($v ? $this : $this)->a);
+                        }
+                    }',
+                'error_message' => 'ImpureFunctionCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:29 - The context is read-props but function call on sort requires write-this-props',
+            ],
+            'callingAMutatingMethodOnATernaryOfThisWritesThisProps' => [
+                'code' => '<?php
+                    final class Counter {
+                        public int $n = 0;
+
+                        /**
+                         * @return $this
+                         * @psalm-external-mutation-free
+                         */
+                        public function inc(): static {
+                            $this->n++;
+                            return $this;
+                        }
+
+                        /** @psalm-mutation-free */
+                        public function incIf(bool $v): void {
+                            ($v ? $this : $this)->inc();
+                        }
+                    }',
+                'error_message' => 'ImpureMethodCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:16:29 - The context is read-props but method Counter::inc requires write-this-props',
             ],
             'purityArgumentsGoInBrackets' => [
                 'code' => '<?php
