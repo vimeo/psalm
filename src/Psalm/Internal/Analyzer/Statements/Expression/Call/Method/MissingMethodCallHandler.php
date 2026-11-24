@@ -268,6 +268,12 @@ final class MissingMethodCallHandler
 
             [$pseudo_method_storage, $defining_class_storage] = $found_method_and_class_storage;
 
+            // `static` in the params is the object the method is called on, as for a declared method: the mixin
+            // for a method of a mixin
+            $static_type = $mixin_type ?? $lhs_type_part;
+            $static_is_final = $mixin_type === null ? $class_storage->final : $pseudo_method_class_storage->final;
+            $resolve_return_type = $mixin_type === null;
+
             $pseudo_method_storage = self::selectOverload(
                 $statements_analyzer,
                 $codebase,
@@ -275,6 +281,16 @@ final class MissingMethodCallHandler
                 $context,
                 $defining_class_storage->pseudo_method_overloads[$method_name_lc] ?? null,
                 $pseudo_method_storage,
+                $static_type instanceof Atomic\TNamedObject
+                    ? static fn(MethodStorage $storage): MethodStorage => self::resolveStaticInParams(
+                        $codebase,
+                        $storage,
+                        $defining_class_storage,
+                        $static_type,
+                        $static_is_final,
+                        $resolve_return_type,
+                    )
+                    : null,
             );
 
             // the templates of a mixin's `@method` are those of the mixin, `$this` and static stay the class
@@ -288,23 +304,6 @@ final class MissingMethodCallHandler
                     && !$statements_analyzer->isStatic()
                     && $method_id->fq_class_name === $context->self,
             );
-
-            // `static` in the params is the object the method is called on, as for a declared method: the mixin
-            // for a method of a mixin
-            $static_type = $mixin_type ?? $lhs_type_part;
-
-            if ($static_type instanceof Atomic\TNamedObject) {
-                $pseudo_method_storage = self::resolveStaticInParams(
-                    $codebase,
-                    $pseudo_method_storage,
-                    $defining_class_storage,
-                    $static_type,
-                    $mixin_type === null
-                        ? $class_storage->final
-                        : $pseudo_method_class_storage->final,
-                    $mixin_type === null,
-                );
-            }
 
             // the pseudo-method's own templates are the purity templates of its `_` params
             $template_result = new TemplateResult(
@@ -543,6 +542,25 @@ final class MissingMethodCallHandler
 
             [$pseudo_method_storage, $defining_class_storage] = $found_method_and_class_storage;
 
+            // `static` in the params is the object the method is called on
+            $pseudo_method_storage = self::selectOverload(
+                $statements_analyzer,
+                $codebase,
+                $stmt->getArgs(),
+                $context,
+                $defining_class_storage->pseudo_method_overloads[$method_name_lc] ?? null,
+                $pseudo_method_storage,
+                $lhs_type_part instanceof Atomic\TNamedObject
+                    ? static fn(MethodStorage $storage): MethodStorage => self::resolveStaticInParams(
+                        $codebase,
+                        $storage,
+                        $defining_class_storage,
+                        $lhs_type_part,
+                        !$lhs_type_part->is_static || $class_storage->final,
+                    )
+                    : null,
+            );
+
             if ($stmt->isFirstClassCallable()) {
                 $result->return_type = self::createFirstClassCallableReturnType(
                     $statements_analyzer,
@@ -753,6 +771,8 @@ final class MissingMethodCallHandler
      *
      * @param list<PhpParser\Node\Arg> $args
      * @param non-empty-list<MethodStorage>|null $overloads
+     * @param (Closure[_](MethodStorage): MethodStorage)|null $resolve applied to every overload before the arguments
+     *     are matched against it, so that the choice sees the object the method is called on
      */
     public static function selectOverload(
         StatementsAnalyzer $statements_analyzer,
@@ -761,7 +781,13 @@ final class MissingMethodCallHandler
         Context $context,
         ?array $overloads,
         MethodStorage $default,
+        ?Closure $resolve = null,
     ): MethodStorage {
+        if ($resolve !== null) {
+            $default = $resolve($default);
+            $overloads = $overloads !== null ? array_map($resolve, $overloads) : null;
+        }
+
         if ($overloads === null) {
             return $default;
         }

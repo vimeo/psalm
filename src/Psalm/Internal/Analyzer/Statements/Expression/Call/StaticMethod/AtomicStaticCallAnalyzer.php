@@ -1077,6 +1077,16 @@ final class AtomicStaticCallAnalyzer
             $context,
             $class_storage->pseudo_static_method_overloads[$method_id->method_name] ?? null,
             $pseudo_method_storage,
+            // `static` in the params is the class the method is called on: that class itself when named
+            $lhs_type_part instanceof TNamedObject
+                ? static fn(MethodStorage $storage): MethodStorage => MissingMethodCallHandler::resolveStaticInParams(
+                    $codebase,
+                    $storage,
+                    $class_storage,
+                    $lhs_type_part,
+                    !$lhs_type_part->is_static || $static_class_storage->final,
+                )
+                : null,
         );
 
         if (!$context->isSuppressingExceptions($statements_analyzer)) {

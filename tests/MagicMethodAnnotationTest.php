@@ -561,6 +561,43 @@ final class MagicMethodAnnotationTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'staticInTheParamsOfAMethodTagOfAnInterfaceIsTheObjectItIsCalledOn' => [
+                'code' => '<?php
+                    /**
+                     * @method ($o is null ? int : string) cmp(static|null $o = null)
+                     */
+                    interface Box {}
+
+                    function ib(Box $b): string {
+                        return $b->cmp($b);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'staticInTheParamsOfOverloadedMethodTagsIsResolvedBeforeTheOverloadIsChosen' => [
+                'code' => '<?php
+                    /**
+                     * @method int pick(static $o)
+                     * @method string pick(int $o)
+                     * @method static int spick(static $o)
+                     * @method static string spick(int $o)
+                     */
+                    final class OBox {
+                        public function __call(string $name, array $args): mixed { throw new RuntimeException(); }
+                        public static function __callStatic(string $name, array $args): mixed {
+                            throw new RuntimeException();
+                        }
+                    }
+
+                    function ov(OBox $b): void {
+                        $b->pick($b);
+                        OBox::spick($b);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'staticInTheParamsOfAMethodTagIsTheClassItIsCalledOn' => [
                 'code' => '<?php
                     /**
