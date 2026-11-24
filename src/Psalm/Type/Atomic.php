@@ -473,9 +473,16 @@ abstract class Atomic implements TypeNode, Stringable
     }
 
     /**
-     * This is the string that will be used to represent the type in Union::$types. This means that two types sharing
-     * the same getKey value will override themselves in a Union
+     * The slot of the type in Union::$types: two types of the same key don't coexist in a union. It is coarse where
+     * TypeCombiner merges the types of a slot and exact where it doesn't:
      *
+     *     non-empty-string            string
+     *     Foo<5>, Foo<array{a: int}>  Foo<int>, Foo<array>
+     *     Foo&Bar<5>                  Foo&Bar<5>
+     *
+     * It names no type: use getId() to compare types or show them.
+     *
+     * @param bool $include_extra false to leave out the intersected types
      * @psalm-mutation-free
      */
     abstract public function getKey(bool $include_extra = true): string;
@@ -767,6 +774,9 @@ abstract class Atomic implements TypeNode, Stringable
         return [];
     }
 
+    /**
+     * The id of the type, see getId()
+     */
     #[Override]
     final public function __toString(): string
     {
@@ -774,7 +784,15 @@ abstract class Atomic implements TypeNode, Stringable
     }
 
     /**
-     * This is the true identifier for the type. It defaults to self::getKey() but can be overridden to be more precise
+     * The identifier of the type: what compares types, keys caches and names the type in issue messages. Without
+     * $exact, literals and refinements are left out:
+     *
+     *     exact             not exact
+     *     5                 int
+     *     'a'               string
+     *     non-empty-string  string
+     *
+     * Defaults to getKey(), for the types whose key is already exact.
      *
      * @psalm-mutation-free
      */
@@ -782,9 +800,9 @@ abstract class Atomic implements TypeNode, Stringable
     {
         return $this->getKey();
     }
+
     /**
-     * This string is used in order to transform a type into an string assertion for the assertion module
-     * Default to self::getId()
+     * The type in a serialized assertion: `int(5)` and `string(a)` for literals, the id otherwise
      *
      * @psalm-mutation-free
      */
@@ -794,8 +812,15 @@ abstract class Atomic implements TypeNode, Stringable
     }
 
     /**
-     * Returns the detailed description of the type, either in phpdoc standard format or Psalm format depending on flag
-     * Defaults to the id, without literals and refinements in phpdoc format, like an int literal written as `int`
+     * The type written into the user's code (docblocks, stubs), with class names relative to $namespace. The phpdoc
+     * format, for `@param` and `@return`, leaves out literals and refinements, the Psalm format, for `@psalm-param`
+     * and `@psalm-return`, keeps them:
+     *
+     *     phpdoc  Psalm
+     *     int     5
+     *     string  non-empty-string
+     *
+     * Defaults to getId(), not exact in the phpdoc format. Types whose id is no docblock syntax override it.
      *
      * @param array<lowercase-string, string> $aliased_classes
      * @psalm-mutation-free
@@ -810,8 +835,7 @@ abstract class Atomic implements TypeNode, Stringable
     }
 
     /**
-     * Returns a string representation of the type compatible with php signature or null if the type can't be expressed
-     *  with the given php version
+     * The type as a native type declaration of the given PHP version (`?int`, `int|string`), null when it has none
      *
      * @psalm-mutation-free
      * @param  array<lowercase-string, string> $aliased_classes
