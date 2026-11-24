@@ -6099,6 +6099,72 @@ final class FunctionCallTest extends TestCase
                 ',
                 'error_message' => 'InvalidArgument',
             ],
+            'parentTypeAndInvalidTypeArgument' => [
+                'code' => '<?php
+                    final class Foo {}
+                    function takesFoo(Foo $_f): void {}
+
+                    function passes(object|int $o): void {
+                        takesFoo($o);
+                    }
+                ',
+                'error_message' => 'PossiblyInvalidArgument',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'invalidTypeAndParentTypeArgument' => [
+                'code' => '<?php
+                    final class Foo {}
+                    function takesFoo(Foo $_f): void {}
+
+                    function passes(int|object $o): void {
+                        takesFoo($o);
+                    }
+                ',
+                'error_message' => 'PossiblyInvalidArgument',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'parentScalarTypeAndInvalidTypeArgument' => [
+                'code' => '<?php
+                    /** @param non-empty-string $_s */
+                    function takesNonEmptyString(string $_s): void {}
+
+                    function passes(string|int $s): void {
+                        takesNonEmptyString($s);
+                    }
+                ',
+                'error_message' => 'PossiblyInvalidArgument',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'curlHandleArgumentGivenObjectOrResource' => [
+                'code' => '<?php
+                    /** @param object|resource $h */
+                    function g($h): void {
+                        curl_getinfo($h, CURLINFO_HTTP_CODE);
+                    }
+                ',
+                'error_message' => 'PossiblyInvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:38'
+                    . ' - Argument 1 of curl_getinfo expects CurlHandle, but possibly different type'
+                    . ' object|resource provided',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'noMemberFitsArgument' => [
+                'code' => '<?php
+                    final class Foo {}
+                    final class Bar {}
+                    function takesFoo(Foo $_f): void {}
+
+                    function passes(Bar|int $o): void {
+                        takesFoo($o);
+                    }
+                ',
+                'error_message' => 'InvalidArgument',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
             'possiblyInvalidEntryOfAList' => [
                 'code' => '<?php
                     /** @param scalar|list<scalar> $value */

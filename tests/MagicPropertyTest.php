@@ -1474,6 +1474,23 @@ final class MagicPropertyTest extends TestCase
                     }',
                 'error_message' => 'InvalidPropertyAssignmentValue',
             ],
+            'explicitSetCallWithParentTypeAndInvalidTypeIsPossiblyInvalid' => [
+                'code' => '<?php
+                    final class Foo {}
+
+                    /** @property Foo $p */
+                    final class A {
+                        /** @param mixed $value */
+                        public function __set(string $name, $value): void {}
+                    }
+
+                    function f(A $a, object|int $o): void {
+                        $a->__set("p", $o);
+                    }',
+                'error_message' => 'PossiblyInvalidPropertyAssignmentValue',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
             'explicitSetCallSharingAnObjectWithThePropertyIsPossiblyInvalid' => [
                 'code' => '<?php
                     final class Foo {}
