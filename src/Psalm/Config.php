@@ -2654,18 +2654,14 @@ final class Config
             }
         }
 
-        if (!$this->report_info && $reporting_level === self::REPORT_INFO) {
-            $reporting_level = self::REPORT_SUPPRESS;
-        }
-
         $parent_issue_type = self::getParentIssueType($issue_type);
 
         if ($parent_issue_type && $reporting_level === self::REPORT_ERROR) {
-            $parent_reporting_level = $this->getReportingLevelForFile($parent_issue_type, $e->getFilePath());
+            $reporting_level = $this->getReportingLevelForFile($parent_issue_type, $e->getFilePath());
+        }
 
-            if ($parent_reporting_level !== $reporting_level) {
-                return $parent_reporting_level;
-            }
+        if (!$this->report_info && $reporting_level === self::REPORT_INFO) {
+            $reporting_level = self::REPORT_SUPPRESS;
         }
 
         return $reporting_level;
@@ -2866,7 +2862,6 @@ final class Config
                 // so we should also check reporting levels for the symbol in global scope
                 $root_function_id = (string) preg_replace('/.*\\\/', '', $function_id);
                 if ($root_function_id !== $function_id) {
-                    /** @psalm-suppress PossiblyUndefinedStringArrayOffset https://github.com/vimeo/psalm/issues/7656 */
                     $level = $this->issue_handlers[$issue_type]->getReportingLevelForFunction($root_function_id);
                 }
             }
@@ -3938,6 +3933,16 @@ final class Config
     public function addPreloadedStubFile(string $stub_file): void
     {
         $this->preloaded_stub_files[$stub_file] = $stub_file;
+    }
+
+    /**
+     * The stub files whose classes are loaded before the project is scanned (`preloadClasses="true"`)
+     *
+     * @return array<string, string>
+     */
+    public function getPreloadedStubFiles(): array
+    {
+        return $this->preloaded_stub_files;
     }
 
     public function getPhpVersion(): ?string
