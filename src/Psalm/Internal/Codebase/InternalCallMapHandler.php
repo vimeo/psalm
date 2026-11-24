@@ -555,7 +555,7 @@ final class InternalCallMapHandler
         $class_extensions = [];
         foreach ($method_counts as $class => $counts) {
             arsort($counts);
-            $class_extensions[$class] = (string) array_key_first($counts);
+            $class_extensions[$class] = array_key_first($counts);
         }
 
         return self::$extensions[$version] = [$function_extensions, $class_extensions];

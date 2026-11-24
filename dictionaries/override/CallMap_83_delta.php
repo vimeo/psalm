@@ -354,6 +354,21 @@ return array (
         '&array' => 'array<array-key, mixed>',
       ),
     ),
+    'odbc_autocommit' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool|int',
+        'odbc' => 'resource',
+        'enable=' => 'bool',
+      ),
+      'new' => 
+      array (
+        0 => 'bool|int',
+        'odbc' => 'resource',
+        'enable=' => 'bool|null',
+      ),
+    ),
     'pg_close' => 
     array (
       'old' => 

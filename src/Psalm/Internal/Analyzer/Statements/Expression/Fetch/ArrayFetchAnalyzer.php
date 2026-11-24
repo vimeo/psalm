@@ -1150,6 +1150,7 @@ final class ArrayFetchAnalyzer
                     // nothing replaces an item an assignment writes into, which is modified in place as well
                     $by_reference || $replacement_type === null,
                     $offset_call_receiver_type,
+                    $replacement_type,
                 );
             } elseif (!$array_type->hasMixed()) {
                 $non_array_types[] = (string)$type;
@@ -2501,6 +2502,7 @@ final class ArrayFetchAnalyzer
         bool &$has_array_access,
         bool $in_place,
         ?Union $receiver_type,
+        ?Union $replacement_type,
     ): void {
         $codebase = $statements_analyzer->getCodebase();
         if (strtolower($type->value) === 'simplexmlelement'
@@ -2583,6 +2585,25 @@ final class ArrayFetchAnalyzer
 
                 $statements_analyzer->node_data = clone $statements_analyzer->node_data;
 
+                // the value of a destructured item or of a `foreach` target is not that of the expression the
+                // assignment was given: the call has no value to check
+                $assign_value_type = $assign_value !== null
+                    ? $statements_analyzer->node_data->getType($assign_value)
+                    : null;
+                $value_is_given = $assign_value !== null
+                    && ($replacement_type === null
+                        || $assign_value_type === null
+                        || $assign_value_type->getId() === $replacement_type->getId());
+                $value_expr = $assign_value;
+
+                // the type assigned is that of the item, which the call checks like a value it was given
+                if (!$value_is_given && $replacement_type !== null && !$in_place) {
+                    $value_expr = new VirtualConstFetch(new VirtualName('null'), $stmt->getAttributes());
+                    $statements_analyzer->node_data->setType($value_expr, $replacement_type);
+                    $statements_analyzer->node_data->markEvaluated([$value_expr]);
+                    $value_is_given = true;
+                }
+
                 $fake_set_method_call = new VirtualMethodCall(
                     $stmt->var,
                     new VirtualIdentifier('offsetSet', $stmt->var->getAttributes()),
@@ -2596,11 +2617,13 @@ final class ArrayFetchAnalyzer
                             attributes: $arg_attributes,
                         ),
                         new VirtualArg(
-                            $assign_value ?? new VirtualConstFetch(
+                            $value_expr ?? new VirtualConstFetch(
                                 new VirtualName('null'),
                                 $stmt->var->getAttributes(),
                             ),
-                            attributes: $arg_attributes,
+                            attributes: $value_is_given
+                                ? $arg_attributes
+                                : [ArgumentAnalyzer::NOT_PASSED => true],
                         ),
                     ],
                 );

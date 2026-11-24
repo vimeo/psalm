@@ -783,7 +783,11 @@ final class ArithmeticOpAnalyzer
 
         if ($left_type_part instanceof TLiteralString) {
             if (preg_match('/^\-?\d+$/', $left_type_part->value)) {
-                $left_type_part = new TLiteralInt((int) $left_type_part->value);
+                // a digit string outside the int range is a float in arithmetic
+                $int = LiteralCast::toInt($left_type_part->value);
+                $left_type_part = $int === null
+                    ? new TLiteralFloat((float) $left_type_part->value)
+                    : new TLiteralInt($int);
             } elseif (preg_match('/^\-?\d?\.\d+$/', $left_type_part->value)) {
                 $left_type_part = new TLiteralFloat((float) $left_type_part->value);
             }
@@ -791,7 +795,10 @@ final class ArithmeticOpAnalyzer
 
         if ($right_type_part instanceof TLiteralString) {
             if (preg_match('/^\-?\d+$/', $right_type_part->value)) {
-                $right_type_part = new TLiteralInt((int) $right_type_part->value);
+                $int = LiteralCast::toInt($right_type_part->value);
+                $right_type_part = $int === null
+                    ? new TLiteralFloat((float) $right_type_part->value)
+                    : new TLiteralInt($int);
             } elseif (preg_match('/^\-?\d?\.\d+$/', $right_type_part->value)) {
                 $right_type_part = new TLiteralFloat((float) $right_type_part->value);
             }

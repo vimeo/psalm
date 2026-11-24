@@ -207,7 +207,6 @@ final class Config
     private const FIRST_PARTY_PLUGINS = [
         'phpunit/phpunit' => 'Psalm\PhpUnitPlugin\Plugin',
         'mockery/mockery' => 'Psalm\MockeryPlugin\Plugin',
-        'symfony/framework-bundle' => 'Psalm\SymfonyPsalmPlugin\Plugin',
         'laravel/framework' => 'Psalm\LaravelPlugin\Plugin',
         'orchestra/testbench' => 'Psalm\LaravelPlugin\Plugin',
         'doctrine/orm' => 'Weirdan\DoctrinePsalmPlugin\Plugin',
@@ -1802,7 +1801,7 @@ final class Config
 
             foreach (['require', 'require-dev'] as $section) {
                 foreach ($composer_json[$section] ?? [] as $package => $_) {
-                    $plugin_class_name = self::FIRST_PARTY_PLUGINS[strtolower((string) $package)] ?? null;
+                    $plugin_class_name = self::getFirstPartyPluginClass(strtolower((string) $package));
                     if ($plugin_class_name !== null) {
                         $library_plugin_classes[] = $plugin_class_name;
                     }
@@ -1863,6 +1862,21 @@ final class Config
         }
 
         return $config;
+    }
+
+    /**
+     * The first-party plugin of a library composer.json requires (see loadLibraryPlugins): that of any Symfony
+     * package but the polyfills, which libraries require without using Symfony
+     *
+     * @psalm-pure
+     */
+    private static function getFirstPartyPluginClass(string $package): ?string
+    {
+        if (str_starts_with($package, 'symfony/') && !str_starts_with($package, 'symfony/polyfill-')) {
+            return 'Psalm\SymfonyPsalmPlugin\Plugin';
+        }
+
+        return self::FIRST_PARTY_PLUGINS[$package] ?? null;
     }
 
     /**

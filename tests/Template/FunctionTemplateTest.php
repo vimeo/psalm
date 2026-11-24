@@ -256,6 +256,78 @@ final class FunctionTemplateTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'isStringOfATemplateBoundedByNumericNarrowsItToANumericString' => [
+                'code' => '<?php
+                    /**
+                     * @template T of numeric
+                     * @param T $n
+                     * @return T
+                     */
+                    function keepString($n) {
+                        if (is_string($n)) {
+                            /** @var numeric-string */
+                            $s = $n;
+                            echo $s;
+                        }
+                        return $n;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'typeCheckOfATemplateBoundedByScalarTypesCanHold' => [
+                'code' => '<?php
+                    /**
+                     * @template T of bool|int|float|string
+                     * @param T $i
+                     */
+                    function isBool(bool|int|float|string $i): bool {
+                        return is_bool($i);
+                    }
+
+                    /**
+                     * @template T of bool|int|float|string
+                     * @param T $i
+                     */
+                    function isInt(bool|int|float|string $i): bool {
+                        return is_int($i);
+                    }
+
+                    /**
+                     * @template T of numeric
+                     * @param T $i
+                     */
+                    function isIntOfNumeric(int|float|string $i): bool {
+                        return is_int($i);
+                    }
+
+                    /**
+                     * @template T of array-key
+                     * @param T $i
+                     */
+                    function isNumericOfArrayKey(int|string $i): bool {
+                        return is_numeric($i);
+                    }
+
+                    /**
+                     * @template T of array-key
+                     * @param T $i
+                     */
+                    function isScalarOfArrayKey(int|string $i): bool {
+                        return is_scalar($i);
+                    }
+
+                    /**
+                     * @template T of int<0, 10>
+                     * @param T $i
+                     */
+                    function isNumericOfIntRange(int $i): bool {
+                        return is_numeric($i);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'isCallableLeavesOutATemplateOfAClassWithoutInvoke' => [
                 'code' => '<?php
                     /**
@@ -3801,6 +3873,21 @@ final class FunctionTemplateTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'typeCheckOfATemplateWhoseBoundCantHoldTheTypeIsStillAContradiction' => [
+                'code' => '<?php
+                    /**
+                     * @template T of string
+                     * @param T $s
+                     */
+                    function f($s): void {
+                        if (is_int($s)) {
+                            echo $s;
+                        }
+                    }',
+                'error_message' => 'DocblockTypeContradiction',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
             'isCallableOfATemplateOfAClassWithoutInvoke' => [
                 'code' => '<?php
                     /**
