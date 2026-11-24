@@ -948,25 +948,48 @@ final class TypeExpander
                     $is_static_resolved,
                 );
             } else {
+                $generic_receiver = $static_class_type instanceof TTemplateParam
+                    ? self::getGenericBound($static_class_type)
+                    : $static_class_type;
+
+                // a template receiver is its bound with the other type arguments: `C` only stands for itself
                 if ($return_type instanceof TGenericObject
-                    && $static_class_type instanceof TGenericObject
+                    && $generic_receiver instanceof TGenericObject
+                    && ($generic_receiver === $static_class_type
+                        || !self::haveSameTypeParams($return_type, $generic_receiver))
                 ) {
+                    $receiver_storage = $codebase->classlike_storage_provider->has($generic_receiver->value)
+                        ? $codebase->classlike_storage_provider->get($generic_receiver->value)
+                        : null;
+
+                    // a template bound by a final class can only be that class
+                    if ($generic_receiver !== $static_class_type && $receiver_storage?->final) {
+                        $is_static = $return_type->is_static;
+                        $is_static_resolved = null;
+                    }
+
                     $return_type = $return_type->setValueIsStatic(
-                        $static_class_type->value,
+                        $generic_receiver->value,
                         $is_static,
                         $is_static_resolved,
                     );
 
-                    if ($codebase->classlike_storage_provider->has($static_class_type->value)) {
+                    if ($receiver_storage !== null) {
                         $type_params = PurityArguments::trim(
                             $return_type->type_params,
-                            $codebase->classlike_storage_provider->get($static_class_type->value),
+                            $receiver_storage,
                         );
 
                         if ($type_params !== [] && count($type_params) !== count($return_type->type_params)) {
                             $return_type = $return_type->setTypeParams($type_params);
                         }
                     }
+
+                    $return_type = $return_type->setIntersectionTypes(array_merge(
+                        $return_type->extra_types,
+                        $generic_receiver->extra_types,
+                        $static_class_type->extra_types,
+                    ));
                 } elseif ($static_class_type instanceof TNamedObject) {
                     $return_type = $static_class_type->setIsStatic(
                         $is_static,
@@ -1042,6 +1065,35 @@ final class TypeExpander
         }
 
         return $return_type;
+    }
+
+    /**
+     * @psalm-pure
+     */
+    private static function getGenericBound(TTemplateParam $template): ?TGenericObject
+    {
+        $bound_types = $template->as->getAtomicTypes();
+        $bound = reset($bound_types);
+
+        return count($bound_types) === 1 && $bound instanceof TGenericObject ? $bound : null;
+    }
+
+    /**
+     * @psalm-pure
+     */
+    private static function haveSameTypeParams(TGenericObject $a, TGenericObject $b): bool
+    {
+        if (count($a->type_params) !== count($b->type_params)) {
+            return false;
+        }
+
+        foreach ($a->type_params as $offset => $type_param) {
+            if ($type_param->getId() !== $b->type_params[$offset]->getId()) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /**

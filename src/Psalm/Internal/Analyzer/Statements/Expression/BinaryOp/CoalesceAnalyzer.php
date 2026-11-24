@@ -24,6 +24,7 @@ use Psalm\Type\Union;
 use function preg_replace;
 use function str_starts_with;
 use function strlen;
+use function strpbrk;
 use function substr;
 
 /**
@@ -156,6 +157,16 @@ final class CoalesceAnalyzer
             );
         }
 
+        $left_operand_var_id = ExpressionIdentifier::getExtendedVarId(
+            $left_expr,
+            $statements_analyzer->getFQCLN(),
+            $statements_analyzer,
+        );
+        // a property may be uninitialized whatever its type says
+        $left_operand_type = $left_operand_var_id !== null && strpbrk($left_operand_var_id, '->:') === false
+            ? $context->vars_in_scope[$left_operand_var_id] ?? null
+            : null;
+
         $ternary = new VirtualTernary(
             new VirtualIsset(
                 [$left_expr],
@@ -181,6 +192,17 @@ final class CoalesceAnalyzer
             $left_not_null = $left_type->getBuilder();
             $left_not_null->removeType('null');
             $ternary_type = Type::combineUnionTypes($left_not_null->freeze(), $right_type);
+        }
+
+        // a left side known to be set and not null is the result: the right side is never evaluated
+        if ($left_type
+            && $left_operand_type
+            && !$left_operand_type->possibly_undefined
+            && !$left_operand_type->possibly_undefined_from_try
+            && !$left_operand_type->isNullable()
+            && !$left_operand_type->hasMixed()
+        ) {
+            $ternary_type = $left_type;
         }
 
         $statements_analyzer->node_data = $old_node_data;
