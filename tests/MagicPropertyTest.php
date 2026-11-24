@@ -25,6 +25,27 @@ final class MagicPropertyTest extends TestCase
     use InvalidCodeAnalysisTestTrait;
     use ValidCodeAnalysisTestTrait;
 
+    public function testNotSetChildOfASimpleXmlElementWithoutItsStubIsStillReadThroughGet(): void
+    {
+        $config = Config::getInstance();
+        self::assertInstanceOf(TestConfig::class, $config);
+        $config->disableExtension('simplexml');
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                function f(SimpleXMLElement $xml): string {
+                    if (!isset($xml->title)) {
+                        return $xml->title->getName();
+                    }
+
+                    return "";
+                }',
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
     public function testPhpDocPropertyWithoutGet(): void
     {
         Config::getInstance()->use_phpdoc_property_without_magic_or_parent = true;
@@ -399,6 +420,139 @@ final class MagicPropertyTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'issetOfAMagicPropertyThatNeverReturnsNullCanFail' => [
+                'code' => '<?php
+                    final class Bag {
+                        public function __get(string $name): string {
+                            return $name;
+                        }
+
+                        public function __isset(string $name): bool {
+                            return $name === "known";
+                        }
+                    }
+
+                    function read(Bag $bag): string {
+                        if (!isset($bag->known)) {
+                            return "unknown";
+                        }
+
+                        return $bag->known;
+                    }',
+            ],
+            'magicPropertyThatIsNotSetIsStillReadThroughGet' => [
+                'code' => '<?php
+                    final class Node {
+                        public function __get(string $name): Node {
+                            return new Node();
+                        }
+
+                        public function __isset(string $name): bool {
+                            return $name === "title";
+                        }
+
+                        public function getName(): string {
+                            return "node";
+                        }
+                    }
+
+                    function f(Node $node): string {
+                        if (isset($node->title)) {
+                            error_log("t");
+                        }
+
+                        return $node->title->getName();
+                    }
+
+                    $node = new Node();
+                    if (!isset($node->title)) {
+                        $not_set = $node->title;
+                    }
+                    $after = $node->title;',
+                'assertions' => [
+                    '$not_set===' => 'Node',
+                    '$after===' => 'Node',
+                ],
+            ],
+            'magicPropertyThatCanBeNullIsNullWhereItIsNotSet' => [
+                'code' => '<?php
+                    final class Node {
+                        public function __get(string $name): ?Node {
+                            return null;
+                        }
+
+                        public function __isset(string $name): bool {
+                            return false;
+                        }
+                    }
+
+                    $node = new Node();
+                    if (!isset($node->title)) {
+                        $not_set = $node->title;
+                    }',
+                'assertions' => [
+                    '$not_set===' => 'null',
+                ],
+            ],
+            'nestedIssetOfMagicPropertiesInAnAnd' => [
+                'code' => '<?php
+                    final class Node {
+                        public function __get(string $name): Node {
+                            return new Node();
+                        }
+
+                        public function __isset(string $name): bool {
+                            return $name === "a";
+                        }
+                    }
+
+                    function g(Node $node): void {
+                        if (isset($node->a) && isset($node->a->b)) {
+                            error_log("set");
+                        }
+                    }',
+            ],
+            'coalesceOfAMagicPropertyThatNeverReturnsNull' => [
+                'code' => '<?php
+                    final class Bag {
+                        public function __get(string $name): string {
+                            return $name;
+                        }
+
+                        public function __isset(string $name): bool {
+                            return $name === "known";
+                        }
+                    }
+
+                    $bag = new Bag();
+                    $t = $bag->x ?? null;',
+                'assertions' => [
+                    '$t' => 'null|string',
+                ],
+            ],
+            'issetOfAPseudoPropertyCanFail' => [
+                'code' => '<?php
+                    /**
+                     * @property string $known
+                     */
+                    final class Bag {
+                        public function __get(string $name): string {
+                            return $name;
+                        }
+
+                        public function __isset(string $name): bool {
+                            return $name === "known";
+                        }
+                    }
+
+                    function read(Bag $bag): string {
+                        if (!isset($bag->known)) {
+                            return "unknown";
+                        }
+
+                        return $bag->known;
+                    }',
+            ],
             'propertyAnnotationWithATemplateOfAUsedTraitIsLocalizedInTheClass' => [
                 'code' => '<?php
                     /**

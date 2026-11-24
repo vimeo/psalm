@@ -2768,6 +2768,16 @@ final class AssertionReconciler extends Reconciler
     }
 
     /**
+     * @psalm-capabilities read-props|write-props
+     */
+    private static function isOnlyImplementedByEnums(Codebase $codebase, string $interface_name): bool
+    {
+        return strtolower($interface_name) === 'unitenum'
+            || ($codebase->interfaceExists($interface_name)
+                && $codebase->interfaceExtends($interface_name, 'UnitEnum'));
+    }
+
+    /**
      * No object is an instance of two classes that don't extend one another, or of a final class and an interface
      * it doesn't implement
      *
@@ -2798,6 +2808,17 @@ final class AssertionReconciler extends Reconciler
 
             $existing_is_class = !$existing_storage->is_interface && !$existing_storage->is_trait;
             $new_is_class = !$new_storage->is_interface && !$new_storage->is_trait;
+
+            // only an enum implements UnitEnum, and an enum extends no class
+            if (($existing_is_class
+                    && !$existing_storage->is_enum
+                    && self::isOnlyImplementedByEnums($codebase, $new_type_part->value))
+                || ($new_is_class
+                    && !$new_storage->is_enum
+                    && self::isOnlyImplementedByEnums($codebase, $existing_name))
+            ) {
+                return false;
+            }
 
             if ($existing_is_class && $new_is_class) {
                 if (!$codebase->classExtends($existing_name, $new_type_part->value)

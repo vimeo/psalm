@@ -740,7 +740,7 @@ final class ValueOfTemplateTest extends TestCase
                         return $t;
                     }',
                 'error_message' => 'InvalidReturnStatement - src' . DIRECTORY_SEPARATOR
-                    . "somefile.php:11:32 - The inferred type 'non-empty-array<'a'|'b'|(key-of",
+                    . "somefile.php:11:32 - The inferred type 'array{a: int, b: 1|string, ...<key-of<T:fn-w as ",
                 'error_levels' => [],
                 'php_version' => '8.2',
             ],

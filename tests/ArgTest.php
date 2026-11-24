@@ -400,7 +400,7 @@ final class ArgTest extends TestCase
                 ',
                 'assertions' => [
                     '$a' => 'non-empty-array<int|string, bool|int>',
-                    '$b' => 'non-empty-array<int|string, bool|int>',
+                    '$b' => 'array{a: int, b: int, ...<int<0, max>, bool>}',
                 ],
             ],
             'byRefArgAssignment' => [
