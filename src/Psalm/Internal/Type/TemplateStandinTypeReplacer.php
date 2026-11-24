@@ -1137,11 +1137,13 @@ final class TemplateStandinTypeReplacer
             // that flowed into it for the gate, while the upper bound recorded
             // below still reconciles against the variable's bounds
             $gate_replacement_type = $replacement_type;
+            $is_type_variable = false;
 
             foreach ($replacement_type->getAtomicTypes() as $replacement_atomic_type) {
                 if ($replacement_atomic_type instanceof TTypeVariable) {
                     $gate_resolver = new TypeVariableResolver($codebase, construction_site_only: false);
                     $gate_resolver->traverse($gate_replacement_type);
+                    $is_type_variable = true;
                     break;
                 }
             }
@@ -1165,8 +1167,9 @@ final class TemplateStandinTypeReplacer
                         $gate_replacement_type,
                     );
                 }
-            } elseif ($input_type->hasTemplate()) {
-                // a template input, whose values aren't known yet, records no bound
+            } elseif ($is_type_variable || $input_type->hasTemplate()) {
+                // a template input, whose values aren't known yet, and a value outside what a type variable has
+                // received record no bound: the variable widens
                 $generic_param = null;
             } else {
                 // as for a lower bound, the parts of the bound the input contains, if any

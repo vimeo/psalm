@@ -3424,6 +3424,31 @@ final class FunctionTemplateTest extends TestCase
                 ],
                 'ignored_issues' => ['ArgumentTypeCoercion', 'PossiblyInvalidArgument', 'InvalidScalarArgument'],
             ],
+            'callableOfATemplateOfTheCallerKeepsItsUpperBound' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @param callable(T): void $cb
+                     * @return T
+                     */
+                    function fromCallback(callable $cb) { throw new Exception(); }
+
+                    /**
+                     * @template U of string
+                     * @param U $u
+                     */
+                    function g($u): void {
+                        /** @param U $x */
+                        $f = function ($x): void {};
+                        $r = fromCallback($f);
+                        takesString($r);
+                    }
+
+                    function takesString(string $s): void {}',
+                'assertions' => [],
+                'ignored_issues' => ['UnusedParam', 'UnusedClosureParam'],
+                'php_version' => '8.2',
+            ],
             'templateArgumentWithNoPartOfTheBoundIsNotNarrowedToTheBoundPartsItContains' => [
                 'code' => '<?php
                     /**
@@ -3673,6 +3698,50 @@ final class FunctionTemplateTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'callableOfATemplateOfTheCallerStillChecksItsArgument' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @param list<T> $xs
+                     * @param callable(T): void $cb
+                     */
+                    function each(array $xs, callable $cb): void {}
+
+                    /**
+                     * @template U of string
+                     * @param U $u
+                     */
+                    function g($u): void {
+                        /** @param U $x */
+                        $f = function ($x): void {};
+                        each([1, 2], $f);
+                    }',
+                'error_message' => 'InvalidScalarArgument',
+                'error_levels' => ['UnusedParam', 'UnusedClosureParam'],
+                'php_version' => '8.2',
+            ],
+            'callableOfAListOfATemplateOfTheCallerStillChecksItsArgument' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @param list<T> $xs
+                     * @param callable(T): void $cb
+                     */
+                    function each(array $xs, callable $cb): void {}
+
+                    /**
+                     * @template U of string
+                     * @param U $u
+                     */
+                    function g($u): void {
+                        /** @param list<U> $x */
+                        $f2 = function (array $x): void {};
+                        each([[1]], $f2);
+                    }',
+                'error_message' => 'InvalidScalarArgument',
+                'error_levels' => ['UnusedParam', 'UnusedClosureParam'],
+                'php_version' => '8.2',
+            ],
             'callableParamTypedWithATemplateOfTheCallerIsCheckedAgainstTheArgument' => [
                 'code' => '<?php
                     /**
