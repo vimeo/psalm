@@ -7506,6 +7506,99 @@ final class ConditionalTest extends TestCase
                         }
                     }',
             ],
+            'typeChecksOfAnEmptyOrNonEmptyScalarGiveTheExactPartsOfEachKind' => [
+                'code' => '<?php
+                    /** @param non-empty-scalar $v */
+                    function nonEmptyInt($v): void {
+                        if (!is_int($v)) {
+                            /** @psalm-check-type-exact $v = float|non-falsy-string|true */;
+                        }
+                    }
+
+                    /** @param non-empty-scalar $v */
+                    function nonEmptyString($v): void {
+                        if (is_string($v)) {
+                            /** @psalm-check-type-exact $v = non-falsy-string */;
+                        }
+                    }
+
+                    /** @param non-empty-scalar $v */
+                    function nonEmptyBool($v): void {
+                        if (is_bool($v)) {
+                            /** @psalm-check-type-exact $v = true */;
+                        }
+                    }
+
+                    /** @param non-empty-scalar $v */
+                    function nonEmptyFloat($v): void {
+                        if (is_float($v)) {
+                            /** @psalm-check-type-exact $v = float */;
+                        }
+                    }
+
+                    /** @param non-empty-scalar $v */
+                    function nonEmptyNumeric($v): void {
+                        if (is_numeric($v)) {
+                            if (is_string($v)) {
+                                /** @psalm-check-type-exact $v = non-falsy-string&numeric-string */;
+                            }
+
+                            if (is_float($v)) {
+                                /** @psalm-check-type-exact $v = float */;
+                            }
+                        } else {
+                            /** @psalm-check-type-exact $v = non-falsy-string|true */;
+                        }
+                    }
+
+                    /** @param empty-scalar $v */
+                    function emptyInt($v): void {
+                        if (is_int($v)) {
+                            /** @psalm-check-type-exact $v = 0 */;
+                        } else {
+                            /** @psalm-check-type-exact $v = \'\'|\'0\'|false|0.0 */;
+                        }
+                    }
+
+                    /** @param empty-scalar $v */
+                    function emptyString($v): void {
+                        if (is_string($v)) {
+                            /** @psalm-check-type-exact $v = \'\'|\'0\' */;
+                        } else {
+                            /** @psalm-check-type-exact $v = 0|false|0.0 */;
+                        }
+                    }
+
+                    /** @param empty-scalar $v */
+                    function emptyBool($v): void {
+                        if (is_bool($v)) {
+                            /** @psalm-check-type-exact $v = false */;
+                        } else {
+                            /** @psalm-check-type-exact $v = \'\'|\'0\'|0|0.0 */;
+                        }
+                    }
+
+                    /** @param empty-scalar $v */
+                    function emptyFloat($v): void {
+                        if (is_float($v)) {
+                            /** @psalm-check-type-exact $v = 0.0 */;
+                        } else {
+                            /** @psalm-check-type-exact $v = \'\'|\'0\'|0|false */;
+                        }
+                    }
+
+                    /** @param empty-scalar $v */
+                    function emptyNumeric($v): void {
+                        if (is_numeric($v)) {
+                            /** @psalm-check-type-exact $v = \'0\'|0|0.0 */;
+                        } else {
+                            /** @psalm-check-type-exact $v = \'\'|false */;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.2',
+            ],
             'typeChecksOfAnEmptyOrNonEmptyScalarKeepItsEmptiness' => [
                 'code' => '<?php
                     /** @param int<1, max>|int<min, -1> $i */

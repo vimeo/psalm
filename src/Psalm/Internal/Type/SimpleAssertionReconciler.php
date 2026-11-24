@@ -42,14 +42,12 @@ use Psalm\Type\Atomic\TCallableObject;
 use Psalm\Type\Atomic\TCallableString;
 use Psalm\Type\Atomic\TClassConstant;
 use Psalm\Type\Atomic\TClassString;
-use Psalm\Type\Atomic\TEmptyScalar;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TIntRange;
 use Psalm\Type\Atomic\TIterable;
 use Psalm\Type\Atomic\TKeyedArray;
-use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TLowercaseNumericString;
 use Psalm\Type\Atomic\TLowercaseString;
@@ -85,6 +83,7 @@ use Psalm\Type\Union;
 use function array_is_list;
 use function array_map;
 use function array_merge;
+use function array_push;
 use function array_reverse;
 use function array_values;
 use function assert;
@@ -92,6 +91,7 @@ use function count;
 use function explode;
 use function in_array;
 use function is_int;
+use function is_numeric;
 use function ksort;
 use function strlen;
 use function strpos;
@@ -1072,14 +1072,10 @@ final class SimpleAssertionReconciler extends Reconciler
             } elseif ($type instanceof TNumeric) {
                 $string_types[] = new TNumericString;
                 $redundant = false;
-            } elseif ($type instanceof TEmptyScalar) {
-                $string_types[] = Type::getAtomicStringFromLiteral('');
-                $string_types[] = Type::getAtomicStringFromLiteral('0');
+            } elseif ($type instanceof TScalar) {
+                array_push($string_types, ...AtomicParts::getScalarPartsOfKind($type, TString::class));
                 $redundant = false;
-            } elseif ($type instanceof TNonEmptyScalar) {
-                $string_types[] = new TNonFalsyString;
-                $redundant = false;
-            } elseif ($type instanceof TScalar || $type instanceof TArrayKey) {
+            } elseif ($type instanceof TArrayKey) {
                 $string_types[] = new TString;
                 $redundant = false;
             } elseif ($type instanceof TTemplateParam) {
@@ -1173,14 +1169,10 @@ final class SimpleAssertionReconciler extends Reconciler
             } elseif ($type instanceof TNumeric) {
                 $int_types[] = new TInt;
                 $redundant = false;
-            } elseif ($type instanceof TEmptyScalar) {
-                $int_types[] = new TLiteralInt(0);
+            } elseif ($type instanceof TScalar) {
+                array_push($int_types, ...AtomicParts::getScalarPartsOfKind($type, TInt::class));
                 $redundant = false;
-            } elseif ($type instanceof TNonEmptyScalar) {
-                $int_types[] = new TIntRange(null, -1);
-                $int_types[] = new TIntRange(1, null);
-                $redundant = false;
-            } elseif ($type instanceof TScalar || $type instanceof TArrayKey) {
+            } elseif ($type instanceof TArrayKey) {
                 $int_types[] = new TInt;
                 $redundant = false;
             } elseif ($type instanceof TTemplateParam) {
@@ -1253,14 +1245,8 @@ final class SimpleAssertionReconciler extends Reconciler
             if ($type instanceof TBool) {
                 $type = $type->setFromDocblock(false);
                 $bool_types[] = $type;
-            } elseif ($type instanceof TEmptyScalar) {
-                $bool_types[] = new TFalse;
-                $redundant = false;
-            } elseif ($type instanceof TNonEmptyScalar) {
-                $bool_types[] = new TTrue;
-                $redundant = false;
             } elseif ($type instanceof TScalar) {
-                $bool_types[] = new TBool;
+                array_push($bool_types, ...AtomicParts::getScalarPartsOfKind($type, TBool::class));
                 $redundant = false;
             } elseif ($type instanceof TTemplateParam) {
                 $bound = self::getTemplateBound($type);
@@ -1496,7 +1482,24 @@ final class SimpleAssertionReconciler extends Reconciler
                 $numeric_types[] = $type;
             } elseif ($type instanceof TScalar) {
                 $redundant = false;
-                $numeric_types[] = new TNumeric();
+
+                if ($type::class === TScalar::class) {
+                    $numeric_types[] = new TNumeric();
+                } else {
+                    // what an empty-scalar or a non-empty-scalar says of its emptiness holds for the numbers in it
+                    foreach (AtomicParts::getScalarParts($type) ?? [] as $scalar_part) {
+                        if ($scalar_part instanceof TNonFalsyString) {
+                            $numeric_types[] = new TNonFalsyNumericString();
+                        } elseif ($scalar_part instanceof TString && !$scalar_part instanceof TLiteralString) {
+                            $numeric_types[] = new TNumericString();
+                        } elseif ($scalar_part instanceof TInt
+                            || $scalar_part instanceof TFloat
+                            || ($scalar_part instanceof TLiteralString && is_numeric($scalar_part->value))
+                        ) {
+                            $numeric_types[] = $scalar_part;
+                        }
+                    }
+                }
             } elseif ($type instanceof TArrayKey) {
                 $redundant = false;
                 $numeric_types[] = new TInt();

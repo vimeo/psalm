@@ -46,7 +46,6 @@ use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TInt;
-use Psalm\Type\Atomic\TIntRange;
 use Psalm\Type\Atomic\TIterable;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TLiteralFloat;
@@ -58,9 +57,7 @@ use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNever;
 use Psalm\Type\Atomic\TNonEmptyLowercaseString;
 use Psalm\Type\Atomic\TNonEmptyNonspecificLiteralString;
-use Psalm\Type\Atomic\TNonEmptyScalar;
 use Psalm\Type\Atomic\TNonEmptyString;
-use Psalm\Type\Atomic\TNonFalsyString;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TNumeric;
 use Psalm\Type\Atomic\TNumericString;
@@ -76,6 +73,7 @@ use Psalm\Type\Union;
 
 use function array_push;
 use function assert;
+use function is_numeric;
 use function str_contains;
 use function strpbrk;
 use function strtolower;
@@ -492,42 +490,24 @@ final class SimpleNegatedAssertionReconciler extends Reconciler
     }
 
     /**
-     * The parts of a scalar, keeping what an empty-scalar or a non-empty-scalar says of their emptiness
+     * The parts of a scalar of the given kinds, keeping what an empty-scalar or a non-empty-scalar says of their
+     * emptiness
      *
-     * @param list<'string'|'non-numeric-string'|'int'|'float'|'bool'> $kinds
+     * @param list<class-string<TInt>|class-string<TFloat>|class-string<TString>|class-string<TBool>> $kinds
      * @return list<Atomic>
+     * @psalm-pure
      */
-    private static function getScalarParts(TScalar $type, array $kinds): array
+    private static function getScalarPartsOfKinds(TScalar $type, array $kinds, bool $non_numeric = false): array
     {
         $parts = [];
 
         foreach ($kinds as $kind) {
-            if ($type instanceof TEmptyScalar) {
-                $kind_parts = match ($kind) {
-                    'string' => [Type::getAtomicStringFromLiteral(''), Type::getAtomicStringFromLiteral('0')],
-                    'non-numeric-string' => [Type::getAtomicStringFromLiteral('')],
-                    'int' => [new TLiteralInt(0)],
-                    'float' => [new TLiteralFloat(0.0)],
-                    'bool' => [new TFalse()],
-                };
-            } elseif ($type instanceof TNonEmptyScalar) {
-                $kind_parts = match ($kind) {
-                    'string', 'non-numeric-string' => [new TNonFalsyString()],
-                    'int' => [new TIntRange(null, -1), new TIntRange(1, null)],
-                    'float' => [new TFloat()],
-                    'bool' => [new TTrue()],
-                };
-            } else {
-                $kind_parts = match ($kind) {
-                    'string', 'non-numeric-string' => [new TString()],
-                    'int' => [new TInt()],
-                    'float' => [new TFloat()],
-                    'bool' => [new TBool()],
-                };
-            }
+            foreach (AtomicParts::getScalarPartsOfKind($type, $kind) as $part) {
+                if ($non_numeric && $part instanceof TLiteralString && is_numeric($part->value)) {
+                    continue;
+                }
 
-            foreach ($kind_parts as $kind_part) {
-                $parts[] = $kind_part;
+                $parts[] = $part;
             }
         }
 
@@ -575,7 +555,10 @@ final class SimpleNegatedAssertionReconciler extends Reconciler
             ) {
                 if ($type instanceof TScalar) {
                     $redundant = false;
-                    array_push($non_bool_types, ...self::getScalarParts($type, ['string', 'int', 'float']));
+                    array_push(
+                        $non_bool_types,
+                        ...self::getScalarPartsOfKinds($type, [TString::class, TInt::class, TFloat::class]),
+                    );
                 } else {
                     $non_bool_types[] = $type;
                 }
@@ -1240,7 +1223,10 @@ final class SimpleNegatedAssertionReconciler extends Reconciler
                 $non_numeric_types[] = new TString();
             } elseif ($type instanceof TScalar) {
                 $redundant = false;
-                array_push($non_numeric_types, ...self::getScalarParts($type, ['non-numeric-string', 'bool']));
+                array_push(
+                    $non_numeric_types,
+                    ...self::getScalarPartsOfKinds($type, [TString::class, TBool::class], true),
+                );
             } elseif (!$type->isNumericType()) {
                 $non_numeric_types[] = $type;
             } else {
@@ -1310,7 +1296,10 @@ final class SimpleNegatedAssertionReconciler extends Reconciler
                 $non_int_types[] = new TString();
             } elseif ($type instanceof TScalar) {
                 $redundant = false;
-                array_push($non_int_types, ...self::getScalarParts($type, ['string', 'float', 'bool']));
+                array_push(
+                    $non_int_types,
+                    ...self::getScalarPartsOfKinds($type, [TString::class, TFloat::class, TBool::class]),
+                );
             } elseif ($type instanceof TInt) {
                 $redundant = false;
 
@@ -1381,7 +1370,10 @@ final class SimpleNegatedAssertionReconciler extends Reconciler
                 $non_float_types[] = $type;
             } elseif ($type instanceof TScalar) {
                 $redundant = false;
-                array_push($non_float_types, ...self::getScalarParts($type, ['string', 'int', 'bool']));
+                array_push(
+                    $non_float_types,
+                    ...self::getScalarPartsOfKinds($type, [TString::class, TInt::class, TBool::class]),
+                );
             } elseif ($type instanceof TFloat) {
                 $redundant = false;
 
@@ -1465,7 +1457,10 @@ final class SimpleNegatedAssertionReconciler extends Reconciler
                 $redundant = false;
             } elseif ($type instanceof TScalar) {
                 $redundant = false;
-                array_push($non_string_types, ...self::getScalarParts($type, ['float', 'int', 'bool']));
+                array_push(
+                    $non_string_types,
+                    ...self::getScalarPartsOfKinds($type, [TFloat::class, TInt::class, TBool::class]),
+                );
             } elseif (!$type instanceof TString) {
                 $non_string_types[] = $type;
             } else {
