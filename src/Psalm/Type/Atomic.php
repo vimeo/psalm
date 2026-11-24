@@ -473,16 +473,17 @@ abstract class Atomic implements TypeNode, Stringable
     }
 
     /**
-     * The slot of the type in Union::$types: two types of the same key don't coexist in a union. It is coarse where
-     * TypeCombiner merges the types of a slot and exact where it doesn't:
+     * The key the type is stored under in Union::$types: a union holds at most one type per key, so adding a type
+     * replaces the one of the same key. Different types may share a key, where TypeCombiner merges them into one:
      *
+     *     type                        key
      *     non-empty-string            string
      *     Foo<5>, Foo<array{a: int}>  Foo<int>, Foo<array>
      *     Foo&Bar<5>                  Foo&Bar<5>
      *
-     * It names no type: use getId() to compare types or show them.
+     * As it doesn't tell types apart, it is not meant to compare types or show them: use getId().
      *
-     * @param bool $include_extra false to leave out the intersected types
+     * @param bool $include_extra whether the key includes the intersected types (`&Bar<5>`)
      * @psalm-mutation-free
      */
     abstract public function getKey(bool $include_extra = true): string;
@@ -784,15 +785,15 @@ abstract class Atomic implements TypeNode, Stringable
     }
 
     /**
-     * The identifier of the type: what compares types, keys caches and names the type in issue messages. Without
-     * $exact, literals and refinements are left out:
+     * The string that identifies the type: two types are the same type when they have the same id. Types are compared,
+     * cached and named in issue messages by their id. Without $exact, literals and refinements are left out:
      *
      *     exact             not exact
      *     5                 int
      *     'a'               string
      *     non-empty-string  string
      *
-     * Defaults to getKey(), for the types whose key is already exact.
+     * Defaults to getKey(): a type whose key leaves something out of the type overrides it.
      *
      * @psalm-mutation-free
      */
@@ -802,7 +803,8 @@ abstract class Atomic implements TypeNode, Stringable
     }
 
     /**
-     * The type in a serialized assertion: `int(5)` and `string(a)` for literals, the id otherwise
+     * How the type is written in the string form of an assertion: `int(5)` and `string(a)` for literals, the id
+     * otherwise
      *
      * @psalm-mutation-free
      */
@@ -812,15 +814,16 @@ abstract class Atomic implements TypeNode, Stringable
     }
 
     /**
-     * The type written into the user's code (docblocks, stubs), with class names relative to $namespace. The phpdoc
-     * format, for `@param` and `@return`, leaves out literals and refinements, the Psalm format, for `@psalm-param`
-     * and `@psalm-return`, keeps them:
+     * The type as Psalm writes it in the docblocks and stubs it generates (`--alter`, stub generation), with class
+     * names shortened by $namespace and $aliased_classes. With $use_phpdoc_format, for `@param` and `@return`,
+     * literals and refinements are left out; without it, for `@psalm-param` and `@psalm-return`, they are kept:
      *
-     *     phpdoc  Psalm
-     *     int     5
-     *     string  non-empty-string
+     *     with $use_phpdoc_format  without
+     *     int                      5
+     *     string                   non-empty-string
      *
-     * Defaults to getId(), not exact in the phpdoc format. Types whose id is no docblock syntax override it.
+     * Defaults to getId(), not exact with $use_phpdoc_format. A type whose id can't be written in a docblock
+     * (`empty-mixed`, a type variable) overrides it.
      *
      * @param array<lowercase-string, string> $aliased_classes
      * @psalm-mutation-free
@@ -835,7 +838,8 @@ abstract class Atomic implements TypeNode, Stringable
     }
 
     /**
-     * The type as a native type declaration of the given PHP version (`?int`, `int|string`), null when it has none
+     * The type as a native type declaration (`?int`, `int|string`) for the given PHP version, null when it can't be
+     * declared natively in that version
      *
      * @psalm-mutation-free
      * @param  array<lowercase-string, string> $aliased_classes

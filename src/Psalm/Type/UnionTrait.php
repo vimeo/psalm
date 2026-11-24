@@ -304,8 +304,8 @@ trait UnionTrait
     }
 
     /**
-     * The identifier of the type: the sorted ids of its atomic types (see Atomic::getId()), a template among
-     * several types in parentheses (`(T:fn-f as int)|null`)
+     * The string that identifies the type (see Atomic::getId()): the ids of its atomic types, sorted and joined by
+     * `|`, with a template in parentheses when there are several types (`(T:fn-f as int)|null`)
      *
      * @psalm-mutation-free
      */
@@ -346,7 +346,7 @@ trait UnionTrait
     }
 
     /**
-     * The type written into the user's code, see Atomic::toNamespacedString()
+     * The type as Psalm writes it in the docblocks and stubs it generates, see Atomic::toNamespacedString()
      *
      * @param  array<lowercase-string, string> $aliased_classes
      * @psalm-mutation-free
