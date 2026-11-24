@@ -115,6 +115,7 @@ use Psalm\Type\TaintKind;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
+use function array_diff_key;
 use function array_filter;
 use function array_map;
 use function array_values;
@@ -213,10 +214,10 @@ final class AssignmentAnalyzer
     }
 
     /**
-     * Writing a property of a constant (`CONFIG->debug = true`, `CONFIG->items[] = 1`) is a compile error before
-     * PHP 8.6, whatever the types are
+     * Writing a property of a constant (`CONFIG->debug = true`, `CONFIG->items[] = 1`, `unset(CONFIG->debug)`, passing
+     * or binding it by reference) is a compile error before PHP 8.6, whatever the types are
      */
-    private static function checkConstantObjectWrite(StatementsAnalyzer $statements_analyzer, Expr $assign_var): void
+    public static function checkConstantObjectWrite(StatementsAnalyzer $statements_analyzer, Expr $assign_var): void
     {
         if ($statements_analyzer->getCodebase()->analysis_php_version_id >= 8_06_00) {
             return;
@@ -1420,6 +1421,8 @@ final class AssignmentAnalyzer
         Context $context,
         ?PhpParser\Node\Stmt $from_stmt,
     ): bool {
+        self::checkConstantObjectWrite($statements_analyzer, $stmt->expr);
+
         // Usage through a reference held by a property or array item can't be tracked, so the referenced
         // variable counts as used, like the value of a regular assignment to one.
         $was_inside_general_use = $context->inside_general_use;
@@ -2631,8 +2634,6 @@ final class AssignmentAnalyzer
     /**
      * Assigns the item of $array_type at $offset_value to a variable of a destructuring. A value that can be
      * anything gives the item no type to carry what it takes, so the item is fetched from the value here.
-     *
-     * @param int-mask-of<TaintKind::*> $removed_taints
      */
     private static function assignDestructuredItem(
         StatementsAnalyzer $statements_analyzer,
@@ -3141,7 +3142,7 @@ final class AssignmentAnalyzer
 
         // prevents writing to any properties in a mutation-free context
         $statements_analyzer->signalMutation(
-            $pureCompat ? Capabilities::NONE : $mutations,
+            $pureCompat && !$isThis ? Capabilities::NONE : $mutations,
             $context,
             'property assignment',
             ImpurePropertyAssignment::class,
@@ -3275,6 +3276,16 @@ final class AssignmentAnalyzer
                     $var_object_id = spl_object_id($assign_var);
                     $cond_object_id = spl_object_id($assign_value);
 
+                    // whether each mixed variable may be unset
+                    $mixed_vars = [];
+
+                    foreach ($context->vars_in_scope as $context_var_id => $context_type) {
+                        if ($context_type->isMixed()) {
+                            $mixed_vars[$context_var_id] = $context_type->possibly_undefined
+                                || $context_type->possibly_undefined_from_try;
+                        }
+                    }
+
                     try {
                         $cond_clauses = FormulaGenerator::getFormula(
                             $cond_object_id,
@@ -3287,7 +3298,7 @@ final class AssignmentAnalyzer
 
                         $right_clauses = Context::filterClauses(
                             $var_id,
-                            $cond_clauses,
+                            self::forgetItemsOfMixedVars($cond_clauses, $mixed_vars, $cond_object_id),
                         );
 
                         $assignment_clauses = Algebra::combineOredClauses(
@@ -3305,13 +3316,17 @@ final class AssignmentAnalyzer
                         try {
                             $negated_clauses = Context::filterClauses(
                                 $var_id,
-                                FormulaGenerator::getNegatedFormula(
-                                    $cond_clauses,
-                                    $assign_value,
+                                self::forgetItemsOfMixedVars(
+                                    FormulaGenerator::getNegatedFormula(
+                                        $cond_clauses,
+                                        $assign_value,
+                                        $cond_object_id,
+                                        $context->self,
+                                        $statements_analyzer,
+                                        $codebase,
+                                    ),
+                                    $mixed_vars,
                                     $cond_object_id,
-                                    $context->self,
-                                    $statements_analyzer,
-                                    $codebase,
                                 ),
                             );
 
@@ -3363,6 +3378,34 @@ final class AssignmentAnalyzer
                 }
             }
         }
+    }
+
+    /**
+     * The clauses without those on an offset or a property of a mixed variable, which say nothing (see
+     * Clause::forgetItemsOfMixedVars()), unless a clause is about the variable itself, as in an if condition
+     *
+     * @param list<Clause> $clauses
+     * @param array<string, bool> $mixed_vars whether each mixed variable may be unset
+     * @return list<Clause>
+     * @psalm-capabilities read-props
+     */
+    private static function forgetItemsOfMixedVars(array $clauses, array $mixed_vars, int $cond_object_id): array
+    {
+        foreach ($clauses as $clause) {
+            $mixed_vars = array_diff_key($mixed_vars, $clause->possibilities);
+        }
+
+        $known_clauses = [];
+
+        foreach ($clauses as $clause) {
+            $clause = $clause->forgetItemsOfMixedVars($mixed_vars, $cond_object_id);
+
+            if (!$clause->wedge) {
+                $known_clauses[] = $clause;
+            }
+        }
+
+        return $known_clauses;
     }
 
     /**

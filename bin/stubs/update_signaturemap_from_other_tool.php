@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+use function Psalm\Internal\Stubs\get_changed_functions;
+
 require __DIR__ . '/gen_callmap_utils.php';
 
 $long_options = [

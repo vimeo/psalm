@@ -12,6 +12,7 @@ use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\AssertionFinder;
 use Psalm\Internal\Analyzer\Statements\Expression\BinaryOp\ArithmeticOpAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
+use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ArrayFetchAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ConstFetchAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\IncludeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
@@ -733,33 +734,74 @@ final class NamedFunctionCallHandler
         }
     }
 
+    /**
+     * The flag given to extract() when it is EXTR_OVERWRITE or EXTR_SKIP, false otherwise.
+     *
+     * @param array<int, PhpParser\Node\Arg> $args
+     * @psalm-capabilities read-props
+     */
+    private static function getExtractFlag(StatementsAnalyzer $statements_analyzer, array $args): int|false
+    {
+        if (!isset($args[1])) {
+            return EXTR_OVERWRITE;
+        }
+
+        $flags_type = $statements_analyzer->node_data->getType($args[1]->value);
+
+        if (!$flags_type || !$flags_type->isSingleIntLiteral()) {
+            return false;
+        }
+
+        // @todo add support for other flags
+        return match ($flags_type->getSingleIntLiteral()->value) {
+            EXTR_SKIP => EXTR_SKIP,
+            EXTR_OVERWRITE => EXTR_OVERWRITE,
+            default => false,
+        };
+    }
+
+    /**
+     * The sealed array given to extract() when the analysis knows the variable extract() assigns for each of its
+     * keys, null otherwise.
+     *
+     * @param array<int, PhpParser\Node\Arg> $args
+     * @psalm-capabilities read-props
+     */
+    public static function getExtractedArray(StatementsAnalyzer $statements_analyzer, array $args): ?TKeyedArray
+    {
+        if (!isset($args[0])
+            || $args[0]->unpack
+            || ($args[0]->name !== null && $args[0]->name->name !== 'array')
+            || (isset($args[1]) && $args[1]->name !== null && $args[1]->name->name !== 'flags')
+            || self::getExtractFlag($statements_analyzer, $args) === false
+            || !($array_type = $statements_analyzer->node_data->getType($args[0]->value))
+            || !$array_type->isSingle()
+        ) {
+            return null;
+        }
+
+        $array_atomic = $array_type->getSingleAtomic();
+
+        return $array_atomic instanceof TKeyedArray && $array_atomic->fallback_params === null
+            ? $array_atomic
+            : null;
+    }
+
     private static function handleExtract(
         StatementsAnalyzer $statements_analyzer,
         Codebase $codebase,
         PhpParser\Node\Expr\FuncCall $stmt,
         Context $context,
     ): void {
-        $flag_value = false;
-        if (!isset($stmt->args[1])) {
-            $flag_value = EXTR_OVERWRITE;
-        } elseif (isset($stmt->args[1]->value)
-            && $stmt->args[1]->value instanceof PhpParser\Node\Expr
-            && ($flags_type = $statements_analyzer->node_data->getType($stmt->args[1]->value))
-            && $flags_type->hasLiteralInt() && count($flags_type->getAtomicTypes()) === 1) {
-            $flag_type_value = $flags_type->getSingleIntLiteral()->value;
-            if ($flag_type_value === EXTR_SKIP) {
-                $flag_value = EXTR_SKIP;
-            } elseif ($flag_type_value === EXTR_OVERWRITE) {
-                $flag_value = EXTR_OVERWRITE;
-            }
-            // @todo add support for other flags
-        }
+        $args = $stmt->getArgs();
+        $flag_value = self::getExtractFlag($statements_analyzer, $args);
 
         $is_unsealed = true;
         $validated_var_ids = [];
-        if ($flag_value !== false && isset($stmt->args[0]->value)
-            && $stmt->args[0]->value instanceof PhpParser\Node\Expr
-            && ($array_type_union = $statements_analyzer->node_data->getType($stmt->args[0]->value))
+        if ($flag_value !== false
+            && isset($args[0])
+            && !$args[0]->unpack
+            && ($array_type_union = $statements_analyzer->node_data->getType($args[0]->value))
             && $array_type_union->isSingle()
         ) {
             foreach ($array_type_union->getAtomicTypes() as $array_type) {
@@ -772,6 +814,18 @@ final class NamedFunctionCallHandler
 
                         $var_id = '$' . $key;
                         $validated_var_ids[] = $var_id;
+
+                        // the variable gets what the array holds under its key
+                        $key_type = Type::getString($key);
+                        ArrayFetchAnalyzer::taintArrayFetch(
+                            $statements_analyzer,
+                            $args[0]->value,
+                            $var_id,
+                            $type,
+                            $key_type,
+                            null,
+                            $array_type_union,
+                        );
 
                         if (isset($context->vars_in_scope[$var_id]) && $flag_value === EXTR_SKIP) {
                             $existing_type = $context->vars_in_scope[$var_id];
@@ -788,9 +842,7 @@ final class NamedFunctionCallHandler
                             );
                         } elseif (!isset($context->vars_in_scope[$var_id]) && $type->possibly_undefined === true) {
                             $context->possibly_assigned_var_ids[$var_id] = true;
-                        } elseif (isset($context->vars_in_scope[$var_id])
-                            && $type->possibly_undefined === true
-                            && $flag_value === EXTR_OVERWRITE) {
+                        } elseif (isset($context->vars_in_scope[$var_id]) && $type->possibly_undefined === true) {
                             $type = Type::combineUnionTypes(
                                 $context->vars_in_scope[$var_id],
                                 $type,

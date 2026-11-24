@@ -37,11 +37,18 @@ const EXTENSIONS = [
     'amqp', 'apcu', 'zmq', 'ds', 'event', 'ev', 'redis', 'mongodb', 'imagick', 'pcntl',
     'pgsql', 'intl', 'gmp', 'mbstring', 'mysqli', 'pdo_mysql', 'pdo_pgsql',
     'snmp', 'tidy', 'xsl', 'xml', 'dom', 'iconv', 'zip', 'igbinary', 'gd', 'bcmath',
+    'bz2', 'calendar', 'dba', 'enchant', 'exif', 'gettext', 'ldap', 'odbc', 'pdo_dblib', 'pdo_firebird', 'pdo_odbc',
+    'shmop', 'sockets', 'sysvmsg', 'sysvsem', 'sysvshm', 'imap', 'pspell', 'oci8',
 ];
 
 /** Extensions added on top of EXTENSIONS for specific versions. */
 const INCLUDES = [
-    '7.4' => ['ffi'],
+    // PHP 8.0 removed xmlrpc
+    '7.0' => ['xmlrpc'],
+    '7.1' => ['xmlrpc'],
+    '7.2' => ['xmlrpc'],
+    '7.3' => ['xmlrpc'],
+    '7.4' => ['ffi', 'xmlrpc'],
     '8.0' => ['uv-beta', 'ffi'],
     '8.1' => ['uv-beta', 'ffi'],
     '8.2' => ['uv-beta', 'ffi'],
@@ -56,8 +63,8 @@ const EXCLUDES = [
     // php-zmq does not build on PHP 8.5 (it calls zend_exception_get_default(), removed in 8.5).
     '8.5' => ['zmq'],
     // php-zmq still calls zend_exception_get_default(); redis, memcached, amqp, apcu and ds use APIs 8.6 removed;
-    // swoole and zookeeper require PHP <= 8.5
-    '8.6' => ['zmq', 'redis', 'memcached', 'amqp', 'apcu', 'ds', 'swoole', 'zookeeper'],
+    // swoole and zookeeper require PHP <= 8.5, and install-php-extensions doesn't support imap and pspell on 8.6
+    '8.6' => ['zmq', 'redis', 'memcached', 'amqp', 'apcu', 'ds', 'swoole', 'zookeeper', 'imap', 'pspell'],
 ];
 
 /** Extension versions pinned for specific versions, by base extension name. */
@@ -174,6 +181,10 @@ const SOURCES = [
     'igbinary' => 'pecl',
     'uv' => 'pecl',
     'zmq' => 'git:zeromq/php-zmq@master',
+    // bundled until PHP 8.3, released on PECL since
+    'imap' => 'pecl',
+    'pspell' => 'pecl',
+    'oci8' => 'pecl',
     'soap' => 'php',
     'pcntl' => 'php',
     'pgsql' => 'php',
@@ -193,6 +204,23 @@ const SOURCES = [
     'gd' => 'php',
     'bcmath' => 'php',
     'ffi' => 'php',
+    'bz2' => 'php',
+    'calendar' => 'php',
+    'dba' => 'php',
+    'enchant' => 'php',
+    'exif' => 'php',
+    'gettext' => 'php',
+    'ldap' => 'php',
+    'odbc' => 'php',
+    'pdo_dblib' => 'php',
+    'pdo_firebird' => 'php',
+    'pdo_odbc' => 'php',
+    'shmop' => 'php',
+    'sockets' => 'php',
+    'sysvmsg' => 'php',
+    'sysvsem' => 'php',
+    'sysvshm' => 'php',
+    'xmlrpc' => 'php',
 ];
 
 const INSTALLER_URL = 'https://github.com/mlocati/docker-php-extension-installer/releases/latest/download/install-php-extensions';

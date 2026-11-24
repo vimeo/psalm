@@ -113,6 +113,7 @@ use function count;
 use function implode;
 use function in_array;
 use function is_int;
+use function reset;
 use function spl_object_id;
 use function strlen;
 use function strpbrk;
@@ -1149,6 +1150,7 @@ final class ArrayFetchAnalyzer
                     // nothing replaces an item an assignment writes into, which is modified in place as well
                     $by_reference || $replacement_type === null,
                     $offset_call_receiver_type,
+                    $replacement_type,
                 );
             } elseif (!$array_type->hasMixed()) {
                 $non_array_types[] = (string)$type;
@@ -1317,20 +1319,22 @@ final class ArrayFetchAnalyzer
             return false;
         }
 
+        // the offset is known to be set when each of the ints it may be is
+        $all_set = $extended_var_id !== null;
+
         foreach ($offset_type->getAtomicTypes() as $offset_type_part) {
-            if ($extended_var_id
+            if ($all_set
                 && $offset_type_part instanceof TLiteralInt
-                && isset(
-                    $context->vars_in_scope[
-                        $extended_var_id . '[' . $offset_type_part->value . ']'
-                    ],
-                )
-                && !$context->vars_in_scope[
-                        $extended_var_id . '[' . $offset_type_part->value . ']'
-                    ]->possibly_undefined
+                && !(isset($context->vars_in_scope[$extended_var_id . '[' . $offset_type_part->value . ']'])
+                    && !$context->vars_in_scope[$extended_var_id . '[' . $offset_type_part->value . ']']
+                        ->possibly_undefined)
             ) {
-                return false;
+                $all_set = false;
             }
+        }
+
+        if ($all_set) {
+            return false;
         }
 
         if ($context->inside_by_ref_offset) {
@@ -1368,11 +1372,11 @@ final class ArrayFetchAnalyzer
         }
 
         if ($offset_type->hasLiteralString() && !$expected_offset_type->hasLiteralClassString()) {
-            $found_match = false;
+            // the offset is known to be set when each of the strings it may be is
+            $found_match = $extended_var_id !== null;
 
             foreach ($offset_type->getAtomicTypes() as $offset_type_part) {
-                if ($extended_var_id === null
-                    || !($offset_type_part instanceof TLiteralString)) {
+                if (!$found_match || !$offset_type_part instanceof TLiteralString) {
                     continue;
                 }
 
@@ -1383,16 +1387,15 @@ final class ArrayFetchAnalyzer
                 $literal_access = $string_to_int === false
                     ? ExpressionIdentifier::quoteOffset($offset_type_part->value)
                     : $string_to_int;
-                if (isset(
+                if (!isset(
                     $context->vars_in_scope[
                         $extended_var_id . '[' . $literal_access . ']'
                     ],
-                ) && !$context->vars_in_scope[
+                ) || $context->vars_in_scope[
                         $extended_var_id . '[' . $literal_access . ']'
                     ]->possibly_undefined
                 ) {
-                    $found_match = true;
-                    break;
+                    $found_match = false;
                 }
             }
 
@@ -1571,6 +1574,28 @@ final class ArrayFetchAnalyzer
     }
 
     /**
+     * `value-of<T>` for `$arr[$k]` with `$arr: T` and `$k: key-of<T>`: an item of `T`
+     *
+     * @psalm-pure
+     */
+    private static function getValueOfTemplateAtItsKey(Atomic $array_type, MutableUnion $offset_type): ?TTemplateValueOf
+    {
+        $offset_atomic_types = $offset_type->getAtomicTypes();
+        $key_of = reset($offset_atomic_types);
+
+        if (!$array_type instanceof TTemplateParam
+            || count($offset_atomic_types) !== 1
+            || !$key_of instanceof TTemplateKeyOf
+            || $key_of->param_name !== $array_type->param_name
+            || $key_of->defining_class !== $array_type->defining_class
+        ) {
+            return null;
+        }
+
+        return new TTemplateValueOf($key_of->param_name, $key_of->defining_class, $key_of->as);
+    }
+
+    /**
      * @param list<string> $expected_offset_types
      * @param TArray|TKeyedArray|TClassStringMap $type
      * @param-out TArray|TKeyedArray|TClassStringMap $type
@@ -1690,6 +1715,12 @@ final class ArrayFetchAnalyzer
                 $replacement_type,
                 $array_access_type,
             );
+        } elseif (!$in_assignment
+            && ($value_of = self::getValueOfTemplateAtItsKey($original_type, $offset_type)) !== null
+        ) {
+            $array_access_type = Type::combineUnionTypes($array_access_type, new Union([$value_of]));
+
+            $has_valid_offset = true;
         } else {
             self::handleArrayAccessOnKeyedArray(
                 $statements_analyzer,
@@ -1796,7 +1827,11 @@ final class ArrayFetchAnalyzer
 
             $union_comparison_results = new TypeComparisonResult();
 
-            if ($original_type instanceof TTemplateParam && $templated_offset_type) {
+            if ($value_of = self::getValueOfTemplateAtItsKey($original_type, $offset_type)) {
+                $type = $type->setTypeParams([$type->type_params[0], new Union([$value_of])]);
+
+                $has_valid_offset = true;
+            } elseif ($original_type instanceof TTemplateParam && $templated_offset_type) {
                 foreach ($templated_offset_type->as->getAtomicTypes() as $offset_as) {
                     if ($offset_as instanceof TTemplateKeyOf
                         && $offset_as->param_name === $original_type->param_name
@@ -2467,6 +2502,7 @@ final class ArrayFetchAnalyzer
         bool &$has_array_access,
         bool $in_place,
         ?Union $receiver_type,
+        ?Union $replacement_type,
     ): void {
         $codebase = $statements_analyzer->getCodebase();
         if (strtolower($type->value) === 'simplexmlelement'
@@ -2549,6 +2585,25 @@ final class ArrayFetchAnalyzer
 
                 $statements_analyzer->node_data = clone $statements_analyzer->node_data;
 
+                // the value of a destructured item or of a `foreach` target is not that of the expression the
+                // assignment was given: the call has no value to check
+                $assign_value_type = $assign_value !== null
+                    ? $statements_analyzer->node_data->getType($assign_value)
+                    : null;
+                $value_is_given = $assign_value !== null
+                    && ($replacement_type === null
+                        || $assign_value_type === null
+                        || $assign_value_type->getId() === $replacement_type->getId());
+                $value_expr = $assign_value;
+
+                // the type assigned is that of the item, which the call checks like a value it was given
+                if (!$value_is_given && $replacement_type !== null && !$in_place) {
+                    $value_expr = new VirtualConstFetch(new VirtualName('null'), $stmt->getAttributes());
+                    $statements_analyzer->node_data->setType($value_expr, $replacement_type);
+                    $statements_analyzer->node_data->markEvaluated([$value_expr]);
+                    $value_is_given = true;
+                }
+
                 $fake_set_method_call = new VirtualMethodCall(
                     $stmt->var,
                     new VirtualIdentifier('offsetSet', $stmt->var->getAttributes()),
@@ -2562,11 +2617,13 @@ final class ArrayFetchAnalyzer
                             attributes: $arg_attributes,
                         ),
                         new VirtualArg(
-                            $assign_value ?? new VirtualConstFetch(
+                            $value_expr ?? new VirtualConstFetch(
                                 new VirtualName('null'),
                                 $stmt->var->getAttributes(),
                             ),
-                            attributes: $arg_attributes,
+                            attributes: $value_is_given
+                                ? $arg_attributes
+                                : [ArgumentAnalyzer::NOT_PASSED => true],
                         ),
                     ],
                 );

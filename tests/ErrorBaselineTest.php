@@ -694,6 +694,62 @@ bar&#13;
         ], $remainingBaseline);
     }
 
+    public function testUpdateShouldKeepAMultilineCodeSampleOfACrlfFile(): void
+    {
+        $baselineFile = 'baseline.xml';
+
+        $this->fileProvider->allows()->fileExists($baselineFile)->andReturns(true);
+        $this->fileProvider->allows()->getContents($baselineFile)->andReturns(
+            '<?xml version="1.0" encoding="UTF-8"?>
+            <files>
+              <file src="sample/sample-file.php">
+                <InvalidArgument>
+                    <code><![CDATA[[
+            1,
+        ]]]></code>
+                </InvalidArgument>
+              </file>
+            </files>',
+        );
+
+        $this->fileProvider->allows()->setContents(Mockery::andAnyOtherArgs());
+
+        $newIssues = [
+            'sample/sample-file.php' => [
+                new IssueData(
+                    IssueData::SEVERITY_ERROR,
+                    0,
+                    0,
+                    'InvalidArgument',
+                    'Message',
+                    'sample/sample-file.php',
+                    'sample/sample-file.php',
+                    "[\r\n            1,\r\n        ]",
+                    "[\r\n            1,\r\n        ]",
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                ),
+            ],
+        ];
+
+        $remainingBaseline = ErrorBaseline::update(
+            $this->fileProvider,
+            $baselineFile,
+            $newIssues,
+            false,
+        );
+
+        $this->assertSame([
+            'sample/sample-file.php' => [
+                'InvalidArgument' => ['o' => 1, 's' => ["[\n            1,\n        ]"]],
+            ],
+        ], $remainingBaseline);
+    }
+
     public function testUpdateShouldKeepTheRemainingCodeSamplesAList(): void
     {
         $baselineFile = 'baseline.xml';

@@ -6,6 +6,7 @@ namespace Psalm\Internal\Provider;
 
 use Closure;
 use Psalm\Context;
+use Psalm\Internal\Perf;
 use Psalm\Internal\Provider\PropertyTypeProvider\DomDocumentPropertyTypeProvider;
 use Psalm\Plugin\EventHandler\Event\PropertyTypeProviderEvent;
 use Psalm\Plugin\EventHandler\PropertyTypeProviderInterface;
@@ -51,11 +52,12 @@ final class PropertyTypeProvider
 
     /**
      * @param Closure(PropertyTypeProviderEvent): ?Union $c
-     * @psalm-external-mutation-free
      */
     public function registerClosure(string $fq_classlike_name, Closure $c): void
     {
-        self::$handlers[strtolower($fq_classlike_name)][] = $c;
+        self::$handlers[strtolower($fq_classlike_name)][] = Perf\Collector::$enabled
+            ? Perf\Collector::wrap($c, 'PropertyType')
+            : $c;
     }
 
     /**

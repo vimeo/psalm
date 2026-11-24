@@ -68,6 +68,7 @@ use Psalm\Storage\FileStorage;
 use Psalm\Storage\MethodStorage;
 use Psalm\Storage\PropertyHookStorage;
 use Psalm\Storage\PropertyStorage;
+use Psalm\Storage\TemplateVariance;
 use Psalm\Type;
 use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TNamedObject;
@@ -494,8 +495,8 @@ final class ClassLikeNodeScanner
                 usort(
                     $docblock_info->templates,
                     /**
-                     * @param array{string, ?string, ?string, bool, int} $l
-                     * @param array{string, ?string, ?string, bool, int} $r
+                     * @param array{string, ?string, ?string, TemplateVariance, int} $l
+                     * @param array{string, ?string, ?string, TemplateVariance, int} $r
                      */
                     static fn(array $l, array $r): int
                         => [in_array($l[0], $purity_templates, true), $l[4]]
@@ -583,11 +584,14 @@ final class ClassLikeNodeScanner
                             );
                         }
                     } else {
-                        /** @psalm-suppress PropertyTypeCoercion due to a Psalm bug */
                         $storage->template_types[$template_name][$fq_classlike_name] = Type::getMixed();
                     }
 
-                    $storage->template_covariants[$i] = $template_map[3];
+                    $storage->template_covariants[$i] = $template_map[3] === TemplateVariance::Covariant;
+
+                    if ($template_map[3] === TemplateVariance::Contravariant) {
+                        $storage->template_contravariants[$i] = true;
+                    }
                 }
 
                 $this->class_template_types = $storage->template_types;
