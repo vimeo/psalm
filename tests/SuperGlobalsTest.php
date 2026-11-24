@@ -207,6 +207,72 @@ final class SuperGlobalsTest extends TestCase
                 }
             ',
         ];
+
+        yield 'superGlobalAssignedInAnIfOnlyKeepsItsDefaultType' => [
+            'code' => '<?php
+                function f(): void {
+                    if (rand(0, 1)) {
+                        $_SESSION = ["a" => 1];
+                    }
+
+                    $session = $_SESSION;
+                    /** @psalm-check-type-exact $session = array<non-empty-string, mixed> */;
+                }
+            ',
+        ];
+
+        yield 'superGlobalAssignedInATryOnlyKeepsItsDefaultType' => [
+            'code' => '<?php
+                function f(): void {
+                    try {
+                        $_SESSION = ["a" => 1];
+                    } catch (Exception) {
+                    }
+
+                    $session = $_SESSION;
+                    /** @psalm-check-type-exact $session = array<non-empty-string, mixed> */;
+                }
+            ',
+        ];
+
+        yield 'superGlobalAssignedInALoopOnlyKeepsItsDefaultType' => [
+            'code' => '<?php
+                function f(int $n): void {
+                    while ($n-- > 0) {
+                        $_SESSION = ["a" => 1];
+                    }
+
+                    $session = $_SESSION;
+                    /** @psalm-check-type-exact $session = array<non-empty-string, mixed> */;
+                }
+            ',
+        ];
+
+        yield 'superGlobalAssignedOnEveryPathHasTheAssignedType' => [
+            'code' => '<?php
+                function f(): void {
+                    if (rand(0, 1)) {
+                        $_SESSION = ["a" => 1];
+                    } else {
+                        $_SESSION = ["a" => 2];
+                    }
+
+                    $session = $_SESSION;
+                    /** @psalm-check-type-exact $session = array{a: 1|2} */;
+                }
+            ',
+        ];
+
+        yield 'superGlobalAssignedUnconditionallyHasTheAssignedType' => [
+            'code' => '<?php
+                function f(): void {
+                    $_SESSION = ["a" => 1];
+
+                    $session = $_SESSION;
+                    /** @psalm-check-type-exact $session = array{a: 1} */;
+                }
+            ',
+        ];
     }
 
     /**

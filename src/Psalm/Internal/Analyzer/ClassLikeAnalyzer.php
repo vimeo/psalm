@@ -614,7 +614,7 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
                     $fq_class_name . ' depends on class or interface '
                         . $dependency_class_name . ' that does not exist',
                     $code_location,
-                    $fq_class_name,
+                    $dependency_class_name,
                 ),
                 $suppressed_issues,
             )) {

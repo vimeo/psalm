@@ -81,6 +81,135 @@ final class IssetTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'issetInALoopOverLiteralKeysOfAnIntersectionShape' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-type HttpOptions = array{
+                     *   headers?: array<string, string | list<string>>,
+                     * }
+                     *
+                     * @psalm-type SerializedAccount = HttpOptions & array{discoveryUri: string, baseUrl?: ?string}
+                     */
+                    final class Account {
+                        /**
+                         * @psalm-param SerializedAccount $props
+                         */
+                        public static function constructFromArray(array $props): string
+                        {
+                            $requiredProps = [\'discoveryUri\'];
+
+                            foreach ($requiredProps as $prop) {
+                                if (!isset($props[$prop])) {
+                                    throw new \\Exception("x");
+                                }
+                            }
+
+                            return $props["discoveryUri"];
+                        }
+                    }',
+            ],
+            'coalesceToNullComparedWithNullNarrowsTheCoalescedOffset' => [
+                'code' => '<?php
+                    final class Item {
+                        public function getName(): string {
+                            return "x";
+                        }
+                    }
+
+                    /** @param array<string, Item> $data */
+                    function repeated(array $data): string {
+                        if (($data["item"] ?? null) !== null) {
+                            return ($data["item"] ?? null)->getName();
+                        }
+                        return "";
+                    }
+
+                    /** @param array<string, Item> $data */
+                    function negated(array $data): string {
+                        if (($data["item"] ?? null) === null) {
+                            return "";
+                        }
+                        return $data["item"]->getName();
+                    }
+
+                    /** @var array<string, Item> $data */
+                    $data = [];
+                    $item = ($data["item"] ?? null) !== null ? ($data["item"] ?? null) : new Item();',
+                'assertions' => [
+                    '$item===' => 'Item',
+                ],
+            ],
+            'coalesceOfASetNonNullVariableIsTheVariable' => [
+                'code' => '<?php
+                    function f(?int $i): ?int {
+                        return $i;
+                    }
+                    $i = f(1);
+                    $result = $i !== null ? ($i ?? "never") : 0;',
+                'assertions' => [
+                    '$result===' => 'int',
+                ],
+                'ignored_issues' => ['RedundantCondition', 'TypeDoesNotContainNull'],
+            ],
+            'offsetUnderOneOfSeveralLiteralKeysIsTheValueOfThoseKeys' => [
+                'code' => '<?php
+                    function getUserIps(): string {
+                        $ips = [];
+                        foreach (["REMOTE_ADDR", "HTTP_X_FORWARDED_FOR", "HTTP_CLIENT_IP"] as $k) {
+                            if (isset($_SERVER[$k])) {
+                                $ips[] = $_SERVER[$k];
+                            }
+                        }
+
+                        return implode(", ", $ips);
+                    }
+
+                    /**
+                     * @param array{a?: non-empty-string, b?: non-empty-string, argv?: list<string>, ...<string, scalar>} $arr
+                     * @param "a"|"b" $k
+                     * @return non-empty-string
+                     */
+                    function setOne(array $arr, string $k): string {
+                        if (isset($arr[$k])) {
+                            return $arr[$k];
+                        }
+                        return "x";
+                    }
+
+                    /**
+                     * @param array{a: int, b: string} $arr
+                     * @param "a"|"c" $k
+                     */
+                    function sealed(array $arr, string $k): int {
+                        if (isset($arr[$k])) {
+                            return $arr[$k];
+                        }
+                        return 0;
+                    }',
+            ],
+            'offsetUnderSeveralLiteralKeysNoneOfWhichASealedShapeListsIsItsValue' => [
+                'code' => '<?php
+                    enum Level: int {
+                        case Debug = 100;
+                        case Info = 200;
+                    }
+
+                    final class Logger {
+                        private const LEVELS = [7 => Level::Debug, 6 => Level::Info];
+
+                        /** @param 100|200|Level $level */
+                        public static function level(int|Level $level): Level {
+                            if (is_int($level) && isset(self::LEVELS[$level])) {
+                                $level = self::LEVELS[$level];
+                            }
+
+                            return $level instanceof Level ? $level : Level::from($level);
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['InvalidArrayOffset'],
+                'php_version' => '8.1',
+            ],
             'stringWithACharacterAtAnOffsetIsNonEmpty' => [
                 'code' => '<?php
                     /** @return non-empty-string */

@@ -213,10 +213,10 @@ final class AssignmentAnalyzer
     }
 
     /**
-     * Writing a property of a constant (`CONFIG->debug = true`, `CONFIG->items[] = 1`) is a compile error before
-     * PHP 8.6, whatever the types are
+     * Writing a property of a constant (`CONFIG->debug = true`, `CONFIG->items[] = 1`, `unset(CONFIG->debug)`, passing
+     * or binding it by reference) is a compile error before PHP 8.6, whatever the types are
      */
-    private static function checkConstantObjectWrite(StatementsAnalyzer $statements_analyzer, Expr $assign_var): void
+    public static function checkConstantObjectWrite(StatementsAnalyzer $statements_analyzer, Expr $assign_var): void
     {
         if ($statements_analyzer->getCodebase()->analysis_php_version_id >= 8_06_00) {
             return;
@@ -1420,6 +1420,8 @@ final class AssignmentAnalyzer
         Context $context,
         ?PhpParser\Node\Stmt $from_stmt,
     ): bool {
+        self::checkConstantObjectWrite($statements_analyzer, $stmt->expr);
+
         // Usage through a reference held by a property or array item can't be tracked, so the referenced
         // variable counts as used, like the value of a regular assignment to one.
         $was_inside_general_use = $context->inside_general_use;

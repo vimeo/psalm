@@ -3385,6 +3385,16 @@ final class ArrayFunctionCallTest extends TestCase
                     '$d' => 'array<int, list{string}|string>',
                 ],
             ],
+            'arraySpliceOffsetNotRepresentableAsIntIsNotZero' => [
+                'code' => '<?php
+                    /** @param list<int> $d */
+                    function f(array $d): void {
+                        array_splice($d, "1e999");
+                        /** @psalm-check-type-exact $d = list<int> */
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['InvalidScalarArgument'],
+            ],
             'arraySpliceRefWithoutReplacement' => [
                 'code' => '<?php
                     $d = [1,2];
@@ -5152,6 +5162,43 @@ final class ArrayFunctionCallTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'closureParameterSharingOnlyNullWithTheArrayValuesIsInvalid' => [
+                'code' => '<?php
+                    final class Foo {}
+                    final class Bar {}
+
+                    /** @param list<?Foo> $l */
+                    function f(array $l): void {
+                        array_map(function (?Bar $b): int { return 1; }, $l);
+                    }',
+                'error_message' => 'InvalidArgument',
+            ],
+            'closureParameterSharingOnlyFalseWithTheArrayValuesIsInvalid' => [
+                'code' => '<?php
+                    final class Foo {}
+                    final class Bar {}
+
+                    /** @param list<Foo|false> $l */
+                    function f(array $l): void {
+                        array_map(
+                            /** @param Bar|false $b */
+                            function ($b): int { return 1; },
+                            $l,
+                        );
+                    }',
+                'error_message' => 'InvalidArgument',
+            ],
+            'closureParameterSharingAnObjectWithTheArrayValuesIsPossiblyInvalid' => [
+                'code' => '<?php
+                    final class Foo {}
+                    final class Bar {}
+
+                    /** @param list<Foo|Bar|null> $l */
+                    function f(array $l): void {
+                        array_map(function (?Bar $b): int { return 1; }, $l);
+                    }',
+                'error_message' => 'PossiblyInvalidArgument',
+            ],
             'keyOfAListTakenBeforeTheListShrinksIsNoKeyAnyMore' => [
                 'code' => '<?php
                     /**

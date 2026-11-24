@@ -29,6 +29,27 @@ final class ValueTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'notIdenticalToAVariableOfSeveralLiteralsKeepsThemInTheElseif' => [
+                'code' => '<?php
+                    $a = rand(0, 1) ? "a" : "b";
+                    $b = rand(0, 1) ? "a" : "b";
+
+                    $s = rand(0, 1) ? $a : $b;
+                    if (rand(0, 1)) {
+                        $s = "c";
+                    }
+
+                    if ($s === $a) {
+                        $result = $s;
+                    } elseif ($s === $b) {
+                        $result = $s;
+                    } else {
+                        $result = null;
+                    }',
+                'assertions' => [
+                    '$result===' => '\'a\'|\'b\'|null',
+                ],
+            ],
             'looseComparisonOfAnObjectOrAStringWithAStringKeepsTheObject' => [
                 'code' => <<<'PHP'
                     <?php
@@ -2082,6 +2103,14 @@ final class ValueTest extends TestCase
 
                     if ($s == 3) {}',
                 'error_message' => 'TypeDoesNotContainType',
+            ],
+            'stringNotRepresentableAsIntIsNeverLooselyEqualToZero' => [
+                'code' => '<?php
+                    /** @param "1e999"|"5" $s */
+                    function foo(string $s): void {
+                        if ($s == 0) {}
+                    }',
+                'error_message' => 'DocblockTypeContradiction',
             ],
             'badIfOrAssertionWithSwitch' => [
                 'code' => '<?php
