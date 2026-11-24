@@ -498,8 +498,12 @@ final class TemplateInferredTypeReplacer
                             if (isset($classlike_storage->template_extended_params[$defining_class])) {
                                 $param_map = $classlike_storage->template_extended_params[$defining_class];
 
-                                if (isset($param_map[$key])) {
-                                    $template_name = (string) $param_map[$key];
+                                $mapped_template = isset($param_map[$key]) && $param_map[$key]->isSingle()
+                                    ? $param_map[$key]->getSingleAtomic()
+                                    : null;
+
+                                if ($mapped_template instanceof TTemplateParam) {
+                                    $template_name = $mapped_template->param_name;
                                     if (isset($inferred_lower_bounds[$template_name][$template_class])) {
                                         $template_type
                                             = TemplateStandinTypeReplacer::getMostSpecificTypeFromBounds(
