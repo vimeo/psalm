@@ -27,6 +27,7 @@ final class TEmptyNumeric extends TNumeric
      * empty-numeric is no docblock type: written as numeric
      *
      * @param array<lowercase-string, string> $aliased_classes
+     * @psalm-pure
      */
     #[Override]
     public function toNamespacedString(

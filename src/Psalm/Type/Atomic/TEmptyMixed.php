@@ -28,6 +28,7 @@ final class TEmptyMixed extends TMixed
      * empty-mixed is no docblock type: written as mixed
      *
      * @param array<lowercase-string, string> $aliased_classes
+     * @psalm-pure
      */
     #[Override]
     public function toNamespacedString(
