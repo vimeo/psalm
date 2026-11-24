@@ -2505,6 +2505,7 @@ final class SimpleAssertionReconciler extends Reconciler
     /**
      * @param   string[]  $suppressed_issues
      * @param Reconciler::RECONCILIATION_* $failed_reconciliation
+     * @psalm-suppress ComplexMethod
      */
     private static function reconcileCallable(
         Assertion $assertion,
