@@ -1052,8 +1052,8 @@ abstract class Type
             return $array->setTypeParams([$key_intersection, $value_intersection]);
         }
 
-        // the only list without a key 0 is the empty one
-        if (self::intersectUnionTypes(self::getInt(false, 0), $key_intersection, $codebase) === null) {
+        // a list with fewer keys, e.g. of array<0, string> or of an array without the key 0, is no generic list
+        if (!UnionTypeComparator::isContainedBy($codebase, self::getListKey(), $key_intersection)) {
             return null;
         }
 
