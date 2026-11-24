@@ -122,6 +122,70 @@ final class EnumTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'instanceofAnEnumInterfaceExcludesClasses' => [
+                'code' => '<?php
+                    interface Labeled {}
+                    interface Coded extends BackedEnum {}
+
+                    function toString(BackedEnum|DateTime $x): string {
+                        if ($x instanceof BackedEnum) {
+                            /** @psalm-check-type-exact $x = BackedEnum */
+                            return (string) $x->value;
+                        }
+
+                        return $x->format(DateTime::ATOM);
+                    }
+
+                    function unit(UnitEnum|ArrayObject $x): void {
+                        if ($x instanceof UnitEnum) {
+                            /** @psalm-check-type-exact $x = UnitEnum */
+                        }
+                    }
+
+                    function custom(Coded|DateTime $x): void {
+                        if ($x instanceof Coded) {
+                            /** @psalm-check-type-exact $x = Coded */
+                        }
+                    }
+
+                    function otherInterface(Labeled $x): void {
+                        if ($x instanceof BackedEnum) {
+                            /** @psalm-check-type-exact $x = Labeled&BackedEnum */
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'matchOnTheValueOfAUnionOfEnums' => [
+                'code' => '<?php
+                    enum Foo1: string {
+                        case one = "one";
+                    }
+
+                    enum Foo2: string {
+                        case one = "one";
+                        case two = "two";
+                    }
+
+                    function test1(Foo1|Foo2 $value): int {
+                        return match ($value->value) {
+                            "one" => 1,
+                            "two" => 2,
+                        };
+                    }
+
+                    function test2(Foo1|Foo2|null $value): int {
+                        return match ($value?->value) {
+                            "one" => 1,
+                            "two" => 2,
+                            null => 0,
+                        };
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'enumCaseWithInvokeIsCallable' => [
                 'code' => '<?php
                     /**

@@ -80,8 +80,14 @@ function paramsToEntries(ReflectionFunctionAbstract $reflectionFunction, string 
         $res[-2] = 'none';
     }
 
-    foreach ($reflectionFunction->getParameters() as $param) {
+    $names = [];
+    foreach ($reflectionFunction->getParameters() as $position => $param) {
         $key = $param->getName();
+        // the arginfo of some PHP 7 functions repeats a name, e.g. oci_lob_is_equal(lob_descriptor, lob_descriptor)
+        if (isset($names[$key])) {
+            $key .= '_' . ($position + 1);
+        }
+        $names[$key] = true;
         if ($param->isVariadic()) {
             $key = "...$key";
         }
