@@ -27,12 +27,6 @@ final class TIntMaskOf extends TInt
         return 'int-mask-of<' . $this->value->getKey() . '>';
     }
 
-    #[Override]
-    public function getId(bool $exact = true): string
-    {
-        return 'int-mask-of<' . $this->value->getId($exact) . '>';
-    }
-
     /**
      * @param array<lowercase-string, string> $aliased_classes
      */
