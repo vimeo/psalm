@@ -1317,20 +1317,22 @@ final class ArrayFetchAnalyzer
             return false;
         }
 
+        // the offset is known to be set when each of the ints it may be is
+        $all_set = $extended_var_id !== null;
+
         foreach ($offset_type->getAtomicTypes() as $offset_type_part) {
-            if ($extended_var_id
+            if ($all_set
                 && $offset_type_part instanceof TLiteralInt
-                && isset(
-                    $context->vars_in_scope[
-                        $extended_var_id . '[' . $offset_type_part->value . ']'
-                    ],
-                )
-                && !$context->vars_in_scope[
-                        $extended_var_id . '[' . $offset_type_part->value . ']'
-                    ]->possibly_undefined
+                && !(isset($context->vars_in_scope[$extended_var_id . '[' . $offset_type_part->value . ']'])
+                    && !$context->vars_in_scope[$extended_var_id . '[' . $offset_type_part->value . ']']
+                        ->possibly_undefined)
             ) {
-                return false;
+                $all_set = false;
             }
+        }
+
+        if ($all_set) {
+            return false;
         }
 
         if ($context->inside_by_ref_offset) {
@@ -1368,11 +1370,11 @@ final class ArrayFetchAnalyzer
         }
 
         if ($offset_type->hasLiteralString() && !$expected_offset_type->hasLiteralClassString()) {
-            $found_match = false;
+            // the offset is known to be set when each of the strings it may be is
+            $found_match = $extended_var_id !== null;
 
             foreach ($offset_type->getAtomicTypes() as $offset_type_part) {
-                if ($extended_var_id === null
-                    || !($offset_type_part instanceof TLiteralString)) {
+                if (!$found_match || !$offset_type_part instanceof TLiteralString) {
                     continue;
                 }
 
@@ -1383,16 +1385,15 @@ final class ArrayFetchAnalyzer
                 $literal_access = $string_to_int === false
                     ? ExpressionIdentifier::quoteOffset($offset_type_part->value)
                     : $string_to_int;
-                if (isset(
+                if (!isset(
                     $context->vars_in_scope[
                         $extended_var_id . '[' . $literal_access . ']'
                     ],
-                ) && !$context->vars_in_scope[
+                ) || $context->vars_in_scope[
                         $extended_var_id . '[' . $literal_access . ']'
                     ]->possibly_undefined
                 ) {
-                    $found_match = true;
-                    break;
+                    $found_match = false;
                 }
             }
 
