@@ -1726,6 +1726,28 @@ final class TaintTest extends TestCase
                     'TaintedSleep on line 7',
                 ],
             ],
+            // the option of an array literal unpacked into the arguments is read like a positional one
+            'unpackedArguments' => [
+                '<?php
+                    $t = (string) $_GET["x"];
+                    curl_setopt(...[curl_init(), CURLOPT_PRIVATE, $t]);
+                    curl_setopt(...[curl_init(), CURLOPT_WRITEFUNCTION, $t]);
+                    curl_setopt_array(...[curl_init(), [CURLOPT_PRIVATE => $t]]);
+                    curl_setopt_array(...[curl_init(), [CURLOPT_COOKIEFILE => $t]]);
+
+                    // the option of another unpacked array may be any
+                    $args = [curl_init(), CURLOPT_PRIVATE, $t];
+                    curl_setopt(...$args);',
+                [
+                    'TaintedCallable on line 10',
+                    'TaintedCallable on line 4',
+                    'TaintedFile on line 10',
+                    'TaintedFile on line 6',
+                    'TaintedHeader on line 10',
+                    'TaintedSSRF on line 10',
+                    'TaintedSleep on line 10',
+                ],
+            ],
         ];
 
         $data = [];
@@ -3551,6 +3573,21 @@ final class TaintTest extends TestCase
                     printf("%d", (string) $_GET["x"]);
                     vprintf("%d items", [(string) $_GET["x"]]);
                     printf("%2\$s %1\$05.2f", (string) $_GET["x"], "a");',
+            ],
+            'dontTaintTheVprintfOutputOfWhatANamedFormatFormatsAsANumber' => [
+                'code' => '<?php // --taint-analysis
+                    vprintf(values: [(string) $_GET["x"]], format: "%d items");',
+            ],
+            'dontTaintTheVsprintfResultOfWhatANamedFormatFormatsAsANumber' => [
+                'code' => '<?php // --taint-analysis
+                    $t = (string) $_GET["x"];
+                    echo vsprintf(values: [$t], format: "%d items");',
+            ],
+            'dontTaintTheVfprintfOutputOfWhatANamedFormatFormatsAsANumber' => [
+                'code' => '<?php // --taint-analysis
+                    $t = (string) $_GET["x"];
+                    vfprintf(fopen("php://output", "w"), values: [$t], format: "%d items");
+                    vfprintf(values: [$t], format: "%d items", stream: fopen("php://output", "w"));',
             ],
             'dontTaintWhatVsprintfFormatsAsANumber' => [
                 'code' => '<?php // --taint-analysis
@@ -13066,6 +13103,21 @@ final class TaintTest extends TestCase
             'taintHtmlFormattedByVsprintfAsAString' => [
                 'code' => '<?php // --taint-analysis
                     echo vsprintf("%s", [(string) $_GET["x"]]);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintHtmlFormattedByVsprintfWithANamedFormatAsAString' => [
+                'code' => '<?php // --taint-analysis
+                    echo vsprintf(values: [(string) $_GET["x"]], format: "%s");',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintHtmlInANamedFormatOfVsprintfPassedAfterItsValues' => [
+                'code' => '<?php // --taint-analysis
+                    echo vsprintf(values: [1], format: (string) $_GET["x"]);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintHtmlFormattedByVfprintfWithANamedFormatAsAString' => [
+                'code' => '<?php // --taint-analysis
+                    vfprintf(values: [(string) $_GET["x"]], format: "%s", stream: fopen("php://output", "w"));',
                 'error_message' => 'TaintedHtml',
             ],
             'taintHtmlInTheValuesOfVsprintfWithAStringConversion' => [
