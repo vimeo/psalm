@@ -205,6 +205,29 @@ final class FunctionTemplateTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'templateBoundNamingAnEarlierTemplateWithAForwardBound' => [
+                'code' => '<?php
+                    /** @template-covariant TValue */
+                    interface Box {
+                        /** @return TValue */
+                        public function get();
+                    }
+
+                    function takesInt(int $i): void {}
+
+                    /**
+                     * @template TB of Box<TC>
+                     * @template TC of int
+                     * @template TD of Box<TB>
+                     * @param TD $d
+                     */
+                    function dep(Box $d): void {
+                        takesInt($d->get()->get());
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'isCallableLeavesOutATemplateOfAClassWithoutInvoke' => [
                 'code' => '<?php
                     /**

@@ -70,7 +70,6 @@ use function array_fill_keys;
 use function array_filter;
 use function array_map;
 use function array_merge;
-use function array_slice;
 use function array_values;
 use function count;
 use function explode;
@@ -2092,9 +2091,9 @@ final class FunctionLikeDocblockScanner
             $declared_template_types[$template_map[0]] = ['fn-' . strtolower($cased_function_id) => Type::getMixed()];
         }
 
-        $forward_bounds = [];
+        $dependent_bounds = [];
 
-        foreach ($docblock_info->templates as $i => $template_map) {
+        foreach ($docblock_info->templates as $template_map) {
             $template_name = $template_map[0];
 
             if ($template_map[1] !== null && $template_map[2] !== null) {
@@ -2107,15 +2106,15 @@ final class FunctionLikeDocblockScanner
                     }
                     $type_string = CommentAnalyzer::sanitizeDocblockType($type_string);
 
-                    $later_templates = array_map(
+                    $other_templates = array_map(
                         preg_quote(...),
-                        array_column(array_slice($docblock_info->templates, $i + 1), 0),
+                        array_diff(array_column($docblock_info->templates, 0), [$template_name]),
                     );
 
-                    if ($later_templates !== []
-                        && preg_match('/\\b(?:' . implode('|', $later_templates) . ')\\b/', $type_string)
+                    if ($other_templates !== []
+                        && preg_match('/\\b(?:' . implode('|', $other_templates) . ')\\b/', $type_string)
                     ) {
-                        $forward_bounds[$template_name] = $type_string;
+                        $dependent_bounds[$template_name] = $type_string;
                     }
 
                     try {
@@ -2163,16 +2162,16 @@ final class FunctionLikeDocblockScanner
             }
         }
 
-        // a bound that named a template declared after it read that template as mixed
-        for ($pass = count($forward_bounds); $pass > 0; $pass--) {
+        // a bound read another template before that template's own bound was final
+        for ($pass = count($dependent_bounds); $pass > 0; $pass--) {
             $settled = true;
 
-            foreach ($forward_bounds as $template_name => $type_string) {
+            foreach ($dependent_bounds as $template_name => $type_string) {
                 if (!isset($storage->template_types[$template_name])) {
                     continue;
                 }
 
-                $known_template_types = $storage->template_types + ($template_types ?: []);
+                $known_template_types = $storage->template_types + ($template_types ?? []);
 
                 try {
                     $bound = TypeParser::parseTokens(
@@ -2219,7 +2218,7 @@ final class FunctionLikeDocblockScanner
             );
         $storage->docblock_issues = [...$storage->docblock_issues, ...$default_issues];
 
-        return array_merge($template_types ?? [], $storage->template_types);
+        return array_merge($template_types ?: [], $storage->template_types);
     }
 
     private static function handleUnexpectedTags(
