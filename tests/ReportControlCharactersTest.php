@@ -294,7 +294,7 @@ final class ReportControlCharactersTest extends TestCase
 
         self::assertSame(
             "SECURITY: TaintedHtml\nat /p/src/file.php:3:5\na message (see https://psalm.dev/012)\n"
-                . "  \$a$escaped - src/$escaped.php:3:5\nfoo('$escaped');\n\n"
+                . "  \$a$escaped - /p/src/$escaped.php:3:5\nfoo('$escaped');\n\n"
                 . "  \$b$escaped\n    <no known location>\n\n\n\n",
             (new PhpStormReport([$issue], [], $options))->create(),
         );
@@ -303,11 +303,96 @@ final class ReportControlCharactersTest extends TestCase
 
         self::assertSame(
             "\e[0;31mSECURITY\e[0m: TaintedHtml\nat /p/src/file.php:3:5\na message (see https://psalm.dev/012)\n"
-                . "  \$a$escaped - src/$escaped.php:3:5\nfoo(\e[30;47m'\\u{001B}[\e[0m"
+                . "  \$a$escaped - /p/src/$escaped.php:3:5\nfoo(\e[30;47m'\\u{001B}[\e[0m"
                 . substr($escaped, strlen('\u{001B}[')) . "');\n\n"
                 . "  \$b$escaped\n    <no known location>\n\n\n\n",
             (new PhpStormReport([$issue], [], $options))->create(),
         );
+    }
+
+    /**
+     * @return iterable<string, array{Closure(list<IssueData>, ReportOptions): Report, string, string}>
+     * @psalm-pure
+     */
+    public static function reportsWithOtherReferences(): iterable
+    {
+        $escaped = self::DANGEROUS_ESCAPED;
+
+        yield 'console' => [
+            /** @param array<int, IssueData> $i */ static fn(array $i, ReportOptions $o): Report => new ConsoleReport($i, [], $o),
+            "ERROR: MixedAssignment - src/file.php:3:5 - a message (see https://psalm.dev/032)\nfoo(bar);\n"
+                . "  The type of \$a$escaped is sourced from here - src/other.php:3:5\nfoo('$escaped');\n\n\n\n",
+            "\e[0;31mERROR\e[0m: MixedAssignment - src/\e[1;31mfile.php:3:5\e[0m - a message"
+                . " (see https://psalm.dev/032)\nfoo(\e[97;41mbar\e[0m);\n\n"
+                . "  The type of \$a$escaped is sourced from here - src/\e[1;31mother.php:3:5\e[0m\n"
+                . "foo(\e[30;47m'\\u{001B}[\e[0m" . substr($escaped, strlen('\u{001B}[')) . "');\n\n\n\n",
+        ];
+        yield 'phpstorm' => [
+            /** @param array<int, IssueData> $i */ static fn(array $i, ReportOptions $o): Report => new PhpStormReport($i, [], $o),
+            "ERROR: MixedAssignment\nat /p/src/file.php:3:5\na message (see https://psalm.dev/032)\nfoo(bar);\n"
+                . "  The type of \$a$escaped is sourced from here - /p/src/other.php:3:5\nfoo('$escaped');\n\n\n\n",
+            "\e[0;31mERROR\e[0m: MixedAssignment\nat /p/src/file.php:3:5\na message"
+                . " (see https://psalm.dev/032)\nfoo(\e[97;41mbar\e[0m);\n\n"
+                . "  The type of \$a$escaped is sourced from here - /p/src/other.php:3:5\n"
+                . "foo(\e[30;47m'\\u{001B}[\e[0m" . substr($escaped, strlen('\u{001B}[')) . "');\n\n\n\n",
+        ];
+    }
+
+    /**
+     * @param Closure(list<IssueData>, ReportOptions): Report $create_report
+     */
+    #[DataProvider('reportsWithOtherReferences')]
+    public function testTheOtherReferencesAreListedAndEscaped(
+        Closure $create_report,
+        string $expected,
+        string $expected_in_color,
+    ): void {
+        $file = 'src/other.php';
+        $node = new DataFlowNodeData(
+            'The type of $a' . self::DANGEROUS . ' is sourced from here',
+            3,
+            3,
+            $file,
+            '/p/' . $file,
+            "foo('" . self::DANGEROUS . "');",
+            4,
+            7,
+            0,
+            5,
+            8,
+        );
+        $issue = new IssueData(
+            IssueData::SEVERITY_ERROR,
+            3,
+            3,
+            'MixedAssignment',
+            'a message',
+            'src/file.php',
+            '/p/src/file.php',
+            'foo(bar);',
+            'bar',
+            4,
+            7,
+            0,
+            9,
+            5,
+            8,
+            32,
+            1,
+            null,
+            [$node],
+        );
+
+        $options = new ReportOptions();
+        $options->use_color = false;
+        $options->show_snippet = true;
+        $options->in_ci = true;
+
+        self::assertSame($expected, $create_report([$issue], $options)->create());
+
+        $options->use_color = true;
+
+        self::assertSame($expected_in_color, $create_report([$issue], $options)->create());
     }
 
     public function testALoneCrIsEscapedButACrLfIsKept(): void

@@ -17,6 +17,7 @@ jobs:
   lint:
     name: Check PHP syntax
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - name: Set up PHP
         uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # v2
@@ -71,6 +72,7 @@ jobs:
     # scoper prefixed PHP's own Io\Poll classes, which revolt/event-loop's IoPollDriver uses).
     name: Build and test the phar
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - name: Set up PHP
         uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # v2
@@ -111,6 +113,7 @@ jobs:
   code-style:
     name: Code Style Analysis
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - name: Set up PHP
         uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # v2
@@ -176,6 +179,7 @@ jobs:
     name: "Unit Tests - PHP ${{ matrix.php-version }} ${{ matrix.chunk }}/${{ matrix.count }}"
 
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     needs:
       - chunk-matrix
 
@@ -252,6 +256,7 @@ jobs:
   hack-conformance:
     name: Hack conformance
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - name: Set up PHP
         uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # v2

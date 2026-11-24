@@ -324,7 +324,7 @@ class ArrayIterator implements SeekableIterator, ArrayAccess, Serializable, Coun
     public function offsetGet($key) { }
 
     /**
-     * @param TKey $key The index to set for.
+     * @param TKey|null $key The index to set for, null to append.
      * @param TValue $value The new value to store at the index.
      * @return void
      * @no-named-arguments because of conflict with ArrayAccess
@@ -773,7 +773,7 @@ class DirectoryIterator extends SplFileInfo implements SeekableIterator {
     /**
      * @psalm-capabilities io
      */
-    public function __construct(string $path){}
+    public function __construct(string $directory){}
 
     /**
      * @return self
@@ -803,11 +803,11 @@ class DirectoryIterator extends SplFileInfo implements SeekableIterator {
     public function rewind(){}
 
     /**
-     * @param int $position
+     * @param int $offset
      *
      * @psalm-capabilities read-props|write-this-props|io
      */
-    public function seek($position) {}
+    public function seek($offset) {}
 
     /**
      * @return bool
@@ -896,7 +896,7 @@ class FilesystemIterator extends DirectoryIterator
      *
      * @psalm-capabilities io
      */
-    public function __construct(string $path, int $flags = self::KEY_AS_PATHNAME|self::CURRENT_AS_FILEINFO|self::SKIP_DOTS) {}
+    public function __construct(string $directory, int $flags = self::KEY_AS_PATHNAME|self::CURRENT_AS_FILEINFO|self::SKIP_DOTS) {}
 
     /**
      * @return FilesystemIterator|SplFileInfo|string|null
@@ -1139,12 +1139,12 @@ class MultipleIterator implements Iterator {
 
     /**
      * @param Iterator[TPurity]<TKey,TValue> $iterator
-     * @param string|int $infos
+     * @param string|int $info
      * @return void
      *
      * @psalm-capabilities read-props|write-this-props
      */
-    public function attachIterator(Iterator $iterator, $infos = '') {}
+    public function attachIterator(Iterator $iterator, $info = '') {}
 
     /**
      * @param Iterator<TKey, TValue> $iterator
@@ -1499,12 +1499,12 @@ class RecursiveDirectoryIterator extends FilesystemIterator implements Recursive
     const UNIX_PATHS = 8192 ;
 
     /**
-     * @param string $path
+     * @param string $directory
      * @param int-mask<self::CURRENT_AS_PATHNAME,self::CURRENT_AS_FILEINFO,self::CURRENT_AS_SELF,self::KEY_AS_PATHNAME,self::KEY_AS_FILENAME,self::FOLLOW_SYMLINKS,self::NEW_CURRENT_AND_KEY,self::SKIP_DOTS,self::UNIX_PATHS> $flags
      *
      * @psalm-capabilities io
      */
-    public function __construct(string $path, int $flags = self::KEY_AS_PATHNAME|self::CURRENT_AS_FILEINFO) {}
+    public function __construct(string $directory, int $flags = self::KEY_AS_PATHNAME|self::CURRENT_AS_FILEINFO) {}
 
     /**
      * @return string
@@ -1721,14 +1721,14 @@ class RecursiveRegexIterator extends RegexIterator implements RecursiveIterator 
 
     /**
      * @param TIterator $iterator
-     * @param string $regex
+     * @param string $pattern
      * @param self::MATH|self::GET_MATCH|self::ALL_MATCHES|self::SPLIT|self::REPLACE $mode
      * @param self::USE_KEY|0 $flags
-     * @param int $preg_flags
+     * @param int $pregFlags
      * @psalm-flow ($iterator) -> return
      * @psalm-pure
      */
-    public function __construct(RecursiveIterator $iterator, string $regex, int $mode = self::MATCH, int $flags = 0, int $preg_flags = 0) {}
+    public function __construct(RecursiveIterator $iterator, string $pattern, int $mode = self::MATCH, int $flags = 0, int $pregFlags = 0) {}
 
     /**
      * @psalm-pure
@@ -1806,16 +1806,16 @@ class RecursiveTreeIterator extends RecursiveIteratorIterator implements OuterIt
     public function callHasChildren() {}
 
     /**
-     * @param RecursiveIterator[TPurity]<TKey, TValue>|IteratorAggregate[TPurity]<TKey, TValue> $it
+     * @param RecursiveIterator[TPurity]<TKey, TValue>|IteratorAggregate[TPurity]<TKey, TValue> $iterator
      * @param int-mask<self::BYPASS_CURRENT, self::BYPASS_KEY> $flags
-     * @param int-mask<self::CATCH_GET_CHILD> $cit_flags
+     * @param int-mask<self::CATCH_GET_CHILD> $cachingIteratorFlags
      * @param self::LEAVES_ONLY|self::SELF_FIRST|self::CHILD_FIRST $mode
-     * @psalm-flow ($it) -> return
+     * @psalm-flow ($iterator) -> return
      *
      * @psalm-pure
      * @psalm-purity-from-template TPurity
      */
-    public function __construct($it, int $flags = self::BYPASS_KEY, int $cit_flags = self::CATCH_GET_CHILD, int $mode = self::SELF_FIRST) {}
+    public function __construct($iterator, int $flags = self::BYPASS_KEY, int $cachingIteratorFlags = self::CATCH_GET_CHILD, int $mode = self::SELF_FIRST) {}
 
     /**
      * @psalm-pure
@@ -1932,14 +1932,14 @@ class RegexIterator extends FilterIterator {
 
     /**
      * @param TIterator $iterator
-     * @param string $regex
+     * @param string $pattern
      * @param self::MATCH|self::GET_MATCH|self::ALL_MATCHES|self::SPLIT|self::REPLACE $mode
      * @param int-mask<self::USE_KEY> $flags
-     * @param int $preg_flags
+     * @param int $pregFlags
      * @psalm-flow ($iterator) -> return
      * @psalm-pure
      */
-    public function __construct(Iterator $iterator, string $regex, int $mode = self::MATCH, int $flags = 0, int $preg_flags = 0) {}
+    public function __construct(Iterator $iterator, string $pattern, int $mode = self::MATCH, int $flags = 0, int $pregFlags = 0) {}
 
     /**
      * @psalm-pure

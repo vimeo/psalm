@@ -52,8 +52,10 @@ use function is_string;
 use function preg_match;
 use function reset;
 use function spl_object_id;
+use function str_contains;
 use function strpos;
 use function strtolower;
+use function trim;
 
 /**
  * @internal
@@ -142,6 +144,15 @@ final class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements Fi
             $this->handleNamespace($node);
         } elseif ($node instanceof PhpParser\Node\Stmt\Use_ || $node instanceof PhpParser\Node\Stmt\GroupUse) {
             $this->handleUse($node);
+        } elseif ($node instanceof PhpParser\Node\Stmt\Declare_) {
+            foreach ($node->declares as $declaration) {
+                if ((string) $declaration->key === 'strict_types'
+                    && $declaration->value instanceof PhpParser\Node\Scalar\Int_
+                    && $declaration->value->value === 1
+                ) {
+                    $this->file_storage->strict_types = true;
+                }
+            }
         } elseif ($node instanceof PhpParser\Node\Stmt\ClassLike) {
             if ($this->skip_if_descendants) {
                 return null;
@@ -488,6 +499,23 @@ final class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements Fi
                 $var_type = $var_comment->type;
                 /** @psalm-suppress UnusedMethodCall */
                 $var_type->queueClassLikesForScanning($this->codebase, $this->file_storage);
+            }
+
+            // the class of `@psalm-scope-this` is needed to analyse the code it scopes, as the class of a `@var` is
+            if (str_contains($doc_comment->getText(), '@psalm-scope-this')) {
+                try {
+                    $scope_this = DocComment::parsePreservingLength($doc_comment, true)->tags['psalm-scope-this'] ?? [];
+                } catch (DocblockParseException) {
+                    $scope_this = [];
+                }
+
+                $scope_class = $scope_this !== [] ? trim(reset($scope_this)) : '';
+                $scope_fqcn = $scope_class !== '' ? Type::getFQCLNFromString($scope_class, $this->aliases) : '';
+
+                if ($scope_fqcn !== '') {
+                    $this->codebase->scanner->queueClassLikeForScanning($scope_fqcn, false, false);
+                    $this->file_storage->referenced_classlikes[strtolower($scope_fqcn)] = $scope_fqcn;
+                }
             }
         }
 
