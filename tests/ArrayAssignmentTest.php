@@ -3615,6 +3615,39 @@ final class ArrayAssignmentTest extends TestCase
                     }
                 PHP,
             ],
+            'itemWrittenUnderAMixedKeyIsKeptWhenTheKeyIsNarrowed' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @param array<array-key, mixed> $form
+                     * @param mixed $value
+                     */
+                    function f(array $form, $value): int {
+                        /** @psalm-suppress MixedArrayOffset */
+                        $form[$value] = ['a' => 1];
+                        if ($value != 'value') {
+                            unset($form['value']);
+                        }
+                        return count($form[$value]);
+                    }
+                PHP,
+            ],
+            'itemWrittenUnderANarrowedKeyInALoop' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param array<string, array<int, mixed>> $r */
+                    function f(bool $b, array $r, string $k, int $i, string $s): array {
+                        while ($b) {
+                            $r[$k][$i] = ['offset' => 1];
+                            if ($k === 'scot') {
+                                $r[$k][$i]['data'] = $s;
+                            }
+                            $b = false;
+                        }
+                        return $r;
+                    }
+                PHP,
+            ],
         ];
     }
 
@@ -4394,6 +4427,61 @@ final class ArrayAssignmentTest extends TestCase
                     }
                 ',
                 'error_message' => 'InvalidOperand',
+            ],
+            'itemUnderAKeyNarrowedToALiteralTheArrayCantHave' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param array<0, int> $a */
+                    function f(array $a, int $k): void {
+                        $x = $a[$k];
+                        if ($k === 1) {
+                            echo $a[$k];
+                        }
+                    }
+                PHP,
+                'error_message' => "InvalidArrayOffset - src" . DIRECTORY_SEPARATOR . "somefile.php:6:18 - Cannot access value on variable \$a using offset value of '1', expecting 0",
+            ],
+            'itemUnderAKeyNarrowedToATypeTheArrayCantHave' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param array<string, int> $a */
+                    function f(array $a, string|int $k): void {
+                        if (isset($a[$k])) {
+                            if (is_int($k)) {
+                                echo $a[$k];
+                            }
+                        }
+                    }
+                PHP,
+                'error_message' => 'InvalidArrayOffset',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'itemUnderAKeyNarrowedToAnIntLikeStringTheArrayCantHave' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param array<string, int|string> $a */
+                    function f(array $a, string $k): void {
+                        $x = $a[$k];
+                        if ($k === '1') {
+                            echo $a[$k];
+                        }
+                    }
+                PHP,
+                'error_message' => "InvalidArrayOffset - src" . DIRECTORY_SEPARATOR . "somefile.php:6:18 - Cannot access value on variable \$a using offset value of '1', expecting string",
+            ],
+            'itemUnderAKeyNarrowedToANumericStringTheArrayMayNotHave' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param array<string, int|string> $a */
+                    function f(array $a, string $k): void {
+                        $x = $a[$k];
+                        if (is_numeric($k)) {
+                            echo $a[$k];
+                        }
+                    }
+                PHP,
+                'error_message' => 'PossiblyInvalidArrayOffset',
             ],
         ];
     }

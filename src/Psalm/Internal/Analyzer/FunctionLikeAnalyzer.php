@@ -39,7 +39,7 @@ use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Internal\FileManipulation\FunctionDocblockManipulator;
 use Psalm\Internal\MethodIdentifier;
-use Psalm\Internal\PhpVisitor\NodeCounterVisitor;
+use Psalm\Internal\Perf;
 use Psalm\Internal\Provider\NodeDataProvider;
 use Psalm\Internal\Type\Comparator\TypeComparisonResult;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
@@ -114,7 +114,6 @@ use function in_array;
 use function is_string;
 use function krsort;
 use function mb_strpos;
-use function microtime;
 use function preg_match;
 use function reset;
 use function sort;
@@ -776,7 +775,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             ]);
         }
 
-        $time = microtime(true);
+        $perf_start = Perf\Collector::$enabled ? Perf\Collector::functionStart() : null;
 
         $project_analyzer = $statements_analyzer->getProjectAnalyzer();
 
@@ -958,20 +957,18 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             }
         }
 
-        if (!$context->collect_initializations
-            && $project_analyzer->debug_performance
-            && $cased_method_id
-        ) {
-            $traverser = new PhpParser\NodeTraverser;
-
-            $node_counter = new NodeCounterVisitor();
-            $traverser->addVisitor($node_counter);
-            $traverser->traverse($function_stmts);
-
-            if ($node_counter->count > 5) {
-                $time_taken = microtime(true) - $time;
-                $codebase->analyzer->addFunctionTiming($cased_method_id, $time_taken / $node_counter->count);
-            }
+        if ($perf_start !== null) {
+            // the id of a method of an anonymous class names the file, and so does the path of the record
+            Perf\Collector::functionEnd(
+                $this->getFilePath(),
+                $this->getFileName(),
+                $this->function->getLine(),
+                $appearing_class_storage?->anonymous === true
+                    ? '{anonymous-class}::' . ($storage->cased_name ?? '')
+                    : $cased_method_id ?? '{closure}',
+                $context->collect_initializations,
+                $perf_start,
+            );
         }
 
         $final_actions = ScopeAnalyzer::getControlActions(
