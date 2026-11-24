@@ -2081,6 +2081,91 @@ final class ArrayFetchAnalyzer
     }
 
     /**
+     * A shape that surely has an item keeps, when written under a key whose value isn't known, the items the key can't
+     * be: they are what they were. An append writes under a key the shape doesn't have yet
+     *
+     * @psalm-capabilities read-props|write-this-props
+     */
+    public static function writeUnknownKeyOfAShape(
+        TKeyedArray $type,
+        Union $key_type,
+        Union $value_type,
+        bool $appends = false,
+    ): ?TKeyedArray {
+        if ($type->is_list || !$type->isNonEmpty()) {
+            return null;
+        }
+
+        // an append is under the int key after the largest one, none of which is negative unless one is
+        if ($appends) {
+            $key_type = Type::getListKey();
+
+            foreach ($type->properties as $key => $_) {
+                if (is_int($key) && $key < 0) {
+                    $key_type = Type::getInt();
+                }
+            }
+        }
+
+        [$can_be_int, $can_be_string] = $appends ? [false, false] : self::getKindsOfAWrittenKey($key_type);
+
+        $properties = [];
+
+        foreach ($type->properties as $key => $property) {
+            // an item the write may not have reached may still be missing
+            $properties[$key] = (is_int($key) ? $can_be_int : $can_be_string)
+                ? Type::combineUnionTypes($property, $value_type, null, false, true, 500, $property->possibly_undefined)
+                : $property;
+        }
+
+        $shape = TKeyedArray::make(
+            $properties,
+            $type->class_strings,
+            $type->fallback_params === null
+                ? [$key_type, $value_type]
+                : [
+                    Type::combineUnionTypes($type->fallback_params[0], $key_type),
+                    Type::combineUnionTypes($type->fallback_params[1], $value_type),
+                ],
+        );
+
+        return $shape instanceof TKeyedArray ? $shape : null;
+    }
+
+    /**
+     * Whether a written key can be an int and a string. PHP writes a string of a decimal int (`'0'`) under the int key,
+     * and a key type that isn't known to be only one of them can be both.
+     *
+     * @return array{bool, bool}
+     * @psalm-pure
+     */
+    private static function getKindsOfAWrittenKey(Union $key_type): array
+    {
+        $can_be_int = false;
+        $can_be_string = false;
+
+        foreach ($key_type->getAtomicTypes() as $key_atomic_type) {
+            if ($key_atomic_type instanceof TTemplateParam) {
+                [$bound_can_be_int, $bound_can_be_string] = self::getKindsOfAWrittenKey($key_atomic_type->as);
+                $can_be_int = $can_be_int || $bound_can_be_int;
+                $can_be_string = $can_be_string || $bound_can_be_string;
+            } elseif ($key_atomic_type instanceof TInt) {
+                $can_be_int = true;
+            } elseif ($key_atomic_type instanceof TLiteralString) {
+                $can_be_string = true;
+                $can_be_int = $can_be_int || (string) (int) $key_atomic_type->value === $key_atomic_type->value;
+            } elseif ($key_atomic_type instanceof TClassString) {
+                $can_be_string = true;
+            } else {
+                $can_be_int = true;
+                $can_be_string = true;
+            }
+        }
+
+        return [$can_be_int, $can_be_string];
+    }
+
+    /**
      * @param list<string> $expected_offset_types
      * @param list<TLiteralString|TLiteralInt> $key_values
      * @param-out TArray|TKeyedArray $type
@@ -2320,14 +2405,24 @@ final class ArrayFetchAnalyzer
                                 true,
                             );
                         } else {
-                            $type = new TNonEmptyArray([
-                                $new_key_type,
-                                $generic_params,
-                            ], null, $type->getMinCount()+1);
+                            $type = self::writeUnknownKeyOfAShape($type, Type::getInt(), $replacement_type, true)
+                                ?? new TNonEmptyArray([
+                                    $new_key_type,
+                                    $generic_params,
+                                ], null, $type->getMinCount()+1);
                         }
                     } else {
                         $min_count = $type->getMinCount();
-                        if ($min_count) {
+                        $shape = self::writeUnknownKeyOfAShape(
+                            $type,
+                            $offset_type->hasMixed()
+                                ? Type::getArrayKey()
+                                : self::castOffsetTypeOfAWrite($offset_type->freeze()),
+                            $replacement_type,
+                        );
+                        if ($shape) {
+                            $type = $shape;
+                        } elseif ($min_count) {
                             $type = new TNonEmptyArray([
                                 $new_key_type,
                                 $generic_params,
