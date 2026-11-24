@@ -45,6 +45,11 @@ final class DocblockParser
     private const COMBINED_TAGS = [
         'template' => ['template', 'phpstan-template', 'psalm-template'],
         'template-covariant' => ['template-covariant', 'phpstan-template-covariant', 'psalm-template-covariant'],
+        'template-contravariant' => [
+            'template-contravariant',
+            'phpstan-template-contravariant',
+            'psalm-template-contravariant',
+        ],
         'extends' => ['template-extends', 'inherits', 'extends', 'psalm-extends', 'phpstan-extends'],
         'implements' => ['template-implements', 'implements', 'phpstan-implements', 'psalm-implements'],
         'use' => ['template-use', 'use', 'phpstan-use', 'psalm-use'],
