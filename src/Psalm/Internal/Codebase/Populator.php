@@ -7,6 +7,8 @@ namespace Psalm\Internal\Codebase;
 use BackedEnum;
 use InvalidArgumentException;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
+use Psalm\Internal\Analyzer\MethodAnalyzer;
+use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Perf;
 use Psalm\Internal\PhpVisitor\Reflector\FunctionLikeDocblockScanner;
@@ -1826,6 +1828,24 @@ final class Populator
     }
 
     /**
+     * A native method a later PHP version introduces is no method of the parent in the analysed version, so a method
+     * of the same name doesn't override it
+     */
+    private static function isNativeMethodOfLaterVersion(
+        ClassLikeStorage $declaring_class_storage,
+        MethodIdentifier $method_id,
+    ): bool {
+        if ($declaring_class_storage->user_defined) {
+            return false;
+        }
+
+        $codebase = ProjectAnalyzer::getInstance()->getCodebase();
+        $since_php_version_id = MethodAnalyzer::getMethodSincePhpVersionId($codebase, $method_id);
+
+        return $since_php_version_id !== null && $since_php_version_id > $codebase->analysis_php_version_id;
+    }
+
+    /**
      * The names a method of the parent is inherited under: its own, unless `insteadof` excludes the parent's, and
      * the aliases of a trait.
      *
@@ -1941,8 +1961,10 @@ final class Populator
                     $declaring_visibility = $parent_storage->trait_visibility_map[$method_name_lc]
                         ?? $declaring_method_storage?->visibility;
 
-                    if ($declaring_method_storage === null
-                        || $declaring_visibility !== ClassLikeAnalyzer::VISIBILITY_PRIVATE
+                    if (($declaring_method_storage === null
+                            || $declaring_visibility !== ClassLikeAnalyzer::VISIBILITY_PRIVATE)
+                        && !(isset($storage->methods[$method_name_lc])
+                            && self::isNativeMethodOfLaterVersion($declaring_class_storage, $declaring_method_id))
                     ) {
                         $storage->overridden_method_ids[$method_name_lc][$declaring_method_id->fq_class_name]
                             = $declaring_method_id;

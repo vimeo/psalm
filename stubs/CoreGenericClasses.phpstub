@@ -662,6 +662,8 @@ class mysqli
     /**
      * Escapes the string and puts it in quotes
      *
+     * @param string $string
+     * @return string
      * @psalm-pure
      *
      * @psalm-taint-escape sql

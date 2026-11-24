@@ -7,8 +7,10 @@ namespace Psalm\Internal\Type;
 use AssertionError;
 use Psalm\CodeLocation;
 use Psalm\Codebase;
+use Psalm\Internal\Analyzer\MethodAnalyzer;
 use Psalm\Internal\Codebase\ClassConstantByWildcardResolver;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
+use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\Comparator\CallableTypeComparator;
 use Psalm\Storage\Assertion;
 use Psalm\Storage\Assertion\Any;
@@ -917,6 +919,20 @@ final class SimpleAssertionReconciler extends Reconciler
     }
 
     /**
+     * Whether the method, which exists, is also in the analysed PHP version: a native method a later version introduces
+     * makes a `method_exists()` check meaningful
+     */
+    private static function isMethodAvailable(Codebase $codebase, string $fq_class_name, string $method_name): bool
+    {
+        $since_php_version_id = MethodAnalyzer::getMethodSincePhpVersionId(
+            $codebase,
+            new MethodIdentifier($fq_class_name, strtolower($method_name)),
+        );
+
+        return $since_php_version_id === null || $since_php_version_id <= $codebase->analysis_php_version_id;
+    }
+
+    /**
      * @param   string[]  $suppressed_issues
      * @param Reconciler::RECONCILIATION_* $failed_reconciliation
      */
@@ -975,6 +991,8 @@ final class SimpleAssertionReconciler extends Reconciler
                     }
 
                     $type = $type->setIntersectionTypes($extra_types);
+                } elseif (!self::isMethodAvailable($codebase, $type->value, $method_name)) {
+                    $redundant = false;
                 }
                 $object_types[] = $type;
             } elseif ($type instanceof TObjectWithProperties) {

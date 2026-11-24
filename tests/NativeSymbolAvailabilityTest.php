@@ -5,14 +5,17 @@ declare(strict_types=1);
 namespace Psalm\Tests;
 
 use Override;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Psalm\Context;
 use Psalm\IssueBuffer;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
+use ReflectionFunction;
 
 use function array_filter;
 use function array_map;
 use function explode;
+use function function_exists;
 use function implode;
 use function str_replace;
 
@@ -56,6 +59,54 @@ final class NativeSymbolAvailabilityTest extends TestCase
         );
 
         $this->assertCount(2, $unused_calls);
+    }
+
+    /**
+     * A polyfill of a native function Psalm has no signature of (the runtime doesn't have it natively, and no stub
+     * declares it) stays known with allFunctionsGlobal: imageavif() of ext-gd, and clamp() of PHP 8.6, which Psalm's
+     * own symfony/polyfill-php86 defines in this process.
+     */
+    #[DataProvider('providerPolyfilledFunctions')]
+    public function testPolyfillOfFunctionWithoutNativeSignatureIsGlobal(string $function): void
+    {
+        if (function_exists($function) && (new ReflectionFunction($function))->isInternal()) {
+            $this->markTestSkipped($function . '() is native in this process');
+        }
+
+        $this->project_analyzer->setPhpVersion('8.0', 'tests');
+        $codebase = $this->project_analyzer->getCodebase();
+        $codebase->all_functions_global = true;
+
+        $this->addFile(
+            'polyfill.php',
+            '<?php
+                if (!function_exists("' . $function . '")) {
+                    function ' . $function . '(int $i): int {
+                        return $i;
+                    }
+                }
+            ',
+        );
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                function f(): int {
+                    return ' . $function . '(1);
+                }
+            ',
+        );
+        $codebase->addFilesToAnalyze(['polyfill.php' => 'polyfill.php']);
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    /**
+     * @return iterable<string, array{string}>
+     */
+    public static function providerPolyfilledFunctions(): iterable
+    {
+        yield 'imageavif' => ['imageavif'];
+        yield 'clamp' => ['clamp'];
     }
 
     /**
@@ -284,6 +335,118 @@ final class NativeSymbolAvailabilityTest extends TestCase
             'assertions' => [],
             'ignored_issues' => [],
             'php_version' => '8.0',
+        ];
+
+        yield 'methodExistsOfMethodBelowItsVersion' => [
+            'code' => '<?php
+                function a(ReflectionClass $r): bool {
+                    if (method_exists($r, "isEnum") && $r->isEnum()) {
+                        return true;
+                    }
+
+                    return false;
+                }
+
+                function b(ReflectionClass $r): bool {
+                    if (!method_exists($r, "isEnum")) {
+                        return false;
+                    }
+
+                    return $r->isEnum() === true;
+                }
+            ',
+            'assertions' => [],
+            'ignored_issues' => [],
+            'php_version' => '8.0',
+        ];
+
+        yield 'methodExistsOfInheritedMethodBelowItsVersion' => [
+            'code' => '<?php
+                /** @extends ReflectionClass<object> */
+                final class R extends ReflectionClass {}
+
+                function a(R $r): bool {
+                    return method_exists($r, "isEnum") && $r->isEnum();
+                }
+
+                function b(ReflectionObject $r): bool {
+                    return method_exists($r, "isEnum") && $r->isEnum();
+                }
+            ',
+            'assertions' => [],
+            'ignored_issues' => [],
+            'php_version' => '8.0',
+        ];
+
+        yield 'foreachOverNativeTraversableBelowItsIteratorMethodsVersion' => [
+            'code' => '<?php
+                function f(DOMNodeList $l, DOMNamedNodeMap $m, SimpleXMLElement $x): void {
+                    foreach ($l as $_node) {}
+                    foreach ($m as $_attr) {}
+                    foreach ($x as $_child) {}
+                }
+            ',
+            'assertions' => [],
+            'ignored_issues' => [],
+            'php_version' => '7.4',
+        ];
+
+        yield 'oldStyleConstructorOfNativeClassBelowPhp80' => [
+            'code' => '<?php
+                final class H extends SoapHeader {
+                    public function __construct() {
+                        parent::__construct("ns", "n");
+                    }
+                }
+            ',
+            'assertions' => [],
+            'ignored_issues' => [],
+            'php_version' => '7.4',
+        ];
+
+        yield 'subclassRetypesMethodOfLaterVersion' => [
+            'code' => '<?php
+                final class M extends mysqli {
+                    public function quote_string(int $i): int {
+                        return $i;
+                    }
+                }
+            ',
+            'assertions' => [],
+            'ignored_issues' => [],
+            'php_version' => '8.2',
+        ];
+
+        yield 'subclassDeclaresMethodOfLaterVersion' => [
+            'code' => '<?php
+                final class M extends mysqli {
+                    /**
+                     * @param string $string
+                     * @return string
+                     */
+                    public function quote_string($string) {
+                        return "\'" . $this->real_escape_string($string) . "\'";
+                    }
+                }
+            ',
+            'assertions' => [],
+            'ignored_issues' => [],
+            'php_version' => '8.2',
+        ];
+
+        yield 'methodExistsOfStubbedMethodBelowItsVersion' => [
+            'code' => '<?php
+                function f(mysqli $m): string {
+                    if (method_exists($m, "quote_string")) {
+                        return $m->quote_string("a");
+                    }
+
+                    return "";
+                }
+            ',
+            'assertions' => [],
+            'ignored_issues' => [],
+            'php_version' => '8.2',
         ];
 
         // PhpVersionedClasses.phpstub is parsed with the target version's grammar, so it must stay free of
@@ -988,6 +1151,93 @@ final class NativeSymbolAvailabilityTest extends TestCase
                 . ' (it was introduced in PHP 8.1',
             'error_levels' => [],
             'php_version' => '8.0',
+        ];
+
+        yield 'inheritedMethodBelowItsVersion' => [
+            'code' => '<?php
+                function f(ReflectionObject $r): bool {
+                    return $r->isEnum();
+                }
+            ',
+            'error_message' => 'Method ReflectionObject::isEnum is not defined for the analysed PHP version 8.0'
+                . ' (it was introduced in PHP 8.1',
+            'error_levels' => [],
+            'php_version' => '8.0',
+        ];
+
+        yield 'domMethodBelowItsVersion' => [
+            'code' => '<?php
+                function f(DOMElement $e): void {
+                    $e->remove();
+                }
+            ',
+            'error_message' => 'Method DOMElement::remove is not defined for the analysed PHP version 7.4'
+                . ' (it was introduced in PHP 8.0',
+            'error_levels' => [],
+            'php_version' => '7.4',
+        ];
+
+        yield 'explicitIteratorMethodBelowItsVersion' => [
+            'code' => '<?php
+                function f(DOMNodeList $l): Iterator {
+                    return $l->getIterator();
+                }
+            ',
+            'error_message' => 'Method DOMNodeList::getIterator is not defined for the analysed PHP version 7.4'
+                . ' (it was introduced in PHP 8.0',
+            'error_levels' => [],
+            'php_version' => '7.4',
+        ];
+
+        yield 'subclassDeclaresMethodInItsVersion' => [
+            'code' => '<?php
+                final class M extends mysqli {
+                    /** @return string */
+                    public function quote_string($string) {
+                        return "\'" . $this->real_escape_string($string) . "\'";
+                    }
+                }
+            ',
+            'error_message' => 'ImmutableDependency',
+            'error_levels' => [],
+            'php_version' => '8.6',
+        ];
+
+        yield 'opcacheFunctionBelowItsVersion' => [
+            'code' => '<?php
+                opcache_jit_blacklist(function (): void {});
+            ',
+            'error_message' => 'Function opcache_jit_blacklist is not defined for the analysed PHP version 8.3'
+                . ' (it was introduced in PHP 8.4',
+            'error_levels' => [],
+            'php_version' => '8.3',
+        ];
+
+        yield 'stubbedMethodBelowItsVersion' => [
+            'code' => '<?php
+                function f(mysqli $m): string {
+                    return $m->quote_string("a");
+                }
+            ',
+            'error_message' => 'Method mysqli::quote_string is not defined for the analysed PHP version 8.2'
+                . ' (it was introduced in PHP 8.6',
+            'error_levels' => [],
+            'php_version' => '8.2',
+        ];
+
+        yield 'methodExistsOfStubbedMethodInItsVersion' => [
+            'code' => '<?php
+                function f(mysqli $m): string {
+                    if (method_exists($m, "quote_string")) {
+                        return $m->quote_string("a");
+                    }
+
+                    return "";
+                }
+            ',
+            'error_message' => 'RedundantCondition',
+            'error_levels' => [],
+            'php_version' => '8.6',
         ];
 
         yield 'php86DurationBelowItsVersion' => [
