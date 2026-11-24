@@ -9,6 +9,8 @@ use Psalm\Tests\TestCase;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
+use const DIRECTORY_SEPARATOR;
+
 final class ConditionalReturnTypeTest extends TestCase
 {
     use ValidCodeAnalysisTestTrait;
@@ -2746,6 +2748,85 @@ final class ConditionalReturnTypeTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'nonEmptyConditionOnATemplatedArrayKeepsItsValueTemplate' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @param array<T> $array
+                     * @return T
+                     */
+                    function first(array $array): mixed {
+                        $values = array_values($array);
+
+                        return $values[0] ?? throw new RuntimeException();
+                    }
+
+                    /**
+                     * @template T
+                     * @param iterable<T> $iterable
+                     * @return T
+                     */
+                    function iterableFirst(iterable $iterable): mixed {
+                        $values = is_array($iterable) ? array_values($iterable) : [];
+
+                        return $values[0] ?? throw new RuntimeException();
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'nonEmptyConditionOnATemplatedListKeepsItsTemplate' => [
+                'code' => '<?php
+                    /**
+                     * @template TList of list
+                     * @param TList $list
+                     * @return (TList is non-empty-list ? non-empty-list<value-of<TList>> : list<value-of<TList>>)
+                     */
+                    function listValues(array $list): array {
+                        throw new RuntimeException();
+                    }
+
+                    /**
+                     * @template T
+                     * @param list<T> $list
+                     * @return T
+                     */
+                    function first(array $list): mixed {
+                        $values = listValues($list);
+
+                        return $values[0] ?? throw new RuntimeException();
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'listConditionOnATemplatedArrayKeepsItsTemplate' => [
+                'code' => '<?php
+                    /**
+                     * @template TArray of array
+                     * @param TArray $array
+                     * @return (TArray is list ? list<value-of<TArray>> : array<value-of<TArray>>)
+                     */
+                    function sameValues(array $array): array {
+                        throw new RuntimeException();
+                    }
+
+                    /**
+                     * @template T
+                     * @param array<int, T> $array
+                     * @return T
+                     */
+                    function first(array $array): mixed {
+                        foreach (sameValues($array) as $value) {
+                            return $value;
+                        }
+
+                        throw new RuntimeException();
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
         ];
     }
 
@@ -2756,6 +2837,19 @@ final class ConditionalReturnTypeTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'nonEmptyConditionOnATemplatedArrayKeepsItsKeyTemplate' => [
+                'code' => '<?php
+                    /**
+                     * @template K of array-key
+                     * @param array<K, mixed> $array
+                     */
+                    function keys(array $array): void {
+                        $keys = array_keys($array);
+                        /** @psalm-trace $keys */
+                    }',
+                'error_message' => 'Trace - src' . DIRECTORY_SEPARATOR
+                    . 'somefile.php:8:50 - $keys: list<K:fn-keys as array-key',
+            ],
             'classTemplateBoundedByStringConditionalOnNonFinalStringableClass' => [
                 'code' => '<?php
                     class Mdl implements Stringable {
