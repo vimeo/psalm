@@ -1233,7 +1233,6 @@ final class ArrayFetchAnalyzer
             $statements_analyzer->countMixed($context, false);
 
             if ($expected_offset_types) {
-                $statements_analyzer->node_data->markOffsetChecked($stmt);
                 $invalid_offset_type = $expected_offset_types[0];
 
                 $used_offset = 'using a ' . $offset_type->getId() . ' offset';
@@ -1248,6 +1247,8 @@ final class ArrayFetchAnalyzer
                     // do nothing
                 } elseif ($has_valid_expected_offset && $has_valid_absolute_offset) {
                     if (!$context->inside_unset && !$offset_reported) {
+                        $statements_analyzer->node_data->markOffsetChecked($stmt);
+
                         IssueBuffer::maybeAdd(
                             new PossiblyInvalidArrayOffset(
                                 'Cannot access value on variable ' .
@@ -1269,6 +1270,8 @@ final class ArrayFetchAnalyzer
                     }
 
                     if (!$offset_reported) {
+                        $statements_analyzer->node_data->markOffsetChecked($stmt);
+
                         IssueBuffer::maybeAdd(
                             new InvalidArrayOffset(
                                 'Cannot access value on variable ' .

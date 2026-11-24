@@ -837,7 +837,10 @@ final class ArrayAccessTest extends TestCase
                     foreach ([1, 2] as $_) {
                         $a[$k]++;
                     }
-                }',
+                }
+
+                /** @param array<string, int> $a */
+                function coalesceAssign(array $a, stdClass|string $k): void { $a[$k] ??= 1; }',
         );
         $this->analyzeFile($file_path, new Context());
 
@@ -860,6 +863,8 @@ final class ArrayAccessTest extends TestCase
                 '20 MixedArrayOffset: Cannot access value on variable $a using mixed offset',
                 '20 MixedArrayOffset: Cannot access value on variable $a[$k] using mixed offset',
                 '25 MixedArrayOffset: Cannot access value on variable $a using mixed offset',
+                '30 PossiblyInvalidArrayOffset: Cannot access value on variable $a[$k] using a stdClass|string offset, '
+                    . 'expecting array-key',
             ],
             $messages,
         );
