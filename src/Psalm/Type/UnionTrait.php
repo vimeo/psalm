@@ -19,6 +19,7 @@ use Psalm\Internal\TypeVisitor\TypeChecker;
 use Psalm\Internal\TypeVisitor\TypeScanner;
 use Psalm\StatementsSource;
 use Psalm\Storage\FileStorage;
+use Psalm\Storage\TemplateVariance;
 use Psalm\Type\Atomic\Scalar;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TArrayKey;
@@ -1510,7 +1511,7 @@ trait UnionTrait
             $phantom_classes,
             $inferred,
             $inherited,
-            $prevent_template_covariance,
+            $prevent_template_covariance ? TemplateVariance::Contravariant : null,
             $context,
         );
 

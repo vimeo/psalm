@@ -13,11 +13,8 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
-use UnexpectedValueException;
 
-use function assert;
 use function getcwd;
-use function is_string;
 
 /**
  * @internal
@@ -55,15 +52,10 @@ abstract class PluginToggleCommand extends Command
         $current_dir = (string) getcwd();
 
         $config_file_path = $input->getOption('config');
-        if ($config_file_path !== null && !is_string($config_file_path)) {
-            throw new UnexpectedValueException('Config file path should be a string');
-        }
 
         $plugin_list = ($this->plugin_list_factory)($current_dir, $config_file_path);
 
         $plugin_name = $input->getArgument('pluginName');
-
-        assert(is_string($plugin_name));
 
         try {
             $plugin_class = $plugin_list->resolvePluginClass($plugin_name);

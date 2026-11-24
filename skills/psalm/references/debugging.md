@@ -35,4 +35,5 @@ wrong is where the fix belongs: a missing return type, a missing template, an un
   last file it was working on.
 - To find the statement: `--debug-by-line <file>`.
 - Memory: `--memory-limit=4G`.
+- Slow: `--no-cache --debug-performance` (short name `--profile`) prints where the time went (`docs/running_psalm/performance.md`).
 - Reduce it to a small repro: [bug-report.md](bug-report.md).

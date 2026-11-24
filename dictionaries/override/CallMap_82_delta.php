@@ -3,11 +3,6 @@
 return array (
   'added' => 
   array (
-    'imap_is_open' => 
-    array (
-      0 => 'bool',
-      'imap' => 'IMAP\\Connection',
-    ),
     'ini_parse_quantity' => 
     array (
       0 => 'int',
@@ -308,6 +303,23 @@ return array (
         'arg=' => 'mixed',
       ),
     ),
+    'dba_fetch' => 
+    array (
+      'old' => 
+      array (
+        0 => 'false|string',
+        'key' => 'array<array-key, mixed>|string',
+        'skip' => 'int',
+        'dba=' => 'resource',
+      ),
+      'new' => 
+      array (
+        0 => 'false|string',
+        'key' => 'array<array-key, mixed>|string',
+        'dba' => 'resource',
+        'skip=' => 'int',
+      ),
+    ),
     'dba_open' => 
     array (
       'old' => 
@@ -348,19 +360,6 @@ return array (
         'permission=' => 'int',
         'map_size=' => 'int',
         'flags=' => 'int|null',
-      ),
-    ),
-    'ds\\hashable::equals' => 
-    array (
-      'old' => 
-      array (
-        0 => 'bool',
-        'obj' => 'mixed',
-      ),
-      'new' => 
-      array (
-        0 => 'bool',
-        'object' => 'mixed',
       ),
     ),
     'ds\\sequence::filter' => 
