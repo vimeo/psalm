@@ -4651,6 +4651,34 @@ final class MethodCallTest extends TestCase
                 'error_levels' => [],
                 'php_version' => '8.0',
             ],
+            'nullsafeChainWithSeveralHopsReportsNullReturnedByACallWithArgumentsInALaterLoopPass' => [
+                'code' => '<?php
+                    abstract class C {
+                        abstract public function c(): int;
+                    }
+                    abstract class B {
+                        abstract public function with(int $x): C;
+                    }
+                    abstract class MaybeB {
+                        abstract public function with(int $x): ?C;
+                    }
+                    abstract class A {
+                        public ?B $b = null;
+                    }
+                    abstract class MaybeA {
+                        public ?MaybeB $b = null;
+                    }
+
+                    function f(?A $a, ?MaybeA $maybe): void {
+                        for ($i = 0; $i < 2; $i++) {
+                            $a?->b?->with(1)->c();
+                            $a = $maybe;
+                        }
+                    }',
+                'error_message' => 'PossiblyNullReference',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
             'nullsafeChainReportsNullArrayElementMethodCall' => [
                 'code' => '<?php
                     abstract class C {
