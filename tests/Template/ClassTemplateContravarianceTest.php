@@ -355,6 +355,24 @@ final class ClassTemplateContravarianceTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.4',
             ],
+            'newThroughASinkArgOfAnInvariantTemplateTakesWhatTheSinkTakes' => [
+                'code' => self::SINK . '
+                    /** @template T */
+                    final class Holder {
+                        /** @param Sink<T> $sink */
+                        public function __construct(private Sink $sink) {}
+                        /** @param T $value */
+                        public function give(mixed $value): void { $this->sink->put($value); }
+                    }
+                    /** @param Sink<int> $ints */
+                    function f(Sink $ints): void {
+                        $holder = new Holder($ints);
+                        $holder->give(1);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'newWithAValueOrClassStringArgTakesTheBound' => [
                 'code' => '<?php
                     final class Dog {}
@@ -754,6 +772,25 @@ final class ClassTemplateContravarianceTest extends TestCase
                         (new Forwarder($sink))->put("a");
                     }',
                 'error_message' => 'Argument 1 of Forwarder::put expects int, but \'a\' provided',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'newThroughASinkArgOfAnInvariantTemplateRejectsWhatTheSinkDoesNot' => [
+                'code' => self::SINK . '
+                    /** @template T */
+                    final class Holder {
+                        /** @param Sink<T> $sink */
+                        public function __construct(private Sink $sink) {}
+                        /** @param T $value */
+                        public function give(mixed $value): void { $this->sink->put($value); }
+                    }
+                    /** @param Sink<int> $ints */
+                    function f(Sink $ints): void {
+                        $holder = new Holder($ints);
+                        $holder->give("a");
+                    }',
+                'error_message' => 'IncompatibleTypeParameters - src' . DIRECTORY_SEPARATOR . 'somefile.php:28:39'
+                    . ' - Type \'a\' should be a subtype of int',
                 'error_levels' => [],
                 'php_version' => '8.0',
             ],

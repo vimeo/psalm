@@ -887,7 +887,9 @@ final class NewAnalyzer extends CallAnalyzer
     /**
      * The type variable a template of a constructed class is carried as: the
      * bounds the constructor arguments inferred are its lower bounds, and the
-     * template's declared constraint its upper bound.
+     * template's declared constraint and what the arguments bound it by from
+     * above (a callback's parameter, a contravariant argument's type) its upper
+     * bounds.
      *
      * @param non-empty-list<TemplateBound> $arg_bounds
      * @param bool $bound_through_class_string whether an argument binds the template through a
@@ -897,6 +899,7 @@ final class NewAnalyzer extends CallAnalyzer
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\New_ $stmt,
         array $arg_bounds,
+        ?TemplateBound $arg_upper_bound,
         Union $constraint,
         bool $bound_through_class_string,
     ): Union {
@@ -921,6 +924,17 @@ final class NewAnalyzer extends CallAnalyzer
         }
 
         $upper_bounds = [new TemplateBound($constraint, 0, null, null, $new_location)];
+
+        // `Holder<T>` built from a `Sink<int>` (`@param Sink<T>`) may only ever take ints
+        if ($arg_upper_bound !== null) {
+            $upper_bounds[] = new TemplateBound(
+                $arg_upper_bound->type,
+                0,
+                $arg_upper_bound->arg_offset,
+                null,
+                $new_location,
+            );
+        }
 
         // A constructor argument that binds this template through a
         // `class-string<T>` position names the type exactly
@@ -2229,6 +2243,7 @@ final class NewAnalyzer extends CallAnalyzer
                         $statements_analyzer,
                         $stmt,
                         $lower_bounds[$template_name][$fq_class_name],
+                        $template_result->upper_bounds[$template_name][$fq_class_name] ?? null,
                         $constraint,
                         $method_storage
                             && self::templateBoundThroughClassString($method_storage, $template_name),
