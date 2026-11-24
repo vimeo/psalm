@@ -365,7 +365,7 @@ final class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
                 }
             }
 
-            if ($method_storage->self_out_type && $lhs_var_id) {
+            if ($method_storage->self_out_type && ($lhs_var_id !== null || $method_storage->returns_this)) {
                 $self_out_candidate = $method_storage->self_out_type;
 
                 if ($template_result->lower_bounds) {
@@ -404,7 +404,14 @@ final class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
                     true,
                 );
 
-                $context->vars_in_scope[$lhs_var_id] = $self_out_candidate;
+                if ($lhs_var_id !== null) {
+                    $context->vars_in_scope[$lhs_var_id] = $self_out_candidate;
+                }
+
+                // the object returned is the one the method changed
+                if ($method_storage->returns_this) {
+                    $return_type_candidate = $self_out_candidate->setParentNodes($return_type_candidate->parent_nodes);
+                }
             }
 
             if (!$context->collect_initializations) {
