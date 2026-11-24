@@ -840,7 +840,6 @@ final class PropertyTypeTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
-<<<<<<< HEAD
             'staticInThePropertyTypeOfAParentIsTheClassOfTheObjectRead' => [
                 'code' => '<?php
                     class Node {
@@ -860,7 +859,8 @@ final class PropertyTypeTest extends TestCase
                     '$prev===' => 'Node|null',
                     '$vars===' => 'array{next: Leaf|null, prev: Node|null}',
                     '$column===' => 'list{Leaf|null}',
-=======
+                ],
+            ],
             'assignedUnionHasItsWidenedGenericReplaced' => [
                 'code' => '<?php
                     /**
@@ -888,7 +888,6 @@ final class PropertyTypeTest extends TestCase
                     $b = $h->b;',
                 'assertions' => [
                     '$b===' => 'Box<int>|null',
->>>>>>> origin/master
                 ],
             ],
             'offsetWriteInitializesAnUninitializedArrayProperty' => [
