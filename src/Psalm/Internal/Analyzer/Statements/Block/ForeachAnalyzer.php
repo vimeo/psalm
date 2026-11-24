@@ -84,7 +84,6 @@ use Psalm\Type\Union;
 use UnexpectedValueException;
 
 use function array_any;
-use function array_diff;
 use function array_filter;
 use function array_keys;
 use function array_map;
@@ -1241,12 +1240,13 @@ final class ForeachAnalyzer
                 $aggregate_expr->getAttributes(),
             );
 
-            $statements_analyzer->node_data->setType(
+            $iterator_type = self::getFakeMethodCallType(
+                $statements_analyzer,
                 $aggregate,
                 new Union([$atomic_type], ['parent_nodes' => $aggregate_type->parent_nodes]),
+                $context,
+                'getIterator',
             );
-
-            $iterator_type = self::getFakeMethodCallType($statements_analyzer, $aggregate, $context, 'getIterator');
 
             if ($iterator_type === null) {
                 continue;
@@ -1380,14 +1380,23 @@ final class ForeachAnalyzer
         $invalid_iterator_types = [];
         $raw_object_types = [];
 
-        $remaining_atomic_types = array_values($iterator_type->getAtomicTypes());
+        // each type with the template parameter it is the bound of, if any
+        $remaining_atomic_types = array_map(
+            static fn(Atomic $atomic_type): array => [$atomic_type, null],
+            array_values($iterator_type->getAtomicTypes()),
+        );
 
         while ($remaining_atomic_types) {
-            $iterator_atomic_type = array_shift($remaining_atomic_types);
+            [$iterator_atomic_type, $bounded_template] = array_shift($remaining_atomic_types);
 
             // a template parameter iterates over every type of its bound
             if ($iterator_atomic_type instanceof TTemplateParam) {
-                array_unshift($remaining_atomic_types, ...array_values($iterator_atomic_type->as->getAtomicTypes()));
+                $bounded_template ??= $iterator_atomic_type;
+
+                array_unshift($remaining_atomic_types, ...array_map(
+                    static fn(Atomic $bound_type): array => [$bound_type, $bounded_template],
+                    array_values($iterator_atomic_type->as->getAtomicTypes()),
+                ));
                 continue;
             }
 
@@ -1615,6 +1624,7 @@ final class ForeachAnalyzer
                         $has_valid_iterator,
                         $invalid_iterator_types,
                         $forwards_send,
+                        $bounded_template,
                     );
                 } else {
                     $raw_object_types[] = $iterator_atomic_type->value;
@@ -1699,7 +1709,11 @@ final class ForeachAnalyzer
         return null;
     }
 
-    /** @param list<string> $invalid_iterator_types */
+    /**
+     * @param list<string> $invalid_iterator_types
+     * @param ?TTemplateParam $bounded_template the template parameter $iterator_atomic_type is the bound of, which
+     *      the iterator methods are called on
+     */
     public static function handleIterable(
         StatementsAnalyzer $statements_analyzer,
         TNamedObject $iterator_atomic_type,
@@ -1711,6 +1725,7 @@ final class ForeachAnalyzer
         bool &$has_valid_iterator,
         array &$invalid_iterator_types = [],
         bool $forwards_send = false,
+        ?TTemplateParam $bounded_template = null,
     ): void {
         if ($iterator_atomic_type->extra_types) {
             $iterator_atomic_types = [
@@ -1743,6 +1758,14 @@ final class ForeachAnalyzer
                         )
                     ))
             ) {
+                // what iterating this object alone gives: the iterator methods are called on it, not on the whole
+                // iterated expression, whose type still says the rest about it (whether it is fresh, its taints)
+                $iterated_key_type = null;
+                $iterated_value_type = null;
+                $receiver = $bounded_template?->replaceAs(new Union([$iterator_atomic_type])) ?? $iterator_atomic_type;
+                $receiver_type = $statements_analyzer->node_data->getType($foreach_expr)?->setTypes([$receiver])
+                    ?? new Union([$receiver]);
+
                 if (strtolower($iterator_atomic_type->value) === 'iteratoraggregate'
                     || $codebase->classImplements(
                         $iterator_atomic_type->value,
@@ -1757,108 +1780,19 @@ final class ForeachAnalyzer
                 ) {
                     $has_valid_iterator = true;
 
-                    $iterator_class_type = self::getFakeMethodCallType(
+                    self::handleIteratorAggregate(
                         $statements_analyzer,
+                        $iterator_atomic_type,
                         $foreach_expr,
+                        $receiver_type,
+                        $codebase,
                         $context,
-                        'getIterator',
+                        $iterated_key_type,
+                        $iterated_value_type,
+                        $has_valid_iterator,
+                        $invalid_iterator_types,
+                        $forwards_send,
                     );
-
-                    if ($iterator_class_type) {
-                        $star_iterable = self::getStarIterable($codebase, $iterator_atomic_type);
-
-                        foreach ($iterator_class_type->getAtomicTypes() as $array_atomic_type) {
-                            $key_type_part = null;
-                            $value_type_part = null;
-
-                            if ($array_atomic_type instanceof TArray
-                                || $array_atomic_type instanceof TKeyedArray
-                            ) {
-                                if ($array_atomic_type instanceof TKeyedArray) {
-                                    $array_atomic_type = $array_atomic_type->getGenericArrayType();
-                                }
-
-                                [$key_type_part, $value_type_part] = $array_atomic_type->type_params;
-                            } else {
-                                if ($array_atomic_type instanceof TNamedObject
-                                    && $codebase->classExists($array_atomic_type->value, null, $context)
-                                    && $codebase->classImplements(
-                                        $array_atomic_type->value,
-                                        'Traversable',
-                                    )
-                                ) {
-                                    $generic_storage = $codebase->classlike_storage_provider->get(
-                                        $array_atomic_type->value,
-                                    );
-
-                                    // The collection might be an iterator, in which case
-                                    // we want to call the iterator function
-                                    /** @psalm-suppress PossiblyUndefinedStringArrayOffset */
-                                    if (!isset($generic_storage->template_extended_params['Traversable'])
-                                        || ($generic_storage
-                                                ->template_extended_params['Traversable']['TKey']->isMixed()
-                                            && $generic_storage
-                                                ->template_extended_params['Traversable']['TValue']->isMixed())
-                                    ) {
-                                        $get_iterator_call = new VirtualMethodCall(
-                                            $foreach_expr,
-                                            new VirtualIdentifier('getIterator', $foreach_expr->getAttributes()),
-                                        );
-
-                                        $statements_analyzer->node_data->setType(
-                                            $get_iterator_call,
-                                            new Union([$array_atomic_type]),
-                                        );
-
-                                        self::handleIterable(
-                                            $statements_analyzer,
-                                            $array_atomic_type,
-                                            $get_iterator_call,
-                                            $codebase,
-                                            $context,
-                                            $key_type,
-                                            $value_type,
-                                            $has_valid_iterator,
-                                            $invalid_iterator_types,
-                                            $forwards_send,
-                                        );
-
-                                        continue;
-                                    }
-                                }
-
-                                if ($array_atomic_type instanceof TIterable
-                                    || ($array_atomic_type instanceof TNamedObject
-                                        && ($array_atomic_type->value === 'Traversable'
-                                            || ($codebase->classOrInterfaceExists(
-                                                $array_atomic_type->value,
-                                                null,
-                                                $context,
-                                            )
-                                                && $codebase->classImplements(
-                                                    $array_atomic_type->value,
-                                                    'Traversable',
-                                                ))))
-                                ) {
-                                    self::getKeyValueParamsForTraversableObject(
-                                        $array_atomic_type,
-                                        $codebase,
-                                        $key_type_part,
-                                        $value_type_part,
-                                    );
-                                }
-                            }
-
-                            if (!$key_type_part || !$value_type_part) {
-                                break;
-                            }
-
-                            self::readStarIterable($codebase, $star_iterable, $key_type_part, $value_type_part);
-
-                            $key_type = Type::combineUnionTypes($key_type, $key_type_part);
-                            $value_type = Type::combineUnionTypes($value_type, $value_type_part);
-                        }
-                    }
                 } elseif ($iterator_atomic_type instanceof TGenericObject
                     && strtolower($iterator_atomic_type->value) === 'generator'
                 ) {
@@ -1877,6 +1811,7 @@ final class ForeachAnalyzer
                     $iterator_value_type = self::getFakeMethodCallType(
                         $statements_analyzer,
                         $foreach_expr,
+                        $receiver_type,
                         $context,
                         'current',
                     );
@@ -1884,6 +1819,7 @@ final class ForeachAnalyzer
                     $iterator_key_type = self::getFakeMethodCallType(
                         $statements_analyzer,
                         $foreach_expr,
+                        $receiver_type,
                         $context,
                         'key',
                     );
@@ -1896,7 +1832,7 @@ final class ForeachAnalyzer
                             $iterator_value_type->removeType('null');
                             $iterator_value_type = $iterator_value_type->freeze();
                         }
-                        $value_type = Type::combineUnionTypes($value_type, $iterator_value_type);
+                        $iterated_value_type = $iterator_value_type;
                     }
 
                     if ($iterator_key_type && !$iterator_key_type->isMixed()) {
@@ -1907,7 +1843,7 @@ final class ForeachAnalyzer
                             $iterator_key_type->removeType('null');
                             $iterator_key_type = $iterator_key_type->freeze();
                         }
-                        $key_type = Type::combineUnionTypes($key_type, $iterator_key_type);
+                        $iterated_key_type = $iterator_key_type;
                     }
                 } elseif ($codebase->classImplements(
                     $iterator_atomic_type->value,
@@ -1925,6 +1861,7 @@ final class ForeachAnalyzer
                     $iterator_value_type = self::getFakeMethodCallType(
                         $statements_analyzer,
                         $foreach_expr,
+                        $receiver_type,
                         $context,
                         'current',
                     );
@@ -1932,6 +1869,7 @@ final class ForeachAnalyzer
                     $iterator_key_type = self::getFakeMethodCallType(
                         $statements_analyzer,
                         $foreach_expr,
+                        $receiver_type,
                         $context,
                         'key',
                     );
@@ -1956,7 +1894,7 @@ final class ForeachAnalyzer
                             $iterator_value_type = $iterator_value_type->freeze();
                         }
 
-                        $value_type = Type::combineUnionTypes($value_type, $iterator_value_type);
+                        $iterated_value_type = $iterator_value_type;
                     }
 
                     if ($iterator_key_type && !$iterator_key_type->isMixed()) {
@@ -1970,17 +1908,25 @@ final class ForeachAnalyzer
                             $iterator_key_type = $iterator_key_type->freeze();
                         }
 
-                        $key_type = Type::combineUnionTypes($key_type, $iterator_key_type);
+                        $iterated_key_type = $iterator_key_type;
                     }
                 }
 
-                if (!$key_type && !$value_type) {
+                if (!$iterated_key_type && !$iterated_value_type) {
                     self::getKeyValueParamsForTraversableObject(
                         $iterator_atomic_type,
                         $codebase,
-                        $key_type,
-                        $value_type,
+                        $iterated_key_type,
+                        $iterated_value_type,
                     );
+                }
+
+                if ($iterated_key_type) {
+                    $key_type = Type::combineUnionTypes($key_type, $iterated_key_type);
+                }
+
+                if ($iterated_value_type) {
+                    $value_type = Type::combineUnionTypes($value_type, $iterated_value_type);
                 }
 
                 return;
@@ -1989,6 +1935,131 @@ final class ForeachAnalyzer
             if (!$codebase->classlikes->classOrInterfaceExists($iterator_atomic_type->value, null, $context)) {
                 return;
             }
+        }
+    }
+
+    /**
+     * Adds to $key_type and $value_type the keys and values of the iterator that getIterator() returns
+     *
+     * @param list<string> $invalid_iterator_types
+     */
+    private static function handleIteratorAggregate(
+        StatementsAnalyzer $statements_analyzer,
+        TIterable|TNamedObject $iterator_atomic_type,
+        PhpParser\Node\Expr $foreach_expr,
+        Union $receiver_type,
+        Codebase $codebase,
+        Context $context,
+        ?Union &$key_type,
+        ?Union &$value_type,
+        bool &$has_valid_iterator,
+        array &$invalid_iterator_types,
+        bool $forwards_send,
+    ): void {
+        $iterator_class_type = self::getFakeMethodCallType(
+            $statements_analyzer,
+            $foreach_expr,
+            $receiver_type,
+            $context,
+            'getIterator',
+        );
+
+        if (!$iterator_class_type) {
+            return;
+        }
+
+        $star_iterable = self::getStarIterable($codebase, $iterator_atomic_type);
+
+        foreach ($iterator_class_type->getAtomicTypes() as $array_atomic_type) {
+            $key_type_part = null;
+            $value_type_part = null;
+
+            if ($array_atomic_type instanceof TArray
+                || $array_atomic_type instanceof TKeyedArray
+            ) {
+                if ($array_atomic_type instanceof TKeyedArray) {
+                    $array_atomic_type = $array_atomic_type->getGenericArrayType();
+                }
+
+                [$key_type_part, $value_type_part] = $array_atomic_type->type_params;
+            } else {
+                if ($array_atomic_type instanceof TNamedObject
+                    && $codebase->classExists($array_atomic_type->value, null, $context)
+                    && $codebase->classImplements(
+                        $array_atomic_type->value,
+                        'Traversable',
+                    )
+                ) {
+                    $generic_storage = $codebase->classlike_storage_provider->get(
+                        $array_atomic_type->value,
+                    );
+
+                    // The collection might be an iterator, in which case
+                    // we want to call the iterator function
+                    /** @psalm-suppress PossiblyUndefinedStringArrayOffset */
+                    if (!isset($generic_storage->template_extended_params['Traversable'])
+                        || ($generic_storage
+                                ->template_extended_params['Traversable']['TKey']->isMixed()
+                            && $generic_storage
+                                ->template_extended_params['Traversable']['TValue']->isMixed())
+                    ) {
+                        $get_iterator_call = new VirtualMethodCall(
+                            $foreach_expr,
+                            new VirtualIdentifier('getIterator', $foreach_expr->getAttributes()),
+                        );
+
+                        $statements_analyzer->node_data->setType(
+                            $get_iterator_call,
+                            new Union([$array_atomic_type]),
+                        );
+
+                        self::handleIterable(
+                            $statements_analyzer,
+                            $array_atomic_type,
+                            $get_iterator_call,
+                            $codebase,
+                            $context,
+                            $key_type,
+                            $value_type,
+                            $has_valid_iterator,
+                            $invalid_iterator_types,
+                            $forwards_send,
+                        );
+
+                        continue;
+                    }
+                }
+
+                if ($array_atomic_type instanceof TIterable
+                    || ($array_atomic_type instanceof TNamedObject
+                        && ($array_atomic_type->value === 'Traversable'
+                            || ($codebase->classOrInterfaceExists(
+                                $array_atomic_type->value,
+                                null,
+                                $context,
+                            )
+                                && $codebase->classImplements(
+                                    $array_atomic_type->value,
+                                    'Traversable',
+                                ))))
+                ) {
+                    self::getKeyValueParamsForTraversableObject(
+                        $array_atomic_type,
+                        $codebase,
+                        $key_type_part,
+                        $value_type_part,
+                    );
+                }
+            }
+
+            if (!$key_type_part || !$value_type_part) {
+                break;
+            }
+
+            self::readStarIterable($codebase, $star_iterable, $key_type_part, $value_type_part);
+
+            $key_type = Type::combineUnionTypes($key_type, $key_type_part);
+            $value_type = Type::combineUnionTypes($value_type, $value_type_part);
         }
     }
 
@@ -2384,51 +2455,43 @@ final class ForeachAnalyzer
                 && $codebase->interfaceExtends($fq_class_name, $parent));
     }
 
+    /**
+     * The type a call of $method_name on $receiver_expr returns when it is of $receiver_type, which may be a single
+     * type of the expression
+     */
     private static function getFakeMethodCallType(
         StatementsAnalyzer $statements_analyzer,
-        PhpParser\Node\Expr $foreach_expr,
+        PhpParser\Node\Expr $receiver_expr,
+        Union $receiver_type,
         Context $context,
         string $method_name,
     ): ?Union {
         $old_data_provider = $statements_analyzer->node_data;
 
         $statements_analyzer->node_data = clone $statements_analyzer->node_data;
+        $statements_analyzer->node_data->setType($receiver_expr, $receiver_type);
 
         $fake_method_call = new VirtualMethodCall(
-            $foreach_expr,
-            new VirtualIdentifier($method_name, $foreach_expr->getAttributes()),
+            $receiver_expr,
+            new VirtualIdentifier($method_name, $receiver_expr->getAttributes()),
         );
 
-        // the call is made on the whole iterated expression: its other parts (null, false, arrays…) are
-        // reported by checkIteratorType()
-        $added_suppressions = array_values(array_diff(
-            ['PossiblyInvalidMethodCall', 'PossiblyUndefinedMethod', 'PossiblyNullReference', 'PossiblyFalseReference'],
-            array_keys($statements_analyzer->getSuppressedIssues()),
-        ));
-
-        $statements_analyzer->addSuppressedIssues($added_suppressions);
-
-        $was_inside_call = $context->inside_call;
-        $was_inside_type_only_call = $context->inside_type_only_call;
-
-        $context->inside_call = true;
-        // only the type is wanted here: the loop is charged for the call
-        $context->inside_type_only_call = true;
+        // only the type is wanted here: the loop is charged for the call, and what the call would narrow or
+        // memoize for the receiver holds only for $receiver_type
+        $call_context = clone $context;
+        $call_context->inside_call = true;
+        $call_context->inside_type_only_call = true;
 
         // the iterated expression was analysed by the loop, which also may have side effects (`$a ??= new B()`)
         MethodCallAnalyzer::analyze(
             $statements_analyzer,
             $fake_method_call,
-            $context,
+            $call_context,
+            real_method_call: false,
             receiver_analyzed: true,
         );
 
-        $context->inside_call = $was_inside_call;
-        $context->inside_type_only_call = $was_inside_type_only_call;
-
-        $statements_analyzer->removeSuppressedIssues($added_suppressions);
-
-        $iterator_class_type = $statements_analyzer->node_data->getType($fake_method_call) ?? null;
+        $iterator_class_type = $statements_analyzer->node_data->getType($fake_method_call);
 
         $statements_analyzer->node_data = $old_data_provider;
 

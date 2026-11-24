@@ -1960,6 +1960,38 @@ final class StarProjectionTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'starProjectionIterationOfAUnionWithAConcreteReceiverReadsEachReceiver' => [
+                'code' => '<?php
+                    abstract class Model {}
+
+                    /**
+                     * @template TValue
+                     * @implements IteratorAggregate<int, TValue>
+                     */
+                    class Collection implements IteratorAggregate {
+                        /** @return ArrayIterator<int, TValue> */
+                        public function getIterator(): ArrayIterator {
+                            throw new Exception();
+                        }
+                    }
+
+                    /**
+                     * @template TModel of Model
+                     * @extends Collection<TModel>
+                     */
+                    final class ModelCollection extends Collection {}
+
+                    /** @var ModelCollection<*>|Collection<int> $either */
+                    $either = new ModelCollection();
+                    $value = null;
+
+                    foreach ($either as $value) {}',
+                'assertions' => [
+                    '$value===' => 'Model|int|null',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'starProjectionOfAnInterfaceMethodTagKeepsTheStar' => [
                 'code' => '<?php
                     /** @template T of object */
