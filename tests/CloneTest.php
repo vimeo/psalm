@@ -487,6 +487,19 @@ final class CloneTest extends TestCase
                 'error_levels' => [],
                 'php_version' => '8.5',
             ],
+            'cloneWithParentTypeAndInvalidTypeValue' => [
+                'code' => '<?php
+                    final class Bar {}
+                    class Foo {
+                        public function __construct(public Bar $x) {}
+                    }
+                    function make(Foo $o, object|int $v): void {
+                        clone($o, ["x" => $v]);
+                    }',
+                'error_message' => 'PossiblyInvalidPropertyAssignmentValue',
+                'error_levels' => [],
+                'php_version' => '8.5',
+            ],
             'cloneWithMultiplePropertiesSecondInvalid' => [
                 'code' => '<?php
                     class Foo {

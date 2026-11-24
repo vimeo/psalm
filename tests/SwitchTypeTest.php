@@ -123,6 +123,17 @@ final class SwitchTypeTest extends TestCase
                         }
                     }',
             ],
+            'switchOnAVariableNamedLikeTheTemporaryOneKeepsIt' => [
+                'code' => '<?php
+                    function bar(int $__tmp_switch__1): int {
+                        switch ($__tmp_switch__1) {
+                            case 1:
+                                break;
+                        }
+
+                        return $__tmp_switch__1;
+                    }',
+            ],
             'continueTargetingAnOuterSwitchLeavesItLikeBreak' => [
                 'code' => '<?php
                     $outer = uniqid();
@@ -307,6 +318,34 @@ final class SwitchTypeTest extends TestCase
                 'assertions' => ['$rest===' => "'a'|'b'|'c'"],
                 'ignored_issues' => [],
                 'php_version' => '8.0',
+            ],
+            'switchTrueOverAUnionOfFinalClassesIsExhaustive' => [
+                'code' => '<?php
+                    final class Bar {}
+                    final class Baz {}
+
+                    function test(Bar|Baz $instance): string {
+                        switch (true) {
+                            case $instance instanceof Bar:
+                                return "bar";
+                            case $instance instanceof Baz:
+                                return "baz";
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'switchTrueOverAClassAndItsOwnInstanceofIsExhaustive' => [
+                'code' => '<?php
+                    class Open {}
+
+                    function test(Open $instance): string {
+                        switch (true) {
+                            case $instance instanceof Open:
+                                return "open";
+                        }
+                    }',
             ],
             'conditionalBreakOfAnExitingCaseKeepsTheTypeOfAVarDefinedBeforeTheSwitch' => [
                 'code' => <<<'PHP'
@@ -2110,6 +2149,90 @@ final class SwitchTypeTest extends TestCase
                     }',
                 'error_message' => 'PossiblyNullReference',
             ],
+            'switchTrueWithACaseThatAssignsItsVariableIsNotExhaustive' => [
+                'code' => '<?php
+                    final class A {}
+                    function f(): ?A { return rand(0, 1) ? new A() : null; }
+
+                    function assignInCase(): string {
+                        $y = new A();
+                        switch (true) {
+                            case ($y = f()) instanceof A:
+                                return "a";
+                        }
+                    }',
+                'error_message' => 'InvalidReturnType',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'switchTrueWithACaseThatPassesItsVariableByReferenceIsNotExhaustive' => [
+                'code' => '<?php
+                    function byRef(string $s): string {
+                        $m = 1;
+                        switch (true) {
+                            case preg_match("/a/", $s, $m) === 1:
+                                return "a";
+                            case $m === 1:
+                                return "b";
+                        }
+                    }',
+                'error_message' => 'InvalidReturnType',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'switchTrueWithACaseThatCallsAMethodChangingTheTestedPropertyIsNotExhaustive' => [
+                'code' => '<?php
+                    final class A {}
+
+                    final class Holder {
+                        public ?A $a = null;
+
+                        public function reset(): bool {
+                            $this->a = null;
+                            return false;
+                        }
+                    }
+
+                    function viaMethod(Holder $h): string {
+                        if ($h->a === null) {
+                            return "early";
+                        }
+                        switch (true) {
+                            case $h->reset():
+                                return "r";
+                            case $h->a instanceof A:
+                                return "a";
+                        }
+                    }',
+                'error_message' => 'InvalidReturnType',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'switchTrueOverASubclassIsNotExhaustive' => [
+                'code' => '<?php
+                    class Open {}
+                    class Sub extends Open {}
+
+                    function test(Open $instance): string {
+                        switch (true) {
+                            case $instance instanceof Sub:
+                                return "sub";
+                        }
+                    }',
+                'error_message' => 'InvalidReturnType',
+            ],
+            'switchTrueOverUnrelatedConditionsIsNotExhaustive' => [
+                'code' => '<?php
+                    function test(int $a, int $b): string {
+                        switch (true) {
+                            case $a > 1:
+                                return "a";
+                            case $b > 1:
+                                return "b";
+                        }
+                    }',
+                'error_message' => 'InvalidReturnType',
+            ],
             'varFromBreakTwoOutOfNestedSwitchIsUndefinedAfterIt' => [
                 'code' => '<?php
                     function f(string $s, string $u): void {
@@ -2790,6 +2913,12 @@ final class SwitchTypeTest extends TestCase
                         }
                     }',
                 'error_message' => 'UndefinedMethod',
+            ],
+            'switchTemporaryVariableIsNotDefinedAfterTheSwitch' => [
+                'code' => '<?php function bar(): int { switch (rand(0, 1)) { case 1: break; }
+                        return $__tmp_switch__36;
+                    }',
+                'error_message' => 'UndefinedVariable',
             ],
         ];
     }

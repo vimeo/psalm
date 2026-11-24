@@ -304,14 +304,35 @@ final class MethodCallPurityAnalyzer
     }
 
     /**
-     * Whether the receiver is the caller's own `$this`: `$this` itself, or a call on it of a method
-     * returning its receiver, as in the fluent chain `$this->a()->b()`.
+     * Whether the receiver is the caller's own `$this`: `$this` itself, a call on it of a method
+     * returning its receiver, as in the fluent chain `$this->a()->b()`, or a ternary or `match`
+     * whose every branch is one of those or throws.
      */
     public static function isReceiverThis(Expr $var): bool
     {
+        if ($var instanceof Expr\Ternary) {
+            return self::isReceiverThisOrThrow($var->if ?? $var->cond)
+                && self::isReceiverThisOrThrow($var->else);
+        }
+
+        if ($var instanceof Expr\Match_) {
+            foreach ($var->arms as $arm) {
+                if (!self::isReceiverThisOrThrow($arm->body)) {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
         return self::isThis($var)
             || (($var instanceof Expr\MethodCall || $var instanceof Expr\StaticCall)
                 && $var->getAttribute(self::RETURNS_THIS, false) === true);
+    }
+
+    private static function isReceiverThisOrThrow(Expr $var): bool
+    {
+        return $var instanceof Expr\Throw_ || self::isReceiverThis($var);
     }
 
     /**
