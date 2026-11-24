@@ -18,13 +18,14 @@ use Psalm\Storage\Capabilities;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArray;
+use Psalm\Type\Atomic\TBool;
 use Psalm\Type\Atomic\TCallable;
 use Psalm\Type\Atomic\TClassConstant;
 use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TClosure;
 use Psalm\Type\Atomic\TConditional;
 use Psalm\Type\Atomic\TEnumCase;
-use Psalm\Type\Atomic\TFalse;
+use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TGlobalConstant;
 use Psalm\Type\Atomic\TInt;
@@ -35,19 +36,18 @@ use Psalm\Type\Atomic\TIterable;
 use Psalm\Type\Atomic\TKeyOf;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TLiteralClassString;
-use Psalm\Type\Atomic\TLiteralFloat;
 use Psalm\Type\Atomic\TLiteralInt;
-use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNever;
 use Psalm\Type\Atomic\TNull;
+use Psalm\Type\Atomic\TObject;
 use Psalm\Type\Atomic\TObjectWithProperties;
 use Psalm\Type\Atomic\TPropertiesOf;
+use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateKeyOf;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTemplateValueOf;
-use Psalm\Type\Atomic\TTrue;
 use Psalm\Type\Atomic\TTypeAlias;
 use Psalm\Type\Atomic\TTypeVariable;
 use Psalm\Type\Atomic\TValueOf;
@@ -608,12 +608,14 @@ final class TypeExpander
 
             foreach ($new_value_types as $new_value_type) {
                 // a wildcard like `self::FLAG_*` may also match constants that are not flags
-                if ($new_value_type instanceof TLiteralString
-                    || $new_value_type instanceof TLiteralFloat
-                    || $new_value_type instanceof TTrue
-                    || $new_value_type instanceof TFalse
+                if ($new_value_type instanceof TString
+                    || $new_value_type instanceof TFloat
+                    || $new_value_type instanceof TBool
                     || $new_value_type instanceof TNull
+                    || $new_value_type instanceof TArray
                     || $new_value_type instanceof TKeyedArray
+                    || $new_value_type instanceof TNamedObject
+                    || $new_value_type instanceof TObject
                 ) {
                     continue;
                 }

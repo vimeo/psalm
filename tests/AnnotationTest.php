@@ -2692,6 +2692,44 @@ final class AnnotationTest extends TestCase
                 'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:14:27 - '
                     . 'Argument 1 of Foo\f expects 0|4, but 1 provided',
             ],
+            'intMaskOfClassWildcardMatchingAnEnumConstantStillChecksTheArgument' => [
+                'code' => '<?php
+                    enum E { case X; }
+
+                    final class A {
+                        public const F_ONE = 1;
+                        public const F_TWO = 2;
+                        public const F_ENUM = E::X;
+
+                        /** @param int-mask-of<self::F_*> $a */
+                        public static function a(int $a): void {
+                            echo $a;
+                        }
+                    }
+
+                    A::a(1234);',
+                'error_message' => 'InvalidArgument',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'intMaskOfClassWildcardMatchingAnArrayConstantStillChecksTheArgument' => [
+                'code' => '<?php
+                    final class A {
+                        public const F_ONE = 1;
+                        public const F_TWO = 2;
+                        public const F_LIST = [];
+
+                        /** @param int-mask-of<self::F_*> $a */
+                        public static function a(int $a): void {
+                            echo $a;
+                        }
+                    }
+
+                    A::a(1234);',
+                'error_message' => 'InvalidArgument',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
             'intMaskOfClassWildcardMatchingAStringConstantStillChecksTheArgument' => [
                 'code' => '<?php
                     final class FileFlag {
