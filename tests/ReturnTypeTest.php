@@ -210,6 +210,19 @@ final class ReturnTypeTest extends TestCase
                         }
                     }',
             ],
+            'thisOfAFinalClassIsAGenericInterfaceItImplementsIntersectedWithStatic' => [
+                'code' => '<?php
+                    /** @template T */
+                    interface I {}
+
+                    /** @implements I<int> */
+                    final class A implements I {
+                        /** @return I<int>&static */
+                        public function get(): I {
+                            return $this;
+                        }
+                    }',
+            ],
             'docblockStringLiteralWithAUnicodeEscapeWithLeadingZeros' => [
                 'code' => '<?php
                     /** @return "\u{0000000000e9}" */
@@ -2859,6 +2872,20 @@ final class ReturnTypeTest extends TestCase
                         }
                     }',
                 'error_message' => 'LessSpecificReturnStatement',
+            ],
+            'thisOfAFinalClassIsNotAGenericInterfaceWithOtherTypeArguments' => [
+                'code' => '<?php
+                    /** @template T */
+                    interface I {}
+
+                    /** @implements I<int> */
+                    final class A implements I {
+                        /** @return I<string>&static */
+                        public function get(): I {
+                            return $this;
+                        }
+                    }',
+                'error_message' => 'InvalidReturnStatement',
             ],
             'doWhileLeftByGoto' => [
                 'code' => '<?php

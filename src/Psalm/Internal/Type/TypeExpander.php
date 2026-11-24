@@ -1010,8 +1010,7 @@ final class TypeExpander
                 $return_type->value === $self_class
                 || ($self_class !== null &&
                     ($codebase->classExtends($return_type->value, $self_class)
-                        // `I&static` in a final class implementing I is that class
-                        || $codebase->classExtendsOrImplements($self_class, $return_type->value)
+                        || $codebase->classExtends($self_class, $return_type->value)
                     )
                 )
             )
@@ -1020,6 +1019,16 @@ final class TypeExpander
                 $static_class_type,
                 false,
             );
+        } elseif ($return_type->is_static
+            && is_string($static_class_type)
+            && $final
+            && $self_class !== null
+            && $codebase->classImplements($self_class, $return_type->value)
+        ) {
+            // the interface stays next to the class, it holds the type arguments of `I<int>&static`
+            $return_type = $return_type
+                ->setIsStatic(false)
+                ->addIntersectionType(new TNamedObject($static_class_type));
         } elseif ($self_class && $return_type_lc === 'self') {
             $return_type = $return_type->setValue($self_class);
         } elseif ($parent_class && $return_type_lc === 'parent') {

@@ -477,10 +477,7 @@ final class ReturnAnalyzer
                 if ($declared_return_type && !$declared_return_type->hasMixed()) {
                     $local_return_type = $source->getLocalReturnType(
                         $declared_return_type,
-                        $storage instanceof MethodStorage
-                            && ($storage->final
-                                || ($context->self !== null
-                                    && $codebase->classlike_storage_provider->get($context->self)->final)),
+                        $storage instanceof MethodStorage && $storage->final,
                     );
 
                     if ($storage instanceof MethodStorage) {
