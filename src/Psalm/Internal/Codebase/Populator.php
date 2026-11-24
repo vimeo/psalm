@@ -1102,8 +1102,16 @@ final class Populator
 
         $this->extendTemplateParams($storage, $trait_storage, false);
 
-        $storage->pseudo_property_get_types += $trait_storage->pseudo_property_get_types;
-        $storage->pseudo_property_set_types += $trait_storage->pseudo_property_set_types;
+        $storage->pseudo_property_get_types += self::localizeInheritedTypes(
+            $storage,
+            $trait_storage,
+            $trait_storage->pseudo_property_get_types,
+        );
+        $storage->pseudo_property_set_types += self::localizeInheritedTypes(
+            $storage,
+            $trait_storage,
+            $trait_storage->pseudo_property_set_types,
+        );
 
         return $trait_storage;
     }
@@ -1258,14 +1266,46 @@ final class Populator
             $storage->preserve_constructor_signature = true;
         }
 
-        $storage->pseudo_property_get_types += $parent_storage->pseudo_property_get_types;
-        $storage->pseudo_property_set_types += $parent_storage->pseudo_property_set_types;
+        $storage->pseudo_property_get_types += self::localizeInheritedTypes(
+            $storage,
+            $parent_storage,
+            $parent_storage->pseudo_property_get_types,
+        );
+        $storage->pseudo_property_set_types += self::localizeInheritedTypes(
+            $storage,
+            $parent_storage,
+            $parent_storage->pseudo_property_set_types,
+        );
 
         $parent_storage->dependent_classlikes[strtolower($storage->name)] = true;
 
         $this->inheritPseudoMethods($storage, $parent_storage);
 
         $parent_storage->has_children = true;
+    }
+
+    /**
+     * The `@property` types of a generic parent or used trait, in terms of the template arguments the class gives it
+     *
+     * @param array<string, Union> $types
+     * @return array<string, Union>
+     */
+    private static function localizeInheritedTypes(
+        ClassLikeStorage $storage,
+        ClassLikeStorage $parent_storage,
+        array $types,
+    ): array {
+        if ($storage->template_extended_params === null || $storage->template_extended_params === []) {
+            return $types;
+        }
+
+        $localizer = new TypeLocalizer($storage->template_extended_params, $parent_storage->name);
+
+        foreach ($types as &$type) {
+            $localizer->traverse($type);
+        }
+
+        return $types;
     }
 
     /**

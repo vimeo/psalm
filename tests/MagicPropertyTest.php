@@ -396,6 +396,66 @@ final class MagicPropertyTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'propertyAnnotationWithATemplateOfAUsedTraitIsLocalizedInTheClass' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @property T|null $at
+                     */
+                    trait Tr {
+                        public function __get(string $name): mixed {
+                            return null;
+                        }
+                        public function __set(string $name, mixed $value): void {}
+                    }
+
+                    final class C {
+                        /** @use Tr<int> */
+                        use Tr;
+
+                        public function fill(): void {
+                            $this->at = 5;
+                        }
+                    }
+
+                    $at = (new C())->at;',
+                'assertions' => [
+                    '$at===' => 'int|null',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'propertyAnnotationWithATemplateOfTheParentIsLocalizedInTheChild' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @property T|null $at
+                     */
+                    abstract class Base {
+                        public function __get(string $name): mixed {
+                            return null;
+                        }
+                        public function __set(string $name, mixed $value): void {}
+                    }
+
+                    /** @extends Base<int> */
+                    class Child extends Base {
+                        public function fill(): void {
+                            $this->at = 5;
+                        }
+                    }
+
+                    final class GrandChild extends Child {}
+
+                    $at = (new Child())->at;
+                    $grandChildAt = (new GrandChild())->at;',
+                'assertions' => [
+                    '$at===' => 'int|null',
+                    '$grandChildAt===' => 'int|null',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'valueOfPseudoPropertyIsNarrowedByAnEqualityCheck' => [
                 'code' => '<?php
                     enum Foo: string {
@@ -1458,6 +1518,54 @@ final class MagicPropertyTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'propertyAnnotationWithATemplateOfTheParentRejectsAnotherTypeInTheChild' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @property T|null $at
+                     */
+                    abstract class Base {
+                        public function __get(string $name): mixed {
+                            return null;
+                        }
+                        public function __set(string $name, mixed $value): void {}
+                    }
+
+                    /** @extends Base<int> */
+                    final class Child extends Base {
+                        public function fill(): void {
+                            $this->at = "x";
+                        }
+                    }',
+                'error_message' => "declared type 'int|null' cannot be assigned type",
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'propertyAnnotationWithATemplateOfAUsedTraitRejectsAnotherTypeInTheClass' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @property T|null $at
+                     */
+                    trait Tr {
+                        public function __get(string $name): mixed {
+                            return null;
+                        }
+                        public function __set(string $name, mixed $value): void {}
+                    }
+
+                    final class C {
+                        /** @use Tr<int> */
+                        use Tr;
+
+                        public function fill(): void {
+                            $this->at = "x";
+                        }
+                    }',
+                'error_message' => "declared type 'int|null' cannot be assigned type",
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
             'explicitSetCallSharingOnlyNullWithThePropertyIsInvalid' => [
                 'code' => '<?php
                     final class Foo {}
