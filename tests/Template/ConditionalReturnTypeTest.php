@@ -73,6 +73,45 @@ final class ConditionalReturnTypeTest extends TestCase
                 'ignored_issues' => ['MixedArgument', 'UndefinedInterfaceMethod'],
                 'php_version' => '8.0',
             ],
+            'argumentWithoutTypeKeepsTheClassTemplateOfTheObject' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class Box {
+                        /** @param T $v */
+                        public function __construct(public mixed $v) {}
+
+                        /**
+                         * @param T $v
+                         * @return Box<T>
+                         */
+                        public function with(mixed $v): Box {
+                            return new Box($v);
+                        }
+
+                        /**
+                         * @param list<T> $v
+                         * @return Box<T>
+                         */
+                        public function withList(array $v): Box {
+                            return $this;
+                        }
+                    }
+
+                    function getCountable(): Countable {
+                        throw new Exception();
+                    }
+
+                    /** @var Box<int> $bi */
+                    $bi = new Box(1);
+                    $b = $bi->with(getCountable()->missing());
+                    $l = $bi->withList(getCountable()->missing());',
+                'assertions' => [
+                    '$b===' => 'Box<int>',
+                    '$l===' => 'Box<int>',
+                ],
+                'ignored_issues' => ['MixedArgument', 'UndefinedInterfaceMethod'],
+                'php_version' => '8.0',
+            ],
             'conditionalOnAnUnresolvedBoolClassTemplateKeepsBothBranches' => [
                 'code' => <<<'PHP'
                     <?php
