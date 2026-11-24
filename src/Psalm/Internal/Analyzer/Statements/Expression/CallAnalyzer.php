@@ -295,6 +295,25 @@ abstract class CallAnalyzer
     }
 
     /**
+     * Whether `static` of a call is the class using the trait the call is in, or its parent (`$this`, `self`, `static`,
+     * `parent`), which differs for each class using it: such a call doesn't resolve `static` in the hints of closure
+     * arguments
+     */
+    public static function isStaticOfTraitUser(
+        StatementsSource $source,
+        Context $context,
+        string $static_class,
+        bool $is_static = false,
+    ): bool {
+        $static_class = strtolower($static_class);
+
+        return ($is_static
+                || $static_class === strtolower((string) $context->self)
+                || $static_class === strtolower((string) $context->parent))
+            && self::isInTrait($source);
+    }
+
+    /**
      * @param  list<PhpParser\Node\Arg>   $args
      */
     public static function checkMethodArgs(
