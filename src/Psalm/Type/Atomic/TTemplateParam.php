@@ -11,7 +11,6 @@ use Psalm\Storage\UnserializeMemoryUsageSuppressionTrait;
 use Psalm\Type\Atomic;
 use Psalm\Type\Union;
 
-use function array_map;
 use function implode;
 
 /**
@@ -81,7 +80,7 @@ final class TTemplateParam extends Atomic
     }
 
     #[Override]
-    public function getId(bool $exact = true, bool $nested = false): string
+    public function getId(bool $exact = true): string
     {
         if (!$exact) {
             return $this->param_name;
@@ -89,13 +88,10 @@ final class TTemplateParam extends Atomic
 
         if ($this->extra_types) {
             return '(' . $this->param_name . ':' . $this->defining_class . ' as ' . $this->as->getId($exact)
-                . ')&' . implode('&', array_map(static fn(Atomic $type): string
-                    => $type->getId($exact, true), $this->extra_types));
+                . ')' . $this->getIntersectionTypesId($exact);
         }
 
-        return ($nested ? '(' : '') . $this->param_name
-            . ':' . $this->defining_class
-            . ' as ' . $this->as->getId($exact) . ($nested ? ')' : '');
+        return $this->param_name . ':' . $this->defining_class . ' as ' . $this->as->getId($exact);
     }
 
     /**

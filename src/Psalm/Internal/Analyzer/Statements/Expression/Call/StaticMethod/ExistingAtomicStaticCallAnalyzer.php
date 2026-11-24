@@ -316,6 +316,7 @@ final class ExistingAtomicStaticCallAnalyzer
                 $stmt,
                 $method_id,
                 $method_storage,
+                $template_result,
             );
 
             // what the purity templates of the method are bound to here

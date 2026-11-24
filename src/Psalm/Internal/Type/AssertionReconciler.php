@@ -244,9 +244,11 @@ final class AssertionReconciler extends Reconciler
         }
 
         if (($assertion instanceof IsLooselyEqual || $assertion instanceof IsNotLooselyEqual)
-            && $assertion->type instanceof TNull
+            && ($assertion->type instanceof TNull
+                || $assertion->type instanceof TTrue
+                || $assertion->type instanceof TFalse)
         ) {
-            return self::reconcileLooseNullComparison(
+            return self::reconcileLooseNullOrBoolComparison(
                 $assertion,
                 $existing_var_type,
                 $key,
@@ -349,7 +351,7 @@ final class AssertionReconciler extends Reconciler
             return new Union([$new_type_part]);
         }
 
-        $refined_type = self::refine(
+        $refined_type = self::refineWithJuggling(
             $statements_analyzer,
             $assertion,
             $new_type_part,
@@ -508,13 +510,14 @@ final class AssertionReconciler extends Reconciler
     }
 
     /**
-     * `$x == null` is `!$x`, except that null is compared to a string as '': the falsy '0' is still != null
+     * `$x == true` is `(bool) $x`, `$x == false` and `$x == null` are `!$x`, except that null is compared to a string
+     * as '': the falsy '0' is still != null
      *
      * @param   string[]            $suppressed_issues
      * @param   array<string, array<string, Union>> $template_type_map
      * @param-out Reconciler::RECONCILIATION_* $failed_reconciliation
      */
-    private static function reconcileLooseNullComparison(
+    private static function reconcileLooseNullOrBoolComparison(
         IsLooselyEqual|IsNotLooselyEqual $assertion,
         Union $existing_var_type,
         ?string $key,
@@ -526,6 +529,23 @@ final class AssertionReconciler extends Reconciler
         ?int &$failed_reconciliation,
         bool $negated,
     ): Union {
+        if (!$assertion->type instanceof TNull) {
+            return self::reconcile(
+                ($assertion instanceof IsLooselyEqual) === ($assertion->type instanceof TTrue)
+                    ? new Truthy()
+                    : new Falsy(),
+                $existing_var_type,
+                $key,
+                $statements_analyzer,
+                $inside_loop,
+                $template_type_map,
+                $code_location,
+                $suppressed_issues,
+                $failed_reconciliation,
+                $negated,
+            );
+        }
+
         $codebase = $statements_analyzer->getCodebase();
         $zero = TLiteralString::make('0');
         $zero_types = self::getZeroStringTypes($codebase, $existing_var_type, $zero);
@@ -677,6 +697,10 @@ final class AssertionReconciler extends Reconciler
      * @param Reconciler::RECONCILIATION_* $failed_reconciliation
      * @param   string[]    $suppressed_issues
      * @param-out Reconciler::RECONCILIATION_* $failed_reconciliation
+     * @param-out bool $impossible whether no value of the type can match. It is set with or without a location, while
+     *                             $failed_reconciliation is only RECONCILIATION_EMPTY with one: callers without a
+     *                             location rely on getting the asserted type with RECONCILIATION_OK (e.g. `$this`
+     *                             narrowed again by instanceof keeps its property types)
      */
     private static function refine(
         StatementsAnalyzer $statements_analyzer,
@@ -688,7 +712,10 @@ final class AssertionReconciler extends Reconciler
         ?CodeLocation $code_location,
         array $suppressed_issues,
         int &$failed_reconciliation,
+        bool &$impossible = false,
     ): Union {
+        $impossible = false;
+
         $codebase = $statements_analyzer->getCodebase();
 
         $old_var_type_string = $existing_var_type->getId();
@@ -904,10 +931,10 @@ final class AssertionReconciler extends Reconciler
                 ));
             }
 
-            if ($code_location
-                && !$intersection_type
-                && (!$assertion instanceof IsLooselyEqual || !$any_scalar_type_match_found)
-            ) {
+            $impossible = !$intersection_type
+                && (!$assertion instanceof IsLooselyEqual || !$any_scalar_type_match_found);
+
+            if ($code_location && $impossible) {
                 if ($new_type_part instanceof TNull) {
                     if ($existing_var_type->from_docblock) {
                         IssueBuffer::maybeAdd(
@@ -979,6 +1006,147 @@ final class AssertionReconciler extends Reconciler
         }
 
         return $new_type ?: new Union([$new_type_part]);
+    }
+
+    /**
+     * Refines the type, keeping for a loose comparison the parts that PHP juggles into an equal value
+     *
+     * @param   string[]    $suppressed_issues
+     * @param Reconciler::RECONCILIATION_* $failed_reconciliation
+     * @param-out Reconciler::RECONCILIATION_* $failed_reconciliation
+     */
+    private static function refineWithJuggling(
+        StatementsAnalyzer $statements_analyzer,
+        Assertion $assertion,
+        Atomic $new_type_part,
+        Union $existing_var_type,
+        ?string $key,
+        bool $negated,
+        ?CodeLocation $code_location,
+        array $suppressed_issues,
+        int &$failed_reconciliation,
+    ): Union {
+        $juggled_type = $assertion instanceof IsLooselyEqual
+            ? self::refineLooseEquality($statements_analyzer, $assertion, $new_type_part, $existing_var_type, $negated)
+            : null;
+
+        if ($juggled_type === null) {
+            return self::refine(
+                $statements_analyzer,
+                $assertion,
+                $new_type_part,
+                $existing_var_type,
+                $key,
+                $negated,
+                $code_location,
+                $suppressed_issues,
+                $failed_reconciliation,
+            );
+        }
+
+        if ($juggled_type->isNever()) {
+            if ($key !== null && $code_location !== null) {
+                self::triggerIssueForImpossible(
+                    $existing_var_type,
+                    $existing_var_type->getId(),
+                    $key,
+                    $assertion,
+                    false,
+                    $negated,
+                    $code_location,
+                    $suppressed_issues,
+                );
+            }
+
+            $failed_reconciliation = Reconciler::RECONCILIATION_EMPTY;
+        }
+
+        return $juggled_type;
+    }
+
+    /**
+     * A loose comparison keeps the parts of the type of another kind that PHP juggles into an equal value (`1.0 == 1`,
+     * `"1" == 1.0`, `true == "a"`, `false == []`), and refines the others as usual.
+     * Returns null when no part of the type is juggled, and never when no part can be equal.
+     */
+    private static function refineLooseEquality(
+        StatementsAnalyzer $statements_analyzer,
+        IsLooselyEqual $assertion,
+        Atomic $new_type_part,
+        Union $existing_var_type,
+        bool $negated,
+    ): ?Union {
+        $kept_types = [];
+        $refined_types = [];
+        $juggled = false;
+
+        foreach ($existing_var_type->getAtomicTypes() as $existing_type_part) {
+            if ($existing_type_part instanceof TTemplateParam) {
+                $as = self::refineLooseEquality(
+                    $statements_analyzer,
+                    $assertion,
+                    $new_type_part,
+                    $existing_type_part->as,
+                    $negated,
+                );
+
+                if ($as === null) {
+                    $refined_types[] = $existing_type_part;
+                } else {
+                    $juggled = true;
+
+                    if (!$as->isNever()) {
+                        $kept_types[] = $existing_type_part->replaceAs($as);
+                    }
+                }
+
+                continue;
+            }
+
+            $loosely_equal_type_part = SimpleAssertionReconciler::getLooselyEqualJuggledAtomic(
+                $existing_type_part,
+                $new_type_part,
+            );
+
+            if ($loosely_equal_type_part === null) {
+                $refined_types[] = $existing_type_part;
+            } else {
+                $juggled = true;
+
+                if ($loosely_equal_type_part !== false) {
+                    $kept_types[] = $loosely_equal_type_part;
+                }
+            }
+        }
+
+        if (!$juggled) {
+            return null;
+        }
+
+        if ($refined_types) {
+            $refined_type = new Union($refined_types);
+            $failed_reconciliation = Reconciler::RECONCILIATION_OK;
+            $impossible = false;
+
+            $refined_type = self::refine(
+                $statements_analyzer,
+                $assertion,
+                $new_type_part,
+                $refined_type,
+                null,
+                $negated,
+                null,
+                [],
+                $failed_reconciliation,
+                $impossible,
+            );
+
+            if (!$impossible && !$refined_type->isNever()) {
+                $kept_types = [...$kept_types, ...$refined_type->getAtomicTypes()];
+            }
+        }
+
+        return $kept_types ? new Union($kept_types) : Type::getNever();
     }
 
     /**
@@ -2185,11 +2353,7 @@ final class AssertionReconciler extends Reconciler
         $atomic_types = $literal_type->getAtomicTypes();
 
         foreach ($existing_var_atomic_types as $atomic_type) {
-            // an `object` may be one with a __toString too
-            if ($atomic_type::class === TObject::class
-                || ($atomic_type instanceof TNamedObject
-                    && $codebase->methodExists(new MethodIdentifier($atomic_type->value, '__tostring')))
-            ) {
+            if (SimpleAssertionReconciler::canBeStringableObject($codebase, $atomic_type)) {
                 $atomic_types[$atomic_type->getKey()] = $atomic_type;
             }
         }
@@ -2320,6 +2484,17 @@ final class AssertionReconciler extends Reconciler
                     && !$existing_var_atomic_type instanceof TLiteralFloat
                 ) {
                     return $existing_var_type;
+                }
+            }
+        }
+
+        if ($assertion instanceof IsLooselyEqual) {
+            foreach ($existing_var_atomic_types as $key => $existing_var_atomic_type) {
+                if (SimpleAssertionReconciler::canBeStringableObject(
+                    $statements_analyzer->getCodebase(),
+                    $existing_var_atomic_type,
+                )) {
+                    $loosely_equal_literals[$key] = $existing_var_atomic_type;
                 }
             }
         }

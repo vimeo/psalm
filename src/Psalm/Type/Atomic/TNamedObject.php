@@ -12,7 +12,6 @@ use Psalm\Storage\Capabilities;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 
-use function array_map;
 use function implode;
 use function strrpos;
 use function substr;
@@ -124,16 +123,10 @@ class TNamedObject extends Atomic
     }
 
     #[Override]
-    public function getId(bool $exact = true, bool $nested = false): string
+    public function getId(bool $exact = true): string
     {
         if ($this->extra_types) {
-            return $this->value . '&' . implode(
-                '&',
-                array_map(
-                    static fn(Atomic $type): string => $type->getId($exact, true),
-                    $this->extra_types,
-                ),
-            );
+            return $this->value . $this->getIntersectionTypesId($exact);
         }
 
         return $this->is_static && $exact ? $this->value . '&static' : $this->value;

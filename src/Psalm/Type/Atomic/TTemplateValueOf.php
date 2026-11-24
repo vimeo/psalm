@@ -37,7 +37,7 @@ final class TTemplateValueOf extends Atomic
     }
 
     #[Override]
-    public function getId(bool $exact = true, bool $nested = false): string
+    public function getId(bool $exact = true): string
     {
         if (!$exact) {
             return 'value-of<' . $this->param_name . '>';
