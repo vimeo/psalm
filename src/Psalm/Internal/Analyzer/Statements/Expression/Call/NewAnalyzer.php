@@ -82,6 +82,8 @@ use UnexpectedValueException;
 use function array_key_first;
 use function array_keys;
 use function array_map;
+use function array_pop;
+use function array_push;
 use function array_search;
 use function array_values;
 use function count;
@@ -1997,9 +1999,22 @@ final class NewAnalyzer extends CallAnalyzer
                 continue;
             }
 
-            foreach ($method_storage->params as $param) {
-                if ($param->type) {
-                    self::removeConstrainableTemplates($unconstrainable, $param->type, $storage);
+            // an implementation that doesn't document its parameters has those of the methods it overrides
+            $method_params = [$method_storage->params];
+
+            foreach ($storage->overridden_method_ids[$method_name] ?? [] as $overridden_method_id) {
+                try {
+                    $method_params[] = $codebase->methods->getStorage($overridden_method_id)->params;
+                } catch (UnexpectedValueException) {
+                    continue;
+                }
+            }
+
+            foreach ($method_params as $params) {
+                foreach ($params as $param) {
+                    if ($param->type) {
+                        self::removeConstrainableTemplates($unconstrainable, $param->type, $storage);
+                    }
                 }
             }
         }
@@ -2053,15 +2068,32 @@ final class NewAnalyzer extends CallAnalyzer
         ClassLikeStorage $storage,
     ): void {
         $class_lc = strtolower($storage->name);
+        $seen = [];
+        $pending = $type->getTemplateTypes();
 
-        foreach ($type->getTemplateTypes() as $template_type) {
+        // a template of an ancestor may be passed on through the templates of the classes in between
+        while ($pending) {
+            $template_type = array_pop($pending);
+
+            if (strtolower($template_type->defining_class) === $class_lc) {
+                unset($unconstrainable[$template_type->param_name]);
+
+                continue;
+            }
+
+            $seen_key = strtolower($template_type->defining_class) . '::' . $template_type->param_name;
+
+            if (isset($seen[$seen_key])) {
+                continue;
+            }
+
+            $seen[$seen_key] = true;
+
             $extended_type = $storage->template_extended_params[$template_type->defining_class]
                 [$template_type->param_name] ?? null;
 
-            foreach ($extended_type ? $extended_type->getTemplateTypes() : [$template_type] as $class_template_type) {
-                if (strtolower($class_template_type->defining_class) === $class_lc) {
-                    unset($unconstrainable[$class_template_type->param_name]);
-                }
+            if ($extended_type) {
+                array_push($pending, ...$extended_type->getTemplateTypes());
             }
         }
     }

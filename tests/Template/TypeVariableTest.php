@@ -1562,6 +1562,56 @@ final class TypeVariableTest extends TestCase
                         return $n;
                     }',
             ],
+            'constructionOfATemplateConstrainedThroughAGrandparentMember' => [
+                'code' => '<?php
+                    /** @template T */
+                    class GP {
+                        public function __construct() {}
+
+                        /** @param T $x */
+                        public function add($x): void {}
+                    }
+
+                    /**
+                     * @template U
+                     * @extends GP<U>
+                     */
+                    class P extends GP {}
+
+                    /**
+                     * @template W
+                     * @extends P<W>
+                     */
+                    final class GrandChild extends P {
+                        public function __construct() {}
+                    }
+
+                    /** @return GrandChild<int> */
+                    function grand(): GrandChild {
+                        return new GrandChild();
+                    }',
+            ],
+            'constructionOfATemplateConstrainedThroughADocblockInheritedParam' => [
+                'code' => '<?php
+                    /** @template T */
+                    abstract class AbsBase {
+                        /** @param T $x */
+                        abstract public function add($x): void;
+                    }
+
+                    /**
+                     * @template U
+                     * @extends AbsBase<U>
+                     */
+                    final class Impl extends AbsBase {
+                        public function add($x): void {}
+                    }
+
+                    /** @return Impl<int> */
+                    function impl(): Impl {
+                        return new Impl();
+                    }',
+            ],
             'constructionOfATemplateConstrainedThroughInheritedMembers' => [
                 'code' => '<?php
                     /** @template T */
