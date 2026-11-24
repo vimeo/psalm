@@ -16,6 +16,7 @@ use function count;
 use function is_string;
 use function spl_object_id;
 use function str_contains;
+use function str_starts_with;
 use function strrpos;
 use function substr;
 
@@ -80,14 +81,18 @@ final class AssignmentMapVisitor extends PhpParser\NodeVisitorAbstract
     private array $overwritten_var_ids = [];
 
     /**
-     * The variables the loop itself writes: in the functions it declares, only the properties and the variables a
-     * closure uses by reference
+     * The variables the loop itself writes, and the ones it binds by reference
      *
      * @var array<string, true>
      */
     private array $loop_written_var_ids = [];
 
     private int $function_like_depth = 0;
+
+    /**
+     * The depth of the functions and methods, which don't share `$this` with the loop
+     */
+    private int $own_this_depth = 0;
 
     /**
      * @psalm-mutation-free
@@ -119,21 +124,24 @@ final class AssignmentMapVisitor extends PhpParser\NodeVisitorAbstract
     public function enterNode(PhpParser\Node $node): ?int
     {
         if ($node instanceof PhpParser\Node\FunctionLike) {
-            if ($node instanceof PhpParser\Node\Expr\Closure && !$this->isInFunctionLike()) {
-                foreach ($node->uses as $use) {
-                    if ($use->byRef && is_string($use->var->name)) {
-                        $this->loop_written_var_ids['$' . $use->var->name] = true;
-                    }
-                }
-            }
-
             ++$this->function_like_depth;
+
+            if (!$node instanceof PhpParser\Node\Expr\Closure
+                && !$node instanceof PhpParser\Node\Expr\ArrowFunction
+            ) {
+                ++$this->own_this_depth;
+            }
 
             return null;
         }
 
         if ($node instanceof PhpParser\Node\Expr\AssignRef) {
             $right_var_id = ExpressionIdentifier::getRootVarId($node->expr, $this->this_class_name);
+
+            // written through the reference
+            if ($right_var_id !== null) {
+                $this->addLoopWrittenVarId($right_var_id);
+            }
 
             foreach ($this->getAssignedRootVarIds($node->var) as $var_id) {
                 $this->addDefinedVarId($var_id);
@@ -461,6 +469,12 @@ final class AssignmentMapVisitor extends PhpParser\NodeVisitorAbstract
     {
         if ($node instanceof PhpParser\Node\FunctionLike) {
             --$this->function_like_depth;
+
+            if (!$node instanceof PhpParser\Node\Expr\Closure
+                && !$node instanceof PhpParser\Node\Expr\ArrowFunction
+            ) {
+                --$this->own_this_depth;
+            }
         }
 
         return null;
@@ -480,8 +494,12 @@ final class AssignmentMapVisitor extends PhpParser\NodeVisitorAbstract
 
     private function addLoopWrittenVarId(string $var_id): void
     {
-        // a function declared in the loop has its own variables, but the objects are shared
-        if (!$this->isInFunctionLike() || str_contains($var_id, '->') || str_contains($var_id, '::')) {
+        // a function declared in the loop has its own variables, but the objects are shared, and so is `$this` with a
+        // closure; a method of a class declared in the loop has its own `$this`
+        if (!$this->isInFunctionLike()
+            || (!$this->hasOwnThis() && (str_contains($var_id, '->') || str_contains($var_id, '::')))
+            || !str_starts_with($var_id, '$')
+        ) {
             $this->loop_written_var_ids[$var_id] = true;
         }
     }
@@ -492,6 +510,14 @@ final class AssignmentMapVisitor extends PhpParser\NodeVisitorAbstract
     private function isInFunctionLike(): bool
     {
         return $this->function_like_depth > 0 || ($this->outer_visitor?->isInFunctionLike() ?? false);
+    }
+
+    /**
+     * @psalm-mutation-free
+     */
+    private function hasOwnThis(): bool
+    {
+        return $this->own_this_depth > 0 || ($this->outer_visitor?->hasOwnThis() ?? false);
     }
 
     /**

@@ -722,6 +722,27 @@ final class ForTest extends TestCase
                 'assertions' => [],
                 'ignored_issues' => ['MixedArgument', 'MixedArrayAssignment'],
             ],
+            'countClauseOnMixedVariableWrittenThroughReferenceInNestedLoop' => [
+                'code' => '<?php
+                    /** @param mixed $props */
+                    function f($props, int $n, int $m): void {
+                        for ($i = 0; $i < $n; ++$i) {
+                            if (count($props) >= 32) {
+                                break;
+                            }
+                            for ($j = 0; $j < $m; ++$j) {
+                                if (count($props) >= 32) {
+                                    break;
+                                }
+                                $r = &$props;
+                                $c = count($r);
+                                $r[$c] = $j;
+                            }
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedArgument', 'MixedArrayAssignment'],
+            ],
             'countClauseOnMixedVariableWrittenInClosureUsingItByReference' => [
                 'code' => '<?php
                     /** @param mixed $props */
@@ -956,6 +977,37 @@ final class ForTest extends TestCase
                                 }
                                 $f = fn(): int => $props[] = $j;
                                 $f();
+                            }
+                        }
+                    }',
+                'error_message' => 'ParadoxicalCondition',
+                'error_levels' => ['MixedArgument', 'MixedArrayAssignment'],
+            ],
+            'countClauseOnMixedPropertyWrittenByAnonymousClassMethodToItsOwnProperty' => [
+                'code' => '<?php
+                    final class A {
+                        /** @var mixed */
+                        public $props = [];
+
+                        public function f(int $n, int $m): void {
+                            for ($i = 0; $i < $n; ++$i) {
+                                if (count($this->props) >= 32) {
+                                    break;
+                                }
+                                for ($j = 0; $j < $m; ++$j) {
+                                    if (count($this->props) >= 32) {
+                                        break;
+                                    }
+                                    $o = new class {
+                                        /** @var mixed */
+                                        public $props = [];
+
+                                        public function add(): void {
+                                            $this->props[] = 1;
+                                        }
+                                    };
+                                    $o->add();
+                                }
                             }
                         }
                     }',
