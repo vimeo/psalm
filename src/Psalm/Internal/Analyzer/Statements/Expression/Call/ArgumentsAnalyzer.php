@@ -3160,7 +3160,9 @@ final class ArgumentsAnalyzer
     /**
      * The sinks of the argument passed as the parameter at $param_offset of a call of $function_id. The value given
      * to curl_setopt() is the sink of its option (see CURL_OPTION_SINKS). An option the analysis can't tell may be
-     * any of them. A `Location` header given to header() is a redirect (see getLocationHeaderSinks()).
+     * any of them. A `Location` header given to header() is a redirect (see getLocationHeaderSinks()). The keys of a
+     * sealed array given to extract() are known, so they name no variable the input chooses (each variable gets
+     * what the array holds under its name).
      *
      * @param array<int, PhpParser\Node\Arg> $args
      * @param array<int, FunctionLikeParameter> $function_params
@@ -3179,6 +3181,13 @@ final class ArgumentsAnalyzer
             && ($header_arg = self::getArgForParam($args, $function_params, 'header'))
         ) {
             return self::getLocationHeaderSinks($statements_analyzer, $header_arg->value) ?? $sinks;
+        }
+
+        if ($param_offset === 0
+            && strtolower($function_id) === 'extract'
+            && NamedFunctionCallHandler::getExtractedArray($statements_analyzer, $args)
+        ) {
+            return $sinks & ~TaintKind::INPUT_EXTRACT;
         }
 
         if ($param_offset !== 2
