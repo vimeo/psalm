@@ -20,6 +20,7 @@ use Psalm\Type\Atomic\TCapabilities;
 use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TClassStringMap;
 use Psalm\Type\Atomic\TDecimalIntString;
+use Psalm\Type\Atomic\TDependentGetClass;
 use Psalm\Type\Atomic\TEmptyMixed;
 use Psalm\Type\Atomic\TEnumCase;
 use Psalm\Type\Atomic\TFalse;
@@ -86,6 +87,26 @@ use const ARRAY_FILTER_USE_BOTH;
  */
 final class TypeCombiner
 {
+    /**
+     * Combines the parts of a declared type. A type variable that stands for `never` until bound adds no value to a
+     * union, but what is passed for a param of that type (`T|null`) still binds it.
+     *
+     * @psalm-external-mutation-free
+     * @param non-empty-list<Atomic> $types
+     */
+    public static function combineKeepingNeverBoundVariables(array $types, ?Codebase $codebase = null): Union
+    {
+        $combined = self::combine($types, $codebase);
+
+        foreach ($types as $type) {
+            if ($type instanceof TTypeVariable && $type->isNeverBound() && !$combined->hasType($type->getKey())) {
+                $combined = $combined->getBuilder()->addType($type)->freeze();
+            }
+        }
+
+        return $combined;
+    }
+
     /**
      * Combines types together
      *  - so `int + string = int|string`
@@ -1197,6 +1218,27 @@ final class TypeCombiner
         return null;
     }
 
+    /**
+     * The string type too many literals are combined into: as specific as all of them are
+     *
+     * @param array<TLiteralString> $literals
+     * @psalm-pure
+     */
+    private static function getStringOfLiterals(array $literals): TString
+    {
+        $non_falsy = true;
+
+        foreach ($literals as $literal) {
+            if ($literal->value === '') {
+                return new TString();
+            }
+
+            $non_falsy = $non_falsy && $literal->value !== '0';
+        }
+
+        return $non_falsy ? new TNonFalsyString() : new TNonEmptyString();
+    }
+
     private static function scrapeStringProperties(
         string $type_key,
         Atomic $type,
@@ -1204,6 +1246,28 @@ final class TypeCombiner
         ?Codebase $codebase,
         int $literal_limit,
     ): void {
+        // beside other strings, the class name `get_class()` gives is a non-falsy string
+        $existing_string = $combination->value_types['string'] ?? null;
+        $is_class_string = $type instanceof TClassString || $type instanceof TLiteralClassString;
+
+        if ($existing_string instanceof TDependentGetClass
+            && !$type instanceof TDependentGetClass
+            && !$is_class_string
+        ) {
+            $combination->value_types['string'] = new TNonFalsyString();
+        }
+
+        if ($type instanceof TDependentGetClass
+            && (($existing_string !== null && !$existing_string instanceof TDependentGetClass)
+                || array_any(
+                    $combination->strings ?? [],
+                    static fn(TLiteralString $string): bool => !$string instanceof TLiteralClassString,
+                ))
+        ) {
+            $type = new TNonFalsyString();
+            $type_key = 'string';
+        }
+
         if ($type instanceof TCallableString && isset($combination->value_types['callable[impure]'])) {
             return;
         }
@@ -1256,6 +1320,7 @@ final class TypeCombiner
             } else {
                 $shared_classlikes = $codebase ? self::getSharedTypes($combination, $codebase) : [];
 
+                $literals = $combination->strings ?? [];
                 $had_literals = $combination->strings !== null;
                 $combination->strings = null;
 
@@ -1329,6 +1394,8 @@ final class TypeCombiner
                     && $type->value !== ''
                 ) {
                     // do nothing
+                } elseif ($had_literals && !isset($combination->value_types['string'])) {
+                    $combination->value_types['string'] = self::getStringOfLiterals([...$literals, $type]);
                 } else {
                     $combination->value_types['string'] = new TString();
                 }
@@ -1481,16 +1548,21 @@ final class TypeCombiner
                         && $combination->value_types['string']::class === TNonEmptyString::class
                     ) {
                         // do nothing
-                    } elseif (($type::class === TNonEmptyString::class
-                            || $type::class === TNumericString::class)
+                    } elseif ($type::class === TNonEmptyString::class
                         && $combination->value_types['string']::class === TNonFalsyString::class
                     ) {
                         $combination->value_types['string'] = $type;
                     } elseif ($type::class === TNonFalsyString::class
-                        && ($combination->value_types['string']::class === TNonEmptyString::class
-                            || $combination->value_types['string']::class === TNumericString::class)
+                        && $combination->value_types['string']::class === TNonEmptyString::class
                     ) {
                         // do nothing
+                    } elseif ((($type::class === TNumericString::class
+                                && $combination->value_types['string']::class === TNonFalsyString::class)
+                            || ($type::class === TNonFalsyString::class
+                                && $combination->value_types['string']::class === TNumericString::class))
+                    ) {
+                        // 'abc' isn't numeric, and '0' is numeric but falsy
+                        $combination->value_types['string'] = new TNonEmptyString();
                     } elseif (($type::class === TNonEmptyString::class
                             || $type::class === TNonFalsyString::class)
                         && $combination->value_types['string']::class === TNonEmptyLowercaseString::class

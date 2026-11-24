@@ -11,6 +11,7 @@ use PhpParser\Node\Expr\ArrayDimFetch;
 use PhpParser\Node\Expr\Array_;
 use PhpParser\Node\Expr\StaticPropertyFetch;
 use PhpParser\Node\Expr\Variable;
+use Psalm\Internal\Analyzer\Statements\Expression\ArrayAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Plugin\EventHandler\Event\MethodReturnTypeProviderEvent;
 use Psalm\Plugin\EventHandler\MethodReturnTypeProviderInterface;
@@ -169,8 +170,9 @@ final class ReflectionReferenceReturnTypeProvider implements MethodReturnTypePro
 
         if ($atomic instanceof TLiteralString) {
             // "1" is stored as 1, "01" stays a string
-            $value = $atomic->value;
-            return (string) (int) $value === $value ? (int) $value : $value;
+            $int = ArrayAnalyzer::getLiteralArrayKeyInt($atomic->value);
+
+            return $int === false ? $atomic->value : $int;
         }
 
         return null;

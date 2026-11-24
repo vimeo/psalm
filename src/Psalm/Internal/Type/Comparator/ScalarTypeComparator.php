@@ -188,15 +188,11 @@ final class ScalarTypeComparator
                 return true;
             }
 
-            if ($input_type_part instanceof TNonEmptyLowercaseString
-                && $container_type_part instanceof TLowercaseString
-            ) {
+            if ($input_type_part instanceof TNonEmptyLowercaseString) {
                 return true;
             }
 
-            if ($input_type_part instanceof TLowercaseString
-                && $container_type_part instanceof TNonEmptyLowercaseString
-            ) {
+            if ($input_type_part instanceof TLowercaseString) {
                 if ($atomic_comparison_result) {
                     $atomic_comparison_result->type_coerced = true;
                 }
@@ -218,6 +214,25 @@ final class ScalarTypeComparator
 
             if ($atomic_comparison_result) {
                 $atomic_comparison_result->type_coerced = true;
+            }
+
+            return false;
+        }
+
+        // get_class() of a union of classes is the name of any of them
+        if ($container_type_part instanceof TDependentGetClass
+            && !$container_type_part->as_type->isSingle()
+        ) {
+            foreach ($container_type_part->as_type->getAtomicTypes() as $class_type) {
+                if (self::isContainedBy(
+                    $codebase,
+                    $input_type_part,
+                    new TClassString('object', $class_type instanceof TNamedObject ? $class_type : null),
+                    $allow_interface_equality,
+                    $allow_float_int_equality,
+                )) {
+                    return true;
+                }
             }
 
             return false;

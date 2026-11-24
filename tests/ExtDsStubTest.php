@@ -20,6 +20,59 @@ final class ExtDsStubTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'Hashable equals takes the object as $obj' => [
+                'code' => <<<'PHP'
+                    <?php
+                    use Ds\Hashable;
+
+                    final class Key implements Hashable {
+                        public function __construct(private string $name) {}
+
+                        #[Override]
+                        public function equals($obj): bool {
+                            return $obj instanceof self && $obj->name === $this->name;
+                        }
+
+                        #[Override]
+                        public function hash(): string {
+                            return $this->name;
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
+            'a vector and a deque have the methods of a sequence' => [
+                'code' => <<<'PHP'
+                    <?php
+                    use Ds\Deque;
+                    use Ds\Vector;
+
+                    /**
+                     * @param Vector<int> $vector
+                     * @param Deque<int> $deque
+                     */
+                    function fill(Vector $vector, Deque $deque): void {
+                        $vector->push(1);
+                        $vector->unshift(0);
+                        $vector->insert(1, 5);
+                        $vector->set(0, 2);
+                        $vector->apply(fn(int $value): int => $value * 2);
+                        $vector->sort(fn(int $a, int $b): int => $a <=> $b);
+
+                        $deque->push(1);
+                        $deque->unshift(0);
+                        $deque->insert(1, 5);
+                        $deque->set(0, 2);
+                        $deque->apply(fn(int $value): int => $value * 2);
+                        $deque->sort();
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'iterating a map, a set, a vector or a deque is mutation-free' => [
                 'code' => <<<'PHP'
                     <?php
@@ -83,6 +136,41 @@ final class ExtDsStubTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'Hashable equals with another parameter name is a ParamNameMismatch' => [
+                'code' => <<<'PHP'
+                    <?php
+                    use Ds\Hashable;
+
+                    final class Key implements Hashable {
+                        #[Override]
+                        public function equals($other): bool {
+                            return $other === $this;
+                        }
+
+                        #[Override]
+                        public function hash(): string {
+                            return "key";
+                        }
+                    }
+                    PHP,
+                'error_message' => 'ParamNameMismatch',
+                'error_levels' => [],
+                'php_version' => '8.3',
+            ],
+            'pushing a value of another type to a vector' => [
+                'code' => <<<'PHP'
+                    <?php
+                    use Ds\Vector;
+
+                    /** @param Vector<int> $vector */
+                    function add(Vector $vector): void {
+                        $vector->push('a');
+                    }
+                    PHP,
+                'error_message' => 'InvalidArgument',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
             'iterating a stack removes its values' => [
                 'code' => <<<'PHP'
                     <?php

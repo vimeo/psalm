@@ -27,8 +27,6 @@ use function array_keys;
 use function array_merge;
 use function count;
 use function in_array;
-use function preg_match;
-use function preg_quote;
 
 /**
  * @internal
@@ -126,8 +124,20 @@ final class ElseAnalyzer
 
             foreach ($changed_var_ids as $changed_var_id => $_) {
                 foreach ($else_context->vars_in_scope as $var_id => $_) {
-                    if (preg_match('/' . preg_quote($changed_var_id, '/') . '[\]\[\-]/', $var_id)
+                    if (Reconciler::dependsOnNarrowedVar(
+                        $statements_analyzer->getCodebase(),
+                        $var_id,
+                        $changed_var_id,
+                        $else_context->vars_in_scope,
+                    )
                         && !array_key_exists($var_id, $changed_var_ids)
+                        && !Reconciler::narrowingKeepsProperty(
+                            $codebase,
+                            $original_context->vars_in_scope[$changed_var_id] ?? null,
+                            $else_context->vars_in_scope[$changed_var_id] ?? null,
+                            $changed_var_id,
+                            $var_id,
+                        )
                     ) {
                         $else_context->removePossibleReference($var_id);
                     }

@@ -647,6 +647,13 @@ final class ClosureAnalyzer extends FunctionLikeAnalyzer
             }
         }
 
+        // and with the extensions it checked
+        foreach ($context->vars_in_scope as $var_id => $type) {
+            if (str_starts_with($var_id, Context::PHP_EXTENSION_VAR_ID_PREFIX)) {
+                $use_context->vars_in_scope[$var_id] = $type;
+            }
+        }
+
         $use_context->calling_method_id = $context->calling_method_id;
         $use_context->calling_function_id = $context->calling_function_id;
         $use_context->phantom_classes = $context->phantom_classes;
