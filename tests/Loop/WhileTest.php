@@ -217,6 +217,19 @@ final class WhileTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'varAssignedRightOfLogicalAndInTheConditionIsDefinedInTheBody' => [
+                'code' => '<?php
+                    /** @return int|false */
+                    function h() {
+                        return rand(0, 1) ? 3 : false;
+                    }
+                    function f(bool $b): void {
+                        while ($b and false !== ($j = h())) {
+                            echo $j;
+                            $b = (bool) rand(0, 1);
+                        }
+                    }',
+            ],
             'varUnsetBeforeContinueAndAssignedByTheConditionStaysDefined' => [
                 'code' => '<?php
                     function nextRow(): ?array {
