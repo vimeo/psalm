@@ -264,6 +264,22 @@ final class AlgebraAnalyzer
     }
 
     /**
+     * Whether the clause tests a pseudo-variable of a symbol or extension check (see Context::isSymbolCheckVarId())
+     *
+     * @psalm-pure
+     */
+    private static function testsSymbolCheckVar(Clause $clause): bool
+    {
+        foreach ($clause->possibilities as $key => $_) {
+            if (Context::isSymbolCheckVarId($key)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
      * This looks to see if there are any clauses in one formula that contradict
      * clauses in another formula, or clauses that duplicate previous clauses
      *
@@ -320,6 +336,7 @@ final class AlgebraAnalyzer
                     || ($not_null_var_id !== null && isset($isset_var_ids[$not_null_var_id])))
                 && !self::testsAnyVar($formula_2_clause, $new_assigned_var_ids)
                 && !self::hasUnidentifiedPossibility($formula_2_clause)
+                && !self::testsSymbolCheckVar($formula_2_clause)
             ) {
                 IssueBuffer::maybeAdd(
                     new RedundantCondition(

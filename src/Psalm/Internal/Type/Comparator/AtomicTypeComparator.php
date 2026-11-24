@@ -749,6 +749,8 @@ final class AtomicTypeComparator
                 }
 
                 $all_types_contain = true;
+                $all_failures_coercible = true;
+                $some_failure_from_mixed = false;
 
                 foreach ($input_type_part->type_params as $i => $input_param) {
                     $container_param_offset = $i - (2 - count($container_type_part->type_params));
@@ -777,9 +779,10 @@ final class AtomicTypeComparator
                         )
                             && !$array_comparison_result->type_coerced_from_scalar
                         ) {
-                            if ($atomic_comparison_result && $array_comparison_result->type_coerced_from_mixed) {
-                                $atomic_comparison_result->type_coerced_from_mixed = true;
-                            }
+                            $all_failures_coercible = $all_failures_coercible
+                                && $array_comparison_result->type_coerced === true;
+                            $some_failure_from_mixed = $some_failure_from_mixed
+                                || $array_comparison_result->type_coerced_from_mixed === true;
                             $all_types_contain = false;
                         } else {
                             if ($atomic_comparison_result) {
@@ -789,6 +792,13 @@ final class AtomicTypeComparator
                             }
                         }
                     }
+                }
+                if ($atomic_comparison_result && !$all_types_contain) {
+                    // A mixed parameter must not hide a hard mismatch in another parameter.
+                    $mixed_coercion = $all_failures_coercible && $some_failure_from_mixed;
+                    $atomic_comparison_result->type_coerced = $mixed_coercion;
+                    // Keep the mixed-parameter detail even when another parameter rules out coercion.
+                    $atomic_comparison_result->type_coerced_from_mixed = $some_failure_from_mixed;
                 }
                 return $all_types_contain;
             }
@@ -857,7 +867,8 @@ final class AtomicTypeComparator
                         && ($input_type_part->value === 'Stringable'
                             || ($codebase->classlikes->classExists($input_type_part->value)
                                 && $codebase->classlikes->classImplements($input_type_part->value, 'Stringable'))
-                            || $codebase->classlikes->interfaceExtends($input_type_part->value, 'Stringable'))
+                            || ($codebase->classlike_storage_provider->has($input_type_part->value)
+                                && $codebase->classlikes->interfaceExtends($input_type_part->value, 'Stringable')))
                     ) {
                         if ($atomic_comparison_result) {
                             $atomic_comparison_result->to_string_cast = true;

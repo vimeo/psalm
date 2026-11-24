@@ -80,6 +80,16 @@ final class TestConfig extends Config
     }
 
     /**
+     * For a test of the default mode, where the callmap stands in for the stub of an extension
+     *
+     * @psalm-capabilities read-props|write-this-props
+     */
+    public function disableExtension(string $extension): void
+    {
+        $this->php_extensions[$extension] = false;
+    }
+
+    /**
      * Scanning every extension stub took about two thirds of a simple test case, and few cases use an
      * extension, so an extension the config leaves unset is enabled only if the scanned files use it.
      */

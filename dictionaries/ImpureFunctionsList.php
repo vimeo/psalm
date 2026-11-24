@@ -263,6 +263,7 @@ return [
     'proc_terminate' => Capabilities::IO,
     // curl
     'curl_setopt' => Capabilities::IO,
+    'curl_share_setopt' => Capabilities::IO,
     'curl_close' => Capabilities::IO,
     'curl_multi_add_handle' => Capabilities::IO,
     'curl_multi_exec' => Capabilities::IO | Capabilities::WRITE_REFS,
@@ -729,4 +730,7 @@ return [
     'posix_sysconf' => Capabilities::IO,
     // it reads the body of the request
     'request_parse_body' => Capabilities::IO,
+    // IMAP:
+    'imap_timeout' => Capabilities::IO,
+    'imap_expunge' => Capabilities::IO,
 ];

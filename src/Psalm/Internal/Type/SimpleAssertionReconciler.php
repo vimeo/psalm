@@ -1188,6 +1188,12 @@ final class SimpleAssertionReconciler extends Reconciler
             } elseif ($type instanceof TString && $assertion instanceof IsLooselyEqual) {
                 $int_types[] = new TNumericString();
                 $redundant = false;
+            } elseif ($assertion instanceof IsLooselyEqual
+                && ($type instanceof TFloat || $type instanceof TBool || $type instanceof TNull)
+            ) {
+                // a non-strict comparison with an int juggles the types: `1.0 == 1`, `false == 0`, `null == 0`
+                $int_types[] = $type;
+                $redundant = false;
             } else {
                 $redundant = false;
             }
@@ -1866,7 +1872,7 @@ final class SimpleAssertionReconciler extends Reconciler
                     $existing_var_type->getId(),
                     $key,
                     $assertion,
-                    true,
+                    $negated,
                     $negated,
                     $code_location,
                     $suppressed_issues,

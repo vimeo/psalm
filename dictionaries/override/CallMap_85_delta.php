@@ -974,6 +974,23 @@ return array (
         'countryOrRawOffset=' => 'int|null|string',
       ),
     ),
+    'ldap_get_option' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'ldap' => 'LDAP\\Connection',
+        'option' => 'int',
+        '&w value=' => 'array<array-key, mixed>|int|string',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'ldap' => 'LDAP\\Connection|null',
+        'option' => 'int',
+        '&w value=' => 'array<array-key, mixed>|int|string',
+      ),
+    ),
     'libxml_set_external_entity_loader' => 
     array (
       'old' => 
@@ -1119,6 +1136,19 @@ return array (
       'new' => 
       array (
         0 => 'true',
+      ),
+    ),
+    'shm_detach' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'shm' => 'SysvSharedMemory',
+      ),
+      'new' => 
+      array (
+        0 => 'true',
+        'shm' => 'SysvSharedMemory',
       ),
     ),
     'soapclient::__dorequest' => 

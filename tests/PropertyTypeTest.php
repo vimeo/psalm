@@ -5034,6 +5034,36 @@ final class PropertyTypeTest extends TestCase
                     }',
                 'error_message' => 'InvalidPropertyAssignmentValue',
             ],
+            'parentTypeAndInvalidTypeAssignedToProperty' => [
+                'code' => '<?php
+                    final class Foo {}
+
+                    final class A {
+                        public ?Foo $p = null;
+
+                        public function set(object|int $o): void {
+                            $this->p = $o;
+                        }
+                    }',
+                'error_message' => 'PossiblyInvalidPropertyAssignmentValue',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'parentTypeAndInvalidTypeAssignedToStaticProperty' => [
+                'code' => '<?php
+                    final class Foo {}
+
+                    final class A {
+                        public static ?Foo $p = null;
+
+                        public static function set(object|int $o): void {
+                            self::$p = $o;
+                        }
+                    }',
+                'error_message' => 'PossiblyInvalidPropertyAssignmentValue',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
             'templateOfBoolMakesAValuePossiblyValidForABoolProperty' => [
                 'code' => '<?php
                     final class Foo {}

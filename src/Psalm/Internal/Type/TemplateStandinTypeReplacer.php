@@ -11,7 +11,9 @@ use Psalm\Internal\Codebase\Methods;
 use Psalm\Internal\Type\Comparator\AtomicTypeComparator;
 use Psalm\Internal\Type\Comparator\CallableTypeComparator;
 use Psalm\Internal\Type\Comparator\KeyedArrayComparator;
+use Psalm\Internal\Type\Comparator\TypeComparisonResult;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
+use Psalm\Internal\TypeVisitor\ConditionalTemplateVisitor;
 use Psalm\Internal\TypeVisitor\TemplateTypeCollector;
 use Psalm\Internal\TypeVisitor\TypeVariableResolver;
 use Psalm\Storage\Capabilities;
@@ -781,6 +783,47 @@ final class TemplateStandinTypeReplacer
         return array_values($matching_atomic_types);
     }
 
+    private static function normalizeStringInput(
+        Union $input_type,
+        Union $as,
+        Codebase $codebase,
+    ): Union {
+        $non_string_types = [];
+        foreach ($as->getAtomicTypes() as $bound_type) {
+            if (!$bound_type instanceof Atomic\TString) {
+                $non_string_types[] = $bound_type;
+            }
+        }
+        $non_string_bound = $non_string_types ? new Union($non_string_types) : null;
+
+        // A nested cast does not convert the argument itself. Check conversion to
+        // string directly, and keep inputs accepted by a non-string alternative.
+        $converted_input = null;
+        foreach ($input_type->getAtomicTypes() as $input_key => $input_atomic) {
+            $candidate = new Union([$input_atomic]);
+            $comparison = new TypeComparisonResult();
+            if (!UnionTypeComparator::isContainedBy(
+                $codebase,
+                $candidate,
+                Type::getString(),
+                false,
+                false,
+                $comparison,
+            ) || !$comparison->to_string_cast) {
+                continue;
+            }
+            if ($non_string_bound
+                && UnionTypeComparator::isContainedBy($codebase, $candidate, $non_string_bound)
+            ) {
+                continue;
+            }
+            $converted_input ??= $input_type->getBuilder();
+            $converted_input->removeType($input_key);
+            $converted_input->addType(new Atomic\TString());
+        }
+        return $converted_input?->freeze() ?? $input_type;
+    }
+
     /**
      * @return list<Atomic>
      */
@@ -999,6 +1042,19 @@ final class TemplateStandinTypeReplacer
             $as_resolver->traverse($as);
 
             $atomic_type = $atomic_type->replaceAs($as);
+
+            // Use the converted argument only for the template tested by the return condition.
+            if ($input_type !== null
+                && $input_arg_offset !== null
+                && $depth === 1
+                && !$add_lower_bound
+                && !$template_result->readonly
+                && $as->hasString()
+                && $template_result->conditional_return_context !== null
+                && ConditionalTemplateVisitor::contains($template_result->conditional_return_context, $atomic_type)
+            ) {
+                $input_type = self::normalizeStringInput($input_type, $as, $codebase);
+            }
 
             if ($input_type
                 && !$template_result->readonly
@@ -1669,6 +1725,10 @@ final class TemplateStandinTypeReplacer
      * @param TGenericObject|TNamedObject|TIterable $container_type_part
      * @psalm-capabilities read-props|write-this-props|write-props|write-refs
      * @param-out array<int, true> $input_star_offsets the offsets of the returned params that are a `*`
+     * @param-out array<int, true>|null $container_type_params_contravariant
+     * @param-out array<int, true> $input_unbound_offsets the offsets of the returned params that hold a template of
+     *                                                    an input without type params (`Impl` for `Sink<T>`): an
+     *                                                    unknown type, not the bound the template stands for
      * @return list<Union>
      */
     public static function getMappedGenericTypeParams(
@@ -1677,7 +1737,11 @@ final class TemplateStandinTypeReplacer
         Atomic $container_type_part,
         ?array &$container_type_params_covariant = null,
         ?array &$input_star_offsets = null,
+        ?array &$container_type_params_contravariant = null,
+        ?array &$input_unbound_offsets = null,
     ): array {
+        $input_unbound_offsets = [];
+
         if ($input_type_part instanceof TGenericObject || $input_type_part instanceof TIterable) {
             $input_type_params = $input_type_part->type_params;
 
@@ -1709,6 +1773,7 @@ final class TemplateStandinTypeReplacer
 
             if (strtolower($input_type_part->value) === strtolower($container_type_part->value)) {
                 $input_type_params = $class_storage->getClassTemplateTypes();
+                $input_unbound_offsets = array_fill(0, count($input_type_params), true);
             } elseif (!empty($class_storage->template_extended_params[$container_class])) {
                 // the params of the container are mapped below from those of the class, which an
                 // object without type params leaves at its templates
@@ -1735,9 +1800,12 @@ final class TemplateStandinTypeReplacer
             }
         }
 
-        $container_type_params_covariant = $codebase->classlike_storage_provider->has($container_type_part->value)
-            ? $codebase->classlike_storage_provider->get($container_type_part->value)->template_covariants
+        $container_class_storage = $codebase->classlike_storage_provider->has($container_type_part->value)
+            ? $codebase->classlike_storage_provider->get($container_type_part->value)
             : null;
+
+        $container_type_params_covariant = $container_class_storage?->template_covariants;
+        $container_type_params_contravariant = $container_class_storage?->template_contravariants;
 
         if ($input_type_part->value !== $container_type_part->value
             && $input_class_storage
@@ -1860,6 +1928,16 @@ final class TemplateStandinTypeReplacer
                         }
                     }
 
+                    if (!$input_type_part instanceof TGenericObject
+                        && !$input_type_part instanceof TIterable
+                        && $input_template_types !== null
+                        && $input_template_types !== []
+                        && ($candidate_offsets !== []
+                            || self::holdsTemplateOf($extended_input_param_type, $input_template_types))
+                    ) {
+                        $input_unbound_offsets[count($new_input_params)] = true;
+                    }
+
                     $new_input_params[] = $new_input_param;
                 }
 
@@ -1891,5 +1969,25 @@ final class TemplateStandinTypeReplacer
         }
 
         return $params;
+    }
+
+    /**
+     * Whether the type holds one of the templates, nested ones included (`list<T>`).
+     *
+     * @param array<string, non-empty-array<string, Union>> $template_types
+     * @psalm-pure
+     */
+    private static function holdsTemplateOf(Union $type, array $template_types): bool
+    {
+        $template_collector = new TemplateTypeCollector(true);
+        $template_collector->traverseArray($type->getAtomicTypes());
+
+        foreach ($template_collector->getTemplateTypes() as $template) {
+            if (isset($template_types[$template->param_name][$template->defining_class])) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }

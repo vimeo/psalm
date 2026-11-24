@@ -188,15 +188,11 @@ final class ScalarTypeComparator
                 return true;
             }
 
-            if ($input_type_part instanceof TNonEmptyLowercaseString
-                && $container_type_part instanceof TLowercaseString
-            ) {
+            if ($input_type_part instanceof TNonEmptyLowercaseString) {
                 return true;
             }
 
-            if ($input_type_part instanceof TLowercaseString
-                && $container_type_part instanceof TNonEmptyLowercaseString
-            ) {
+            if ($input_type_part instanceof TLowercaseString) {
                 if ($atomic_comparison_result) {
                     $atomic_comparison_result->type_coerced = true;
                 }

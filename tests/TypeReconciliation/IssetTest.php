@@ -1651,6 +1651,59 @@ final class IssetTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'issetOnNullableMixedInElseif' => [
+                'code' => '<?php
+                    function processParam(mixed $param) : void {
+                        if (rand(0, 1)) {
+                            $param = null;
+                        }
+
+                        if (rand(0, 1)) {
+                        } elseif (isset($param["name"])) {
+                            /**
+                             * @psalm-suppress MixedArgument
+                             */
+                            echo $param["name"];
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'issetOnMixedAssignedInElseifCondition' => [
+                'code' => '<?php
+                    function getMixed(): mixed {
+                        return rand(0, 1) ? ["name" => "a"] : null;
+                    }
+
+                    function processParam() : void {
+                        if (rand(0, 1)) {
+                        } elseif (($param = getMixed()) !== null && isset($param["name"])) {
+                            /**
+                             * @psalm-suppress MixedArgument
+                             */
+                            echo $param["name"];
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedAssignment'],
+                'php_version' => '8.0',
+            ],
+            'elseifTooComplicatedToNegateKeepsEarlierNegation' => [
+                'code' => '<?php
+                    function takesInt(int $i): void {}
+
+                    function f(?int $x, ?int $y, bool $a1, bool $b1, bool $a2, bool $b2, bool $a3, bool $b3, bool $a4, bool $b4, bool $a5, bool $b5, bool $a6, bool $b6, bool $a7, bool $b7, bool $a8, bool $b8, bool $a9, bool $b9, bool $a10, bool $b10, bool $a11, bool $b11, bool $a12, bool $b12, bool $a13, bool $b13, bool $a14, bool $b14, bool $a15, bool $b15): void {
+                        if ($x === null) {
+                            return;
+                        } elseif ($y !== null && ($a1 || $b1) && ($a2 || $b2) && ($a3 || $b3) && ($a4 || $b4) && ($a5 || $b5) && ($a6 || $b6) && ($a7 || $b7) && ($a8 || $b8) && ($a9 || $b9) && ($a10 || $b10) && ($a11 || $b11) && ($a12 || $b12) && ($a13 || $b13) && ($a14 || $b14) && ($a15 || $b15)) {
+                            takesInt($x);
+                            takesInt($y);
+                        } else {
+                            takesInt($x);
+                        }
+                    }',
+            ],
             'assertComplex' => [
                 'code' => '<?php
                     function returnsInt(?int $a, ?int $b): int {
