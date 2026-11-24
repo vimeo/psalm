@@ -22,6 +22,7 @@ use function array_map;
 use function array_values;
 use function count;
 use function implode;
+use function str_contains;
 use function strpos;
 use function substr;
 
@@ -145,7 +146,8 @@ trait GenericTrait
 
             $value_type_string = $value_type->toNamespacedString($namespace, $aliased_classes, $this_class, true);
 
-            if (!$value_type->isSingle()) {
+            // `[]` binds tighter than `|` and `&`: `(A&B)[]`, not `A&B[]`
+            if (!$value_type->isSingle() || str_contains($value_type_string, '&')) {
                 return '(' . $value_type_string . ')[]';
             }
 

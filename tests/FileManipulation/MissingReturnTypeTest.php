@@ -95,6 +95,56 @@ final class MissingReturnTypeTest extends FileManipulationTestCase
                 'issues_to_fix' => ['MissingReturnType'],
                 'safe_types' => true,
             ],
+            'addMissingReturnTypeParenthesisesACompoundStringRefinementOfListValues' => [
+                'input' => '<?php
+                    /**
+                     * @param list<non-falsy-string&numeric-string> $s
+                     */
+                    function foo(array $s) {
+                        return $s;
+                    }',
+                'output' => '<?php
+                    /**
+                     * @param list<non-falsy-string&numeric-string> $s
+                     *
+                     * @return (non-falsy-string&numeric-string)[]
+                     *
+                     * @psalm-return list<non-falsy-string&numeric-string>
+                     */
+                    function foo(array $s): array {
+                        return $s;
+                    }',
+                'php_version' => '8.0',
+                'issues_to_fix' => ['MissingReturnType'],
+                'safe_types' => true,
+            ],
+            'addMissingReturnTypeParenthesisesAnIntersectionOfListValues' => [
+                'input' => '<?php
+                    interface Foo {}
+                    interface Bar {}
+                    /**
+                     * @param list<Foo&Bar> $s
+                     */
+                    function foo(array $s) {
+                        return $s;
+                    }',
+                'output' => '<?php
+                    interface Foo {}
+                    interface Bar {}
+                    /**
+                     * @param list<Foo&Bar> $s
+                     *
+                     * @return (Foo&Bar)[]
+                     *
+                     * @psalm-return list<Foo&Bar>
+                     */
+                    function foo(array $s): array {
+                        return $s;
+                    }',
+                'php_version' => '8.0',
+                'issues_to_fix' => ['MissingReturnType'],
+                'safe_types' => true,
+            ],
             'addMissingReturnTypeWritesEmptyNumericAsNumeric' => [
                 'input' => '<?php
                     /**
