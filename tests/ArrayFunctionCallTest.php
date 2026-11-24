@@ -163,6 +163,44 @@ final class ArrayFunctionCallTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'arrayKeyExistsNotFindingALiteralFallbackKeyOfAnUnsealedShape' => [
+                'code' => '<?php
+                    /**
+                     * @param array{a: int, ...<"b", int>} $data
+                     * @param "b" $key
+                     */
+                    function f(string $key, array $data): void {
+                        if (!array_key_exists($key, $data)) {}
+                    }',
+            ],
+            'arrayKeyExistsNotFindingAKeyOfAGenericArray' => [
+                'code' => '<?php
+                    final class Settings {
+                        private const COLOR = "color";
+                        private const SIZE = "size";
+
+                        /** @param array<self::COLOR|self::SIZE, string> $data */
+                        public function __construct(array $data) {
+                            foreach ([self::COLOR, self::SIZE] as $key) {
+                                if (!array_key_exists($key, $data)) {
+                                    throw new Exception("Missing " . $key);
+                                }
+                            }
+                        }
+                    }
+
+                    /**
+                     * @param array<"a"|"b", int> $data
+                     * @param "a"|"b"|"c" $key
+                     */
+                    function find(string $key, array $data): void {
+                        if (array_key_exists($key, $data)) {
+                            /** @psalm-check-type-exact $key = "a"|"b" */;
+                        } else {
+                            /** @psalm-check-type-exact $key = "a"|"b"|"c" */;
+                        }
+                    }',
+            ],
             'writeUnderTheLastKeyTwiceAndOfAPropertyKeepsAList' => [
                 'code' => '<?php
                     /**
@@ -5245,6 +5283,26 @@ final class ArrayFunctionCallTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'arrayKeyExistsOfAKeyTheArrayCantHaveIsNeverTrue' => [
+                'code' => '<?php
+                    /** @param array<"a"|"b", int> $data */
+                    function g(array $data): void {
+                        $key = "c";
+                        if (array_key_exists($key, $data)) {}
+                    }',
+                'error_message' => "TypeDoesNotContainType - src" . DIRECTORY_SEPARATOR . "somefile.php:5:29 - Type 'c' for \$key is never in-array-'a'|'b",
+            ],
+            'arrayKeyExistsOfADocblockKeyTheArrayCantHaveIsNeverTrue' => [
+                'code' => '<?php
+                    /**
+                     * @param array<"a"|"b", int> $data
+                     * @param "c" $key
+                     */
+                    function g(string $key, array $data): void {
+                        if (array_key_exists($key, $data)) {}
+                    }',
+                'error_message' => "DocblockTypeContradiction - src" . DIRECTORY_SEPARATOR . "somefile.php:7:29 - Docblock-defined type 'c' for \$key is never in-array-'a'|'b",
+            ],
             'closureParameterSharingOnlyNullWithTheArrayValuesIsInvalid' => [
                 'code' => '<?php
                     final class Foo {}

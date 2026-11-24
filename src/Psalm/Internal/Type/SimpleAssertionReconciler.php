@@ -1872,7 +1872,7 @@ final class SimpleAssertionReconciler extends Reconciler
                     $existing_var_type->getId(),
                     $key,
                     $assertion,
-                    true,
+                    $negated,
                     $negated,
                     $code_location,
                     $suppressed_issues,
