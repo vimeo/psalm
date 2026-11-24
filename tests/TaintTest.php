@@ -1788,6 +1788,16 @@ final class TaintTest extends TestCase
                     echo implode(",", [$tag, new Plain()]);
                     echo strval(new Plain());',
             ],
+            'offsetOverwrittenInTheBranchWhereItIsSetIsUntaintedAfterTheIf' => [
+                'code' => '<?php
+                    function f(array $a): void {
+                        if (isset($a["x"])) {
+                            $a["x"] = "safe";
+                        }
+                        echo (string) ($a["x"] ?? "");
+                    }
+                    f($_GET);',
+            ],
             'extractSealedArrayOfInput' => [
                 'code' => '<?php
                     extract(["name" => $_GET["name"]]);',
@@ -7507,6 +7517,35 @@ final class TaintTest extends TestCase
     public static function providerInvalidCodeParse(): array
     {
         return [
+            'offsetOnlyNarrowedInTheBranchWhereItIsSetStaysTaintedAfterTheIf' => [
+                'code' => '<?php
+                    function f(array $a): void {
+                        if (isset($a["x"])) {
+                            if (is_string($a["x"])) {}
+                        }
+                        echo (string) ($a["x"] ?? "");
+                    }
+                    f($_GET);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'mixedAssignedInTheElseOfAnIfReassigningTheSameTypeIsTainted' => [
+                'code' => '<?php
+                    /** @return mixed */
+                    function input() {
+                        return $_GET["x"];
+                    }
+
+                    function f(int $a): void {
+                        $saved = $a;
+                        if ($a > 0) {
+                            $a = $saved;
+                        } else {
+                            $a = input();
+                        }
+                        echo $a;
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
             'urldecodeKeepsTheTaintOfItsArgument' => [
                 'code' => '<?php
                     echo urldecode($_GET["x"]);',
