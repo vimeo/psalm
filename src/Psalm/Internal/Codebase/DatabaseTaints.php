@@ -28,12 +28,15 @@ use Psalm\Type\Union;
 use function array_values;
 use function count;
 use function dirname;
+use function in_array;
 use function is_int;
 use function ltrim;
 use function preg_match_all;
 use function preg_split;
+use function sprintf;
 use function str_starts_with;
 use function strlen;
+use function strpos;
 use function strtolower;
 use function substr;
 
@@ -97,6 +100,9 @@ final class DatabaseTaints
     private const ROWS_STORE = 'database rows';
 
     private const RESULTS = ['result', 'rows', 'value', 'column', 'any_value', 'any_column', 'value_or_row', 'none'];
+
+    /** The conversion specifiers of sprintf() but %% */
+    private const SPRINTF_SPECIFIERS = ['b', 'c', 'd', 'e', 'E', 'f', 'F', 'g', 'G', 'h', 'H', 'o', 's', 'u', 'x', 'X'];
 
     /** @var null|array<lowercase-string, list<Spec>> */
     private static ?array $map = null;
@@ -1056,7 +1062,6 @@ final class DatabaseTaints
      * The text of the SQL, where each part whose text the analysis doesn't know is a hole (see SqlStatement)
      *
      * @param list<Expr> $holes the parts that are holes, in their order
-     * @psalm-capabilities read-props|write-this-props|write-refs
      */
     private static function getText(StatementsAnalyzer $statements_analyzer, Expr $expr, array &$holes): string
     {
@@ -1087,7 +1092,7 @@ final class DatabaseTaints
         }
 
         if ($expr instanceof FuncCall && $expr->name instanceof Name && !$expr->isFirstClassCallable()
-            && $expr->name->toLowerString() === 'sprintf'
+            && TaintStore::getCalledFunctionId($statements_analyzer, $expr->name) === 'sprintf'
         ) {
             $text = self::getSprintfText($statements_analyzer, $expr->getArgs(), $holes);
             if ($text !== null) {
@@ -1101,8 +1106,11 @@ final class DatabaseTaints
     }
 
     /**
-     * The text sprintf() gives with a literal format, each conversion being the text of its argument, or null if the
-     * format isn't a literal or names an argument not given one by one
+     * The text sprintf() gives with a literal format, or null if the analysis can't tell which parts of it come from
+     * which argument, or what text a conversion of an argument whose text it doesn't know puts in
+     *
+     * A conversion of a literal is its text. A plain `%s` is the text of its argument, and a number conversion
+     * (`%d`, `%05.2f`, ...) is a part whose text the analysis doesn't know.
      *
      * @param array<array-key, Arg> $args
      * @param list<Expr> $holes
@@ -1122,36 +1130,48 @@ final class DatabaseTaints
         }
 
         $format = $format_type->getSingleStringLiteral()->value;
+        // %[argnum$][flags][width][.precision]specifier, the flags being -, +, space, 0 and 'char in any order
         preg_match_all(
-            '/%(?:([1-9][0-9]*)\$)?[-+ 0]*(?:\'.)?-?[0-9]*(?:\.[0-9]+)?(.)/s',
+            '/%(?:([1-9][0-9]*)\$)?((?:[-+ 0]|\'.)*)(\*|[0-9]*)(\.(?:\*|[0-9]*))?(.)/s',
             $format,
             $conversions,
             PREG_SET_ORDER | PREG_OFFSET_CAPTURE,
         );
 
-        // the argument of each conversion, null for `%%`
-        $arguments = [];
+        $text = '';
+        $offset = 0;
         $next = 1;
-        foreach ($conversions as [, [$position], [$type]]) {
+        foreach ($conversions as [[$conversion, $at], [$position], [$flags], [$width], [$precision], [$type]]) {
+            $text .= substr($format, $offset, $at - $offset);
+            $offset = $at + strlen($conversion);
+
             if ($type === '%') {
-                $arguments[] = null;
+                $text .= '%';
                 continue;
             }
 
-            $argument = $position !== '' ? (int) $position : $next++;
-            if (!isset($args[$argument])) {
+            // `*` takes the width or the precision from an argument
+            if ($width === '*' || $precision === '.*' || !in_array($type, self::SPRINTF_SPECIFIERS, true)) {
                 return null;
             }
 
-            $arguments[] = $args[$argument]->value;
-        }
+            $argument = $args[$position !== '' ? (int) $position : $next++] ?? null;
+            if ($argument === null) {
+                return null;
+            }
 
-        $text = '';
-        $offset = 0;
-        foreach ($conversions as $i => [[$conversion, $conversion_offset]]) {
-            $text .= substr($format, $offset, $conversion_offset - $offset);
-            $text .= $arguments[$i] === null ? '%' : self::getText($statements_analyzer, $arguments[$i], $holes);
-            $offset = $conversion_offset + strlen($conversion);
+            $argument_type = $statements_analyzer->node_data->getType($argument->value);
+            if ($argument_type !== null && $argument_type->isSingleLiteral()) {
+                $text .= sprintf('%' . $flags . $width . $precision . $type, $argument_type->getSingleLiteral()->value);
+            } elseif ($type === 's' && $flags === '' && $width === '' && $precision === '') {
+                $text .= self::getText($statements_analyzer, $argument->value, $holes);
+            } elseif ($type !== 'c' && $type !== 's' && strpos($flags, '\'') === false) {
+                $holes[] = $argument->value;
+                $text .= SqlStatement::HOLE_MARKER . (count($holes) - 1) . SqlStatement::HOLE_MARKER;
+            } else {
+                // a character, a string cut or padded, or padding of any character
+                return null;
+            }
         }
 
         return $text . substr($format, $offset);

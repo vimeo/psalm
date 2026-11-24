@@ -8785,6 +8785,60 @@ final class TaintTest extends TestCase
                     }',
                 'error_message' => 'TaintedHtml',
             ],
+            'sprintfQueryStoresInTheColumnAPrecisionCutsTheNameTo' => [
+                'code' => '<?php
+                    function run(PDO $pdo): void {
+                        $pdo->exec(sprintf("INSERT INTO users (%.3s) VALUES (%s)", "biography", $pdo->quote($_GET["bio"])));
+                        echo (string) $pdo->query("SELECT bio FROM users")->fetch()["bio"];
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'sprintfQueryStoresInTheColumnACharacterConversionNames' => [
+                'code' => '<?php
+                    function run(PDO $pdo): void {
+                        $pdo->exec(sprintf("INSERT INTO users (bi%c) VALUES (%s)", 111, $pdo->quote($_GET["bio"])));
+                        echo (string) $pdo->query("SELECT bio FROM users")->fetch()["bio"];
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'sprintfCharacterOfANumberEndingAStatementCantBeParsed' => [
+                'code' => '<?php
+                    function run(PDO $pdo, int $separator): void {
+                        $pdo->exec(sprintf("UPDATE users SET bio = %s WHERE id = 1%c", $pdo->quote($_GET["bio"]), $separator));
+                        echo (string) $pdo->query("SELECT name FROM users")->fetch()["name"];
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'sprintfQueryStoresInTheTableOfAConversionWithFlagsInAnyOrder' => [
+                'code' => '<?php
+                    function run(PDO $pdo): void {
+                        $pdo->exec(sprintf("INSERT INTO %\'x0-5s (bio) VALUES (%s)", "users", $pdo->quote($_GET["bio"])));
+                        echo (string) $pdo->query("SELECT bio FROM users")->fetch()["bio"];
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'sprintfWithAWidthTakenFromAnArgumentCantBeParsed' => [
+                'code' => '<?php
+                    function run(PDO $pdo): void {
+                        $pdo->exec(sprintf("INSERT INTO users (name, bio) VALUES (\'admin\', %*s)", 3, $pdo->quote($_GET["bio"])));
+                        echo (string) $pdo->query("SELECT name FROM users")->fetch()["name"];
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'sprintfOfTheNamespaceIsNotTheBuiltin' => [
+                'code' => '<?php
+                    namespace App;
+
+                    function sprintf(string $format, string ...$values): string {
+                        return "UPDATE users SET bio = " . implode(", ", $values);
+                    }
+
+                    function run(\PDO $pdo): void {
+                        $pdo->exec(sprintf("INSERT INTO logs (message) VALUES (%s)", $pdo->quote((string) $_GET["bio"])));
+                        echo (string) $pdo->query("SELECT bio FROM users")->fetch()["bio"];
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
             'columnCopiedByInsertSelectIsTainted' => [
                 'code' => '<?php
                     function store(PDO $pdo): void {
@@ -12597,6 +12651,27 @@ final class TaintTest extends TestCase
                     function read(string $id): void {
                         echo store_get("lock_" . $id);
                     }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'keyedStoreKnownStartOfSprintfOfTheNamespace' => [
+                'code' => '<?php
+                    namespace App;
+
+                    /** @psalm-flow ($value) -> Store::$data[$key] */
+                    function store_set(string $key, string $value): void {}
+
+                    /** @psalm-flow Store::$data[$key] -> return */
+                    function store_get(string $key): string {}
+
+                    function sprintf(string $format, string ...$values): string {
+                        return "b_" . implode("", $values);
+                    }
+
+                    function write(string $id): void {
+                        store_set(sprintf("a_%s", $id), (string) $_GET["x"]);
+                    }
+
+                    echo store_get("b_1");',
                 'error_message' => 'TaintedHtml',
             ],
             'keyedStoreUnknownKeyReadsEveryKey' => [
