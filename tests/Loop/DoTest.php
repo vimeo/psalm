@@ -1453,6 +1453,18 @@ final class DoTest extends TestCase
                 'error_levels' => [],
                 'php_version' => '8.0',
             ],
+            'varAssignedRightOfLogicalAndInTheConditionIsPossiblyUndefinedAfterTheLoop' => [
+                'code' => '<?php
+                    /** @return int|false */
+                    function h() {
+                        return rand(0, 1) ? 3 : false;
+                    }
+                    do {
+                        $b = (bool) rand(0, 1);
+                    } while ($b and false !== ($j = h()));
+                    echo $j;',
+                'error_message' => 'PossiblyUndefinedGlobalVariable - src' . DIRECTORY_SEPARATOR . 'somefile.php:9:26',
+            ],
             'varUnsetBeforeContinueIsPossiblyUndefinedAfterTheLoop' => [
                 'code' => '<?php
                     function f(): void {

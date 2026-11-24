@@ -48,6 +48,7 @@ use Psalm\Internal\Provider\ReturnTypeProvider\HexdecReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\HrtimeReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\ImplodeReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\InArrayReturnTypeProvider;
+use Psalm\Internal\Provider\ReturnTypeProvider\IniGetReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\IteratorToArrayReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\MbInternalEncodingReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\MbStrtolowerReturnTypeProvider;
@@ -150,6 +151,7 @@ final class FunctionReturnTypeProvider
         $this->registerClass(GetParentClassReturnTypeProvider::class);
         $this->registerClass(HrtimeReturnTypeProvider::class);
         $this->registerClass(MbStrtolowerReturnTypeProvider::class);
+        $this->registerClass(IniGetReturnTypeProvider::class);
     }
 
     /**

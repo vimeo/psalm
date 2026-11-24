@@ -6,6 +6,7 @@ namespace Psalm\Internal\Codebase;
 
 use InvalidArgumentException;
 use Psalm\Exception\CircularReferenceException;
+use Psalm\Internal\Analyzer\Statements\Expression\ArrayAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ConstFetchAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Provider\FileStorageProvider;
@@ -312,8 +313,10 @@ final class ConstantTypeResolver
                     $key_value = $key_type->value;
                     if ($key_type instanceof TLiteralInt) {
                         $auto_key = $key_type->value + 1;
-                    } elseif (ctype_digit($key_type->value)) {
-                        $auto_key = ((int) $key_type->value) + 1;
+                    } elseif (ctype_digit($key_type->value)
+                        && ($int_key = ArrayAnalyzer::getLiteralArrayKeyInt($key_type->value)) !== false
+                    ) {
+                        $auto_key = $int_key + 1;
                     }
                 } else {
                     return Type::getArrayAtomic();
