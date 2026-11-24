@@ -1,6 +1,8 @@
 ---
 name: pr-description
 description: Use when writing the description of a vimeo/psalm pull request (gh pr create / gh pr edit), or when asked to reformat, tidy or shorten an existing PR description, including PRs opened by other people. Defines the house format (one-line bug + Before/After code blocks taken from PR test cases that assert the fix) and how to verify them.
+metadata:
+  internal: "true"
 ---
 
 # PR descriptions

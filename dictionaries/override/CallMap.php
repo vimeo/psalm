@@ -59045,6 +59045,10 @@ return array (
     0 => 'bool',
     'stream' => 'resource',
   ),
+  'stream_last_errors' => 
+  array (
+    0 => 'list<StreamError>',
+  ),
   'stream_notification_callback' => 
   array (
     0 => 'callback',
