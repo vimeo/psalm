@@ -250,6 +250,8 @@ trait UnionTrait
     }
 
     /**
+     * The id of the type, see getId()
+     *
      * @psalm-mutation-free
      */
     public function __toString(): string
@@ -302,6 +304,9 @@ trait UnionTrait
     }
 
     /**
+     * The string that identifies the type (see Atomic::getId()): the ids of its atomic types, sorted and joined by
+     * `|`, with a template in parentheses when there are several types (`(T:fn-f as int)|null`)
+     *
      * @psalm-mutation-free
      */
     public function getId(bool $exact = true): string
@@ -341,6 +346,8 @@ trait UnionTrait
     }
 
     /**
+     * The type as Psalm writes it in the docblocks and stubs it generates, see Atomic::toNamespacedString()
+     *
      * @param  array<lowercase-string, string> $aliased_classes
      * @psalm-mutation-free
      */
@@ -391,6 +398,8 @@ trait UnionTrait
     }
 
     /**
+     * The type as a native type declaration, see Atomic::toPhpString()
+     *
      * @psalm-mutation-free
      * @param  array<lowercase-string, string> $aliased_classes
      */
