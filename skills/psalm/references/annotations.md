@@ -99,6 +99,8 @@ function names(): Collection { … }
   `if (!$service instanceof $class) { throw … }`.
 - `@template-covariant T` when `Collection<Child>` must be accepted where `Collection<Parent>` is expected;
   `T` may then only appear in return positions.
+- A parameter that takes a `Collection` of any type: `Collection<*>`. What it returns as `T` has the
+  template's bound (`mixed`, or `object` for `T of object`), and its `T` parameters accept nothing.
 - Details: `docs/annotating_code/templated_annotations.md`.
 
 ## Assertions
