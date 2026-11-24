@@ -355,7 +355,12 @@ final class NewAnalyzer extends CallAnalyzer
             }
 
             if ($stmt->class instanceof PhpParser\Node\Stmt\Class_) {
-                $extends = $stmt->class->extends ? (string) $stmt->class->extends : null;
+                $extends = $stmt->class->extends
+                    ? ClassLikeAnalyzer::getFQCLNFromNameObject(
+                        $stmt->class->extends,
+                        $statements_analyzer->getAliases(),
+                    )
+                    : null;
                 $result_atomic_type = new TAnonymousClassInstance($fq_class_name, false, $extends);
             } else {
                 //if the class is a Name, it can't represent a child

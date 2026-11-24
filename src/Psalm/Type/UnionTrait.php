@@ -409,6 +409,16 @@ trait UnionTrait
         ?string $this_class,
         int     $analysis_php_version_id,
     ): ?string {
+        // mixed contains the other types, and can't be combined with them natively
+        if (isset($this->types['mixed'])) {
+            return $this->types['mixed']->toPhpString(
+                $namespace,
+                $aliased_classes,
+                $this_class,
+                $analysis_php_version_id,
+            );
+        }
+
         if (!$this->isSingleAndMaybeNullable()) {
             if ($analysis_php_version_id < 8_00_00) {
                 return null;
@@ -477,6 +487,10 @@ trait UnionTrait
      */
     public function canBeFullyExpressedInPhp(int $analysis_php_version_id): bool
     {
+        if (isset($this->types['mixed'])) {
+            return $this->types['mixed']->canBeFullyExpressedInPhp($analysis_php_version_id);
+        }
+
         if (!$this->isSingleAndMaybeNullable() && $analysis_php_version_id < 8_00_00) {
             return false;
         }

@@ -72,6 +72,81 @@ final class MissingReturnTypeTest extends FileManipulationTestCase
                 'issues_to_fix' => ['MissingReturnType'],
                 'safe_types' => false,
             ],
+            'addMissingReturnTypeWritesTheStringRefinementWithoutADocblock' => [
+                'input' => '<?php
+                    function foo(string $s) {
+                        if ($s === "") {
+                            throw new Exception();
+                        }
+                        return $s;
+                    }',
+                'output' => '<?php
+                    /**
+                     * @psalm-return non-empty-string
+                     */
+                    function foo(string $s): string {
+                        if ($s === "") {
+                            throw new Exception();
+                        }
+                        return $s;
+                    }',
+                'php_version' => '8.0',
+                'issues_to_fix' => ['MissingReturnType'],
+                'safe_types' => true,
+            ],
+            'addMissingReturnTypeNamesTheEnumOfACaseRelativeToTheNamespace' => [
+                'input' => '<?php
+                    namespace Foo;
+
+                    enum Suit {
+                        case Hearts;
+                    }
+
+                    function foo() {
+                        return Suit::Hearts;
+                    }',
+                'output' => '<?php
+                    namespace Foo;
+
+                    enum Suit {
+                        case Hearts;
+                    }
+
+                    /**
+                     * @return Suit::Hearts
+                     */
+                    function foo(): Suit {
+                        return Suit::Hearts;
+                    }',
+                'php_version' => '8.1',
+                'issues_to_fix' => ['MissingReturnType'],
+                'safe_types' => true,
+            ],
+            'addMissingReturnTypeNamesTheParentOfAnAnonymousClassFromAnotherNamespace' => [
+                'input' => '<?php
+                    namespace Bar {
+                        class Base {}
+                    }
+
+                    namespace Foo {
+                        function foo() {
+                            return new class extends \Bar\Base {};
+                        }
+                    }',
+                'output' => '<?php
+                    namespace Bar {
+                        class Base {}
+                    }
+
+                    namespace Foo {
+                        function foo(): \Bar\Base {
+                            return new class extends \Bar\Base {};
+                        }
+                    }',
+                'php_version' => '8.0',
+                'issues_to_fix' => ['MissingReturnType'],
+                'safe_types' => true,
+            ],
             'addMissingReturnTypeKeepsTheStringRefinement' => [
                 'input' => '<?php
                     /**
