@@ -10,7 +10,6 @@ use Psalm\CodeLocation;
 use Psalm\Codebase;
 use Psalm\Context;
 use Psalm\Internal\DataFlow\DataFlowNode;
-use Psalm\Internal\Type\TypeArgumentKey;
 use Psalm\Internal\TypeVisitor\CanContainObjectTypeVisitor;
 use Psalm\Internal\TypeVisitor\ClasslikeReplacer;
 use Psalm\Internal\TypeVisitor\ContainsClassLikeVisitor;
@@ -259,13 +258,47 @@ trait UnionTrait
     }
 
     /**
-     * @deprecated The key of a Union is no notion of its own: use getId() to identify a type, and Atomic::getKey()
-     *     for the slot of an atomic type in a Union
+     * @deprecated A union has no key of its own: use getId() to identify a type, and Atomic::getKey() for the slot
+     *     of an atomic type in a union. Will be removed in Psalm 8.
      * @psalm-mutation-free
      */
     public function getKey(): string
     {
-        return TypeArgumentKey::get($this);
+        $types = [];
+
+        $printed_int = false;
+        $printed_float = false;
+        $printed_string = false;
+
+        foreach ($this->types as $type) {
+            if ($type instanceof TLiteralFloat) {
+                if ($printed_float) {
+                    continue;
+                }
+
+                $types[] = 'float';
+                $printed_float = true;
+            } elseif ($type instanceof TLiteralString) {
+                if ($printed_string) {
+                    continue;
+                }
+
+                $types[] = 'string';
+                $printed_string = true;
+            } elseif ($type instanceof TLiteralInt) {
+                if ($printed_int) {
+                    continue;
+                }
+
+                $types[] = 'int';
+                $printed_int = true;
+            } else {
+                $types[] = $type->getKey();
+            }
+        }
+
+        sort($types);
+        return implode('|', $types);
     }
 
     /**

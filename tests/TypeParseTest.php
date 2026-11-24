@@ -1577,7 +1577,7 @@ final class TypeParseTest extends TestCase
     public function testKeyOfConditionalNamesItsSubject(): void
     {
         $this->assertSame(
-            'TConditional<value-of<T>>',
+            'TConditional<value-of<T: as array<array-key, mixed>>>',
             Type::parseString(
                 '(value-of<T> is string ? string : int)',
                 null,
