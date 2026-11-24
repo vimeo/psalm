@@ -11,7 +11,7 @@ No annotation is suggested for a function-like whose parameter default values ne
 To automatically add pure annotations where needed, run Psalm with `--alter --issues=MissingPureAnnotation` (it does not need the config flag).  
 
 ```php
-<?php
+<?php // suggestPurityAnnotations="true"
 
 function couldBePure(int $a): int {
     return $a+1;
