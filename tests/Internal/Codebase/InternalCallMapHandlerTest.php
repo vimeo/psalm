@@ -390,6 +390,51 @@ final class InternalCallMapHandlerTest extends TestCase
         $this->assertSame('false|string', $php74_entries[0]->return_type?->getId());
     }
 
+    public function testPhpredisAuthParamsAcceptAclCredentials(): void
+    {
+        $project_analyzer = new ProjectAnalyzer(
+            new TestConfig(),
+            new Providers(new FakeFileProvider(), new FakeParserCacheProvider()),
+        );
+        $codebase = $project_analyzer->getCodebase();
+
+        $credentials = [
+            'string',
+            'list{string}',
+            'list{string, string}',
+            'array{pass: string}',
+            'array{user: string, pass: string}',
+        ];
+
+        foreach (['7.0', '7.1', '7.2', '7.3', '7.4', '8.0', '8.1', '8.2', '8.3', '8.4', '8.5', '8.6'] as $version) {
+            $project_analyzer->setPhpVersion($version, 'tests');
+            $auth_params = InternalCallMapHandler::getCallablesFromCallMap('Redis::auth')[0]->params ?? [];
+            $cluster_params = InternalCallMapHandler::getCallablesFromCallMap('RedisCluster::__construct')[0]->params
+                ?? [];
+
+            foreach ([...$credentials, 'null'] as $type) {
+                if ($type !== 'null') {
+                    self::assertTrue(
+                        UnionTypeComparator::isContainedBy(
+                            $codebase,
+                            Type::parseString($type),
+                            $auth_params[0]->type ?? Type::getNever(),
+                        ),
+                        "$version: Redis::auth accepts $type",
+                    );
+                }
+                self::assertTrue(
+                    UnionTypeComparator::isContainedBy(
+                        $codebase,
+                        Type::parseString($type),
+                        $cluster_params[5]->type ?? Type::getNever(),
+                    ),
+                    "$version: RedisCluster::__construct accepts the $type auth",
+                );
+            }
+        }
+    }
+
     /**
      * @return iterable<string, array{string, array<int|string, string>}>
      */

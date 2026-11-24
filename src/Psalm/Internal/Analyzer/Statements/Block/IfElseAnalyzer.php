@@ -18,7 +18,6 @@ use Psalm\Internal\Analyzer\Statements\Block\IfElse\ElseIfAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Block\IfElse\IfAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\BinaryOp\GuardedClasses;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
-use Psalm\Internal\Analyzer\TraitAnalyzer;
 use Psalm\Internal\Clause;
 use Psalm\Internal\Codebase\VariableUseGraph;
 use Psalm\Internal\Scope\IfConditionalScope;
@@ -644,18 +643,12 @@ final class IfElseAnalyzer
                 && $post_if_context->vars_in_scope[$var_id]->hasMixed()
                 && !$reconciled_type->hasMixed()
             ) {
-                if (!$post_if_context->collect_initializations
-                    && $statements_analyzer->getFilePath() === $statements_analyzer->getRootFilePath()
-                ) {
+                if ($statements_analyzer->shouldCountMixed($post_if_context)) {
                     $parent_source = $statements_analyzer->getSource();
 
-                    $functionlike_storage = $parent_source instanceof FunctionLikeAnalyzer
-                        ? $parent_source->getFunctionLikeStorage($statements_analyzer)
-                        : null;
-
-                    if (!$functionlike_storage
-                            || (!$parent_source->getSource() instanceof TraitAnalyzer
-                                && !isset($functionlike_storage->param_lookup[substr($var_id, 1)]))
+                    if (!$parent_source instanceof FunctionLikeAnalyzer
+                        || !isset($parent_source->getFunctionLikeStorage($statements_analyzer)
+                            ->param_lookup[substr($var_id, 1)])
                     ) {
                         $codebase = $statements_analyzer->getCodebase();
                         $codebase->analyzer->decrementMixedCount($statements_analyzer->getFilePath());
