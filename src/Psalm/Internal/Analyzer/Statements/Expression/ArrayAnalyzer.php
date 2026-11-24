@@ -237,9 +237,10 @@ final class ArrayAnalyzer
         }
 
         // only an int in its canonical decimal form is cast to an int, e.g. not '015', '+5', '5 ' or '-0'
-        $int_array_key = (int) $literal_array_key;
+        // filter_var avoids the PHP 8.5 warning on (int) casts of non-representable float-strings like '6e5212ed-...'
+        $int_array_key = filter_var($literal_array_key, FILTER_VALIDATE_INT);
 
-        return (string) $int_array_key === $literal_array_key ? $int_array_key : false;
+        return $int_array_key !== false && (string) $int_array_key === $literal_array_key ? $int_array_key : false;
     }
 
     /**
