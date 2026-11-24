@@ -9,9 +9,11 @@ use Override;
 use Psalm\Codebase;
 use Psalm\Internal\Analyzer\Statements\Expression\ArrayAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Type\StarProjection;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
+use Psalm\Internal\Type\TypeArgumentProjection;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Union;
@@ -61,8 +63,12 @@ trait GenericTrait
      * @param list<Union> $purity_args
      * @param Closure[read-props](Union): string $to_string
      */
-    private static function formatTypeParams(array $type_params, array $purity_args, Closure $to_string): string
-    {
+    private static function formatTypeParams(
+        array $type_params,
+        array $purity_args,
+        Closure $to_string,
+        ?TGenericObject $generic_object = null,
+    ): string {
         $s = '';
 
         if ($purity_args) {
@@ -78,8 +84,10 @@ trait GenericTrait
         if ($type_params) {
             $params = [];
 
-            foreach ($type_params as $type_param) {
-                $params[] = $to_string($type_param);
+            foreach ($type_params as $i => $type_param) {
+                $params[] = $generic_object?->getProjection($i) === TypeArgumentProjection::Star
+                    ? StarProjection::NAME
+                    : $to_string($type_param);
             }
 
             $s .= '<' . implode(', ', $params) . '>';
@@ -97,6 +105,7 @@ trait GenericTrait
             $type_params,
             $purity_args,
             static fn(Union $type_param): string => $type_param->getId($exact),
+            $this instanceof TGenericObject ? $this : null,
         );
 
         $extra_types = '';
@@ -203,6 +212,7 @@ trait GenericTrait
                 $purity_args,
                 static fn(Union $type_param): string =>
                     $type_param->toNamespacedString($namespace, $aliased_classes, $this_class, false),
+                $this instanceof TGenericObject ? $this : null,
             )
             . $extra_types;
     }
@@ -225,8 +235,10 @@ trait GenericTrait
 
 
         $input_object_type_params = [];
+        $input_star_offsets = [];
 
         $container_type_params_covariant = [];
+        $container_type_params_contravariant = null;
 
         if ($input_type instanceof TGenericObject
             && ($this instanceof TGenericObject || $this instanceof TIterable)
@@ -236,6 +248,8 @@ trait GenericTrait
                 $input_type,
                 $this,
                 $container_type_params_covariant,
+                $input_star_offsets,
+                $container_type_params_contravariant,
             );
         }
 
@@ -262,6 +276,21 @@ trait GenericTrait
                 $input_type_param = $input_object_type_params[$offset];
             }
 
+            // a contravariant argument holds the types it fits: the input bounds the template from above, as a
+            // callable's parameter does
+            $contravariant = isset($container_type_params_contravariant[$offset]);
+
+            // a `*` is no type of its own for an invariant (or contravariant) argument to bind a template to, only one
+            // bounded by the bound it holds, which a covariant argument reads; a `*` of the container takes no binding
+            $invariant_star_input = isset($input_star_offsets[$offset])
+                && ($contravariant || !($container_type_params_covariant[$offset] ?? true));
+            $star_container_param = $this instanceof TGenericObject
+                && $this->getProjection($offset) === TypeArgumentProjection::Star;
+
+            if ($invariant_star_input || $star_container_param) {
+                $input_type_param = null;
+            }
+
             $type_params[$offset] = TemplateStandinTypeReplacer::replace(
                 $type_param,
                 $template_result,
@@ -272,8 +301,9 @@ trait GenericTrait
                 $calling_class,
                 $calling_function,
                 $replace,
-                $add_lower_bound,
-                !($container_type_params_covariant[$offset] ?? true)
+                $contravariant ? !$add_lower_bound : $add_lower_bound,
+                !$contravariant
+                    && !($container_type_params_covariant[$offset] ?? true)
                     && $this instanceof TGenericObject
                     ? $this->value
                     : null,

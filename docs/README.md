@@ -57,6 +57,7 @@ There are two main inspirations for Psalm:
         - [Authoring plugins](running_psalm/plugins/authoring_plugins.md)
         - [How Psalm represents types](running_psalm/plugins/plugins_type_system.md)
     - [Command line usage](running_psalm/command_line_usage.md)
+    - [Finding out why Psalm is slow](running_psalm/performance.md)
     - [IDE support](running_psalm/language_server.md)
     - Handling errors:
         - [Dealing with code issues](running_psalm/dealing_with_code_issues.md)

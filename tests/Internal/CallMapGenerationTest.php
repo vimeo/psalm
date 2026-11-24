@@ -5,10 +5,15 @@ declare(strict_types=1);
 namespace Psalm\Tests\Internal;
 
 use PHPUnit\Framework\TestCase;
+use Psalm\Internal\Analyzer\ProjectAnalyzer;
+use Psalm\Internal\Provider\FileProvider;
+use Psalm\Internal\Provider\Providers;
 use Psalm\Internal\Stubs\CallMapVersionFilter;
+use Psalm\Tests\TestConfig;
 use Symfony\Component\Filesystem\Filesystem;
 use Symfony\Component\Process\Process;
 
+use function Psalm\Internal\Stubs\assertEntryParameters;
 use function chmod;
 use function dirname;
 use function file_put_contents;
@@ -48,6 +53,46 @@ final class CallMapGenerationTest extends TestCase
             'array_key_first' => 'standard',
             'random_int' => 'random',
         ]));
+    }
+
+    public function testParametersRenamedSinceAnOlderPhpMatchByPosition(): void
+    {
+        require_once dirname(__DIR__, 2) . '/bin/stubs/gen_callmap_utils.php';
+        new ProjectAnalyzer(new TestConfig(), new Providers(new FileProvider()));
+
+        // PHP 7 reflects imap_open(..., $options, $n_retries, $params), PHP 8 imap_open(..., $flags, $retries, $options)
+        self::assertSame(
+            [
+                0 => 'false|resource',
+                'mailbox' => 'string',
+                'user' => 'string',
+                'password' => 'string',
+                'options=' => 'int',
+                'n_retries=' => 'int',
+                'params=' => 'array<array-key, mixed>',
+            ],
+            assertEntryParameters(
+                'imap_open',
+                [
+                    0 => 'mixed',
+                    'mailbox' => 'mixed',
+                    'user' => 'mixed',
+                    'password' => 'mixed',
+                    'options=' => 'mixed',
+                    'n_retries=' => 'mixed',
+                    'params=' => 'mixed',
+                ],
+                [
+                    0 => 'false|resource',
+                    'mailbox' => 'string',
+                    'user' => 'string',
+                    'password' => 'string',
+                    'flags=' => 'int',
+                    'retries=' => 'int',
+                    'options=' => 'array<array-key, mixed>',
+                ],
+            ),
+        );
     }
 
     public function testFailedImagePreventsMergingCallmaps(): void

@@ -72,6 +72,20 @@ final class AssignmentInConditionalTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'variableAssignedInThePossiblySkippedOperandOfAnAndHasItsType' => [
+                'code' => '<?php
+                    function check(string $s): bool {
+                        return $s === "b";
+                    }
+
+                    $enabled = (bool) rand(0, 1);
+                    $matches = $enabled && check($captured = "b");',
+                'assertions' => [
+                    '$captured===' => "'b'",
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
             'variableAssignedBeforeABreakInTheElseIsNotTypedByTheIf' => [
                 'code' => '<?php
                     /** @return list<string> */
@@ -1190,6 +1204,36 @@ final class AssignmentInConditionalTest extends TestCase
                 'assertions' => [],
                 'ignored_issues' => [],
                 'php_version' => '8.0',
+            ],
+            'variableAssignedInTheLeftOfNegatedAndIsDefinedInNextAndOperand' => [
+                'code' => '<?php
+                    function check(string $s): bool {
+                        return $s === "b";
+                    }
+
+                    function f(bool $b, bool $c, string $s): bool {
+                        return $b && !(check($x = $s) && $c) && $x === "a";
+                    }',
+            ],
+            'variableAssignedInTheLeftOfDoubleNegatedAndIsDefinedInNextAndOperand' => [
+                'code' => '<?php
+                    function check(string $s): bool {
+                        return $s === "b";
+                    }
+
+                    function f(bool $b, bool $c, string $s): bool {
+                        return $b && !!(check($x = $s) && $c) && $x === "a";
+                    }',
+            ],
+            'variableAssignedInTheLeftOfAndInsideNegatedAndIsDefinedInNextAndOperand' => [
+                'code' => '<?php
+                    function check(string $s): bool {
+                        return $s === "b";
+                    }
+
+                    function f(bool $b, bool $c, string $s): bool {
+                        return $b && !(!check($x = $s) && $c) && $x === "a";
+                    }',
             ],
             'variableAssignedInRightXorOperandIsSetInIf' => [
                 'code' => '<?php

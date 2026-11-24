@@ -138,7 +138,8 @@ final class VariableFetchAnalyzer
             return true;
         }
 
-        if (!$context->check_variables) {
+        // a superglobal is always defined, and what it holds is tainted whether the other variables are known or not
+        if (!$context->check_variables && !(is_string($stmt->name) && self::isSuperGlobal('$' . $stmt->name))) {
             if (is_string($stmt->name)) {
                 $var_name = '$' . $stmt->name;
 
@@ -188,6 +189,15 @@ final class VariableFetchAnalyzer
 
             if (isset($context->vars_in_scope[$var_name])) {
                 $type = $context->vars_in_scope[$var_name];
+
+                // assigned on some paths only: the others leave it the type it has by default
+                if ($type->possibly_undefined) {
+                    $type = Type::combineUnionTypes(
+                        $type->setPossiblyUndefined(false),
+                        self::getGlobalType($var_name, $codebase->analysis_php_version_id),
+                        $codebase,
+                    );
+                }
 
                 self::taintVariable($statements_analyzer, $context, $var_name, $type, $stmt);
 

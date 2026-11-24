@@ -65,6 +65,61 @@ final class MethodCallTest extends TestCase
         );
     }
 
+    public function testMixedMethodCallOnAReceiverWithAMixedPartIsReportedOnceWithOneWording(): void
+    {
+        $this->testConfig->throw_exception = false;
+        $file_path = self::$src_dir_path . 'somefile.php';
+        $this->addFile(
+            $file_path,
+            '<?php
+                /**
+                 * @template T
+                 * @param T|object $o
+                 */
+                function unbounded($o): void {
+                    $o->foo();
+                }
+
+                /**
+                 * @template T of object
+                 * @param T $o
+                 */
+                function bounded($o): void {
+                    $o->foo();
+                }
+
+                /** @param mixed|object $o */
+                function mixedOrObject($o): void {
+                    $o->foo();
+                }
+
+                /**
+                 * @template U
+                 * @template T of U
+                 * @param T|object $o
+                 */
+                function nested($o): void {
+                    $o->foo();
+                }',
+        );
+
+        $this->project_analyzer->setPhpVersion('8.1', 'tests');
+        $this->analyzeFile($file_path, new Context(), false);
+
+        self::assertSame(
+            [
+                '7: Cannot determine the type of $o when calling method foo',
+                '15: Cannot determine the methods of $o (object) when calling method foo',
+                '20: Cannot determine the type of $o when calling method foo',
+                '29: Cannot determine the type of $o when calling method foo',
+            ],
+            array_map(
+                static fn(IssueData $issue): string => $issue->line_from . ': ' . $issue->message,
+                IssueBuffer::getIssuesDataForFile($file_path),
+            ),
+        );
+    }
+
     public function testMethodCallMemoize(): void
     {
         $this->project_analyzer->getConfig()->memoize_method_calls = true;
@@ -381,6 +436,38 @@ final class MethodCallTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'argumentsOfACallANullsafeOperatorShortCircuits' => [
+                'code' => '<?php
+                    final class Entry {
+                        public DateTime $date;
+                        public string $format = "Y";
+
+                        public function __construct() {
+                            $this->date = new DateTime();
+                        }
+
+                        public function self(): self {
+                            return $this;
+                        }
+                    }
+
+                    function age(?Entry $entry): ?DateInterval {
+                        return $entry?->date->diff($entry->date);
+                    }
+
+                    function formatted(?Entry $entry): ?string {
+                        return $entry?->self()->date->diff($entry->date)->format($entry->format);
+                    }
+
+                    function checked(?Entry $entry): void {
+                        if ($entry?->self()->date->format($entry->format) !== null) {
+                            /** @psalm-check-type-exact $entry = Entry */;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'memoizedResultForgottenWhenAPropertyOfTheObjectIsWritten' => [
                 'code' => '<?php
                     final class Tokens {
@@ -3165,6 +3252,37 @@ final class MethodCallTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'nullsafeChainWithSeveralHopsKeepsNullOnlyForTheShortCircuitBeforeACallWithArguments' => [
+                'code' => '<?php
+                    abstract class C {
+                        abstract public function c(): int;
+                    }
+                    abstract class B {
+                        public ?B $next = null;
+                        abstract public function with(int $x): self;
+                        abstract public function c(int $x): C;
+                    }
+                    abstract class A {
+                        public ?B $b = null;
+                    }
+                    function aOrNull(): ?A {
+                        return null;
+                    }
+
+                    $a = aOrNull();
+                    $twoHops = $a?->b?->with(1)->c(2)->c();
+                    $threeHops = $a?->b?->next?->with(1)->c(2)->c();
+                    $severalCallsWithArguments = $a?->b?->with(1)->with(2)->c(3)->c();
+                    $hopAfterTheCall = $a?->b?->with(1)->next?->c(2)->c();',
+                'assertions' => [
+                    '$twoHops' => 'int|null',
+                    '$threeHops' => 'int|null',
+                    '$severalCallsWithArguments' => 'int|null',
+                    '$hopAfterTheCall' => 'int|null',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'nullsafeChainKeepsShortCircuitNullInsideIssetEmptyAndCoalesce' => [
                 'code' => '<?php
                     abstract class C {
@@ -3452,6 +3570,162 @@ final class MethodCallTest extends TestCase
                 'ignored_issues' => ['DeprecatedMethod'],
                 'php_version' => '7.4',
             ],
+            'overrideWithAnExtraVariadicKeepsTheTemplatesOfTheStaticMethodBound' => [
+                'code' => '<?php
+                    /** @template TValue */
+                    interface Enumerable
+                    {
+                        /**
+                         * @template TWrapValue
+                         * @param iterable<array-key, TWrapValue>|TWrapValue $value
+                         * @return static<TWrapValue>
+                         */
+                        public static function wrap($value);
+
+                        /**
+                         * @template TTimesValue
+                         * @param callable(int): TTimesValue $callback
+                         * @return static<TTimesValue>
+                         */
+                        public static function times(int $number, ?callable $callback = null);
+                    }
+
+                    trait EnumeratesValues
+                    {
+                        /**
+                         * @template TWrapValue
+                         * @param iterable<array-key, TWrapValue>|TWrapValue $value
+                         * @return static<TWrapValue>
+                         */
+                        public static function wrap($value, ...$args)
+                        {
+                            return new static();
+                        }
+
+                        /**
+                         * @template TTimesValue
+                         * @param callable(int): TTimesValue $callback
+                         * @return static<TTimesValue>
+                         */
+                        public static function times(int $number, ?callable $callback = null, ...$args)
+                        {
+                            return new static();
+                        }
+                    }
+
+                    /**
+                     * @template TValue
+                     * @implements Enumerable<TValue>
+                     */
+                    final class Collection implements Enumerable
+                    {
+                        use EnumeratesValues;
+
+                        public function __construct() {}
+                    }
+
+                    /** @param array<string, int>|object $x */
+                    function f($x): void {
+                        $c = Collection::wrap($x);
+                        $t = Collection::times(3, static fn(int $i): string => (string) $i);
+                    }
+
+                    /** @var array<string, int>|object $y */
+                    $c = Collection::wrap($y);',
+                'assertions' => [
+                    '$c===' => 'Collection<int>',
+                ],
+                'ignored_issues' => ['UnusedVariable', 'UnusedParam', 'MissingParamType'],
+                'php_version' => '8.0',
+            ],
+            'overrideOfAStubMethodWithATemplateKeepsItsParameterType' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @psalm-immutable */
+                    final class MyEnumReflection extends ReflectionEnum
+                    {
+                        #[\Override]
+                        public function isSubclassOf(ReflectionClass|string $class): bool
+                        {
+                            return false;
+                        }
+                    }
+
+                    /** @param class-string $name */
+                    function f(MyEnumReflection $r, ReflectionEnum $core, string $name): bool
+                    {
+                        $core->isSubclassOf($name);
+
+                        return $r->isSubclassOf($name);
+                    }
+                PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'overrideDocumentingSomeParamsBindsTheTemplatesOfTheOthers' => [
+                'code' => <<<'PHP'
+                    <?php
+                    abstract class Base
+                    {
+                        /**
+                         * @template T
+                         * @param T $value
+                         * @param string $label
+                         * @return T
+                         */
+                        abstract public function keep($value, $label);
+                    }
+
+                    final class Partial extends Base
+                    {
+                        /**
+                         * @param string $label
+                         */
+                        #[\Override]
+                        public function keep($value, $label)
+                        {
+                            return $value;
+                        }
+                    }
+
+                    function f(Partial $p): int
+                    {
+                        return $p->keep(3, "x");
+                    }
+                PHP,
+            ],
+            'overrideOfAMethodWithATemplateWithoutDocblock' => [
+                'code' => <<<'PHP'
+                    <?php
+                    class Base
+                    {
+                        /**
+                         * @template J as object
+                         * @param class-string<J> $class
+                         */
+                        public function take(string $class): bool
+                        {
+                            return true;
+                        }
+                    }
+
+                    final class Child extends Base
+                    {
+                        #[\Override]
+                        public function take(string $class): bool
+                        {
+                            return false;
+                        }
+                    }
+
+                    /** @param class-string<stdClass> $name */
+                    function f(Child $c, string $name): bool
+                    {
+                        return $c->take($name);
+                    }
+                PHP,
+            ],
         ];
     }
 
@@ -3462,6 +3736,55 @@ final class MethodCallTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'mixedMethodCallOnAnObjectShapeNamesItsMethods' => [
+                'code' => '<?php
+                    /** @param object{exp_month: int} $card */
+                    function f(object $card): void {
+                        $card->offsetGet("a");
+                    }',
+                'error_message' => 'MixedMethodCall - src' . DIRECTORY_SEPARATOR
+                    . 'somefile.php:4:32 - Cannot determine the methods of $card (object{exp_month:int})'
+                    . ' when calling method offsetGet',
+            ],
+            'mixedMethodCallOnAnObjectNamesItsMethods' => [
+                'code' => '<?php
+                    function f(object $o): void {
+                        $o->foo();
+                    }',
+                'error_message' => 'MixedMethodCall - src' . DIRECTORY_SEPARATOR
+                    . 'somefile.php:3:29 - Cannot determine the methods of $o (object) when calling method foo',
+            ],
+            'mixedMethodCallOnAMixedValueStillNamesItsType' => [
+                'code' => '<?php
+                    /** @param mixed $m */
+                    function f($m): void {
+                        $m->foo();
+                    }',
+                'error_message' => 'MixedMethodCall - src' . DIRECTORY_SEPARATOR
+                    . 'somefile.php:4:29 - Cannot determine the type of $m when calling method foo',
+            ],
+            'argumentOfAShortCircuitedCallWithAnotherNullableVariable' => [
+                'code' => '<?php
+                    final class Entry {
+                        public DateTime $date;
+                        public string $format = "Y";
+
+                        public function __construct() {
+                            $this->date = new DateTime();
+                        }
+
+                        public function self(): self {
+                            return $this;
+                        }
+                    }
+
+                    function age(?Entry $entry, ?Entry $other): ?DateInterval {
+                        return $entry?->date->diff($other->date);
+                    }',
+                'error_message' => 'PossiblyNullPropertyFetch',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
             'memoizedGetterForgottenInANestedBranchIsNotNarrowedAfterIt' => [
                 'code' => '<?php
                     final class A {
@@ -4547,6 +4870,135 @@ final class MethodCallTest extends TestCase
                 'error_levels' => [],
                 'php_version' => '8.0',
             ],
+            'nullsafeChainWithSeveralHopsReportsNullReturnedByACallWithArguments' => [
+                'code' => '<?php
+                    abstract class C {
+                        abstract public function c(): int;
+                    }
+                    abstract class B {
+                        abstract public function maybe(int $x): ?C;
+                    }
+                    abstract class A {
+                        public ?B $b = null;
+                    }
+
+                    function f(?A $a): void {
+                        $a?->b?->maybe(1)->c();
+                    }',
+                'error_message' => 'PossiblyNullReference',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'nullsafeChainWithSeveralHopsReportsNullReturnedByACallWithArgumentsInALaterLoopPass' => [
+                'code' => '<?php
+                    abstract class C {
+                        abstract public function c(): int;
+                    }
+                    abstract class B {
+                        abstract public function with(int $x): C;
+                    }
+                    abstract class MaybeB {
+                        abstract public function with(int $x): ?C;
+                    }
+                    abstract class A {
+                        public ?B $b = null;
+                    }
+                    abstract class MaybeA {
+                        public ?MaybeB $b = null;
+                    }
+
+                    function f(?A $a, ?MaybeA $maybe): void {
+                        for ($i = 0; $i < 2; $i++) {
+                            $a?->b?->with(1)->c();
+                            $a = $maybe;
+                        }
+                    }',
+                'error_message' => 'PossiblyNullReference',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'nullsafeChainReportsStaticCallOnTheResultOfAVoidMethod' => [
+                'code' => '<?php
+                    abstract class B {
+                        abstract public function run(int $x): void;
+                    }
+
+                    function f(?B $b): void {
+                        $b?->run(1)::done();
+                    }',
+                'error_message' => 'UndefinedClass',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'nullsafeChainWithSeveralHopsReportsStaticCallOnTheResultOfAVoidMethod' => [
+                'code' => '<?php
+                    abstract class B {
+                        abstract public function run(int $x): void;
+                    }
+                    abstract class A {
+                        public ?B $b = null;
+                    }
+
+                    function f(?A $a): void {
+                        $a?->b?->run(1)::done();
+                    }',
+                'error_message' => 'UndefinedClass',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'nullsafeChainReportsNullValueOfATemplate' => [
+                'code' => '<?php
+                    abstract class C {
+                        abstract public function c(): int;
+                    }
+                    abstract class B {
+                        /**
+                         * @template U
+                         * @param U $u
+                         * @return U
+                         */
+                        abstract public function id(mixed $u): mixed;
+                    }
+
+                    /**
+                     * @template T of array<string, C|null>
+                     * @param value-of<T> $value
+                     */
+                    function f(?B $b, mixed $value): void {
+                        $b?->id($value)->c();
+                    }',
+                'error_message' => 'PossiblyNullReference',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'nullsafeChainWithSeveralHopsReportsNullValueOfATemplate' => [
+                'code' => '<?php
+                    abstract class C {
+                        abstract public function c(): int;
+                    }
+                    abstract class B {
+                        /**
+                         * @template U
+                         * @param U $u
+                         * @return U
+                         */
+                        abstract public function id(mixed $u): mixed;
+                    }
+                    abstract class A {
+                        public ?B $b = null;
+                    }
+
+                    /**
+                     * @template T of array<string, C|null>
+                     * @param value-of<T> $value
+                     */
+                    function f(?A $a, mixed $value): void {
+                        $a?->b?->id($value)->c();
+                    }',
+                'error_message' => 'PossiblyNullReference',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
             'nullsafeChainReportsNullArrayElementMethodCall' => [
                 'code' => '<?php
                     abstract class C {
@@ -4679,6 +5131,27 @@ final class MethodCallTest extends TestCase
                     $_a = (new A)->foo(...);
                 PHP,
                 'error_message' => 'UndefinedMethod',
+            ],
+            'overrideOfAStubMethodWithATemplateStillChecksTheArgument' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class MyEnumReflection extends ReflectionEnum
+                    {
+                        #[\Override]
+                        public function isSubclassOf(ReflectionClass|string $class): bool
+                        {
+                            return false;
+                        }
+                    }
+
+                    function f(MyEnumReflection $r): bool
+                    {
+                        return $r->isSubclassOf(new stdClass);
+                    }
+                PHP,
+                'error_message' => 'InvalidArgument',
+                'error_levels' => [],
+                'php_version' => '8.1',
             ],
         ];
     }
