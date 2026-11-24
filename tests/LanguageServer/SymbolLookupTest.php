@@ -615,6 +615,32 @@ final class SymbolLookupTest extends TestCase
         $this->assertSame('B\AClass', $reference->symbol);
     }
 
+    public function testGetSymbolPositionStaticReturnType(): void
+    {
+        $config = $this->codebase->config;
+        $config->throw_exception = false;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                namespace B;
+                class AClass {
+                    public function make(): static {
+                        return $this;
+                    }
+                }',
+        );
+
+        $this->codebase->file_provider->openFile('somefile.php');
+        $this->codebase->scanFiles();
+        $this->analyzeFile('somefile.php', new Context());
+
+        $reference = $this->codebase->getReferenceAtPositionAsReference('somefile.php', new Position(3, 47));
+        $this->assertNotNull($reference);
+
+        $this->assertSame('B\AClass', $reference->symbol);
+    }
+
     public function testGetSymbolPositionMethodWrongReturnType(): void
     {
         $config = $this->codebase->config;
