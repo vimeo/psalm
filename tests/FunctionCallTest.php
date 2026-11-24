@@ -24,6 +24,26 @@ final class FunctionCallTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'urlencodeOfANonEmptyStringIsNonEmpty' => [
+                'code' => '<?php
+                    /** @param non-empty-string $input */
+                    function encode(string $input, string $any): void {
+                        /** @psalm-check-type-exact $encoded = non-empty-string */
+                        $encoded = urlencode($input);
+                        /** @psalm-check-type-exact $rawEncoded = non-empty-string */
+                        $rawEncoded = rawurlencode($input);
+                        /** @psalm-check-type-exact $maybeEmpty = string */
+                        $maybeEmpty = urlencode($any);
+                        /** @psalm-check-type-exact $decoded = non-empty-string */
+                        $decoded = urldecode($input);
+                        /** @psalm-check-type-exact $rawDecoded = non-empty-string */
+                        $rawDecoded = rawurldecode($input);
+                        /** @psalm-check-type-exact $maybeEmptyDecoded = string */
+                        $maybeEmptyDecoded = urldecode($any);
+                        /** @psalm-check-type-exact $maybeEmptyRawDecoded = string */
+                        $maybeEmptyRawDecoded = rawurldecode($any);
+                    }',
+            ],
             'filterVarThrowOnFailureHasNoFailureValue' => [
                 'code' => '<?php
                     $input = (string) rand();

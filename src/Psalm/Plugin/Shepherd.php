@@ -381,7 +381,7 @@ final class Shepherd implements AfterAnalysisInterface
         $secrets = array_keys($secrets);
         usort($secrets, static fn(string $a, string $b): int => strlen($b) <=> strlen($a));
 
-        return array_values(array_filter($secrets, static fn(string $secret): bool => $secret !== ''));
+        return $secrets;
     }
 
     /**
