@@ -7,6 +7,7 @@ namespace Psalm\Internal\Analyzer\Statements\Block;
 use PhpParser;
 use Psalm\Context;
 use Psalm\Internal\Algebra;
+use Psalm\Internal\Algebra\FormulaGenerator;
 use Psalm\Internal\Analyzer\ScopeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Block\IfElse\IfAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
@@ -22,6 +23,8 @@ use function array_intersect_key;
 use function array_merge;
 use function count;
 use function in_array;
+use function str_contains;
+use function str_starts_with;
 
 /**
  * @internal
@@ -180,10 +183,14 @@ final class SwitchAnalyzer
                         $original_context->inside_loop,
                     );
 
-                // the cases of `switch (true)` narrow the variables of their conditions
+                // the cases of `switch (true)` narrow the variables of their conditions, but the negated conditions
+                // describe the values after the conditions ran, not those of the original context
+                [$assigned_var_ids, $has_call] = self::getVarsChangedByTheConditions($statements_analyzer, $stmt);
+
                 foreach ($reconcilable_if_types as $var_id => $_) {
                     if (isset($case_vars_in_scope_reconciled[$var_id])
                         && $case_vars_in_scope_reconciled[$var_id]->isNever()
+                        && !self::mayBeChangedByTheConditions($var_id, $assigned_var_ids, $has_call)
                     ) {
                         $all_options_matched = true;
                         break;
@@ -303,5 +310,61 @@ final class SwitchAnalyzer
         }
 
         return Type::combineUnionTypes($case_type, $type);
+    }
+
+    /**
+     * @return array{array<string, true>, bool} the variables the case conditions assign or pass by reference, and
+     *     whether one of them calls something
+     */
+    private static function getVarsChangedByTheConditions(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Stmt\Switch_ $stmt,
+    ): array {
+        $assigned_var_ids = [];
+        $has_call = false;
+        $node_finder = new PhpParser\NodeFinder();
+
+        foreach ($stmt->cases as $case) {
+            if (!$case->cond) {
+                continue;
+            }
+
+            $assigned_var_ids += FormulaGenerator::getAssignedVarIds(
+                $case->cond,
+                $statements_analyzer->getFQCLN(),
+                $statements_analyzer->node_data,
+            );
+
+            $has_call = $has_call
+                || $node_finder->findFirst(
+                    $case->cond,
+                    static fn(PhpParser\Node $node): bool => $node instanceof PhpParser\Node\Expr\CallLike,
+                ) !== null;
+        }
+
+        return [$assigned_var_ids, $has_call];
+    }
+
+    /**
+     * @param array<string, true> $assigned_var_ids
+     * @psalm-pure
+     */
+    private static function mayBeChangedByTheConditions(string $var_id, array $assigned_var_ids, bool $has_call): bool
+    {
+        // a call may write the properties it can reach
+        if ($has_call && (str_contains($var_id, '->') || str_contains($var_id, '::'))) {
+            return true;
+        }
+
+        foreach ($assigned_var_ids as $assigned_var_id => $_) {
+            if ($var_id === $assigned_var_id
+                || str_starts_with($var_id, $assigned_var_id . '[')
+                || str_starts_with($var_id, $assigned_var_id . '->')
+            ) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }

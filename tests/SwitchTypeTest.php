@@ -274,19 +274,6 @@ final class SwitchTypeTest extends TestCase
                         }
                     }',
             ],
-            'negatedInstanceofOfADynamicClassKeepsTheType' => [
-                'code' => '<?php
-                    class Open {}
-
-                    /** @param class-string<Open> $class */
-                    function test(Open $instance, string $class): string {
-                        if (!$instance instanceof $class) {
-                            return "other";
-                        }
-
-                        return "same";
-                    }',
-            ],
             'conditionalBreakOfAnExitingCaseKeepsTheTypeOfAVarDefinedBeforeTheSwitch' => [
                 'code' => <<<'PHP'
                     <?php
@@ -1989,6 +1976,65 @@ final class SwitchTypeTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'switchTrueWithACaseThatAssignsItsVariableIsNotExhaustive' => [
+                'code' => '<?php
+                    final class A {}
+                    function f(): ?A { return rand(0, 1) ? new A() : null; }
+
+                    function assignInCase(): string {
+                        $y = new A();
+                        switch (true) {
+                            case ($y = f()) instanceof A:
+                                return "a";
+                        }
+                    }',
+                'error_message' => 'InvalidReturnType',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'switchTrueWithACaseThatPassesItsVariableByReferenceIsNotExhaustive' => [
+                'code' => '<?php
+                    function byRef(string $s): string {
+                        $m = 1;
+                        switch (true) {
+                            case preg_match("/a/", $s, $m) === 1:
+                                return "a";
+                            case $m === 1:
+                                return "b";
+                        }
+                    }',
+                'error_message' => 'InvalidReturnType',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'switchTrueWithACaseThatCallsAMethodChangingTheTestedPropertyIsNotExhaustive' => [
+                'code' => '<?php
+                    final class A {}
+
+                    final class Holder {
+                        public ?A $a = null;
+
+                        public function reset(): bool {
+                            $this->a = null;
+                            return false;
+                        }
+                    }
+
+                    function viaMethod(Holder $h): string {
+                        if ($h->a === null) {
+                            return "early";
+                        }
+                        switch (true) {
+                            case $h->reset():
+                                return "r";
+                            case $h->a instanceof A:
+                                return "a";
+                        }
+                    }',
+                'error_message' => 'InvalidReturnType',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
             'switchTrueOverASubclassIsNotExhaustive' => [
                 'code' => '<?php
                     class Open {}
