@@ -47,6 +47,9 @@ use Psalm\Type\Atomic\TCallableString;
 use Psalm\Type\Atomic\TClassConstant;
 use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TDecimalIntString;
+use Psalm\Type\Atomic\TDependentGetClass;
+use Psalm\Type\Atomic\TDependentGetDebugType;
+use Psalm\Type\Atomic\TDependentGetType;
 use Psalm\Type\Atomic\TEmptyNumeric;
 use Psalm\Type\Atomic\TEnumCase;
 use Psalm\Type\Atomic\TFalse;
@@ -70,6 +73,7 @@ use Psalm\Type\Atomic\TNonEmptyNonspecificLiteralString;
 use Psalm\Type\Atomic\TNonEmptyString;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TNumeric;
+use Psalm\Type\Atomic\TNumericString;
 use Psalm\Type\Atomic\TObject;
 use Psalm\Type\Atomic\TScalar;
 use Psalm\Type\Atomic\TString;
@@ -348,7 +352,23 @@ final class AssertionReconciler extends Reconciler
             return new Union([$new_type_part]);
         }
 
-        $refined_type = self::refine(
+        $refined_type = null;
+
+        if ($assertion instanceof IsLooselyEqual
+            && ($new_type_part instanceof TString
+                || $new_type_part instanceof TInt
+                || $new_type_part instanceof TFloat)
+        ) {
+            $refined_type = self::refineLooseScalarEquality(
+                $statements_analyzer,
+                $assertion,
+                $new_type_part,
+                $existing_var_type,
+                $negated,
+            );
+        }
+
+        $refined_type ??= self::refine(
             $statements_analyzer,
             $assertion,
             $new_type_part,
@@ -978,6 +998,162 @@ final class AssertionReconciler extends Reconciler
         }
 
         return $new_type ?: new Union([$new_type_part]);
+    }
+
+    /**
+     * A loose comparison with a non-literal int, float or string keeps the scalars of another kind that PHP juggles
+     * into an equal value (`1.0 == 1`, `"1" == 1.0`, `true == "a"`, `null == ""`), and refines the others as usual.
+     * Returns null when no part of the type is juggled, or when none can be equal.
+     */
+    private static function refineLooseScalarEquality(
+        StatementsAnalyzer $statements_analyzer,
+        IsLooselyEqual $assertion,
+        TString|TInt|TFloat $new_type_part,
+        Union $existing_var_type,
+        bool $negated,
+    ): ?Union {
+        $kept_types = [];
+        $refined_types = [];
+        $juggled = false;
+
+        foreach ($existing_var_type->getAtomicTypes() as $existing_type_part) {
+            if ($existing_type_part instanceof TTemplateParam) {
+                $as = self::refineLooseScalarEquality(
+                    $statements_analyzer,
+                    $assertion,
+                    $new_type_part,
+                    $existing_type_part->as,
+                    $negated,
+                );
+
+                if ($as === null) {
+                    $refined_types[] = $existing_type_part;
+                } else {
+                    $juggled = true;
+                    $kept_types[] = $existing_type_part->replaceAs($as);
+                }
+
+                continue;
+            }
+
+            $loosely_equal_type_part = self::getLooselyEqualJuggledAtomic($existing_type_part, $new_type_part);
+
+            if ($loosely_equal_type_part === null) {
+                $refined_types[] = $existing_type_part;
+            } else {
+                $juggled = true;
+
+                if ($loosely_equal_type_part !== false) {
+                    $kept_types[] = $loosely_equal_type_part;
+                }
+            }
+        }
+
+        if (!$juggled) {
+            return null;
+        }
+
+        if ($refined_types) {
+            $refined_type = new Union($refined_types);
+            $failed_reconciliation = Reconciler::RECONCILIATION_OK;
+
+            $refined_type = self::refine(
+                $statements_analyzer,
+                $assertion,
+                $new_type_part,
+                $refined_type,
+                null,
+                $negated,
+                null,
+                [],
+                $failed_reconciliation,
+            );
+
+            if (!$refined_type->isNever()) {
+                $kept_types = [...$kept_types, ...$refined_type->getAtomicTypes()];
+            }
+        }
+
+        return $kept_types ? new Union($kept_types) : null;
+    }
+
+    /**
+     * The part of a scalar that can be loosely equal to a value of another kind of scalar: null when they are of the
+     * same kind (or the type isn't a scalar), false when no value of it can be equal
+     *
+     * @psalm-pure
+     */
+    private static function getLooselyEqualJuggledAtomic(
+        Atomic $existing_type_part,
+        TString|TInt|TFloat $new_type_part,
+    ): Atomic|false|null {
+        if ($new_type_part instanceof TString) {
+            if ($existing_type_part instanceof TString) {
+                return null;
+            }
+
+            // class names, callable names and gettype() results are never numeric
+            $can_be_numeric = !$new_type_part instanceof TClassString
+                && !$new_type_part instanceof TCallableString
+                && !$new_type_part instanceof TTraitString
+                && !$new_type_part instanceof TDependentGetClass
+                && !$new_type_part instanceof TDependentGetType
+                && !$new_type_part instanceof TDependentGetDebugType;
+
+            if ($existing_type_part instanceof TBool || $existing_type_part instanceof TScalar) {
+                return $existing_type_part;
+            }
+
+            if ($existing_type_part instanceof TNull) {
+                // null is only equal to ""
+                return $can_be_numeric && !$new_type_part instanceof TNonEmptyString ? $existing_type_part : false;
+            }
+
+            if ($existing_type_part instanceof TInt
+                || $existing_type_part instanceof TFloat
+                || $existing_type_part instanceof TNumeric
+            ) {
+                return $can_be_numeric ? $existing_type_part : false;
+            }
+
+            if ($existing_type_part instanceof TArrayKey && $can_be_numeric) {
+                return $existing_type_part;
+            }
+
+            return null;
+        }
+
+        if ($new_type_part instanceof TInt
+            ? $existing_type_part instanceof TInt
+            : $existing_type_part instanceof TFloat
+        ) {
+            return null;
+        }
+
+        if ($existing_type_part instanceof TString) {
+            if ($existing_type_part instanceof TLiteralString) {
+                return is_numeric($existing_type_part->value) ? $existing_type_part : false;
+            }
+
+            return $existing_type_part instanceof TNumericString ? $existing_type_part : new TNumericString();
+        }
+
+        if ($existing_type_part instanceof TNull) {
+            // null is only equal to 0
+            return !$new_type_part instanceof TIntRange || $new_type_part->contains(0) ? $existing_type_part : false;
+        }
+
+        if ($existing_type_part instanceof TInt
+            || $existing_type_part instanceof TFloat
+            || $existing_type_part instanceof TNumeric
+            || $existing_type_part instanceof TScalar
+            || $existing_type_part instanceof TArrayKey
+            || $existing_type_part instanceof TBool
+        ) {
+            return $existing_type_part;
+        }
+
+        return null;
     }
 
     /**

@@ -7609,6 +7609,156 @@ final class ConditionalTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'looseEqualityWithAnIntFloatOrBoolKeepsTheOtherScalars' => [
+                'code' => '<?php
+                    /** @param numeric $n */
+                    function numericVsInt($n, int $i): void {
+                        if ($n == $i) {
+                            /** @psalm-check-type-exact $n = numeric */;
+                        }
+                    }
+
+                    /** @param numeric $n */
+                    function numericVsFloat($n, float $f): void {
+                        if ($n == $f) {
+                            /** @psalm-check-type-exact $n = numeric */;
+                        }
+                    }
+
+                    function intVsFloat(int $i, float $f): void {
+                        if ($i == $f) {
+                            /** @psalm-check-type-exact $i = int */;
+                        }
+                    }
+
+                    function nullableBoolVsFloat(?bool $b, float $f): void {
+                        if ($b == $f) {
+                            /** @psalm-check-type-exact $b = bool|null */;
+                        }
+                    }
+
+                    function calculatedIntVsFloat(int $i, float $f): void {
+                        $x = $i * 2;
+                        if ($x == $f) {
+                            /** @psalm-check-type-exact $x = int */;
+                        }
+                    }
+
+                    function scalarsVsBool(int|float|string|null $x, bool $b): void {
+                        if ($x == $b) {
+                            /** @psalm-check-type-exact $x = float|int|null|string */;
+                        }
+                    }
+
+                    /** @param positive-int $p */
+                    function scalarsVsPositiveInt(float|string|bool|null $x, int $p): void {
+                        if ($x == $p) {
+                            /** @psalm-check-type-exact $x = bool|float|numeric-string */;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'looseEqualityWithAStringSubtypeKeepsTheOtherScalars' => [
+                'code' => '<?php
+                    /** @param non-empty-string $s */
+                    function floatVsNonEmptyString(float $f, string $s): void {
+                        if ($f == $s) {
+                            /** @psalm-check-type-exact $f = float */;
+                        }
+                    }
+
+                    /** @param lowercase-string $s */
+                    function floatVsLowercaseString(float $f, string $s): void {
+                        if ($f == $s) {
+                            /** @psalm-check-type-exact $f = float */;
+                        }
+                    }
+
+                    /** @param numeric-string $s */
+                    function floatVsNumericString(float $f, string $s): void {
+                        if ($f == $s) {
+                            /** @psalm-check-type-exact $f = float */;
+                        }
+                    }
+
+                    /**
+                     * @param numeric $n
+                     * @param non-empty-string $s
+                     */
+                    function numericVsNonEmptyString($n, string $s): void {
+                        if ($n == $s) {
+                            /** @psalm-check-type-exact $n = numeric */;
+                        }
+                    }
+
+                    /** @param non-empty-string $s */
+                    function nullableIntOrStringVsNonEmptyString(int|string|null $x, string $s): void {
+                        if ($x == $s) {
+                            /** @psalm-check-type-exact $x = int|non-empty-string */;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'looseEqualityKeepsTheTemplatesWhoseBoundCanBeEqual' => [
+                'code' => '<?php
+                    /**
+                     * @template T of float|null
+                     * @param T $x
+                     */
+                    function floatTemplateVsString($x, string $s): void {
+                        if ($x == $s) {
+                            /** @psalm-check-type-exact $x = T */;
+                        }
+                    }
+
+                    /**
+                     * @template T of float
+                     * @param T $x
+                     */
+                    function floatTemplateVsInt($x, int $i): void {
+                        if ($x == $i) {
+                            /** @psalm-check-type-exact $x = T */;
+                        }
+                    }
+
+                    /**
+                     * @template T of int|null
+                     * @param T $x
+                     */
+                    function intTemplateVsFloat($x, float $f): void {
+                        if ($x == $f) {
+                            /** @psalm-check-type-exact $x = T */;
+                        }
+                    }
+
+                    /**
+                     * @template T of float
+                     * @param T $x
+                     * @param non-empty-string $s
+                     */
+                    function floatTemplateVsNonEmptyString($x, string $s): void {
+                        if ($x == $s) {
+                            /** @psalm-check-type-exact $x = T */;
+                        }
+                    }
+
+                    /**
+                     * @template T of int|bool
+                     * @param T $x
+                     */
+                    function templateVsBool($x, bool $b): void {
+                        if ($x == $b) {
+                            /** @psalm-check-type-exact $x = T */;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'issetOfAnOffsetStoredInAVariableSetsAPossiblyUndefinedMixedVariable' => [
                 'code' => '<?php
                     /** @return mixed */

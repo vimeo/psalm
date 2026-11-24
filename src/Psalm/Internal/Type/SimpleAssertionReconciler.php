@@ -537,16 +537,12 @@ final class SimpleAssertionReconciler extends Reconciler
             );
         }
 
-        if ($assertion_type instanceof TFloat) {
-            if ($existing_var_type->from_calculation
-                && $existing_var_type->hasInt()
-            ) {
-                return Type::getFloat();
-            }
-
-            if ($assertion instanceof IsLooselyEqual && $existing_var_type->isString()) {
-                return Type::getNumericString();
-            }
+        if ($assertion_type instanceof TFloat
+            && !$assertion instanceof IsLooselyEqual
+            && $existing_var_type->from_calculation
+            && $existing_var_type->hasInt()
+        ) {
+            return Type::getFloat();
         }
 
         if ($assertion_type instanceof TClassConstant) {
@@ -1081,6 +1077,24 @@ final class SimpleAssertionReconciler extends Reconciler
             } elseif ($type instanceof TScalar || $type instanceof TArrayKey) {
                 $string_types[] = new TString;
                 $redundant = false;
+            } elseif ($type instanceof TTemplateParam && $assertion instanceof IsLooselyEqual) {
+                $bound_failed_reconciliation = Reconciler::RECONCILIATION_OK;
+                $as = self::reconcileString(
+                    $assertion,
+                    $type->as,
+                    null,
+                    false,
+                    null,
+                    $suppressed_issues,
+                    $bound_failed_reconciliation,
+                    $is_equality,
+                );
+
+                if (!$as->isNever()) {
+                    $string_types[] = $type->replaceAs($as);
+                }
+
+                $redundant = false;
             } elseif ($type instanceof TTemplateParam) {
                 $bound = self::getTemplateBound($type);
 
@@ -1169,11 +1183,26 @@ final class SimpleAssertionReconciler extends Reconciler
                 if ($existing_var_type->from_calculation) {
                     $redundant = false;
                 }
-            } elseif ($type instanceof TNumeric) {
-                $int_types[] = new TInt;
+            } elseif ($type instanceof TNumeric || $type instanceof TScalar || $type instanceof TArrayKey) {
+                // a non-strict comparison with an int juggles the types: `"1" == 1`, `1.0 == 1`
+                $int_types[] = $assertion instanceof IsLooselyEqual ? $type : new TInt;
                 $redundant = false;
-            } elseif ($type instanceof TScalar || $type instanceof TArrayKey) {
-                $int_types[] = new TInt;
+            } elseif ($type instanceof TTemplateParam && $assertion instanceof IsLooselyEqual) {
+                $bound_failed_reconciliation = Reconciler::RECONCILIATION_OK;
+                $as = self::reconcileInt(
+                    $assertion,
+                    $type->as,
+                    null,
+                    false,
+                    null,
+                    $suppressed_issues,
+                    $bound_failed_reconciliation,
+                );
+
+                if (!$as->isNever()) {
+                    $int_types[] = $type->replaceAs($as);
+                }
+
                 $redundant = false;
             } elseif ($type instanceof TTemplateParam) {
                 $bound = self::getTemplateBound($type);
@@ -1237,6 +1266,11 @@ final class SimpleAssertionReconciler extends Reconciler
         int &$failed_reconciliation,
         bool $is_equality,
     ): Union {
+        // every value is loosely equal to true or to false
+        if ($assertion instanceof IsLooselyEqual) {
+            return $existing_var_type;
+        }
+
         if ($existing_var_type->hasMixed()) {
             return Type::getBool();
         }
