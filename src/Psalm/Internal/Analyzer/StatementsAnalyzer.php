@@ -46,11 +46,13 @@ use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\Codebase\VariableUseGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
+use Psalm\Internal\Perf;
 use Psalm\Internal\Provider\NodeDataProvider;
 use Psalm\Internal\Provider\TypeVariableResolvingNodeTypeProvider;
 use Psalm\Internal\ReferenceConstraint;
 use Psalm\Internal\Scanner\ParsedDocblock;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
+use Psalm\Internal\Type\TypeExpander;
 use Psalm\Internal\Type\TypeParser;
 use Psalm\Internal\Type\TypeTokenizer;
 use Psalm\Internal\Type\TypeVariableTracker;
@@ -86,7 +88,9 @@ use function assert;
 use function count;
 use function explode;
 use function fwrite;
+use function hrtime;
 use function is_string;
+use function preg_match;
 use function preg_replace;
 use function preg_split;
 use function reset;
@@ -294,7 +298,17 @@ final class StatementsAnalyzer extends SourceAnalyzer
             }
 
             foreach ($stmts as $stmt) {
-                if (self::analyzeStatement($this, $stmt, $context, $global_context) === false) {
+                if (Perf\Collector::$enabled) {
+                    $perf_outer_child_ns = Perf\Collector::$child_ns;
+                    Perf\Collector::$child_ns = 0;
+                    $perf_start_ns = (int) hrtime(true);
+                    $analysis_result = self::analyzeStatement($this, $stmt, $context, $global_context);
+                    Perf\Collector::statementEnd($this, $stmt, $perf_start_ns, $perf_outer_child_ns);
+
+                    if ($analysis_result === false) {
+                        return false;
+                    }
+                } elseif (self::analyzeStatement($this, $stmt, $context, $global_context) === false) {
                     return false;
                 }
 
@@ -440,6 +454,67 @@ final class StatementsAnalyzer extends SourceAnalyzer
     }
 
     /**
+     * The type of a static property a trace names (`self::$items`, `Foo::$items`): what the context knows of it, or
+     * its declared type
+     */
+    private static function getStaticPropertyTraceType(
+        StatementsAnalyzer $statements_analyzer,
+        Context $context,
+        string $traced_variable,
+    ): ?Union {
+        if (preg_match('/^([\\w\\\\]+)::\\$(\\w+)$/D', $traced_variable, $matches) !== 1) {
+            return null;
+        }
+
+        [, $class_name, $property_name] = $matches;
+        $codebase = $statements_analyzer->getCodebase();
+
+        $fq_class_name = match (strtolower($class_name)) {
+            'self', 'static' => $context->self,
+            'parent' => $statements_analyzer->getParentFQCLN(),
+            default => Type::getFQCLNFromString($class_name, $statements_analyzer->getAliases()),
+        };
+
+        if ($fq_class_name === null || !$codebase->classOrInterfaceOrEnumExists($fq_class_name)) {
+            return null;
+        }
+
+        $property_id = $fq_class_name . '::$' . $property_name;
+
+        // `static::$x` is kept under its own key, which the caller has already looked up
+        if (strtolower($class_name) !== 'static' && isset($context->vars_in_scope[$property_id])) {
+            return $context->vars_in_scope[$property_id];
+        }
+
+        $declaring_class = $codebase->properties->getDeclaringClassForProperty(
+            $property_id,
+            true,
+            $statements_analyzer,
+        );
+
+        if ($declaring_class === null) {
+            return null;
+        }
+
+        $class_storage = $codebase->classlike_storage_provider->get($declaring_class);
+        $property = $class_storage->properties[$property_name];
+
+        if (!$property->is_static) {
+            return null;
+        }
+
+        return $property->type
+            ? TypeExpander::expandUnion(
+                $codebase,
+                $property->type,
+                $class_storage->name,
+                $class_storage->name,
+                $class_storage->parent_class,
+            )
+            : Type::getMixed();
+    }
+
+    /**
      * @param list<array{string, bool}> $checked_types
      */
     private static function analyzeCheckedTypes(
@@ -483,7 +558,7 @@ final class StatementsAnalyzer extends SourceAnalyzer
                     try {
                         $checked_type = $context->vars_in_scope[$checked_var_id];
 
-                        $path = $statements_analyzer->getRootFilePath();
+                        $path = $statements_analyzer->getFilePath();
                         $file_storage = $codebase->file_storage_provider->get($path);
 
                         $check_tokens = TypeTokenizer::getFullyQualifiedTokens(
@@ -635,7 +710,17 @@ final class StatementsAnalyzer extends SourceAnalyzer
 
         $checked_types = [];
         $hasParsed = false;
-        foreach ($stmt->getComments() as $docblock) {
+
+        $comments = $stmt->getComments();
+
+        // a short echo tag has no room for a docblock before it: one before an echoed expression is the echo's
+        if ($stmt instanceof PhpParser\Node\Stmt\Echo_) {
+            foreach ($stmt->exprs as $echoed_expr) {
+                $comments = [...$comments, ...$echoed_expr->getComments()];
+            }
+        }
+
+        foreach ($comments as $docblock) {
             if (!$docblock instanceof Doc) {
                 continue;
             }
@@ -674,7 +759,9 @@ final class StatementsAnalyzer extends SourceAnalyzer
             if (isset($statements_analyzer->parsed_docblock->tags['psalm-suppress'])) {
                 $suppressed = $statements_analyzer->parsed_docblock->tags['psalm-suppress'];
                 if ($suppressed) {
-                    $new_issues = ExpressionAnalyzer::addSuppressions($statements_analyzer, $suppressed);
+                    // the suppressions of every docblock of the statement are removed after it
+                    $new_issues = ($new_issues ?? [])
+                        + ExpressionAnalyzer::addSuppressions($statements_analyzer, $suppressed);
                 }
             }
 
@@ -685,7 +772,7 @@ final class StatementsAnalyzer extends SourceAnalyzer
                 && !$stmt instanceof PhpParser\Node\Stmt\Return_
                 && !$stmt instanceof PhpParser\Node\Stmt\Property
             ) {
-                $file_path = $statements_analyzer->getRootFilePath();
+                $file_path = $statements_analyzer->getFilePath();
 
                 $file_storage_provider = $codebase->file_storage_provider;
 
@@ -868,10 +955,13 @@ final class StatementsAnalyzer extends SourceAnalyzer
         }
 
         foreach ($traced_variables as $traced_variable) {
-            if (isset($context->vars_in_scope[$traced_variable])) {
+            $traced_type = $context->vars_in_scope[$traced_variable]
+                ?? self::getStaticPropertyTraceType($statements_analyzer, $context, $traced_variable);
+
+            if ($traced_type !== null) {
                 IssueBuffer::maybeAdd(
                     new Trace(
-                        $traced_variable . ': ' . $context->vars_in_scope[$traced_variable]->getId(),
+                        $traced_variable . ': ' . $traced_type->getId(),
                         new CodeLocation($statements_analyzer->source, $stmt),
                     ),
                     $statements_analyzer->getSuppressedIssues(),
@@ -1312,6 +1402,34 @@ final class StatementsAnalyzer extends SourceAnalyzer
     public function getBranchPoint(string $var_id): ?int
     {
         return $this->var_branch_points[$var_id] ?? null;
+    }
+
+    /**
+     * Whether the mixed and non-mixed counts (the inferred-type percentage) include
+     * the expressions analysed here: not in initialization passes, included files,
+     * or trait methods (they are analysed once per using class).
+     *
+     * @psalm-mutation-free
+     */
+    public function shouldCountMixed(Context $context): bool
+    {
+        return !$context->collect_initializations
+            && $this->getFilePath() === $this->getRootFilePath()
+            && (!(($parent_source = $this->getSource()) instanceof FunctionLikeAnalyzer)
+                || !$parent_source->getSource() instanceof TraitAnalyzer);
+    }
+
+    public function countMixed(Context $context, bool $is_mixed): void
+    {
+        if (!$this->shouldCountMixed($context)) {
+            return;
+        }
+
+        if ($is_mixed) {
+            $this->codebase->analyzer->incrementMixedCount($this->getFilePath());
+        } else {
+            $this->codebase->analyzer->incrementNonMixedCount($this->getFilePath());
+        }
     }
 
     /**

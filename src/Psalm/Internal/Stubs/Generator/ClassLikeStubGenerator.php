@@ -14,11 +14,15 @@ use Psalm\Node\Stmt\VirtualClassMethod;
 use Psalm\Node\Stmt\VirtualInterface;
 use Psalm\Node\Stmt\VirtualProperty;
 use Psalm\Node\Stmt\VirtualTrait;
+use Psalm\Node\Stmt\TraitUseAdaptation\VirtualAlias;
+use Psalm\Node\Stmt\TraitUseAdaptation\VirtualPrecedence;
+use Psalm\Node\Stmt\VirtualTraitUse;
 use Psalm\Node\VirtualConst;
 use Psalm\Node\VirtualIdentifier;
 use Psalm\Node\VirtualPropertyItem;
 use Psalm\Storage\ClassConstantStorage;
 use Psalm\Storage\ClassLikeStorage;
+use Psalm\Storage\TemplateVariance;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Scanner\ParsedDocblock;
 use Psalm\Type;
@@ -28,11 +32,15 @@ use Psalm\Type\Union;
 
 use ReflectionProperty;
 use UnexpectedValueException;
+use function array_keys;
+use function array_map;
 use function array_slice;
+use function array_values;
 use function in_array;
 use function is_int;
 use function is_string;
 use function rtrim;
+use function strtolower;
 
 /**
  * @internal
@@ -47,20 +55,40 @@ final class ClassLikeStubGenerator
         ClassLikeStorage $storage,
         string $classlike_name
     ) : PhpParser\Node\Stmt\ClassLike {
+        $trait_uses = $storage->used_traits
+            ? [new VirtualTraitUse(
+                array_map(
+                    static fn(string $trait): VirtualFullyQualified => new VirtualFullyQualified($trait),
+                    array_values($storage->used_traits),
+                ),
+                self::getTraitAdaptations($codebase, $storage),
+            )]
+            : [];
+
         $subnodes = [
-            'stmts' => [...self::getConstantNodes($codebase, $storage), ...self::getPropertyNodes($storage), ...self::getMethodNodes($storage)]
+            'stmts' => [
+                ...$trait_uses,
+                ...self::getConstantNodes($codebase, $storage),
+                ...self::getPropertyNodes($storage),
+                ...self::getMethodNodes($storage),
+            ]
         ];
 
-        $docblock = new ParsedDocblock('', []);
+        // one line for each template in the declared order, which is the order of the type arguments
+        $template_lines = [];
 
         $template_offset = 0;
 
         foreach ($storage->template_types ?: [] as $template_name => $map) {
             $type = array_values($map)[0];
 
-            $key = isset($storage->template_covariants[$template_offset]) ? 'template-covariant' : 'template';
+            $key = match ($storage->getTemplateVariance($template_offset)) {
+                TemplateVariance::Invariant => 'template',
+                TemplateVariance::Covariant => 'template-covariant',
+                TemplateVariance::Contravariant => 'template-contravariant',
+            };
 
-            $docblock->tags[$key][] = $template_name . ' as ' . $type->toNamespacedString(
+            $template_lines[] = ' * @' . $key . ' ' . $template_name . ' as ' . $type->toNamespacedString(
                 null,
                 [],
                 null,
@@ -71,12 +99,8 @@ final class ClassLikeStubGenerator
         }
 
         $attrs = [
-            'comments' => $docblock->tags
-                ? [
-                    new PhpParser\Comment\Doc(
-                        rtrim($docblock->render('        '))
-                    )
-                ]
+            'comments' => $template_lines
+                ? [new PhpParser\Comment\Doc("/**\n" . implode("\n", $template_lines) . "\n */")]
                 : []
         ];
 
@@ -179,6 +203,86 @@ final class ClassLikeStubGenerator
             $subnodes,
             $attrs
         );
+    }
+
+    /**
+     * The `insteadof` and `as` rules of the trait use, rebuilt from what the storage keeps of them
+     *
+     * @return list<PhpParser\Node\Stmt\TraitUseAdaptation>
+     */
+    private static function getTraitAdaptations(Codebase $codebase, ClassLikeStorage $storage): array
+    {
+        $adaptations = [];
+
+        foreach ($storage->trait_excluded_methods as $method_name => $excluded_traits) {
+            foreach ($storage->used_traits as $trait_lc => $trait) {
+                if (isset($excluded_traits[$trait_lc])
+                    || !$codebase->classlike_storage_provider->has($trait)
+                    || !isset($codebase->classlike_storage_provider->get($trait)->declaring_method_ids[$method_name])
+                ) {
+                    continue;
+                }
+
+                $adaptations[] = new VirtualPrecedence(
+                    new VirtualFullyQualified($trait),
+                    $method_name,
+                    array_map(
+                        static fn(string $excluded): VirtualFullyQualified => new VirtualFullyQualified(
+                            $storage->used_traits[$excluded] ?? $excluded,
+                        ),
+                        array_keys($excluded_traits),
+                    ),
+                );
+
+                break;
+            }
+        }
+
+        $aliased = [];
+
+        foreach ($storage->trait_alias_map_cased as $alias => $method_name) {
+            $alias_lc = strtolower($alias);
+            $aliased[$alias_lc] = true;
+            $trait_lc = $storage->trait_alias_trait_map[$alias_lc] ?? null;
+
+            $adaptations[] = new VirtualAlias(
+                $trait_lc !== null ? new VirtualFullyQualified($storage->used_traits[$trait_lc] ?? $trait_lc) : null,
+                $method_name,
+                self::getTraitModifier($storage, $alias_lc),
+                $alias,
+            );
+        }
+
+        // `use T { f as protected; }` changes the visibility of the method without an alias
+        foreach ($storage->trait_visibility_map + $storage->trait_final_map as $method_name => $_) {
+            if (!isset($aliased[$method_name])) {
+                $adaptations[] = new VirtualAlias(
+                    null,
+                    $method_name,
+                    self::getTraitModifier($storage, $method_name),
+                    null,
+                );
+            }
+        }
+
+        return $adaptations;
+    }
+
+    /**
+     * @psalm-capabilities read-props
+     */
+    private static function getTraitModifier(ClassLikeStorage $storage, string $name_lc): ?int
+    {
+        if (isset($storage->trait_final_map[$name_lc])) {
+            return PhpParser\Modifiers::FINAL;
+        }
+
+        return match ($storage->trait_visibility_map[$name_lc] ?? null) {
+            ClassLikeAnalyzer::VISIBILITY_PUBLIC => PhpParser\Modifiers::PUBLIC,
+            ClassLikeAnalyzer::VISIBILITY_PROTECTED => PhpParser\Modifiers::PROTECTED,
+            ClassLikeAnalyzer::VISIBILITY_PRIVATE => PhpParser\Modifiers::PRIVATE,
+            default => null,
+        };
     }
 
     /**

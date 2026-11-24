@@ -43,16 +43,19 @@ use Psalm\Type\Atomic\TNonEmptyArray;
 use Psalm\Type\Atomic\TNumericString;
 use Psalm\Type\Atomic\TObjectWithProperties;
 use Psalm\Type\Atomic\TString;
+use Psalm\Type\Atomic\TTemplateKeyOf;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTrue;
 use Psalm\Type\TaintKind;
 use Psalm\Type\Union;
 
 use function count;
+use function filter_var;
 use function is_int;
 use function is_string;
 use function substr;
 
+use const FILTER_VALIDATE_INT;
 use const PHP_INT_MAX;
 
 /**
@@ -168,6 +171,7 @@ final class ArrayAnalyzer
                     && !$atomic_key_type instanceof TInt
                     && !$atomic_key_type instanceof TArrayKey
                     && !$atomic_key_type instanceof TTemplateParam
+                    && !$atomic_key_type instanceof TTemplateKeyOf
                     && !(
                         $atomic_key_type instanceof TObjectWithProperties
                         && isset($atomic_key_type->methods['__tostring'])
@@ -235,9 +239,10 @@ final class ArrayAnalyzer
         }
 
         // only an int in its canonical decimal form is cast to an int, e.g. not '015', '+5', '5 ' or '-0'
-        $int_array_key = (int) $literal_array_key;
+        // (int) warns on PHP 8.5.0 and 8.5.1 for strings like '6e5212ed-...' that parse as an out-of-range float
+        $int_array_key = filter_var($literal_array_key, FILTER_VALIDATE_INT);
 
-        return (string) $int_array_key === $literal_array_key ? $int_array_key : false;
+        return $int_array_key !== false && (string) $int_array_key === $literal_array_key ? $int_array_key : false;
     }
 
     /**
@@ -609,6 +614,8 @@ final class ArrayAnalyzer
         }
 
         if ($item->byRef) {
+            AssignmentAnalyzer::checkConstantObjectWrite($statements_analyzer, $item->value);
+
             $var_id = ExpressionIdentifier::getExtendedVarId(
                 $item->value,
                 $statements_analyzer->getFQCLN(),

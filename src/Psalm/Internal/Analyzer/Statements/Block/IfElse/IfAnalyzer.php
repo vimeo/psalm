@@ -45,7 +45,6 @@ use function array_reduce;
 use function count;
 use function in_array;
 use function preg_match;
-use function preg_quote;
 use function spl_object_id;
 use function str_ends_with;
 
@@ -96,6 +95,18 @@ final class IfAnalyzer
             $omit_keys = array_combine($omit_keys, $omit_keys);
             $omit_keys = array_diff_key($omit_keys, Algebra::getTruthsFromFormula($outer_context->clauses));
 
+            // the outer clauses only get in the way when they assert something of the variable the condition doesn't,
+            // except for the cases a switch falls through, whose conditions the case they fall into checks
+            if (!$stmt->getAttribute('switchFallthrough')) {
+                foreach ($reconcilable_if_types as $var_id => $anded_types) {
+                    if (count(array_intersect_key($anded_types, $active_if_types[$var_id] ?? []))
+                        === count($anded_types)
+                    ) {
+                        unset($omit_keys[$var_id]);
+                    }
+                }
+            }
+
             $cond_referenced_var_ids = array_diff_key(
                 $cond_referenced_var_ids,
                 $omit_keys,
@@ -105,6 +116,7 @@ final class IfAnalyzer
         // if the if has an || in the conditional, we cannot easily reason about it
         if ($reconcilable_if_types) {
             $changed_var_ids = [];
+            $types_before = $if_context->vars_in_scope;
 
             [$if_context->vars_in_scope, $if_context->references_in_scope] = Reconciler::reconcileKeyedTypes(
                 $reconcilable_if_types,
@@ -140,9 +152,21 @@ final class IfAnalyzer
 
                 foreach ($changed_var_ids as $changed_var_id => $_) {
                     foreach ($if_context->vars_in_scope as $var_id => $_) {
-                        if (preg_match('/' . preg_quote($changed_var_id, '/') . '[\]\[\-]/', $var_id)
+                        if (Reconciler::dependsOnNarrowedVar(
+                            $statements_analyzer->getCodebase(),
+                            $var_id,
+                            $changed_var_id,
+                            $if_context->vars_in_scope,
+                        )
                             && !array_key_exists($var_id, $changed_var_ids)
                             && !array_key_exists($var_id, $cond_referenced_var_ids)
+                            && !Reconciler::narrowingKeepsProperty(
+                                $statements_analyzer->getCodebase(),
+                                $types_before[$changed_var_id] ?? null,
+                                $if_context->vars_in_scope[$changed_var_id] ?? null,
+                                $changed_var_id,
+                                $var_id,
+                            )
                         ) {
                             $if_context->removePossibleReference($var_id);
                         }

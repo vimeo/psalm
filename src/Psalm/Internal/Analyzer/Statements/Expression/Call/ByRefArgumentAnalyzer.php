@@ -9,6 +9,7 @@ use PhpParser\Node\Arg;
 use PhpParser\Node\Expr;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\Statements\Expression\AssignmentAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodCallPurityAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Storage\Capabilities;
 use Psalm\Storage\FunctionLikeParameter;
@@ -176,17 +177,17 @@ final class ByRefArgumentAnalyzer
         }
 
         if ($root instanceof Expr\PropertyFetch) {
+            $is_this = MethodCallPurityAnalyzer::isReceiverThis($root->var);
+
             // a property of an object nobody else holds, like a fresh clone, is like a local
-            if ($statements_analyzer->node_data->isPureCompatible($root->var)) {
+            if (!$is_this && $statements_analyzer->node_data->isPureCompatible($root->var)) {
                 return Capabilities::NONE;
             }
 
             $object_type = $statements_analyzer->node_data->getType($root->var);
             $on_global_state = $object_type !== null && $object_type->from_global_state;
 
-            $capabilities = $root->var instanceof Expr\Variable && $root->var->name === 'this'
-                ? Capabilities::WRITE_THIS_PROPS
-                : Capabilities::WRITE_PROPS;
+            $capabilities = $is_this ? Capabilities::WRITE_THIS_PROPS : Capabilities::WRITE_PROPS;
 
             return $on_global_state ? $capabilities | Capabilities::WRITE_GLOBALS : $capabilities;
         }

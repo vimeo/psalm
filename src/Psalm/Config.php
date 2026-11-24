@@ -42,6 +42,7 @@ use Psalm\Internal\Fork\IgbinarySerializer;
 use Psalm\Internal\GzipSerializer;
 use Psalm\Internal\IncludeCollector;
 use Psalm\Internal\Lz4Serializer;
+use Psalm\Internal\Perf;
 use Psalm\Internal\Provider\AddRemoveTaints\HtmlFunctionTainter;
 use Psalm\Internal\Provider\AddRemoveTaints\JsonEncodeTainter;
 use Psalm\Internal\Scanner\FileScanner;
@@ -109,6 +110,7 @@ use function getcwd;
 use function getenv;
 use function glob;
 use function hash;
+use function hrtime;
 use function implode;
 use function in_array;
 use function interface_exists;
@@ -205,7 +207,6 @@ final class Config
     private const FIRST_PARTY_PLUGINS = [
         'phpunit/phpunit' => 'Psalm\PhpUnitPlugin\Plugin',
         'mockery/mockery' => 'Psalm\MockeryPlugin\Plugin',
-        'symfony/framework-bundle' => 'Psalm\SymfonyPsalmPlugin\Plugin',
         'laravel/framework' => 'Psalm\LaravelPlugin\Plugin',
         'orchestra/testbench' => 'Psalm\LaravelPlugin\Plugin',
         'doctrine/orm' => 'Weirdan\DoctrinePsalmPlugin\Plugin',
@@ -684,6 +685,7 @@ final class Config
         "mysqli" => null,
         "openssl" => null,
         "pdo" => null,
+        "pgsql" => null,
         "protobuf" => null,
         "random" => null,
         "rdkafka" => null,
@@ -1231,7 +1233,6 @@ final class Config
     /**
      * @param non-empty-string $file_contents
      * @psalm-suppress MixedAssignment
-     * @psalm-suppress MixedPropertyFetch
      * @throws ConfigException
      */
     private static function fromXmlAndPaths(
@@ -1660,14 +1661,12 @@ final class Config
         }
 
         if (isset($config_xml->mockClasses) && isset($config_xml->mockClasses->class)) {
-            /** @var SimpleXMLElement $mock_class */
             foreach ($config_xml->mockClasses->class as $mock_class) {
                 $config->mock_classes[] = strtolower((string)$mock_class['name']);
             }
         }
 
         if (isset($config_xml->universalObjectCrates) && isset($config_xml->universalObjectCrates->class)) {
-            /** @var SimpleXMLElement $universal_object_crate */
             foreach ($config_xml->universalObjectCrates->class as $universal_object_crate) {
                 $classString = (string) $universal_object_crate['name'];
                 $config->addUniversalObjectCrate($classString);
@@ -1698,21 +1697,18 @@ final class Config
         }
 
         if (isset($config_xml->unsuppressibleIssues) && isset($config_xml->unsuppressibleIssues->issue)) {
-            /** @var SimpleXMLElement $unsuppressible_issue */
             foreach ($config_xml->unsuppressibleIssues->issue as $unsuppressible_issue) {
                 $config->addUnsuppressibleIssue((string) $unsuppressible_issue['name']);
             }
         }
 
         if (isset($config_xml->forbiddenFunctions) && isset($config_xml->forbiddenFunctions->function)) {
-            /** @var SimpleXMLElement $forbidden_function */
             foreach ($config_xml->forbiddenFunctions->function as $forbidden_function) {
                 $config->forbidden_functions[strtolower((string) $forbidden_function['name'])] = true;
             }
         }
 
         if (isset($config_xml->forbiddenConstants) && isset($config_xml->forbiddenConstants->constant)) {
-            /** @var SimpleXMLElement $forbidden_function */
             foreach ($config_xml->forbiddenConstants->constant as $forbidden_function) {
                 $config->forbidden_constants[(string) $forbidden_function['name']] = true;
             }
@@ -1799,7 +1795,7 @@ final class Config
 
             foreach (['require', 'require-dev'] as $section) {
                 foreach ($composer_json[$section] ?? [] as $package => $_) {
-                    $plugin_class_name = self::FIRST_PARTY_PLUGINS[strtolower((string) $package)] ?? null;
+                    $plugin_class_name = self::getFirstPartyPluginClass(strtolower((string) $package));
                     if ($plugin_class_name !== null) {
                         $library_plugin_classes[] = $plugin_class_name;
                     }
@@ -1844,7 +1840,6 @@ final class Config
         }
 
         if (isset($config_xml->globals) && isset($config_xml->globals->var)) {
-            /** @var SimpleXMLElement $var */
             foreach ($config_xml->globals->var as $var) {
                 $config->globals['$' . (string) $var['name']] = (string) $var['type'];
             }
@@ -1860,6 +1855,21 @@ final class Config
         }
 
         return $config;
+    }
+
+    /**
+     * The first-party plugin of a library composer.json requires (see loadLibraryPlugins): that of any Symfony
+     * package but the polyfills, which libraries require without using Symfony
+     *
+     * @psalm-pure
+     */
+    private static function getFirstPartyPluginClass(string $package): ?string
+    {
+        if (str_starts_with($package, 'symfony/') && !str_starts_with($package, 'symfony/polyfill-')) {
+            return 'Psalm\SymfonyPsalmPlugin\Plugin';
+        }
+
+        return self::FIRST_PARTY_PLUGINS[$package] ?? null;
     }
 
     /**
@@ -2219,7 +2229,12 @@ final class Config
             }
 
             try {
+                $perf_start = Perf\Collector::$enabled ? (int) hrtime(true) : 0;
                 $plugin($socket, $plugin_config);
+
+                if ($perf_start !== 0) {
+                    Perf\Collector::pluginInit($plugin_class_name, $perf_start);
+                }
             } catch (Throwable $t) {
                 throw new ConfigException(
                     'Failed to invoke plugin ' . $plugin_class_name,
@@ -2257,8 +2272,17 @@ final class Config
 
         foreach ($this->plugin_paths as $path) {
             try {
+                $perf_start = Perf\Collector::$enabled ? (int) hrtime(true) : 0;
                 $plugin = new FileBasedPluginAdapter($path, $this, $codebase);
                 $plugin($socket);
+
+                if ($perf_start !== 0) {
+                    $declared = array_values(ClassLikeAnalyzer::getClassesForFile(
+                        $codebase,
+                        str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $path),
+                    ));
+                    Perf\Collector::pluginInit($declared[0] ?? $path, $perf_start);
+                }
             } catch (Throwable $e) {
                 throw new ConfigException('Failed to load plugin ' . $path, 0, $e);
             }
@@ -2637,18 +2661,14 @@ final class Config
             }
         }
 
-        if (!$this->report_info && $reporting_level === self::REPORT_INFO) {
-            $reporting_level = self::REPORT_SUPPRESS;
-        }
-
         $parent_issue_type = self::getParentIssueType($issue_type);
 
         if ($parent_issue_type && $reporting_level === self::REPORT_ERROR) {
-            $parent_reporting_level = $this->getReportingLevelForFile($parent_issue_type, $e->getFilePath());
+            $reporting_level = $this->getReportingLevelForFile($parent_issue_type, $e->getFilePath());
+        }
 
-            if ($parent_reporting_level !== $reporting_level) {
-                return $parent_reporting_level;
-            }
+        if (!$this->report_info && $reporting_level === self::REPORT_INFO) {
+            $reporting_level = self::REPORT_SUPPRESS;
         }
 
         return $reporting_level;
@@ -2849,7 +2869,6 @@ final class Config
                 // so we should also check reporting levels for the symbol in global scope
                 $root_function_id = (string) preg_replace('/.*\\\/', '', $function_id);
                 if ($root_function_id !== $function_id) {
-                    /** @psalm-suppress PossiblyUndefinedStringArrayOffset https://github.com/vimeo/psalm/issues/7656 */
                     $level = $this->issue_handlers[$issue_type]->getReportingLevelForFunction($root_function_id);
                 }
             }
@@ -3044,7 +3063,7 @@ final class Config
 
         $codebase->register_stub_files = true;
 
-        $codebase->scanFiles();
+        $codebase->scanFiles(1, 'scan.stubs');
 
         $codebase->register_stub_files = false;
 
@@ -3088,7 +3107,7 @@ final class Config
         }
 
         if ($library_stubs !== []) {
-            $codebase->scanFiles();
+            $codebase->scanFiles(1, 'scan.stubs');
         }
 
         $codebase->register_stub_files = true;
@@ -3196,7 +3215,7 @@ final class Config
 
         $progress->debug('Registering stub files' . "\n");
 
-        $codebase->scanFiles();
+        $codebase->scanFiles(1, 'scan.stubs');
 
         $progress->debug('Finished registering stub files' . "\n");
 
@@ -3921,6 +3940,16 @@ final class Config
     public function addPreloadedStubFile(string $stub_file): void
     {
         $this->preloaded_stub_files[$stub_file] = $stub_file;
+    }
+
+    /**
+     * The stub files whose classes are loaded before the project is scanned (`preloadClasses="true"`)
+     *
+     * @return array<string, string>
+     */
+    public function getPreloadedStubFiles(): array
+    {
+        return $this->preloaded_stub_files;
     }
 
     public function getPhpVersion(): ?string

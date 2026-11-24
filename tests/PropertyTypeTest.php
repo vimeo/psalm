@@ -15,6 +15,9 @@ use Psalm\IssueBuffer;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
+use function array_column;
+use function sort;
+
 use const DIRECTORY_SEPARATOR;
 use const PHP_VERSION_ID;
 
@@ -704,6 +707,57 @@ final class PropertyTypeTest extends TestCase
         self::assertSame(['UndefinedDocblockClass src' . DIRECTORY_SEPARATOR . 'parent.php:7'], $issues);
     }
 
+    public function testCodeAfterAnInvalidStaticPropertyAssignmentIsAnalyzed(): void
+    {
+        $this->testConfig->throw_exception = false;
+
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile($file_path, '<?php
+            final class S {
+                public static int $x = 0;
+                /** @var list<int> */
+                public static array $l = [];
+            }
+
+            function possiblyInvalid(int|float $v): void {
+                S::$x = $v;
+                undefinedFunction1();
+            }
+
+            function invalid(float $v): void {
+                S::$x = $v;
+                undefinedFunction2();
+            }
+
+            function invalidOffset(): void {
+                S::$l[] = "x";
+                undefinedFunction3();
+            }
+        ');
+
+        $this->project_analyzer->setPhpVersion('8.0', 'tests');
+        $this->analyzeFile($file_path, new Context());
+
+        $issues = [];
+
+        foreach (IssueBuffer::getIssuesDataForFile($file_path) as $issue) {
+            $issues[] = $issue->type . ':' . $issue->line_from;
+        }
+
+        self::assertSame(
+            [
+                'PossiblyInvalidPropertyAssignmentValue:9',
+                'UndefinedFunction:10',
+                'InvalidPropertyAssignmentValue:14',
+                'UndefinedFunction:15',
+                'InvalidPropertyAssignmentValue:19',
+                'UndefinedFunction:20',
+            ],
+            $issues,
+        );
+    }
+
     /**
      * @return iterable<string, array{string}>
      * @psalm-pure
@@ -752,6 +806,33 @@ final class PropertyTypeTest extends TestCase
         self::assertSame('int', $context->vars_in_scope['$entityCount']->getId(true));
     }
 
+    public function testPossiblyNullAndPossiblyFalseAssignmentsToAPropertyAreBothReported(): void
+    {
+        $this->project_analyzer->getConfig()->throw_exception = false;
+
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                final class A {
+                    public int $i = 0;
+
+                    /** @param int|null|false $i */
+                    public function set($i): void {
+                        $this->i = $i;
+                    }
+                }',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+
+        $types = array_column(IssueBuffer::getIssuesDataForFile($file_path), 'type');
+        sort($types);
+
+        self::assertSame(['PossiblyFalsePropertyAssignmentValue', 'PossiblyNullPropertyAssignmentValue'], $types);
+    }
+
     /**
      * @psalm-pure
      */
@@ -797,6 +878,56 @@ final class PropertyTypeTest extends TestCase
                 'assertions' => [],
                 'ignored_issues' => [],
                 'php_version' => '8.1',
+            ],
+            'propertyInitialisedByParentConstructorInEveryNonThrowingBranch' => [
+                'code' => '<?php
+                    class X {
+                        public string $y;
+
+                        public function __construct(string $y)
+                        {
+                            $this->y = $y;
+                        }
+                    }
+
+                    final class Y extends X {
+                        public function __construct(string $y)
+                        {
+                            if ($y === \'a\' || $y === \'b\' || $y === \'c\') {
+                                parent::__construct($y);
+                            } else {
+                                throw new InvalidArgumentException();
+                            }
+                        }
+                    }
+
+                    final class Z extends X {
+                        public function __construct(string $y)
+                        {
+                            switch ($y) {
+                                case \'a\':
+                                case \'b\':
+                                case \'c\':
+                                    parent::__construct($y);
+                                    return;
+                                default:
+                                    throw new InvalidArgumentException();
+                            }
+                        }
+                    }
+
+                    final class ZZ extends X {
+                        public function __construct(string $y)
+                        {
+                            match ($y) {
+                                \'a\', \'b\', \'c\' => parent::__construct($y),
+                                default => throw new InvalidArgumentException()
+                            };
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'propertySetInConstructorStaysSetAfterAnIfNarrowingThis' => [
                 'code' => '<?php
@@ -4882,6 +5013,108 @@ final class PropertyTypeTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'nullOfAValueDoesNotMakeItPossiblyValidForANullableTemplateProperty' => [
+                'code' => '<?php
+                    final class Foo {}
+                    final class Bar {}
+
+                    /** @template T of ?Bar */
+                    final class Box {
+                        /** @var T */
+                        public $v;
+
+                        /** @param T $v */
+                        public function __construct($v) {
+                            $this->v = $v;
+                        }
+
+                        public function set(?Foo $foo): void {
+                            $this->v = $foo;
+                        }
+                    }',
+                'error_message' => 'InvalidPropertyAssignmentValue',
+            ],
+            'parentTypeAndInvalidTypeAssignedToProperty' => [
+                'code' => '<?php
+                    final class Foo {}
+
+                    final class A {
+                        public ?Foo $p = null;
+
+                        public function set(object|int $o): void {
+                            $this->p = $o;
+                        }
+                    }',
+                'error_message' => 'PossiblyInvalidPropertyAssignmentValue',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'parentTypeAndInvalidTypeAssignedToStaticProperty' => [
+                'code' => '<?php
+                    final class Foo {}
+
+                    final class A {
+                        public static ?Foo $p = null;
+
+                        public static function set(object|int $o): void {
+                            self::$p = $o;
+                        }
+                    }',
+                'error_message' => 'PossiblyInvalidPropertyAssignmentValue',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'templateOfBoolMakesAValuePossiblyValidForABoolProperty' => [
+                'code' => '<?php
+                    final class Foo {}
+                    final class Bar {}
+
+                    final class A {
+                        public Bar|bool $p = false;
+
+                        /**
+                         * @template T of bool
+                         * @param Foo|T $foo
+                         */
+                        public function set($foo): void {
+                            $this->p = $foo;
+                        }
+                    }',
+                'error_message' => 'PossiblyInvalidPropertyAssignmentValue',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'falseOfAValueDoesNotMakeItPossiblyValidForABoolProperty' => [
+                'code' => '<?php
+                    final class Foo {}
+                    final class Bar {}
+
+                    final class A {
+                        public Bar|bool $p = false;
+
+                        public function set(Foo|false $foo): void {
+                            $this->p = $foo;
+                        }
+                    }',
+                'error_message' => 'InvalidPropertyAssignmentValue',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'writingAPropertyOfAnUndefinedDocblockClassIsADocblockIssue' => [
+                'code' => '<?php
+                    /** @return mixed */
+                    function k() {
+                        return null;
+                    }
+
+                    /**
+                     * @psalm-suppress UndefinedDocblockClass
+                     * @var Foobar $o
+                     */
+                    $o = k();
+                    $o->a = 1;',
+                'error_message' => 'UndefinedDocblockClass - src' . DIRECTORY_SEPARATOR . 'somefile.php:12:21 - Cannot set properties of undefined docblock class Foobar',
+            ],
             'offsetWriteToAnUninitializedReadonlyArrayProperty' => [
                 'code' => '<?php
                     final class Bag
@@ -4944,6 +5177,21 @@ final class PropertyTypeTest extends TestCase
                         }
                     }',
                 'error_message' => 'UninitializedProperty',
+            ],
+            'nameOfPhpParserFiveHasNoParts' => [
+                'code' => '<?php
+                    namespace PhpParser\\Node {
+                        class Name {
+                            public string $name = "";
+                        }
+                    }
+
+                    namespace {
+                        function f(PhpParser\\Node\\Name $n): array {
+                            return $n->parts;
+                        }
+                    }',
+                'error_message' => 'UndefinedPropertyFetch',
             ],
             'staticPropertyOfAStaticTypeInANonFinalClassIsNotTheClass' => [
                 'code' => '<?php
@@ -7073,6 +7321,174 @@ final class PropertyTypeTest extends TestCase
                 'error_message' => 'RedundantCondition - src' . DIRECTORY_SEPARATOR . 'somefile.php:11:29 - Type string for $book->name is always isset',
                 'error_levels' => [],
                 'php_version' => '8.0',
+            ],
+            'nullAssignedToAStaticProperty' => [
+                'code' => '<?php
+                    final class A {
+                        public static int $i = 0;
+                    }
+
+                    A::$i = null;',
+                'error_message' => 'PossiblyNullPropertyAssignmentValue',
+            ],
+            'possiblyNullAssignedToAStaticProperty' => [
+                'code' => '<?php
+                    final class A {
+                        public static int $i = 0;
+
+                        public static function set(?int $i): void {
+                            self::$i = $i;
+                        }
+                    }',
+                'error_message' => 'PossiblyNullPropertyAssignmentValue',
+            ],
+            'possiblyFalseAssignedToAStaticProperty' => [
+                'code' => '<?php
+                    final class A {
+                        public static int $i = 0;
+
+                        public static function set(int|false $i): void {
+                            self::$i = $i;
+                        }
+                    }',
+                'error_message' => 'PossiblyFalsePropertyAssignmentValue',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'nullOfAValueDoesNotMakeItPossiblyValidForANullableStaticProperty' => [
+                'code' => '<?php
+                    final class A {
+                        public static ?int $i = null;
+
+                        public static function set(?string $s): void {
+                            self::$i = $s;
+                        }
+                    }',
+                'error_message' => 'InvalidPropertyAssignmentValue',
+            ],
+            'possiblyFalseAssignedToAPropertyOfTrueOrInt' => [
+                'code' => '<?php
+                    final class A {
+                        public true|int $p = 1;
+
+                        public function set(int|false $i): void {
+                            $this->p = $i;
+                        }
+                    }',
+                'error_message' => 'PossiblyFalsePropertyAssignmentValue',
+                'error_levels' => [],
+                'php_version' => '8.2',
+            ],
+            'possiblyFalseAssignedToAStaticPropertyOfTrueOrInt' => [
+                'code' => '<?php
+                    final class A {
+                        public static true|int $p = 1;
+
+                        public static function set(int|false $i): void {
+                            self::$p = $i;
+                        }
+                    }',
+                'error_message' => 'PossiblyFalsePropertyAssignmentValue',
+                'error_levels' => [],
+                'php_version' => '8.2',
+            ],
+            'stringableAssignedToAStringPropertyUnderStrictTypes' => [
+                'code' => '<?php
+                    declare(strict_types=1);
+
+                    final class S {
+                        public function __toString(): string {
+                            return "s";
+                        }
+                    }
+
+                    final class A {
+                        public string $s = "";
+
+                        public function set(S $s): void {
+                            $this->s = $s;
+                        }
+                    }',
+                'error_message' => 'InvalidPropertyAssignmentValue',
+            ],
+            'stringableAssignedToAStaticStringPropertyUnderStrictTypes' => [
+                'code' => '<?php
+                    declare(strict_types=1);
+
+                    final class S {
+                        public function __toString(): string {
+                            return "s";
+                        }
+                    }
+
+                    final class A {
+                        public static string $s = "";
+
+                        public static function set(S $s): void {
+                            self::$s = $s;
+                        }
+                    }',
+                'error_message' => 'InvalidPropertyAssignmentValue',
+            ],
+            'stringableAssignedToANonEmptyStringPropertyUnderStrictTypes' => [
+                'code' => '<?php
+                    declare(strict_types=1);
+
+                    final class S {
+                        public function __toString(): string {
+                            return "s";
+                        }
+                    }
+
+                    final class A {
+                        /** @var non-empty-string */
+                        public string $s = "a";
+
+                        public function set(S $s): void {
+                            $this->s = $s;
+                        }
+                    }',
+                'error_message' => 'InvalidPropertyAssignmentValue',
+            ],
+            'stringableAssignedToANonEmptyStringStaticPropertyUnderStrictTypes' => [
+                'code' => '<?php
+                    declare(strict_types=1);
+
+                    final class S {
+                        public function __toString(): string {
+                            return "s";
+                        }
+                    }
+
+                    final class A {
+                        /** @var non-empty-string */
+                        public static string $s = "a";
+
+                        public static function set(S $s): void {
+                            self::$s = $s;
+                        }
+                    }',
+                'error_message' => 'InvalidPropertyAssignmentValue',
+            ],
+            'stringableAssignedToADocblockStringPropertyUnderStrictTypes' => [
+                'code' => '<?php
+                    declare(strict_types=1);
+
+                    final class S {
+                        public function __toString(): string {
+                            return "s";
+                        }
+                    }
+
+                    final class A {
+                        /** @var string */
+                        public $s = "";
+
+                        public function set(S $s): void {
+                            $this->s = $s;
+                        }
+                    }',
+                'error_message' => 'ImplicitToStringCast',
             ],
         ];
     }

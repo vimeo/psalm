@@ -292,6 +292,53 @@ final class CommentAnalyzer
     }
 
     /**
+     * Parses a `<type> $name` docblock line (`@param`, `@property`, `@global`…).
+     *
+     * `name` loses its `&` markers and trailing `,`/`;` but keeps a leading `...`, which is only
+     * accepted when $allow_variadic is set. `type_length` is the length of the type as written.
+     *
+     * @return array{type: string, name: string, type_length: int, has_description: bool}|false|null
+     *     false when the line is a single word other than `$name`; null when it is a lone `$name`
+     *     or isn't in the `<type> $name` shape
+     * @throws DocblockParseException if an invalid string is found
+     * @throws IncorrectDocblockException when the type is missing or is a variable
+     * @psalm-pure
+     */
+    public static function parseVariableDocLine(string $line, bool $allow_variadic): array|false|null
+    {
+        $line_parts = self::splitDocLine($line);
+
+        if (!isset($line_parts[1])) {
+            return isset($line_parts[0][0]) && $line_parts[0][0] === '$' ? null : false;
+        }
+
+        $name_pattern = $allow_variadic
+            ? '/^&?(\.\.\.)?&?\$[A-Za-z0-9_\x80-\xff]+[,;]?$/'
+            : '/^&?\$[A-Za-z0-9_\x80-\xff]+[,;]?$/';
+
+        if (!preg_match($name_pattern, $line_parts[1])
+            || ($line_parts[0] !== '' && $line_parts[0][0] === '{')
+        ) {
+            return null;
+        }
+
+        $type = self::sanitizeDocblockType($line_parts[0]);
+
+        if ($type === ''
+            || ($type[0] === '$' && !preg_match('/^\$this *(\||$)/', $type))
+        ) {
+            throw new IncorrectDocblockException('Misplaced variable');
+        }
+
+        return [
+            'type' => $type,
+            'name' => trim((string) preg_replace('/[,;]$/', '', str_replace('&', '', $line_parts[1]), 1)),
+            'type_length' => strlen($line_parts[0]),
+            'has_description' => isset($line_parts[2]),
+        ];
+    }
+
+    /**
      * @throws DocblockParseException if an invalid string is found
      * @return non-empty-list<string>
      * @psalm-pure
@@ -565,7 +612,7 @@ final class CommentAnalyzer
         $var_comments = [];
 
         try {
-            $file_path = $statements_analyzer->getRootFilePath();
+            $file_path = $statements_analyzer->getFilePath();
             $file_storage_provider = $codebase->file_storage_provider;
             $file_storage = $file_storage_provider->get($file_path);
 

@@ -1291,10 +1291,13 @@ final class ArrayFunctionArgumentsAnalyzer
             }
 
             if (!$union_comparison_results->type_coerced && !$type_match_found) {
-                $types_can_be_identical = UnionTypeComparator::canExpressionTypesBeIdentical(
+                $can_fit = UnionTypeComparator::canBeContainedBy(
                     $codebase,
                     $input_type,
                     $closure_param_type,
+                    true,
+                    true,
+                    coerced_parts_match: true,
                 );
 
                 if ($union_comparison_results->scalar_type_match_found) {
@@ -1307,7 +1310,7 @@ final class ArrayFunctionArgumentsAnalyzer
                         ),
                         $statements_analyzer->getSuppressedIssues(),
                     );
-                } elseif ($types_can_be_identical) {
+                } elseif ($can_fit) {
                     IssueBuffer::maybeAdd(
                         new PossiblyInvalidArgument(
                             'Parameter ' . ($i + 1) . ' of closure passed to function ' . $method_id . ' expects '

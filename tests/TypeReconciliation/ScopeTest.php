@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Psalm\Tests\TypeReconciliation;
 
 use Override;
+use Psalm\Context;
 use Psalm\Tests\TestCase;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
@@ -15,6 +16,32 @@ final class ScopeTest extends TestCase
 {
     use InvalidCodeAnalysisTestTrait;
     use ValidCodeAnalysisTestTrait;
+
+    public function testPsalmScopeThisWithoutAClassInAFileThatIsOnlyScanned(): void
+    {
+        $this->addFile('scanned.php', '<?php
+            /** @psalm-scope-this */
+            echo 1;');
+        $this->addFile('somefile.php', '<?php
+            echo 1;');
+
+        $this->analyzeFile('somefile.php', new Context());
+
+        $this->addToAssertionCount(1);
+    }
+
+    public function testPsalmScopeThisWithAnEmptyClassNameInAFileThatIsOnlyScanned(): void
+    {
+        $this->addFile('scanned.php', '<?php
+            /** @psalm-scope-this \ */
+            echo 1;');
+        $this->addFile('somefile.php', '<?php
+            echo 1;');
+
+        $this->analyzeFile('somefile.php', new Context());
+
+        $this->addToAssertionCount(1);
+    }
 
     /**
      * @psalm-pure
@@ -404,6 +431,12 @@ final class ScopeTest extends TestCase
                 ?>
                 <h1><?= $this->getMessage() ?></h1>',
             ],
+            'psalmScopeThisInTemplateIsTheOnlyReferenceToTheClass' => [
+                'code' => '<?php
+                    /** @psalm-scope-this Psalm\Tests\LanguageServer\MockProtocolStream */
+                ?>
+                <h1><?php $this->write(new Psalm\Internal\LanguageServer\Message(new AdvancedJsonRpc\Notification("a"))); ?></h1>',
+            ],
             'psalmScopeThisInTemplateFQCN' => [
                 'code' => '<?php
                     $e = new Exception(); // necessary to trick Psalm’s scanner for test
@@ -495,6 +528,22 @@ final class ScopeTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'unknownAnnotationOnAStatementIsReported' => [
+                'code' => '<?php
+                    /** @psalm-not-an-annotation */
+                    $a = 1;',
+                'error_message' => 'InvalidDocblock',
+            ],
+            'unknownAnnotationNextToPsalmScopeThisIsReported' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-scope-this Exception
+                     * @psalm-not-an-annotation
+                     */
+                ?>
+                <h1><?= $this->getMessage() ?></h1>',
+                'error_message' => 'InvalidDocblock',
+            ],
             'variableUnsetInACaseThatFallsThroughIsPossiblyUndefined' => [
                 'code' => '<?php
                     function f(int $i): int {
