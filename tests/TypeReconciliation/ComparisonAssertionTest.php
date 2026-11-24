@@ -103,6 +103,61 @@ final class ComparisonAssertionTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.2',
             ],
+            'looseEqualityToAScalarKeepsTheLooselyEqualBoolsAndNull' => [
+                'code' => '<?php
+                    /** @return int|false */
+                    function intOrFalse() { return 1; }
+
+                    /** @return int|bool */
+                    function intOrBool() { return 1; }
+
+                    /** @return string|null */
+                    function stringOrNull() { return null; }
+
+                    /** @return string|false */
+                    function stringOrFalse() { return false; }
+
+                    /** @return float|null */
+                    function floatOrNull() { return null; }
+
+                    /** @return 0|false */
+                    function zeroOrFalse() { return 0; }
+
+                    $a = intOrFalse();
+                    $zeroOrFalse = $a == 0 ? $a : null;
+                    $elseBranch = $a != 0 ? null : $a;
+
+                    $b = intOrBool();
+                    $zeroOrFalseFromBool = $b == 0 ? $b : null;
+                    $fiveOrTrue = $b == 5 ? $b : null;
+
+                    $c = stringOrNull();
+                    $emptyOrNull = $c == "" ? $c : 1;
+                    $zeroStringWithoutNull = $c == "0" ? $c : 1;
+
+                    $d = stringOrFalse();
+                    $zeroStringOrFalse = $d == "0" ? $d : null;
+                    $nonFalsyString = $d == "a" ? $d : null;
+
+                    $e = floatOrNull();
+                    $zeroFloatOrNull = $e == 0.0 ? $e : 1;
+
+                    $f = zeroOrFalse();
+                    $unchanged = $f == 0 ? $f : null;',
+                'assertions' => [
+                    '$zeroOrFalse===' => '0|false|null',
+                    '$elseBranch===' => '0|false|null',
+                    '$zeroOrFalseFromBool===' => '0|false|null',
+                    '$fiveOrTrue===' => '5|null|true',
+                    '$emptyOrNull===' => "''|1|null",
+                    '$zeroStringWithoutNull===' => "'0'|1",
+                    '$zeroStringOrFalse===' => "'0'|false|null",
+                    '$nonFalsyString===' => "'a'|null",
+                    '$zeroFloatOrNull===' => '1|float(0)|null',
+                    '$unchanged===' => '0|false|null',
+                ],
+                'ignored_issues' => ['LessSpecificReturnType'],
+            ],
             'looseEqualityKeepsEveryNumericallyEqualLiteral' => [
                 'code' => '<?php
                     /** @return \'1\'|\'01\' */
@@ -641,6 +696,14 @@ final class ComparisonAssertionTest extends TestCase
                         if ($a !== $b) {}
                     }',
                 'error_message' => 'RedundantConditionGivenDocblockType - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:29 - Docblock-defined type 2 can never contain 1',
+            ],
+            'looseEqualityOfTrueToZeroIsImpossible' => [
+                'code' => '<?php
+                    /** @param true|resource $x */
+                    function f($x): void {
+                        if ($x == 0) {}
+                    }',
+                'error_message' => 'DocblockTypeContradiction - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:29',
             ],
             'looseEqualityOfIntsThatCannotBeIdentical' => [
                 'code' => '<?php

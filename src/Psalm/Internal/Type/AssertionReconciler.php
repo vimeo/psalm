@@ -41,6 +41,7 @@ use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\Scalar;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TArrayKey;
+use Psalm\Type\Atomic\TBool;
 use Psalm\Type\Atomic\TCallable;
 use Psalm\Type\Atomic\TCallableString;
 use Psalm\Type\Atomic\TClassConstant;
@@ -48,6 +49,7 @@ use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TDecimalIntString;
 use Psalm\Type\Atomic\TEmptyNumeric;
 use Psalm\Type\Atomic\TEnumCase;
+use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TInt;
@@ -76,12 +78,14 @@ use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTemplateParamClass;
 use Psalm\Type\Atomic\TTemplateValueOf;
 use Psalm\Type\Atomic\TTraitString;
+use Psalm\Type\Atomic\TTrue;
 use Psalm\Type\Atomic\TTypeVariable;
 use Psalm\Type\Atomic\TValueOf;
 use Psalm\Type\Reconciler;
 use Psalm\Type\Union;
 
 use function array_diff_key;
+use function array_filter;
 use function array_intersect_key;
 use function array_keys;
 use function array_merge;
@@ -1669,6 +1673,41 @@ final class AssertionReconciler extends Reconciler
             }
         }
 
+        if ($assertion instanceof IsLooselyEqual && !$assertion_type instanceof TEnumCase) {
+            $bools_and_null = array_filter(
+                $existing_var_atomic_types,
+                static fn(Atomic $atomic_type): bool => $atomic_type instanceof TBool
+                    || $atomic_type instanceof TNull,
+            );
+            $loosely_equal_bools_and_null = self::getLooselyEqualBoolsAndNull($assertion_type, $bools_and_null);
+
+            if ($loosely_equal_bools_and_null !== []) {
+                $other_atomic_types = array_diff_key($existing_var_atomic_types, $bools_and_null);
+
+                // the other types are reconciled without reporting: the comparison may be true for a bool or null
+                $other_type = $other_atomic_types === []
+                    ? Type::getNever()
+                    : self::handleLiteralEquality(
+                        $statements_analyzer,
+                        $assertion,
+                        $assertion_type,
+                        new Union(array_values($other_atomic_types), [
+                            'from_docblock' => $existing_var_type->from_docblock,
+                        ]),
+                        $old_var_type_string,
+                        null,
+                        $negated,
+                        null,
+                        $suppressed_issues,
+                    );
+
+                return new Union([
+                    ...$other_type->isNever() ? [] : array_values($other_type->getAtomicTypes()),
+                    ...$loosely_equal_bools_and_null,
+                ], ['from_docblock' => $existing_var_type->from_docblock]);
+            }
+        }
+
         if ($assertion_type instanceof TLiteralInt) {
             return self::handleLiteralEqualityWithInt(
                 $statements_analyzer,
@@ -1768,6 +1807,38 @@ final class AssertionReconciler extends Reconciler
         }
 
         return $existing_var_type;
+    }
+
+    /**
+     * The bools and null loosely equal to the scalar: a bool is compared to the scalar cast to bool (`false == 0`),
+     * null to a string as "" (`null == ""`) and to anything else as false (`null == 0`)
+     *
+     * @param array<string, TBool|TNull> $bools_and_null
+     * @return list<TBool|TNull>
+     * @psalm-pure
+     */
+    private static function getLooselyEqualBoolsAndNull(
+        TLiteralInt|TLiteralString|TLiteralFloat $scalar,
+        array $bools_and_null,
+    ): array {
+        $scalar_is_truthy = (bool) $scalar->value;
+        $loosely_equal = [];
+
+        foreach ($bools_and_null as $atomic_type) {
+            if ($atomic_type instanceof TNull) {
+                if ($scalar instanceof TLiteralString ? $scalar->value === '' : !$scalar_is_truthy) {
+                    $loosely_equal[] = $atomic_type;
+                }
+            } elseif ($atomic_type instanceof TTrue || $atomic_type instanceof TFalse) {
+                if ($atomic_type instanceof TTrue === $scalar_is_truthy) {
+                    $loosely_equal[] = $atomic_type;
+                }
+            } else {
+                $loosely_equal[] = $scalar_is_truthy ? new TTrue() : new TFalse();
+            }
+        }
+
+        return $loosely_equal;
     }
 
     /**
