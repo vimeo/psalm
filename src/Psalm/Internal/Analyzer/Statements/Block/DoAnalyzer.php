@@ -194,10 +194,13 @@ final class DoAnalyzer
         }
 
         // the loop is left when the condition is false: what it asserted of an offset or property of a mixed variable,
-        // whose negation is not known, doesn't hold after it
+        // whose negation is not known, doesn't hold after it (what the body assigned to it does)
         foreach ($cond_clauses as $cond_clause) {
             foreach ($cond_clause->possibilities as $key => $_) {
-                if (!isset($negated_while_types[$key]) && self::isItemOfMixedVar($key, $mixed_vars)) {
+                if (!isset($negated_while_types[$key])
+                    && !isset($inner_loop_context->assigned_var_ids[$key])
+                    && self::isItemOfMixedVar($key, $mixed_vars)
+                ) {
                     $context->remove($key);
                 }
             }

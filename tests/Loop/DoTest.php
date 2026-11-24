@@ -43,6 +43,21 @@ final class DoTest extends TestCase
                 'ignored_issues' => ['MixedArrayAccess'],
                 'php_version' => '8.0',
             ],
+            'doWhileOffsetOfAMixedVariableAssignedByTheBodyKeepsItsTypeAfterTheLoop' => [
+                'code' => '<?php
+                    function f(mixed $m): void {
+                        do {
+                            $m["x"] = rand(0, 1);
+                        } while ($m["x"]);
+
+                        $z = $m["x"];
+                        /** @psalm-check-type-exact $z = int<0, 1> */
+                        echo $z;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedArrayAssignment', 'MixedArrayAccess'],
+                'php_version' => '8.0',
+            ],
             'doWhileBarePostDecrementConditionIsMinusOneAfterTheLoop' => [
                 'code' => '<?php
                     $c = 3;
@@ -1424,6 +1439,20 @@ final class DoTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'doWhileConditionOnAnOffsetOfATypedArrayStillHoldsAfterTheLoop' => [
+                'code' => '<?php
+                    /** @param array<string, mixed> $m */
+                    function f(array $m): void {
+                        do {
+                            echo "";
+                        } while ($m["x"]);
+
+                        if ($m["x"]) {}
+                    }',
+                'error_message' => 'DocblockTypeContradiction',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
             'varUnsetBeforeContinueIsPossiblyUndefinedAfterTheLoop' => [
                 'code' => '<?php
                     function f(): void {
