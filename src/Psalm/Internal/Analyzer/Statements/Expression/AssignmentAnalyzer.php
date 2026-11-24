@@ -2756,14 +2756,15 @@ final class AssignmentAnalyzer
     }
 
     /**
-     * The error PHP refuses to compile a destructuring with, if any. Trailing empty entries are left out, and the
-     * first entry decides whether the entries are keyed.
+     * The error PHP refuses to compile a destructuring with, if any. The empty entry of a trailing comma is left out,
+     * and the first entry decides whether the entries are keyed.
      *
      * @param PhpParser\Node\Expr\List_|PhpParser\Node\Expr\Array_ $assign_var
-     * @psalm-capabilities read-props
      */
-    private static function getDestructuringCompileError(PhpParser\Node\Expr $assign_var): ?string
-    {
+    private static function getDestructuringCompileError(
+        PhpParser\Node\Expr $assign_var,
+        int $php_version_id,
+    ): ?string {
         $items = $assign_var->items;
 
         foreach ($items as $item) {
@@ -2772,7 +2773,11 @@ final class AssignmentAnalyzer
             }
         }
 
-        while ($items && end($items) === null) {
+        // PHP drops one trailing empty entry, the one of a trailing comma (php-parser already did for `[...]`)
+        if ($assign_var->getAttribute('kind') === PhpParser\Node\Expr\List_::KIND_LIST
+            && $items
+            && end($items) === null
+        ) {
             array_pop($items);
         }
 
@@ -2785,8 +2790,9 @@ final class AssignmentAnalyzer
             }
         }
 
+        // `list() = $x` was valid before PHP 7.0
         if ($is_keyed === null) {
-            return 'Cannot use empty list';
+            return $php_version_id >= 7_00_00 ? 'Cannot use empty list' : null;
         }
 
         foreach ($items as $item) {
@@ -2800,6 +2806,26 @@ final class AssignmentAnalyzer
         }
 
         return null;
+    }
+
+    /**
+     * @param PhpParser\Node\Expr\List_|PhpParser\Node\Expr\Array_ $assign_var
+     */
+    private static function reportDestructuringCompileError(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr $assign_var,
+    ): void {
+        $compile_error = self::getDestructuringCompileError(
+            $assign_var,
+            $statements_analyzer->getCodebase()->analysis_php_version_id,
+        );
+
+        if ($compile_error !== null) {
+            IssueBuffer::maybeAdd(
+                new ParseError($compile_error, new CodeLocation($statements_analyzer->getSource(), $assign_var)),
+                $statements_analyzer->getSuppressedIssues(),
+            );
+        }
     }
 
     /**
@@ -2818,14 +2844,7 @@ final class AssignmentAnalyzer
         array $var_comments,
         int $removed_taints,
     ): void {
-        $compile_error = self::getDestructuringCompileError($assign_var);
-
-        if ($compile_error !== null) {
-            IssueBuffer::maybeAdd(
-                new ParseError($compile_error, new CodeLocation($statements_analyzer->getSource(), $assign_var)),
-                $statements_analyzer->getSuppressedIssues(),
-            );
-        }
+        self::reportDestructuringCompileError($statements_analyzer, $assign_var);
 
         $assign_value_type = TypeVariableResolver::resolveTopLevel($assign_value_type, $codebase);
 

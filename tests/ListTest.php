@@ -300,6 +300,16 @@ final class ListTest extends TestCase
                     }',
                 'error_message' => 'Cannot use empty array entries in keyed array assignment',
             ],
+            'destructuringWithAnEmptyKeyedEntryBeforeATrailingComma' => [
+                'code' => '<?php
+                    ["a" => $a, , ] = ["a" => 1];',
+                'error_message' => 'Cannot use empty array entries in keyed array assignment',
+            ],
+            'listWithAnEmptyKeyedEntryBeforeATrailingComma' => [
+                'code' => '<?php
+                    list("a" => $a, , ) = ["a" => 1];',
+                'error_message' => 'Cannot use empty array entries in keyed array assignment',
+            ],
             'destructuringIntoAnEmptyList' => [
                 'code' => '<?php
                     [, ] = [1];',
