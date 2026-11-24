@@ -695,9 +695,10 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
         if ($storage instanceof MethodStorage && $storage->location && !$storage->allowsNamedArguments()) {
             foreach ($overridden_method_ids as $overridden_method_id) {
                 $overridden_storage = $codebase->methods->getStorage($overridden_method_id);
-                if ($overridden_storage->allowsNamedArguments()) {
+                // a method without parameters can't be passed named arguments
+                if ($overridden_storage->params && $overridden_storage->allowsNamedArguments()) {
                     IssueBuffer::maybeAdd(new MethodSignatureMismatch(
-                        'Method ' . (string) $method_id . ' should accept named arguments '
+                        'Method ' . (string) $method_id . ' should accept named arguments'
                             . ' as ' . (string) $overridden_method_id . ' does',
                         $storage->location,
                     ));
