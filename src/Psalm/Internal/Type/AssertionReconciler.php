@@ -696,7 +696,10 @@ final class AssertionReconciler extends Reconciler
      * @param Reconciler::RECONCILIATION_* $failed_reconciliation
      * @param   string[]    $suppressed_issues
      * @param-out Reconciler::RECONCILIATION_* $failed_reconciliation
-     * @param-out bool $impossible whether no value of the type can match, which is reported only with a location
+     * @param-out bool $impossible whether no value of the type can match. It is set with or without a location, while
+     *                             $failed_reconciliation is only RECONCILIATION_EMPTY with one: callers without a
+     *                             location rely on getting the asserted type with RECONCILIATION_OK (e.g. `$this`
+     *                             narrowed again by instanceof keeps its property types)
      */
     private static function refine(
         StatementsAnalyzer $statements_analyzer,
