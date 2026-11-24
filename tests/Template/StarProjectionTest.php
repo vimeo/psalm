@@ -91,6 +91,100 @@ final class StarProjectionTest extends TestCase
         );
     }
 
+    public function testStarProjectionArrayRequiringAnElementOfTheTemplateIsNever(): void
+    {
+        $this->project_analyzer->getConfig()->throw_exception = false;
+        $this->project_analyzer->setPhpVersion('8.0', 'tests');
+
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                /** @template-covariant T */
+                interface Reader {
+                    /** @return T */
+                    public function read(): mixed;
+                }
+
+                /** @template T of object */
+                final class Box {
+                    /** @param array{value: T} $a */
+                    public function setShape(array $a): void {}
+
+                    /** @param list{T} $a */
+                    public function setSealedList(array $a): void {}
+
+                    /** @param list{T, int} $a */
+                    public function setSealedPair(array $a): void {}
+
+                    /** @param non-empty-list<T> $a */
+                    public function setNonEmptyList(array $a): void {}
+
+                    /** @param non-empty-array<int, T> $a */
+                    public function setNonEmptyArray(array $a): void {}
+
+                    /** @param non-empty-list<Box<T>> $a */
+                    public function setNonEmptyListOfBoxes(array $a): void {}
+
+                    /** @param array{value: array{inner: T}} $a */
+                    public function setNestedShape(array $a): void {}
+
+                    /** @param array{value: T, count: int} $a */
+                    public function setShapeWithCount(array $a): void {}
+
+                    /** @param iterable<array{value: T}> $a */
+                    public function setIterable(iterable $a): void {}
+
+                    /** @param Reader<array{value: T}> $a */
+                    public function setReader(Reader $a): void {}
+
+                    /** @param Closure(): array{value: T} $a */
+                    public function setFactory(Closure $a): void {}
+                }
+
+                /**
+                 * @param Box<*> $any
+                 * @param Box<stdClass> $std
+                 * @param Reader<array{}> $empty_reader
+                 */
+                function f(Box $any, Box $std, Reader $empty_reader): void {
+                    $std->setShape([]);
+                    $any->setShape([]);
+                    $any->setSealedList([]);
+                    $any->setSealedPair([]);
+                    $any->setNonEmptyList([]);
+                    $any->setNonEmptyArray([]);
+                    $any->setNonEmptyListOfBoxes([]);
+                    $any->setNestedShape([]);
+                    $any->setShapeWithCount(["count" => 1]);
+                    $any->setIterable([[]]);
+                    $any->setReader($empty_reader);
+                    $any->setFactory(fn(): array => []);
+                }',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+
+        self::assertSame(
+            [
+                'Argument 1 of Box::setShape expects array{value: stdClass}, but array<never, never> provided',
+                'Argument 1 of Box::setShape expects never, but array<never, never> provided',
+                'Argument 1 of Box::setSealedList expects never, but array<never, never> provided',
+                'Argument 1 of Box::setSealedPair expects never, but array<never, never> provided',
+                'Argument 1 of Box::setNonEmptyList expects never, but array<never, never> provided',
+                'Argument 1 of Box::setNonEmptyArray expects never, but array<never, never> provided',
+                'Argument 1 of Box::setNonEmptyListOfBoxes expects never, but array<never, never> provided',
+                'Argument 1 of Box::setNestedShape expects never, but array<never, never> provided',
+                'Argument 1 of Box::setShapeWithCount expects never, but array{count: 1} provided',
+                'Argument 1 of Box::setIterable expects iterable<mixed, never>, but list{array<never, never>} provided',
+                'Argument 1 of Box::setReader expects Reader<never>, but Reader<array<never, never>> provided',
+                'Argument 1 of Box::setFactory expects Closure[impure]():never, but Closure[pure]():array<never, never> provided',
+            ],
+            array_column(IssueBuffer::getIssuesDataForFile($file_path), 'message'),
+        );
+    }
+
     /**
      * @psalm-pure
      */
@@ -1657,6 +1751,215 @@ final class StarProjectionTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'starProjectionIterationReadsTheBoundOfTheReceiver' => [
+                'code' => '<?php
+                    abstract class Model {}
+                    final class Role extends Model {}
+
+                    /**
+                     * @template TValue
+                     * @implements IteratorAggregate<int, TValue>
+                     */
+                    class Collection implements IteratorAggregate {
+                        /** @return ArrayIterator<int, TValue> */
+                        public function getIterator(): ArrayIterator {
+                            throw new Exception();
+                        }
+                    }
+
+                    /**
+                     * @template TModel of Model
+                     * @extends Collection<TModel>
+                     */
+                    class ModelCollection extends Collection {}
+
+                    /**
+                     * @template TRole of Role
+                     * @extends ModelCollection<TRole>
+                     */
+                    final class RoleCollection extends ModelCollection {}
+
+                    /** @var ModelCollection<*> $star */
+                    $star = new ModelCollection();
+                    /** @var ModelCollection<Role> $roles */
+                    $roles = new ModelCollection();
+                    /** @var RoleCollection<*> $star_roles */
+                    $star_roles = new RoleCollection();
+                    /** @var ModelCollection<*>&Countable $counted */
+                    $counted = new ModelCollection();
+                    /** @var list<ModelCollection<*>> $nested */
+                    $nested = [];
+                    $key = null;
+                    $model = null;
+                    $role = null;
+                    $star_role = null;
+                    $counted_model = null;
+                    $nested_model = null;
+
+                    foreach ($star as $key => $model) {}
+
+                    foreach ($roles as $role) {}
+
+                    foreach ($star_roles as $star_role) {}
+
+                    foreach ($counted as $counted_model) {}
+
+                    foreach ($nested as $inner) {
+                        foreach ($inner as $nested_model) {}
+                    }
+
+                    $array = iterator_to_array($star);
+                    $iterator = $star->getIterator();',
+                'assertions' => [
+                    '$key===' => 'int|null',
+                    '$model===' => 'Model|null',
+                    '$role===' => 'Role|null',
+                    '$star_role===' => 'Role|null',
+                    '$counted_model===' => 'Model|null',
+                    '$nested_model===' => 'Model|null',
+                    '$array===' => 'array<int, Model>',
+                    '$iterator===' => 'ArrayIterator<int, *>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'starProjectionIterationReadsTheBoundOfACovariantParent' => [
+                'code' => '<?php
+                    abstract class Model {}
+
+                    /**
+                     * @template TKey of array-key
+                     * @template-covariant TValue
+                     * @implements IteratorAggregate<TKey, TValue>
+                     */
+                    class Collection implements IteratorAggregate {
+                        /**
+                         * @return ArrayIterator<TKey, TValue>
+                         * @psalm-suppress InvalidTemplateParam
+                         */
+                        public function getIterator(): ArrayIterator {
+                            throw new Exception();
+                        }
+                    }
+
+                    /**
+                     * @template TKey of array-key
+                     * @template TModel of Model
+                     * @extends Collection<TKey, TModel>
+                     */
+                    final class EloquentCollection extends Collection {}
+
+                    /**
+                     * @template TId of positive-int
+                     * @template TModel of Model
+                     * @extends Collection<TId, TModel>
+                     */
+                    final class ByIdCollection extends Collection {}
+
+                    /** @var EloquentCollection<*, *> $any */
+                    $any = new EloquentCollection();
+                    /** @var EloquentCollection<int, *> $listed */
+                    $listed = new EloquentCollection();
+                    /** @var ByIdCollection<*, *> $by_id */
+                    $by_id = new ByIdCollection();
+                    $any_key = null;
+                    $any_model = null;
+                    $listed_key = null;
+                    $listed_model = null;
+                    $id = null;
+
+                    foreach ($any as $any_key => $any_model) {}
+
+                    foreach ($listed as $listed_key => $listed_model) {}
+
+                    foreach ($by_id as $id => $_) {}',
+                'assertions' => [
+                    '$any_key===' => 'array-key|null',
+                    '$any_model===' => 'Model|null',
+                    '$listed_key===' => 'int|null',
+                    '$listed_model===' => 'Model|null',
+                    '$id===' => 'int<1, max>|null',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'starProjectionIterationReadsTheBoundOfEachReceiver' => [
+                'code' => '<?php
+                    abstract class Model {}
+
+                    /** @template T of object */
+                    final class Box {}
+
+                    /**
+                     * @template TValue
+                     * @implements IteratorAggregate<int, TValue>
+                     */
+                    class Collection implements IteratorAggregate {
+                        /** @return ArrayIterator<int, TValue> */
+                        public function getIterator(): ArrayIterator {
+                            throw new Exception();
+                        }
+                    }
+
+                    /**
+                     * @template TModel of Model
+                     * @extends Collection<TModel>
+                     */
+                    final class ModelCollection extends Collection {}
+
+                    /**
+                     * @template TString of string
+                     * @extends Collection<TString>
+                     */
+                    final class StringCollection extends Collection {}
+
+                    /**
+                     * @template T of Model
+                     * @implements IteratorAggregate<array-key, T>
+                     */
+                    final class Listed implements IteratorAggregate {
+                        /** @return ArrayIterator<int, T> */
+                        public function getIterator(): ArrayIterator {
+                            throw new Exception();
+                        }
+                    }
+
+                    /**
+                     * @template T of Model
+                     * @implements IteratorAggregate<int, Box<T>>
+                     */
+                    final class Boxes implements IteratorAggregate {
+                        /** @return ArrayIterator<int, Box<T>> */
+                        public function getIterator(): ArrayIterator {
+                            throw new Exception();
+                        }
+                    }
+
+                    /** @var ModelCollection<*>|StringCollection<*> $either */
+                    $either = new ModelCollection();
+                    /** @var Listed<*> $listed */
+                    $listed = new Listed();
+                    /** @var Boxes<*> $boxes */
+                    $boxes = new Boxes();
+                    $value = null;
+                    $listed_key = null;
+                    $listed_model = null;
+                    $box = null;
+
+                    foreach ($either as $value) {}
+
+                    foreach ($listed as $listed_key => $listed_model) {}
+
+                    foreach ($boxes as $box) {}',
+                'assertions' => [
+                    '$value===' => 'Model|null|string',
+                    '$listed_key===' => 'int|null',
+                    '$listed_model===' => 'Model|null',
+                    '$box===' => 'Box<*>|null',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'starProjectionOfAnInterfaceMethodTagKeepsTheStar' => [
                 'code' => '<?php
                     /** @template T of object */
@@ -2083,6 +2386,47 @@ final class StarProjectionTest extends TestCase
                         $b->id(new stdClass());
                     }',
                 'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'starProjectionArrayNotRequiringAnElementOfTheTemplateAcceptsTheEmptyArray' => [
+                'code' => '<?php
+                    /** @template T of object */
+                    final class Box {
+                        /** @param array{value?: T} $a */
+                        public function setOptional(array $a): void {}
+
+                        /** @param list<T> $a */
+                        public function setList(array $a): void {}
+
+                        /** @param array{value: T|null} $a */
+                        public function setNullable(array $a): void {}
+
+                        /** @param iterable<array{value: T}> $a */
+                        public function setIterable(iterable $a): void {}
+
+                        /** @param Closure(array{value: T}): void $f */
+                        public function each(Closure $f): void {}
+
+                        /** @return array{value: T} */
+                        public function get(): array {
+                            throw new Exception();
+                        }
+                    }
+
+                    /** @var Box<*> $any */
+                    $any = new Box();
+                    $any->setOptional([]);
+                    $any->setList([]);
+                    $any->setNullable(["value" => null]);
+                    $any->setIterable([]);
+                    $any->each(function (array $a): void {
+                        /** @psalm-check-type-exact $a = array{value: object} */
+                    });
+                    $shape = $any->get();',
+                'assertions' => [
+                    '$shape===' => 'array{value: object}',
+                ],
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
@@ -3384,6 +3728,332 @@ final class StarProjectionTest extends TestCase
                         $ref = new stdClass();
                     }',
                 'error_message' => 'ReferenceConstraintViolation - src' . DIRECTORY_SEPARATOR . 'somefile.php:16:25 - Variable $ref is limited to values of type never because it is a reference to $b->value, stdClass type found',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'starProjectionShapeParamRequiringTheTemplateIsNever' => [
+                'code' => '<?php
+                    /** @template T of object */
+                    final class Box {
+                        /** @param array{value: T} $shape */
+                        public function setShape(array $shape): void {}
+                    }
+
+                    /** @param Box<*> $any */
+                    function f(Box $any): void {
+                        $any->setShape([]);
+                    }',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:40 - Argument 1 of Box::setShape expects never, but array<never, never> provided',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'starProjectionMagicMethodShapeParamIsNever' => [
+                'code' => '<?php
+                    /**
+                     * @template T of object
+                     * @method void setShape(array{value: T} $shape)
+                     */
+                    final class Box {
+                        public function __call(string $name, array $arguments): mixed {
+                            return null;
+                        }
+                    }
+
+                    /** @param Box<*> $any */
+                    function f(Box $any): void {
+                        $any->setShape([]);
+                    }',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:14:40 - Argument 1 of setShape expects never, but array<never, never> provided',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'starProjectionShapeParamForwardedByAMixinIsNever' => [
+                'code' => '<?php
+                    /** @template T of object */
+                    final class Setter {
+                        /** @param array{value: T} $shape */
+                        public function setShape(array $shape): void {}
+                    }
+
+                    /**
+                     * @template T of object
+                     * @mixin Setter<T>
+                     */
+                    final class Box {
+                        public function __call(string $name, array $arguments): mixed {
+                            return null;
+                        }
+                    }
+
+                    /** @param Box<*> $any */
+                    function f(Box $any): void {
+                        $any->setShape([]);
+                    }',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:20:40 - Argument 1 of Setter::setShape expects never, but array<never, never> provided',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'starProjectionInheritedShapeParamIsNever' => [
+                'code' => '<?php
+                    /** @template T of object */
+                    class Box {
+                        /** @param array{value: T} $shape */
+                        public function setShape(array $shape): void {}
+                    }
+
+                    /**
+                     * @template T of object
+                     * @extends Box<T>
+                     */
+                    final class SubBox extends Box {}
+
+                    /** @param SubBox<*> $any */
+                    function f(SubBox $any): void {
+                        $any->setShape([]);
+                    }',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:16:40 - Argument 1 of SubBox::setShape expects never, but array<never, never> provided',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'starProjectionParamOfAComposedShapeParentArgumentIsNever' => [
+                'code' => '<?php
+                    /** @template T */
+                    abstract class Base {
+                        /** @param T $value */
+                        public function set(mixed $value): void {}
+                    }
+
+                    /**
+                     * @template TModel of object
+                     * @extends Base<array{value: TModel}>
+                     */
+                    final class Shaped extends Base {}
+
+                    /** @param Shaped<*> $shaped */
+                    function f(Shaped $shaped): void {
+                        $shaped->set([]);
+                    }',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:16:38 - Argument 1 of Shaped::set expects never, but array<never, never> provided',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'starProjectionFirstClassCallableOfAShapeParamExpectsNever' => [
+                'code' => '<?php
+                    /** @template T of object */
+                    final class Box {
+                        /** @param array{value: T} $shape */
+                        public function setShape(array $shape): void {}
+                    }
+
+                    /** @param Box<*> $any */
+                    function f(Box $any): void {
+                        $any->setShape(...)([]);
+                    }',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:45 - Argument 1 expects never, but array<never, never> provided',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'starProjectionCallableOfAShapeParamExpectsNever' => [
+                'code' => '<?php
+                    /** @template T of object */
+                    final class Box {
+                        /** @param array{value: T} $shape */
+                        public function setShape(array $shape): void {}
+                    }
+
+                    /** @param Box<*> $any */
+                    function f(Box $any): void {
+                        Closure::fromCallable([$any, "setShape"])([]);
+                    }',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:67 - Argument 1 expects never, but array<never, never> provided',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'starProjectionShapeSetterIsNotACallableOfTheEmptyArray' => [
+                'code' => '<?php
+                    /** @template T of object */
+                    final class Box {
+                        /** @param array{value: T} $shape */
+                        public function setShape(array $shape): void {}
+                    }
+
+                    /** @param callable(array{}): void $callback */
+                    function takesCallback(callable $callback): void {}
+
+                    /** @param Box<*> $any */
+                    function f(Box $any): void {
+                        takesCallback([$any, "setShape"]);
+                    }',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:13:39 - Argument 1 of takesCallback expects callable[impure](array<never, never>):void, but callable[impure](never):void provided',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'starProjectionShapePropertyWriteIsNever' => [
+                'code' => '<?php
+                    /** @template T of object */
+                    final class Box {
+                        /** @var array{value: T} */
+                        public array $shape;
+
+                        /** @param T $value */
+                        public function __construct(object $value) {
+                            $this->shape = ["value" => $value];
+                        }
+                    }
+
+                    /** @param Box<*> $any */
+                    function f(Box $any): void {
+                        $any->shape = [];
+                    }',
+                'error_message' => 'InvalidPropertyAssignmentValue - src' . DIRECTORY_SEPARATOR . 'somefile.php:15:39 - $any->shape with declared type \'never\' cannot be assigned type',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'starProjectionNonEmptyListPropertyWriteIsNever' => [
+                'code' => '<?php
+                    /** @template T of object */
+                    final class Box {
+                        /** @var non-empty-list<T> */
+                        public array $values;
+
+                        /** @param T $value */
+                        public function __construct(object $value) {
+                            $this->values = [$value];
+                        }
+                    }
+
+                    /** @param Box<*> $any */
+                    function f(Box $any): void {
+                        $any->values = [];
+                    }',
+                'error_message' => 'InvalidPropertyAssignmentValue - src' . DIRECTORY_SEPARATOR . 'somefile.php:15:40 - $any->values with declared type \'never\' cannot be assigned type',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'starProjectionOffsetSetOfAShapeIsNever' => [
+                'code' => '<?php
+                    /**
+                     * @template T of object
+                     * @extends ArrayAccess<int, array{value: T}>
+                     */
+                    interface Shelf extends ArrayAccess {}
+
+                    /** @param Shelf<*> $shelf */
+                    function f(Shelf $shelf): void {
+                        $shelf[0] = [];
+                    }',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:37 - Argument 2 of Shelf::offsetSet expects never, but array<never, never> provided',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'starProjectionIteratorOfAnIteratedReceiverTakesNoWrite' => [
+                'code' => '<?php
+                    abstract class Model {}
+                    final class OtherModel extends Model {}
+
+                    /**
+                     * @template TValue
+                     * @implements IteratorAggregate<int, TValue>
+                     */
+                    class Collection implements IteratorAggregate {
+                        /** @return ArrayIterator<int, TValue> */
+                        public function getIterator(): ArrayIterator {
+                            throw new Exception();
+                        }
+                    }
+
+                    /**
+                     * @template TModel of Model
+                     * @extends Collection<TModel>
+                     */
+                    final class ModelCollection extends Collection {}
+
+                    /** @param ModelCollection<*> $star */
+                    function f(ModelCollection $star): void {
+                        foreach ($star as $_) {}
+                        $star->getIterator()->offsetSet(0, new OtherModel());
+                    }',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:25:60 - Argument 2 of ArrayIterator::offsetSet expects never, but OtherModel provided',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'starProjectionIterationKeepsAnIteratorReadTheBoundDoesNotContain' => [
+                'code' => '<?php
+                    abstract class Model {}
+
+                    /**
+                     * @template X of array-key
+                     * @template Y of object
+                     */
+                    final class Pair {}
+
+                    /**
+                     * @template K of int
+                     * @implements IteratorAggregate<int, Pair<int, *>|string>
+                     */
+                    final class Bag implements IteratorAggregate {
+                        /** @return Generator<int, Pair<K, Model>|string> */
+                        public function getIterator(): Generator {
+                            throw new Exception();
+                        }
+                    }
+
+                    /** @param Bag<*> $bag */
+                    function f(Bag $bag): void {
+                        foreach ($bag as $item) {
+                            strlen($item);
+                        }
+                    }',
+                'error_message' => 'PossiblyInvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:24:36 - Argument 1 of strlen expects string, but possibly different type Pair<*, Model>|string provided',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'starProjectionIterationReadsADocblockDefinedBound' => [
+                'code' => '<?php
+                    abstract class Model {}
+
+                    /**
+                     * @template TValue
+                     * @implements IteratorAggregate<int, TValue>
+                     */
+                    class Collection implements IteratorAggregate {
+                        /** @return ArrayIterator<int, TValue> */
+                        public function getIterator(): ArrayIterator {
+                            throw new Exception();
+                        }
+                    }
+
+                    /**
+                     * @template TModel of Model
+                     * @extends Collection<TModel>
+                     */
+                    final class ModelCollection extends Collection {}
+
+                    /** @param ModelCollection<*> $star */
+                    function f(ModelCollection $star): void {
+                        foreach ($star as $model) {
+                            if ($model instanceof Model) {}
+                        }
+                    }',
+                'error_message' => 'RedundantConditionGivenDocblockType',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'starProjectionShapeParamOfAClosureReturnedFromAReceiverIsNever' => [
+                'code' => '<?php
+                    /** @template T of object */
+                    final class Box {
+                        /** @return Closure(array{value: T}): void */
+                        public function shapeSetter(): Closure {
+                            throw new Exception();
+                        }
+                    }
+
+                    /** @param Box<*> $any */
+                    function f(Box $any): void {
+                        ($any->shapeSetter())([]);
+                    }',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:12:47 - Argument 1 expects never, but array<never, never> provided',
                 'error_levels' => [],
                 'php_version' => '8.0',
             ],

@@ -10,6 +10,8 @@ use Psalm\Exception\CodeException;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
+use const DIRECTORY_SEPARATOR;
+
 final class ClassScopeTest extends TestCase
 {
     use InvalidCodeAnalysisTestTrait;
@@ -197,6 +199,20 @@ final class ClassScopeTest extends TestCase
                         }
                     }',
             ],
+            'internalObjectsWithAPrivateConstructorComeFromTheirFactories' => [
+                'code' => '<?php
+                    function gen(): Generator {
+                        yield 1;
+                    }
+
+                    $g = gen();
+                    $c = Closure::fromCallable("strlen");
+                    $h = hash_init("sha256");
+                    $w = WeakReference::create(new stdClass());',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
         ];
     }
 
@@ -366,6 +382,30 @@ final class ClassScopeTest extends TestCase
                         echo self::bar();
                     }',
                 'error_message' => 'NonStaticSelfCall',
+            ],
+            'generatorCannotBeInstantiated' => [
+                'code' => '<?php
+                    function gen(): Generator {
+                        return new Generator();
+                    }',
+                'error_message' => 'InaccessibleMethod - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:32 - Cannot access private method Generator::__construct',
+            ],
+            'weakReferenceCannotBeInstantiated' => [
+                'code' => '<?php
+                    $w = new WeakReference();',
+                'error_message' => 'Cannot access private method WeakReference::__construct',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'closureCannotBeInstantiated' => [
+                'code' => '<?php
+                    $c = new Closure();',
+                'error_message' => 'Cannot access private method Closure::__construct',
+            ],
+            'hashContextCannotBeInstantiated' => [
+                'code' => '<?php
+                    $h = new HashContext();',
+                'error_message' => 'Cannot access private method HashContext::__construct',
             ],
         ];
     }

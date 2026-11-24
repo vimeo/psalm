@@ -31,16 +31,26 @@ One JSON `POST` request at the end of the run, with:
 
 * the CI build and the last commit, including the **names and emails** of its author and committer
 * every issue of severity `error`, with its file path and the **source code snippet** around it
-* the type coverage counts, your error level, and the versions of Psalm and the PHP parser
+* how many issues of each type are not errors, as `issue_counts` (only types and counts, no code): those your [baseline](dealing_with_code_issues.md#using-a-baseline-file) covers (counted only as baselined, also when your config reports them as `info`), and those your error level or an [issue handler](dealing_with_code_issues.md) reports as `info`; a group without issues is `{}`
+* how the analysis ran, as `analysis`: whether it covered the whole project, how many files the results cover, the target PHP version, and whether unused code detection and taint analysis were on
+* the type coverage counts, your error level, and the versions of Psalm, the PHP parser and the PHP that runs Psalm
 
 Because of the code snippets, don't use `--shepherd` for code that must not leave your servers. Without `--shepherd` (or `PSALM_SHEPHERD`) Psalm sends nothing.
 
 ## Sending reports to your own endpoint
 
-Pass a URL instead, and Psalm posts the same JSON there:
+Pass a URL instead, and Psalm posts the same JSON there. The URL must use `http` or `https`.
 
 ```bash
 ./vendor/bin/psalm --shepherd=https://example.com/psalm-report
 ```
 
 Psalm posts to exactly that URL, and adds `https://` when the value has no scheme.
+
+To check what Psalm would send, for example to test your own endpoint, write the report to a file instead:
+
+```bash
+./vendor/bin/psalm --shepherd=file://$PWD/build/psalm-shepherd.json
+```
+
+The file holds exactly the JSON Psalm would post, and Psalm prints `Results written to` with its path. Psalm replaces an existing file. As with a URL, Psalm writes it only in CI with a GitHub repository. The path must be absolute.

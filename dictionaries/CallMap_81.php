@@ -67561,7 +67561,7 @@ return array (
   array (
     0 => 'bool',
     -1 => 'Redis|bool',
-    'credentials' => 'string',
+    'credentials' => 'array{0?: string, 1?: string, pass?: string, user?: string}|string',
   ),
   'redis::bgrewriteaof' => 
   array (
@@ -69853,7 +69853,7 @@ return array (
     'timeout=' => 'float',
     'read_timeout=' => 'float',
     'persistent=' => 'bool',
-    'auth=' => 'null|string',
+    'auth=' => 'array{0?: string, 1?: string, pass?: string, user?: string}|null|string',
     'context=' => 'array<array-key, mixed>|null',
     -2 => 'none',
   ),

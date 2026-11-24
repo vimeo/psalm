@@ -823,12 +823,14 @@ final class CallableTypeComparator
         } elseif ($input_type_part instanceof TNamedObject
             && $input_type_part->value === 'Closure'
         ) {
-            return new TCallable();
+            return new TClosure();
         } elseif ($input_type_part instanceof TNamedObject
-            && $codebase->classExists($input_type_part->value, null, $context)
+            && ($invokable = self::getInvokeMember($codebase, $input_type_part)) !== null
+            && ($codebase->classExists($invokable->value, null, $context)
+                || $codebase->classlikes->enumExists($invokable->value))
         ) {
             $invoke_id = new MethodIdentifier(
-                $input_type_part->value,
+                $invokable->value,
                 '__invoke',
             );
 
@@ -836,7 +838,7 @@ final class CallableTypeComparator
                 $declaring_method_id = $codebase->methods->getDeclaringMethodId($invoke_id);
                 $template_result = null;
 
-                if ($input_type_part instanceof Atomic\TGenericObject) {
+                if ($invokable instanceof Atomic\TGenericObject) {
                     $invokable_storage = $codebase->methods->getClassLikeStorageForMethod(
                         $declaring_method_id ?? $invoke_id,
                     );
@@ -845,13 +847,13 @@ final class CallableTypeComparator
                     foreach ($invokable_storage->template_types ?? [] as $template => $for_class) {
                         foreach ($for_class as $type) {
                             $type_params[] = new Type\Union([
-                                new TTemplateParam($template, $type, $input_type_part->value),
+                                new TTemplateParam($template, $type, $invokable->value),
                             ]);
                         }
                     }
 
                     if (!empty($type_params)) {
-                        $input_with_templates = new Atomic\TGenericObject($input_type_part->value, $type_params);
+                        $input_with_templates = new Atomic\TGenericObject($invokable->value, $type_params);
                         $template_result = new TemplateResult($invokable_storage->template_types ?? [], []);
 
                         TemplateStandinTypeReplacer::fillTemplateResult(
@@ -859,7 +861,7 @@ final class CallableTypeComparator
                             $template_result,
                             $codebase,
                             null,
-                            new Type\Union([$input_type_part]),
+                            new Type\Union([$invokable]),
                         );
                     }
                 }
@@ -893,7 +895,7 @@ final class CallableTypeComparator
                     $callable = self::bindReceiverTemplates(
                         $codebase,
                         $callable,
-                        $input_type_part,
+                        $invokable,
                         $declaring_method_id,
                     );
 
@@ -1015,6 +1017,56 @@ final class CallableTypeComparator
     }
 
     /**
+     * The classes of an intersection, through template bounds and nested intersections
+     *
+     * @param array<Atomic> $types
+     * @return list<string>
+     * @psalm-pure
+     */
+    public static function getIntersectionClassNames(array $types): array
+    {
+        $class_names = [];
+
+        foreach ($types as $type) {
+            if ($type instanceof TTemplateParam) {
+                $class_names = [...$class_names, ...self::getIntersectionClassNames($type->as->getAtomicTypes())];
+            } elseif ($type instanceof TNamedObject) {
+                $class_names[] = $type->value;
+            } else {
+                continue;
+            }
+
+            $class_names = [...$class_names, ...self::getIntersectionClassNames($type->extra_types)];
+        }
+
+        return $class_names;
+    }
+
+    /**
+     * The member of an object type whose `__invoke` it has: the type itself, or else the first class of those it is
+     * intersected with
+     */
+    public static function getInvokeMember(Codebase $codebase, TNamedObject $object): ?TNamedObject
+    {
+        if ($codebase->classOrInterfaceOrEnumExists($object->value)
+            && $codebase->methodExists(new MethodIdentifier($object->value, '__invoke'))
+        ) {
+            return $object;
+        }
+
+        foreach ($object->getIntersectionTypes() as $member) {
+            if ($member instanceof TNamedObject
+                && ($codebase->classExists($member->value) || $codebase->classlikes->enumExists($member->value))
+                && $codebase->methodExists(new MethodIdentifier($member->value, '__invoke'))
+            ) {
+                return $member;
+            }
+        }
+
+        return null;
+    }
+
+    /**
      * @return null|'not-callable'|MethodIdentifier
      * @psalm-capabilities read-props|write-this-props|write-props|write-refs
      */
@@ -1094,11 +1146,9 @@ final class CallableTypeComparator
 
                     // of an intersection, the method is the one of the type that has it
                     if ($codebase && !self::classHasMethod($codebase, $class_name, $method_name)) {
-                        foreach ($lhs_atomic_type->getIntersectionTypes() as $intersection_type) {
-                            if ($intersection_type instanceof TNamedObject
-                                && self::classHasMethod($codebase, $intersection_type->value, $method_name)
-                            ) {
-                                $class_name = $intersection_type->value;
+                        foreach (self::getIntersectionClassNames([$lhs_atomic_type]) as $intersection_class) {
+                            if (self::classHasMethod($codebase, $intersection_class, $method_name)) {
+                                $class_name = $intersection_class;
                                 break;
                             }
                         }
@@ -1111,6 +1161,17 @@ final class CallableTypeComparator
                             $class_name = $lhs_template_atomic_type->value;
                         } elseif ($lhs_template_atomic_type instanceof TClassString) {
                             $class_name = $lhs_template_atomic_type->as;
+                        }
+                    }
+
+                    if ($codebase
+                        && ($class_name === null || !self::classHasMethod($codebase, $class_name, $method_name))
+                    ) {
+                        foreach (self::getIntersectionClassNames([$lhs_atomic_type]) as $intersection_class) {
+                            if (self::classHasMethod($codebase, $intersection_class, $method_name)) {
+                                $class_name = $intersection_class;
+                                break;
+                            }
                         }
                     }
                 } elseif ($lhs_atomic_type instanceof TClassString
