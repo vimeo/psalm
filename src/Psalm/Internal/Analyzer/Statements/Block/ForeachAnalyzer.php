@@ -1469,7 +1469,7 @@ final class ForeachAnalyzer
 
                 $has_valid_iterator = true;
             } elseif ($iterator_atomic_type instanceof Scalar || $iterator_atomic_type instanceof TVoid) {
-                $invalid_iterator_types[] = $iterator_atomic_type->getId();
+                $invalid_iterator_types[] = $iterator_atomic_type->getId(false);
 
                 // what the other types of the iterated value hold is still iterated
                 $value_type = Type::getMixed()->setParentNodes($value_type?->parent_nodes ?? []);
@@ -1676,7 +1676,7 @@ final class ForeachAnalyzer
             $message = (stripos($invalid_iterator_types[0], 'generator<') === 0
                     ? 'Cannot iterate over generator with non-null send() type '
                     : 'Cannot iterate over ')
-                . '\'' . $invalid_iterator_types[0] . '\'';
+                . $invalid_iterator_types[0];
 
             if ($has_valid_iterator) {
                 IssueBuffer::maybeAdd(
