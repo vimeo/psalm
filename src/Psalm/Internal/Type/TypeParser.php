@@ -122,7 +122,6 @@ use function reset;
 use function str_contains;
 use function str_ends_with;
 use function str_starts_with;
-use function stripslashes;
 use function strlen;
 use function strpos;
 use function strtolower;
@@ -2585,8 +2584,9 @@ final class TypeParser
                 $had_explicit = true;
                 $previous_property_key = $property_key;
 
+                // a quoted key is the string PHP reads from the literal (`"a\nb"` holds a line break)
                 if ($property_key[0] === '\'' || $property_key[0] === '"') {
-                    $property_key = stripslashes(substr($property_key, 1, -1));
+                    $property_key = self::unescapeStringLiteral(substr($property_key, 1, -1), $property_key[0]);
                 }
             } else {
                 throw new TypeParseTreeException(

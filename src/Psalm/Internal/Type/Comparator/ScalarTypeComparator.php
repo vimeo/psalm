@@ -223,6 +223,25 @@ final class ScalarTypeComparator
             return false;
         }
 
+        // get_class() of a union of classes is the name of any of them
+        if ($container_type_part instanceof TDependentGetClass
+            && !$container_type_part->as_type->isSingle()
+        ) {
+            foreach ($container_type_part->as_type->getAtomicTypes() as $class_type) {
+                if (self::isContainedBy(
+                    $codebase,
+                    $input_type_part,
+                    new TClassString('object', $class_type instanceof TNamedObject ? $class_type : null),
+                    $allow_interface_equality,
+                    $allow_float_int_equality,
+                )) {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
         if ($container_type_part instanceof TDependentGetClass) {
             $first_type = $container_type_part->as_type->getSingleAtomic();
 

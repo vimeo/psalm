@@ -53,6 +53,24 @@ final class ReferenceConstraintTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'foreachByReferenceOverAPropertyMayWriteItsItemType' => [
+                'code' => '<?php
+                    final class A {
+                        /** @var list<int> */
+                        public array $ints = [];
+
+                        /** @param list<string> $strings */
+                        public function f(array $strings): array {
+                            foreach ($this->ints as &$v) {
+                                $v = $v + 1;
+                            }
+                            foreach ($strings as &$v) {
+                                $v = "s";
+                            }
+                            return $strings;
+                        }
+                    }',
+            ],
             'paramOutOfAByRefParamWhoseTemplateItsOwnArgumentBindsIsNotHandledAgain' => [
                 'code' => '<?php
                     function run(string $command): string {
@@ -79,6 +97,37 @@ final class ReferenceConstraintTest extends TestCase
                 ],
                 'ignored_issues' => [],
                 'php_version' => '8.0',
+            ],
+            'paramOutOfAByRefParamOfAStaticMethodBeforeTheArgumentThatBindsItsTemplate' => [
+                'code' => '<?php
+                    final class C {
+                        /**
+                         * @template T
+                         * @param mixed $out
+                         * @param T $v
+                         * @param-out list<T> $out
+                         */
+                        public static function s(&$out, $v): void {
+                            $out = [$v];
+                        }
+
+                        /**
+                         * @template T
+                         * @param mixed $out
+                         * @param T $v
+                         * @param-out list<T> $out
+                         */
+                        public function m(&$out, $v): void {
+                            $out = [$v];
+                        }
+                    }
+
+                    C::s($static, "x");
+                    (new C())->m($instance, "x");',
+                'assertions' => [
+                    '$static===' => "list<'x'>",
+                    '$instance===' => "list<'x'>",
+                ],
             ],
             'paramOutOfAByRefParamAfterTheArgumentThatBindsItsTemplate' => [
                 'code' => '<?php
@@ -896,6 +945,34 @@ final class ReferenceConstraintTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'foreachByReferenceOverAPropertyChecksItsItemType' => [
+                'code' => '<?php
+                    final class A {
+                        /** @var list<int> */
+                        public array $ints = [];
+
+                        public function f(): void {
+                            foreach ($this->ints as &$v) {
+                                $v = "s";
+                            }
+                        }
+                    }',
+                'error_message' => 'ReferenceConstraintViolation',
+            ],
+            'foreachByReferenceOverAnItemOfAStaticPropertyChecksItsItemType' => [
+                'code' => '<?php
+                    final class A {
+                        /** @var array<string, list<int>> */
+                        public static array $nested = ["k" => []];
+
+                        public static function f(): void {
+                            foreach (self::$nested["k"] as &$v) {
+                                $v = "s";
+                            }
+                        }
+                    }',
+                'error_message' => 'ReferenceConstraintViolation',
+            ],
             'paramOutOfAByRefPropertyBeforeTheArgumentThatBindsItsTemplateIsCheckedAgainstItsDeclaredType' => [
                 'code' => '<?php
                     /**

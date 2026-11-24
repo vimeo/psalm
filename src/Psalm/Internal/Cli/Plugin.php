@@ -12,7 +12,6 @@ use Psalm\Internal\PluginManager\PluginListFactory;
 use Symfony\Component\Console\Application;
 
 use function dirname;
-use function getcwd;
 
 // phpcs:disable PSR1.Files.SideEffects
 
@@ -28,7 +27,7 @@ final class Plugin
     public static function run(): void
     {
         CliUtils::checkRuntimeRequirements();
-        $current_dir = (string) getcwd();
+        $current_dir = CliUtils::getCurrentDir([]);
         $vendor_dir = CliUtils::getVendorDir($current_dir);
         CliUtils::requireAutoloaders($current_dir, false, $vendor_dir);
 
