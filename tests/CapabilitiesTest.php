@@ -2785,6 +2785,143 @@ final class CapabilitiesTest extends TestCase
                         }
                     }',
             ],
+            'functionGivingBackItsThisArgumentReturnsThis' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @param T $value
+                     * @param (callable(T): mixed)|null $callback
+                     * @return T
+                     */
+                    function tap($value, $callback = null) {
+                        if ($callback !== null) {
+                            $callback($value);
+                        }
+                        return $value;
+                    }
+
+                    final class A {
+                        /** @return $this */
+                        public function configure() {
+                            return tap($this, function (self $_a): void {});
+                        }
+                    }',
+            ],
+            'functionGivingBackItsNamedThisArgumentReturnsThis' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @param T $value
+                     * @param (callable(T): mixed)|null $callback
+                     * @return T
+                     */
+                    function tap($value, $callback = null) {
+                        if ($callback !== null) {
+                            $callback($value);
+                        }
+                        return $value;
+                    }
+
+                    final class A {
+                        /** @return $this */
+                        public function configure(): static {
+                            return tap(callback: null, value: $this);
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'functionGivingBackItsFluentThisArgumentReturnsThis' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @param T $value
+                     * @return T
+                     */
+                    function same($value) {
+                        return $value;
+                    }
+
+                    final class A {
+                        /** @return $this */
+                        public function a(): static {
+                            return $this;
+                        }
+
+                        /** @return $this */
+                        public function b(): static {
+                            return same($this->a());
+                        }
+                    }',
+            ],
+            'staticMethodGivingBackItsThisArgumentReturnsThis' => [
+                'code' => '<?php
+                    final class Helper {
+                        /**
+                         * @template T
+                         * @param T $value
+                         * @return T
+                         */
+                        public static function same($value) {
+                            return $value;
+                        }
+                    }
+
+                    final class A {
+                        /** @return $this */
+                        public function configure(): static {
+                            return Helper::same($this);
+                        }
+                    }',
+            ],
+            'methodGivingBackItsThisArgumentReturnsThis' => [
+                'code' => '<?php
+                    final class Helper {
+                        /**
+                         * @template T
+                         * @param T $value
+                         * @return T
+                         */
+                        public function same($value) {
+                            return $value;
+                        }
+                    }
+
+                    final class A {
+                        private Helper $helper;
+
+                        public function __construct() {
+                            $this->helper = new Helper();
+                        }
+
+                        /** @return $this */
+                        public function configure(): static {
+                            return $this->helper->same($this);
+                        }
+                    }',
+            ],
+            'assigningToAPropertyOfACallGivingBackItsThisArgumentOnlyMutatesThis' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @param T $value
+                     * @return T
+                     * @psalm-pure
+                     */
+                    function same($value) {
+                        return $value;
+                    }
+
+                    final class Counter {
+                        public int $n = 0;
+
+                        /** @psalm-external-mutation-free */
+                        public function reset(): void {
+                            same($this)->n = 0;
+                        }
+                    }',
+            ],
             'assigningToAPropertyOfATernaryOfThisOnlyMutatesThis' => [
                 'code' => '<?php
                     final class Counter {
@@ -7667,6 +7804,94 @@ final class CapabilitiesTest extends TestCase
                 'error_message' => 'InvalidReturnStatement - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:36 - The declared return type \'$this\' for Counter::copyIf requires returning $this, but this may return another object',
                 'error_levels' => [],
                 'php_version' => '8.0',
+            ],
+            'functionGivingBackAnArgumentThatIsNotThisIsNotThis' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @param T $value
+                     * @return T
+                     */
+                    function same($value) {
+                        return $value;
+                    }
+
+                    final class Counter {
+                        /** @return $this */
+                        public function copy(): static {
+                            return same(clone $this);
+                        }
+                    }',
+                'error_message' => 'InvalidReturnStatement - src' . DIRECTORY_SEPARATOR . 'somefile.php:14:36 - The declared return type \'$this\' for Counter::copy requires returning $this, but this may return another object',
+            ],
+            'functionGivingBackOneOfTwoArgumentsIsNotThis' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @param T $a
+                     * @param T $b
+                     * @return T
+                     */
+                    function either($a, $b) {
+                        return rand(0, 1) ? $a : $b;
+                    }
+
+                    final class Counter {
+                        /** @return $this */
+                        public function copyMaybe(): static {
+                            return either($this, clone $this);
+                        }
+                    }',
+                'error_message' => 'InvalidReturnStatement - src' . DIRECTORY_SEPARATOR . 'somefile.php:15:36 - The declared return type \'$this\' for Counter::copyMaybe requires returning $this, but this may return another object',
+            ],
+            'functionGivingBackWhatItsCallbackReturnsIsNotThis' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @param T $value
+                     * @param callable(): T $make
+                     * @return T
+                     */
+                    function orMake($value, callable $make) {
+                        return rand(0, 1) ? $value : $make();
+                    }
+
+                    final class Counter {
+                        /** @return $this */
+                        public function copyMaybe(): static {
+                            return orMake($this, fn() => clone $this);
+                        }
+                    }',
+                'error_message' => 'InvalidReturnStatement - src' . DIRECTORY_SEPARATOR . 'somefile.php:15:36 - The declared return type \'$this\' for Counter::copyMaybe requires returning $this, but this may return another object',
+            ],
+            'methodGivingBackAClassTemplateIsNotThis' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class Box {
+                        /** @var T */
+                        private $value;
+
+                        /** @param T $value */
+                        public function __construct($value) {
+                            $this->value = $value;
+                        }
+
+                        /**
+                         * @param T $_other
+                         * @return T
+                         */
+                        public function get($_other) {
+                            return $this->value;
+                        }
+                    }
+
+                    final class Counter {
+                        /** @return $this */
+                        public function copy(): static {
+                            return (new Box(clone $this))->get($this);
+                        }
+                    }',
+                'error_message' => 'InvalidReturnStatement - src' . DIRECTORY_SEPARATOR . 'somefile.php:24:36 - The declared return type \'$this\' for Counter::copy requires returning $this, but this may return another object',
             ],
             'assigningToAPropertyOfATernaryOfThisWritesThisProps' => [
                 'code' => '<?php
