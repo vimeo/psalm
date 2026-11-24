@@ -9,6 +9,7 @@ use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Perf;
 use Psalm\Plugin\ArgTypeInferer;
 use Psalm\Plugin\DynamicFunctionStorage;
 use Psalm\Plugin\DynamicTemplateProvider;
@@ -46,11 +47,12 @@ final class DynamicFunctionStorageProvider
 
     /**
      * @param Closure(DynamicFunctionStorageProviderEvent): ?DynamicFunctionStorage $c
-     * @psalm-external-mutation-free
      */
     public function registerClosure(string $fq_function_name, Closure $c): void
     {
-        self::$handlers[strtolower($fq_function_name)][] = $c;
+        self::$handlers[strtolower($fq_function_name)][] = Perf\Collector::$enabled
+            ? Perf\Collector::wrap($c, 'DynamicFunctionStorage')
+            : $c;
     }
 
     /**
