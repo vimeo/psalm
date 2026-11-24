@@ -225,6 +225,16 @@ final class RedundantConditionTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'issetOfAnOffsetOfAShapeItemThatMayBeAnArrayAccessObject' => [
+                'code' => '<?php
+                    /** @param array{a: array{b: int}|ArrayAccess<string, int>} $t */
+                    function f(array $t): void {
+                        if (isset($t["a"]["b"])) {}
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'issetOfAnOffsetUnderLiteralKeysOneOfWhichMayBeUnset' => [
                 'code' => '<?php
                     /**
