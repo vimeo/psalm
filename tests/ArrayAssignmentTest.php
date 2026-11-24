@@ -132,6 +132,30 @@ final class ArrayAssignmentTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'uuidLikeStringKeyStaysString' => [
+                'code' => '<?php
+                    $a = ["6e5212ed-a197-4339-99aa-5654798a4854" => 1, "1e999" => 2];',
+                'assertions' => [
+                    '$a===' => "array{'1e999': 2, '6e5212ed-a197-4339-99aa-5654798a4854': 1}",
+                ],
+            ],
+            'constArrayKeyThatStaysStringDoesNotMoveTheNextKey' => [
+                'code' => '<?php
+                    class A {
+                        const B = [K::BIG => 1, 2];
+                        const C = [K::OCTAL => 1, 2];
+                    }
+                    class K {
+                        const BIG = "99999999999999999999";
+                        const OCTAL = "015";
+                    }
+                    $b = A::B;
+                    $c = A::C;',
+                'assertions' => [
+                    '$b===' => "array{'99999999999999999999': 1, 0: 2}",
+                    '$c===' => "array{'015': 1, 0: 2}",
+                ],
+            ],
             'appendsStopGrowingAListShapeAtTheMaximumSize' => [
                 'code' => '<?php
                     $a = [];' . str_repeat('
@@ -3615,6 +3639,39 @@ final class ArrayAssignmentTest extends TestCase
                     }
                 PHP,
             ],
+            'itemWrittenUnderAMixedKeyIsKeptWhenTheKeyIsNarrowed' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @param array<array-key, mixed> $form
+                     * @param mixed $value
+                     */
+                    function f(array $form, $value): int {
+                        /** @psalm-suppress MixedArrayOffset */
+                        $form[$value] = ['a' => 1];
+                        if ($value != 'value') {
+                            unset($form['value']);
+                        }
+                        return count($form[$value]);
+                    }
+                PHP,
+            ],
+            'itemWrittenUnderANarrowedKeyInALoop' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param array<string, array<int, mixed>> $r */
+                    function f(bool $b, array $r, string $k, int $i, string $s): array {
+                        while ($b) {
+                            $r[$k][$i] = ['offset' => 1];
+                            if ($k === 'scot') {
+                                $r[$k][$i]['data'] = $s;
+                            }
+                            $b = false;
+                        }
+                        return $r;
+                    }
+                PHP,
+            ],
         ];
     }
 
@@ -3625,6 +3682,27 @@ final class ArrayAssignmentTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'offsetUnsetInABranchAfterALoopWritingItIsPossiblyUndefined' => [
+                'code' => '<?php
+                    /**
+                     * @param array{a?: array<string>} $t
+                     */
+                    function f(array $t): void {
+                        $a = $t["a"] ?? [];
+                        $t["a"] = [];
+
+                        foreach ($a as $b) {
+                            $t["a"][] = $b;
+                        }
+                        if (0 === count($t["a"])) {
+                            unset($t["a"]);
+                        }
+
+                        foreach ($t["a"] as $_) {
+                        }
+                    }',
+                'error_message' => 'PossiblyUndefinedArrayOffset',
+            ],
             'byReferenceArgumentUnderAKeyTheListDoesNotHaveIsNull' => [
                 'code' => '<?php
                     function takesArray(array &$x): void {}
@@ -4394,6 +4472,61 @@ final class ArrayAssignmentTest extends TestCase
                     }
                 ',
                 'error_message' => 'InvalidOperand',
+            ],
+            'itemUnderAKeyNarrowedToALiteralTheArrayCantHave' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param array<0, int> $a */
+                    function f(array $a, int $k): void {
+                        $x = $a[$k];
+                        if ($k === 1) {
+                            echo $a[$k];
+                        }
+                    }
+                PHP,
+                'error_message' => "InvalidArrayOffset - src" . DIRECTORY_SEPARATOR . "somefile.php:6:18 - Cannot access value on variable \$a using offset value of '1', expecting 0",
+            ],
+            'itemUnderAKeyNarrowedToATypeTheArrayCantHave' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param array<string, int> $a */
+                    function f(array $a, string|int $k): void {
+                        if (isset($a[$k])) {
+                            if (is_int($k)) {
+                                echo $a[$k];
+                            }
+                        }
+                    }
+                PHP,
+                'error_message' => 'InvalidArrayOffset',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'itemUnderAKeyNarrowedToAnIntLikeStringTheArrayCantHave' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param array<string, int|string> $a */
+                    function f(array $a, string $k): void {
+                        $x = $a[$k];
+                        if ($k === '1') {
+                            echo $a[$k];
+                        }
+                    }
+                PHP,
+                'error_message' => "InvalidArrayOffset - src" . DIRECTORY_SEPARATOR . "somefile.php:6:18 - Cannot access value on variable \$a using offset value of '1', expecting string",
+            ],
+            'itemUnderAKeyNarrowedToANumericStringTheArrayMayNotHave' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param array<string, int|string> $a */
+                    function f(array $a, string $k): void {
+                        $x = $a[$k];
+                        if (is_numeric($k)) {
+                            echo $a[$k];
+                        }
+                    }
+                PHP,
+                'error_message' => 'PossiblyInvalidArrayOffset',
             ],
         ];
     }
