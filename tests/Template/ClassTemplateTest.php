@@ -1284,6 +1284,34 @@ final class ClassTemplateTest extends TestCase
                         if ($c->getType() === FooChild::class) {}
                     }',
             ],
+            'closurePropertyOfAGenericObjectIsLocalizedAfterACallWritingIt' => [
+                'code' => '<?php
+                    /** @template T of object */
+                    final class Box {
+                        /** @var Closure(T): void */
+                        public Closure $cb;
+
+                        /** @param T $v */
+                        public function __construct(object $v) {
+                            $this->cb = function (object $_x): void {};
+                        }
+
+                        /** @param Closure(T): void $cb */
+                        public function setCb(Closure $cb): void {
+                            $this->cb = $cb;
+                        }
+                    }
+
+                    /** @param Box<DateTime> $b */
+                    function check(Box $b): void {
+                        $b->setCb(function (object $x): void {});
+                        $r = $b->cb;
+                        /** @psalm-check-type-exact $r = Closure[impure](DateTime):void */;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'getMagicPropertyOnClass' => [
                 'code' => '<?php
                    class A {}
