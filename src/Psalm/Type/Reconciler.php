@@ -1279,10 +1279,14 @@ class Reconciler
         $class_storage = $codebase->classlike_storage_provider->get($fq_class_name);
         $constant_storage = $class_storage->constants[$const_name] ?? null;
 
-        // as for the fetch: a subclass may give `static::NAME` another value, of the type the constant declares
-        $late_static_binding = $is_static && !$class_storage->final && !$constant_storage?->final;
+        // a subclass may give `static::NAME` another value, of the type the constant declares
+        $late_static_binding = $is_static
+            && !$class_storage->final
+            && !$constant_storage?->final
+            && ($constant_storage?->type?->from_docblock === true
+                || ClassConstAnalyzer::hasDeclaredType($constant_storage));
 
-        $type = $codebase->classlikes->getClassConstantType(
+        return $codebase->classlikes->getClassConstantType(
             $fq_class_name,
             $const_name,
             ReflectionProperty::IS_PRIVATE,
@@ -1290,16 +1294,6 @@ class Reconciler
             [],
             $late_static_binding,
         );
-
-        if ($late_static_binding
-            && $type !== null
-            && !$type->from_docblock
-            && !ClassConstAnalyzer::hasDeclaredType($constant_storage)
-        ) {
-            return null;
-        }
-
-        return $type;
     }
 
     /**
