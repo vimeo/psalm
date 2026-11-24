@@ -58,7 +58,6 @@ use Psalm\Storage\Assertion\IsNotLooselyEqual;
 use Psalm\Storage\Assertion\IsType;
 use Psalm\Storage\Assertion\Truthy;
 use Psalm\Storage\ClassLikeStorage;
-use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Storage\FunctionStorage;
 use Psalm\Storage\MethodStorage;
@@ -388,21 +387,39 @@ abstract class CallAnalyzer
                 }
             }
 
-            // the parameter types inherited from overridden methods refer to their templates: all of them, or only
-            // those the method's own docblock leaves out (Methods::getMethodParams())
-            if ($declaring_class_storage->user_defined
-                && array_any(
-                    $method_storage->params,
-                    static fn(FunctionLikeParameter $param): bool => !$param->has_docblock_type,
-                )
-            ) {
+            // the parameter types an override inherits from the methods it overrides refer to their templates
+            if ($declaring_class_storage->user_defined) {
+                $inherited_template_types = [];
+
                 foreach ($class_storage->overridden_method_ids[$method_name] ?? [] as $overridden_method_id) {
                     $overridden_method_storage = $codebase->methods->hasStorage($overridden_method_id)
                         ? $codebase->methods->getStorage($overridden_method_id)
                         : null;
 
-                    if ($overridden_method_storage?->has_docblock_param_types) {
-                        $template_result->template_types += $overridden_method_storage->template_types ?? [];
+                    if ($overridden_method_storage === null || !$overridden_method_storage->has_docblock_param_types) {
+                        continue;
+                    }
+
+                    foreach ($method_storage->params as $i => $param) {
+                        if (!$param->has_docblock_type
+                            && ($overridden_method_storage->params[$i]->has_docblock_type ?? false)
+                        ) {
+                            foreach ($overridden_method_storage->template_types ?? [] as $name => $by_class) {
+                                $inherited_template_types[$name] = ($inherited_template_types[$name] ?? []) + $by_class;
+                            }
+
+                            break;
+                        }
+                    }
+                }
+
+                if ($inherited_template_types !== []) {
+                    // the templates of the called method stay bound too
+                    foreach ([$method_storage->template_types ?? [], $inherited_template_types] as $template_types) {
+                        foreach ($template_types as $name => $by_class) {
+                            $template_result->template_types[$name] = ($template_result->template_types[$name] ?? [])
+                                + $by_class;
+                        }
                     }
                 }
             }
