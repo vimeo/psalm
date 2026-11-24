@@ -13,7 +13,8 @@ use Psalm\Type\Union;
 
 /**
  * ini_get() returns false only for a setting nothing has registered, which can't happen to these core settings.
- * The value is the raw INI text, so even numeric settings can hold "30s" or "": the result is string, not numeric-string.
+ * The value is the raw INI text, so even numeric settings can hold "30s" or "": the result is string, not
+ * numeric-string.
  *
  * @internal
  */
