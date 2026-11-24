@@ -4845,6 +4845,59 @@ final class TypeAlgebraTest extends TestCase
                 'assertions' => [],
                 'ignored_issues' => ['DocblockTypeContradiction'],
             ],
+            'listIsKeptWhenAnOffsetIsWrittenWhereItCannotBe' => [
+                'code' => '<?php
+                    /** @param list{null, int} $a */
+                    function f(array $a): void {
+                        if ($a[0] !== null) {
+                            $a[2] = 1;
+                        }
+                        /** @psalm-check-type-exact $a = list{null, int} */
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['DocblockTypeContradiction'],
+            ],
+            'arrayIsKeptWhenOffsetsAreWrittenWhereItCannotBe' => [
+                'code' => '<?php
+                    /** @param array{test: null} $a */
+                    function f(array $a): void {
+                        if ($a["test"] !== null) {
+                            $a["other"] = 1;
+                            $a["x"]["y"] = 2;
+                        }
+                        /** @psalm-check-type-exact $a = array{test: null} */
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['DocblockTypeContradiction'],
+            ],
+            'variableIsKeptWhenAnOffsetIsWrittenWhereItCannotBe' => [
+                'code' => '<?php
+                    /** @param array{x: int} $a */
+                    function f(array $a): void {
+                        if (!is_array($a)) {
+                            $a["y"] = 1;
+                        }
+                        /** @psalm-check-type-exact $a = array{x: int} */
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['TypeDoesNotContainType'],
+            ],
+            'propertyIsKeptWhenAnOffsetIsWrittenWhereItCannotBe' => [
+                'code' => '<?php
+                    final class A {
+                        /** @var array{t: null} */
+                        public array $p = ["t" => null];
+
+                        public function m(): void {
+                            if ($this->p["t"] !== null) {
+                                $this->p["o"] = 1;
+                            }
+                            /** @psalm-check-type-exact $this->p = array{t: null} */
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['DocblockTypeContradiction'],
+            ],
             'offsetKnownFromTheConditionIsKeptWhenTheArrayIsNotReassigned' => [
                 'code' => '<?php
                     $a = ["test" => rand(0, 1) ? null : "x"];
@@ -5617,6 +5670,31 @@ final class TypeAlgebraTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'offsetOfAnArrayThatCannotBeIsNever' => [
+                'code' => '<?php
+                    /** @param array{test: null, other: int} $a */
+                    function f(array $a): void {
+                        if ($a["test"] !== null) {
+                            $b = $a["other"];
+                            echo $b;
+                        }
+                    }',
+                'error_message' => 'NoValue',
+                'error_levels' => ['DocblockTypeContradiction'],
+            ],
+            'offsetOfAVariableThatCannotBeIsNever' => [
+                'code' => '<?php
+                    function f(): void {
+                        $a = null;
+
+                        if ($a !== null) {
+                            $b = $a["x"];
+                            echo $b;
+                        }
+                    }',
+                'error_message' => 'NoValue',
+                'error_levels' => ['TypeDoesNotContainType'],
+            ],
             'contradictionAfterAnIfThatConditionallyDefinesAVariable' => [
                 'code' => '<?php
                     function a(array $l): bool {
