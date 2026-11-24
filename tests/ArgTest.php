@@ -97,6 +97,44 @@ final class ArgTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'namedArgumentsOfSplClassesUseThePhp8Names' => [
+                'code' => '<?php
+                    $fixed = SplFixedArray::fromArray([1, 2], preserveKeys: false);
+                    $fixed->offsetSet(index: 0, value: 1);
+                    $exists = $fixed->offsetExists(index: 0);
+                    $fixed->offsetUnset(index: 0);
+
+                    $list = new SplDoublyLinkedList();
+                    $list->add(index: 0, value: 1);
+                    $list->offsetSet(index: 0, value: 2);
+                    $exists = $list->offsetExists(index: 0);
+                    $list->offsetUnset(index: 0);
+
+                    $directory = new DirectoryIterator(directory: ".");
+                    $directory->seek(offset: 0);
+                    $files = new FilesystemIterator(directory: ".");
+                    $recursive = new RecursiveDirectoryIterator(directory: ".");
+
+                    $regex = new RegexIterator(new ArrayIterator([]), pattern: "/a/", pregFlags: 0);
+                    $recursiveRegex = new RecursiveRegexIterator(
+                        new RecursiveArrayIterator([]),
+                        pattern: "/a/",
+                        pregFlags: 0,
+                    );
+                    $tree = new RecursiveTreeIterator(iterator: new RecursiveArrayIterator([]), cachingIteratorFlags: 16);
+
+                    $multiple = new MultipleIterator();
+                    $multiple->attachIterator(new ArrayIterator([]), info: "a");
+
+                    $map = new WeakMap();
+                    $key = new stdClass();
+                    $map->offsetSet(object: $key, value: 1);
+                    $exists = $map->offsetExists(object: $key);
+                    $map->offsetUnset(object: $key);',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'namedArgumentsOfArrayObjectAndArrayIteratorUseThePhp8Names' => [
                 'code' => '<?php
                     $object = new ArrayObject(array: [3, 1, 2]);
@@ -753,6 +791,98 @@ final class ArgTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'falseOfAValueDoesNotMakeItPossiblyValidForAScalarParameter' => [
+                'code' => '<?php
+                    final class Foo {}
+                    final class Bar {}
+
+                    function takes(Bar|int|string|float|bool $b): void {}
+
+                    function f(Foo|false $foo): void {
+                        takes($foo);
+                    }',
+                'error_message' => 'InvalidArgument',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'templateOfFalseDoesNotMakeAValuePossiblyValidForABoolParameter' => [
+                'code' => '<?php
+                    final class Foo {}
+                    final class Bar {}
+
+                    function takes(Bar|bool $b): void {}
+
+                    /**
+                     * @template T of false
+                     * @param Foo|T $foo
+                     */
+                    function f($foo): void {
+                        takes($foo);
+                    }',
+                'error_message' => 'InvalidArgument',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'templateOfBoolMakesAValuePossiblyValidForABoolParameter' => [
+                'code' => '<?php
+                    final class Foo {}
+                    final class Bar {}
+
+                    function takes(Bar|bool $b): void {}
+
+                    /**
+                     * @template T of bool
+                     * @param Foo|T $foo
+                     */
+                    function f($foo): void {
+                        takes($foo);
+                    }',
+                'error_message' => 'PossiblyInvalidArgument',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'falseOfAValueDoesNotMakeItPossiblyValidForABoolParameter' => [
+                'code' => '<?php
+                    final class Foo {}
+                    final class Bar {}
+
+                    function takes(Bar|bool $b): void {}
+
+                    function f(Foo|false $foo): void {
+                        takes($foo);
+                    }',
+                'error_message' => 'InvalidArgument',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'boolOfAValueMakesItPossiblyValidForABoolParameter' => [
+                'code' => '<?php
+                    final class Foo {}
+                    final class Bar {}
+
+                    function takes(Bar|bool $b): void {}
+
+                    function f(Foo|bool $foo): void {
+                        takes($foo);
+                    }',
+                'error_message' => 'PossiblyInvalidArgument',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'trueOfAValueMakesItPossiblyValidForABoolParameter' => [
+                'code' => '<?php
+                    final class Foo {}
+                    final class Bar {}
+
+                    function takes(Bar|bool $b): void {}
+
+                    function f(Foo|true $foo): void {
+                        takes($foo);
+                    }',
+                'error_message' => 'PossiblyInvalidArgument',
+                'error_levels' => [],
+                'php_version' => '8.2',
+            ],
             'arrayObjectNamedArgumentsOfPhp7AreRejected' => [
                 'code' => '<?php
                     $o = new ArrayObject([3, 1, 2]);
