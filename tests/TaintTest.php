@@ -2191,6 +2191,30 @@ final class TaintTest extends TestCase
                         echo (string) $row[0];
                     }',
             ],
+            'rowsInsertedAsAListKeepTheirColumnsApart' => [
+                'code' => '<?php
+                    final class Table {
+                        /**
+                         * @psalm-database-insert $table $data
+                         */
+                        public function insert(string $table, array $data): void {}
+
+                        /**
+                         * @return list<array<string, mixed>>
+                         * @psalm-database-query $sql
+                         */
+                        public function all(string $sql): array {
+                            return [];
+                        }
+                    }
+
+                    function run(Table $db): void {
+                        $db->insert("users", [["name" => "admin", "bio" => $_GET["bio"]]]);
+                        foreach ($db->all("SELECT name FROM users") as $user) {
+                            echo (string) $user["name"];
+                        }
+                    }',
+            ],
             'annotationsOfAQueryMethodReplaceItsBody' => [
                 'code' => '<?php
                     final class Db {
@@ -8503,6 +8527,57 @@ final class TaintTest extends TestCase
                     }',
                 'error_message' => 'TaintedHtml',
                 'php_version' => '8.1',
+            ],
+            'valueOfARowInsertedAsAListIsStoredInItsColumn' => [
+                'code' => '<?php
+                    final class Table {
+                        /**
+                         * @psalm-database-insert $table $data
+                         */
+                        public function insert(string $table, array $data): void {}
+
+                        /**
+                         * @return list<array<string, mixed>>
+                         * @psalm-database-query $sql
+                         */
+                        public function all(string $sql): array {
+                            return [];
+                        }
+                    }
+
+                    function run(Table $db): void {
+                        $db->insert("users", [["name" => "admin", "bio" => $_GET["bio"]]]);
+                        foreach ($db->all("SELECT bio FROM users") as $user) {
+                            echo (string) $user["bio"];
+                        }
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'positionalValueOfARowCanBeInAnyColumn' => [
+                'code' => '<?php
+                    final class Table {
+                        /**
+                         * @param list<list<mixed>> $rows
+                         * @psalm-database-insert $table $rows
+                         */
+                        public function insert(string $table, array $rows): void {}
+
+                        /**
+                         * @return list<array<string, mixed>>
+                         * @psalm-database-query $sql
+                         */
+                        public function all(string $sql): array {
+                            return [];
+                        }
+                    }
+
+                    function run(Table $db): void {
+                        $db->insert("users", [["admin", $_GET["bio"]]]);
+                        foreach ($db->all("SELECT name FROM users") as $user) {
+                            echo (string) $user["name"];
+                        }
+                    }',
+                'error_message' => 'TaintedHtml',
             ],
             'rowInsertedWithPgInsertIsSelected' => [
                 'code' => '<?php

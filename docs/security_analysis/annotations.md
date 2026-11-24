@@ -213,7 +213,7 @@ on (a statement, a result). The last word says how, as in the table of `@psalm-d
 ### `@psalm-database-insert $table $data`, `@psalm-database-update $table $data` and `@psalm-database-select $table`
 
 `insert` and `update` store each value of the array given to `$data` in the column its key names, in the table given
-to `$table`. `select` returns the rows of that table, as `SELECT *` gives them.
+to `$table`, or a list of rows. `select` returns the rows of that table, as `SELECT *` gives them.
 
 ```php
 <?php // --taint-analysis
@@ -239,6 +239,8 @@ final class Table
 function run(Table $db): void {
     $db->insert('users', ['name' => 'admin', 'bio' => '']);
     $db->update('users', ['bio' => $_GET['bio'] ?? ''], ['id' => 1]);
+    $db->insert('posts', [['title' => 'Hello', 'body' => $_GET['body'] ?? '']]);
+    $db->insert('tags', [[1, $_GET['tag'] ?? '']]);
 
     foreach ($db->select('users') as $user) {
         echo (string) $user['bio'];  // TaintedHtml
@@ -246,7 +248,12 @@ function run(Table $db): void {
     }
 
     foreach ($db->select('posts') as $post) {
+        echo (string) $post['body'];  // TaintedHtml
         echo (string) $post['title']; // no issue
+    }
+
+    foreach ($db->select('tags') as $tag) {
+        echo (string) $tag['label']; // TaintedHtml: a value without a column name can be in any column
     }
 }
 ```

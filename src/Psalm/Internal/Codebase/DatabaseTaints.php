@@ -15,6 +15,7 @@ use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Storage\FunctionLikeStorage;
+use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Union;
 
@@ -43,7 +44,8 @@ use function substr;
  *   `execute` (`params`) and `bind` (`value` under the placeholder `key`, `base` being the number of the first
  *   positional placeholder, or the values given from `values` on, in the order of the placeholders);
  * - `insert` and `update`: store the values of the array given to `data`, under its keys, in the columns of the table
- *   given to `table`;
+ *   given to `table`; under integer keys, which name no column, it holds rows (`[$row]`, a list of rows), each storing
+ *   its values in the columns of its own keys;
  * - `fetch`: what the call returns is from the rows the result given to `from` (or the object the method is called on)
  *   holds, as `result` says.
  *
@@ -595,8 +597,6 @@ final class DatabaseTaints
         $table = self::getTableName($statements_analyzer, $args[$spec['table'] ?? -1][0] ?? null);
 
         foreach ($args[$spec['data'] ?? -1] ?? [] as $data_arg) {
-            $data_type = $statements_analyzer->node_data->getType($data_arg->value);
-            $keyed = $data_type !== null && $data_type->isSingle() ? $data_type->getSingleAtomic() : null;
             $data_node = DataFlowNode::getForAssignment('database data', $call_location);
 
             if (!self::addPathsFromArg($statements_analyzer, $graph, $data_arg, $data_node, '=')) {
@@ -605,28 +605,95 @@ final class DatabaseTaints
 
             $graph->addNode($data_node);
 
-            $columns = [];
-            if ($keyed instanceof TKeyedArray && $keyed->fallback_params === null) {
-                foreach ($keyed->properties as $key => $_) {
-                    $columns[] = $data_arg->unpack ? null : (string) $key;
-                }
-            } else {
-                $columns[] = null;
+            if ($data_arg->unpack) {
+                // what is given to the parameter is one of the values unpacked
+                self::addColumnWrite($graph, $table, null, $data_node, 'arrayvalue-fetch', $call_location);
+                continue;
             }
 
-            foreach ($columns as $column) {
-                $write_node = DataFlowNode::getForAssignment('database write ' . ($column ?? '*'), $call_location);
-                $graph->addNode($write_node);
-                $graph->addPath(
-                    $data_node,
-                    $write_node,
-                    $column === null ? 'arrayvalue-fetch' : 'arrayvalue-fetch-\'' . $column . '\'',
-                );
-                self::addWrite($graph, $table, $column, $write_node);
-            }
+            self::addDataWrites(
+                $graph,
+                $table,
+                $statements_analyzer->node_data->getType($data_arg->value),
+                $data_node,
+                $call_location,
+                false,
+            );
         }
 
         return $return_type;
+    }
+
+    /**
+     * Stores the values of $node, an array of the type $type, in the columns of the table its keys name. Integer keys
+     * name no column: what is under them is a row, which stores its values in the columns its own keys name, and a
+     * value under them in a row (`[$id, $name]`) can be in any column.
+     */
+    private static function addDataWrites(
+        TaintFlowGraph $graph,
+        ?string $table,
+        ?Union $type,
+        DataFlowNode $node,
+        CodeLocation $call_location,
+        bool $is_row,
+    ): void {
+        $atomic = $type !== null && $type->isSingle() ? $type->getSingleAtomic() : null;
+
+        if ($atomic instanceof TKeyedArray && $atomic->fallback_params === null) {
+            foreach ($atomic->properties as $key => $value_type) {
+                $path = 'arrayvalue-fetch-\'' . $key . '\'';
+
+                if (!is_int($key) || $is_row) {
+                    self::addColumnWrite($graph, $table, is_int($key) ? null : $key, $node, $path, $call_location);
+                    continue;
+                }
+
+                $row_node = DataFlowNode::getForAssignment($node->label . ' row ' . $key, $call_location);
+                $graph->addNode($row_node);
+                $graph->addPath($node, $row_node, $path);
+                self::addDataWrites($graph, $table, $value_type, $row_node, $call_location, true);
+            }
+
+            return;
+        }
+
+        // a list of rows
+        if (!$is_row && ($atomic instanceof TKeyedArray || $atomic instanceof TArray)) {
+            [$key_type, $value_type] = $atomic instanceof TKeyedArray
+                ? [$atomic->getGenericKeyType(), $atomic->getGenericValueType()]
+                : $atomic->type_params;
+
+            if ($key_type->isInt()) {
+                $row_node = DataFlowNode::getForAssignment($node->label . ' row', $call_location);
+                $graph->addNode($row_node);
+                $graph->addPath($node, $row_node, 'arrayvalue-fetch');
+                self::addDataWrites($graph, $table, $value_type, $row_node, $call_location, true);
+
+                return;
+            }
+        }
+
+        self::addColumnWrite($graph, $table, null, $node, 'arrayvalue-fetch', $call_location);
+    }
+
+    /**
+     * Stores what $path takes of $data in the column, or in any column of the table if it isn't known
+     */
+    private static function addColumnWrite(
+        TaintFlowGraph $graph,
+        ?string $table,
+        ?string $column,
+        DataFlowNode $data,
+        string $path,
+        CodeLocation $call_location,
+    ): void {
+        $write_node = DataFlowNode::getForAssignment(
+            $data->label . ' write ' . ($column ?? '*'),
+            $call_location,
+        );
+        $graph->addNode($write_node);
+        $graph->addPath($data, $write_node, $path);
+        self::addWrite($graph, $table, $column, $write_node);
     }
 
     /**
