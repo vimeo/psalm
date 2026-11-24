@@ -14,6 +14,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\BinaryOp\CoalesceAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\ClassTemplateParamCollector;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodCallReturnTypeFetcher;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
+use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ArrayFetchAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ConstFetchAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\VariableFetchAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
@@ -21,6 +22,7 @@ use Psalm\Internal\Clause;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\AssertionReconciler;
+use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Internal\Type\TypeExpander;
@@ -101,6 +103,7 @@ use function reset;
 use function sort;
 use function str_contains;
 use function str_ends_with;
+use function str_replace;
 use function str_split;
 use function str_starts_with;
 use function strlen;
@@ -244,6 +247,7 @@ class Reconciler
 
         // make sure array keys come after base keys
         ksort($new_types);
+        $new_types = self::moveOffsetsAfterTheirIndexVars($new_types);
 
         $codebase = $statements_analyzer->getCodebase();
 
@@ -679,8 +683,13 @@ class Reconciler
                             continue;
                         }
 
-                        if (!isset($new_types[$new_key])
-                            && preg_match('/' . preg_quote($key, '/') . '[\]\[\-]/', $new_key)
+                        if ((!isset($new_types[$new_key]) || str_contains($new_key, '[' . $key . ']'))
+                            && self::dependsOnNarrowedVar(
+                                $codebase,
+                                $new_key,
+                                $key,
+                                [$key => $result_type] + $existing_types,
+                            )
                             && $is_real
                         ) {
                             // Fix any references to the type before removing it.
@@ -1109,6 +1118,145 @@ class Reconciler
             && $key_parts[1] === '['
             && isset($existing_types[$key_parts[0]])
             && $existing_types[$key_parts[0]]->isString();
+    }
+
+    /**
+     * An offset asserted along with its index variable is read under the narrowed index
+     *
+     * @param array<string, array<array<int, Assertion>>> $new_types
+     * @return array<string, array<array<int, Assertion>>>
+     * @psalm-pure
+     */
+    private static function moveOffsetsAfterTheirIndexVars(array $new_types): array
+    {
+        $offsets = [];
+
+        foreach ($new_types as $key => $type) {
+            if (!str_contains($key, '[$')) {
+                continue;
+            }
+
+            foreach ($new_types as $index_var => $_) {
+                if (str_contains($key, '[' . $index_var . ']')) {
+                    $offsets[$key] = $type;
+                    unset($new_types[$key]);
+                    break;
+                }
+            }
+        }
+
+        return $new_types + $offsets;
+    }
+
+    /**
+     * Whether what is known about $var_id may be stale after $narrowed_var_id has been narrowed. It is not when
+     * $narrowed_var_id is only an index of $var_id into an array whose value type is the same for every key and whose
+     * keys include the narrowed index.
+     *
+     * @internal
+     * @param array<string, Union> $types
+     */
+    public static function dependsOnNarrowedVar(
+        Codebase $codebase,
+        string $var_id,
+        string $narrowed_var_id,
+        array $types,
+    ): bool {
+        $index = '[' . $narrowed_var_id . ']';
+
+        if (preg_match('/' . preg_quote($narrowed_var_id, '/') . '[\]\[\-]/', str_replace($index, '[]', $var_id))) {
+            return true;
+        }
+
+        $position = strpos($var_id, $index);
+
+        while ($position !== false) {
+            $array_type = $types[substr($var_id, 0, $position)] ?? null;
+
+            if ($array_type === null
+                || !self::hasSameValueTypeForEveryKey($array_type)
+                || !self::hasKeyType($codebase, $array_type, $types[$narrowed_var_id] ?? null)
+            ) {
+                return true;
+            }
+
+            $position = strpos($var_id, $index, $position + 1);
+        }
+
+        return false;
+    }
+
+    /**
+     * Whether the keys of the array include the narrowed index, which a fetch reports otherwise. The index is cast as
+     * PHP casts a key: '1' is 1. An index still mixed is no more invalid than before it was narrowed.
+     */
+    private static function hasKeyType(Codebase $codebase, Union $array_type, ?Union $index_type): bool
+    {
+        if ($index_type === null) {
+            return false;
+        }
+
+        if ($index_type->hasMixed()) {
+            return true;
+        }
+
+        $key_type = ArrayFetchAnalyzer::replaceOffsetTypeWithInts($index_type);
+
+        foreach ($array_type->getAtomicTypes() as $atomic_type) {
+            if ($atomic_type instanceof TMixed) {
+                continue;
+            }
+
+            $array_key_type = match (true) {
+                $atomic_type instanceof TArray => $atomic_type->type_params[0],
+                $atomic_type instanceof TKeyedArray => $atomic_type->getGenericKeyType(),
+                default => null,
+            };
+
+            if ($array_key_type === null
+                || !UnionTypeComparator::isContainedBy($codebase, $key_type, $array_key_type)
+            ) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * @psalm-pure
+     */
+    private static function hasSameValueTypeForEveryKey(Union $type): bool
+    {
+        foreach ($type->getAtomicTypes() as $atomic_type) {
+            if ($atomic_type instanceof TArray || $atomic_type instanceof TMixed) {
+                continue;
+            }
+
+            if (!$atomic_type instanceof TKeyedArray) {
+                return false;
+            }
+
+            $value_types = $atomic_type->properties;
+
+            if ($atomic_type->fallback_params !== null) {
+                $value_types[] = $atomic_type->fallback_params[1];
+            }
+
+            $value_type_id = null;
+
+            foreach ($value_types as $value_type) {
+                $id = $value_type->setPossiblyUndefined(false)->getId();
+
+                if ($value_type_id !== null && $id !== $value_type_id) {
+                    return false;
+                }
+
+                $value_type_id = $id;
+            }
+        }
+
+        return true;
     }
 
     /**

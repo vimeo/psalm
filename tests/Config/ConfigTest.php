@@ -4118,6 +4118,31 @@ final class ConfigTest extends DeferredAnalyzerTestCase
         );
     }
 
+    public function testReportInfoFalseSuppressesAnIssueThatTakesInfoFromItsParent(): void
+    {
+        $config = Config::loadFromXML(
+            (string) getcwd(),
+            <<<XML
+            <?xml version="1.0"?>
+            <psalm reportInfo="false">
+                <issueHandlers>
+                    <NullReference errorLevel="info" />
+                </issueHandlers>
+            </psalm>
+            XML,
+        );
+
+        $this->assertSame(
+            Config::REPORT_SUPPRESS,
+            $config->getReportingLevelForIssue(
+                new PossiblyNullReference(
+                    'Cannot call method on possibly null value',
+                    new Raw('aaa', 'aaa.php', 'aaa.php', 1, 2),
+                ),
+            ),
+        );
+    }
+
     /**
      * @return iterable<string, array{string}>
      * @psalm-pure
