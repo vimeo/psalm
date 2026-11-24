@@ -59,6 +59,7 @@ use Psalm\Issue\InvalidTraversableImplementation;
 use Psalm\Issue\MethodSignatureMismatch;
 use Psalm\Issue\MismatchingDocblockPropertyType;
 use Psalm\Issue\MissingConstructor;
+use Psalm\Issue\MissingOverrideAttribute;
 use Psalm\Issue\MissingPropertyType;
 use Psalm\Issue\MutableDependency;
 use Psalm\Issue\NoEnumProperties;
@@ -127,6 +128,7 @@ use function str_replace;
 use function strpos;
 use function strtolower;
 use function substr;
+use function substr_count;
 
 /**
  * @internal
@@ -762,6 +764,59 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
         }
     }
 
+    private static function checkOverrideAttributeOfProperty(
+        StatementsSource $statements_source,
+        ClassLikeStorage $storage,
+        PropertyStorage $property_storage,
+        string $property_name,
+    ): void {
+        $codebase = $statements_source->getCodebase();
+
+        $attributes = $property_storage->attributes;
+
+        // the attributes of a promoted property are written on the param of the constructor
+        if ($property_storage->is_promoted) {
+            foreach ($storage->methods['__construct']->params ?? [] as $param) {
+                if ($param->name === $property_name) {
+                    $attributes = [...$attributes, ...$param->attributes];
+                }
+            }
+        }
+
+        foreach ($attributes as $attribute) {
+            if ($attribute->fq_class_name === 'Override') {
+                return;
+            }
+        }
+
+        if ($property_storage->location === null
+            || !self::overridesAParentProperty($storage, $property_name, $codebase)
+        ) {
+            return;
+        }
+
+        IssueBuffer::maybeAdd(
+            new MissingOverrideAttribute(
+                'Property ' . $storage->name . '::$' . $property_name . ' should have the "Override" attribute',
+                $property_storage->location,
+            ),
+            $property_storage->suppressed_issues ?: $storage->suppressed_issues,
+            true,
+        );
+
+        // a statement declaring several properties would give the attribute to all of them
+        if ($codebase->alter_code
+            && $property_storage->stmt_location !== null
+            && substr_count($property_storage->stmt_location->getSnippet(), '$') === 1
+            && isset(ProjectAnalyzer::getInstance()->getIssuesToFix()['MissingOverrideAttribute'])
+        ) {
+            $idx = $property_storage->stmt_location->getSelectionBounds()[0];
+            FileManipulationBuffer::add($property_storage->stmt_location->file_path, [
+                new FileManipulation($idx, $idx, "#[\\Override]\n", true),
+            ]);
+        }
+    }
+
     public static function addContextProperties(
         StatementsSource $statements_source,
         ClassLikeStorage $storage,
@@ -795,6 +850,15 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                     ),
                     $property_storage->suppressed_issues,
                 );
+            }
+
+            // PHP 8.5: a property that overrides a property of a parent class needs #[\Override]
+            if ($property_class_name === $fq_class_name
+                && $codebase->analysis_php_version_id >= 8_05_00
+                && $codebase->config->ensure_override_attribute
+                && $property_storage->location
+            ) {
+                self::checkOverrideAttributeOfProperty($statements_source, $storage, $property_storage, $property_name);
             }
 
             // PHP 8.5: #[\Override] on a property needs a property of the same name that isn't private in a parent
