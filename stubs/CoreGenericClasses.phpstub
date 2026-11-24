@@ -231,7 +231,7 @@ class ArrayObject implements IteratorAggregate, ArrayAccess, Serializable, Count
      * Sets the value at the specified index to newval
      * @link http://php.net/manual/en/arrayobject.offsetset.php
      *
-     * @param TKey $key  The index being set.
+     * @param TKey|null $key The index being set, null to append.
      * @param TValue $value The new value for the index.
      * @return void
      *
@@ -595,34 +595,34 @@ final class WeakReference
 final class WeakMap implements ArrayAccess, Countable, IteratorAggregate, Traversable
 {
     /**
-     * @param TKey $offset
+     * @param TKey $object
      * @return bool
      *
      * @psalm-mutation-free
      */
-    public function offsetExists($offset) {}
+    public function offsetExists($object) {}
 
     /**
-     * @param TKey $offset
+     * @param TKey $object
      * @return TVal|null
      * @psalm-ignore-nullable-return
      *
      * @psalm-mutation-free
      */
-    public function offsetGet($offset) {}
+    public function offsetGet($object) {}
 
     /**
-     * @param TKey $offset
+     * @param TKey $object
      * @param TVal $value
      * @return void
      */
-    public function offsetSet($offset, $value) {}
+    public function offsetSet($object, $value) {}
 
     /**
-     * @param TKey $offset
+     * @param TKey $object
      * @return void
      */
-    public function offsetUnset($offset) {}
+    public function offsetUnset($object) {}
 
     /**
      * @return int<0, max>

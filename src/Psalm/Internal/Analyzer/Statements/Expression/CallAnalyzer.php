@@ -25,6 +25,7 @@ use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Provider\NodeDataProvider;
+use Psalm\Internal\Type\Comparator\CallableTypeComparator;
 use Psalm\Internal\Type\Comparator\TypeComparisonResult;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\TemplateBound;
@@ -63,9 +64,7 @@ use Psalm\Storage\MethodStorage;
 use Psalm\Storage\Possibilities;
 use Psalm\Type;
 use Psalm\Type\Atomic\Scalar;
-use Psalm\Type\Atomic\TCallableObject;
 use Psalm\Type\Atomic\TNamedObject;
-use Psalm\Type\Atomic\TObjectWithProperties;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTrue;
 use Psalm\Type\Reconciler;
@@ -293,6 +292,25 @@ abstract class CallAnalyzer
         }
 
         return $source instanceof TraitAnalyzer;
+    }
+
+    /**
+     * Whether `static` of a call is the class using the trait the call is in, or its parent (`$this`, `self`, `static`,
+     * `parent`), which differs for each class using it: such a call doesn't resolve `static` in the hints of closure
+     * arguments
+     */
+    public static function isStaticOfTraitUser(
+        StatementsSource $source,
+        Context $context,
+        string $static_class,
+        bool $is_static = false,
+    ): bool {
+        $static_class = strtolower($static_class);
+
+        return ($is_static
+                || $static_class === strtolower((string) $context->self)
+                || $static_class === strtolower((string) $context->parent))
+            && self::isInTrait($source);
     }
 
     /**
@@ -684,19 +702,8 @@ abstract class CallAnalyzer
             if ($type_part instanceof TNamedObject) {
                 $method_id = $type_part->value . '::' . $method_name;
 
-                foreach ($type_part->extra_types as $extra_type) {
-                    // the property shape `method_exists()` adds says nothing about the class of the method
-                    if ($extra_type instanceof TObjectWithProperties) {
-                        continue;
-                    }
-
-                    if ($extra_type instanceof TTemplateParam
-                        || $extra_type instanceof TCallableObject
-                    ) {
-                        throw new UnexpectedValueException('Shouldn’t get a generic param here');
-                    }
-
-                    $method_id .= '&' . $extra_type->value . '::' . $method_name;
+                foreach (CallableTypeComparator::getIntersectionClassNames($type_part->extra_types) as $class_name) {
+                    $method_id .= '&' . $class_name . '::' . $method_name;
                 }
 
                 $method_ids[] = '$' . $method_id;

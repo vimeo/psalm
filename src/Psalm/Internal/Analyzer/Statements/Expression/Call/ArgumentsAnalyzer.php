@@ -213,6 +213,8 @@ final class ArgumentsAnalyzer
             && isset($args[0])
             && isset($args[1])
         ) {
+            AssignmentAnalyzer::checkConstantObjectWrite($statements_analyzer, $args[0]->value);
+
             if (ArrayFunctionArgumentsAnalyzer::handleAddition(
                 $statements_analyzer,
                 $args,
@@ -227,6 +229,8 @@ final class ArgumentsAnalyzer
         }
 
         if ($method_id === 'array_splice' && $function_params && count($args) > 1) {
+            AssignmentAnalyzer::checkConstantObjectWrite($statements_analyzer, $args[0]->value);
+
             if (ArrayFunctionArgumentsAnalyzer::handleSplice($statements_analyzer, $args, $context) === false) {
                 return false;
             }
@@ -287,6 +291,8 @@ final class ArgumentsAnalyzer
 
             if ($by_ref) {
                 $by_ref_type = $param->type ?: Type::getMixed();
+
+                AssignmentAnalyzer::checkConstantObjectWrite($statements_analyzer, $arg->value);
             }
 
             if ($by_ref
@@ -892,10 +898,10 @@ final class ArgumentsAnalyzer
                             // A class template inferred at a construction site is
                             // carried as a type variable (e.g. `` `_0 ``). When it
                             // reaches an untyped closure parameter, resolve it to
-                            // the shape inferred at the construction site: the
-                            // closure body is a separate function-like where the
-                            // bare variable would otherwise be treated as neither
-                            // array nor object.
+                            // every value that flowed into it: the closure body is
+                            // a separate function-like where the bare variable
+                            // would otherwise be treated as neither array nor
+                            // object.
                             //
                             // A variable minted for an empty construction stands
                             // for `never` so far; a parameter typed by the closure
@@ -908,6 +914,7 @@ final class ArgumentsAnalyzer
                                 $codebase,
                                 false,
                                 $param_storage->type !== null && !$param_type_inferred,
+                                construction_site_only: false,
                             );
                             $type_variable_resolver->traverse($replaced_param_type);
 
