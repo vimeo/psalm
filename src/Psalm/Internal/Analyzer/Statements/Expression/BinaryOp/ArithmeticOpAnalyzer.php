@@ -41,6 +41,7 @@ use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TIntRange;
 use Psalm\Type\Atomic\TKeyedArray;
+use Psalm\Type\Atomic\TLiteralClassString;
 use Psalm\Type\Atomic\TLiteralFloat;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
@@ -640,9 +641,17 @@ final class ArithmeticOpAnalyzer
                         }
                     }
 
+                    // a key only the right shape has may also be one the rest of the left shape holds
                     if ($left_type_part->fallback_params !== null) {
                         foreach ($definitely_existing_mixed_right_properties as $key => $type) {
-                            $properties[$key] = Type::combineUnionTypes(Type::getMixed(), $type);
+                            $properties[$key] = self::mayHaveKey(
+                                $codebase,
+                                $left_type_part->fallback_params[0],
+                                $key,
+                                isset($right_type_part->class_strings[$key]),
+                            )
+                                ? Type::combineUnionTypes($left_type_part->fallback_params[1], $type)
+                                : $type;
                         }
                     }
 
@@ -684,7 +693,8 @@ final class ArithmeticOpAnalyzer
                     $properties = [];
 
                     foreach ($right_type_part->properties as $key => $type) {
-                        $properties[$key] = self::mayHaveKey($codebase, $left_key_type, $key)
+                        $is_class_string = isset($right_type_part->class_strings[$key]);
+                        $properties[$key] = self::mayHaveKey($codebase, $left_key_type, $key, $is_class_string)
                             ? Type::combineUnionTypes(
                                 $left_value_type,
                                 $type,
@@ -718,8 +728,9 @@ final class ArithmeticOpAnalyzer
                     $properties = [];
 
                     foreach ($left_type_part->properties as $key => $type) {
+                        $is_class_string = isset($left_type_part->class_strings[$key]);
                         $properties[$key] = $type->possibly_undefined
-                            && self::mayHaveKey($codebase, $right_key_type, $key)
+                            && self::mayHaveKey($codebase, $right_key_type, $key, $is_class_string)
                             ? Type::combineUnionTypes(
                                 $type,
                                 $right_value_type,
@@ -1873,11 +1884,24 @@ final class ArithmeticOpAnalyzer
     /**
      * Whether an array of the key type may have the key of a shape: `array<string, V>` has no int key `0`
      */
-    private static function mayHaveKey(?Codebase $codebase, Union $key_type, int|string $key): bool
-    {
-        return $codebase === null || UnionTypeComparator::canBeContainedBy(
+    private static function mayHaveKey(
+        ?Codebase $codebase,
+        Union $key_type,
+        int|string $key,
+        bool $is_class_string = false,
+    ): bool {
+        // a template key stands for values not known yet
+        if ($codebase === null || $key_type->hasTemplate()) {
+            return true;
+        }
+
+        return UnionTypeComparator::canBeContainedBy(
             $codebase,
-            new Union([is_int($key) ? new TLiteralInt($key) : TLiteralString::make($key)]),
+            new Union([
+                is_int($key)
+                    ? new TLiteralInt($key)
+                    : ($is_class_string ? new TLiteralClassString($key) : TLiteralString::make($key)),
+            ]),
             $key_type,
         );
     }

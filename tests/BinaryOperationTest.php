@@ -746,6 +746,46 @@ final class BinaryOperationTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'secondArrayUnionKeepsTheRestOfTheArrayForTheOtherKey' => [
+                'code' => '<?php
+                    /** @var array<string, int> $arr */
+                    $arr = [];
+                    $arr += ["a" => "x"];
+                    $arr += ["b" => "y"];',
+                'assertions' => [
+                    '$arr===' => 'array{a: \'x\'|int, b: \'y\'|int, ...<string, int>}',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'unionOfAClassStringKeyedArrayAndAShapeMayHaveTheKey' => [
+                'code' => '<?php
+                    /** @param array<class-string, int> $arr */
+                    function a(array $arr): void {
+                        $r = $arr + [Exception::class => "x"];
+                        /** @psalm-check-type-exact $r = array{Exception::class: \'x\'|int, ...<class-string, int>} */;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'unionOfAShapeWithAnOptionalClassStringKeyAndAnArrayMayHaveTheKey' => [
+                'code' => '<?php
+                    /** @param array{Exception::class?: string} $shape */
+                    function c(array $shape): void {}
+
+                    /**
+                     * @param array{Exception::class?: string} $shape
+                     * @param array<class-string, int> $arr
+                     */
+                    function d(array $shape, array $arr): void {
+                        $r = $shape + $arr;
+                        /** @psalm-check-type-exact $r = array{Exception::class?: int|string, ...<class-string, int>} */;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'unionOfAnArrayAndAShapeHasTheKeysOfTheShape' => [
                 'code' => '<?php
                     /** @return array<string, int> */
@@ -3217,6 +3257,22 @@ final class BinaryOperationTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'unionOfATemplateKeyedArrayAndAShapeMayHaveTheKey' => [
+                'code' => '<?php
+                    function takesInt(int $i): void {}
+
+                    /**
+                     * @template K of array-key
+                     * @param array<K, int> $arr
+                     */
+                    function b(array $arr): void {
+                        $r = $arr + ["a" => "x"];
+                        takesInt($r["a"]);
+                    }',
+                'error_message' => 'InvalidScalarArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:34 - Argument 1 of takesInt expects int, but \'x\'|int provided',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
             'offsetOfAVariableAssignedInTheRightOperandOfAndIsForgottenAfterTheIf' => [
                 'code' => '<?php
                     /** @return array{a?: int} */
