@@ -95,7 +95,7 @@ final class ExtRedisStubTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
-            'RedisCluster rejects credentials with more than two elements' => [
+            'RedisCluster rejects a third positional credential' => [
                 'code' => <<<'PHP'
                     <?php
                     new RedisCluster(null, ['localhost:7000'], 1, 1, false, ['user', 'password', 'extra']);
