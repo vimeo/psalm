@@ -32,12 +32,13 @@ Run Psalm on the PHP version CI uses: a Psalm installed in a tool directory (`to
 - `--show-info=true` adds the issues the configured `errorLevel` doesn't count as errors, and `Trace` output.
   Useful for one file or before raising the level; for a whole project it is mostly noise.
 - `--stats` (with `--output-format=console`) prints the share of expressions with a known type per file:
-  the files with the most `mixed` are where typing pays off first.
+  the files with the most `mixed` are where typing pays off first. `--min-type-coverage=95` fails the run
+  (exit `2`) when the share of the whole project drops below 95 %.
 - `--php-version=8.3` analyses for another PHP version than the one in `composer.json`.
 
 ## Finding code
 
-- `--find-references-to=App\Foo` or `--find-references-to='App\Foo::$bar'` lists where a class or a
-  property is used.
+- `--find-references-to=` lists where a class (`App\Foo`), method (`App\Foo::bar`), property
+  (`'App\Foo::$bar'`) or function (`App\baz`) is used.
 - `--find-unused-psalm-suppress` reports suppressions that hide nothing.
 - Unused code is reported by default (`findUnusedCode`); a run on single files skips it.
