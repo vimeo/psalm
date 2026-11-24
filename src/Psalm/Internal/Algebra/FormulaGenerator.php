@@ -7,6 +7,7 @@ namespace Psalm\Internal\Algebra;
 use Override;
 use PhpParser;
 use Psalm\Codebase;
+use Psalm\Context;
 use Psalm\Exception\ComplicatedExpressionException;
 use Psalm\FileSource;
 use Psalm\Internal\Algebra;
@@ -40,8 +41,10 @@ use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
 
+use function array_any;
 use function array_diff_key;
 use function array_filter;
+use function array_keys;
 use function array_map;
 use function array_values;
 use function count;
@@ -658,6 +661,24 @@ final class FormulaGenerator
 
         $truthy = new Truthy();
 
+        // with a clause of the call's own truthiness, the negation says nothing about the pseudo-variables
+        if ($conditional instanceof PhpParser\Node\Expr\FuncCall
+            && array_any(
+                $clauses,
+                static fn(Clause $clause): bool => array_any(
+                    array_keys($clause->possibilities),
+                    Context::isSymbolCheckVarId(...),
+                ),
+            )
+            && AssertionFinder::isSymbolExistsCheck($conditional, $source)
+        ) {
+            $clauses[] = new Clause(
+                [$conditional_ref => [(string) $truthy => $truthy]],
+                $conditional_object_id,
+                $creating_object_id,
+            );
+        }
+
         if (!$clauses) {
             $possibilities = [$conditional_ref => [(string) $truthy => $truthy]];
             $non_empty_string_comparison = AssertionFinder::getOneWayNonEmptyStringLengthComparison(
@@ -716,6 +737,33 @@ final class FormulaGenerator
 
             if (!$found) {
                 $clauses[] = $receiver_clause;
+            }
+        }
+
+        // `$x !== $a?->p` with an `$x` that can't be null is also true where `$a` is null
+        if ($conditional instanceof PhpParser\Node\Expr\BinaryOp\NotIdentical) {
+            $receiver_id = self::getReceiverOfANullsafeFetchIdenticalToANonNull(
+                new VirtualIdentical($conditional->left, $conditional->right, $conditional->getAttributes()),
+                $this_class_name,
+                $source,
+            );
+
+            if ($receiver_id !== null) {
+                $null = new IsType(new TNull());
+                $clauses = array_map(
+                    static fn(Clause $clause): Clause => isset($clause->possibilities[$receiver_id])
+                        ? $clause
+                        : new Clause(
+                            [...$clause->possibilities, $receiver_id => [(string) $null => $null]],
+                            $conditional_object_id,
+                            $creating_object_id,
+                            false,
+                            $clause->reconcilable,
+                            $clause->generated,
+                            $clause->redefined_vars,
+                        ),
+                    $clauses,
+                );
             }
         }
 
@@ -1620,7 +1668,7 @@ final class FormulaGenerator
         return $expr instanceof PhpParser\Node\Expr\ConstFetch && strtolower($expr->name->getFirst()) === 'null';
     }
 
-    private static function isFalsyLiteral(PhpParser\Node\Expr $expr): bool
+    public static function isFalsyLiteral(PhpParser\Node\Expr $expr): bool
     {
         return ($expr instanceof PhpParser\Node\Expr\ConstFetch
                 && in_array(strtolower($expr->name->getFirst()), ['false', 'null'], true))

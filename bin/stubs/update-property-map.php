@@ -15,6 +15,9 @@ use PhpParser\NodeTraverser;
 use PhpParser\NodeVisitor\NameResolver;
 use PhpParser\ParserFactory;
 
+use function Psalm\Internal\Stubs\extractClassesFromStatements;
+use function Psalm\Internal\Stubs\serializeArray;
+
 set_error_handler(function ($num, $str, $file, $line, $context = null): void {
     throw new ErrorException($str, 0, $num, $file, $line);
 });

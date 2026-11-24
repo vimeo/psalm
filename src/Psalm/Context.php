@@ -2129,6 +2129,19 @@ final class Context
     }
 
     /**
+     * The pseudo-variables of symbol and extension checks don't say which symbol was checked:
+     * `extension_loaded('x')` and `function_exists('x_f')`, or checks of two functions of one extension or
+     * PHP version, assert the same thing
+     *
+     * @psalm-pure
+     */
+    public static function isSymbolCheckVarId(string $var_id): bool
+    {
+        return $var_id === self::PHP_SYMBOL_GUARD_VAR_ID
+            || str_starts_with($var_id, self::PHP_EXTENSION_VAR_ID_PREFIX);
+    }
+
+    /**
      * @psalm-mutation-free
      */
     public function isPhantomClass(string $class_name): bool
