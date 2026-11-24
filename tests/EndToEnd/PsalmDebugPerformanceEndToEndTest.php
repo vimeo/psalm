@@ -12,10 +12,12 @@ use function array_column;
 use function array_diff;
 use function array_filter;
 use function array_keys;
+use function array_map;
 use function array_merge;
 use function array_sum;
 use function array_unique;
 use function array_values;
+use function explode;
 use function file_get_contents;
 use function file_put_contents;
 use function glob;
@@ -23,11 +25,16 @@ use function implode;
 use function json_decode;
 use function ksort;
 use function mkdir;
+use function preg_match;
 use function preg_match_all;
 use function realpath;
+use function rtrim;
 use function sort;
 use function str_repeat;
 use function str_replace;
+use function str_starts_with;
+use function strpos;
+use function trim;
 use function unlink;
 
 use const JSON_THROW_ON_ERROR;
@@ -55,7 +62,7 @@ final class PsalmDebugPerformanceEndToEndTest extends PsalmEndToEndTestCase
     #[Override]
     public function tearDown(): void
     {
-        // a dump left by this test would let assertFileExists() of the next one pass
+        // a profile left by this test would let assertFileExists() of the next one pass
         @unlink(self::$tmpDir . '/perf.json');
         parent::tearDown();
     }
@@ -206,6 +213,22 @@ final class PsalmDebugPerformanceEndToEndTest extends PsalmEndToEndTestCase
         }
     }
 
+    public function testProfileIsAnAliasOfDebugPerformance(): void
+    {
+        $this->setUpProject(2);
+        $dump_path = self::$tmpDir . '/perf.json';
+
+        $result = $this->runPsalm(['--no-cache', '--profile=' . $dump_path], self::$tmpDir, true);
+
+        $this->assertSame(1, $this->readDump($dump_path)['schema']);
+        $this->assertStringContainsString("\nSlowest files by CPU\n", $result['STDOUT']);
+
+        $both = $this->runPsalmProcess(['--no-cache', '--profile', '--debug-performance=' . $dump_path]);
+
+        $this->assertSame(1, $both->getExitCode());
+        $this->assertStringContainsString('Only one of --debug-performance and --profile', $both->getErrorOutput());
+    }
+
     public function testWithoutAValuePrintsTheSummaryAndWritesNoFile(): void
     {
         $this->setUpProject(2);
@@ -221,7 +244,25 @@ final class PsalmDebugPerformanceEndToEndTest extends PsalmEndToEndTestCase
         $this->assertMatchesRegularExpression('/^Peak memory [\d.]+ MB\. Counts: \d+ class-likes, /m', $result['STDOUT']);
         // a stage that comes back is one row
         $this->assertSame(1, preg_match_all('/^  scan\.files /m', $result['STDOUT']));
-        $this->assertStringNotContainsString('Performance dump written', $result['STDERR']);
+
+        // stages and their steps share the columns: wall, cpu and the share start at the same offsets
+        $this->assertSame(1, preg_match('/^Stages\n((?:  .*\n)+)/m', $result['STDOUT'], $stages_block));
+        $rows = explode("\n", rtrim($stages_block[1], "\n"));
+        $this->assertNotEmpty(array_filter($rows, static fn(string $row): bool => str_starts_with($row, '    ')));
+
+        foreach ($rows as $row) {
+            $this->assertMatchesRegularExpression('/^ +\S+ +[\d.]+ s wall +[\d.]+ s cpu +[\d.]+%$/', $row);
+        }
+
+        foreach ([' wall ', ' cpu ', '%'] as $needle) {
+            $this->assertCount(
+                1,
+                array_unique(array_map(static fn(string $row): int => (int) strpos($row, $needle), $rows)),
+                'The "' . trim($needle) . '" column is not aligned in: ' . "\n" . $stages_block[1],
+            );
+        }
+
+        $this->assertStringNotContainsString('Performance profile written', $result['STDERR']);
         $this->assertSame($files_before, glob(self::$tmpDir . '/*'));
     }
 

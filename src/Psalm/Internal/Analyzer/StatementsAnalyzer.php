@@ -647,7 +647,17 @@ final class StatementsAnalyzer extends SourceAnalyzer
 
         $checked_types = [];
         $hasParsed = false;
-        foreach ($stmt->getComments() as $docblock) {
+
+        $comments = $stmt->getComments();
+
+        // a short echo tag has no room for a docblock before it: one before an echoed expression is the echo's
+        if ($stmt instanceof PhpParser\Node\Stmt\Echo_) {
+            foreach ($stmt->exprs as $echoed_expr) {
+                $comments = [...$comments, ...$echoed_expr->getComments()];
+            }
+        }
+
+        foreach ($comments as $docblock) {
             if (!$docblock instanceof Doc) {
                 continue;
             }
@@ -686,7 +696,9 @@ final class StatementsAnalyzer extends SourceAnalyzer
             if (isset($statements_analyzer->parsed_docblock->tags['psalm-suppress'])) {
                 $suppressed = $statements_analyzer->parsed_docblock->tags['psalm-suppress'];
                 if ($suppressed) {
-                    $new_issues = ExpressionAnalyzer::addSuppressions($statements_analyzer, $suppressed);
+                    // the suppressions of every docblock of the statement are removed after it
+                    $new_issues = ($new_issues ?? [])
+                        + ExpressionAnalyzer::addSuppressions($statements_analyzer, $suppressed);
                 }
             }
 

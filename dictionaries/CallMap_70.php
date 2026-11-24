@@ -70306,7 +70306,7 @@ return array (
   'redis::auth' => 
   array (
     0 => 'bool',
-    'auth' => 'string',
+    'auth' => 'array{0?: string, 1?: string, pass?: string, user?: string}|string',
     -2 => 'none',
   ),
   'redis::bgrewriteaof' => 
@@ -72283,7 +72283,7 @@ return array (
     'timeout=' => 'float',
     'read_timeout=' => 'float',
     'persistent=' => 'bool',
-    'auth=' => 'null|string',
+    'auth=' => 'array{0?: string, 1?: string, pass?: string, user?: string}|null|string',
     -2 => 'none',
   ),
   'rediscluster::_compress' => 
