@@ -631,8 +631,8 @@ final class UnionTypeComparator
      *
      * @param bool $ignore_null  a null input value does not count as fitting
      * @param bool $ignore_false a false input value does not count as fitting
-     * @param bool $coerced_parts_match an input part the container only accepts with a coercion (a parent type,
-     *                                  e.g. object for Foo) counts as fitting
+     * @param bool $coerced_parts_match an input part the container only accepts as a parent type (object for
+     *                                  Foo) counts as fitting
      */
     public static function canBeContainedBy(
         Codebase $codebase,
@@ -641,7 +641,7 @@ final class UnionTypeComparator
         bool $ignore_null = false,
         bool $ignore_false = false,
         array &$matching_input_keys = [],
-        bool $coerced_parts_match = true,
+        bool $coerced_parts_match = false,
     ): bool {
         if ($container_type->hasMixed()) {
             return true;
@@ -702,7 +702,9 @@ final class UnionTypeComparator
 
                 if (($is_atomic_contained_by && !$atomic_comparison_result->to_string_cast)
                     || $atomic_comparison_result->type_coerced_from_mixed
-                    || ($coerced_parts_match && $atomic_comparison_result->type_coerced)
+                    || ($coerced_parts_match
+                        && $atomic_comparison_result->type_coerced
+                        && !$atomic_comparison_result->to_string_cast)
                 ) {
                     $matching_input_keys[$input_type_part->getKey()] = true;
                 }

@@ -1009,8 +1009,6 @@ final class TemplateStandinTypeReplacer
                         false,
                         false,
                         $matching_input_keys,
-                        // a parent type is not a binding: keepMatchingInputTypes() narrows it to the bound
-                        false,
                     )
                 )
             ) {
@@ -1139,7 +1137,6 @@ final class TemplateStandinTypeReplacer
                 false,
                 false,
                 $matching_input_keys,
-                false,
             )
             ) {
                 $generic_param = $input_type->getBuilder();

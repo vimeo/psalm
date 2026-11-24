@@ -4667,7 +4667,7 @@ final class FunctionCallTest extends TestCase
                 'error_levels' => [],
                 'php_version' => '8.5',
             ],
-            'callableAndScalarUnionIsInvalidForInt' => [
+            'callableAndScalarUnionIsPossiblyInvalidForInt' => [
                 'code' => '<?php
                     /** @param int $i */
                     function takesInt($i): void {}
@@ -4676,9 +4676,9 @@ final class FunctionCallTest extends TestCase
                     function f($x): void {
                         takesInt($x);
                     }',
-                'error_message' => 'InvalidArgument',
+                'error_message' => 'PossiblyInvalidArgument',
             ],
-            'scalarAndCallableUnionIsInvalidForInt' => [
+            'scalarAndCallableUnionIsPossiblyInvalidForInt' => [
                 'code' => '<?php
                     /** @param int $i */
                     function takesInt($i): void {}
@@ -4687,7 +4687,7 @@ final class FunctionCallTest extends TestCase
                     function f($x): void {
                         takesInt($x);
                     }',
-                'error_message' => 'InvalidArgument',
+                'error_message' => 'PossiblyInvalidArgument',
             ],
             'arrayAndScalarUnionIsAPlainMismatchForString' => [
                 'code' => '<?php
@@ -4697,7 +4697,7 @@ final class FunctionCallTest extends TestCase
                     function f($x): void {
                         takesString($x);
                     }',
-                'error_message' => 'InvalidArgument',
+                'error_message' => 'PossiblyInvalidArgument',
             ],
             'stringableAndArrayAndScalarUnionIsPossiblyInvalidForStringable' => [
                 'code' => '<?php
@@ -6151,6 +6151,48 @@ final class FunctionCallTest extends TestCase
                 'error_levels' => [],
                 'php_version' => '8.0',
             ],
+            'sealedShapeMissingARequiredKeyArgument' => [
+                'code' => '<?php
+                    /** @param array{a: non-empty-string, b: int} $_a */
+                    function takesShape(array $_a): void {}
+
+                    /** @param array{a: string} $a */
+                    function passes(array $a): void {
+                        takesShape($a);
+                    }
+                ',
+                'error_message' => 'InvalidArgument',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'sealedShapeWithAPossiblyUndefinedRequiredKeyArgument' => [
+                'code' => '<?php
+                    /** @param array{a: non-empty-string, b: int} $_a */
+                    function takesShape(array $_a): void {}
+
+                    /** @param array{a: string, b?: int} $a */
+                    function passes(array $a): void {
+                        takesShape($a);
+                    }
+                ',
+                'error_message' => 'ArgumentTypeCoercion',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'shapeMissingARequiredKeyAndInvalidTypeArgument' => [
+                'code' => '<?php
+                    /** @param array{a: non-empty-string, b: int} $_a */
+                    function takesShape(array $_a): void {}
+
+                    /** @param array{a: string}|int $a */
+                    function passes(array|int $a): void {
+                        takesShape($a);
+                    }
+                ',
+                'error_message' => 'InvalidArgument',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
             'noMemberFitsArgument' => [
                 'code' => '<?php
                     final class Foo {}
@@ -6158,6 +6200,34 @@ final class FunctionCallTest extends TestCase
                     function takesFoo(Foo $_f): void {}
 
                     function passes(Bar|int $o): void {
+                        takesFoo($o);
+                    }
+                ',
+                'error_message' => 'InvalidArgument',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'implementedInterfaceAndInvalidTypeArgument' => [
+                'code' => '<?php
+                    interface I {}
+                    final class Foo implements I {}
+                    function takesFoo(Foo $_f): void {}
+
+                    function passes(I|int $o): void {
+                        takesFoo($o);
+                    }
+                ',
+                'error_message' => 'PossiblyInvalidArgument',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'unimplementedInterfaceAndInvalidTypeArgument' => [
+                'code' => '<?php
+                    interface I {}
+                    final class Foo {}
+                    function takesFoo(Foo $_f): void {}
+
+                    function passes(I|int $o): void {
                         takesFoo($o);
                     }
                 ',

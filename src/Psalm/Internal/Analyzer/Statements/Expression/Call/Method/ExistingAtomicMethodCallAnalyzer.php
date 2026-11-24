@@ -653,6 +653,7 @@ final class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
                             $pseudo_set_type,
                             true,
                             true,
+                            coerced_parts_match: true,
                         )) {
                             IssueBuffer::maybeAdd(
                                 new PossiblyInvalidPropertyAssignmentValue(
