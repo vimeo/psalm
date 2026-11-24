@@ -298,6 +298,8 @@ function store(PDO $pdo, int $id): void {
     $pdo->exec("UPDATE users SET bio = $bio WHERE id = 1");
     $pdo->exec(sprintf('UPDATE users SET bio = %s WHERE id = %d', $bio, $id));
     $pdo->exec("UPDATE users SET bio = $bio WHERE id = $id");
+    $sql = "UPDATE users SET bio = $bio";
+    $pdo->exec("$sql WHERE id = 1");
 }
 
 function show(PDO $pdo): void {
@@ -316,6 +318,8 @@ function store(PDO $pdo): void {
     $pdo->exec("UPDATE users SET bio = $bio");                           // can't be parsed
     $pdo->exec(sprintf('UPDATE users SET bio = %s', $bio));              // can't be parsed
     $pdo->exec("UPDATE users SET bio = 'none' /* $bio */ WHERE id = 1"); // can't be parsed
+    $sql = "UPDATE users SET bio = $bio";
+    $pdo->exec($sql);                                                    // can't be parsed
 }
 
 function show(PDO $pdo): void {

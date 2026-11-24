@@ -2296,6 +2296,14 @@ final class TaintTest extends TestCase
                         }
                     }',
             ],
+            'queryInAVariableIsReadFromWhatItStartsWithWhenKnownTextFollows' => [
+                'code' => '<?php
+                    function run(PDO $pdo, string $status): void {
+                        $pdo->prepare("INSERT INTO users (name, bio) VALUES (?, ?)")->execute(["admin", $_GET["bio"]]);
+                        $sql = "SELECT name FROM users WHERE status = " . $pdo->quote($status);
+                        echo (string) $pdo->query($sql . " LIMIT 1")->fetch()["name"];
+                    }',
+            ],
             'selectingAllColumnsKeepsThemApart' => [
                 'code' => '<?php
                     function store(PDO $pdo): void {
@@ -8856,6 +8864,30 @@ final class TaintTest extends TestCase
 
                     function show(PDO $pdo): void {
                         echo (string) $pdo->query("SELECT body FROM archive")->fetch()["body"];
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'rowsEndingAQueryInAVariableCanBeStoredInAnyColumn' => [
+                'code' => '<?php
+                    /** @param list<string> $messages */
+                    function store(PDO $pdo, array $messages): void {
+                        $sql = "INSERT INTO logs (message) VALUES " . implode(",", array_map(
+                            fn(string $message): string => "(" . $pdo->quote($message) . ")",
+                            $messages,
+                        ));
+                        $pdo->exec($sql);
+                    }
+
+                    store(new PDO("sqlite::memory:"), [(string) $_GET["message"]]);
+                    echo (string) (new PDO("sqlite::memory:"))->query("SELECT name FROM users")->fetch()["name"];',
+                'error_message' => 'TaintedHtml',
+            ],
+            'queryInAVariableTheAnalysisKnowsOnlyTheStartOfCantBeParsed' => [
+                'code' => '<?php
+                    function run(PDO $pdo, string $status): void {
+                        $pdo->prepare("INSERT INTO users (name, bio) VALUES (?, ?)")->execute(["admin", $_GET["bio"]]);
+                        $sql = "SELECT name FROM users WHERE status = " . $pdo->quote($status);
+                        echo (string) $pdo->query($sql)->fetch()["name"];
                     }',
                 'error_message' => 'TaintedHtml',
             ],

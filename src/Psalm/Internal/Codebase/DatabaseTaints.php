@@ -1104,7 +1104,10 @@ final class DatabaseTaints
 
         $holes[] = $expr;
 
-        return SqlStatement::HOLE_MARKER . (count($holes) - 1) . SqlStatement::HOLE_MARKER;
+        // what the analysis knows the part starts with, as for the keys of a store (a variable assigned
+        // `'SELECT a FROM t WHERE b = ' . $b`, then concatenated with `' LIMIT 1'`)
+        return TaintStore::getKnownStart($statements_analyzer, $expr)
+            . SqlStatement::HOLE_MARKER . (count($holes) - 1) . SqlStatement::HOLE_MARKER;
     }
 
     /**
