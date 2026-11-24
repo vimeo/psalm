@@ -17,7 +17,6 @@ use Psalm\Type\Atomic;
 use Psalm\Type\Union;
 
 use function count;
-use function implode;
 
 /**
  * denotes the `iterable` type(which can also result from an `is_iterable` check).
@@ -134,11 +133,7 @@ final class TIterable extends Atomic
     {
         [$type_params, $purity_args] = $this->getTypeParamsAndPurityArgs();
 
-        $extra_types = '';
-
-        if ($this->extra_types) {
-            $extra_types = '&' . implode('&', $this->extra_types);
-        }
+        $extra_types = $this->getIntersectionTypesId($exact);
 
         return $this->value
             . self::formatTypeParams(
