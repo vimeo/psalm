@@ -1171,6 +1171,46 @@ abstract class Type
     }
 
     /**
+     * A list contained by an array or a list, with the intersection of their values, e.g. non-empty-list and
+     * list<T> are non-empty-list<T>
+     */
+    private static function intersectListValues(
+        TKeyedArray $list,
+        ?Atomic $wider_type,
+        Codebase $codebase,
+        bool $allow_interface_equality,
+        bool $allow_float_int_equality,
+    ): TKeyedArray|TArray|null {
+        if (!$list->isGenericList()) {
+            return $list;
+        }
+
+        if ($wider_type instanceof TArray) {
+            $wider_value_type = $wider_type->type_params[1];
+        } elseif ($wider_type instanceof TKeyedArray && $wider_type->isGenericList()) {
+            $wider_value_type = $wider_type->fallback_params[1];
+        } else {
+            return $list;
+        }
+
+        $value_intersection = self::intersectUnionTypes(
+            $list->fallback_params[1],
+            $wider_value_type,
+            $codebase,
+            $allow_interface_equality,
+            $allow_float_int_equality,
+        );
+
+        if ($value_intersection === null || ($list->isNonEmpty() && $value_intersection->isNever())) {
+            return null;
+        }
+
+        return $list->isNonEmpty()
+            ? self::getNonEmptyListAtomic($value_intersection, $list->from_docblock)
+            : self::getListAtomic($value_intersection, $list->from_docblock);
+    }
+
+    /**
      * The intersection of two atomic types neither of which contains the other
      */
     private static function intersectOverlappingAtomics(
@@ -1327,6 +1367,15 @@ abstract class Type
                         // containment can leave wider generic params
                         return self::intersectArrayParams(
                             $intersection_atomic,
+                            $intersection_atomic,
+                            $wider_type,
+                            $codebase,
+                            $allow_interface_equality,
+                            $allow_float_int_equality,
+                        );
+                    }
+                    if ($intersection_atomic instanceof TKeyedArray) {
+                        return self::intersectListValues(
                             $intersection_atomic,
                             $wider_type,
                             $codebase,

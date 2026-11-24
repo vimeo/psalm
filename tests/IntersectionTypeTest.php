@@ -578,6 +578,21 @@ final class IntersectionTypeTest extends TestCase
                 'assertions' => [],
                 'ignored_issues' => ['MixedMethodCall'],
             ],
+            'propertyOfAnArrayWithFewerKeysThanAListKeepsItsType' => [
+                'code' => '<?php
+                    final class C {
+                        /** @var array<0, string> */
+                        public array $x = [];
+                    }
+
+                    /**
+                     * @param C&object{x: list<string>} $v
+                     * @return array<0, string>
+                     */
+                    function f(object $v): array {
+                        return $v->x;
+                    }',
+            ],
         ];
     }
 

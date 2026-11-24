@@ -3210,6 +3210,58 @@ final class ConditionalReturnTypeTest extends TestCase
                 'ignored_issues' => ['ImplicitToStringCast'],
                 'php_version' => '8.2',
             ],
+            'nonEmptyConditionOnATemplatedListKeepsItsTemplate' => [
+                'code' => '<?php
+                    /**
+                     * @template TList of list
+                     * @param TList $list
+                     * @return (TList is non-empty-list ? non-empty-list<value-of<TList>> : list<value-of<TList>>)
+                     */
+                    function listValues(array $list): array {
+                        throw new RuntimeException();
+                    }
+
+                    /**
+                     * @template T
+                     * @param list<T> $list
+                     * @return T
+                     */
+                    function first(array $list): mixed {
+                        $values = listValues($list);
+
+                        return $values[0] ?? throw new RuntimeException();
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'listConditionOnATemplatedArrayKeepsItsTemplate' => [
+                'code' => '<?php
+                    /**
+                     * @template TArray of array
+                     * @param TArray $array
+                     * @return (TArray is list ? list<value-of<TArray>> : array<value-of<TArray>>)
+                     */
+                    function sameValues(array $array): array {
+                        throw new RuntimeException();
+                    }
+
+                    /**
+                     * @template T
+                     * @param array<int, T> $array
+                     * @return T
+                     */
+                    function first(array $array): mixed {
+                        foreach (sameValues($array) as $value) {
+                            return $value;
+                        }
+
+                        throw new RuntimeException();
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
         ];
     }
 
