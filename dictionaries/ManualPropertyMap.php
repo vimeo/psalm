@@ -31,7 +31,7 @@ return [
     // Undocumented classes from here on.
     //
     'phpparser\\node\\expr\\array_' => [
-        'items' => 'array<int, PhpParser\\Node\\Expr\\ArrayItem|null>',
+        'items' => 'array<int, PhpParser\\Node\\ArrayItem>',
     ],
     'phpparser\\node\\expr\\arrowfunction' => [
         'params' => 'list<PhpParser\\Node\\Param>',
@@ -40,16 +40,13 @@ return [
         'params' => 'list<PhpParser\\Node\\Param>',
     ],
     'phpparser\\node\\expr\\list_' => [
-        'items' => 'array<int, PhpParser\\Node\\Expr\\ArrayItem|null>',
+        'items' => 'array<int, PhpParser\\Node\\ArrayItem|null>',
     ],
     'phpparser\\node\\expr\\shellexec' => [
         'parts' => 'list<PhpParser\\Node\\Expr|PhpParser\\Node\\InterpolatedStringPart>',
     ],
     'phpparser\\node\\matcharm' => [
         'conds' => 'null|list<PhpParser\\Node\\Expr>',
-    ],
-    'phpparser\\node\\name' => [
-        'parts' => 'non-empty-list<non-empty-string>',
     ],
     'phpparser\\node\\stmt\\case_' => [
         'stmts' => 'list<PhpParser\\Node\\Stmt>',

@@ -7,6 +7,7 @@ namespace Psalm\Internal\Codebase;
 use Psalm\CodeLocation;
 use Psalm\Codebase;
 use Psalm\Context;
+use Psalm\Internal\Analyzer\ClosureAnalyzer;
 use Psalm\Internal\Provider\ClassLikeStorageProvider;
 use Psalm\Internal\Provider\PropertyExistenceProvider;
 use Psalm\Internal\Provider\PropertyTypeProvider;
@@ -18,6 +19,7 @@ use UnexpectedValueException;
 
 use function explode;
 use function ltrim;
+use function str_starts_with;
 use function strtolower;
 
 /**
@@ -266,7 +268,11 @@ final class Properties
                     return $class_storage->pseudo_property_set_types['$'.$property_name];
                 }
                 $setter_param_type = $storage->hook_set?->param_type;
-                if ($declaring_class_storage->is_interface && $setter_param_type !== null) {
+                // a write from outside the hooks goes through the set hook, one inside them sets the backing value
+                if ($setter_param_type !== null
+                    && ($declaring_class_storage->is_interface
+                        || !self::isInHookOf($source, $declaring_class_storage->name, $property_name))
+                ) {
                     return $setter_param_type;
                 }
             } else {
@@ -291,5 +297,39 @@ final class Properties
         }
 
         return null;
+    }
+
+    /**
+     * Whether the code is in a hook of the property
+     */
+    public static function isInHookOf(?StatementsSource $source, string $class_name, string $property_name): bool
+    {
+        while ($source !== null) {
+            if ($source instanceof ClosureAnalyzer
+                && ($hook_id = $source->getPropertyHookId()) !== null
+            ) {
+                // the hook of a trait's property is analysed for the class using the trait
+                $hook_class = explode('::$', $hook_id, 2)[0];
+                $hook_property_id = $hook_class . '::$' . $property_name;
+                $declaring_class = $source->getCodebase()->properties->getDeclaringClassForProperty(
+                    $hook_property_id,
+                    true,
+                );
+
+                return $declaring_class !== null
+                    && strtolower($declaring_class) === strtolower($class_name)
+                    && str_starts_with(strtolower($hook_id), strtolower($hook_property_id . '::'));
+            }
+
+            $parent_source = $source->getSource();
+
+            if ($parent_source === $source) {
+                return false;
+            }
+
+            $source = $parent_source;
+        }
+
+        return false;
     }
 }

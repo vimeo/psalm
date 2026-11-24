@@ -324,6 +324,55 @@ final class ClassLikeStringTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'getClassOfAUnionWithAnIntersectionIsComparedWithAClassOfTheUnion' => [
+                'code' => '<?php
+                    interface Shape {}
+                    interface Marked {}
+                    final class Circle implements Shape {}
+                    abstract class Group implements Shape {}
+
+                    /** @param (Group&Marked)|Shape $shape */
+                    function flagged(object $shape): bool {
+                        $class = get_class($shape);
+                        $flags = [Circle::class => true];
+
+                        return isset($flags[$class]) && $class === Circle::class;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'templateClassStringIsComparedWithAClassName' => [
+                'code' => '<?php
+                    final class Special {}
+
+                    /**
+                     * @template T of object
+                     * @param class-string<T> $name
+                     */
+                    function isSpecial(string $name): bool {
+                        return $name === "Special";
+                    }
+
+                    echo isSpecial(Special::class) ? "yes" : "no";',
+                'assertions' => [],
+                'ignored_issues' => ['InvalidStringClass'],
+            ],
+            'boundedTemplateClassStringIsComparedWithASubclassName' => [
+                'code' => '<?php
+                    abstract class Base {}
+                    final class Child extends Base {}
+
+                    /**
+                     * @template T of Base
+                     * @param class-string<T> $name
+                     */
+                    function isChild(string $name): bool {
+                        return $name === "Child";
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['InvalidStringClass'],
+            ],
             'negatedClassExistsOnTheLeftOfAnOrAllowsTheClassOnTheRight' => [
                 'code' => '<?php
                     function check(): bool {
@@ -1459,6 +1508,31 @@ final class ClassLikeStringTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'templateClassStringIsNeverAClassThatDoesNotExist' => [
+                'code' => '<?php
+                    /**
+                     * @template T of object
+                     * @param class-string<T> $name
+                     */
+                    function isNope(string $name): bool {
+                        return $name === "Nope";
+                    }',
+                'error_message' => 'DocblockTypeContradiction',
+            ],
+            'boundedTemplateClassStringIsNeverAnUnrelatedClass' => [
+                'code' => '<?php
+                    abstract class Base {}
+                    final class Other {}
+
+                    /**
+                     * @template T of Base
+                     * @param class-string<T> $name
+                     */
+                    function isOther(string $name): bool {
+                        return $name === "Other";
+                    }',
+                'error_message' => 'DocblockTypeContradiction',
+            ],
             'getParentClassWithoutArgumentInATraitIsExactlyTheParentOfTheUsingClass' => [
                 'code' => '<?php
                     class A {}
