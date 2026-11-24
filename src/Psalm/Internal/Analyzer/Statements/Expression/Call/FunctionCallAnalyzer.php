@@ -2313,7 +2313,7 @@ final class FunctionCallAnalyzer extends CallAnalyzer
         PhpParser\Node\Expr\FuncCall $stmt,
         Context $context,
     ): void {
-        /** @var list<array{PhpParser\Node\Arg, Union, int}> $arrays */
+        /** @var list<array{PhpParser\Node\Arg, Union, non-empty-list<int>}> $arrays */
         $arrays = [];
 
         foreach ($stmt->getArgs() as $arg) {
@@ -2331,26 +2331,53 @@ final class FunctionCallAnalyzer extends CallAnalyzer
             $value_type = CastAnalyzer::getArrayValueType($type);
 
             if ($value_type) {
-                $arrays[] = [$arg, $value_type, SORT_REGULAR];
+                $arrays[] = [$arg, $value_type, [SORT_REGULAR]];
             } elseif ($arrays) {
                 $last = count($arrays) - 1;
 
-                if (!$type->isSingleIntLiteral()) {
+                if (!$type->allIntLiterals()) {
                     // flags that aren't known may be SORT_STRING
-                    $arrays[$last][2] = SORT_STRING;
-                } elseif (($value = $type->getSingleIntLiteral()->value) !== SORT_ASC && $value !== SORT_DESC) {
-                    $arrays[$last][2] = $value & ~SORT_FLAG_CASE;
+                    $arrays[$last][2] = [SORT_STRING];
+                    continue;
+                }
+
+                $possible_flags = [];
+
+                foreach ($type->getLiteralInts() as $literal) {
+                    if ($literal->value === SORT_ASC || $literal->value === SORT_DESC) {
+                        // an order leaves the flags as they are
+                        $possible_flags = [...$possible_flags, ...$arrays[$last][2]];
+                    } else {
+                        $possible_flags[] = $literal->value & ~SORT_FLAG_CASE;
+                    }
+                }
+
+                if ($possible_flags) {
+                    $arrays[$last][2] = $possible_flags;
                 }
             }
         }
 
-        foreach ($arrays as [$arg, $value_type, $flags]) {
-            if ($value_type->hasObjectType()
-                && ($flags === SORT_REGULAR
+        foreach ($arrays as [$arg, $value_type, $possible_flags]) {
+            if (!$value_type->hasObjectType()) {
+                continue;
+            }
+
+            foreach ($possible_flags as $flags) {
+                if ($flags === SORT_REGULAR
                     ? self::mayBeString($value_type)
-                    : $flags === SORT_STRING || $flags === self::SORT_LOCALE_STRING || $flags === SORT_NATURAL)
-            ) {
-                CastAnalyzer::castStringAttempt($statements_analyzer, $context, $value_type, $arg->value, false, false);
+                    : $flags === SORT_STRING || $flags === self::SORT_LOCALE_STRING || $flags === SORT_NATURAL
+                ) {
+                    CastAnalyzer::castStringAttempt(
+                        $statements_analyzer,
+                        $context,
+                        $value_type,
+                        $arg->value,
+                        false,
+                        false,
+                    );
+                    break;
+                }
             }
         }
     }

@@ -1512,6 +1512,23 @@ final class CapabilitiesTest extends TestCase
                             && max($some_names) !== min($some_names[0], $some_names[0]);
                     }',
             ],
+            'noToStringInArrayMultisortWithAnOrderChosenAtRuntime' => [
+                'code' => '<?php
+                    final class Name {
+                        public function __toString(): string { return "name"; }
+                    }
+
+                    /**
+                     * @psalm-pure
+                     * @param list<Name> $names
+                     */
+                    function f(array $names, bool $desc): array {
+                        $order = $desc ? SORT_DESC : SORT_ASC;
+                        array_multisort($names, $order);
+
+                        return $names;
+                    }',
+            ],
             'noToStringOfValuesArrayMultisortAndStrtrDoNotCompareAsStrings' => [
                 'code' => '<?php
                     final class Name {
@@ -5851,6 +5868,43 @@ final class CapabilitiesTest extends TestCase
                         return strtr("abc", ["a" => $name]);
                     }',
                 'error_message' => 'possibly-mutating method Name::__toString',
+            ],
+            'impureToStringInArrayMultisortWithAnOrderOrStringFlagsChosenAtRuntime' => [
+                'code' => '<?php
+                    final class Name {
+                        public function __toString(): string { return "name"; }
+                    }
+
+                    /**
+                     * @psalm-pure
+                     * @param list<Name> $names
+                     */
+                    function f(array $names, bool $b): array {
+                        $flag = $b ? SORT_DESC : SORT_STRING;
+                        array_multisort($names, $flag);
+
+                        return $names;
+                    }',
+                'error_message' => 'possibly-mutating method Name::__toString',
+            ],
+            'impureToStringInArrayMultisortWithFlagsNotKnown' => [
+                'code' => '<?php
+                    final class Name {
+                        public function __toString(): string { return "name"; }
+                    }
+
+                    /**
+                     * @psalm-pure
+                     * @param list<Name> $names
+                     */
+                    function f(array $names, int $n): array {
+                        $flag = $n + 1;
+                        array_multisort($names, $flag);
+
+                        return $names;
+                    }',
+                'error_message' => 'possibly-mutating method Name::__toString',
+                'error_levels' => ['ImpureFunctionCall'],
             ],
             'impureToStringInArrayMultisortWithStringFlags' => [
                 'code' => '<?php
