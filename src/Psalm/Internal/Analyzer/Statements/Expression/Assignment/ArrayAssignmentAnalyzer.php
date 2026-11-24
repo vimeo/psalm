@@ -12,6 +12,7 @@ use Psalm\Codebase;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ArrayAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodCallPurityAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ArrayFetchAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\InstancePropertyFetchAnalyzer;
@@ -809,15 +810,18 @@ final class ArrayAssignmentAnalyzer
             return;
         }
 
+        $is_this = MethodCallPurityAnalyzer::isReceiverThis($property_fetch->var);
+        $mutations = $is_this ? Capabilities::WRITE_THIS_PROPS : Capabilities::WRITE_PROPS;
+
         $statements_analyzer->signalMutation(
-            $statements_analyzer->node_data->isPureCompatible($property_fetch->var)
+            !$is_this && $statements_analyzer->node_data->isPureCompatible($property_fetch->var)
                 ? Capabilities::NONE
-                : Capabilities::WRITE_PROPS,
+                : $mutations,
             $context,
             'property assignment',
             ImpurePropertyAssignment::class,
             $property_fetch,
-            Capabilities::WRITE_PROPS,
+            $mutations,
         );
     }
 

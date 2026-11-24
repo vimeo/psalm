@@ -3143,7 +3143,7 @@ final class AssignmentAnalyzer
 
         // prevents writing to any properties in a mutation-free context
         $statements_analyzer->signalMutation(
-            $pureCompat ? Capabilities::NONE : $mutations,
+            $pureCompat && !$isThis ? Capabilities::NONE : $mutations,
             $context,
             'property assignment',
             ImpurePropertyAssignment::class,

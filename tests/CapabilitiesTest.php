@@ -2680,6 +2680,121 @@ final class CapabilitiesTest extends TestCase
                         }
                     }',
             ],
+            'ternaryOrMatchWhoseEveryBranchReturnsThisIsThis' => [
+                'code' => '<?php
+                    final class Counter {
+                        public int $n = 0;
+
+                        /**
+                         * @return $this
+                         * @psalm-external-mutation-free
+                         */
+                        public function inc(): static {
+                            $this->n++;
+                            return $this;
+                        }
+
+                        /** @return $this */
+                        public function ping(string $u): static {
+                            echo $u;
+                            return $this;
+                        }
+
+                        /** @return $this */
+                        public function pingIf(bool $v): static {
+                            return $v ? $this->ping("") : $this;
+                        }
+
+                        /** @return $this */
+                        public function incOrFail(bool $v): static {
+                            return $v ? $this->inc() : throw new RuntimeException();
+                        }
+
+                        /** @return $this */
+                        public function incShort(): static {
+                            return $this->inc() ?: $this;
+                        }
+
+                        /** @return $this */
+                        public function incBy(int $by, bool $v): static {
+                            return match ($by) {
+                                0 => $this,
+                                1 => $this->inc(),
+                                2 => $v ? $this->inc()->inc() : $this->ping(""),
+                                default => throw new InvalidArgumentException(),
+                            };
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['RedundantConditionGivenDocblockType'],
+                'php_version' => '8.0',
+            ],
+            'ternaryOfThisAsReceiverOnlyMutatesThis' => [
+                'code' => '<?php
+                    final class Counter {
+                        public int $n = 0;
+
+                        /**
+                         * @return $this
+                         * @psalm-external-mutation-free
+                         */
+                        public function inc(): static {
+                            $this->n++;
+                            return $this;
+                        }
+
+                        /** @psalm-external-mutation-free */
+                        public function incIfThenInc(bool $v): void {
+                            ($v ? $this->inc() : $this)->inc();
+                        }
+                    }',
+            ],
+            'assigningToAPropertyOfATernaryOfThisOnlyMutatesThis' => [
+                'code' => '<?php
+                    final class Counter {
+                        public int $n = 0;
+
+                        /**
+                         * @return $this
+                         * @psalm-external-mutation-free
+                         */
+                        public function inc(): static {
+                            $this->n++;
+                            return $this;
+                        }
+
+                        /** @psalm-external-mutation-free */
+                        public function resetIf(bool $v): void {
+                            ($v ? $this->inc() : $this)->n = 0;
+                        }
+                    }',
+            ],
+            'changingAnArrayPropertyOfATernaryOfThisOnlyMutatesThis' => [
+                'code' => '<?php
+                    final class Counter {
+                        /** @var list<int> */
+                        public array $a = [];
+
+                        /**
+                         * @return $this
+                         * @psalm-external-mutation-free
+                         */
+                        public function add(): static {
+                            $this->a[] = 0;
+                            return $this;
+                        }
+
+                        /** @psalm-external-mutation-free */
+                        public function addIf(bool $v): void {
+                            ($v ? $this->add() : $this)->a[] = 1;
+                        }
+
+                        /** @psalm-external-mutation-free */
+                        public function sortIf(bool $v): void {
+                            sort(($v ? $this->add() : $this)->a);
+                        }
+                    }',
+            ],
             'purityTemplatesComeAfterTypeTemplates' => [
                 'code' => '<?php
                     /**
@@ -7399,6 +7514,100 @@ final class CapabilitiesTest extends TestCase
                         }
                     }',
                 'error_message' => 'InvalidReturnStatement - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:36 - The declared return type \'$this\' for Copying::inc requires returning $this, but this may return another object',
+            ],
+            'ternaryWithABranchNotReturningThisIsNotThis' => [
+                'code' => '<?php
+                    final class Counter {
+                        /** @return $this */
+                        public function copyIf(bool $v): static {
+                            return $v ? $this : clone $this;
+                        }
+                    }',
+                'error_message' => 'InvalidReturnStatement - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:36 - The declared return type \'$this\' for Counter::copyIf requires returning $this, but this may return another object',
+            ],
+            'shortTernaryWithAConditionNotReturningThisIsNotThis' => [
+                'code' => '<?php
+                    final class Counter {
+                        /** @return $this */
+                        public function otherOrThis(?self $other): static {
+                            return $other ?: $this;
+                        }
+                    }',
+                'error_message' => 'InvalidReturnStatement - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:36 - The declared return type \'$this\' for Counter::otherOrThis requires returning $this, but this may return another object',
+            ],
+            'matchWithAnArmNotReturningThisIsNotThis' => [
+                'code' => '<?php
+                    final class Counter {
+                        /** @return $this */
+                        public function copyIf(int $v): static {
+                            return match ($v) {
+                                0 => $this,
+                                default => clone $this,
+                            };
+                        }
+                    }',
+                'error_message' => 'InvalidReturnStatement - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:36 - The declared return type \'$this\' for Counter::copyIf requires returning $this, but this may return another object',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'assigningToAPropertyOfATernaryOfThisWritesThisProps' => [
+                'code' => '<?php
+                    final class Counter {
+                        public int $n = 0;
+
+                        /** @psalm-mutation-free */
+                        public function reset(bool $v): void {
+                            ($v ? $this : $this)->n = 0;
+                        }
+                    }',
+                'error_message' => 'ImpurePropertyAssignment - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:29 - The context is read-props but property assignment requires write-this-props',
+            ],
+            'appendingToAPropertyOfATernaryOfThisWritesThisProps' => [
+                'code' => '<?php
+                    final class Counter {
+                        /** @var list<int> */
+                        public array $a = [];
+
+                        /** @psalm-mutation-free */
+                        public function add(bool $v): void {
+                            ($v ? $this : $this)->a[] = 0;
+                        }
+                    }',
+                'error_message' => 'ImpurePropertyAssignment - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:29 - The context is read-props but property assignment requires write-this-props',
+            ],
+            'passingAPropertyOfATernaryOfThisByReferenceWritesThisProps' => [
+                'code' => '<?php
+                    final class Counter {
+                        /** @var list<int> */
+                        public array $a = [];
+
+                        /** @psalm-mutation-free */
+                        public function sortIt(bool $v): void {
+                            sort(($v ? $this : $this)->a);
+                        }
+                    }',
+                'error_message' => 'ImpureFunctionCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:29 - The context is read-props but function call on sort requires write-this-props',
+            ],
+            'callingAMutatingMethodOnATernaryOfThisWritesThisProps' => [
+                'code' => '<?php
+                    final class Counter {
+                        public int $n = 0;
+
+                        /**
+                         * @return $this
+                         * @psalm-external-mutation-free
+                         */
+                        public function inc(): static {
+                            $this->n++;
+                            return $this;
+                        }
+
+                        /** @psalm-mutation-free */
+                        public function incIf(bool $v): void {
+                            ($v ? $this : $this)->inc();
+                        }
+                    }',
+                'error_message' => 'ImpureMethodCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:16:29 - The context is read-props but method Counter::inc requires write-this-props',
             ],
             'purityArgumentsGoInBrackets' => [
                 'code' => '<?php
