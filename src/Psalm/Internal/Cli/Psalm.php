@@ -20,6 +20,7 @@ use Psalm\Internal\Codebase\ReferenceMapGenerator;
 use Psalm\Internal\Composer;
 use Psalm\Internal\ErrorHandler;
 use Psalm\Internal\IncludeCollector;
+use Psalm\Internal\Perf;
 use Psalm\Internal\Preloader;
 use Psalm\Internal\Provider\ClassLikeStorageCacheProvider;
 use Psalm\Internal\Provider\FileProvider;
@@ -81,6 +82,7 @@ use function setlocale;
 use function sort;
 use function str_starts_with;
 use function strlen;
+use function strval;
 use function substr;
 use function trim;
 use function wordwrap;
@@ -102,6 +104,7 @@ require_once __DIR__ . '/../IncludeCollector.php';
 require_once __DIR__ . '/../../IssueBuffer.php';
 require_once __DIR__ . '/../../Report.php';
 require_once __DIR__ . '/IdeDetector.php';
+require_once __DIR__ . '/../Perf/Collector.php';
 
 /**
  * @internal
@@ -125,7 +128,8 @@ final class Psalm
         'config:',
         'debug',
         'debug-by-line',
-        'debug-performance',
+        'debug-performance::',
+        'profile::',
         'debug-emitted-issues',
         'diff',
         'disable-extension:',
@@ -199,6 +203,7 @@ final class Psalm
 
         // get options from command line
         $options = CliUtils::getOptions($args, self::SHORT_OPTIONS, self::LONG_OPTIONS);
+        $given_option_names = array_map(strval(...), array_keys($options));
 
         // debug CI environment
         if (!array_key_exists('debug', $options)
@@ -211,6 +216,8 @@ final class Psalm
         self::forwardCliCall($options, $argv);
 
         CliUtils::rejectUnrecognisedOptions($args, self::SHORT_OPTIONS, self::LONG_OPTIONS);
+
+        self::startPerformanceCollector($options, $given_option_names);
 
         $min_type_coverage = self::parseMinTypeCoverageOption($options);
 
@@ -273,6 +280,8 @@ final class Psalm
 
         $output_format = self::initOutputFormat($options);
 
+        Perf\Collector::step('config');
+
         [$config, $init_source_dir] = self::initConfig(
             $current_dir,
             $args,
@@ -304,6 +313,7 @@ final class Psalm
         $progress = self::initProgress($options, $config, $in_ci);
 
         $force_jit = $config->force_jit || isset($options['force-jit']);
+        Perf\Collector::step('restart.check');
         self::restart($options, $force_jit, $threads, $scanThreads, $progress);
 
         // after the restart: the process that restarts would print them too
@@ -384,6 +394,7 @@ final class Psalm
             self::clearGlobalCache($config);
         }
 
+        Perf\Collector::step('providers');
         $providers = ProjectBootstrap::initProviders($options, $config, $current_dir);
 
         $stdout_report_options = self::initStdoutReportOptions($options, $show_info, $output_format, $in_ci);
@@ -428,6 +439,8 @@ final class Psalm
             $project_analyzer->checkPaths($paths_to_check);
         }
 
+        Perf\Collector::stage('post');
+
         if ($find_references_to) {
             $project_analyzer->findReferencesTo($find_references_to);
         }
@@ -442,6 +455,9 @@ final class Psalm
             self::generateStubs($options, $providers, $project_analyzer);
         }
 
+        Perf\Collector::stage('report');
+        Perf\Collector::step('baseline');
+
         if (!isset($options['i'])) {
             IssueBuffer::finish(
                 $project_analyzer,
@@ -453,6 +469,41 @@ final class Psalm
         } else {
             self::autoGenerateConfig($project_analyzer, $current_dir, $init_source_dir, $vendor_dir);
         }
+    }
+
+    /**
+     * @param list<string> $given_option_names
+     */
+    private static function startPerformanceCollector(array $options, array $given_option_names): void
+    {
+        if (isset($options['debug-performance'])) {
+            if (isset($options['profile'])) {
+                fwrite(STDERR, 'Only one of --debug-performance and --profile can be given' . PHP_EOL);
+                exit(1);
+            }
+
+            $name = 'debug-performance';
+            /** @var list<string>|string|false $path type guaranteed by argument to getopt() */
+            $path = $options['debug-performance'];
+        } elseif (isset($options['profile'])) {
+            $name = 'profile';
+            /** @var list<string>|string|false $path type guaranteed by argument to getopt() */
+            $path = $options['profile'];
+        } else {
+            return;
+        }
+
+        if (is_array($path)) {
+            fwrite(STDERR, 'Only one --' . $name . ' path can be given' . PHP_EOL);
+            exit(1);
+        }
+
+        if ($path === '') {
+            fwrite(STDERR, '--' . $name . '= needs a path: use --' . $name . '=PATH or no value' . PHP_EOL);
+            exit(1);
+        }
+
+        Perf\Collector::start(is_string($path) ? $path : null, $given_option_names);
     }
 
     /** @return int<1, max> */
@@ -1046,6 +1097,7 @@ final class Psalm
             }
         }
 
+        Perf\Collector::step('preload');
         Preloader::preload($progress, $hasJit);
     }
 
@@ -1449,8 +1501,13 @@ final class Psalm
             --debug-by-line
                 Debug information on a line-by-line level
 
-            --debug-performance
-                Show performance information
+            --debug-performance[=PATH]
+                Print where the time and memory went: stages, slowest files, hottest statements and functions.
+                With =PATH, also write all of it as a JSON performance profile to PATH. The path needs the `=`: after a space it is
+                a file to analyse. Debug output (--debug) distorts the timings.
+
+            --profile[=PATH]
+                Alias of --debug-performance.
 
             --debug-emitted-issues
                 Print a php backtrace to stderr when emitting issues.
