@@ -21,6 +21,54 @@ final class ConditionalReturnTypeTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'conditionalOnAnUnresolvedBoolClassTemplateKeepsBothBranches' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class Lazy {}
+                    final class Response {}
+
+                    /** @template TAsync of bool */
+                    final class Request {
+                        /** @param TAsync $async */
+                        public function __construct(public bool $async) {}
+
+                        /**
+                         * @return (TAsync is false ? Response : Lazy)
+                         */
+                        public function send(): Response|Lazy {
+                            return $this->async ? new Lazy() : new Response();
+                        }
+
+                        public function get(): ?Response {
+                            $r = $this->send();
+                            if ($r instanceof Response) {
+                                return $r;
+                            }
+                            return null;
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'conditionalOnANonEmptyListReturnsTheArrayMapOfTheList' => [
+                'code' => '<?php
+                    /**
+                     * @param list $items
+                     * @return ($items is non-empty-list ? non-empty-list : list)
+                     */
+                    function test(array $items): array
+                    {
+                        return array_map(
+                            static fn (mixed $item): mixed => $item,
+                            $items,
+                        );
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'conditionalOnClosureKeepsTheIfBranchForAnInterfaceNarrowedToClosure' => [
                 'code' => <<<'PHP'
                     <?php
@@ -40,7 +88,7 @@ final class ConditionalReturnTypeTest extends TestCase
                         $plain = kind($factory);
 
                         if ($factory instanceof Closure) {
-                            /** @psalm-check-type-exact $narrowed = 'closure'|'other' */
+                            /** @psalm-check-type-exact $narrowed = 'closure' */
                             $narrowed = kind($factory);
                         }
                     }
@@ -2204,7 +2252,7 @@ final class ConditionalReturnTypeTest extends TestCase
                     $node = new Node();
                     $result = $node->cmp($node);',
                 'assertions' => [
-                    '$result===' => 'int|string',
+                    '$result===' => 'string',
                 ],
                 'ignored_issues' => ['ArgumentTypeCoercion'],
             ],
@@ -2709,6 +2757,27 @@ final class ConditionalReturnTypeTest extends TestCase
                 'assertions' => [],
                 'ignored_issues' => [],
                 'php_version' => '8.1',
+            ],
+            'conditionOnAParamIsAboutAnArgumentThatDoesNotFitIt' => [
+                'code' => '<?php
+                    final class Name {
+                        public function __toString(): string {
+                            return "n";
+                        }
+                    }
+
+                    /** @var list<Name> $names */
+                    $names = [new Name()];
+
+                    $r = preg_replace("/a/", "b", $names);
+                    $s = str_replace("a", "b", $names);
+                    $t = str_replace("a", "b", "abc");',
+                'assertions' => [
+                    '$r===' => 'array<int<0, max>, string>|null',
+                    '$s===' => 'array<int<0, max>, string>',
+                    '$t===' => "'bbc'",
+                ],
+                'ignored_issues' => ['ImplicitToStringCast'],
             ],
             'conditionalReturnOfAMixedTemplateArgumentKeepsBothBranches' => [
                 'code' => '<?php

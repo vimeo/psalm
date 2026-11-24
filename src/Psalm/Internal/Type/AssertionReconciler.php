@@ -35,6 +35,7 @@ use Psalm\Storage\Assertion\NestedAssertions;
 use Psalm\Storage\Assertion\NonEmpty;
 use Psalm\Storage\Assertion\NonEmptyCountable;
 use Psalm\Storage\Assertion\Truthy;
+use Psalm\Storage\Capabilities;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\Scalar;
@@ -90,6 +91,8 @@ use function count;
 use function is_nan;
 use function is_numeric;
 use function is_string;
+use function reset;
+use function rtrim;
 use function strtolower;
 
 /**
@@ -698,26 +701,38 @@ final class AssertionReconciler extends Reconciler
             $new_as_atomic = $new_type_part->as->getSingleAtomic();
 
             $acceptable_atomic_types = [];
+            $narrowed = false;
 
             foreach ($existing_var_type->getAtomicTypes() as $existing_var_type_part) {
                 if ($existing_var_type_part instanceof TNamedObject
                     || $existing_var_type_part instanceof TTemplateParam
                 ) {
                     $acceptable_atomic_types[] = $existing_var_type_part;
-                } else {
-                    if (AtomicTypeComparator::isContainedBy(
-                        $codebase,
-                        $existing_var_type_part,
-                        $new_as_atomic,
-                    )) {
-                        $acceptable_atomic_types[] = $existing_var_type_part;
+                } elseif (AtomicTypeComparator::isContainedBy(
+                    $codebase,
+                    $existing_var_type_part,
+                    $new_as_atomic,
+                )) {
+                    $acceptable_atomic_types[] = $existing_var_type_part;
+                } elseif (($overlap = Type::intersectUnionTypes(
+                    new Union([$existing_var_type_part]),
+                    new Union([$new_as_atomic]),
+                    $codebase,
+                )) !== null
+                    && !$overlap->isNever()
+                ) {
+                    // a string can be the value of a template of `numeric`: a numeric string
+                    $narrowed = true;
+
+                    foreach ($overlap->getAtomicTypes() as $overlap_atomic_type) {
+                        $acceptable_atomic_types[] = $overlap_atomic_type;
                     }
                 }
             }
 
             if ($acceptable_atomic_types) {
                 $acceptable_atomic_types =
-                    count($acceptable_atomic_types) === count($existing_var_type->getAtomicTypes())
+                    !$narrowed && count($acceptable_atomic_types) === count($existing_var_type->getAtomicTypes())
                         ? $existing_var_type
                         : new Union($acceptable_atomic_types);
                 return new Union([$new_type_part->replaceAs($acceptable_atomic_types)]);
@@ -1027,14 +1042,14 @@ final class AssertionReconciler extends Reconciler
     /**
      * Narrowing a `Parent<A, B>` to a child class whose templates are passed straight to Parent's
      * (`@extends Parent<T, U>`, `@implements Iterator[P]<K, V>`) gives the child those arguments:
-     * `Iterator[pure]<int, string>` narrowed to `Child` is a `Child[pure]<int, string>`.
-     *
-     * @psalm-capabilities read-props
+     * `Iterator[pure]<int, string>` narrowed to `Child` is a `Child[pure]<int, string>`. With
+     * $unknown_as_star, the other type templates are `*` rather than leaving the child without arguments.
      */
     private static function inferTemplateParamsFromParent(
         Codebase $codebase,
         TNamedObject $child,
         TGenericObject $parent,
+        bool $unknown_as_star = false,
     ): TNamedObject {
         if (!$codebase->classlike_storage_provider->has($child->value)
             || !$codebase->classlike_storage_provider->has($parent->value)
@@ -1058,8 +1073,9 @@ final class AssertionReconciler extends Reconciler
 
         $parent_template_names = array_keys($parent_storage->template_types);
         $type_params = [];
+        $projections = [];
 
-        foreach (array_keys($child_storage->template_types) as $template_name) {
+        foreach ($child_storage->template_types as $template_name => $type_map) {
             $inferred = null;
 
             foreach ($extended_params as $parent_template_name => $extended_type) {
@@ -1076,26 +1092,46 @@ final class AssertionReconciler extends Reconciler
                     && $extended_atomic->defining_class === $child_storage->name
                 ) {
                     $inferred = $parent->type_params[$offset];
+
+                    if ($parent->getProjection($offset) === TypeArgumentProjection::Star) {
+                        $projections[count($type_params)] = TypeArgumentProjection::Star;
+                    }
+
                     break;
                 }
             }
 
             if ($inferred === null) {
-                // a template not passed straight to the parent: nothing is known about it
-                return $child;
+                if (!$unknown_as_star) {
+                    // a template not passed straight to the parent: nothing is known about it
+                    return $child;
+                }
+
+                // a purity template is left to its bound, which a `*` cannot stand for
+                $bound = reset($type_map);
+
+                if (Capabilities::isPurityType($bound)) {
+                    $inferred = PurityArguments::getOmittedArgument($bound);
+                } else {
+                    $inferred = Type::getMixed();
+                    $projections[count($type_params)] = TypeArgumentProjection::Star;
+                }
             }
 
             $type_params[] = $inferred;
         }
 
-        return new TGenericObject(
+        $narrowed = (new TGenericObject(
             $child->value,
             $type_params,
             false,
             $child->is_static,
             $child->extra_types,
             $child->from_docblock,
-        );
+        ))->setProjections($projections);
+
+        // a `*` passed down holds the bound of the child's template, with the child's other arguments applied
+        return StarProjection::resolve($narrowed, $codebase, array_keys($projections));
     }
 
     /**
@@ -1537,6 +1573,18 @@ final class AssertionReconciler extends Reconciler
         Codebase $codebase,
         bool $type_coerced,
     ): ?Atomic {
+        if ($type_2_atomic::class === TNamedObject::class
+            && $type_1_atomic instanceof TGenericObject
+            && $type_1_atomic->hasStarProjection()
+        ) {
+            // what a `*` leaves unknown stays unknown: `Pair<int, *>` narrowed to `Pair` is still a `Pair<int, *>`
+            // (with the intersection asserted next to it), and narrowed to a `Child` that `@extends Pair<int, T>` is a
+            // `Child<*>`, not one of the template's bound
+            return strtolower($type_2_atomic->value) === strtolower($type_1_atomic->value)
+                ? $type_1_atomic->setIntersectionTypes([...$type_1_atomic->extra_types, ...$type_2_atomic->extra_types])
+                : self::inferTemplateParamsFromParent($codebase, $type_2_atomic, $type_1_atomic, true);
+        }
+
         if ($type_coerced
             && $type_2_atomic::class === TNamedObject::class
             && $type_1_atomic instanceof TGenericObject
@@ -1891,7 +1939,7 @@ final class AssertionReconciler extends Reconciler
 
             if ($assertion instanceof IsLooselyEqual
                 && $existing_var_atomic_type instanceof TLiteralString
-                && (int)$existing_var_atomic_type->value === $value
+                && LiteralCast::toInt($existing_var_atomic_type->value) === $value
             ) {
                 return new Union([$existing_var_atomic_type]);
             }
@@ -1930,6 +1978,17 @@ final class AssertionReconciler extends Reconciler
         }
 
         return Type::getNever();
+    }
+
+    /**
+     * What `is_numeric()` tells for the PHP version analysed: a trailing whitespace is allowed as of PHP 8
+     *
+     * @psalm-pure
+     */
+    public static function isNumericString(string $value, int $analysis_php_version_id): bool
+    {
+        return is_numeric($value)
+            && ($analysis_php_version_id >= 8_00_00 || rtrim($value, " \t\n\r\v\f") === $value);
     }
 
     /**
@@ -1981,8 +2040,28 @@ final class AssertionReconciler extends Reconciler
     ): Union {
         $value = $assertion_type->value;
 
+        // PHP compares two numeric strings by their numbers: `"1" == "01"`
+        $loosely_equal_literals = [];
+
+        if ($assertion instanceof IsLooselyEqual
+            && self::isNumericString($value, $statements_analyzer->getCodebase()->analysis_php_version_id)
+        ) {
+            foreach ($existing_var_atomic_types as $key => $existing_var_atomic_type) {
+                if ($existing_var_atomic_type instanceof TLiteralString
+                    && $existing_var_atomic_type->value !== $value
+                    && self::isNumericString(
+                        $existing_var_atomic_type->value,
+                        $statements_analyzer->getCodebase()->analysis_php_version_id,
+                    )
+                    && $existing_var_atomic_type->value == $value
+                ) {
+                    $loosely_equal_literals[$key] = $existing_var_atomic_type;
+                }
+            }
+        }
+
         // we create the literal that is being asserted. We'll return this when we're sure this is the resulting type
-        $literal_asserted_type_string = new Union([$assertion_type], [
+        $literal_asserted_type_string = new Union([$assertion_type, ...array_values($loosely_equal_literals)], [
             'from_docblock' => $existing_var_type->from_docblock,
         ]);
 
@@ -2068,6 +2147,12 @@ final class AssertionReconciler extends Reconciler
                     return $existing_var_type;
                 }
             }
+        }
+
+        if ($loosely_equal_literals !== []) {
+            return new Union(array_values($loosely_equal_literals), [
+                'from_docblock' => $existing_var_type->from_docblock,
+            ]);
         }
 
         //if we're here, no type was eligible for the given literal. We'll emit an impossible error for this assertion

@@ -4,7 +4,7 @@ Emitted when `--find-dead-code` is turned on and Psalm cannot find any
 references to the foreach value
 
 ```php
-<?php
+<?php // findUnusedCode="true"
 
 /** @param array<string, int> $a */
 function foo(array $a) : void {

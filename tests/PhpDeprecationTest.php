@@ -221,6 +221,12 @@ final class PhpDeprecationTest extends TestCase
                 'code' => '<?php
                     $a = chr(65) . ord("a") . pow(2, -1) . 0 ** 2;',
             ],
+            'argumentCountsThatAreNotDeprecated' => [
+                'code' => '<?php
+                    $a = mb_check_encoding("a");
+                    $b = stream_context_set_option(stream_context_create(), "http", "method", "POST");
+                    $c = finfo_buffer(finfo_open(), "a", 0);',
+            ],
             'staticMemberOfAClassUsingATrait' => [
                 'code' => '<?php
                     trait T {
@@ -397,6 +403,22 @@ final class PhpDeprecationTest extends TestCase
                 'code' => '<?php
                     define("SOME_CONSTANT", 1, false);',
                 'error_message' => 'The case_insensitive argument of define() is deprecated since PHP 8.6, leave it out',
+            ],
+            'mbCheckEncodingWithoutArguments' => [
+                'code' => '<?php
+                    $a = mb_check_encoding();',
+                'error_message' => 'Calling mb_check_encoding() without arguments is deprecated since PHP 8.1',
+            ],
+            'streamContextSetOptionWithAnArrayOfOptions' => [
+                'code' => '<?php
+                    $a = stream_context_set_option(stream_context_create(), ["http" => ["method" => "POST"]]);',
+                'error_message' => 'Calling stream_context_set_option() with an array of options is deprecated since PHP 8.4, '
+                    . 'use stream_context_set_options() instead',
+            ],
+            'contextArgumentOfFinfoBuffer' => [
+                'code' => '<?php
+                    $a = finfo_buffer(finfo_open(), "a", 0, stream_context_create());',
+                'error_message' => 'The context argument of finfo_buffer() is deprecated since PHP 8.5, leave it out',
             ],
             'isAWithAClassNameAndNoAllowString' => [
                 'code' => '<?php
