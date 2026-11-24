@@ -3257,6 +3257,14 @@ final class BinaryOperationTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'possiblyNullOperandShowsTheRefinedType' => [
+                'code' => '<?php
+                    /** @param non-empty-string|null $p */
+                    function f(?string $p): string {
+                        return $p . "x";
+                    }',
+                'error_message' => 'PossiblyNullOperand - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:32 - Cannot concatenate with a possibly null non-empty-string|null',
+            ],
             'unionOfATemplateKeyedArrayAndAShapeMayHaveTheKey' => [
                 'code' => '<?php
                     function takesInt(int $i): void {}
