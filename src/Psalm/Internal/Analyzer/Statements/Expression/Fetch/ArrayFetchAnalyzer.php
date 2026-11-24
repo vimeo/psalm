@@ -892,6 +892,7 @@ final class ArrayFetchAnalyzer
         } elseif ($stmt->dim instanceof PhpParser\Node\Scalar\Int_) {
             $key_values[] = new TLiteralInt($stmt->dim->value);
         } elseif ($stmt->dim && ($stmt_dim_type = $statements_analyzer->node_data->getType($stmt->dim))) {
+            $stmt_dim_type = self::replaceTemplatesWithBounds($stmt_dim_type);
             $string_literals = $stmt_dim_type->getLiteralStrings();
             $int_literals = $stmt_dim_type->getLiteralInts();
 

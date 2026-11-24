@@ -1612,6 +1612,29 @@ final class ArrayAccessTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'issetOfAnOffsetOfATemplateBoundedByLiteralsThatPartlyMatchTheKeys' => [
+                'code' => '<?php
+                    /**
+                     * @template T of \'a\'|\'z\'
+                     * @param array{a: int, b: int} $array
+                     * @param T $o
+                     */
+                    function partialIsset(array $array, $o): bool {
+                        return isset($array[$o]);
+                    }
+
+                    /**
+                     * @template T of \'x\'|\'y\'
+                     * @param array{a: true, b: true} $array
+                     * @param T|\'a\' $o
+                     */
+                    function unionWithTemplate(array $array, $o): bool {
+                        return isset($array[$o]);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'issetOfASealedArrayWithATemplateOffsetBoundedByAUnion' => [
                 'code' => '<?php
                     final class Types {
@@ -4229,6 +4252,20 @@ final class ArrayAccessTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'offsetOfATemplateBoundedByLiteralsOutsideIssetIsStillReported' => [
+                'code' => '<?php
+                    /**
+                     * @template T of \'x\'|\'y\'
+                     * @param array{a: int, b: int} $array
+                     * @param T $o
+                     */
+                    function outside(array $array, $o): int {
+                        return $array[$o];
+                    }',
+                'error_message' => 'InvalidArrayOffset',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
             'issetOfASealedArrayWithATemplateOffsetBoundedByATypeOfNoKey' => [
                 'code' => '<?php
                     /**
