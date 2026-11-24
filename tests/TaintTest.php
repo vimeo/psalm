@@ -14147,6 +14147,12 @@ final class TaintTest extends TestCase
                 'error_message' => 'TaintedHtml',
                 'php_version' => '7.4',
             ],
+            'taintFlowsThroughAParameterOfAnExtensionPhp8Renamed' => [
+                'code' => '<?php // --taint-analysis
+                    echo (string) imap_base64((string) $_GET["value"]);',
+                'error_message' => 'TaintedHtml',
+                'php_version' => '7.4',
+            ],
             'taintParseStrResult' => [
                 'code' => '<?php // --taint-analysis
                     parse_str((string) $_GET["value"], $result);
