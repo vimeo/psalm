@@ -84,6 +84,7 @@ use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Storage\FunctionStorage;
 use Psalm\Storage\MethodStorage;
+use Psalm\Storage\TemplateVariance;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArray;
@@ -740,6 +741,30 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 false,
                 $context,
             );
+        }
+
+        // what an assertion narrows a value to is handed out, as a return type is (a negated one hands nothing out)
+        if ($storage->location !== null) {
+            $asserted_types = [];
+            $possibilities_list = [
+                ...$storage->assertions,
+                ...$storage->if_true_assertions,
+                ...$storage->if_false_assertions,
+            ];
+
+            foreach ($possibilities_list as $possibilities) {
+                foreach ($possibilities->rule as $assertion) {
+                    if (!$assertion->isNegation() && ($asserted_type = $assertion->getAtomicType()) !== null) {
+                        $asserted_types[] = $asserted_type;
+                    }
+                }
+            }
+
+            if ($asserted_types
+                && !$this->checkOutputTypeTemplates(new Union($asserted_types), $storage->location, $storage, $context)
+            ) {
+                $check_stmts = false;
+            }
         }
 
         // a signature that fails the check skips the body, but what the body initialises still counts:
@@ -1874,6 +1899,42 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
     }
 
     /**
+     * Checks a type a method hands out other than as its return type (`@param-out`, a by-ref parameter, what an
+     * assertion narrows to) for the contravariant templates of its class. Covariant ones were never checked there.
+     *
+     * @return bool whether the type has no errors, as for check()
+     * @psalm-capabilities read-props
+     */
+    private function checkOutputTypeTemplates(
+        Union $type,
+        CodeLocation $location,
+        FunctionLikeStorage $storage,
+        Context $context,
+    ): bool {
+        if (!$storage instanceof MethodStorage
+            || $storage->defining_fqcln === null
+            || !$this->function instanceof ClassMethod
+            || strtolower($this->function->name->name) === '__construct'
+            || $this->codebase->classlike_storage_provider->get($storage->defining_fqcln)->template_contravariants
+                === null
+        ) {
+            return true;
+        }
+
+        return (new TypeChecker(
+            $this,
+            $location,
+            $storage->suppressed_issues,
+            [],
+            false,
+            false,
+            TemplateVariance::Covariant,
+            $context,
+            true,
+        ))->check($type);
+    }
+
+    /**
      * A trait method is analyzed as a method of the class using the trait, where the templates of the trait
      * are the types given to `@use`: an argument of such a template type fits the parameter of a call the
      * concrete type fits.
@@ -2077,6 +2138,12 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 && ($codebase->classlike_storage_provider->get($storage->defining_fqcln)
                     ->properties[$function_param->name]->inherited_type ?? false);
 
+            // a docblock type inherited from an overridden method keeps the native types the override adds, which
+            // are checked where the override declares them
+            $inherits_docblock_type = $function_param->has_docblock_type
+                && isset($storage->params[$offset])
+                && !$storage->params[$offset]->has_docblock_type;
+
             if ($signature_type && $signature_type_location && $signature_type->hasObjectType()) {
                 $referenced_type = $signature_type;
                 if ($referenced_type->isNullable()) {
@@ -2207,18 +2274,55 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                     }
                 }
 
+                $checked_type = $param_type;
+
+                if ($inherits_docblock_type && $signature_type) {
+                    $checked_types = array_diff_key($param_type->getAtomicTypes(), $signature_type->getAtomicTypes());
+                    $checked_type = $checked_types ? new Union($checked_types) : null;
+                }
+
                 if ($function_param->type_location && !$inherited_type) {
-                    if ($param_type->check(
-                        $this,
-                        $function_param->type_location,
-                        $storage->suppressed_issues,
-                        [],
-                        false,
-                        false,
-                        $this->function instanceof ClassMethod
-                            && strtolower($this->function->name->name) !== '__construct',
-                        $context,
-                    ) === false) {
+                    $own_param = $storage->params[$offset] ?? null;
+
+                    // a type the parameter takes from the overridden method is checked there, for its templates
+                    if ($checked_type
+                        && !$checked_type->checked
+                        && !(new TypeChecker(
+                            $this,
+                            $function_param->type_location,
+                            $storage->suppressed_issues,
+                            [],
+                            false,
+                            false,
+                            $this->function instanceof ClassMethod
+                                && strtolower($this->function->name->name) !== '__construct'
+                                && $function_param === $own_param
+                                    ? TemplateVariance::Contravariant
+                                    : null,
+                            $context,
+                            false,
+                            $function_param !== $own_param,
+                        ))->check($checked_type)
+                    ) {
+                        $check_stmts = false;
+                    }
+
+                    // the method's own `@param-out` is checked here even if the type it takes is the overridden
+                    // method's, which checks only what it declares
+                    $output_type = $function_param->out_type
+                        ?? ($function_param->by_ref && $function_param === $own_param ? $param_type : null);
+
+                    if ($output_type !== null
+                        && $own_param !== null
+                        && !$this->checkOutputTypeTemplates(
+                            $output_type,
+                            $function_param === $own_param
+                                ? $function_param->type_location
+                                : $own_param->location ?? $function_param->type_location,
+                            $storage,
+                            $context,
+                        )
+                    ) {
                         $check_stmts = false;
                     }
                 }
@@ -2229,6 +2333,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                     'by_ref' => $function_param->by_ref,
                     'parent_nodes' => $parent_nodes,
                 ]);
+                $checked_type = $param_type;
             }
 
             $var_type = $param_type;
@@ -2369,7 +2474,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             }
 
             if ($has_template_types && !$inherited_type) {
-                if ($param_type->check(
+                if ($checked_type?->check(
                     $this->source,
                     $function_param->type_location,
                     $this->suppressed_issues,
@@ -2399,7 +2504,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                     );
                 }
 
-                if ($param_type->check(
+                if ($checked_type?->check(
                     $this->source,
                     $function_param->type_location,
                     $this->suppressed_issues,
@@ -2411,6 +2516,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             }
 
             if (($inherited_type
+                    || $inherits_docblock_type
                     || ($function_param->type_location !== $function_param->signature_type_location
                         && $function_param->type?->getId() !== $function_param->signature_type?->getId()))
                 && $function_param->signature_type_location

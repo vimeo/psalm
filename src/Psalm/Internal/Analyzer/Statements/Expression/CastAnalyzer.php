@@ -514,9 +514,17 @@ final class CastAnalyzer
         if ($atomic_type instanceof TString) {
             // a numeric string can be any number, and any other string is technically 0,
             // however we cannot be certain that it's not inferred, therefore less strict
-            return $atomic_type instanceof TLiteralString
-                ? [self::getNumericLiteral($atomic_type->value, $is_int)]
-                : [];
+            if (!$atomic_type instanceof TLiteralString) {
+                return [];
+            }
+
+            if (!$is_int) {
+                return [new TLiteralFloat((float) $atomic_type->value)];
+            }
+
+            $int = LiteralCast::toInt($atomic_type->value);
+
+            return $int === null ? [] : [new TLiteralInt($int)];
         }
 
         if ($atomic_type instanceof TNull || $atomic_type instanceof TFalse) {
@@ -575,9 +583,9 @@ final class CastAnalyzer
     /**
      * @psalm-pure
      */
-    private static function getNumericLiteral(int|string $value, bool $is_int): TLiteralInt|TLiteralFloat
+    private static function getNumericLiteral(int $value, bool $is_int): TLiteralInt|TLiteralFloat
     {
-        return $is_int ? new TLiteralInt((int) $value) : new TLiteralFloat((float) $value);
+        return $is_int ? new TLiteralInt($value) : new TLiteralFloat((float) $value);
     }
 
     /**

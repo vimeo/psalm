@@ -126,7 +126,7 @@ final class ForeachAnalyzer
         $doc_comment = $stmt->getDocComment();
 
         $codebase = $statements_analyzer->getCodebase();
-        $file_path = $statements_analyzer->getRootFilePath();
+        $file_path = $statements_analyzer->getFilePath();
         $type_aliases = $codebase->file_storage_provider->get($file_path)->type_aliases;
 
         if ($doc_comment) {

@@ -25,7 +25,7 @@ final class DocComment
 {
     public const PSALM_ANNOTATIONS = [
         'return', 'param', 'template', 'var', 'type',
-        'template-covariant', 'property', 'property-read', 'property-write', 'method',
+        'template-covariant', 'template-contravariant', 'property', 'property-read', 'property-write', 'method',
         'assert', 'assert-if-true', 'assert-if-false', 'suppress',
         'ignore-nullable-return', 'override-property-visibility',
         'override-method-visibility', 'seal-properties', 'seal-methods',

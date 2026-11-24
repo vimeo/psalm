@@ -14,6 +14,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\PhpDeprecations;
 use Psalm\Internal\Provider\NodeDataProvider;
+use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\LiteralCast;
 use Psalm\Internal\Type\TemplateBound;
 use Psalm\Internal\Type\TypeCombiner;
@@ -40,6 +41,7 @@ use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TIntRange;
 use Psalm\Type\Atomic\TKeyedArray;
+use Psalm\Type\Atomic\TLiteralClassString;
 use Psalm\Type\Atomic\TLiteralFloat;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
@@ -639,9 +641,17 @@ final class ArithmeticOpAnalyzer
                         }
                     }
 
+                    // a key only the right shape has may also be one the rest of the left shape holds
                     if ($left_type_part->fallback_params !== null) {
                         foreach ($definitely_existing_mixed_right_properties as $key => $type) {
-                            $properties[$key] = Type::combineUnionTypes(Type::getMixed(), $type);
+                            $properties[$key] = self::mayHaveKey(
+                                $codebase,
+                                $left_type_part->fallback_params[0],
+                                $key,
+                                isset($right_type_part->class_strings[$key]),
+                            )
+                                ? Type::combineUnionTypes($left_type_part->fallback_params[1], $type)
+                                : $type;
                         }
                     }
 
@@ -672,6 +682,77 @@ final class ArithmeticOpAnalyzer
                         $fallback_params,
                     );
                     $result_type_member = new Union([$new_keyed_array]);
+                } elseif ($left_type_part instanceof TArray
+                    && !$left_type_part->isEmptyArray()
+                    && $right_type_part instanceof TKeyedArray
+                    && !$right_type_part->isGenericList()
+                ) {
+                    [$left_key_type, $left_value_type] = $left_type_part->type_params;
+
+                    // the result has every key the shape has, under it what the array had if it had it
+                    $properties = [];
+
+                    foreach ($right_type_part->properties as $key => $type) {
+                        $is_class_string = isset($right_type_part->class_strings[$key]);
+                        $properties[$key] = self::mayHaveKey($codebase, $left_key_type, $key, $is_class_string)
+                            ? Type::combineUnionTypes(
+                                $left_value_type,
+                                $type,
+                                $codebase,
+                                false,
+                                true,
+                                500,
+                                $type->possibly_undefined,
+                            )
+                            : $type;
+                    }
+
+                    $result_type_member = new Union([TKeyedArray::make(
+                        $properties,
+                        $right_type_part->class_strings,
+                        $right_type_part->fallback_params === null
+                            ? [$left_key_type, $left_value_type]
+                            : [
+                                Type::combineUnionTypes($left_key_type, $right_type_part->fallback_params[0]),
+                                Type::combineUnionTypes($left_value_type, $right_type_part->fallback_params[1]),
+                            ],
+                    )]);
+                } elseif ($left_type_part instanceof TKeyedArray
+                    && !$left_type_part->isGenericList()
+                    && $right_type_part instanceof TArray
+                    && !$right_type_part->isEmptyArray()
+                ) {
+                    [$right_key_type, $right_value_type] = $right_type_part->type_params;
+
+                    // the shape's keys win, the array can only fill in those the shape may lack
+                    $properties = [];
+
+                    foreach ($left_type_part->properties as $key => $type) {
+                        $is_class_string = isset($left_type_part->class_strings[$key]);
+                        $properties[$key] = $type->possibly_undefined
+                            && self::mayHaveKey($codebase, $right_key_type, $key, $is_class_string)
+                            ? Type::combineUnionTypes(
+                                $type,
+                                $right_value_type,
+                                $codebase,
+                                false,
+                                true,
+                                500,
+                                true,
+                            )
+                            : $type;
+                    }
+
+                    $result_type_member = new Union([TKeyedArray::make(
+                        $properties,
+                        $left_type_part->class_strings,
+                        $left_type_part->fallback_params === null
+                            ? [$right_key_type, $right_value_type]
+                            : [
+                                Type::combineUnionTypes($left_type_part->fallback_params[0], $right_key_type),
+                                Type::combineUnionTypes($left_type_part->fallback_params[1], $right_value_type),
+                            ],
+                    )]);
                 } else {
                     $result_type_member = TypeCombiner::combine(
                         [$left_type_part, $right_type_part],
@@ -783,7 +864,11 @@ final class ArithmeticOpAnalyzer
 
         if ($left_type_part instanceof TLiteralString) {
             if (preg_match('/^\-?\d+$/', $left_type_part->value)) {
-                $left_type_part = new TLiteralInt((int) $left_type_part->value);
+                // a digit string outside the int range is a float in arithmetic
+                $int = LiteralCast::toInt($left_type_part->value);
+                $left_type_part = $int === null
+                    ? new TLiteralFloat((float) $left_type_part->value)
+                    : new TLiteralInt($int);
             } elseif (preg_match('/^\-?\d?\.\d+$/', $left_type_part->value)) {
                 $left_type_part = new TLiteralFloat((float) $left_type_part->value);
             }
@@ -791,7 +876,10 @@ final class ArithmeticOpAnalyzer
 
         if ($right_type_part instanceof TLiteralString) {
             if (preg_match('/^\-?\d+$/', $right_type_part->value)) {
-                $right_type_part = new TLiteralInt((int) $right_type_part->value);
+                $int = LiteralCast::toInt($right_type_part->value);
+                $right_type_part = $int === null
+                    ? new TLiteralFloat((float) $right_type_part->value)
+                    : new TLiteralInt($int);
             } elseif (preg_match('/^\-?\d?\.\d+$/', $right_type_part->value)) {
                 $right_type_part = new TLiteralFloat((float) $right_type_part->value);
             }
@@ -1798,5 +1886,30 @@ final class ArithmeticOpAnalyzer
                 $statements_analyzer->getSuppressedIssues(),
             );
         }
+    }
+
+    /**
+     * Whether an array of the key type may have the key of a shape: `array<string, V>` has no int key `0`
+     */
+    private static function mayHaveKey(
+        ?Codebase $codebase,
+        Union $key_type,
+        int|string $key,
+        bool $is_class_string = false,
+    ): bool {
+        // a template key stands for values not known yet
+        if ($codebase === null || $key_type->hasTemplate()) {
+            return true;
+        }
+
+        return UnionTypeComparator::canBeContainedBy(
+            $codebase,
+            new Union([
+                is_int($key)
+                    ? new TLiteralInt($key)
+                    : ($is_class_string ? new TLiteralClassString($key) : TLiteralString::make($key)),
+            ]),
+            $key_type,
+        );
     }
 }
