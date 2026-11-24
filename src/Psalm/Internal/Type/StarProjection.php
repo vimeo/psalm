@@ -17,7 +17,8 @@ use function reset;
  * The `*` type argument of a generic object (`Pair<int, *>`), see TypeArgumentProjection::Star.
  *
  * The type a `*` slot holds is the bound of its template with the other type arguments applied. The parser has no
- * class storage to compute it with and holds `mixed`, which resolve() replaces.
+ * class storage to compute it with and holds `mixed`, which resolve() replaces. A bound mixin's `*` may hold a
+ * refinement of that bound, what its slot reads from the receiver (MixinLookup::holdReadTypes()).
  *
  * @internal
  */

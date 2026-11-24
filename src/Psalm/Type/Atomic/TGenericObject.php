@@ -246,7 +246,8 @@ final class TGenericObject extends TNamedObject
         foreach ($this->type_params as $i => $type_param) {
             $is_star = $this->getProjection($i) === TypeArgumentProjection::Star;
 
-            // the type of a `*` is a function of the class and the other arguments
+            // the type of a `*` is a function of the class and the other arguments (a bound mixin's `*` may hold a
+            // refinement of it, see StarProjection, which this ignores)
             if ($is_star !== ($other_type->getProjection($i) === TypeArgumentProjection::Star)
                 || (!$is_star && !$type_param->equals($other_type->type_params[$i], $ensure_source_equality, false))
             ) {
@@ -364,7 +365,7 @@ final class TGenericObject extends TNamedObject
     /**
      * The invariant arguments that mention a template the receiver bound to a `*` (`Box<T>`, `Box<Box<T>>` read from
      * a `Box<*>`): what is read from the receiver is as unknown as the receiver, at the outermost such argument. A
-     * covariant argument reads the bound.
+     * covariant argument reads the bound, unless the types are replaced for a receiver (see star_receiver).
      *
      * @return array<int, TypeArgumentProjection>
      * @psalm-mutation-free
@@ -382,7 +383,7 @@ final class TGenericObject extends TNamedObject
         $projections = [];
 
         foreach ($this->type_params as $offset => $type_param) {
-            if ($covariants[$offset] ?? false) {
+            if (($covariants[$offset] ?? false) && !$template_result->star_receiver) {
                 continue;
             }
 
