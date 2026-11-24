@@ -700,7 +700,7 @@ final class TemplateInferredTypeReplacer
 
                 // only a candidate that can't be of the condition is decidably in the else branch; one that only
                 // fails it through mixed type params, e.g. a Traversable for an iterable<int, int>, can be of it
-                if (!$comparison_result->type_coerced_from_mixed
+                if ((!$comparison_result->type_coerced_from_mixed || $candidate_atomic_type instanceof TMixed)
                     && self::isDisjoint($codebase, $candidate_atomic_type, $conditional_type)
                 ) {
                     continue;

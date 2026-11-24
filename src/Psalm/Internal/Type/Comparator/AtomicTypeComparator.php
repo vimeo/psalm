@@ -867,7 +867,8 @@ final class AtomicTypeComparator
                         && ($input_type_part->value === 'Stringable'
                             || ($codebase->classlikes->classExists($input_type_part->value)
                                 && $codebase->classlikes->classImplements($input_type_part->value, 'Stringable'))
-                            || $codebase->classlikes->interfaceExtends($input_type_part->value, 'Stringable'))
+                            || ($codebase->classlike_storage_provider->has($input_type_part->value)
+                                && $codebase->classlikes->interfaceExtends($input_type_part->value, 'Stringable')))
                     ) {
                         if ($atomic_comparison_result) {
                             $atomic_comparison_result->to_string_cast = true;
