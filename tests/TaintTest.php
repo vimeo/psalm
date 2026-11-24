@@ -3518,6 +3518,17 @@ final class TaintTest extends TestCase
                 'code' => '<?php // --taint-analysis
                     vprintf(values: [(string) $_GET["x"]], format: "%d items");',
             ],
+            'dontTaintTheVsprintfResultOfWhatANamedFormatFormatsAsANumber' => [
+                'code' => '<?php // --taint-analysis
+                    $t = (string) $_GET["x"];
+                    echo vsprintf(values: [$t], format: "%d items");',
+            ],
+            'dontTaintTheVfprintfOutputOfWhatANamedFormatFormatsAsANumber' => [
+                'code' => '<?php // --taint-analysis
+                    $t = (string) $_GET["x"];
+                    vfprintf(fopen("php://output", "w"), values: [$t], format: "%d items");
+                    vfprintf(values: [$t], format: "%d items", stream: fopen("php://output", "w"));',
+            ],
             'dontTaintWhatVsprintfFormatsAsANumber' => [
                 'code' => '<?php // --taint-analysis
                     echo vsprintf("%d items", [(string) $_GET["x"]]);
@@ -12907,6 +12918,21 @@ final class TaintTest extends TestCase
             'taintHtmlFormattedByVsprintfAsAString' => [
                 'code' => '<?php // --taint-analysis
                     echo vsprintf("%s", [(string) $_GET["x"]]);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintHtmlFormattedByVsprintfWithANamedFormatAsAString' => [
+                'code' => '<?php // --taint-analysis
+                    echo vsprintf(values: [(string) $_GET["x"]], format: "%s");',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintHtmlInANamedFormatOfVsprintfPassedAfterItsValues' => [
+                'code' => '<?php // --taint-analysis
+                    echo vsprintf(values: [1], format: (string) $_GET["x"]);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintHtmlFormattedByVfprintfWithANamedFormatAsAString' => [
+                'code' => '<?php // --taint-analysis
+                    vfprintf(values: [(string) $_GET["x"]], format: "%s", stream: fopen("php://output", "w"));',
                 'error_message' => 'TaintedHtml',
             ],
             'taintHtmlInTheValuesOfVsprintfWithAStringConversion' => [
