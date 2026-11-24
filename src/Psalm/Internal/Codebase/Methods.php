@@ -483,9 +483,25 @@ final class Methods
                 // the docblock of an overridden method only documents what its own native type accepts: what the
                 // native type of the override accepts beyond what any of them documents keeps its native type
                 if ($signature_type) {
+                    // the documenting method's types are compared with the other methods documenting the parameter
+                    $covering_params = $documenting_params;
+
+                    if ($is_from_documenting_method) {
+                        foreach ($overridden_method_ids as $method_id) {
+                            $overridden_param = $this->getStorage($method_id)->params[$i] ?? null;
+
+                            if ($overridden_param !== null
+                                && $overridden_param->type
+                                && $overridden_param->has_docblock_type
+                            ) {
+                                $covering_params[$method_id->fq_class_name] ??= [$method_id, $overridden_param];
+                            }
+                        }
+                    }
+
                     $overridden_signature_types = [];
 
-                    foreach ($documenting_params as [$method_id, $overridden_param]) {
+                    foreach ($covering_params as [$method_id, $overridden_param]) {
                         if ($overridden_param->signature_type === null) {
                             $overridden_signature_types = [];
                             break;

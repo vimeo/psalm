@@ -1172,6 +1172,54 @@ final class MethodSignatureTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.3',
             ],
+            'inheritedParamTypeOfAnUndocumentedOverrideKeepsWhatAnotherParentDocumentsOut' => [
+                'code' => '<?php
+                    final class D {}
+
+                    interface I {
+                        /** @param D|null $d */
+                        public function decide(?D $d = null): void;
+                    }
+
+                    interface K {
+                        /** @param D|null $d */
+                        public function decide(bool|D|null $d = null): void;
+                    }
+
+                    final class M implements I, K {
+                        #[\Override]
+                        public function decide(bool|D|null $d = null): void {
+                            /** @psalm-check-type-exact $d = D|null */;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
+            'inheritedParamTypeOfAnUndocumentedOverrideKeepsWhatAnotherParentDocumentsOutInEitherOrder' => [
+                'code' => '<?php
+                    final class D {}
+
+                    interface I {
+                        /** @param D|null $d */
+                        public function decide(?D $d = null): void;
+                    }
+
+                    interface K {
+                        /** @param D|null $d */
+                        public function decide(bool|D|null $d = null): void;
+                    }
+
+                    final class M implements K, I {
+                        #[\Override]
+                        public function decide(bool|D|null $d = null): void {
+                            /** @psalm-check-type-exact $d = D|null */;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
             'inheritedParamTypeOfAParentNativeTypeIsNotWidenedByTheSameClass' => [
                 'code' => '<?php
                     class A {}
@@ -2424,6 +2472,27 @@ final class MethodSignatureTest extends TestCase
                         public function decide(Unknown|D|null $d = null): void {}
                     }',
                 'error_message' => 'UndefinedClass - src' . DIRECTORY_SEPARATOR . 'somefile.php:11:48',
+                'error_levels' => [],
+                'php_version' => '8.3',
+            ],
+            'deprecatedClassInTheNativeTypeOfAnOverrideInheritingAParamTypeIsReportedOnTheOverride' => [
+                'code' => '<?php
+                    /** @deprecated */
+                    final class Old {}
+
+                    interface I {
+                        /**
+                         * @param Old|null $o
+                         * @psalm-suppress DeprecatedClass
+                         */
+                        public function f(?Old $o): void;
+                    }
+
+                    final class M implements I {
+                        #[\Override]
+                        public function f(?Old $o): void {}
+                    }',
+                'error_message' => 'DeprecatedClass - src' . DIRECTORY_SEPARATOR . 'somefile.php:15:43',
                 'error_levels' => [],
                 'php_version' => '8.3',
             ],
