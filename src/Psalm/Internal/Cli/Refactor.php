@@ -99,7 +99,12 @@ final class Refactor
         $options = CliUtils::getOptions($args, $valid_short_options, $valid_long_options);
 
         // --refactor is an option of psalm, which forwards the call to psalm-refactor
-        CliUtils::rejectUnrecognisedOptions($args, $valid_short_options, $valid_long_options, ['--refactor']);
+        CliUtils::rejectUnrecognisedOptions(
+            $args,
+            $valid_short_options,
+            $valid_long_options,
+            ['--refactor', '--into', '--to'],
+        );
 
         CliUtils::syncShortOptions($options, [
             'help' => 'h',
@@ -517,6 +522,12 @@ final class Refactor
         ) {
             return 'Destination for ' . $source . ' must be of the form '
                 . ($is_property ? 'Foo\\Bar::$baz' : 'Foo\\Bar::baz') . ', got ' . $destination;
+        }
+
+        $destination_segments = explode('\\', $destination_parts[0]);
+        $short_name = end($destination_segments);
+        if (self::isReservedClassName($short_name)) {
+            return 'Cannot use ' . $short_name . ' as a class name as it is reserved';
         }
 
         return null;

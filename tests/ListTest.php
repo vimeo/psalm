@@ -22,6 +22,17 @@ final class ListTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'destructuringWithTrailingEmptyEntries' => [
+                'code' => '<?php
+                    ["a" => $a, ] = ["a" => 1];
+                    list("b" => $b, ) = ["b" => 2];
+                    [$c, , ] = [3, 4];',
+                'assertions' => [
+                    '$a===' => '1',
+                    '$b===' => '2',
+                    '$c===' => '3',
+                ],
+            ],
             'destructuringInAConditionLeavesOutTheNullOfANullValue' => [
                 'code' => '<?php
                     /** @return list{int, int}|null */
@@ -271,6 +282,75 @@ final class ListTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'destructuringWithKeyedAndUnkeyedEntries' => [
+                'code' => '<?php
+                    /** @param array<int, float> $source */
+                    function f(array $source): float {
+                        [0 => $a, $b] = $source;
+                        return $a + $b;
+                    }',
+                'error_message' => 'ParseError - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:25 - Cannot mix keyed and unkeyed array entries in assignments',
+            ],
+            'destructuringWithAnEmptyKeyedEntry' => [
+                'code' => '<?php
+                    /** @param array<int, float> $source */
+                    function f(array $source): float {
+                        [0 => $a, , 2 => $b] = $source;
+                        return $a + $b;
+                    }',
+                'error_message' => 'Cannot use empty array entries in keyed array assignment',
+            ],
+            'destructuringWithAnEmptyKeyedEntryBeforeATrailingComma' => [
+                'code' => '<?php
+                    ["a" => $a, , ] = ["a" => 1];',
+                'error_message' => 'Cannot use empty array entries in keyed array assignment',
+            ],
+            'listWithAnEmptyKeyedEntryBeforeATrailingComma' => [
+                'code' => '<?php
+                    list("a" => $a, , ) = ["a" => 1];',
+                'error_message' => 'Cannot use empty array entries in keyed array assignment',
+            ],
+            'destructuringIntoAnEmptyList' => [
+                'code' => '<?php
+                    [, ] = [1];',
+                'error_message' => 'Cannot use empty list',
+            ],
+            'destructuringWithASpread' => [
+                'code' => '<?php
+                    [...$a] = [1];',
+                'error_message' => 'Spread operator is not supported in assignments',
+            ],
+            'foreachDestructuringWithKeyedAndUnkeyedEntries' => [
+                'code' => '<?php
+                    foreach ([[1, 2]] as [0 => $a, $b]) {
+                        echo $a + $b;
+                    }',
+                'error_message' => 'Cannot mix keyed and unkeyed array entries in assignments',
+            ],
+            'destructuringAKeyMissingFromASealedShape' => [
+                'code' => '<?php
+                    $source = ["a" => 1, "b" => 2];
+                    ["a" => $a, "c" => $c] = $source;',
+                'error_message' => "InvalidArrayOffset - src" . DIRECTORY_SEPARATOR . "somefile.php:3:40 - Cannot access value with offset",
+            ],
+            'destructuringAPositionMissingFromSomeOfTheTypes' => [
+                'code' => '<?php
+                    /** @param list{int, int}|ArrayObject<int, int> $source */
+                    function f($source): void {
+                        [$a, $b, $c] = $source;
+                        echo $a, $b, $c;
+                    }',
+                'error_message' => 'PossiblyInvalidArrayOffset - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:34 - Cannot access value with offset 2',
+            ],
+            'destructuringAKeyMissingFromSomeOfTheTypes' => [
+                'code' => '<?php
+                    /** @param array{a: int}|ArrayObject<string, int> $source */
+                    function f($source): void {
+                        ["c" => $c] = $source;
+                        echo $c;
+                    }',
+                'error_message' => "PossiblyInvalidArrayOffset - src" . DIRECTORY_SEPARATOR . "somefile.php:4:33 - Cannot access value with offset",
+            ],
             'destructuringInAConditionKeepsTheNullOfANullableItem' => [
                 'code' => '<?php
                     /** @return list{?int, int}|null */

@@ -225,6 +225,15 @@ final class MissingExtensionRequirementTest extends TestCase
                         return $s;
                     }',
             ],
+            'functionOfTheExtensionExistsEarlyReturn' => [
+                'code' => '<?php
+                    function f(string $s): int {
+                        if (!function_exists("iconv_strlen")) {
+                            return strlen($s);
+                        }
+                        return (int) iconv_strlen($s);
+                    }',
+            ],
             'classOfTheExtensionExists' => [
                 'code' => '<?php
                     function f(): ?ZipArchive {
@@ -313,6 +322,39 @@ final class MissingExtensionRequirementTest extends TestCase
                     }',
                 'error_message' => 'mb_strlen is part of the ext-mbstring extension',
             ],
+            'branchWhereAFunctionOfTheExtensionIsMissing' => [
+                'code' => '<?php
+                    function f(string $s): int {
+                        if (!function_exists("iconv")) {
+                            return (int) iconv_strlen($s);
+                        }
+                        return 0;
+                    }',
+                'error_message' => 'iconv_strlen is part of the ext-iconv extension',
+            ],
+            'functionOfTheExtensionIdenticalToFalseSaysNothingOfAnotherOne' => [
+                'code' => '<?php
+                    function f(): void {
+                        if (function_exists("iconv") && function_exists("iconv_strlen") === false) {
+                            echo (string) iconv("a", "b", "c");
+                        }
+                        echo (int) iconv_strlen("a");
+                    }',
+                'error_message' => 'MissingExtensionRequirement - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:36',
+            ],
+            'functionOfTheExtensionNotIdenticalToTrueSaysNothingOfAnotherOne' => [
+                'code' => '<?php
+                    function f(): void {
+                        if (!function_exists("iconv")) {
+                            return;
+                        }
+                        if (function_exists("iconv_strlen") !== true) {
+                            echo (string) iconv("a", "b", "c");
+                        }
+                        echo mb_strlen("a");
+                    }',
+                'error_message' => 'mb_strlen is part of the ext-mbstring extension',
+            ],
             'afterTheGuardedBranch' => [
                 'code' => '<?php
                     function f(string $s): int {
@@ -331,6 +373,15 @@ final class MissingExtensionRequirementTest extends TestCase
                 'error_message' => 'Redis is part of the ext-redis extension',
                 'error_levels' => [],
                 'php_version' => '8.6',
+            ],
+            'bundledExtension' => [
+                'code' => '<?php
+                    function f(): bool {
+                        return socket_create(2, 1, 6) !== false;
+                    }',
+                'error_message' => 'socket_create is part of the ext-sockets extension',
+                'error_levels' => [],
+                'php_version' => '8.0',
             ],
             'composerNameOfOpcache' => [
                 'code' => '<?php

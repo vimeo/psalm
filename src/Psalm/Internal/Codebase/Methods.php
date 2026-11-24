@@ -474,16 +474,81 @@ final class Methods
                     $inherited_type = $inherited_type->getBuilder()->addType(new TNull)->freeze();
                 }
 
+                $codebase = $source ? $source->getCodebase() : ProjectAnalyzer::getInstance()->getCodebase();
+
+                $signature_type = $param->signature_type
+                    ? $this->expandSignatureType($codebase, $param->signature_type, $appearing_fq_class_name)
+                    : null;
+
+                // the docblock of an overridden method only documents what its own native type accepts: what the
+                // native type of the override accepts beyond what any of them documents keeps its native type
+                if ($signature_type) {
+                    // the documenting method's types are compared with the other methods documenting the parameter
+                    $covering_params = $documenting_params;
+
+                    if ($is_from_documenting_method) {
+                        foreach ($overridden_method_ids as $method_id) {
+                            $overridden_param = $this->getStorage($method_id)->params[$i] ?? null;
+
+                            if ($overridden_param !== null
+                                && $overridden_param->type
+                                && $overridden_param->has_docblock_type
+                            ) {
+                                $covering_params[$method_id->fq_class_name] ??= [$method_id, $overridden_param];
+                            }
+                        }
+                    }
+
+                    $overridden_signature_types = [];
+
+                    foreach ($covering_params as [$method_id, $overridden_param]) {
+                        if ($overridden_param->signature_type === null) {
+                            $overridden_signature_types = [];
+                            break;
+                        }
+
+                        $overridden_signature_types[] = $this->expandSignatureType(
+                            $codebase,
+                            $overridden_param->signature_type,
+                            $method_id->fq_class_name,
+                        );
+                    }
+
+                    $widened_types = [];
+
+                    if ($overridden_signature_types) {
+                        foreach ($signature_type->getAtomicTypes() as $atomic_type) {
+                            foreach ($overridden_signature_types as $overridden_signature_type) {
+                                if (UnionTypeComparator::isContainedBy(
+                                    $codebase,
+                                    new Union([$atomic_type]),
+                                    $overridden_signature_type,
+                                )) {
+                                    continue 2;
+                                }
+                            }
+
+                            $widened_types[] = $atomic_type;
+                        }
+                    }
+
+                    if ($widened_types) {
+                        $inherited_type = Type::combineUnionTypes(
+                            $inherited_type,
+                            new Union($widened_types),
+                            $codebase,
+                            false,
+                            false,
+                        );
+                    }
+                }
+
                 // a type the native type of the override doesn't contain is not the type of the override's parameter
                 // (the documenting method's types are applied as they always were)
                 if (!$is_from_documenting_method
-                    && $param->signature_type
+                    && $signature_type
                     && !$inherited_type->hasTemplate()
-                    && !UnionTypeComparator::isContainedBy(
-                        $source ? $source->getCodebase() : ProjectAnalyzer::getInstance()->getCodebase(),
-                        $inherited_type,
-                        $param->signature_type,
-                    )
+                    && !UnionTypeComparator::isContainedBy($codebase, $inherited_type, $signature_type)
                 ) {
                     continue;
                 }
@@ -498,6 +563,23 @@ final class Methods
         }
 
         throw new UnexpectedValueException('Cannot get method params for ' . $method_id);
+    }
+
+    /**
+     * A native type with its `self` and `parent` resolved in the class that declares it
+     */
+    private function expandSignatureType(Codebase $codebase, Union $type, string $fq_class_name): Union
+    {
+        $class_storage = $this->classlike_storage_provider->get($fq_class_name);
+
+        return TypeExpander::expandUnion(
+            $codebase,
+            $type,
+            $class_storage->name,
+            $class_storage->name,
+            $class_storage->parent_class,
+            false,
+        );
     }
 
     public static function localizeType(

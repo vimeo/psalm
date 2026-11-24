@@ -1720,10 +1720,14 @@ final class FunctionCallReturnTypeFetcher
             }
 
             // the values formatted after the start of a URL fixing its server can't choose it
-            if (($function_id === 'sprintf' || $function_id === 'vsprintf') && isset($args[0])) {
+            $format_arg = $function_id === 'sprintf' || $function_id === 'vsprintf'
+                ? self::getSprintfFormatArg($args)
+                : null;
+
+            if ($format_arg) {
                 $prefixes = [];
 
-                foreach (ConcatAnalyzer::getLiteralPrefixes($statements_analyzer, $args[0]->value) as $format) {
+                foreach (ConcatAnalyzer::getLiteralPrefixes($statements_analyzer, $format_arg->value) as $format) {
                     // the text formatted before the first conversion specification
                     preg_match('~^(?:[^%]|%%)*~', $format, $matches);
                     $prefixes[] = str_replace('%%', '%', $matches[0] ?? '');
@@ -1732,9 +1736,7 @@ final class FunctionCallReturnTypeFetcher
                 $removed_taints |= ConcatAnalyzer::getTaintsRemovedAfterUrlOrigins($prefixes);
             }
 
-            $format_type = ($function_id === 'sprintf' || $function_id === 'vsprintf') && isset($args[0])
-                ? $statements_analyzer->node_data->getType($args[0]->value)
-                : null;
+            $format_type = $format_arg ? $statements_analyzer->node_data->getType($format_arg->value) : null;
 
             $arg_removed_taints = $format_type && $format_type->allStringLiterals()
                 ? self::getTaintsRemovedBySprintfFormats(
@@ -1755,12 +1757,16 @@ final class FunctionCallReturnTypeFetcher
                     : [];
 
                 foreach ($args as $i => $arg) {
-                    if ($i === 0 || $arg->unpack) {
+                    if ($arg === $format_arg || ($format_arg === null && $i === 0) || $arg->unpack) {
                         continue;
                     }
 
-                    $arg_context = $arg_contexts[$i] ?? StringContext::getUnknown();
-                    $arg_removed_taints[$i] = ($arg_removed_taints[$i] ?? 0) | $arg_context->getRemovedTaints();
+                    // the flows are by parameter: the values of vsprintf() are its second, even before a named format
+                    $param_offset = $function_id === 'vsprintf' ? 1 : $i;
+                    $arg_context = $arg_contexts[$param_offset] ?? StringContext::getUnknown();
+                    $removed_from_arg = ($arg_removed_taints[$i] ?? 0) | $arg_context->getRemovedTaints();
+                    unset($arg_removed_taints[$i]);
+                    $arg_removed_taints[$param_offset] = $removed_from_arg;
 
                     ConcatAnalyzer::addPositionSinksForExpression($statements_analyzer, $arg_context, $arg->value);
                 }
@@ -1849,6 +1855,72 @@ final class FunctionCallReturnTypeFetcher
         int $input_taints,
         bool $values_in_array = false,
     ): array {
+        $string_args = self::getArgsSprintfFormatsAsStrings($formats);
+
+        if ($string_args === null) {
+            return [];
+        }
+
+        $removed_taints = [];
+
+        foreach (array_values($args) as $i => $arg) {
+            if ($arg->unpack) {
+                return [];
+            }
+
+            if ($values_in_array) {
+                if (($arg->name ? $arg->name->name === 'values' : $i === 1) && $string_args === []) {
+                    $removed_taints[$i] = $input_taints & ~TaintKind::NUMERIC_ONLY;
+                }
+
+                continue;
+            }
+
+            if ($arg->name) {
+                return [];
+            }
+
+            if ($i !== 0 && !isset($string_args[$i])) {
+                $removed_taints[$i] = $input_taints & ~TaintKind::NUMERIC_ONLY;
+            }
+        }
+
+        return $removed_taints;
+    }
+
+    /**
+     * The argument of the `format` parameter of a sprintf() family call, whose $args start at the format
+     *
+     * @param array<PhpParser\Node\Arg> $args
+     * @psalm-mutation-free
+     */
+    public static function getSprintfFormatArg(array $args): ?PhpParser\Node\Arg
+    {
+        foreach ($args as $arg) {
+            if ($arg->unpack) {
+                return null;
+            }
+
+            if ($arg->name && $arg->name->name === 'format') {
+                return $arg;
+            }
+        }
+
+        $first_arg = array_values($args)[0] ?? null;
+
+        return $first_arg && !$first_arg->name ? $first_arg : null;
+    }
+
+    /**
+     * The positions (from 1) of the values any of $formats formats as strings (`%s`, `%c`), or null when they can't
+     * be told (a `*` width or precision, an invalid conversion)
+     *
+     * @param list<string> $formats
+     * @return array<int, true>|null
+     * @psalm-pure
+     */
+    public static function getArgsSprintfFormatsAsStrings(array $formats): ?array
+    {
         $string_args = [];
 
         foreach ($formats as $format) {
@@ -1870,7 +1942,7 @@ final class FunctionCallReturnTypeFetcher
 
                 // `*` width or precision, taken from an argument, or an invalid conversion
                 if ($specifier === '') {
-                    return [];
+                    return null;
                 }
 
                 $position = $match[1] ?? '';
@@ -1882,25 +1954,7 @@ final class FunctionCallReturnTypeFetcher
             }
         }
 
-        $removed_taints = [];
-
-        foreach (array_values($args) as $i => $arg) {
-            if ($arg->unpack || $arg->name) {
-                return [];
-            }
-
-            if ($i === 0) {
-                continue;
-            }
-
-            $is_formatted_as_string = $values_in_array ? $string_args !== [] : isset($string_args[$i]);
-
-            if (!$is_formatted_as_string) {
-                $removed_taints[$i] = $input_taints & ~TaintKind::NUMERIC_ONLY;
-            }
-        }
-
-        return $removed_taints;
+        return $string_args;
     }
 
     /**

@@ -732,6 +732,7 @@ final class AtomicPropertyFetchAnalyzer
                     $declaring_property_class,
                     $property_id,
                     $in_assignment,
+                    through_magic_getter: true,
                 );
 
                 $has_valid_fetch_type = true;
@@ -790,7 +791,10 @@ final class AtomicPropertyFetchAnalyzer
                 $stmt_type = $statements_analyzer->node_data->getType($stmt);
                 $statements_analyzer->node_data->setType(
                     $stmt,
-                    Type::combineUnionTypes($fake_method_call_type, $stmt_type),
+                    self::keepIssetOfMagicPropertyOpen(
+                        $context,
+                        Type::combineUnionTypes($fake_method_call_type, $stmt_type),
+                    ),
                 );
             } else {
                 $statements_analyzer->node_data->setType($stmt, Type::getMixed());
@@ -824,6 +828,18 @@ final class AtomicPropertyFetchAnalyzer
         }
 
         return true;
+    }
+
+    /**
+     * Whether a magic property is set is up to the object (__isset()), not to the type __get() returns
+     *
+     * @psalm-mutation-free
+     */
+    private static function keepIssetOfMagicPropertyOpen(Context $context, Union $type): Union
+    {
+        return $context->inside_isset && !$type->ignore_isset
+            ? $type->setProperties(['ignore_isset' => true])
+            : $type;
     }
 
     /**
@@ -1529,6 +1545,7 @@ final class AtomicPropertyFetchAnalyzer
         ?string $declaring_property_class,
         string $property_id,
         bool $in_assignment,
+        bool $through_magic_getter = false,
     ): void {
         $stmt_type = TypeExpander::expandUnion(
             $codebase,
@@ -1571,9 +1588,11 @@ final class AtomicPropertyFetchAnalyzer
             $context,
         );
 
+        $combined_type = Type::combineUnionTypes($stmt_type, $statements_analyzer->node_data->getType($stmt));
+
         $statements_analyzer->node_data->setType(
             $stmt,
-            Type::combineUnionTypes($stmt_type, $statements_analyzer->node_data->getType($stmt)),
+            $through_magic_getter ? self::keepIssetOfMagicPropertyOpen($context, $combined_type) : $combined_type,
         );
     }
 
