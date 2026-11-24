@@ -610,6 +610,9 @@ final class NewAnalyzer extends CallAnalyzer
 
         $args = $stmt->getArgs();
 
+        // `new static` keeps the caller's, any other `new` instantiates the class it names
+        $is_new_static = strtolower($stmt->class->getFirst()) === 'static';
+
         self::applyAssertionsToContext(
             $stmt->class,
             null,
@@ -624,13 +627,16 @@ final class NewAnalyzer extends CallAnalyzer
                 $codebase,
                 $context,
                 ($codebase->methods->getAppearingMethodId($method_id) ?? $declaring_method_id)->fq_class_name,
-                // `new static` keeps the caller's, any other `new` instantiates the class it names
-                strtolower($stmt->class->getFirst()) === 'static' ? 'static' : $method_id->fq_class_name,
+                $is_new_static ? 'static' : $method_id->fq_class_name,
             ),
             $args,
             $template_result,
             $context,
             $statements_analyzer,
+            new TNamedObject(
+                $method_id->fq_class_name,
+                $is_new_static && !$codebase->classlike_storage_provider->get($method_id->fq_class_name)->final,
+            ),
         );
     }
 
@@ -691,7 +697,7 @@ final class NewAnalyzer extends CallAnalyzer
             $template_result ??= new TemplateResult([], []);
             $template_result->constructed_class = $storage->name;
 
-            if (!self::isInTrait($statements_analyzer)) {
+            if (!self::isStaticOfTraitUser($statements_analyzer, $context, $fq_class_name)) {
                 $template_result->static_class_type = $fq_class_name;
                 $template_result->static_class_is_final = $storage->final;
             }
@@ -1845,13 +1851,10 @@ final class NewAnalyzer extends CallAnalyzer
                 $offset++;
             }
 
+            $bound_template_result->static_class_type = $template_result->static_class_type;
             $template_result = $bound_template_result;
         } else {
             return null;
-        }
-
-        if (!self::isInTrait($statements_analyzer)) {
-            $template_result->static_class_type = $fq_class_name;
         }
 
         $self_out_candidate = MethodCallReturnTypeFetcher::replaceTemplateTypes(

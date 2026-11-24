@@ -18,6 +18,7 @@ use Psalm\Internal\Clause;
 use Psalm\Node\Stmt\VirtualExpression;
 use Psalm\Node\Stmt\VirtualIf;
 use Psalm\Type\Reconciler;
+use Psalm\Type\Union;
 
 use function array_diff;
 use function array_diff_key;
@@ -78,7 +79,7 @@ final class AndAnalyzer
         }
 
         // a nested `&&` leaves what holds after it, without what it assigns where it is true
-        $vars_assigned_in_left = self::isAnd($stmt->left) ? $left_context->vars_assigned_in_and : [];
+        $vars_assigned_in_left = self::getVarsAssignedInAnd($stmt->left, $left_context);
 
         IfConditionalAnalyzer::handleParadoxicalCondition($statements_analyzer, $stmt->left);
 
@@ -221,7 +222,7 @@ final class AndAnalyzer
             return false;
         }
 
-        $vars_assigned_in_right = self::isAnd($stmt->right) ? $right_context->vars_assigned_in_and : [];
+        $vars_assigned_in_right = self::getVarsAssignedInAnd($stmt->right, $right_context);
 
         // offset 0 records what no assignment of the condition writes (an argument a call coerces to its parameter
         // type, a property the callee writes): the condition has no clause about its new value
@@ -279,6 +280,7 @@ final class AndAnalyzer
         if ($context->if_body_context && !$context->inside_negation) {
             // the body context gets them instead
             $context->vars_assigned_in_and = [];
+            $context->vars_assigned_always_in_and = [];
 
             $if_body_context = $context->if_body_context;
             $context->vars_in_scope = $right_context->vars_in_scope;
@@ -382,9 +384,53 @@ final class AndAnalyzer
             }
 
             $context->vars_assigned_in_and = [...$vars_assigned_in_and, ...$vars_assigned_in_right];
+
+            // the left operand always runs: what it assigns holds whenever this `&&` is evaluated, even in a negation
+            $left_core = $stmt->left;
+
+            while ($left_core instanceof PhpParser\Node\Expr\BooleanNot) {
+                $left_core = $left_core->expr;
+            }
+
+            $vars_assigned_always = [];
+
+            if (self::isAnd($left_core)) {
+                $vars_assigned_always = $left_context->vars_assigned_always_in_and;
+            } else {
+                foreach ($left_context->vars_in_scope as $var_id => $type) {
+                    if (isset($left_context->assigned_var_ids[$var_id])) {
+                        $vars_assigned_always[$var_id] = $type;
+                    }
+                }
+            }
+
+            $context->vars_assigned_always_in_and = $vars_assigned_always;
         }
 
         return true;
+    }
+
+    /**
+     * What the `&&` an operand is (or is the negation of) assigns that holds where the operand is true: all of it,
+     * but only what its left operand assigns for a negation, as the right operand may not have run
+     *
+     * @return array<string, Union>
+     * @psalm-capabilities read-props
+     */
+    private static function getVarsAssignedInAnd(PhpParser\Node\Expr $operand, Context $operand_context): array
+    {
+        $negated = false;
+
+        while ($operand instanceof PhpParser\Node\Expr\BooleanNot) {
+            $operand = $operand->expr;
+            $negated = !$negated;
+        }
+
+        if (!self::isAnd($operand)) {
+            return [];
+        }
+
+        return $negated ? $operand_context->vars_assigned_always_in_and : $operand_context->vars_assigned_in_and;
     }
 
     /**

@@ -10,6 +10,7 @@ use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 
 use function array_merge;
+use function count;
 use function is_string;
 
 /**
@@ -51,7 +52,9 @@ final class ForAnalyzer
             $assigned_var_ids,
         );
 
-        $while_true = !$stmt->cond && !$stmt->init && !$stmt->loop;
+        // the last condition decides whether the loop goes on
+        $while_true = !$stmt->cond
+            || LoopAnalyzer::isAlwaysTruthyCondition($statements_analyzer, $stmt->cond[count($stmt->cond) - 1]);
 
         return LoopAnalyzer::analyzeForOrWhile(
             $statements_analyzer,
