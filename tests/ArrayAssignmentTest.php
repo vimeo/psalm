@@ -3658,6 +3658,27 @@ final class ArrayAssignmentTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'offsetUnsetInABranchAfterALoopWritingItIsPossiblyUndefined' => [
+                'code' => '<?php
+                    /**
+                     * @param array{a?: array<string>} $t
+                     */
+                    function f(array $t): void {
+                        $a = $t["a"] ?? [];
+                        $t["a"] = [];
+
+                        foreach ($a as $b) {
+                            $t["a"][] = $b;
+                        }
+                        if (0 === count($t["a"])) {
+                            unset($t["a"]);
+                        }
+
+                        foreach ($t["a"] as $_) {
+                        }
+                    }',
+                'error_message' => 'PossiblyUndefinedArrayOffset',
+            ],
             'byReferenceArgumentUnderAKeyTheListDoesNotHaveIsNull' => [
                 'code' => '<?php
                     function takesArray(array &$x): void {}
