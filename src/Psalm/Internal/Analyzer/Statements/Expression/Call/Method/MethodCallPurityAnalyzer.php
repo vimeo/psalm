@@ -475,7 +475,7 @@ final class MethodCallPurityAnalyzer
     /**
      * Whether a value of a parameter of this type can hand the callee values of the template
      *
-     * @psalm-pure
+     * @psalm-capabilities read-props
      */
     private static function providesTemplate(Union $type, TTemplateParam $template): bool
     {
