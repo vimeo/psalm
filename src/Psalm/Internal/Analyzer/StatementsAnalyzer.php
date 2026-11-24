@@ -558,7 +558,7 @@ final class StatementsAnalyzer extends SourceAnalyzer
                     try {
                         $checked_type = $context->vars_in_scope[$checked_var_id];
 
-                        $path = $statements_analyzer->getRootFilePath();
+                        $path = $statements_analyzer->getFilePath();
                         $file_storage = $codebase->file_storage_provider->get($path);
 
                         $check_tokens = TypeTokenizer::getFullyQualifiedTokens(
@@ -772,7 +772,7 @@ final class StatementsAnalyzer extends SourceAnalyzer
                 && !$stmt instanceof PhpParser\Node\Stmt\Return_
                 && !$stmt instanceof PhpParser\Node\Stmt\Property
             ) {
-                $file_path = $statements_analyzer->getRootFilePath();
+                $file_path = $statements_analyzer->getFilePath();
 
                 $file_storage_provider = $codebase->file_storage_provider;
 
@@ -821,11 +821,14 @@ final class StatementsAnalyzer extends SourceAnalyzer
                         $context,
                     );
 
-                    if ($var_comment->var_id === '$this'
-                        && $var_comment->type
-                        && $codebase->classExists((string)$var_comment->type, null, $context)
+                    $this_type = $var_comment->var_id === '$this' && $var_comment->type?->isSingle()
+                        ? $var_comment->type->getSingleAtomic()
+                        : null;
+
+                    if ($this_type instanceof TNamedObject
+                        && $codebase->classExists($this_type->value, null, $context)
                     ) {
-                        $statements_analyzer->setFQCLN((string)$var_comment->type);
+                        $statements_analyzer->setFQCLN($this_type->value);
                     }
                 }
             }

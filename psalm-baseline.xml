@@ -566,10 +566,6 @@
     </RiskyTruthyFalsyComparison>
   </file>
   <file src="src/Psalm/Internal/Analyzer/Statements/Expression/Assignment/ArrayAssignmentAnalyzer.php">
-    <ImplicitToStringCast>
-      <code><![CDATA[$child_stmt_dim_type]]></code>
-      <code><![CDATA[$child_stmt_dim_type]]></code>
-    </ImplicitToStringCast>
     <RiskyTruthyFalsyComparison>
       <code><![CDATA[!$parent_var_id]]></code>
       <code><![CDATA[$object_id]]></code>

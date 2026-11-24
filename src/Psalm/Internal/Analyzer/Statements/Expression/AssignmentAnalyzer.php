@@ -68,6 +68,7 @@ use Psalm\Issue\NoValue;
 use Psalm\Issue\NullReference;
 use Psalm\Issue\ParseError;
 use Psalm\Issue\PossiblyInvalidArrayAccess;
+use Psalm\Issue\PossiblyInvalidArrayOffset;
 use Psalm\Issue\PossiblyInvalidPropertyAssignmentValue;
 use Psalm\Issue\PossiblyNullArrayAccess;
 use Psalm\Issue\PossiblyUndefinedArrayOffset;
@@ -118,9 +119,11 @@ use UnexpectedValueException;
 use function array_diff_key;
 use function array_filter;
 use function array_map;
+use function array_pop;
 use function array_values;
 use function assert;
 use function count;
+use function end;
 use function implode;
 use function is_int;
 use function is_string;
@@ -1059,7 +1062,8 @@ final class AssignmentAnalyzer
             return;
         }
 
-        $file_path = $statements_analyzer->getRootFilePath();
+        // the type aliases of the file the docblock is in, which an inherited method is not analysed as part of
+        $file_path = $statements_analyzer->getFilePath();
 
         $file_storage_provider = $codebase->file_storage_provider;
 
@@ -2532,7 +2536,8 @@ final class AssignmentAnalyzer
         if ($array instanceof TArray) {
             $can_be_empty = !$array instanceof TNonEmptyArray;
 
-            return $array->type_params[1];
+            // an empty array has no item
+            return $array->type_params[1]->isNever() ? null : $array->type_params[1];
         }
 
         $location = new CodeLocation($statements_analyzer->getSource(), $item->value);
@@ -2712,6 +2717,121 @@ final class AssignmentAnalyzer
     }
 
     /**
+     * Reports a literal key or position the arrays the value may be surely lack: sealed shapes without it, and lists
+     * for a string key
+     */
+    private static function checkDestructuredOffsetExists(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr $var,
+        Union $array_type,
+        string|int $offset_value,
+    ): void {
+        $has_type_without_key = false;
+        $has_other_type = false;
+
+        foreach ($array_type->getAtomicTypes() as $atomic_type) {
+            if (($atomic_type instanceof TKeyedArray
+                    && !isset($atomic_type->properties[$offset_value])
+                    && ($atomic_type->fallback_params === null
+                        || ($atomic_type->is_list && is_string($offset_value))))
+                || ($atomic_type instanceof TArray && $atomic_type->isEmptyArray())
+            ) {
+                $has_type_without_key = true;
+            } elseif (!$atomic_type instanceof TNull && !$atomic_type instanceof TFalse) {
+                $has_other_type = true;
+            }
+        }
+
+        if (!$has_type_without_key) {
+            return;
+        }
+
+        $message = 'Cannot access value with offset '
+            . (is_string($offset_value) ? "'" . $offset_value . "'" : (string) $offset_value);
+        $location = new CodeLocation($statements_analyzer->getSource(), $var);
+
+        IssueBuffer::maybeAdd(
+            $has_other_type
+                ? new PossiblyInvalidArrayOffset($message, $location)
+                : new InvalidArrayOffset($message, $location),
+            $statements_analyzer->getSuppressedIssues(),
+        );
+    }
+
+    /**
+     * The error PHP refuses to compile a destructuring with, if any. The empty entry of a trailing comma is left out,
+     * and the first entry decides whether the entries are keyed.
+     *
+     * @param PhpParser\Node\Expr\List_|PhpParser\Node\Expr\Array_ $assign_var
+     */
+    private static function getDestructuringCompileError(
+        PhpParser\Node\Expr $assign_var,
+        int $php_version_id,
+    ): ?string {
+        $items = $assign_var->items;
+
+        foreach ($items as $item) {
+            if ($item?->unpack) {
+                return 'Spread operator is not supported in assignments';
+            }
+        }
+
+        // PHP drops one trailing empty entry, the one of a trailing comma (php-parser already did for `[...]`)
+        if ($assign_var->getAttribute('kind') === PhpParser\Node\Expr\List_::KIND_LIST
+            && $items
+            && end($items) === null
+        ) {
+            array_pop($items);
+        }
+
+        $is_keyed = null;
+
+        foreach ($items as $item) {
+            if ($item !== null) {
+                $is_keyed = $item->key !== null;
+                break;
+            }
+        }
+
+        // `list() = $x` was valid before PHP 7.0
+        if ($is_keyed === null) {
+            return $php_version_id >= 7_00_00 ? 'Cannot use empty list' : null;
+        }
+
+        foreach ($items as $item) {
+            if ($item === null) {
+                if ($is_keyed) {
+                    return 'Cannot use empty array entries in keyed array assignment';
+                }
+            } elseif (($item->key !== null) !== $is_keyed) {
+                return 'Cannot mix keyed and unkeyed array entries in assignments';
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * @param PhpParser\Node\Expr\List_|PhpParser\Node\Expr\Array_ $assign_var
+     */
+    private static function reportDestructuringCompileError(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr $assign_var,
+    ): void {
+        $compile_error = self::getDestructuringCompileError(
+            $assign_var,
+            $statements_analyzer->getCodebase()->analysis_php_version_id,
+        );
+
+        if ($compile_error !== null) {
+            IssueBuffer::maybeAdd(
+                new ParseError($compile_error, new CodeLocation($statements_analyzer->getSource(), $assign_var)),
+                $statements_analyzer->getSuppressedIssues(),
+            );
+        }
+    }
+
+    /**
      * @param PhpParser\Node\Expr\List_|PhpParser\Node\Expr\Array_ $assign_var
      * @param list<VarDocblockComment> $var_comments
      */
@@ -2727,6 +2847,8 @@ final class AssignmentAnalyzer
         array $var_comments,
         int $removed_taints,
     ): void {
+        self::reportDestructuringCompileError($statements_analyzer, $assign_var);
+
         $assign_value_type = TypeVariableResolver::resolveTopLevel($assign_value_type, $codebase);
 
         if (!$assign_value_type->hasArray()
@@ -2809,7 +2931,10 @@ final class AssignmentAnalyzer
                     if ($offset_value !== null
                         && isset($assign_value_atomic_type->properties[$offset_value])
                     ) {
-                        $value_type = $assign_value_atomic_type->properties[$offset_value];
+                        $value_type = TypeVariableResolver::resolveTopLevel(
+                            $assign_value_atomic_type->properties[$offset_value],
+                            $codebase,
+                        );
 
                         if ($value_type->possibly_undefined) {
                             IssueBuffer::maybeAdd(
@@ -2846,16 +2971,6 @@ final class AssignmentAnalyzer
                         $assigned = true;
 
                         continue;
-                    }
-
-                    if ($assign_value_atomic_type->fallback_params === null) {
-                        IssueBuffer::maybeAdd(
-                            new InvalidArrayOffset(
-                                'Cannot access value with offset ' . $offset,
-                                new CodeLocation($statements_analyzer->getSource(), $var),
-                            ),
-                            $statements_analyzer->getSuppressedIssues(),
-                        );
                     }
                 }
 
@@ -2955,7 +3070,7 @@ final class AssignmentAnalyzer
                             $array_id,
                             $assign_value_type,
                             $offset_value,
-                            $item_type,
+                            TypeVariableResolver::resolveTopLevel($item_type, $codebase),
                         );
 
                         $new_assign_type = Type::combineUnionTypes($item_type, $new_assign_type);
@@ -2975,17 +3090,21 @@ final class AssignmentAnalyzer
 
 
 
-            if (!$assigned) {
-                if ($has_null && !$has_shape_with_key) {
-                    IssueBuffer::maybeAdd(
-                        new PossiblyNullArrayAccess(
-                            'Cannot access array value on null variable ' . $extended_var_id,
-                            new CodeLocation($statements_analyzer->getSource(), $var),
-                        ),
-                        $statements_analyzer->getSuppressedIssues(),
-                    );
-                }
+            if (!$assigned && $has_null && !$has_shape_with_key) {
+                IssueBuffer::maybeAdd(
+                    new PossiblyNullArrayAccess(
+                        'Cannot access array value on null variable ' . $extended_var_id,
+                        new CodeLocation($statements_analyzer->getSource(), $var),
+                    ),
+                    $statements_analyzer->getSuppressedIssues(),
+                );
+            }
 
+            if ($offset_value !== null) {
+                self::checkDestructuredOffsetExists($statements_analyzer, $var, $assign_value_type, $offset_value);
+            }
+
+            if (!$assigned) {
                 $has_comment_type = false;
 
                 foreach ($var_comments as $var_comment) {

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Psalm\Tests\TypeReconciliation;
 
 use Override;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Psalm\Config;
 use Psalm\Context;
 use Psalm\Exception\CodeException;
@@ -72,6 +73,72 @@ final class IssetTest extends TestCase
         );
 
         $this->analyzeFile('somefile.php', new Context());
+    }
+
+    /**
+     * Taint analysis tracks an offset the negation of `isset()` removes, which changes only the data flow of the
+     * array in the implicit else: the array keeps its type from before the if, as without taint analysis.
+     */
+    #[DataProvider('providerNarrowingOfAnIssetOffset')]
+    public function testArrayTypeAfterNestedNarrowingOfAnIssetOffsetWithTaintAnalysis(string $narrowing): void
+    {
+        $this->project_analyzer->trackTaintedInputs();
+        $this->testValidCode(
+            '<?php
+                final class Definition {}
+
+                function getService(): array {
+                    return [];
+                }
+
+                $service = getService();
+                $definition = isset($service[0]) && $service[0] instanceof Definition ? array_shift($service) : null;
+                if (isset($service["from_callable"])) {
+                    $service["class"] = "Closure";
+                }
+                ' . $narrowing,
+            ['$service===' => "array<array-key, 'Closure'|Definition|mixed>"],
+            ['MixedAssignment'],
+        );
+    }
+
+    /**
+     * @return iterable<string, array{string}>
+     * @psalm-pure
+     */
+    public static function providerNarrowingOfAnIssetOffset(): iterable
+    {
+        return [
+            'if' => [
+                'if (isset($service["lazy"])) {
+                    if (is_string($service["lazy"])) {}
+                }',
+            ],
+            'ifElseChain' => [
+                'if (isset($service["lazy"])) {
+                    if (is_string($service["lazy"])) {}
+                } elseif (rand(0, 1)) {
+                } else {
+                }',
+            ],
+            'inASwitchCase' => [
+                'switch (rand(0, 2)) {
+                    case 0:
+                        if (isset($service["lazy"])) {
+                            if (is_string($service["lazy"])) {}
+                        }
+                        break;
+                    default:
+                }',
+            ],
+            'inALoop' => [
+                'while (rand(0, 1)) {
+                    if (isset($service["lazy"])) {
+                        if (is_string($service["lazy"])) {}
+                    }
+                }',
+            ],
+        ];
     }
 
     /**
