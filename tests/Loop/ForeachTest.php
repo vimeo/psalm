@@ -273,6 +273,50 @@ final class ForeachTest extends TestCase
                         return $x;
                     }',
             ],
+            'foreachValueKeyIsNotWhatTheLastIterationWrote' => [
+                'code' => '<?php
+                    final class Id {}
+                    final class Photo {}
+
+                    function takesId(Id $_id): void {}
+
+                    /** @param non-empty-list<array{photo: Id}> $links */
+                    function f(array $links): void {
+                        foreach ($links as $link) {
+                            takesId($link["photo"]);
+                        }
+
+                        foreach ($links as $link) {
+                            takesId($link["photo"]);
+                            $link["photo"] = new Photo();
+                        }
+                    }',
+            ],
+            'whileConditionValueKeyIsNotWhatTheLastIterationWrote' => [
+                'code' => '<?php
+                    final class Id {}
+                    final class Photo {}
+
+                    function takesId(Id $_id): void {}
+
+                    /** @return array{photo: Id}|null */
+                    function nextLink(): ?array {
+                        return rand(0, 1) ? ["photo" => new Id()] : null;
+                    }
+
+                    function f(): void {
+                        $link = nextLink();
+                        if ($link === null) {
+                            return;
+                        }
+                        takesId($link["photo"]);
+
+                        while ($link = nextLink()) {
+                            takesId($link["photo"]);
+                            $link["photo"] = new Photo();
+                        }
+                    }',
+            ],
             'foreachOverAnIteratorAggregateGivenByACoalesceAssignment' => [
                 'code' => '<?php
                     /** @implements IteratorAggregate<int, string> */
