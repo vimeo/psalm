@@ -344,6 +344,7 @@ final class EmptyTest extends TestCase
                     }',
                 'assertions' => [],
                 'ignored_issues' => ['MixedAssignment', 'MissingParamType', 'MixedArgument', 'MixedArrayOffset', 'MixedArrayAccess'],
+                'php_version' => '8.0',
             ],
             'possiblyEmptyIterable' => [
                 'code' => '<?php
