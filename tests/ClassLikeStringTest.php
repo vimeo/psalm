@@ -1498,6 +1498,46 @@ final class ClassLikeStringTest extends TestCase
                     '$c===' => 'class-string<A>|class-string<B>',
                 ],
             ],
+            'classStringOfUnionTypeArrayOrObject' => [
+                'code' => '<?php
+
+                    class A {}
+
+                    /**
+                     * @template T as array|object
+                     *
+                     * @param class-string<T> $class
+                     * @return class-string<T>
+                     */
+                    function test(string $class): string {
+                        return $class;
+                    }
+
+                    $r = test(A::class);',
+                'assertions' => [
+                    '$r' => 'class-string<A>',
+                ],
+            ],
+            'classStringOfUnionTypeNullOrObject' => [
+                'code' => '<?php
+
+                    class A {}
+
+                    /**
+                     * @template T as null|object
+                     *
+                     * @param class-string<T> $class
+                     * @return class-string<T>
+                     */
+                    function test(string $class): string {
+                        return $class;
+                    }
+
+                    $r = test(A::class);',
+                'assertions' => [
+                    '$r' => 'class-string<A>',
+                ],
+            ],
         ];
     }
 
@@ -1855,6 +1895,17 @@ final class ClassLikeStringTest extends TestCase
                         return $s;
                     }',
                 'error_message' => 'InvalidReturnStatement',
+            ],
+            'genericTypeWithoutAnyValidType' => [
+                'code' => '<?php
+                    /**
+                     * @param class-string<T> $s
+                     * @template T as string|bool
+                     */
+                    function foo(string $s) : string {
+                        return $s;
+                    }',
+                'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:31 - Invalid templated classname \'string\' in docblock for foo',
             ],
         ];
     }
