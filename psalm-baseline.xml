@@ -1942,9 +1942,6 @@
     <ImpureStaticProperty>
       <code><![CDATA[self::$handlers]]></code>
     </ImpureStaticProperty>
-    <RiskyTruthyFalsyComparison>
-      <code><![CDATA[$result]]></code>
-    </RiskyTruthyFalsyComparison>
   </file>
   <file src="src/Psalm/Internal/Provider/FunctionReturnTypeProvider.php">
     <ImpureStaticProperty>

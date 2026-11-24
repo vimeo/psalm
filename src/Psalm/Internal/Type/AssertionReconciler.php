@@ -1199,6 +1199,51 @@ final class AssertionReconciler extends Reconciler
         return [$type_1_atomic, $type_2_atomic];
     }
 
+    /**
+     * The intersection of objects neither of which contains the other: an interface and a class that can implement
+     * it, or a subclass, which narrows the class part of an intersection and keeps the interfaces already known
+     */
+    private static function intersectNamedObjects(
+        Atomic $type_1_atomic,
+        Atomic $type_2_atomic,
+        Codebase $codebase,
+    ): ?TNamedObject {
+        if (!$type_1_atomic instanceof TNamedObject || !$type_2_atomic instanceof TNamedObject) {
+            return null;
+        }
+
+        if (($codebase->interfaceExists($type_1_atomic->value)
+                || $codebase->interfaceExists($type_2_atomic->value))
+            && self::canBeIntersected($codebase, $type_1_atomic, $type_2_atomic)
+        ) {
+            if ($type_1_atomic instanceof TGenericObject && !$type_2_atomic instanceof TGenericObject) {
+                $type_2_atomic = self::inferTemplateParamsFromParent($codebase, $type_2_atomic, $type_1_atomic);
+            }
+
+            return $type_2_atomic->addIntersectionType($type_1_atomic);
+        }
+
+        if ($type_1_atomic::class !== TNamedObject::class
+            || $type_2_atomic::class !== TNamedObject::class
+            || !$type_1_atomic->extra_types
+            || $type_2_atomic->extra_types
+            || !$codebase->classExists($type_1_atomic->value)
+            || !$codebase->classExists($type_2_atomic->value)
+            || $codebase->classlike_storage_provider->get($type_2_atomic->value)->final
+            || !$codebase->classlikes->classExtends($type_2_atomic->value, $type_1_atomic->value)
+        ) {
+            return null;
+        }
+
+        foreach ($type_1_atomic->extra_types as $constraint) {
+            if ($constraint::class !== TNamedObject::class || !$codebase->interfaceExists($constraint->value)) {
+                return null;
+            }
+        }
+
+        return $type_2_atomic->setIntersectionTypes($type_1_atomic->extra_types);
+    }
+
     private static function filterAtomicWithAnother(
         Atomic &$type_1_atomic,
         Atomic $type_2_atomic,
@@ -1275,20 +1320,12 @@ final class AssertionReconciler extends Reconciler
             );
         }
 
-        $matching_atomic_type = null;
-
-        if ($type_1_atomic instanceof TNamedObject
-            && $type_2_atomic instanceof TNamedObject
-            && ($codebase->interfaceExists($type_1_atomic->value)
-                || $codebase->interfaceExists($type_2_atomic->value))
-            && self::canBeIntersected($codebase, $type_1_atomic, $type_2_atomic)
-        ) {
-            if ($type_1_atomic instanceof TGenericObject && !$type_2_atomic instanceof TGenericObject) {
-                $type_2_atomic = self::inferTemplateParamsFromParent($codebase, $type_2_atomic, $type_1_atomic);
-            }
-
-            return $type_2_atomic->addIntersectionType($type_1_atomic);
+        $object_intersection = self::intersectNamedObjects($type_1_atomic, $type_2_atomic, $codebase);
+        if ($object_intersection !== null) {
+            return $object_intersection;
         }
+
+        $matching_atomic_type = null;
 
         /*if ($type_2_atomic instanceof TKeyedArray
         ) {
