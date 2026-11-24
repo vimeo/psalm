@@ -23,6 +23,47 @@ final class ForTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'varUnsetBeforeContinueAndAssignedByThePostExpressionStaysDefined' => [
+                'code' => '<?php
+                    function f(): int {
+                        $x = 0;
+                        for ($i = 0; $i < 3; $i++, $x = 1) {
+                            if ($i) {
+                                unset($x);
+                                continue;
+                            }
+                        }
+                        return $x;
+                    }',
+            ],
+            'forWithoutAConditionIsOnlyLeftByABreak' => [
+                'code' => '<?php
+                    function withInit(): string {
+                        for ($i = 0;; $i++) {
+                            echo $i;
+
+                            if (rand(0, 1)) {
+                                $x = "s";
+                                break;
+                            }
+                        }
+
+                        return $x;
+                    }
+
+                    function withATrueCondition(): string {
+                        for ($i = 0; true; $i++) {
+                            echo $i;
+
+                            if (rand(0, 1)) {
+                                $x = "s";
+                                break;
+                            }
+                        }
+
+                        return $x;
+                    }',
+            ],
             'forCounterIncrementedThroughAReferenceIsWidened' => [
                 'code' => <<<'PHP'
                     <?php

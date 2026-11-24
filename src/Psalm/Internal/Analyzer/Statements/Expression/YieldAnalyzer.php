@@ -65,6 +65,7 @@ final class YieldAnalyzer
                         $e->getMessage(),
                         new CodeLocation($statements_analyzer->getSource(), $stmt),
                     ),
+                    $statements_analyzer->getSuppressedIssues(),
                 );
             }
 

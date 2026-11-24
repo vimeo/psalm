@@ -448,7 +448,8 @@ function array_fill_keys(array $keys, $value): array
  * @param non-empty-string $pattern
  * @param array<TKey, string> $array
  * @param 0|1 $flags 1=PREG_GREP_INVERT
- * @return array<TKey, string>
+ * @return array<TKey, string>|false
+ * @psalm-ignore-falsable-return
  * @psalm-flow ($array) -> return
  */
 function preg_grep($pattern, array $array, $flags = 0)
@@ -949,12 +950,20 @@ function array_sum(array $array) {}
 /**
  * @param array $array
  *
+ * The product of booleans is whether they are all true, as 1 or 0
+ *
  * @return (
- *     $array is array<int>
- *     ? int
- *     : ($array is array<float>
- *         ? float
- *         : float|int
+ *     $array is array<true>
+ *     ? 1
+ *     : ($array is array<bool>
+ *         ? 0|1
+ *         : ($array is array<int>
+ *             ? int
+ *             : ($array is array<float>
+ *                 ? float
+ *                 : float|int
+ *             )
+ *         )
  *     )
  * )
  */

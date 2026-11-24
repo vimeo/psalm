@@ -11,6 +11,10 @@ use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 use Psalm\Type;
 
+use function array_fill;
+use function implode;
+use function str_repeat;
+
 use const DIRECTORY_SEPARATOR;
 
 final class ArrayAssignmentTest extends TestCase
@@ -128,6 +132,66 @@ final class ArrayAssignmentTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'appendsStopGrowingAListShapeAtTheMaximumSize' => [
+                'code' => '<?php
+                    $a = [];' . str_repeat('
+                    $a[] = "x";', 150),
+                'assertions' => [
+                    '$a===' => 'list{' . implode(', ', array_fill(0, 100, '\'x\'')) . ', ...<\'x\'>}',
+                ],
+            ],
+            'writeUnderAKeyOfTheRestOfAShapeKeepsItsItems' => [
+                'code' => '<?php
+                    /** @var list{int, int, ...<int>} $next */
+                    $next = [1, 2];
+                    $next[2] = 5;
+
+                    /** @var list{int, int, ...<int>} $inside */
+                    $inside = [1, 2];
+                    $inside[1] = 5;
+
+                    /** @var list{int, int, ...<int>} $beyond */
+                    $beyond = [1, 2];
+                    $beyond[5] = 5;',
+                'assertions' => [
+                    '$next===' => 'list{int, int, 5, ...<int>}',
+                    '$inside===' => 'list{int, 5, ...<int>}',
+                    '$beyond===' => 'array{0: int, 1: int, 5: 5, ...<int<0, max>, int>}',
+                ],
+            ],
+            'writeUnderTheNextKeyOfACappedListKeepsItAList' => [
+                'code' => '<?php
+                    /** @param list<int> $l */
+                    function takesAList(array $l): void {}
+
+                    function capped(): int {
+                        $a = [];' . str_repeat('
+                        $a[] = 1;', 101) . '
+                        $a[100] = 0;
+                        takesAList($a);
+
+                        return $a[0];
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'nestedWriteKeepsTheItemsTheArrayHeld' => [
+                'code' => '<?php
+                    /** @return array<string, list<int>> */
+                    function lists(): array { return []; }
+                    /** @return array<string, array<string, int>> */
+                    function maps(): array { return []; }
+
+                    $a = lists();
+                    $a["k"][] = 1;
+                    $b = maps();
+                    $b["x"]["y"] = 2;',
+                'assertions' => [
+                    '$a===' => 'array{k: non-empty-list<int>, ...<string, list<int>>}',
+                    '$b===' => 'array{x: array{y: 2, ...<string, int>}, ...<string, array<string, int>>}',
+                ],
+            ],
             'nestedWriteUnderAKeyTheListDoesNotHaveCreatesIt' => [
                 'code' => '<?php
                     $string_key = [1];
@@ -1052,7 +1116,7 @@ final class ArrayAssignmentTest extends TestCase
                     $e["x"]["y"] = 1;
                     $e["x"][(string) rand()] = "b";
                     $f = $e["x"]["y"];
-                    /** @psalm-check-type-exact $f = \'b\'|1 */;
+                    /** @psalm-check-type-exact $f = int|string */;
 
                     $g = ["y" => 1];
                     $g["x"] = 1;
@@ -3584,6 +3648,39 @@ final class ArrayAssignmentTest extends TestCase
                     }
                 PHP,
             ],
+            'itemWrittenUnderAMixedKeyIsKeptWhenTheKeyIsNarrowed' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @param array<array-key, mixed> $form
+                     * @param mixed $value
+                     */
+                    function f(array $form, $value): int {
+                        /** @psalm-suppress MixedArrayOffset */
+                        $form[$value] = ['a' => 1];
+                        if ($value != 'value') {
+                            unset($form['value']);
+                        }
+                        return count($form[$value]);
+                    }
+                PHP,
+            ],
+            'itemWrittenUnderANarrowedKeyInALoop' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param array<string, array<int, mixed>> $r */
+                    function f(bool $b, array $r, string $k, int $i, string $s): array {
+                        while ($b) {
+                            $r[$k][$i] = ['offset' => 1];
+                            if ($k === 'scot') {
+                                $r[$k][$i]['data'] = $s;
+                            }
+                            $b = false;
+                        }
+                        return $r;
+                    }
+                PHP,
+            ],
         ];
     }
 
@@ -3599,6 +3696,27 @@ final class ArrayAssignmentTest extends TestCase
                     $e = ["a" => 1];
                     $e["b"] ??= 2;',
                 'error_message' => 'TypeDoesNotContainType - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:21 - Type null for $e["b"] is never isset',
+            ],
+            'offsetUnsetInABranchAfterALoopWritingItIsPossiblyUndefined' => [
+                'code' => '<?php
+                    /**
+                     * @param array{a?: array<string>} $t
+                     */
+                    function f(array $t): void {
+                        $a = $t["a"] ?? [];
+                        $t["a"] = [];
+
+                        foreach ($a as $b) {
+                            $t["a"][] = $b;
+                        }
+                        if (0 === count($t["a"])) {
+                            unset($t["a"]);
+                        }
+
+                        foreach ($t["a"] as $_) {
+                        }
+                    }',
+                'error_message' => 'PossiblyUndefinedArrayOffset',
             ],
             'byReferenceArgumentUnderAKeyTheListDoesNotHaveIsNull' => [
                 'code' => '<?php
@@ -4369,6 +4487,61 @@ final class ArrayAssignmentTest extends TestCase
                     }
                 ',
                 'error_message' => 'InvalidOperand',
+            ],
+            'itemUnderAKeyNarrowedToALiteralTheArrayCantHave' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param array<0, int> $a */
+                    function f(array $a, int $k): void {
+                        $x = $a[$k];
+                        if ($k === 1) {
+                            echo $a[$k];
+                        }
+                    }
+                PHP,
+                'error_message' => "InvalidArrayOffset - src" . DIRECTORY_SEPARATOR . "somefile.php:6:18 - Cannot access value on variable \$a using offset value of '1', expecting 0",
+            ],
+            'itemUnderAKeyNarrowedToATypeTheArrayCantHave' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param array<string, int> $a */
+                    function f(array $a, string|int $k): void {
+                        if (isset($a[$k])) {
+                            if (is_int($k)) {
+                                echo $a[$k];
+                            }
+                        }
+                    }
+                PHP,
+                'error_message' => 'InvalidArrayOffset',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'itemUnderAKeyNarrowedToAnIntLikeStringTheArrayCantHave' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param array<string, int|string> $a */
+                    function f(array $a, string $k): void {
+                        $x = $a[$k];
+                        if ($k === '1') {
+                            echo $a[$k];
+                        }
+                    }
+                PHP,
+                'error_message' => "InvalidArrayOffset - src" . DIRECTORY_SEPARATOR . "somefile.php:6:18 - Cannot access value on variable \$a using offset value of '1', expecting string",
+            ],
+            'itemUnderAKeyNarrowedToANumericStringTheArrayMayNotHave' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param array<string, int|string> $a */
+                    function f(array $a, string $k): void {
+                        $x = $a[$k];
+                        if (is_numeric($k)) {
+                            echo $a[$k];
+                        }
+                    }
+                PHP,
+                'error_message' => 'PossiblyInvalidArrayOffset',
             ],
         ];
     }

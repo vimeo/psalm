@@ -20,7 +20,7 @@ class SplDoublyLinkedList implements Iterator, Countable, ArrayAccess, Serializa
     /**
      * Add/insert a new value at the specified index
      *
-     * @param int $offset The index where the new value is to be inserted.
+     * @param int $index The index where the new value is to be inserted.
      * @param TValue $value The new value for the index.
      * @return void
      *
@@ -29,7 +29,7 @@ class SplDoublyLinkedList implements Iterator, Countable, ArrayAccess, Serializa
      *
      * @psalm-capabilities read-props|write-this-props
      */
-    public function add($offset, $value) {}
+    public function add($index, $value) {}
 
     /**
      * Pops a node from the end of the doubly linked list
@@ -130,36 +130,36 @@ class SplDoublyLinkedList implements Iterator, Countable, ArrayAccess, Serializa
     public function isEmpty() {}
 
     /**
-     * Returns whether the requested $offset exists
+     * Returns whether the requested $index exists
      * @link https://php.net/manual/en/spldoublylinkedlist.offsetexists.php
      *
-     * @param int $offset The index being checked.
+     * @param int $index The index being checked.
      * @return bool true if the requested index exists, otherwise false
      *
      * @since 5.3.0
      *
      * @psalm-mutation-free
      */
-    public function offsetExists($offset) {}
+    public function offsetExists($index) {}
 
     /**
-     * Returns the value at the specified $offset
+     * Returns the value at the specified $index
      * @link https://php.net/manual/en/spldoublylinkedlist.offsetget.php
      *
-     * @param int $offset The index with the value.
+     * @param int $index The index with the value.
      * @return TValue The value at the specified index.
      *
      * @since 5.3.0
      *
      * @psalm-mutation-free
      */
-    public function offsetGet($offset) {}
+    public function offsetGet($index) {}
 
     /**
-     * Sets the value at the specified $offset to $value
+     * Sets the value at the specified $index to $value
      * @link https://php.net/manual/en/spldoublylinkedlist.offsetset.php
      *
-     * @param int|null $offset The index being set, null to append.
+     * @param int|null $index The index being set, null to append.
      * @param TValue $value The new value for the index.
      * @return void
      *
@@ -167,20 +167,20 @@ class SplDoublyLinkedList implements Iterator, Countable, ArrayAccess, Serializa
      *
      * @psalm-capabilities read-props|write-this-props
      */
-    public function offsetSet($offset, $value) {}
+    public function offsetSet($index, $value) {}
 
     /**
-     * Unsets the value at the specified $offset
+     * Unsets the value at the specified $index
      * @link https://php.net/manual/en/spldoublylinkedlist.offsetunset.php
      *
-     * @param int $offset The index being unset.
+     * @param int $index The index being unset.
      * @return void
      *
      * @since 5.3.0
      *
      * @psalm-capabilities read-props|write-this-props
      */
-    public function offsetUnset($offset) {}
+    public function offsetUnset($index) {}
 
     /**
      * Return current array entry
@@ -347,7 +347,7 @@ class SplFixedArray implements Iterator, ArrayAccess, Countable {
      *
      * @template TInValue
      * @param array<int, TInValue> $array The array to import
-     * @param bool $save_indexes [optional] Try to save the numeric indexes used in the original array.
+     * @param bool $preserveKeys [optional] Try to save the numeric indexes used in the original array.
      *
      * @return SplFixedArray<TInValue> Instance of SplFixedArray containing the array content
 
@@ -356,7 +356,7 @@ class SplFixedArray implements Iterator, ArrayAccess, Countable {
      *
      * @psalm-pure
      */
-    public static function fromArray(array $array, bool $save_indexes = true): SplFixedArray {}
+    public static function fromArray(array $array, bool $preserveKeys = true): SplFixedArray {}
 
     /**
      * Returns a PHP array from the fixed array
@@ -470,20 +470,20 @@ class SplFixedArray implements Iterator, ArrayAccess, Countable {
      * Returns whether the specified index exists
      * @link https://php.net/manual/en/splfixedarray.offsetexists.php
      *
-     * @param int $offset The index being checked.
+     * @param int $index The index being checked.
      * @return bool true if the requested index exists, and false otherwise.
      *
      * @since 5.3.0
      *
      * @psalm-mutation-free
      */
-    public function offsetExists(int $offset): bool {}
+    public function offsetExists(int $index): bool {}
 
     /**
      * Sets a new value at a specified index
      * @link https://php.net/manual/en/splfixedarray.offsetset.php
      *
-     * @param int $offset The index being sent.
+     * @param int $index The index being sent.
      * @param TValue $value The new value for the index
      * @return void
      *
@@ -491,33 +491,33 @@ class SplFixedArray implements Iterator, ArrayAccess, Countable {
      *
      * @psalm-capabilities read-props|write-this-props
      */
-    public function offsetSet(int $offset, $value): void {}
+    public function offsetSet(int $index, $value): void {}
 
     /**
-     * Unsets the value at the specified $offset
+     * Unsets the value at the specified $index
      * @link https://php.net/manual/en/splfixedarray.offsetunset.php
      *
-     * @param int $offset The index being unset
+     * @param int $index The index being unset
      * @return void
      *
      * @since 5.3.0
      *
      * @psalm-capabilities read-props|write-this-props
      */
-    public function offsetUnset(int $offset): void {}
+    public function offsetUnset(int $index): void {}
 
     /**
      * Returns the value at the specified index
      * @link https://php.net/manual/en/splfixedarray.offsetget.php
      *
-     * @param int $offset The index with the value
+     * @param int $index The index with the value
      * @return TValue The value at the specified index
      *
      * @since 5.3.0
      *
      * @psalm-mutation-free
      */
-    public function offsetGet(int $offset) {}
+    public function offsetGet(int $index) {}
 
     /**
      * Returns an iterator over the array, which only reads it
