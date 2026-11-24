@@ -5831,6 +5831,21 @@ final class CallableTest extends TestCase
                     c("hii");',
                 'error_message' => 'InvalidArgument',
             ],
+            'nonFalsyStringIsNotCallableString' => [
+                'code' => '<?php
+                    /**
+                     * @param callable-string $c
+                     */
+                    function takesCallableString(string $c): void {}
+
+                    /**
+                     * @param non-falsy-string $s
+                     */
+                    function f(string $s): void {
+                        takesCallableString($s);
+                    }',
+                'error_message' => 'ArgumentTypeCoercion',
+            ],
             'mismatchParamTypeFromDocblock' => [
                 'code' => '<?php
                     /**
