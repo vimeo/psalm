@@ -2104,6 +2104,14 @@ final class ValueTest extends TestCase
                     if ($s == 3) {}',
                 'error_message' => 'TypeDoesNotContainType',
             ],
+            'stringNotRepresentableAsIntIsNeverLooselyEqualToZero' => [
+                'code' => '<?php
+                    /** @param "1e999"|"5" $s */
+                    function foo(string $s): void {
+                        if ($s == 0) {}
+                    }',
+                'error_message' => 'DocblockTypeContradiction',
+            ],
             'badIfOrAssertionWithSwitch' => [
                 'code' => '<?php
                     function foo(string $s) : void {

@@ -625,6 +625,8 @@ final class TemplateInferredTypeReplacer
 
         $if_template_type = null;
         $else_template_type = null;
+        $has_overlapping_candidate = false;
+        $has_unresolved_branch = false;
 
         $as_type = $atomic_type->as_type;
         $conditional_type = $atomic_type->conditional_type;
@@ -696,8 +698,11 @@ final class TemplateInferredTypeReplacer
                     continue;
                 }
 
-                // only a candidate that can't be of the condition is decidably in the else branch
-                if (self::isDisjoint($codebase, $candidate_atomic_type, $conditional_type)) {
+                // only a candidate that can't be of the condition is decidably in the else branch; one that only
+                // fails it through mixed type params, e.g. a Traversable for an iterable<int, int>, can be of it
+                if ((!$comparison_result->type_coerced_from_mixed || $candidate_atomic_type instanceof TMixed)
+                    && self::isDisjoint($codebase, $candidate_atomic_type, $conditional_type)
+                ) {
                     continue;
                 }
 
@@ -727,14 +732,20 @@ final class TemplateInferredTypeReplacer
                     false,
                     false,
                 )) {
+                    $has_overlapping_candidate = true;
                     $matching_if_types = [...$matching_if_types, ...array_values($if_part->getAtomicTypes())];
                 } else {
                     $is_decidable = false;
                 }
             }
 
-            $if_candidate_type = $matching_if_types && $is_decidable ? new Union($matching_if_types) : null;
-            $else_candidate_type = $matching_else_types && $is_decidable ? new Union($matching_else_types) : null;
+            // combined: a candidate and a part of another one, as array and callable-array, can share a key
+            $if_candidate_type = $matching_if_types && $is_decidable
+                ? TypeCombiner::combine($matching_if_types, $codebase)
+                : null;
+            $else_candidate_type = $matching_else_types && $is_decidable
+                ? TypeCombiner::combine($matching_else_types, $codebase)
+                : null;
 
             if ($if_candidate_type) {
                 $if_template_type = self::replaceConditionalBranch(
@@ -746,6 +757,7 @@ final class TemplateInferredTypeReplacer
                 );
             }
 
+            $else_comparison_result = new TypeComparisonResult();
             if ($else_candidate_type
                 && ($subject_type !== null
                     || UnionTypeComparator::isContainedBy(
@@ -754,7 +766,7 @@ final class TemplateInferredTypeReplacer
                         $as_type,
                         false,
                         false,
-                        null,
+                        $else_comparison_result,
                         false,
                         false,
                     ))
@@ -766,10 +778,17 @@ final class TemplateInferredTypeReplacer
                     $else_type,
                     $else_candidate_type,
                 );
+            } elseif ($else_candidate_type
+                && ($else_candidate_type->hasTemplateOrStatic() || $else_comparison_result->type_coerced_from_mixed)
+            ) {
+                $has_unresolved_branch = true;
             }
         }
 
-        if (!$if_template_type && !$else_template_type) {
+        if ((!$if_template_type && !$else_template_type)
+            // Failure to refine an unresolved generic is not proof that its branch is impossible.
+            || ($has_overlapping_candidate && $has_unresolved_branch)
+        ) {
             $if_type = self::replace(
                 $if_type,
                 $template_result,
