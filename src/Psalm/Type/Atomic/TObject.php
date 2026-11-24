@@ -27,6 +27,15 @@ class TObject extends Atomic
     }
 
     /**
+     * @psalm-pure
+     */
+    #[Override]
+    public function getId(bool $exact = true): string
+    {
+        return 'object';
+    }
+
+    /**
      * @param  array<lowercase-string, string> $aliased_classes
      */
     #[Override]

@@ -27,6 +27,15 @@ final class TVoid extends Atomic
     }
 
     /**
+     * @psalm-pure
+     */
+    #[Override]
+    public function getId(bool $exact = true): string
+    {
+        return 'void';
+    }
+
+    /**
      * @param  array<lowercase-string, string> $aliased_classes
      */
     #[Override]

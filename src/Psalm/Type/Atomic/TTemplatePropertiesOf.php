@@ -44,7 +44,7 @@ final class TTemplatePropertiesOf extends Atomic
     public function getId(bool $exact = true): string
     {
         if (!$exact) {
-            return $this->getKey();
+            return TPropertiesOf::tokenNameForFilter($this->visibility_filter) . '<' . $this->param_name . '>';
         }
 
         return TPropertiesOf::tokenNameForFilter($this->visibility_filter) . '<' . $this->as->getId($exact) . '>';

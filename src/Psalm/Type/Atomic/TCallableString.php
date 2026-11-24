@@ -40,7 +40,7 @@ final class TCallableString extends TNonFalsyString
     #[Override]
     public function getId(bool $exact = true): string
     {
-        return $this->getKey();
+        return 'callable-string';
     }
 
     /**

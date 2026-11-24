@@ -24,6 +24,15 @@ class TInt extends Scalar
     }
 
     /**
+     * @psalm-pure
+     */
+    #[Override]
+    public function getId(bool $exact = true): string
+    {
+        return 'int';
+    }
+
+    /**
      * @param array<lowercase-string, string> $aliased_classes
      * @psalm-pure
      */

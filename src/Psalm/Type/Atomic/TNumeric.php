@@ -24,6 +24,15 @@ class TNumeric extends Scalar
     }
 
     /**
+     * @psalm-pure
+     */
+    #[Override]
+    public function getId(bool $exact = true): string
+    {
+        return 'numeric';
+    }
+
+    /**
      * @param array<lowercase-string, string> $aliased_classes
      * @psalm-pure
      */

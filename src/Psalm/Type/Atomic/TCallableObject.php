@@ -41,6 +41,16 @@ final class TCallableObject extends TObject
         return $key;
     }
 
+    #[Override]
+    public function getId(bool $exact = true): string
+    {
+        $id = 'callable-object';
+        if ($this->callable !== null) {
+            $id .= $this->callable->getParamString() . $this->callable->getReturnTypeString();
+        }
+        return $id;
+    }
+
     /**
      * @param array<lowercase-string, string> $aliased_classes
      * @psalm-pure

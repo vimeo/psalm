@@ -36,4 +36,13 @@ class TString extends Scalar
     {
         return 'string';
     }
+
+    /**
+     * @psalm-pure
+     */
+    #[Override]
+    public function getId(bool $exact = true): string
+    {
+        return 'string';
+    }
 }

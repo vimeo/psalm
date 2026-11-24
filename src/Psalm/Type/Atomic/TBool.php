@@ -24,6 +24,15 @@ class TBool extends Scalar
     }
 
     /**
+     * @psalm-pure
+     */
+    #[Override]
+    public function getId(bool $exact = true): string
+    {
+        return 'bool';
+    }
+
+    /**
      * @param array<lowercase-string, string> $aliased_classes
      * @psalm-pure
      */
