@@ -821,11 +821,14 @@ final class StatementsAnalyzer extends SourceAnalyzer
                         $context,
                     );
 
-                    if ($var_comment->var_id === '$this'
-                        && $var_comment->type
-                        && $codebase->classExists((string)$var_comment->type, null, $context)
+                    $this_type = $var_comment->var_id === '$this' && $var_comment->type?->isSingle()
+                        ? $var_comment->type->getSingleAtomic()
+                        : null;
+
+                    if ($this_type instanceof TNamedObject
+                        && $codebase->classExists($this_type->value, null, $context)
                     ) {
-                        $statements_analyzer->setFQCLN((string)$var_comment->type);
+                        $statements_analyzer->setFQCLN($this_type->value);
                     }
                 }
             }

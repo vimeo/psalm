@@ -4339,7 +4339,7 @@ final class ReturnTypeTest extends TestCase
                         }
                     }',
                 'error_message' => 'InvalidReturnType',
-                'error_levels' => ['UnusedVariable'],
+                'error_levels' => ['UnusedVariable', 'InvalidArrayOffset'],
             ],
             'codeAfterExhaustiveTypeChecksIsAnalyzed' => [
                 'code' => '<?php
