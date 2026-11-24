@@ -434,9 +434,11 @@ final class FunctionCallAnalyzer extends CallAnalyzer
 
         // after the arguments, which may themselves give back `$this`
         MethodCallPurityAnalyzer::markFuncCallReturningThis(
+            $codebase,
             $real_stmt,
             $function_call_info->function_storage,
             $is_first_class_callable ? [] : $stmt->getArgs(),
+            $template_result,
         );
 
         if (!$is_first_class_callable

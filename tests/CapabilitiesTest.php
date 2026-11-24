@@ -2832,6 +2832,60 @@ final class CapabilitiesTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'functionWithAConditionalReturnGivingBackItsThisArgumentReturnsThis' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class HigherOrderTapProxy {
+                        /** @var T */
+                        public $target;
+
+                        /** @param T $target */
+                        public function __construct($target) {
+                            $this->target = $target;
+                        }
+                    }
+
+                    /**
+                     * @template TValue
+                     * @param TValue $value
+                     * @param (callable(TValue): mixed)|null $callback
+                     * @return ($callback is null ? HigherOrderTapProxy<TValue> : TValue)
+                     */
+                    function tap($value, $callback = null) {
+                        if ($callback === null) {
+                            return new HigherOrderTapProxy($value);
+                        }
+                        $callback($value);
+                        return $value;
+                    }
+
+                    final class Request {
+                        /** @return $this */
+                        public function merge(): static {
+                            return tap($this, function (Request $_request): void {});
+                        }
+                    }',
+            ],
+            'functionWithAConditionalReturnSelectingItsThisArgumentReturnsThis' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @template U
+                     * @param T $a
+                     * @param U $b
+                     * @return ($first is true ? T : U)
+                     */
+                    function choose(bool $first, $a, $b) {
+                        return $first ? $a : $b;
+                    }
+
+                    final class Counter {
+                        /** @return $this */
+                        public function self(): static {
+                            return choose(true, $this, clone $this);
+                        }
+                    }',
+            ],
             'functionGivingBackItsFluentThisArgumentReturnsThis' => [
                 'code' => '<?php
                     /**
@@ -7892,6 +7946,80 @@ final class CapabilitiesTest extends TestCase
                         }
                     }',
                 'error_message' => 'InvalidReturnStatement - src' . DIRECTORY_SEPARATOR . 'somefile.php:24:36 - The declared return type \'$this\' for Counter::copy requires returning $this, but this may return another object',
+            ],
+            'functionWithAConditionalReturnSelectingAnotherArgumentIsNotThis' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @template U
+                     * @param T $a
+                     * @param U $b
+                     * @return ($first is true ? T : U)
+                     */
+                    function choose(bool $first, $a, $b) {
+                        return $first ? $a : $b;
+                    }
+
+                    final class Counter {
+                        /** @return $this */
+                        public function copy(): static {
+                            return choose(false, $this, clone $this);
+                        }
+                    }',
+                'error_message' => 'InvalidReturnStatement - src' . DIRECTORY_SEPARATOR . 'somefile.php:16:36 - The declared return type \'$this\' for Counter::copy requires returning $this, but this may return another object',
+            ],
+            'staticCallOnSeveralClassesGivingBackThisOnlyInOneIsNotThis' => [
+                'code' => '<?php
+                    final class Fresh {
+                        /** @param mixed $_value */
+                        public static function get($_value): Counter {
+                            return new Counter();
+                        }
+                    }
+
+                    final class Same {
+                        /**
+                         * @template T
+                         * @param T $value
+                         * @return T
+                         */
+                        public static function get($value) {
+                            return $value;
+                        }
+                    }
+
+                    final class Counter {
+                        /**
+                         * @param class-string<Fresh>|class-string<Same> $helper
+                         * @return $this
+                         */
+                        public function via(string $helper): static {
+                            return $helper::get($this);
+                        }
+                    }',
+                'error_message' => 'InvalidReturnStatement - src' . DIRECTORY_SEPARATOR . 'somefile.php:26:36 - The declared return type \'$this\' for Counter::via requires returning $this, but this may return another object',
+            ],
+            'functionGivingBackANamedVariadicArgumentIsNotThis' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @param T $first
+                     * @param T ...$rest
+                     * @return T
+                     */
+                    function pick($first, ...$rest) {
+                        return $rest ? $rest[array_key_last($rest)] : $first;
+                    }
+
+                    final class Counter {
+                        /** @return $this */
+                        public function copyMaybe(): static {
+                            return pick($this, $this, other: clone $this);
+                        }
+                    }',
+                'error_message' => 'InvalidReturnStatement - src' . DIRECTORY_SEPARATOR . 'somefile.php:15:36 - The declared return type \'$this\' for Counter::copyMaybe requires returning $this, but this may return another object',
+                'error_levels' => [],
+                'php_version' => '8.0',
             ],
             'assigningToAPropertyOfATernaryOfThisWritesThisProps' => [
                 'code' => '<?php

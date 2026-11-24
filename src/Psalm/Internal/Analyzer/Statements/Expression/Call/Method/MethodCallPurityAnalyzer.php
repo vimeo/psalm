@@ -38,6 +38,7 @@ use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TCallable;
 use Psalm\Type\Atomic\TClosure;
+use Psalm\Type\Atomic\TConditional;
 use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TIterable;
 use Psalm\Type\Atomic\TKeyedArray;
@@ -51,7 +52,6 @@ use function array_key_exists;
 use function array_pop;
 use function array_values;
 use function count;
-use function end;
 use function explode;
 use function preg_match;
 use function str_starts_with;
@@ -75,6 +75,9 @@ final class MethodCallPurityAnalyzer
 
     /** Set on a method call that gives back the caller's own `$this` */
     private const RETURNS_THIS = 'returns_this';
+
+    /** Stands in for a template that a conditional return type gives back as it is */
+    private const RETURNED_TEMPLATE = 'returned ';
 
     /**
      * Whether mutations of the receiver's own state are fine for the caller: the receiver is
@@ -348,13 +351,17 @@ final class MethodCallPurityAnalyzer
      * @param list<PhpParser\Node\Arg> $args
      */
     public static function markFuncCallReturningThis(
+        Codebase $codebase,
         Expr\FuncCall $stmt,
         ?FunctionLikeStorage $storage,
         array $args,
+        TemplateResult $template_result,
     ): void {
         $stmt->setAttribute(
             self::RETURNS_THIS,
-            $storage !== null && !$stmt->isFirstClassCallable() && self::returnsThisArgument($storage, $args),
+            $storage !== null
+                && !$stmt->isFirstClassCallable()
+                && self::returnsThisArgument($codebase, $storage, $args, $template_result),
         );
     }
 
@@ -364,9 +371,38 @@ final class MethodCallPurityAnalyzer
      *
      * @param list<PhpParser\Node\Arg> $args
      */
-    public static function returnsThisArgument(FunctionLikeStorage $storage, array $args): bool
-    {
-        $return_template = $storage->return_type?->isSingle() ? $storage->return_type->getSingleAtomic() : null;
+    public static function returnsThisArgument(
+        Codebase $codebase,
+        FunctionLikeStorage $storage,
+        array $args,
+        ?TemplateResult $template_result,
+    ): bool {
+        $return_type = $storage->return_type;
+
+        if ($return_type === null) {
+            return false;
+        }
+
+        $return_template = $return_type->isSingle() ? $return_type->getSingleAtomic() : null;
+
+        // `($callback is null ? Proxy<T> : T)`: the branch the arguments select
+        if ($template_result !== null && $return_template instanceof TConditional) {
+            [$if_template, $if_type] = self::markReturnedTemplate($return_template->if_type, 'if');
+            [$else_template, $else_type] = self::markReturnedTemplate($return_template->else_type, 'else');
+
+            $selected_type = TemplateInferredTypeReplacer::replace(
+                new Union([$return_template->setTypes(null, null, $if_type, $else_type)]),
+                clone $template_result,
+                $codebase,
+            );
+            $selected_type = $selected_type->isSingle() ? $selected_type->getSingleAtomic() : null;
+
+            $return_template = match ($selected_type instanceof TTemplateParam ? $selected_type->param_name : null) {
+                self::RETURNED_TEMPLATE . 'if' => $if_template,
+                self::RETURNED_TEMPLATE . 'else' => $else_template,
+                default => null,
+            };
+        }
 
         if (!$return_template instanceof TTemplateParam
             || !isset($storage->template_types[$return_template->param_name][$return_template->defining_class])
@@ -375,9 +411,14 @@ final class MethodCallPurityAnalyzer
         }
 
         $param_offsets = [];
+        $variadic_offset = null;
 
         foreach ($storage->params as $offset => $param) {
             $param_offsets[$param->name] = $offset;
+
+            if ($param->is_variadic) {
+                $variadic_offset = $offset;
+            }
         }
 
         $param_args = [];
@@ -387,11 +428,11 @@ final class MethodCallPurityAnalyzer
                 return false;
             }
 
+            // arguments matching no parameter go to the variadic one, named arguments too
             if ($arg->name !== null) {
-                $offset = $param_offsets[$arg->name->name] ?? null;
+                $offset = $param_offsets[$arg->name->name] ?? $variadic_offset;
             } elseif (!isset($storage->params[$offset])) {
-                $last_param = end($storage->params);
-                $offset = $last_param !== false && $last_param->is_variadic ? count($storage->params) - 1 : null;
+                $offset = $variadic_offset;
             }
 
             if ($offset !== null) {
@@ -423,30 +464,70 @@ final class MethodCallPurityAnalyzer
                 continue;
             }
 
-            foreach ($param->type->getAtomicTypes() as $atomic) {
-                // a callable taking the template receives values from the callee, it does not provide any
-                if ($atomic instanceof TCallable || $atomic instanceof TClosure) {
-                    if ($atomic->return_type && self::containsTemplate($atomic->return_type, $return_template)) {
-                        return false;
-                    }
-
-                    foreach ($atomic->params ?? [] as $callable_param) {
-                        if ($callable_param->type
-                            && ($callable_param->by_ref || !self::isTemplate($callable_param->type, $return_template))
-                            && self::containsTemplate($callable_param->type, $return_template)
-                        ) {
-                            return false;
-                        }
-                    }
-                } elseif (self::containsTemplate($atomic, $return_template)) {
-                    return false;
-                }
+            if (self::providesTemplate($param->type, $return_template)) {
+                return false;
             }
         }
 
         return $binds_template;
     }
 
+    /**
+     * Whether a value of a parameter of this type can hand the callee values of the template
+     *
+     * @psalm-pure
+     */
+    private static function providesTemplate(Union $type, TTemplateParam $template): bool
+    {
+        foreach ($type->getAtomicTypes() as $atomic) {
+            if ($atomic instanceof TTemplateParam && !self::isTemplate(new Union([$atomic]), $template)) {
+                // a parameter of a conditional return type is a template of its own, of the parameter's type
+                if (self::providesTemplate($atomic->as, $template)) {
+                    return true;
+                }
+            } elseif ($atomic instanceof TCallable || $atomic instanceof TClosure) {
+                // a callable taking the template receives values from the callee, it does not provide any
+                if ($atomic->return_type && self::containsTemplate($atomic->return_type, $template)) {
+                    return true;
+                }
+
+                foreach ($atomic->params ?? [] as $callable_param) {
+                    if ($callable_param->type
+                        && ($callable_param->by_ref || !self::isTemplate($callable_param->type, $template))
+                        && self::containsTemplate($callable_param->type, $template)
+                    ) {
+                        return true;
+                    }
+                }
+            } elseif (self::containsTemplate($atomic, $template)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * A branch of a conditional return type that is a template, renamed so resolving the condition keeps it
+     *
+     * @return array{?TTemplateParam, Union}
+     * @psalm-pure
+     */
+    private static function markReturnedTemplate(Union $branch, string $name): array
+    {
+        $template = $branch->isSingle() ? $branch->getSingleAtomic() : null;
+
+        if (!$template instanceof TTemplateParam) {
+            return [null, $branch];
+        }
+
+        return [
+            $template,
+            new Union([new TTemplateParam(self::RETURNED_TEMPLATE . $name, $template->as, $template->defining_class)]),
+        ];
+    }
+
+    /** @psalm-pure */
     private static function isTemplate(Union $type, TTemplateParam $template): bool
     {
         if (!$type->isSingle()) {
@@ -460,6 +541,7 @@ final class MethodCallPurityAnalyzer
             && $atomic->defining_class === $template->defining_class;
     }
 
+    /** @psalm-pure */
     private static function containsTemplate(TypeNode $type, TTemplateParam $template): bool
     {
         $collector = new TemplateTypeCollector(true);
@@ -503,15 +585,23 @@ final class MethodCallPurityAnalyzer
         Expr\StaticCall $stmt,
         MethodIdentifier $method_id,
         MethodStorage $method_storage,
+        ?TemplateResult $template_result,
     ): void {
+        // with a class of several types, the call gives back `$this` only if every method called does
         $stmt->setAttribute(
             self::RETURNS_THIS,
-            !$stmt->isFirstClassCallable()
+            $stmt->getAttribute(self::RETURNS_THIS, true) === true
+                && !$stmt->isFirstClassCallable()
                 && ((ReturnAnalyzer::mustReturnThis($statements_analyzer->getCodebase(), $method_storage, $method_id)
                         && !$method_storage->is_static
                         && $stmt->class instanceof PhpParser\Node\Name
                         && strtolower($stmt->class->getFirst()) === 'parent')
-                    || self::returnsThisArgument($method_storage, $stmt->getArgs())),
+                    || self::returnsThisArgument(
+                        $statements_analyzer->getCodebase(),
+                        $method_storage,
+                        $stmt->getArgs(),
+                        $template_result,
+                    )),
         );
     }
 
@@ -561,7 +651,7 @@ final class MethodCallPurityAnalyzer
                 && !$stmt->isFirstClassCallable()
                 && ((ReturnAnalyzer::mustReturnThis($codebase, $method_storage, $method_id)
                         && self::isReceiverThis($stmt->var))
-                    || self::returnsThisArgument($method_storage, $stmt->getArgs())),
+                    || self::returnsThisArgument($codebase, $method_storage, $stmt->getArgs(), $template_result)),
         );
 
         $receiver_capabilities = $method_capabilities;

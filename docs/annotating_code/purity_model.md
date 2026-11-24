@@ -557,6 +557,8 @@ method may return another instance of the class.
 only return `$this`, a call on it of another method returning its receiver, or a call giving back
 its `$this` argument (the callee returns a template of its own that only arguments that are `$this`
 bind); any other return is an [InvalidReturnStatement](../running_psalm/issues/InvalidReturnStatement.md).
+Psalm trusts the callee's template signature here: a templated function returning a clone of its
+argument is not caught.
 
 ```php
 <?php
