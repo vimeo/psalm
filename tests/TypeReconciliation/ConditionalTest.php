@@ -7831,6 +7831,13 @@ final class ConditionalTest extends TestCase
                         }
                     }
 
+                    /** @param Countable&Stringable $o */
+                    function stringableIntersectionVsString(object $o, string $s): void {
+                        if ($o == $s) {
+                            /** @psalm-check-type-exact $o = Countable&Stringable */;
+                        }
+                    }
+
                     function objectVsString(object $o, string $s): void {
                         if ($o == $s) {
                             /** @psalm-check-type-exact $o = object */;

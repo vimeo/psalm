@@ -3130,10 +3130,25 @@ final class SimpleAssertionReconciler extends Reconciler
      */
     public static function canBeStringableObject(Codebase $codebase, Atomic $type): bool
     {
-        return $type::class === TObject::class
-            || ($type instanceof TNamedObject
-                && $codebase->classOrInterfaceExists($type->value)
-                && $codebase->methodExists(new MethodIdentifier($type->value, '__tostring')));
+        if ($type::class === TObject::class) {
+            return true;
+        }
+
+        if (!$type instanceof TNamedObject) {
+            return false;
+        }
+
+        // the __toString() of an intersection can come from any of its parts
+        foreach ([$type, ...$type->extra_types] as $part) {
+            if ($part instanceof TNamedObject
+                && $codebase->classOrInterfaceExists($part->value)
+                && $codebase->methodExists(new MethodIdentifier($part->value, '__tostring'))
+            ) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
