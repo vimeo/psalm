@@ -192,6 +192,53 @@ final class CallableTest extends TestCase
                         }
                     }',
             ],
+            'callableOfThisInATraitIsTheObjectTheMethodIsCalledOn' => [
+                'code' => '<?php
+                    final class Str {
+                        /** @param callable(static): void $callback */
+                        public function __construct(?callable $callback = null) {}
+
+                        /**
+                         * @template TReturn
+                         * @param callable($this): TReturn $callback
+                         * @return TReturn
+                         */
+                        public function when(callable $callback) {
+                            return $callback($this);
+                        }
+
+                        /** @param callable(static): void $callback */
+                        public static function make(callable $callback): void {
+                            $callback(new Str());
+                        }
+
+                        public function beforeLast(string $s): self {
+                            return $this;
+                        }
+                    }
+
+                    trait CompilesEchos {
+                        public function compile(): void {
+                            (new Str())->when(function ($str) {
+                                return $str->beforeLast(";");
+                            });
+
+                            Str::make(function ($str): void {
+                                $str->beforeLast(";");
+                            });
+
+                            new Str(function ($str): void {
+                                $str->beforeLast(";");
+                            });
+                        }
+                    }
+
+                    final class Compiler {
+                        use CompilesEchos;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MissingClosureReturnType'],
+            ],
             'callableArrayOnAnIntersectionWithATemplate' => [
                 'code' => '<?php
                     interface Foo {
@@ -696,7 +743,7 @@ final class CallableTest extends TestCase
                      * @param A $a
                      * @return list{A, B}
                      */
-                    function withUnbound(mixed $a): array { return [$a, null]; }
+                    function withUnbound(mixed $a): array { throw new LogicException(); }
                     $with_unbound = withUnbound(...);
                     $unbound = $with_unbound(1);',
                 'assertions' => [
@@ -4303,6 +4350,44 @@ final class CallableTest extends TestCase
                         }
                     }',
                 'error_message' => 'TypeDoesNotContainType - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:29',
+            ],
+            'callableOfStaticOfTheClassUsingATraitIsNotSharedWithOtherUsers' => [
+                'code' => '<?php
+                    trait Filters {
+                        public function run(): void {
+                            (new self())->where(function ($query): void {
+                                $query->extra();
+                            });
+                        }
+                    }
+
+                    final class EloquentBuilder {
+                        use Filters;
+
+                        /**
+                         * @param (Closure(static): mixed)|string $column
+                         * @return $this
+                         */
+                        public function where($column) {
+                            return $this;
+                        }
+
+                        public function extra(): void {}
+                    }
+
+                    final class QueryBuilder {
+                        use Filters;
+
+                        /**
+                         * @param Closure|string $column
+                         * @return $this
+                         */
+                        public function where($column) {
+                            return $this;
+                        }
+                    }',
+                'error_message' => 'Method QueryBuilder::extra does not exist',
+                'error_levels' => ['InvalidArgument'],
             ],
             'nonPublicCallbackOfANativeFunctionWrittenInAnotherCaseFromAnotherClass' => [
                 'code' => '<?php

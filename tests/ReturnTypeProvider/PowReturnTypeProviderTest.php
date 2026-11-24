@@ -35,6 +35,9 @@ final class PowReturnTypeProviderTest extends TestCase
                 $d = pow(1000, 1000);
                 $e = pow(0, 1000);
                 $f = pow(1000, 0);
+                $g = pow(2, 3);
+                $h = pow(2, -1);
+                $i = pow(2, 3.0);
             ',
             'assertions' => [
                 '$a===' => 'float|int',
@@ -43,6 +46,9 @@ final class PowReturnTypeProviderTest extends TestCase
                 '$d===' => 'float(INF)',
                 '$e===' => '0',
                 '$f===' => '1',
+                '$g===' => '8',
+                '$h===' => 'float(0.5)',
+                '$i===' => 'float(8)',
             ],
         ];
         yield 'intPowerAgreesWithThePowOperator' => [
