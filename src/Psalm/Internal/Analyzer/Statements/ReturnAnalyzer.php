@@ -16,6 +16,7 @@ use Psalm\Internal\Analyzer\ClassLikeNameOptions;
 use Psalm\Internal\Analyzer\ClosureAnalyzer;
 use Psalm\Internal\Analyzer\CommentAnalyzer;
 use Psalm\Internal\Analyzer\ConstructorExits;
+use Psalm\Internal\Analyzer\FunctionLike\ReturnTypeAnalyzer;
 use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\MethodAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\ClassTemplateParamCollector;
@@ -470,24 +471,19 @@ final class ReturnAnalyzer
                         return;
                     }
                 } else {
-                    // a docblock type that the signature rules out has been reported where the function is
-                    // checked; what the body returns is checked against what PHP enforces
-                    if ($storage->return_type
-                        && $storage->signature_return_type
-                        && !UnionTypeComparator::canBeContainedBy(
-                            $codebase,
-                            $storage->return_type,
-                            $storage->signature_return_type,
-                        )
-                    ) {
-                        $declared_return_type = $storage->signature_return_type;
-                    } else {
-                        $declared_return_type = ClassAnalyzer::localizeClosureReturnType(
-                            $codebase,
-                            $storage->return_type,
-                            $context,
-                        );
-                    }
+                    $declared_return_type = ClassAnalyzer::localizeClosureReturnType(
+                        $codebase,
+                        $storage->return_type,
+                        $context,
+                    );
+                }
+
+                // a docblock type that the signature rules out is reported where the function is checked; what the
+                // body returns is checked against what PHP enforces
+                if ($storage->signature_return_type
+                    && ReturnTypeAnalyzer::isDocblockReturnTypeRejected($codebase, $storage, $context->self)
+                ) {
+                    $declared_return_type = $storage->signature_return_type;
                 }
 
                 if ($declared_return_type && !$declared_return_type->hasMixed()) {

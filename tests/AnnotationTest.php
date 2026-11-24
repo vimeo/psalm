@@ -245,9 +245,9 @@ final class AnnotationTest extends TestCase
         self::assertSame(
             [
                 ['MismatchingDocblockReturnType', 2],
-                ['InvalidReturnType', 2],
                 ['MismatchingDocblockReturnType', 7],
                 ['InvalidReturnStatement', 9],
+                ['InvalidReturnType', 7],
             ],
             array_map(
                 static fn(IssueData $issue): array => [$issue->type, $issue->line_from],
@@ -256,7 +256,56 @@ final class AnnotationTest extends TestCase
         );
         self::assertStringContainsString(
             "does not match the declared return type 'string'",
-            IssueBuffer::getIssuesDataForFile($file_path)[3]->message,
+            IssueBuffer::getIssuesDataForFile($file_path)[2]->message,
+        );
+    }
+
+    public function testReturnOfAMethodWithAMismatchingDocblockIsCheckedAgainstTheSignature(): void
+    {
+        $this->project_analyzer->getConfig()->throw_exception = false;
+
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                class A {
+                    /** @return int */
+                    public function run(): string {
+                        return "x";
+                    }
+                }',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+
+        self::assertSame(
+            ['MismatchingDocblockReturnType'],
+            array_column(IssueBuffer::getIssuesDataForFile($file_path), 'type'),
+        );
+    }
+
+    public function testValidDocblockReturnTypeContainedBySignatureIsStillChecked(): void
+    {
+        $this->project_analyzer->getConfig()->throw_exception = false;
+
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                /** @return numeric */
+                function f(mixed $v): int|float|string {
+                    return "abc";
+                }',
+        );
+
+        $this->project_analyzer->setPhpVersion('8.0', 'tests');
+        $this->analyzeFile($file_path, new Context());
+
+        self::assertContains(
+            'InvalidReturnStatement',
+            array_column(IssueBuffer::getIssuesDataForFile($file_path), 'type'),
         );
     }
 
