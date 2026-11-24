@@ -16,7 +16,6 @@ use Psalm\Type\Union;
 
 use function array_key_first;
 use function array_values;
-use function assert;
 use function count;
 
 /**
@@ -43,12 +42,16 @@ final class TypeVariableResolver extends MutableTypeVisitor
      *      variable live
      * @param bool $keep_never_bound leave those live, resolving every other
      *      variable
+     * @param bool $construction_site_only resolve through the construction-site
+     *      bounds only; a read of the values the variable stands for (e.g. the
+     *      elements a callback receives) must count every value that flowed in
      * @psalm-mutation-free
      */
     public function __construct(
         private readonly ?Codebase $codebase,
         private readonly bool $only_never_bound = false,
         private readonly bool $keep_never_bound = false,
+        private readonly bool $construction_site_only = true,
     ) {
     }
 
@@ -137,9 +140,6 @@ final class TypeVariableResolver extends MutableTypeVisitor
             return null;
         }
 
-        // every atomic of the (non-empty) input contributed at least one atomic
-        assert($resolved_types !== []);
-
         return $resolved_types;
     }
 
@@ -200,7 +200,7 @@ final class TypeVariableResolver extends MutableTypeVisitor
             $this->codebase,
             $this->only_never_bound,
             $this->keep_never_bound,
-            true,
+            $this->construction_site_only,
         );
 
         if ($resolved_types !== null) {

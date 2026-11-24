@@ -84,6 +84,12 @@ final class Context
     public const PHP_SYMBOL_GUARD_VAR_ID = 'PHP_SYMBOL_GUARD';
 
     /**
+     * The prefix of the pseudo-variables that are true where an extension is known to be loaded: an
+     * `extension_loaded()` check, or a `function_exists()` or `class_exists()` check of one of its symbols
+     */
+    public const PHP_EXTENSION_VAR_ID_PREFIX = 'PHP_EXTENSION ';
+
+    /**
      * The pseudo-variable through which comparisons of the PHP_SAPI constant and of php_sapi_name() narrow them, so
      * a branch knows the SAPI it runs in (e.g. `if (PHP_SAPI === 'cli')`); it can't clash with a variable name.
      */
@@ -443,6 +449,15 @@ final class Context
     public array $vars_assigned_in_and = [];
 
     /**
+     * The variables the last `&&` analysed outside an if condition assigns whenever it is evaluated, which is
+     * what its left operand assigns
+     *
+     * @internal
+     * @var array<string, Union>
+     */
+    public array $vars_assigned_always_in_and = [];
+
+    /**
      * A list of vars that have been may have been assigned to
      *
      * @var array<string, bool>
@@ -493,6 +508,9 @@ final class Context
     public ?CaseScope $case_scope = null;
 
     public ?FinallyScope $finally_scope = null;
+
+    /** whether the statements are in a finally block of the function-like they are in, or of the file */
+    public bool $inside_finally = false;
 
     public ?TryScope $try_scope = null;
 
@@ -549,6 +567,13 @@ final class Context
      * @var array<string, int>
      */
     public array $parent_remove_vars = [];
+
+    /**
+     * The lists a key type of a variable in scope is bound to (see TIntRange::$dependent_list_key)
+     *
+     * @var array<string, true>
+     */
+    public array $list_key_bound_lists = [];
 
     private static int $clause_removal_count = 0;
 
@@ -1481,6 +1506,36 @@ final class Context
     }
 
     /**
+     * A key of a list (the one of `array_key_last()`, of a foreach) is a key the list has only as long as the list
+     * is the one it was taken from: the types of the variables bound to $list_var_id are free of the binding once
+     * the list is assigned, passed by reference, unset from or forgotten. A write under one of its offsets keeps it.
+     */
+    public function releaseKeysBoundToList(string $list_var_id): void
+    {
+        if (!isset($this->list_key_bound_lists[$list_var_id])) {
+            return;
+        }
+
+        unset($this->list_key_bound_lists[$list_var_id]);
+
+        foreach ($this->vars_in_scope as $var_id => $type) {
+            foreach ($type->getAtomicTypes() as $atomic_key => $atomic_type) {
+                if ($atomic_type instanceof TIntRange && $atomic_type->dependent_list_key === $list_var_id) {
+                    $builder = $type->getBuilder();
+                    $builder->removeType($atomic_key);
+                    $builder->addType(new TIntRange(
+                        $atomic_type->min_bound,
+                        $atomic_type->max_bound,
+                        $atomic_type->from_docblock,
+                    ));
+
+                    $type = $this->vars_in_scope[$var_id] = $builder->freeze();
+                }
+            }
+        }
+    }
+
+    /**
      * Drops the clauses about the variables a nested scope, analysed in a clone of this context, changed. Inside a
      * condition, the clauses are only marked as changed: the condition is checked against them for paradoxes
      * first, and its analyser drops them afterwards (see removeClausesOfVarsChangedSince()).
@@ -1492,6 +1547,13 @@ final class Context
         Context $nested_context,
         ?StatementsAnalyzer $statements_analyzer = null,
     ): void {
+        // a list the nested scope released the keys of
+        foreach ($this->list_key_bound_lists as $list_var_id => $_) {
+            if (!isset($nested_context->list_key_bound_lists[$list_var_id])) {
+                $this->releaseKeysBoundToList($list_var_id);
+            }
+        }
+
         foreach ($nested_context->parent_remove_vars as $var_id => $stamp) {
             // an older stamp than this context's is one the nested scope was cloned with before a sibling scope
             // changed the variable (an else after its if), not a change of its own
@@ -1596,6 +1658,18 @@ final class Context
                         $codebase,
                     );
                 }
+            }
+        }
+
+        // a variable the branch defined first is only possibly defined where the branch may have been skipped
+        foreach ($branch->assigned_var_ids as $assigned_var_id => $_) {
+            if (!isset($this->vars_in_scope[$assigned_var_id])
+                && isset($branch->vars_in_scope[$assigned_var_id])
+                && preg_match('/^\$\w+$/', $assigned_var_id) === 1
+            ) {
+                $this->vars_in_scope[$assigned_var_id] = $branch->vars_in_scope[$assigned_var_id]
+                    ->setPossiblyUndefined(true);
+                $this->vars_possibly_in_scope[$assigned_var_id] = true;
             }
         }
     }
@@ -1860,6 +1934,7 @@ final class Context
         }
 
         foreach ($vars_to_remove as $var_id) {
+            $this->releaseKeysBoundToList($var_id);
             $this->forgetPropertyBoundByReference($var_id, false);
             // forgotten, not unset: Context::update() tells the two apart
             $this->vars_possibly_in_scope[$var_id] = true;
@@ -1948,6 +2023,7 @@ final class Context
     public function forgetPropertyDescendents(string $property_id): void
     {
         $this->forgetNullArrayOffsets($property_id);
+        $this->releaseKeysBoundToList($property_id);
         $this->removeVarFromConflictingClauses($property_id);
 
         // `$a[$this->p]` too
@@ -2040,6 +2116,16 @@ final class Context
                 $this->vars_in_scope[$const_name] = $const_type;
             }
         }
+    }
+
+    /**
+     * The pseudo-variable that is true where the extension is loaded (see PHP_EXTENSION_VAR_ID_PREFIX)
+     *
+     * @psalm-pure
+     */
+    public static function getExtensionVarId(string $extension): string
+    {
+        return self::PHP_EXTENSION_VAR_ID_PREFIX . strtolower($extension);
     }
 
     /**

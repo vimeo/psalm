@@ -7,6 +7,7 @@ namespace Psalm\Internal\Analyzer\Statements\Expression\Call;
 use AssertionError;
 use PhpParser;
 use Psalm\CodeLocation;
+use Psalm\Codebase;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\Statements\Expression\Assignment\ArrayAssignmentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\AssignmentAnalyzer;
@@ -17,6 +18,7 @@ use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\ArrayType;
+use Psalm\Internal\Type\Comparator\CallableTypeComparator;
 use Psalm\Internal\Type\Comparator\TypeComparisonResult;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\LiteralCast;
@@ -24,6 +26,7 @@ use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Internal\Type\TypeCombiner;
 use Psalm\Internal\Type\TypeExpander;
+use Psalm\Internal\TypeVisitor\ContainsStaticVisitor;
 use Psalm\Issue\ArgumentTypeCoercion;
 use Psalm\Issue\CallableByReferenceMismatch;
 use Psalm\Issue\InvalidArgument;
@@ -36,11 +39,17 @@ use Psalm\IssueBuffer;
 use Psalm\Node\Expr\VirtualArrayDimFetch;
 use Psalm\Type;
 use Psalm\Type\Atomic;
+use Psalm\Type\Atomic\Scalar;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TCallable;
+use Psalm\Type\Atomic\TClosedResource;
 use Psalm\Type\Atomic\TClosure;
 use Psalm\Type\Atomic\TKeyedArray;
+use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNonEmptyArray;
+use Psalm\Type\Atomic\TNull;
+use Psalm\Type\Atomic\TObject;
+use Psalm\Type\Atomic\TResource;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
 use UnexpectedValueException;
@@ -64,6 +73,175 @@ use function substr;
  */
 final class ArrayFunctionArgumentsAnalyzer
 {
+    public static function getArrayWalkOutType(
+        StatementsAnalyzer $statements_analyzer,
+        Context $context,
+        Union $array_type,
+        Union $callback_type,
+        bool $recursive,
+    ): ?Union {
+        if (!$array_type->isArray()) {
+            return null;
+        }
+
+        $codebase = $statements_analyzer->getCodebase();
+        $out_type = null;
+
+        foreach ($callback_type->getAtomicTypes() as $callback_atomic) {
+            // The method-callable path also resolves self/static in output parameter types.
+            if ($callback_atomic instanceof TNamedObject
+                && !$callback_atomic instanceof TClosure
+                && $callback_atomic->value !== 'Closure'
+            ) {
+                $callback_atomic = TKeyedArray::make([
+                    new Union([$callback_atomic]),
+                    Type::getString('__invoke'),
+                ]);
+            }
+
+            $callable = CallableTypeComparator::getCallableFromAtomic(
+                $codebase,
+                $callback_atomic,
+                null,
+                $statements_analyzer,
+                $context,
+                true,
+            );
+
+            // Any alternative that cannot be analysed makes the whole result unknown: skipping it
+            // would claim a narrower type than the callback can leave behind. Returning null makes
+            // the caller keep the default by-reference output type.
+            if ($callable === null || $callable->params === null) {
+                return null;
+            }
+
+            $value_param = $callable->params[0] ?? null;
+            $walked_type = $array_type;
+
+            if ($value_param?->by_ref) {
+                $value_out_type = TypeExpander::expandUnion(
+                    $codebase,
+                    $value_param->out_type ?? $value_param->type ?? Type::getMixed(),
+                    null,
+                    null,
+                    null,
+                );
+                $unresolved_static = new ContainsStaticVisitor(true);
+                $unresolved_static->traverse($value_out_type);
+
+                if ($value_param->is_variadic || $value_out_type->getTemplateTypes() || $unresolved_static->matches()) {
+                    return null;
+                }
+
+                $walked_type = self::getArrayWalkType($array_type, $value_out_type, $codebase, $recursive);
+
+                if ($walked_type === null) {
+                    return null;
+                }
+            }
+
+            $out_type = Type::combineUnionTypes($out_type, $walked_type, $codebase);
+        }
+
+        return $out_type;
+    }
+
+    /**
+     * @psalm-external-mutation-free
+     */
+    private static function getArrayWalkType(
+        Union $type,
+        Union $value_out_type,
+        Codebase $codebase,
+        bool $recursive,
+        bool $is_value = false,
+    ): ?Union {
+        if ($type->isNever()) {
+            return $type;
+        }
+
+        if ($is_value && !$recursive) {
+            return $value_out_type->setPossiblyUndefined($type->possibly_undefined);
+        }
+
+        $types = [];
+
+        foreach ($type->getAtomicTypes() as $atomic) {
+            if ($atomic instanceof TArray) {
+                $value_type = self::getArrayWalkType(
+                    $atomic->type_params[1],
+                    $value_out_type,
+                    $codebase,
+                    $recursive,
+                    true,
+                );
+
+                if ($value_type === null) {
+                    return null;
+                }
+
+                $types[] = $atomic->setTypeParams([$atomic->type_params[0], $value_type]);
+            } elseif ($atomic instanceof TKeyedArray) {
+                $properties = [];
+
+                foreach ($atomic->properties as $key => $property_type) {
+                    $property_type = self::getArrayWalkType(
+                        $property_type,
+                        $value_out_type,
+                        $codebase,
+                        $recursive,
+                        true,
+                    );
+
+                    if ($property_type === null) {
+                        return null;
+                    }
+
+                    $properties[$key] = $property_type;
+                }
+
+                $fallback_params = $atomic->fallback_params;
+
+                if ($fallback_params !== null) {
+                    $fallback_value_type = self::getArrayWalkType(
+                        $fallback_params[1],
+                        $value_out_type,
+                        $codebase,
+                        $recursive,
+                        true,
+                    );
+
+                    if ($fallback_value_type === null) {
+                        return null;
+                    }
+
+                    $fallback_params[1] = $fallback_value_type;
+                }
+
+                $types[] = TKeyedArray::make(
+                    $properties,
+                    $atomic->class_strings,
+                    $fallback_params,
+                    $atomic->is_list,
+                    $atomic->from_docblock,
+                );
+            } elseif ($atomic instanceof Scalar
+                || $atomic instanceof TObject
+                || $atomic instanceof TNamedObject
+                || $atomic instanceof TNull
+                || $atomic instanceof TResource
+                || $atomic instanceof TClosedResource
+            ) {
+                $types = [...$types, ...array_values($value_out_type->getAtomicTypes())];
+            } else {
+                // An unresolved value may contain arrays that the recursive walk would descend into.
+                return null;
+            }
+        }
+
+        return $type->setTypes(array_values(TypeCombiner::combine($types, $codebase)->getAtomicTypes()));
+    }
+
     /**
      * @param   array<int, PhpParser\Node\Arg> $args
      */
@@ -434,36 +612,18 @@ final class ArrayFunctionArgumentsAnalyzer
         }
 
         if (!isset($args[2])) {
-            if ($offset_arg_is_zero) {
-                $array_type = Type::getEmptyArray();
-                AssignmentAnalyzer::assignByRefParam(
-                    $statements_analyzer,
-                    $array_arg,
-                    $array_type,
-                    $array_type,
-                    $context,
-                    false,
-                );
-            } elseif ($array_type) {
-                AssignmentAnalyzer::assignByRefParam(
-                    $statements_analyzer,
-                    $array_arg,
-                    new Union([$array_type]),
-                    new Union([$array_type]),
-                    $context,
-                    false,
-                );
-            } else {
-                $default_array_type = Type::getArray();
-                AssignmentAnalyzer::assignByRefParam(
-                    $statements_analyzer,
-                    $array_arg,
-                    $default_array_type,
-                    $default_array_type,
-                    $context,
-                    false,
-                );
-            }
+            $spliced_type = $offset_arg_is_zero
+                ? Type::getEmptyArray()
+                : ($array_type ? new Union([$array_type]) : Type::getArray());
+
+            AssignmentAnalyzer::assignByRefParam(
+                $statements_analyzer,
+                $array_arg,
+                $spliced_type,
+                $spliced_type,
+                $context,
+                false,
+            );
 
             return null;
         }
@@ -509,36 +669,18 @@ final class ArrayFunctionArgumentsAnalyzer
         }
 
         if (!isset($args[3])) {
-            if ($cover_whole_arr) {
-                $array_type = Type::getEmptyArray();
-                AssignmentAnalyzer::assignByRefParam(
-                    $statements_analyzer,
-                    $array_arg,
-                    $array_type,
-                    $array_type,
-                    $context,
-                    false,
-                );
-            } elseif ($array_type) {
-                AssignmentAnalyzer::assignByRefParam(
-                    $statements_analyzer,
-                    $array_arg,
-                    new Union([$array_type]),
-                    new Union([$array_type]),
-                    $context,
-                    false,
-                );
-            } else {
-                $default_array_type = Type::getArray();
-                AssignmentAnalyzer::assignByRefParam(
-                    $statements_analyzer,
-                    $array_arg,
-                    $default_array_type,
-                    $default_array_type,
-                    $context,
-                    false,
-                );
-            }
+            $spliced_type = $cover_whole_arr
+                ? Type::getEmptyArray()
+                : ($array_type ? new Union([$array_type]) : Type::getArray());
+
+            AssignmentAnalyzer::assignByRefParam(
+                $statements_analyzer,
+                $array_arg,
+                $spliced_type,
+                $spliced_type,
+                $context,
+                false,
+            );
 
             return null;
         }
@@ -665,6 +807,7 @@ final class ArrayFunctionArgumentsAnalyzer
         );
 
         if ($var_id) {
+            $context->releaseKeysBoundToList($var_id);
             $context->removeVarFromConflictingClauses($var_id, null, $statements_analyzer);
 
             if (isset($context->vars_in_scope[$var_id])) {
@@ -1148,10 +1291,12 @@ final class ArrayFunctionArgumentsAnalyzer
             }
 
             if (!$union_comparison_results->type_coerced && !$type_match_found) {
-                $types_can_be_identical = UnionTypeComparator::canExpressionTypesBeIdentical(
+                $can_fit = UnionTypeComparator::canBeContainedBy(
                     $codebase,
                     $input_type,
                     $closure_param_type,
+                    true,
+                    true,
                 );
 
                 if ($union_comparison_results->scalar_type_match_found) {
@@ -1164,7 +1309,7 @@ final class ArrayFunctionArgumentsAnalyzer
                         ),
                         $statements_analyzer->getSuppressedIssues(),
                     );
-                } elseif ($types_can_be_identical) {
+                } elseif ($can_fit) {
                     IssueBuffer::maybeAdd(
                         new PossiblyInvalidArgument(
                             'Parameter ' . ($i + 1) . ' of closure passed to function ' . $method_id . ' expects '

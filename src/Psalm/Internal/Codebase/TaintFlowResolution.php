@@ -10,6 +10,7 @@ use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\DataFlow\NodeTable;
 use Psalm\Internal\DataFlow\Path;
+use Psalm\Internal\Perf;
 use Psalm\Progress\Progress;
 use Psalm\Type\TaintKind;
 
@@ -25,6 +26,7 @@ use function count;
 use function explode;
 use function implode;
 use function in_array;
+use function is_array;
 use function ksort;
 use function max;
 use function min;
@@ -206,10 +208,12 @@ final class TaintFlowResolution
      * The taints reportFlow() reports the most general of for a flow, dropping the others: they depend on each other,
      * so they are never told apart from a call's taints when sinks are replayed (see getSinkCallerTaints())
      */
-    private const URL_TAINTS = TaintKind::INPUT_SSRF
+    private const OVERLAPPING_TAINTS = TaintKind::INPUT_SSRF
         | TaintKind::INPUT_REDIRECT
         | TaintKind::INPUT_URL_COMPONENT
-        | TaintKind::INPUT_URL_PATH;
+        | TaintKind::INPUT_URL_PATH
+        | TaintKind::INPUT_SQL
+        | TaintKind::INPUT_SQL_UNQUOTED;
 
     /**
      * The kinds of entries: specialized call entries, and convergences (see enterConvergence())
@@ -777,8 +781,8 @@ final class TaintFlowResolution
     private array $entry_sink_ranks = [];
 
     /**
-     * Entry => sink key => the sinks replayed through every call: those whose walk adds taints, or that URL_TAINTS
-     * apply to (see addEntrySink())
+     * Entry => sink key => the sinks replayed through every call: those whose walk adds taints, or that
+     * OVERLAPPING_TAINTS apply to (see addEntrySink())
      *
      * @var array<int, array<string, true>>
      */
@@ -886,6 +890,10 @@ final class TaintFlowResolution
             }
 
             $progress->taskDone(0);
+
+            if (Perf\Collector::$enabled) {
+                Perf\Collector::taintRound();
+            }
         }
     }
 
@@ -897,13 +905,21 @@ final class TaintFlowResolution
      */
     private function prepareGraph(): void
     {
+        /** @var array<string, string|list<string>> $reverse */
         $reverse = [];
 
         foreach ($this->forward_edges as $from_id => $destinations) {
             $this->linkSpecialization($from_id);
 
             foreach ($destinations as $to_id => $_) {
-                $reverse[$to_id][$from_id] = true;
+                // A single predecessor needs no array. Promote it only when a second edge arrives.
+                if (!isset($reverse[$to_id])) {
+                    $reverse[$to_id] = $from_id;
+                } elseif (is_array($reverse[$to_id])) {
+                    $reverse[$to_id][] = $from_id;
+                } else {
+                    $reverse[$to_id] = [$reverse[$to_id], $from_id];
+                }
                 $this->linkSpecialization($to_id);
             }
         }
@@ -931,7 +947,7 @@ final class TaintFlowResolution
         while ($queue) {
             $id = array_pop($queue);
 
-            foreach ($reverse[$id] ?? [] as $from_id => $_) {
+            foreach ((array) ($reverse[$id] ?? []) as $from_id) {
                 if (!isset($this->sink_reachable[$from_id])) {
                     $this->sink_reachable[$from_id] = true;
                     $queue[] = $from_id;
@@ -961,15 +977,19 @@ final class TaintFlowResolution
                 }
             }
 
-            ksort($destinations, SORT_STRING);
+            if (count($destinations) > 1) {
+                ksort($destinations, SORT_STRING);
+            }
             $this->forward_edges[$from_id] = $destinations;
         }
 
         // The states, and so where flows converge (see enterConvergence()) and the traces of the flows
         // reported, depend on the order the call sites of a node are left through (see walk()).
         foreach ($this->specializations as $id => $specializations) {
-            ksort($specializations, SORT_STRING);
-            $this->specializations[$id] = $specializations;
+            if (count($specializations) > 1) {
+                ksort($specializations, SORT_STRING);
+                $this->specializations[$id] = $specializations;
+            }
         }
 
         $this->computeObservableDepths($reverse);
@@ -1029,7 +1049,7 @@ final class TaintFlowResolution
      *
      * The depths are capped at MAX_OPEN_ASSIGNMENT_DEPTH, which also bounds a cycle of fetches.
      *
-     * @param array<string, array<string, true>> $reverse
+     * @param array<string, string|list<string>> $reverse
      * @psalm-capabilities read-props|write-this-props|write-refs
      */
     private function computeObservableDepths(array $reverse): void
@@ -1054,7 +1074,7 @@ final class TaintFlowResolution
             $id = array_pop($queue);
             $depths = $this->observable_depths[$id];
 
-            foreach ($reverse[$id] ?? [] as $from_id => $_) {
+            foreach ((array) ($reverse[$id] ?? []) as $from_id) {
                 if (isset($this->forward_edges[$from_id][$id])) {
                     $this->raiseObservableDepths(
                         $queue,
@@ -1162,7 +1182,7 @@ final class TaintFlowResolution
     }
 
     /**
-     * @param array<string, array<string, true>> $reverse
+     * @param array<string, string|list<string>> $reverse
      * @psalm-external-mutation-free
      */
     private function computeTaintAddingReachable(array $reverse): void
@@ -1183,7 +1203,7 @@ final class TaintFlowResolution
         while ($queue) {
             $id = array_pop($queue);
 
-            foreach ($reverse[$id] ?? [] as $from_id => $_) {
+            foreach ((array) ($reverse[$id] ?? []) as $from_id) {
                 if (!isset($this->taint_adding_reachable[$from_id])) {
                     $this->taint_adding_reachable[$from_id] = true;
                     $queue[] = $from_id;
@@ -2731,7 +2751,7 @@ final class TaintFlowResolution
 
             if ($sink_taints !== 0) {
                 foreach ($this->entry_sinks[$entry] as [$sink_id, , $sink_added, $reaches]) {
-                    $sink_added |= $sink_taints | $this->sink_taints[$sink_id] & self::URL_TAINTS;
+                    $sink_added |= $sink_taints | $this->sink_taints[$sink_id] & self::OVERLAPPING_TAINTS;
 
                     foreach ($reaches as [$state, $link, $kept, $added]) {
                         $kept &= $sink_added | $this->state_added[$state];
@@ -2741,7 +2761,7 @@ final class TaintFlowResolution
             } else {
                 foreach ($this->entry_unshared_sinks[$entry] ?? [] as $sink_key => $_) {
                     [$sink_id, , $sink_added, $reaches] = $this->entry_sinks[$entry][$sink_key];
-                    $sink_added |= $this->sink_taints[$sink_id] & self::URL_TAINTS;
+                    $sink_added |= $this->sink_taints[$sink_id] & self::OVERLAPPING_TAINTS;
 
                     foreach ($reaches as [$state, $link, $kept, $added]) {
                         $kept &= $sink_added | $this->state_added[$state];
@@ -3651,9 +3671,10 @@ final class TaintFlowResolution
         $this->entry_sinks[$entry][$sink_key] = [$sink_id, $sink[1] | $new_kept, $sink[2] | $new_added, $reaches];
 
         // A taint the walk also adds may have its source in the walk: that sink is replayed through every call. So are
-        // the URL kinds, which reportFlow() drops by each other in a call: they stay in one with its other kinds.
-        $unshared_kept = $new_kept
-            & ($sink[2] | $added | $this->state_added[$state] | $this->sink_taints[$sink_id] & self::URL_TAINTS);
+        // the overlapping kinds, which reportFlow() drops by each other in a call: they stay in one with its others.
+        $unshared_kept = $new_kept & (
+            $sink[2] | $added | $this->state_added[$state] | $this->sink_taints[$sink_id] & self::OVERLAPPING_TAINTS
+        );
         $shared_kept = $new_kept & ~$unshared_kept;
 
         if (!isset($this->entry_sink_origins[$entry])) {
@@ -3689,7 +3710,7 @@ final class TaintFlowResolution
      * (see addEntrySink()). reportFlow() identifies a finding by sink, predecessor, source and taint: of the calls
      * outside any context with the same source for a taint, only the first of them reports it, so only that one is
      * replayed for it. A call inside a context, and a taint whose source isn't certain (see buildTrace()) or that
-     * reportFlow() drops by another (see URL_TAINTS), are replayed as they are.
+     * reportFlow() drops by another (see OVERLAPPING_TAINTS), are replayed as they are.
      *
      * @psalm-external-mutation-free
      */
@@ -3940,6 +3961,11 @@ final class TaintFlowResolution
             $taints &= ~(TaintKind::INPUT_URL_COMPONENT | TaintKind::INPUT_URL_PATH);
         } elseif (($taints & TaintKind::INPUT_URL_COMPONENT) !== 0) {
             $taints &= ~TaintKind::INPUT_URL_PATH;
+        }
+
+        // SQL syntax is reported once, as what can break out of quotes when the flow can do both
+        if (($taints & TaintKind::INPUT_SQL) !== 0) {
+            $taints &= ~TaintKind::INPUT_SQL_UNQUOTED;
         }
 
         $sink = $this->table->decode($sink_id, $this->sinks[$sink_id]);

@@ -18,7 +18,6 @@ use Psalm\Internal\Analyzer\Statements\Expression\Call\ClassTemplateParamCollect
 use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
-use Psalm\Internal\Analyzer\TraitAnalyzer;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Internal\Codebase\MixinLookup;
 use Psalm\Internal\DataFlow\DataFlowNode;
@@ -177,14 +176,7 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
             return;
         }
 
-        if (!$context->collect_initializations
-            && $statements_analyzer->getFilePath() === $statements_analyzer->getRootFilePath()
-            && (!(($parent_source = $statements_analyzer->getSource())
-                    instanceof FunctionLikeAnalyzer)
-                || !$parent_source->getSource() instanceof TraitAnalyzer)
-        ) {
-            $codebase->analyzer->incrementNonMixedCount($statements_analyzer->getFilePath());
-        }
+        $statements_analyzer->countMixed($context, false);
 
         $result->has_valid_method_call_type = true;
 
@@ -752,14 +744,7 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
             case TNonEmptyMixed::class:
             case TObject::class:
             case TObjectWithProperties::class:
-                if (!$context->collect_initializations
-                    && $statements_analyzer->getFilePath() === $statements_analyzer->getRootFilePath()
-                    && (!(($parent_source = $statements_analyzer->getSource())
-                            instanceof FunctionLikeAnalyzer)
-                        || !$parent_source->getSource() instanceof TraitAnalyzer)
-                ) {
-                    $codebase->analyzer->incrementMixedCount($statements_analyzer->getFilePath());
-                }
+                $statements_analyzer->countMixed($context, true);
 
                 $result->has_mixed_method_call = true;
 
@@ -832,7 +817,11 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
                         return;
                     }
 
-                    $result->return_type = Type::getMixed();
+                    // a method of a value that can't exist is never called (a loop's first pass narrowing null away),
+                    // and one of a value a loop may not have set yet (isset() in its first pass) returns such a value
+                    $result->return_type = $lhs_type_part instanceof TNever
+                        ? Type::getNever()
+                        : Type::getMixed($lhs_type_part instanceof TMixed && $lhs_type_part->from_loop_isset);
                 }
                 return;
 

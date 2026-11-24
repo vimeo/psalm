@@ -9,10 +9,10 @@ use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Config;
 use Psalm\Context;
-use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
-use Psalm\Internal\Analyzer\TraitAnalyzer;
+use Psalm\Internal\Codebase\StringContext;
+use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\Comparator\AtomicTypeComparator;
 use Psalm\Internal\Type\Comparator\TypeComparisonResult;
@@ -156,6 +156,63 @@ final class ConcatAnalyzer
     }
 
     /**
+     * Adds the sinks of position $context (see StringContext) for a value with $parent_nodes at $location, a part of
+     * the string being built, which can't carry $removed_taints
+     *
+     * @param array<string, DataFlowNode> $parent_nodes
+     */
+    public static function addPositionSinks(
+        StatementsAnalyzer $statements_analyzer,
+        StringContext $context,
+        array $parent_nodes,
+        int $removed_taints,
+        CodeLocation $location,
+    ): void {
+        $sink_taints = $context->getSinkTaints() & ~$removed_taints;
+        $graph = $statements_analyzer->getTaintFlowGraphWithSuppressed();
+
+        if ($sink_taints === 0 || $graph === null || $parent_nodes === []) {
+            return;
+        }
+
+        $sink = DataFlowNode::getForTaint(
+            (($sink_taints & TaintKind::INPUT_URL_SCHEME) !== 0 ? 'URL' : 'unquoted value')
+                . ' of attribute ' . $context->getAttribute(),
+            $location,
+            $sink_taints,
+        );
+
+        $graph->addSink($sink);
+
+        foreach ($parent_nodes as $parent_node) {
+            $graph->addPath($parent_node, $sink, 'arg', 0, $removed_taints);
+        }
+    }
+
+    /**
+     * Adds the sinks of position $context for the value of $expr, already analyzed, a part of the string being built
+     */
+    public static function addPositionSinksForExpression(
+        StatementsAnalyzer $statements_analyzer,
+        StringContext $context,
+        PhpParser\Node\Expr $expr,
+    ): void {
+        $type = $statements_analyzer->node_data->getType($expr);
+
+        if ($type === null || $context->getSinkTaints() === 0) {
+            return;
+        }
+
+        self::addPositionSinks(
+            $statements_analyzer,
+            $context,
+            $type->parent_nodes,
+            $type->getTaintsToRemove($statements_analyzer->getCodebase()->getInputTaints()),
+            new CodeLocation($statements_analyzer, $expr),
+        );
+    }
+
+    /**
      * The literal strings $expr, already analyzed, can start with as far as they are known: none if it can start with
      * anything
      *
@@ -257,71 +314,38 @@ final class ConcatAnalyzer
             $result_type = Type::getString();
 
             if ($left_type->hasMixed() || $right_type->hasMixed()) {
-                if (!$context->collect_initializations
-                    && $statements_analyzer->getFilePath() === $statements_analyzer->getRootFilePath()
-                    && (!(($parent_source = $statements_analyzer->getSource())
-                            instanceof FunctionLikeAnalyzer)
-                        || !$parent_source->getSource() instanceof TraitAnalyzer)
-                ) {
-                    $codebase->analyzer->incrementMixedCount($statements_analyzer->getFilePath());
+                $statements_analyzer->countMixed($context, true);
+
+                [$side, $operand, $operand_type] = $left_type->hasMixed()
+                    ? ['Left', $left, $left_type]
+                    : ['Right', $right, $right_type];
+
+                $arg_location = new CodeLocation($statements_analyzer->getSource(), $operand);
+                $origin_locations = [];
+
+                if ($statements_analyzer->variable_use_graph) {
+                    foreach ($operand_type->parent_nodes as $parent_node) {
+                        $origin_locations = [
+                            ...$origin_locations,
+                            ...$statements_analyzer->variable_use_graph->getOriginLocations($parent_node),
+                        ];
+                    }
                 }
 
-                if ($left_type->hasMixed()) {
-                    $arg_location = new CodeLocation($statements_analyzer->getSource(), $left);
+                $origin_location = count($origin_locations) === 1 ? reset($origin_locations) : null;
 
-                    $origin_locations = [];
-
-                    if ($statements_analyzer->variable_use_graph) {
-                        foreach ($left_type->parent_nodes as $parent_node) {
-                            $origin_locations = [
-                                ...$origin_locations,
-                                ...$statements_analyzer->variable_use_graph->getOriginLocations($parent_node),
-                            ];
-                        }
-                    }
-
-                    $origin_location = count($origin_locations) === 1 ? reset($origin_locations) : null;
-
-                    if ($origin_location && $origin_location->getHash() === $arg_location->getHash()) {
-                        $origin_location = null;
-                    }
-
-                    IssueBuffer::maybeAdd(
-                        new MixedOperand(
-                            'Left operand cannot be mixed',
-                            $arg_location,
-                            $origin_location,
-                        ),
-                        $statements_analyzer->getSuppressedIssues(),
-                    );
-                } else {
-                    $arg_location = new CodeLocation($statements_analyzer->getSource(), $right);
-                    $origin_locations = [];
-
-                    if ($statements_analyzer->variable_use_graph) {
-                        foreach ($right_type->parent_nodes as $parent_node) {
-                            $origin_locations = [
-                                ...$origin_locations,
-                                ...$statements_analyzer->variable_use_graph->getOriginLocations($parent_node),
-                            ];
-                        }
-                    }
-
-                    $origin_location = count($origin_locations) === 1 ? reset($origin_locations) : null;
-
-                    if ($origin_location && $origin_location->getHash() === $arg_location->getHash()) {
-                        $origin_location = null;
-                    }
-
-                    IssueBuffer::maybeAdd(
-                        new MixedOperand(
-                            'Right operand cannot be mixed',
-                            $arg_location,
-                            $origin_location,
-                        ),
-                        $statements_analyzer->getSuppressedIssues(),
-                    );
+                if ($origin_location && $origin_location->getHash() === $arg_location->getHash()) {
+                    $origin_location = null;
                 }
+
+                IssueBuffer::maybeAdd(
+                    new MixedOperand(
+                        $side . ' operand cannot be mixed',
+                        $arg_location,
+                        $origin_location,
+                    ),
+                    $statements_analyzer->getSuppressedIssues(),
+                );
 
                 $result_type = self::getResultTypeFromKnownOperand($left_type->hasMixed() ? $right_type : $left_type)
                     ?? $result_type;
@@ -329,14 +353,7 @@ final class ConcatAnalyzer
                 return;
             }
 
-            if (!$context->collect_initializations
-                && $statements_analyzer->getFilePath() === $statements_analyzer->getRootFilePath()
-                && (!(($parent_source = $statements_analyzer->getSource())
-                        instanceof FunctionLikeAnalyzer)
-                    || !$parent_source->getSource() instanceof TraitAnalyzer)
-            ) {
-                $codebase->analyzer->incrementNonMixedCount($statements_analyzer->getFilePath());
-            }
+            $statements_analyzer->countMixed($context, false);
 
             self::analyzeOperand($statements_analyzer, $left, $left_type, 'Left', $context);
             self::analyzeOperand($statements_analyzer, $right, $right_type, 'Right', $context);

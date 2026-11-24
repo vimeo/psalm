@@ -34,7 +34,7 @@ of the flow:
   itself. Unless the function is specialized, they are shared by all its calls, so what one caller passes in comes out
   at every other caller.
 + *Specialized* nodes (`wrap#1 specialized in …`) belong to one call only. For a function that is
-  [specialized](avoiding_false_positives.md#specializing-taints-in-functions), or that Psalm infers to be pure, the
+  [specialized](index.md#specializing-functions), or that Psalm infers to be pure, the
   taints go from the arguments of a call to its result without leaving that call, which is why the flow above ends in
   `$x` and not in the other callers of `wrap()`.
 
@@ -117,12 +117,13 @@ stubs and vendor code. With `@psalm-taint-specialize`, each call returns what it
 any object the method is called on holds flows into what every call returns.
 
 The methods of the builtin containers and iterators (`ArrayObject`, `ArrayIterator`, `SplObjectStorage`, …) and of
-`Generator` return what their object holds without annotations: `getArrayCopy()` all of it, `offsetGet('key')` what
-is stored under `'key'`, `current()` an element, `key()` a key, and `Generator::getReturn()` what the generator
-returns. Plugins that follow calls themselves (such as the method calls of a template) get the path along which a
-method returns what its object holds with `Codebase::getReceiverTaintPath()`: `=`, `arrayvalue-fetch`,
-`arrayvalue-fetch-'key'` given the types of the arguments of a call with a literal key, `arraykey-fetch` or `return`,
-or null for a method returning none of it.
+`Generator` return what their object holds without annotations: `getArrayCopy()` all of it, `offsetGet('key')` what is
+stored under `'key'`, `current()` an element, `key()` a key, and `Generator::getReturn()` what the generator returns. A
+`foreach` over an `IteratorAggregate` gives the keys and values of the iterator its `getIterator()` returns, as a call
+of `getIterator()` would (with its sources and flows). Plugins that follow calls themselves (such as the method calls of
+a template) get the path along which a method returns what its object holds with `Codebase::getReceiverTaintPath()`:
+`=`, `arrayvalue-fetch`, `arrayvalue-fetch-'key'` given the types of the arguments of a call with a literal key,
+`arraykey-fetch` or `return`, or null for a method returning none of it.
 
 ### Callable result to return value hint
 
@@ -382,7 +383,7 @@ function show(Model $model): void {
   `foreach ($values as $name => $value) { $model->set($name, $value); }`, sets each property to what is under its
   name in `$values`, as `($values) -> $this->{key}` does, when `$name` and `$value` are still the key and the value of
   the loop.
-+ For a class with [`@psalm-taint-specialize`](avoiding_false_positives.md#specializing-taints-in-classes), properties
++ For a class with [`@psalm-taint-specialize`](index.md#specializing-classes), properties
   are tracked per object.
 
 ### Properties held in an array property
@@ -399,7 +400,9 @@ abstract class Model
     /** @var array<string, mixed> */
     protected array $properties = [];
 
-    abstract public function __get(string $name): mixed;
+    public function __get(string $name): mixed {
+        return $this->properties[$name] ?? null;
+    }
 }
 
 /**

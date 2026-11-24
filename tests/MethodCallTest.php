@@ -381,6 +381,38 @@ final class MethodCallTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'argumentsOfACallANullsafeOperatorShortCircuits' => [
+                'code' => '<?php
+                    final class Entry {
+                        public DateTime $date;
+                        public string $format = "Y";
+
+                        public function __construct() {
+                            $this->date = new DateTime();
+                        }
+
+                        public function self(): self {
+                            return $this;
+                        }
+                    }
+
+                    function age(?Entry $entry): ?DateInterval {
+                        return $entry?->date->diff($entry->date);
+                    }
+
+                    function formatted(?Entry $entry): ?string {
+                        return $entry?->self()->date->diff($entry->date)->format($entry->format);
+                    }
+
+                    function checked(?Entry $entry): void {
+                        if ($entry?->self()->date->format($entry->format) !== null) {
+                            /** @psalm-check-type-exact $entry = Entry */;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'memoizedResultForgottenWhenAPropertyOfTheObjectIsWritten' => [
                 'code' => '<?php
                     final class Tokens {
@@ -2287,7 +2319,7 @@ final class MethodCallTest extends TestCase
                     $db = new PDO("sqlite:sqlitedb");
                     $db->sqliteCreateFunction("md5rev", "md5_and_reverse", 1);',
                 'assertions' => [],
-                'ignored_issues' => ['WeakHash'],
+                'ignored_issues' => ['WeakHash', 'DeprecatedMethod'],
             ],
             'dontConvertedMaybeMixedAfterCall' => [
                 'code' => '<?php
@@ -2978,6 +3010,8 @@ final class MethodCallTest extends TestCase
                         $s->attach($o, null);
                         $s->attach($o);
                     }',
+                'assertions' => [],
+                'ignored_issues' => ['DeprecatedMethod'],
             ],
             'splObjectStorageDataParamsAreNamedInfo' => [
                 'code' => '<?php
@@ -2988,7 +3022,7 @@ final class MethodCallTest extends TestCase
                         $s->setInfo(info: "c");
                     }',
                 'assertions' => [],
-                'ignored_issues' => [],
+                'ignored_issues' => ['DeprecatedMethod'],
                 'php_version' => '8.0',
             ],
             'splObjectStorageOverrideKeepsInfoParamName' => [
@@ -3447,7 +3481,7 @@ final class MethodCallTest extends TestCase
                         $pdo->sqliteCreateFunction("double", static fn(int $i): int => $i * 2, 1, 2048);
                     }',
                 'assertions' => [],
-                'ignored_issues' => [],
+                'ignored_issues' => ['DeprecatedMethod'],
                 'php_version' => '7.4',
             ],
             'overrideOfAStubMethodWithATemplateKeepsItsParameterType' => [
@@ -3546,6 +3580,28 @@ final class MethodCallTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'argumentOfAShortCircuitedCallWithAnotherNullableVariable' => [
+                'code' => '<?php
+                    final class Entry {
+                        public DateTime $date;
+                        public string $format = "Y";
+
+                        public function __construct() {
+                            $this->date = new DateTime();
+                        }
+
+                        public function self(): self {
+                            return $this;
+                        }
+                    }
+
+                    function age(?Entry $entry, ?Entry $other): ?DateInterval {
+                        return $entry?->date->diff($other->date);
+                    }',
+                'error_message' => 'PossiblyNullPropertyFetch',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
             'memoizedGetterForgottenInANestedBranchIsNotNarrowedAfterIt' => [
                 'code' => '<?php
                     final class A {

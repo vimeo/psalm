@@ -49,8 +49,10 @@ use Psalm\Internal\Analyzer\Statements\Expression\UnaryPlusMinusAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\YieldAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\YieldFromAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Codebase\PhpDeprecations;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Internal\Type\TemplateResult;
+use Psalm\Issue\DeprecatedSyntax;
 use Psalm\Issue\RiskyTruthyFalsyComparison;
 use Psalm\Issue\UnrecognizedExpression;
 use Psalm\Issue\UnsupportedReferenceUsage;
@@ -283,6 +285,14 @@ final class ExpressionAnalyzer
             return AssignmentAnalyzer::analyzeAssignmentOperation($statements_analyzer, $stmt, $context);
         }
 
+        if (($stmt instanceof PhpParser\Node\Expr\MethodCall || $stmt instanceof PhpParser\Node\Expr\NullsafeMethodCall)
+            && $statements_analyzer->getCodebase()->analysis_php_version_id >= 8_00_00
+            && ($short_circuited = NullsafeAnalyzer::analyzeShortCircuitedCall($statements_analyzer, $stmt, $context))
+                !== null
+        ) {
+            return $short_circuited;
+        }
+
         if ($stmt instanceof PhpParser\Node\Expr\MethodCall) {
             return MethodCallAnalyzer::analyze($statements_analyzer, $stmt, $context, true, $template_result);
         }
@@ -496,6 +506,14 @@ final class ExpressionAnalyzer
         }
 
         if ($stmt instanceof PhpParser\Node\Expr\ShellExec) {
+            IssueBuffer::maybeAdd(
+                new DeprecatedSyntax(
+                    PhpDeprecations::getDeprecatedSinceMessage('The backtick operator', 8_05_00, 'shell_exec()'),
+                    new CodeLocation($statements_analyzer, $stmt),
+                ),
+                $statements_analyzer->getSuppressedIssues(),
+            );
+
             $concat = new VirtualInterpolatedString($stmt->parts, $stmt->getAttributes());
             $virtual_call = new VirtualFuncCall(new VirtualName(['shell_exec']), [
                 new VirtualArg($concat),
@@ -596,6 +614,17 @@ final class ExpressionAnalyzer
             return [];
         }
 
+        return self::addSuppressions($statements_analyzer, $suppressed);
+    }
+
+    /**
+     * Suppresses the issues of `@psalm-suppress` tags, and tracks them to report the ones that end up unused
+     *
+     * @param array<int, string> $suppressed the tags, by offset
+     * @return array<int, string>
+     */
+    public static function addSuppressions(StatementsAnalyzer $statements_analyzer, array $suppressed): array
+    {
         $codebase = $statements_analyzer->getCodebase();
         $new_issues = [];
 
@@ -607,7 +636,7 @@ final class ExpressionAnalyzer
 
         if ($codebase->track_unused_suppressions
             && (
-                count($new_issues) === 1
+                count($new_issues) === 1 // UnusedPsalmSuppress by itself should be marked as unused
                 || !$codebase->config->suppressesIssueType($new_issues, 'UnusedPsalmSuppress')
             )
         ) {

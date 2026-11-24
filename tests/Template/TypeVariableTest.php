@@ -96,6 +96,116 @@ final class TypeVariableTest extends TestCase
     /**
      * @param list<string> $expected_issues
      */
+    #[DataProvider('providerCallbacksOfAWidenedVariable')]
+    public function testCallbacksOfAWidenedVariableAreReportedOnce(string $code, array $expected_issues): void
+    {
+        $this->testConfig->throw_exception = false;
+        $this->project_analyzer->setPhpVersion('8.1', 'tests');
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile($file_path, $code);
+        $this->analyzeFile($file_path, new Context());
+
+        $this->assertSame(
+            $expected_issues,
+            array_map(
+                static fn(IssueData $issue): string => $issue->type . ' ' . $issue->line_from . ':'
+                    . $issue->column_from . ': ' . $issue->message,
+                IssueBuffer::getIssuesDataForFile($file_path),
+            ),
+        );
+    }
+
+    /**
+     * A callback over a type variable that gained values after its construction
+     * is checked against all of them, and a conflict is reported once.
+     *
+     * @return iterable<string, array{code: string, expected_issues: list<string>}>
+     * @psalm-pure
+     */
+    public static function providerCallbacksOfAWidenedVariable(): iterable
+    {
+        $coll = '<?php
+            final class A {}
+            final class B {}
+            final class C {}
+
+            /** @template T */
+            final class Coll {
+                /** @param list<T> $items */
+                public function __construct(private array $items) {}
+
+                /** @param T $item */
+                public function add($item): void { $this->items[] = $item; }
+
+                /** @param callable(T): void $f */
+                public function each(callable $f): void {}
+            }
+            ';
+
+        yield 'objectCallbackTooNarrow' => [
+            'code' => $coll . '
+                function f(): void {
+                    $c = new Coll([new A()]);
+                    $c->add(new B());
+                    $c->each(function (A $a): void {});
+                }',
+            'expected_issues' => [
+                'IncompatibleTypeParameters 21:25: Type B should be a subtype of A',
+            ],
+        ];
+
+        yield 'objectArrowCallbackTooNarrow' => [
+            'code' => $coll . '
+                function f(): void {
+                    $c = new Coll([new A()]);
+                    $c->add(new B());
+                    $c->each(fn(A $a) => null);
+                }',
+            'expected_issues' => [
+                'IncompatibleTypeParameters 21:25: Type B should be a subtype of A',
+            ],
+        ];
+
+        yield 'scalarCallbackTooNarrow' => [
+            'code' => $coll . '
+                function f(): void {
+                    $c = new Coll([1]);
+                    $c->add("x");
+                    $c->each(function (int $i): void {});
+                }',
+            'expected_issues' => [
+                'IncompatibleTypeParameters 21:30: Type \'x\' should be a subtype of int',
+            ],
+        ];
+
+        yield 'callbackTakingNoConstructionSiteValue' => [
+            'code' => $coll . '
+                function f(): void {
+                    $c = new Coll([new A()]);
+                    $c->add(new B());
+                    $c->each(function (C $x): void {});
+                }',
+            'expected_issues' => [
+                'InvalidArgument 21:30: Argument 1 of Coll::each expects callable[impure](A):void, '
+                    . 'but Closure[pure](C):void provided',
+            ],
+        ];
+
+        yield 'callbackTakingEveryValue' => [
+            'code' => $coll . '
+                function f(): void {
+                    $c = new Coll([new A()]);
+                    $c->add(new B());
+                    $c->each(function (object $x): void {});
+                }',
+            'expected_issues' => [],
+        ];
+    }
+
+    /**
+     * @param list<string> $expected_issues
+     */
     #[DataProvider('providerBoundsOfReanalysedCode')]
     public function testBoundsOfReanalysedCodeAreReconciledOnce(string $code, array $expected_issues): void
     {
@@ -333,6 +443,90 @@ final class TypeVariableTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'magicPropertyOfObjectsBuiltEmptyOnEachBranch' => [
+                'code' => '<?php
+                    /**
+                     * @template K as string
+                     * @template V
+                     */
+                    final class Bag {
+                        /** @var array<K, V> */
+                        private array $properties;
+
+                        /**
+                         * @param array<K, V> $properties
+                         * @psalm-mutation-free
+                         */
+                        public function __construct(array $properties) {
+                            $this->properties = $properties;
+                        }
+
+                        /**
+                         * @param K $name
+                         * @return V
+                         * @psalm-mutation-free
+                         */
+                        public function __get(string $name): mixed {
+                            return $this->properties[$name];
+                        }
+
+                        /**
+                         * @param K $name
+                         * @param V $value
+                         * @psalm-external-mutation-free
+                         */
+                        public function __set(string $name, mixed $value): void {
+                            $this->properties[$name] = $value;
+                        }
+                    }
+
+                    /**
+                     * @param list<string> $keys
+                     * @return array<string, Bag>
+                     */
+                    function count_keys(array $keys, bool $fresh): array {
+                        $bags = [];
+                        foreach ($keys as $key) {
+                            if ($fresh || !isset($bags[$key])) {
+                                $bag = new Bag([]);
+                                $bag->count = 0;
+                                $bags[$key] = $bag;
+                            } else {
+                                $bag = $bags[$key];
+                            }
+                            $bag->count = 1;
+                        }
+                        return $bags;
+                    }',
+                // __set() doesn't bind the variables of an object built empty
+                'assertions' => [],
+                'ignored_issues' => ['UndefinedMagicPropertyAssignment'],
+                'php_version' => '8.0',
+            ],
+            'paramOfATemplateOrNullTakesAValueForAnObjectBuiltEmpty' => [
+                'code' => '<?php
+                    /**
+                     * @template K of array-key
+                     * @template V
+                     */
+                    final class Bag {
+                        /** @param array<K, V> $items */
+                        public function __construct(private array $items = []) {}
+
+                        /**
+                         * @param K|null $key
+                         * @param V $value
+                         */
+                        public function set(int|string|null $key, mixed $value): void {}
+                    }
+
+                    $bag = new Bag();
+                    $bag->set("x", 1);
+                    $bag->set(null, 2);',
+                'assertions' => [],
+                'ignored_issues' => ['UnusedProperty'],
+                'php_version' => '8.0',
+            ],
             'possiblyEmptyArray' => [
                 'code' => '<?php
                     /**
@@ -1368,6 +1562,41 @@ final class TypeVariableTest extends TestCase
                         return $n;
                     }',
             ],
+            'constructionOfACovariantTemplateNothingCanConstrain' => [
+                'code' => '<?php
+                    /** @template-covariant T */
+                    final class Coll {
+                        public function __construct() {}
+
+                        /** @return list<T> */
+                        public function all(): array {
+                            return [];
+                        }
+                    }
+
+                    /** @template-covariant T */
+                    final class ConstructorlessColl {
+                        /** @return list<T> */
+                        public function all(): array {
+                            return [];
+                        }
+                    }
+
+                    /** @return Coll<int> */
+                    function ints(): Coll {
+                        return new Coll();
+                    }
+
+                    /** @return ConstructorlessColl<string> */
+                    function strings(): ConstructorlessColl {
+                        return new ConstructorlessColl();
+                    }
+
+                    $c = new Coll();',
+                'assertions' => [
+                    '$c===' => 'Coll<never>',
+                ],
+            ],
             'constructorlessConstructionOfUnconstrainableTemplate' => [
                 'code' => '<?php
                     /** @template T = int */
@@ -2046,6 +2275,138 @@ final class TypeVariableTest extends TestCase
                         }
                     }',
             ],
+            'arrayReduceOverListOfWidenedVariable' => [
+                // the callback receives every value added after the construction,
+                // not only what the constructor arguments implied
+                'code' => '<?php
+                    /** @template T */
+                    final class Coll {
+                        /** @param list<T> $items */
+                        public function __construct(private array $items) {}
+
+                        /** @param T $item */
+                        public function add($item): void { $this->items[] = $item; }
+
+                        /** @return list<T> */
+                        public function all(): array { return $this->items; }
+
+                        /**
+                         * @template R
+                         * @param callable(T): R $f
+                         * @return list<R>
+                         */
+                        public function map(callable $f): array { return array_map($f, $this->items); }
+
+                        /** @param callable(T): void $f */
+                        public function each(callable $f): void { foreach ($this->items as $i) { $f($i); } }
+                    }
+
+                    $c = new Coll([1]);
+                    $c->add("x");
+                    $last = array_reduce($c->all(), fn($carry, $i) => $i, null);
+                    $mapped = array_map(fn($i) => $i, $c->all());',
+                'assertions' => [
+                    '$last===' => "'x'|1|null",
+                    '$mapped===' => "list<'x'|1>",
+                ],
+            ],
+            'untypedMethodCallbackOfWidenedVariable' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class Coll {
+                        /** @param list<T> $items */
+                        public function __construct(private array $items) {}
+
+                        /** @param T $item */
+                        public function add($item): void { $this->items[] = $item; }
+
+                        /** @return list<T> */
+                        public function all(): array { return $this->items; }
+
+                        /**
+                         * @template R
+                         * @param callable(T): R $f
+                         * @return list<R>
+                         */
+                        public function map(callable $f): array { return array_map($f, $this->items); }
+
+                        /** @param callable(T): void $f */
+                        public function each(callable $f): void { foreach ($this->items as $i) { $f($i); } }
+                    }
+
+                    $c = new Coll([1]);
+                    $c->add("x");
+                    $mapped = $c->map(fn($i) => $i);
+                    $c->each(function ($i): void {});',
+                'assertions' => [
+                    '$mapped===' => "list<'x'|1>",
+                ],
+            ],
+            'typedCallbackAcceptingEveryValueOfWidenedVariable' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class Coll {
+                        /** @param list<T> $items */
+                        public function __construct(private array $items) {}
+
+                        /** @param T $item */
+                        public function add($item): void { $this->items[] = $item; }
+
+                        /** @return list<T> */
+                        public function all(): array { return $this->items; }
+
+                        /**
+                         * @template R
+                         * @param callable(T): R $f
+                         * @return list<R>
+                         */
+                        public function map(callable $f): array { return array_map($f, $this->items); }
+
+                        /** @param callable(T): void $f */
+                        public function each(callable $f): void { foreach ($this->items as $i) { $f($i); } }
+                    }
+
+                    $c = new Coll([1]);
+                    $c->add("x");
+                    $joined = array_reduce($c->all(), fn(string $carry, int|string $i): string => $carry . $i, "");
+                    $c->each(function (int|string $i): void {});',
+                'assertions' => [
+                    '$joined===' => 'string',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'callbackOfVariableWidenedWithTheSameType' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class Coll {
+                        /** @param list<T> $items */
+                        public function __construct(private array $items) {}
+
+                        /** @param T $item */
+                        public function add($item): void { $this->items[] = $item; }
+
+                        /** @return list<T> */
+                        public function all(): array { return $this->items; }
+
+                        /**
+                         * @template R
+                         * @param callable(T): R $f
+                         * @return list<R>
+                         */
+                        public function map(callable $f): array { return array_map($f, $this->items); }
+
+                        /** @param callable(T): void $f */
+                        public function each(callable $f): void { foreach ($this->items as $i) { $f($i); } }
+                    }
+
+                    $c = new Coll([1]);
+                    $c->add(2);
+                    $last = array_reduce($c->all(), fn($carry, $i) => $i, null);',
+                'assertions' => [
+                    '$last===' => '1|2|null',
+                ],
+            ],
         ];
     }
 
@@ -2056,6 +2417,22 @@ final class TypeVariableTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'constructionOfAnInvariantTemplateNothingCanConstrain' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class Coll {
+                        /** @return list<T> */
+                        public function all(): array {
+                            return [];
+                        }
+                    }
+
+                    /** @return Coll<int> */
+                    function ints(): Coll {
+                        return new Coll();
+                    }',
+                'error_message' => 'MixedReturnTypeCoercion',
+            ],
             'mixedConstructionCallableParamRequirement' => [
                 // a value that entered the variable as mixed is then required to
                 // be a Foo by the callable's parameter: reported at the call, as
@@ -2404,6 +2781,71 @@ final class TypeVariableTest extends TestCase
                     }',
                 'error_message' => 'PropertyTypeCoercion - src' . DIRECTORY_SEPARATOR
                     . 'somefile.php:20:40 - Type Base should be a subtype of Child',
+            ],
+            'callbackTooNarrowForValueAddedAfterConstruction' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class Coll {
+                        /** @param list<T> $items */
+                        public function __construct(private array $items) {}
+
+                        /** @param T $item */
+                        public function add($item): void { $this->items[] = $item; }
+
+                        /** @return list<T> */
+                        public function all(): array { return $this->items; }
+
+                        /**
+                         * @template R
+                         * @param callable(T): R $f
+                         * @return list<R>
+                         */
+                        public function map(callable $f): array { return array_map($f, $this->items); }
+
+                        /** @param callable(T): void $f */
+                        public function each(callable $f): void { foreach ($this->items as $i) { $f($i); } }
+                    }
+
+                    $c = new Coll([1]);
+                    $c->add("x");
+                    $c->each(function (int $i): void {});',
+                'error_message' => 'IncompatibleTypeParameters - src' . DIRECTORY_SEPARATOR
+                    . 'somefile.php:26:30 - Type \'x\' should be a subtype of int',
+            ],
+            'untypedCallbackSeesObjectAddedAfterConstruction' => [
+                'code' => '<?php
+                    final class A {
+                        public function onlyA(): int { return 1; }
+                    }
+                    final class B {}
+
+                    /** @template T */
+                    final class Coll {
+                        /** @param list<T> $items */
+                        public function __construct(private array $items) {}
+
+                        /** @param T $item */
+                        public function add($item): void { $this->items[] = $item; }
+
+                        /** @return list<T> */
+                        public function all(): array { return $this->items; }
+
+                        /**
+                         * @template R
+                         * @param callable(T): R $f
+                         * @return list<R>
+                         */
+                        public function map(callable $f): array { return array_map($f, $this->items); }
+
+                        /** @param callable(T): void $f */
+                        public function each(callable $f): void { foreach ($this->items as $i) { $f($i); } }
+                    }
+
+                    $c = new Coll([new A()]);
+                    $c->add(new B());
+                    $c->each(function ($x): void { $x->onlyA(); });',
+                'error_message' => 'PossiblyUndefinedMethod - src' . DIRECTORY_SEPARATOR
+                    . 'somefile.php:31:56 - Method B::onlyA does not exist',
             ],
             'readSitesSeeValuesAddedAfterConstruction' => [
                 // a value added after the construction is one the read may

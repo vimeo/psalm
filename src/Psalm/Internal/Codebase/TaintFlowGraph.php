@@ -13,6 +13,7 @@ use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\DataFlow\NodeTable;
 use Psalm\Internal\DataFlow\Path;
+use Psalm\Internal\Perf;
 use Psalm\Issue\TaintedCallable;
 use Psalm\Issue\TaintedCookie;
 use Psalm\Issue\TaintedCustom;
@@ -21,6 +22,7 @@ use Psalm\Issue\TaintedExtract;
 use Psalm\Issue\TaintedFile;
 use Psalm\Issue\TaintedHeader;
 use Psalm\Issue\TaintedHtml;
+use Psalm\Issue\TaintedHtmlAttribute;
 use Psalm\Issue\TaintedInclude;
 use Psalm\Issue\TaintedLdap;
 use Psalm\Issue\TaintedLlmPrompt;
@@ -35,6 +37,7 @@ use Psalm\Issue\TaintedTextWithQuotes;
 use Psalm\Issue\TaintedUnserialize;
 use Psalm\Issue\TaintedUrlComponent;
 use Psalm\Issue\TaintedUrlPath;
+use Psalm\Issue\TaintedUrlScheme;
 use Psalm\Issue\TaintedUserSecret;
 use Psalm\Issue\TaintedXpath;
 use Psalm\IssueBuffer;
@@ -1206,6 +1209,7 @@ final class TaintFlowGraph extends DataFlowGraph
     public function connectSinksAndSources(Progress $progress): void
     {
         $progress->startPhase(Phase::TAINT_GRAPH_RESOLUTION);
+        Perf\Collector::step('taint.prepare');
 
         // the graph is dumped in the same order whichever order the analysis of the files added it in
         ksort($this->forward_edges);
@@ -1233,6 +1237,14 @@ final class TaintFlowGraph extends DataFlowGraph
                 unset($this->specializations[$k]);
             }
         } unset($map);
+
+        Perf\Collector::step('taint.resolve');
+        Perf\Collector::taint(
+            count($this->nodes),
+            count($this->sources),
+            count($this->sinks),
+            count($this->specializations),
+        );
 
         $resolution = new TaintFlowResolution(
             $this,
@@ -1570,6 +1582,12 @@ final class TaintFlowGraph extends DataFlowGraph
                     $issue_trace,
                     $path,
                 ),
+                TaintKind::INPUT_SQL_UNQUOTED => new TaintedSql(
+                    'Detected tainted SQL outside of quotes',
+                    $issue_location,
+                    $issue_trace,
+                    $path,
+                ),
                 TaintKind::INPUT_NOSQL => new TaintedNosql(
                     'Detected tainted NoSQL query',
                     $issue_location,
@@ -1584,6 +1602,18 @@ final class TaintFlowGraph extends DataFlowGraph
                 ),
                 TaintKind::INPUT_HAS_QUOTES => new TaintedTextWithQuotes(
                     'Detected tainted text with possible quotes',
+                    $issue_location,
+                    $issue_trace,
+                    $path,
+                ),
+                TaintKind::INPUT_HTML_ATTRIBUTE => new TaintedHtmlAttribute(
+                    'Detected tainted unquoted attribute value',
+                    $issue_location,
+                    $issue_trace,
+                    $path,
+                ),
+                TaintKind::INPUT_URL_SCHEME => new TaintedUrlScheme(
+                    'Detected tainted URL scheme',
                     $issue_location,
                     $issue_trace,
                     $path,
