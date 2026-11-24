@@ -1469,7 +1469,7 @@ final class ForeachAnalyzer
 
                 $has_valid_iterator = true;
             } elseif ($iterator_atomic_type instanceof Scalar || $iterator_atomic_type instanceof TVoid) {
-                $invalid_iterator_types[] = $iterator_atomic_type->getKey();
+                $invalid_iterator_types[] = $iterator_atomic_type->getId(false);
 
                 // what the other types of the iterated value hold is still iterated
                 $value_type = Type::getMixed()->setParentNodes($value_type?->parent_nodes ?? []);
@@ -1673,12 +1673,15 @@ final class ForeachAnalyzer
         }
 
         if ($invalid_iterator_types) {
+            $message = (stripos($invalid_iterator_types[0], 'generator<') === 0
+                    ? 'Cannot iterate over generator with non-null send() type '
+                    : 'Cannot iterate over ')
+                . $invalid_iterator_types[0];
+
             if ($has_valid_iterator) {
                 IssueBuffer::maybeAdd(
                     new PossiblyInvalidIterator(
-                        stripos($invalid_iterator_types[0], 'generator<') === 0
-                            ? 'Cannot iterate over generator with non-null send() type ' . $invalid_iterator_types[0]
-                            : 'Cannot iterate over ' . $invalid_iterator_types[0],
+                        $message,
                         new CodeLocation($statements_analyzer->getSource(), $expr),
                     ),
                     $statements_analyzer->getSuppressedIssues(),
@@ -1686,9 +1689,7 @@ final class ForeachAnalyzer
             } else {
                 IssueBuffer::maybeAdd(
                     new InvalidIterator(
-                        stripos($invalid_iterator_types[0], 'generator<') === 0
-                            ? 'Cannot iterate over generator with non-null send() type ' . $invalid_iterator_types[0]
-                            : 'Cannot iterate over ' . $invalid_iterator_types[0],
+                        $message,
                         new CodeLocation($statements_analyzer->getSource(), $expr),
                     ),
                     $statements_analyzer->getSuppressedIssues(),
@@ -1872,7 +1873,7 @@ final class ForeachAnalyzer
                         && !$type_params[2]->isVoid()
                         && !$type_params[2]->isMixed()
                     ) {
-                        $invalid_iterator_types[] = $iterator_atomic_type->getKey();
+                        $invalid_iterator_types[] = $iterator_atomic_type->getId();
                     } else {
                         $has_valid_iterator = true;
                     }

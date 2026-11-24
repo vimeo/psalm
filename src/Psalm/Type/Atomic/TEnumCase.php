@@ -26,7 +26,7 @@ final class TEnumCase extends TNamedObject
     }
 
     #[Override]
-    public function getId(bool $exact = true, bool $nested = false): string
+    public function getId(bool $exact = true): string
     {
         return 'enum(' . $this->value . '::' . $this->case_name . ')';
     }

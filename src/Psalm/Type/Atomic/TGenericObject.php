@@ -90,6 +90,13 @@ final class TGenericObject extends TNamedObject
         return PurityArguments::split($this->type_params);
     }
 
+    #[Override]
+    public function getId(bool $exact = true): string
+    {
+        return $this->value . $this->getTypeParamsId($exact) . $this->getIntersectionTypesId($exact)
+            . ($this->is_static ? '&static' : '');
+    }
+
     /**
      * @internal
      * @psalm-mutation-free
