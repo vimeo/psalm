@@ -9,6 +9,7 @@ use Psalm\CodeLocation;
 use Psalm\Codebase;
 use Psalm\Internal\Codebase\ClassConstantByWildcardResolver;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
+use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\Comparator\CallableTypeComparator;
 use Psalm\Storage\Assertion;
 use Psalm\Storage\Assertion\Any;
@@ -124,6 +125,18 @@ final class SimpleAssertionReconciler extends Reconciler
         int &$failed_reconciliation = Reconciler::RECONCILIATION_OK,
         bool $inside_loop = false,
     ): ?Union {
+        if ($assertion instanceof IsLooselyEqual
+            && ($loose_type = self::reconcileLooseEqualityKeptParts(
+                $assertion,
+                $codebase,
+                $existing_var_type,
+                $negated,
+                $inside_loop,
+            )) !== false
+        ) {
+            return $loose_type;
+        }
+
         $reconciled_type = self::reconcileAssertion(
             $assertion,
             $codebase,
@@ -1249,7 +1262,9 @@ final class SimpleAssertionReconciler extends Reconciler
         return self::finishReconciliation(
             $int_types ? new Union($int_types) : null,
             $redundant,
-            $assertion instanceof IsType,
+            // strings that are never numeric can't be loosely equal to an int
+            $assertion instanceof IsType
+                || ($assertion instanceof IsLooselyEqual && !$int_types && $existing_var_type->isString()),
             false,
             $existing_var_type,
             $old_var_type_string,
@@ -3035,6 +3050,70 @@ final class SimpleAssertionReconciler extends Reconciler
         }
 
         return false;
+    }
+
+    /**
+     * A loose comparison keeps the bools, as every value is loosely equal to true or to false, and against a string the
+     * objects that convert to one, whatever the reconciliation of the other parts gives.
+     * Returns false when there are no such parts, and null when the other parts are left to AssertionReconciler.
+     */
+    private static function reconcileLooseEqualityKeptParts(
+        IsLooselyEqual $assertion,
+        Codebase $codebase,
+        Union $existing_var_type,
+        bool $negated,
+        bool $inside_loop,
+    ): Union|false|null {
+        $assertion_type = $assertion->getAtomicType();
+
+        if ($assertion_type instanceof TBool) {
+            return false;
+        }
+
+        $kept_types = [];
+        $other_types = [];
+
+        foreach ($existing_var_type->getAtomicTypes() as $atomic_type) {
+            if ($atomic_type instanceof TBool
+                || ($atomic_type instanceof TNamedObject
+                    && $assertion_type instanceof TString
+                    && $codebase->classOrInterfaceExists($atomic_type->value)
+                    && $codebase->methodExists(new MethodIdentifier($atomic_type->value, '__tostring')))
+            ) {
+                $kept_types[] = $atomic_type;
+            } else {
+                $other_types[] = $atomic_type;
+            }
+        }
+
+        if (!$kept_types) {
+            return false;
+        }
+
+        if (!$other_types) {
+            return $existing_var_type;
+        }
+
+        $other_failed_reconciliation = Reconciler::RECONCILIATION_OK;
+        $other_type = self::reconcile(
+            $assertion,
+            $codebase,
+            new Union($other_types),
+            null,
+            $negated,
+            null,
+            [],
+            $other_failed_reconciliation,
+            $inside_loop,
+        );
+
+        if ($other_type === null) {
+            return null;
+        }
+
+        return new Union($other_type->isNever()
+            ? $kept_types
+            : [...$kept_types, ...array_values($other_type->getAtomicTypes())]);
     }
 
     /**

@@ -202,7 +202,7 @@ final class ReconcilerTest extends TestCase
             'nullIsNotLooselyEqualToANonEmptyString' => ['int', new IsLooselyEqual(new TNonEmptyString()), 'int|null'],
             'nullIsNotLooselyEqualToANonEmptyLiteralString' => ['int', new IsLooselyEqual(new TNonEmptyNonspecificLiteralString()), 'int|null'],
             'nullIsLooselyEqualToAnEmptyLowercaseString' => ['int|null', new IsLooselyEqual(new TLowercaseString()), 'int|null'],
-            'intIsNotLooselyEqualToAClassString' => ['class-string', new IsLooselyEqual(new TClassString()), 'int|null'],
+            'intIsNotLooselyEqualToAClassString' => ['never', new IsLooselyEqual(new TClassString()), 'int|null'],
             'stringLooselyEqualToANonEmptyStringIsNarrowed' => ['int|non-empty-string', new IsLooselyEqual(new TNonEmptyString()), 'int|string'],
             'floatLooselyEqualToAPositiveIntStaysFloat' => ['float', new IsLooselyEqual(new TIntRange(1, null)), 'float'],
             'stringLooselyEqualToAPositiveIntIsNumeric' => ['numeric-string', new IsLooselyEqual(new TIntRange(1, null)), 'string'],

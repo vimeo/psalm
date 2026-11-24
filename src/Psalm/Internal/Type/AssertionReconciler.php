@@ -243,30 +243,12 @@ final class AssertionReconciler extends Reconciler
         }
 
         if (($assertion instanceof IsLooselyEqual || $assertion instanceof IsNotLooselyEqual)
-            && $assertion->type instanceof TNull
+            && ($assertion->type instanceof TNull
+                || $assertion->type instanceof TTrue
+                || $assertion->type instanceof TFalse)
         ) {
-            return self::reconcileLooseNullComparison(
+            return self::reconcileLooseNullOrBoolComparison(
                 $assertion,
-                $existing_var_type,
-                $key,
-                $statements_analyzer,
-                $inside_loop,
-                $template_type_map,
-                $code_location,
-                $suppressed_issues,
-                $failed_reconciliation,
-                $negated,
-            );
-        }
-
-        // `$x == true` is `(bool) $x`, `$x == false` is `!$x`
-        if (($assertion instanceof IsLooselyEqual || $assertion instanceof IsNotLooselyEqual)
-            && ($assertion->type instanceof TTrue || $assertion->type instanceof TFalse)
-        ) {
-            return self::reconcile(
-                ($assertion instanceof IsLooselyEqual) === ($assertion->type instanceof TTrue)
-                    ? new Truthy()
-                    : new Falsy(),
                 $existing_var_type,
                 $key,
                 $statements_analyzer,
@@ -368,19 +350,7 @@ final class AssertionReconciler extends Reconciler
             return new Union([$new_type_part]);
         }
 
-        $refined_type = null;
-
-        if ($assertion instanceof IsLooselyEqual) {
-            $refined_type = self::refineLooseEquality(
-                $statements_analyzer,
-                $assertion,
-                $new_type_part,
-                $existing_var_type,
-                $negated,
-            );
-        }
-
-        $refined_type ??= self::refine(
+        $refined_type = self::refineWithJuggling(
             $statements_analyzer,
             $assertion,
             $new_type_part,
@@ -539,13 +509,14 @@ final class AssertionReconciler extends Reconciler
     }
 
     /**
-     * `$x == null` is `!$x`, except that null is compared to a string as '': the falsy '0' is still != null
+     * `$x == true` is `(bool) $x`, `$x == false` and `$x == null` are `!$x`, except that null is compared to a string
+     * as '': the falsy '0' is still != null
      *
      * @param   string[]            $suppressed_issues
      * @param   array<string, array<string, Union>> $template_type_map
      * @param-out Reconciler::RECONCILIATION_* $failed_reconciliation
      */
-    private static function reconcileLooseNullComparison(
+    private static function reconcileLooseNullOrBoolComparison(
         IsLooselyEqual|IsNotLooselyEqual $assertion,
         Union $existing_var_type,
         ?string $key,
@@ -557,6 +528,23 @@ final class AssertionReconciler extends Reconciler
         ?int &$failed_reconciliation,
         bool $negated,
     ): Union {
+        if (!$assertion->type instanceof TNull) {
+            return self::reconcile(
+                ($assertion instanceof IsLooselyEqual) === ($assertion->type instanceof TTrue)
+                    ? new Truthy()
+                    : new Falsy(),
+                $existing_var_type,
+                $key,
+                $statements_analyzer,
+                $inside_loop,
+                $template_type_map,
+                $code_location,
+                $suppressed_issues,
+                $failed_reconciliation,
+                $negated,
+            );
+        }
+
         $codebase = $statements_analyzer->getCodebase();
         $zero = TLiteralString::make('0');
         $zero_types = self::getZeroStringTypes($codebase, $existing_var_type, $zero);
@@ -1017,9 +1005,65 @@ final class AssertionReconciler extends Reconciler
     }
 
     /**
+     * Refines the type, keeping for a loose comparison the parts that PHP juggles into an equal value
+     *
+     * @param   string[]    $suppressed_issues
+     * @param Reconciler::RECONCILIATION_* $failed_reconciliation
+     * @param-out Reconciler::RECONCILIATION_* $failed_reconciliation
+     */
+    private static function refineWithJuggling(
+        StatementsAnalyzer $statements_analyzer,
+        Assertion $assertion,
+        Atomic $new_type_part,
+        Union $existing_var_type,
+        ?string $key,
+        bool $negated,
+        ?CodeLocation $code_location,
+        array $suppressed_issues,
+        int &$failed_reconciliation,
+    ): Union {
+        $juggled_type = $assertion instanceof IsLooselyEqual
+            ? self::refineLooseEquality($statements_analyzer, $assertion, $new_type_part, $existing_var_type, $negated)
+            : null;
+
+        if ($juggled_type === null) {
+            return self::refine(
+                $statements_analyzer,
+                $assertion,
+                $new_type_part,
+                $existing_var_type,
+                $key,
+                $negated,
+                $code_location,
+                $suppressed_issues,
+                $failed_reconciliation,
+            );
+        }
+
+        if ($juggled_type->isNever()) {
+            if ($key && $code_location) {
+                self::triggerIssueForImpossible(
+                    $existing_var_type,
+                    $existing_var_type->getId(),
+                    $key,
+                    $assertion,
+                    false,
+                    $negated,
+                    $code_location,
+                    $suppressed_issues,
+                );
+            }
+
+            $failed_reconciliation = Reconciler::RECONCILIATION_EMPTY;
+        }
+
+        return $juggled_type;
+    }
+
+    /**
      * A loose comparison keeps the parts of the type of another kind that PHP juggles into an equal value (`1.0 == 1`,
      * `"1" == 1.0`, `true == "a"`, `false == []`), and refines the others as usual.
-     * Returns null when no part of the type is juggled, or when none can be equal.
+     * Returns null when no part of the type is juggled, and never when no part can be equal.
      */
     private static function refineLooseEquality(
         StatementsAnalyzer $statements_analyzer,
@@ -1046,7 +1090,10 @@ final class AssertionReconciler extends Reconciler
                     $refined_types[] = $existing_type_part;
                 } else {
                     $juggled = true;
-                    $kept_types[] = $existing_type_part->replaceAs($as);
+
+                    if (!$as->isNever()) {
+                        $kept_types[] = $existing_type_part->replaceAs($as);
+                    }
                 }
 
                 continue;
@@ -1095,7 +1142,7 @@ final class AssertionReconciler extends Reconciler
             }
         }
 
-        return $kept_types ? new Union($kept_types) : null;
+        return $kept_types ? new Union($kept_types) : Type::getNever();
     }
 
     /**

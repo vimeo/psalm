@@ -7776,6 +7776,58 @@ final class ConditionalTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'looseEqualityWithANonScalarKeepsBool' => [
+                'code' => '<?php
+                    function boolVsArray(bool $b, array $a): void {
+                        if ($b == $a) {
+                            /** @psalm-check-type-exact $b = bool */;
+                        }
+                    }
+
+                    function boolVsObject(bool $b, object $o): void {
+                        if ($b == $o) {
+                            /** @psalm-check-type-exact $b = bool */;
+                        }
+                    }
+
+                    function boolVsCallable(bool $b, callable $c): void {
+                        if ($b == $c) {
+                            /** @psalm-check-type-exact $b = bool */;
+                        }
+                    }
+
+                    function boolVsIterable(bool $b, iterable $i): void {
+                        if ($b == $i) {
+                            /** @psalm-check-type-exact $b = bool */;
+                        }
+                    }
+
+                    function boolOrIntVsArray(bool|int $b, array $a): void {
+                        if ($b == $a) {
+                            /** @psalm-check-type-exact $b = bool */;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'looseEqualityWithAStringKeepsStringableObjects' => [
+                'code' => '<?php
+                    function stringableVsString(Stringable $o, string $s): void {
+                        if ($o == $s) {
+                            /** @psalm-check-type-exact $o = Stringable */;
+                        }
+                    }
+
+                    function stringableOrScalarVsString(Stringable|int|array $o, string $s): void {
+                        if ($o == $s) {
+                            /** @psalm-check-type-exact $o = Stringable|int */;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'looseEqualityWithAnObjectKeepsBool' => [
                 'code' => '<?php
                     function boolVsObject(bool $b, stdClass $o): void {
@@ -8304,6 +8356,26 @@ final class ConditionalTest extends TestCase
                         if ($x == $p) {}
                     }',
                 'error_message' => 'DocblockTypeContradiction - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:29',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'looseEqualityOfNonNumericStringsWithAFloatIsImpossible' => [
+                'code' => '<?php
+                    /** @param "a"|"b" $s */
+                    function f(string $s, float $f): void {
+                        if ($s == $f) {}
+                    }',
+                'error_message' => 'DocblockTypeContradiction - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:29',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'looseEqualityOfNonNumericStringsWithAnIntIsImpossible' => [
+                'code' => '<?php
+                    /** @param "a"|"b" $s */
+                    function f(string $s, int $i): void {
+                        if ($s == $i) {}
+                    }',
+                'error_message' => 'DocblockTypeContradiction - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:29',
                 'error_levels' => [],
                 'php_version' => '8.0',
             ],
