@@ -10,6 +10,13 @@ use Psalm\Internal\Stubs\CallMapVersionFilter;
 use Psalm\Tests\TestConfig;
 use Webmozart\Assert\Assert;
 
+use function Psalm\Internal\Stubs\assertEntryParameters;
+use function Psalm\Internal\Stubs\normalizeCallMap;
+use function Psalm\Internal\Stubs\normalizeCallMapDelta;
+use function Psalm\Internal\Stubs\normalizeParameters;
+use function Psalm\Internal\Stubs\writeCallMap;
+use function Psalm\Internal\Stubs\writeCallMapIntroductions;
+
 ini_set('memory_limit', '1024M');
 
 require __DIR__ . '/../../vendor/autoload.php';
@@ -359,7 +366,7 @@ foreach ($customMaps as $prevVersion => $prevData) {
         }
     }
 
-    writeCallMap(__DIR__."/../../dictionaries/override/CallMap_{$nextVersion}_delta.php", normalizeCallMap($diff));
+    writeCallMap(__DIR__."/../../dictionaries/override/CallMap_{$nextVersion}_delta.php", normalizeCallMapDelta($diff));
 
     $nextVersion = $prevVersion;
     $nextData = $prevData;

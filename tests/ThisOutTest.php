@@ -22,6 +22,88 @@ final class ThisOutTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'fluentMethodReturnsTheThisOutType' => [
+                'code' => '<?php
+                    /**
+                     * @template T of object
+                     */
+                    class ObjectProphecy {
+                        /**
+                         * @template U of object
+                         * @param class-string<U> $parentClass
+                         * @return $this
+                         * @psalm-this-out static<T&U>
+                         */
+                        public function willExtend(string $parentClass): static {
+                            return $this;
+                        }
+                    }
+
+                    $prophecy = new ObjectProphecy();
+                    $returned = $prophecy->willExtend(Countable::class);
+                    $chained = (new ObjectProphecy())->willExtend(Countable::class);',
+                'assertions' => [
+                    '$prophecy===' => 'ObjectProphecy<Countable>&static',
+                    '$returned===' => 'ObjectProphecy<Countable>&static',
+                    '$chained===' => 'ObjectProphecy<Countable>&static',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'finalMethodReturningOnlyThisReturnsTheThisOutType' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     */
+                    class Box {
+                        /**
+                         * @template U
+                         * @param U $v
+                         * @psalm-this-out static<T|U>
+                         */
+                        final public function add(mixed $v): static {
+                            return $this;
+                        }
+                    }
+
+                    /** @return Box<int> */
+                    function makeBox(): Box {
+                        /** @var Box<int> */
+                        return new Box();
+                    }
+
+                    $added = makeBox()->add("x");',
+                'assertions' => [
+                    '$added===' => 'Box<\'x\'|int>&static',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'staticReturnIsNotTheThisOutType' => [
+                'code' => '<?php
+                    /**
+                     * @template T of object
+                     */
+                    class Builder {
+                        /**
+                         * @template U of object
+                         * @param class-string<U> $class
+                         * @return static
+                         * @psalm-this-out static<U>
+                         */
+                        public function with(string $class): static {
+                            return clone $this;
+                        }
+                    }
+
+                    /** @var Builder<Exception> $builder */
+                    $copy = $builder->with(Countable::class);',
+                'assertions' => [
+                    '$copy===' => 'Builder<Exception>&static',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'changeInterface' => [
                 'code' => '<?php
                       interface Foo {

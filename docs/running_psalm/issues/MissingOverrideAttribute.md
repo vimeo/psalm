@@ -1,6 +1,6 @@
 # MissingOverrideAttribute
 
-Emitted when the config flag `ensureOverrideAttribute` is set to `true` and a method on a child class or interface overrides a method on a parent, but no `Override` attribute is present.
+Emitted when the config flag `ensureOverrideAttribute` is set to `true` and a method on a child class or interface overrides a method on a parent, but no `Override` attribute is present. From PHP 8.5 the same holds for a property that overrides a property of a parent class or implements one of an interface (a private parent property and a property coming from a trait don't count). From PHP 8.6 it holds for a class constant or an enum case that overrides a public or protected constant of a parent class or interface too.
 
 ```php
 <?php // ensureOverrideAttribute="true"
@@ -15,6 +15,30 @@ class B extends A {
     function receive(): void
     {
     }
+}
+```
+
+```php
+<?php
+
+class A {
+    public string $label = 'a';
+}
+
+class B extends A {
+    public string $label = 'b'; // MissingOverrideAttribute, with phpVersion 8.5
+}
+```
+
+```php
+<?php
+
+class A {
+    public const string NAME = 'a';
+}
+
+class B extends A {
+    public const string NAME = 'a'; // MissingOverrideAttribute, with phpVersion 8.6
 }
 ```
 

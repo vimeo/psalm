@@ -57,8 +57,6 @@ return [
     'prev' => ['array'],
     // standard: url
     'parse_url' => ['url'],
-    'rawurldecode' => ['string'],
-    'urldecode' => ['string'],
     // standard: filesystem
     'basename' => ['path'],
     'dirname' => ['path'],

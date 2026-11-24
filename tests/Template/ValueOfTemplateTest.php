@@ -23,6 +23,60 @@ final class ValueOfTemplateTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'scalarCanBeIdenticalToAKeyOrAValueOfATemplateBoundedByArray' => [
+                'code' => '<?php
+                    /**
+                     * @template T of array
+                     * @param T $a
+                     * @param value-of<T> $v
+                     */
+                    function sameValue($a, $v, string $s): string {
+                        if ($v === $s) {
+                            return $s;
+                        }
+                        return "";
+                    }
+
+                    /**
+                     * @template T of array
+                     * @param T $a
+                     * @param key-of<T> $k
+                     */
+                    function sameKey($a, $k, int $i): int {
+                        if ($k === $i) {
+                            return $i;
+                        }
+                        return 0;
+                    }',
+            ],
+            'narrowedByIdentityToAValueOrAKeyOfATemplateKeepsTheLinkToTheTemplate' => [
+                'code' => '<?php
+                    /**
+                     * @template T of array
+                     * @param T $a
+                     * @param value-of<T> $v
+                     * @return value-of<T>
+                     */
+                    function sameValue($a, $v, string $s) {
+                        if ($v === $s) {
+                            return $s;
+                        }
+                        throw new RuntimeException();
+                    }
+
+                    /**
+                     * @template T of array
+                     * @param T $a
+                     * @param key-of<T> $k
+                     * @return key-of<T>
+                     */
+                    function sameKey($a, $k, int $i) {
+                        if ($k === $i) {
+                            return $i;
+                        }
+                        throw new RuntimeException();
+                    }',
+            ],
             'itemOfATemplateArrayAtItsKeyIsItsValue' => [
                 'code' => '<?php
                     /**
@@ -660,6 +714,18 @@ final class ValueOfTemplateTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'intCannotBeIdenticalToAValueOfATemplateBoundedByAStringArray' => [
+                'code' => '<?php
+                    /**
+                     * @template T of array<int, string>
+                     * @param T $a
+                     * @param value-of<T> $v
+                     */
+                    function value($a, $v, int $i): void {
+                        if ($v === $i) {}
+                    }',
+                'error_message' => 'DocblockTypeContradiction',
+            ],
             'writeUnderTheKeyOfATemplateBoundedByAShapeWidensTheArray' => [
                 'code' => '<?php
                     /**
@@ -674,7 +740,7 @@ final class ValueOfTemplateTest extends TestCase
                         return $t;
                     }',
                 'error_message' => 'InvalidReturnStatement - src' . DIRECTORY_SEPARATOR
-                    . "somefile.php:11:32 - The inferred type 'non-empty-array<'a'|'b'|(key-of",
+                    . "somefile.php:11:32 - The inferred type 'array{a: int, b: 1|string, ...<key-of<T:fn-w as ",
                 'error_levels' => [],
                 'php_version' => '8.2',
             ],
