@@ -955,6 +955,56 @@ final class PropertyTypeTest extends TestCase
                         }
                     }',
             ],
+            'propertyInitialisedByParentConstructorInEveryNonThrowingBranch' => [
+                'code' => '<?php
+                    class X {
+                        public string $y;
+
+                        public function __construct(string $y)
+                        {
+                            $this->y = $y;
+                        }
+                    }
+
+                    final class Y extends X {
+                        public function __construct(string $y)
+                        {
+                            if ($y === \'a\' || $y === \'b\' || $y === \'c\') {
+                                parent::__construct($y);
+                            } else {
+                                throw new InvalidArgumentException();
+                            }
+                        }
+                    }
+
+                    final class Z extends X {
+                        public function __construct(string $y)
+                        {
+                            switch ($y) {
+                                case \'a\':
+                                case \'b\':
+                                case \'c\':
+                                    parent::__construct($y);
+                                    return;
+                                default:
+                                    throw new InvalidArgumentException();
+                            }
+                        }
+                    }
+
+                    final class ZZ extends X {
+                        public function __construct(string $y)
+                        {
+                            match ($y) {
+                                \'a\', \'b\', \'c\' => parent::__construct($y),
+                                default => throw new InvalidArgumentException()
+                            };
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'propertySetInConstructorStaysSetAfterAnIfNarrowingThis' => [
                 'code' => '<?php
                     interface Configurable {
@@ -5059,6 +5109,36 @@ final class PropertyTypeTest extends TestCase
                         }
                     }',
                 'error_message' => 'InvalidPropertyAssignmentValue',
+            ],
+            'parentTypeAndInvalidTypeAssignedToProperty' => [
+                'code' => '<?php
+                    final class Foo {}
+
+                    final class A {
+                        public ?Foo $p = null;
+
+                        public function set(object|int $o): void {
+                            $this->p = $o;
+                        }
+                    }',
+                'error_message' => 'PossiblyInvalidPropertyAssignmentValue',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'parentTypeAndInvalidTypeAssignedToStaticProperty' => [
+                'code' => '<?php
+                    final class Foo {}
+
+                    final class A {
+                        public static ?Foo $p = null;
+
+                        public static function set(object|int $o): void {
+                            self::$p = $o;
+                        }
+                    }',
+                'error_message' => 'PossiblyInvalidPropertyAssignmentValue',
+                'error_levels' => [],
+                'php_version' => '8.0',
             ],
             'templateOfBoolMakesAValuePossiblyValidForABoolProperty' => [
                 'code' => '<?php

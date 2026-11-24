@@ -36,6 +36,7 @@ use Psalm\Internal\ReferenceConstraint;
 use Psalm\Internal\Scope\LoopScope;
 use Psalm\Internal\Type\AssertionReconciler;
 use Psalm\Internal\Type\Comparator\AtomicTypeComparator;
+use Psalm\Internal\Type\Comparator\TypeComparisonResult;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\PurityWildcardPaths;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
@@ -125,7 +126,7 @@ final class ForeachAnalyzer
         $doc_comment = $stmt->getDocComment();
 
         $codebase = $statements_analyzer->getCodebase();
-        $file_path = $statements_analyzer->getRootFilePath();
+        $file_path = $statements_analyzer->getFilePath();
         $type_aliases = $codebase->file_storage_provider->get($file_path)->type_aliases;
 
         if ($doc_comment) {
@@ -1764,6 +1765,8 @@ final class ForeachAnalyzer
                     );
 
                     if ($iterator_class_type) {
+                        $star_iterable = self::getStarIterable($codebase, $iterator_atomic_type);
+
                         foreach ($iterator_class_type->getAtomicTypes() as $array_atomic_type) {
                             $key_type_part = null;
                             $value_type_part = null;
@@ -1849,6 +1852,8 @@ final class ForeachAnalyzer
                             if (!$key_type_part || !$value_type_part) {
                                 break;
                             }
+
+                            self::readStarIterable($codebase, $star_iterable, $key_type_part, $value_type_part);
 
                             $key_type = Type::combineUnionTypes($key_type, $key_type_part);
                             $value_type = Type::combineUnionTypes($value_type, $value_type_part);
@@ -1985,6 +1990,69 @@ final class ForeachAnalyzer
                 return;
             }
         }
+    }
+
+    /**
+     * The Traversable params of a `*` receiver, or null for any other receiver. They hold the bound of its `*`, which
+     * is lost when getIterator() returns the `*` in an invariant argument (`ArrayIterator<int, *>` holds `mixed`).
+     */
+    private static function getStarIterable(Codebase $codebase, Atomic $receiver): ?TIterable
+    {
+        if (!$receiver instanceof TGenericObject
+            || !$receiver->hasStarProjection()
+            || !isset($codebase->classlike_storage_provider->get($receiver->value)
+                ->template_extended_params['Traversable'])
+        ) {
+            return null;
+        }
+
+        return $receiver->getIterable($codebase);
+    }
+
+    private static function readStarIterable(
+        Codebase $codebase,
+        ?TIterable $star_iterable,
+        Union &$key_type_part,
+        Union &$value_type_part,
+    ): void {
+        if ($star_iterable === null) {
+            return;
+        }
+
+        $key_type_part = self::readStarIterablePart($codebase, $key_type_part, $star_iterable->type_params[0]);
+        $value_type_part = self::readStarIterablePart($codebase, $value_type_part, $star_iterable->type_params[1]);
+    }
+
+    /**
+     * The declared type replaces the iterated part only when it narrows it. A declared type that the part accepts
+     * only through a cast leaves the part as it is. A `*` is written only in docblocks, so the bound it reads is
+     * docblock-defined.
+     */
+    private static function readStarIterablePart(Codebase $codebase, Union $part, Union $declared): Union
+    {
+        if ($declared->isMixed()) {
+            return $part;
+        }
+
+        $comparison_result = new TypeComparisonResult();
+
+        if (!UnionTypeComparator::isContainedBy(
+            $codebase,
+            $declared,
+            $part,
+            false,
+            false,
+            $comparison_result,
+            false,
+            false,
+        )
+            || $comparison_result->to_string_cast
+            || $comparison_result->callable_by_reference_mismatch
+        ) {
+            return $part;
+        }
+
+        return $part->setTypes($declared->getAtomicTypes())->setFromDocblock();
     }
 
     /**

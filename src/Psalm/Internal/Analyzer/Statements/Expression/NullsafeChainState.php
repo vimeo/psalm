@@ -5,11 +5,16 @@ declare(strict_types=1);
 namespace Psalm\Internal\Analyzer\Statements\Expression;
 
 use PhpParser\Node\Expr;
+use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TConditional;
+use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNonEmptyMixed;
 use Psalm\Type\Atomic\TTemplateParam;
+use Psalm\Type\Atomic\TTemplateValueOf;
 use Psalm\Type\Union;
+
+use function array_values;
 
 /**
  * Where the null in the type of a `?->` chain node comes from.
@@ -77,7 +82,7 @@ enum NullsafeChainState
      */
     public function afterLink(?Union $own_type, bool $own_nullable = false): self
     {
-        if ($own_nullable || ($own_type && $own_type->isNullable())) {
+        if ($own_nullable || ($own_type && self::holdsNull($own_type))) {
             return self::ShortCircuitAndNull;
         }
 
@@ -104,13 +109,16 @@ enum NullsafeChainState
      */
     public static function canBeNull(Union $type): bool
     {
-        if ($type->isNullable()) {
+        if (self::holdsNull($type)) {
             return true;
         }
 
         foreach ($type->getAtomicTypes() as $atomic_type) {
             if (($atomic_type instanceof TMixed && !$atomic_type instanceof TNonEmptyMixed)
                 || ($atomic_type instanceof TTemplateParam && self::canBeNull($atomic_type->as))
+                || ($atomic_type instanceof TTemplateValueOf
+                    && ($value_type = self::getArrayValueType($atomic_type->as))
+                    && self::canBeNull($value_type))
                 || $atomic_type instanceof TConditional
             ) {
                 return true;
@@ -118,5 +126,57 @@ enum NullsafeChainState
         }
 
         return false;
+    }
+
+    /**
+     * Whether the type holds null: `void` evaluates to null, and `value-of<T>` holds the values of the arrays in T's
+     * bound
+     *
+     * @psalm-pure
+     */
+    private static function holdsNull(Union $type): bool
+    {
+        if ($type->isNullable() || $type->hasType('void')) {
+            return true;
+        }
+
+        foreach ($type->getAtomicTypes() as $atomic_type) {
+            if (($atomic_type instanceof TTemplateParam && self::holdsNull($atomic_type->as))
+                || ($atomic_type instanceof TTemplateValueOf
+                    && ($value_type = self::getArrayValueType($atomic_type->as))
+                    && self::holdsNull($value_type))
+            ) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * The values of the arrays in the bound of `value-of<T>`. Its other values are an enum's, which are never null,
+     * so unlike TValueOf::getValueType() this needs no codebase.
+     *
+     * @psalm-pure
+     */
+    private static function getArrayValueType(Union $as): ?Union
+    {
+        $value_types = [];
+
+        foreach ($as->getAtomicTypes() as $atomic_type) {
+            $value_type = match (true) {
+                $atomic_type instanceof TArray => $atomic_type->type_params[1],
+                $atomic_type instanceof TKeyedArray => $atomic_type->getGenericValueType(),
+                $atomic_type instanceof TTemplateParam => self::getArrayValueType($atomic_type->as),
+                $atomic_type instanceof TMixed => new Union([$atomic_type]),
+                default => null,
+            };
+
+            if ($value_type !== null) {
+                $value_types = [...$value_types, ...array_values($value_type->getAtomicTypes())];
+            }
+        }
+
+        return $value_types ? new Union($value_types) : null;
     }
 }
