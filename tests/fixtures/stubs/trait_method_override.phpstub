@@ -1,0 +1,8 @@
+<?php
+namespace Foo;
+
+class TraitUser
+{
+    /** @param int $x */
+    public function m($x): void {}
+}

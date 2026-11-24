@@ -1,0 +1,8 @@
+<?php
+namespace Foo;
+
+interface Describable
+{
+    /** @return int */
+    public function describe();
+}
