@@ -2328,6 +2328,36 @@ final class TypeVariableTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'templatePartlyTakenByAConcreteParamPartIsTheBound' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class Bag {
+                        /** @param T|int $item */
+                        public function add(mixed $item): void {}
+
+                        /** @return list<T> */
+                        public function all(): array { return []; }
+                    }
+
+                    /**
+                     * @template T as int|string
+                     * @param T $value
+                     * @return list<T>
+                     */
+                    function f($value): array {
+                        $bag = new Bag();
+                        $bag->add($value);
+                        $items = [];
+                        foreach ($bag->all() as $item) {
+                            $items[] = $item;
+                        }
+
+                        return $items;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'constructorWithSiblingImplementationsSatisfiesInvariantProperty' => [
                 'code' => '<?php
                     /** @template V */

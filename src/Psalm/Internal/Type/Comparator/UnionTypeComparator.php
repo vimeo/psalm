@@ -93,12 +93,14 @@ final class UnionTypeComparator
         $container_has_template = $container_type->hasTemplateOrStatic();
         $container_type_parts = self::getTypeParts($codebase, $container_type);
         $compare_iterable_directly = self::hasIterableOrSymbolicPart($container_type_parts);
-        $container_has_type_variable = false;
+        $container_type_variable = null;
+        $concrete_container_parts = [];
 
         foreach ($container_type_parts as $container_type_part) {
-            if ($container_type_part instanceof TTypeVariable) {
-                $container_has_type_variable = true;
-                break;
+            if (!$container_type_part instanceof TTypeVariable) {
+                $concrete_container_parts[] = $container_type_part;
+            } elseif ($container_type_variable === null) {
+                $container_type_variable = $container_type_part;
             }
         }
 
@@ -126,12 +128,30 @@ final class UnionTypeComparator
                 continue;
             }
 
-            // a type variable of the container is bound by the template itself rather than by what it stands for
             if ($input_type_part instanceof TTemplateParam
                 && !$container_has_template
                 && !$input_type_part->extra_types
-                && !$container_has_type_variable
             ) {
+                // what the other parts of the container don't all take, a type variable of it is bound to: the
+                // template itself rather than what it stands for
+                if ($container_type_variable !== null
+                    && (!$concrete_container_parts
+                        || !self::isContainedBy(
+                            $codebase,
+                            $input_type_part->as,
+                            new Union($concrete_container_parts),
+                        ))
+                ) {
+                    if ($union_comparison_result) {
+                        $union_comparison_result->type_variable_lower_bounds[] = [
+                            $container_type_variable->name,
+                            new TemplateBound(new Union([$input_type_part])),
+                        ];
+                    }
+
+                    continue;
+                }
+
                 $input_atomic_types = array_merge($input_type_part->as->getAtomicTypes(), $input_atomic_types);
                 continue;
             }
