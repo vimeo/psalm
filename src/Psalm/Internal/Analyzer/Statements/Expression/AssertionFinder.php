@@ -1011,6 +1011,20 @@ final class AssertionFinder
     }
 
     /**
+     * Whether the call is a `function_exists()`, `class_exists()`, `interface_exists()`, `enum_exists()` or
+     * `method_exists()` check: where it holds the symbol's extension is loaded and its PHP version reached, but where
+     * it fails the symbol may only be disabled, missing from that version of the extension or not polyfilled
+     */
+    public static function isSymbolExistsCheck(PhpParser\Node\Expr\FuncCall $expr, FileSource $source): bool
+    {
+        return in_array(
+            self::getCalledFunctionId($expr, $source),
+            ['function_exists', 'class_exists', 'interface_exists', 'enum_exists', 'method_exists'],
+            true,
+        );
+    }
+
+    /**
      * The assertions on the pseudo-variables of a check that a native symbol or an extension is available
      *
      * @return array<string, non-empty-list<non-empty-list<Assertion>>>

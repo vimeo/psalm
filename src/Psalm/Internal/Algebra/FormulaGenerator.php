@@ -7,6 +7,7 @@ namespace Psalm\Internal\Algebra;
 use Override;
 use PhpParser;
 use Psalm\Codebase;
+use Psalm\Context;
 use Psalm\Exception\ComplicatedExpressionException;
 use Psalm\FileSource;
 use Psalm\Internal\Algebra;
@@ -40,8 +41,10 @@ use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
 
+use function array_any;
 use function array_diff_key;
 use function array_filter;
+use function array_keys;
 use function array_map;
 use function array_values;
 use function count;
@@ -657,6 +660,24 @@ final class FormulaGenerator
         }
 
         $truthy = new Truthy();
+
+        // with a clause of the call's own truthiness, the negation says nothing about the pseudo-variables
+        if ($conditional instanceof PhpParser\Node\Expr\FuncCall
+            && array_any(
+                $clauses,
+                static fn(Clause $clause): bool => array_any(
+                    array_keys($clause->possibilities),
+                    Context::isSymbolCheckVarId(...),
+                ),
+            )
+            && AssertionFinder::isSymbolExistsCheck($conditional, $source)
+        ) {
+            $clauses[] = new Clause(
+                [$conditional_ref => [(string) $truthy => $truthy]],
+                $conditional_object_id,
+                $creating_object_id,
+            );
+        }
 
         if (!$clauses) {
             $possibilities = [$conditional_ref => [(string) $truthy => $truthy]];

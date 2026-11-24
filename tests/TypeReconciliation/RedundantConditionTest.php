@@ -257,6 +257,38 @@ final class RedundantConditionTest extends TestCase
                         }
                     }',
             ],
+            'functionOfAnExtensionAndAnotherOneMissing' => [
+                'code' => '<?php
+                    function f(): void {
+                        if (\function_exists("openlog") && !\function_exists("syslog")) {
+                            echo 1;
+                        }
+                    }',
+            ],
+            'functionsOfTwoPhpVersions' => [
+                'code' => '<?php
+                    function f(): void {
+                        if (\function_exists("array_is_list") && \function_exists("str_contains")) {
+                            echo 1;
+                        }
+                    }',
+            ],
+            'functionOfAPhpVersionAndOneOfAnOlderVersionMissing' => [
+                'code' => '<?php
+                    function f(): void {
+                        if (\function_exists("array_is_list") && !\function_exists("str_contains")) {
+                            echo 1;
+                        }
+                    }',
+            ],
+            'missingFunctionOfAnExtensionSaysNothingOfAnotherOne' => [
+                'code' => '<?php
+                    function f(bool $b): void {
+                        if ((\function_exists("openlog") || $b) && (\function_exists("syslog") || $b)) {
+                            echo 1;
+                        }
+                    }',
+            ],
             'notIdenticalToAVariableOfSeveralLiteralsDoesNotExcludeThem' => [
                 'code' => '<?php
                     /** @param 1|2|3|5 $old */

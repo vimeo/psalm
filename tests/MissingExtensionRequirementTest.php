@@ -225,6 +225,15 @@ final class MissingExtensionRequirementTest extends TestCase
                         return $s;
                     }',
             ],
+            'functionOfTheExtensionExistsEarlyReturn' => [
+                'code' => '<?php
+                    function f(string $s): int {
+                        if (!function_exists("iconv_strlen")) {
+                            return strlen($s);
+                        }
+                        return (int) iconv_strlen($s);
+                    }',
+            ],
             'classOfTheExtensionExists' => [
                 'code' => '<?php
                     function f(): ?ZipArchive {
@@ -312,6 +321,16 @@ final class MissingExtensionRequirementTest extends TestCase
                         return 0;
                     }',
                 'error_message' => 'mb_strlen is part of the ext-mbstring extension',
+            ],
+            'branchWhereAFunctionOfTheExtensionIsMissing' => [
+                'code' => '<?php
+                    function f(string $s): int {
+                        if (!function_exists("iconv")) {
+                            return (int) iconv_strlen($s);
+                        }
+                        return 0;
+                    }',
+                'error_message' => 'iconv_strlen is part of the ext-iconv extension',
             ],
             'afterTheGuardedBranch' => [
                 'code' => '<?php
