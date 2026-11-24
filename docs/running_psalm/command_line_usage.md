@@ -16,6 +16,10 @@ If you want to run on specific files, use
 
 Run with `--help` to see a list of options that Psalm supports.
 
+## Statistics
+
+At the end of a run Psalm prints how long it took, how much memory it used and how much of the code it could infer types for, plus the output of `--stats` and [`--debug-performance`](performance.md) if you give them. With any output format other than `console`, `phpstorm` and `github` (`json`, `checkstyle`, `sarif`, …) this goes to stderr, so that stdout stays the report; `--no-progress` leaves stderr empty.
+
 ## Exit status
 
 Psalm exits with status `0` when it successfully completed and found no issues,
@@ -49,6 +53,16 @@ Add `--shepherd` to the Psalm command that runs in CI:
 The coverage history and the badges use the runs on the default branch of your repository. Psalm reports to Shepherd from GitHub Actions and other popular CI services, and from any other CI when the checkout has a GitHub remote.
 
 See [Using Shepherd](shepherd.md) for badges, what is sent, and how to send reports to your own endpoint.
+
+## Finding out why Psalm is slow
+
+`--debug-performance` (or `--profile`) prints the stages of a run, the slowest files and the hottest statements and functions. `--debug-performance=PATH` also writes the measurements as JSON (the path needs the `=`):
+
+```bash
+./vendor/bin/psalm --no-cache --debug-performance=psalm-perf.json
+```
+
+See [Finding out why Psalm is slow](performance.md) for how to read the profile.
 
 ## Running Psalm faster
 

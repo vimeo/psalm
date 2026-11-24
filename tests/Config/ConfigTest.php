@@ -3115,6 +3115,21 @@ final class ConfigTest extends DeferredAnalyzerTestCase
                 '<psalm></psalm>',
                 ['Psalm\SymfonyPsalmPlugin\Plugin'],
             ],
+            'requiredSymfonyComponent' => [
+                ['composer.json' => '{"require": {"symfony/console": "^7"}}'],
+                '<psalm></psalm>',
+                ['Psalm\SymfonyPsalmPlugin\Plugin'],
+            ],
+            'requiredSymfonyAi' => [
+                ['composer.json' => '{"require": {"symfony/ai-platform": "^1"}}'],
+                '<psalm></psalm>',
+                ['Psalm\SymfonyPsalmPlugin\Plugin'],
+            ],
+            'requiredSymfonyPolyfill' => [
+                ['composer.json' => '{"require": {"symfony/polyfill-mbstring": "^1"}}'],
+                '<psalm></psalm>',
+                [],
+            ],
             'requiredDoctrineOrm' => [
                 ['composer.json' => '{"require": {"doctrine/orm": "^3"}}'],
                 '<psalm></psalm>',
@@ -3176,7 +3191,7 @@ final class ConfigTest extends DeferredAnalyzerTestCase
                 [],
             ],
             'requiredOtherLibraries' => [
-                ['composer.json' => '{"require": {"symfony/console": "^7", "guzzlehttp/guzzle": "^7"}}'],
+                ['composer.json' => '{"require": {"monolog/monolog": "^3", "guzzlehttp/guzzle": "^7"}}'],
                 '<psalm></psalm>',
                 [],
             ],
@@ -4112,6 +4127,31 @@ final class ConfigTest extends DeferredAnalyzerTestCase
             $config->getReportingLevelForIssue(
                 new TestPluginIssueDefaultLevel(
                     'test message',
+                    new Raw('aaa', 'aaa.php', 'aaa.php', 1, 2),
+                ),
+            ),
+        );
+    }
+
+    public function testReportInfoFalseSuppressesAnIssueThatTakesInfoFromItsParent(): void
+    {
+        $config = Config::loadFromXML(
+            (string) getcwd(),
+            <<<XML
+            <?xml version="1.0"?>
+            <psalm reportInfo="false">
+                <issueHandlers>
+                    <NullReference errorLevel="info" />
+                </issueHandlers>
+            </psalm>
+            XML,
+        );
+
+        $this->assertSame(
+            Config::REPORT_SUPPRESS,
+            $config->getReportingLevelForIssue(
+                new PossiblyNullReference(
+                    'Cannot call method on possibly null value',
                     new Raw('aaa', 'aaa.php', 'aaa.php', 1, 2),
                 ),
             ),

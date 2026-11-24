@@ -242,12 +242,17 @@ final class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
 
         // a template (or intersection) receiver keeps `static` as declared, which the return type expansion resolves;
         // so does one the method is not of (a `@mixin` user), as the arguments are checked with the method's class,
-        // and a call in a trait, whose closures every class using it shares
+        // and the class using a trait the call is in, whose closures every class using it shares
         if ($static_type instanceof TNamedObject
             && !$static_type->extra_types
             && (strtolower($static_type->value) === strtolower($method_id->fq_class_name)
                 || $codebase->classExtendsOrImplements($static_type->value, $method_id->fq_class_name))
-            && !self::isInTrait($statements_analyzer)
+            && !self::isStaticOfTraitUser(
+                $statements_analyzer,
+                $context,
+                $static_type->value,
+                $static_type->is_static,
+            )
         ) {
             $template_result->static_class_type = $static_type;
             $template_result->static_class_is_final = $codebase->classlike_storage_provider->get($static_type->value)
@@ -377,7 +382,7 @@ final class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
                 }
             }
 
-            if ($method_storage->self_out_type && $lhs_var_id) {
+            if ($method_storage->self_out_type && ($lhs_var_id !== null || $method_storage->returns_this)) {
                 $self_out_candidate = $method_storage->self_out_type;
 
                 if ($template_result->lower_bounds) {
@@ -416,7 +421,14 @@ final class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
                     true,
                 );
 
-                $context->vars_in_scope[$lhs_var_id] = $self_out_candidate;
+                if ($lhs_var_id !== null) {
+                    $context->vars_in_scope[$lhs_var_id] = $self_out_candidate;
+                }
+
+                // the object returned is the one the method changed
+                if ($method_storage->returns_this) {
+                    $return_type_candidate = $self_out_candidate->setParentNodes($return_type_candidate->parent_nodes);
+                }
             }
 
             if (!$context->collect_initializations) {
@@ -665,6 +677,7 @@ final class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
                             $pseudo_set_type,
                             true,
                             true,
+                            coerced_parts_match: true,
                         )) {
                             IssueBuffer::maybeAdd(
                                 new PossiblyInvalidPropertyAssignmentValue(

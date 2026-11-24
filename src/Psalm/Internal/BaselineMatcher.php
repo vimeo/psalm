@@ -54,7 +54,7 @@ final class BaselineMatcher
 
         if ($issue_baseline[$file][$type]['o'] === count($issue_baseline[$file][$type]['s'])) {
             $position = array_search(
-                str_replace("\r\n", "\n", self::normalizeSelectedText(trim($selected_text))),
+                self::normalizeSelectedText(trim($selected_text)),
                 $issue_baseline[$file][$type]['s'],
                 true,
             );
@@ -77,15 +77,18 @@ final class BaselineMatcher
 
     /**
      * The selected text of an issue as the baseline holds it: characters XML 1.0 forbids, even inside a CDATA
-     * section, and invalid UTF-8 become U+FFFD. The text written to the baseline and the text of an issue are
-     * compared in this form.
+     * section, and invalid UTF-8 become U+FFFD, and CRLF line endings become LF. The text written to the baseline
+     * and the text of an issue are compared in this form.
      *
      * @psalm-pure
      */
     public static function normalizeSelectedText(string $selected_text): string
     {
         return htmlspecialchars_decode(
-            htmlspecialchars($selected_text, ENT_XML1 | ENT_QUOTES | ENT_SUBSTITUTE | ENT_DISALLOWED),
+            htmlspecialchars(
+                str_replace("\r\n", "\n", $selected_text),
+                ENT_XML1 | ENT_QUOTES | ENT_SUBSTITUTE | ENT_DISALLOWED,
+            ),
             ENT_XML1 | ENT_QUOTES,
         );
     }
