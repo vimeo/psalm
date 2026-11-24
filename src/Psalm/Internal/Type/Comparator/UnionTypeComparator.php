@@ -122,15 +122,15 @@ final class UnionTypeComparator
                 && !$container_has_template
                 && !$input_type_part->extra_types
             ) {
-                if (!self::bindTypeVariableToTemplate(
-                    $codebase,
-                    $input_type_part,
-                    $container_type_parts,
-                    $union_comparison_result,
-                )) {
-                    $input_atomic_types = array_merge($input_type_part->as->getAtomicTypes(), $input_atomic_types);
-                }
-
+                $input_atomic_types = array_merge(
+                    self::getTemplatePartsToCompare(
+                        $codebase,
+                        $input_type_part,
+                        $container_type_parts,
+                        $union_comparison_result,
+                    ),
+                    $input_atomic_types,
+                );
                 continue;
             }
 
@@ -584,17 +584,18 @@ final class UnionTypeComparator
     }
 
     /**
-     * What the other parts of the container don't all take, a type variable of it is bound to: the template itself
-     * rather than what it stands for. Whether the template was so bound, or is to be compared through its `as`
+     * A template is compared through what it stands for, except where the other parts of the container don't all
+     * take it: a type variable of the container is then bound to the template itself, and nothing is left to compare
      *
      * @param list<Atomic> $container_parts
+     * @return array<Atomic>
      */
-    private static function bindTypeVariableToTemplate(
+    private static function getTemplatePartsToCompare(
         Codebase $codebase,
         TTemplateParam $template,
         array $container_parts,
         ?TypeComparisonResult $union_comparison_result,
-    ): bool {
+    ): array {
         $type_variable = null;
         $concrete_parts = [];
 
@@ -609,7 +610,7 @@ final class UnionTypeComparator
         if ($type_variable === null
             || ($concrete_parts && self::isContainedBy($codebase, $template->as, new Union($concrete_parts)))
         ) {
-            return false;
+            return $template->as->getAtomicTypes();
         }
 
         if ($union_comparison_result) {
@@ -619,7 +620,7 @@ final class UnionTypeComparator
             ];
         }
 
-        return true;
+        return [];
     }
 
     /**
