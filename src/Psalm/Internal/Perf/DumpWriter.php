@@ -65,7 +65,7 @@ final class DumpWriter
     private const SUMMARY_ROWS = 10;
 
     /** A static page that reads the profile in the browser and sends it nowhere */
-    private const VIEWER = 'https://psalm.dev/perf/';
+    private const VIEWER = 'https://psalm.dev/profile/';
 
     /** A statement or function-like that took less of its own time is left out of the summary */
     private const MIN_ROW_US = 10_000;
@@ -343,7 +343,7 @@ final class DumpWriter
             'opcache' => $opcache !== false,
             'jit' => $opcache !== false && ($opcache['jit']['on'] ?? false) === true,
             'zend_assertions' => (int) ini_get('zend.assertions'),
-            'memory_limit' => (string) ini_get('memory_limit'),
+            'memory_limit' => ini_get('memory_limit'),
             'extensions' => $extensions,
             'cpu_count' => max(1, (new CpuCoreCounter())->getCountWithFallback(1)),
             'ci' => CliUtils::runningInCI(),
