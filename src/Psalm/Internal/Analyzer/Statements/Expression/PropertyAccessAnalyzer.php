@@ -7,6 +7,7 @@ namespace Psalm\Internal\Analyzer\Statements\Expression;
 use PhpParser\Node\Expr\PropertyFetch;
 use PhpParser\Node\Expr\StaticPropertyFetch;
 use Psalm\CodeLocation;
+use Psalm\Codebase;
 use Psalm\Context;
 use Psalm\FileManipulation;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
@@ -30,6 +31,8 @@ use Psalm\IssueBuffer;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Type\Atomic\TNamedObject;
 
+use function count;
+use function explode;
 use function strtolower;
 
 /**
@@ -258,6 +261,11 @@ final class PropertyAccessAnalyzer
     ): void {
         $kind = $is_static_property ? 'Static' : ($through_magic_method && !$on_this ? 'Magic instance' : 'Instance');
         $message = $kind . ' property ' . $property_id . ' is not defined';
+
+        if (!$is_static_property && !$through_magic_method) {
+            $message .= self::getPseudoPropertyHint($statements_analyzer->getCodebase(), $property_id, $is_write);
+        }
+
         $code_location = new CodeLocation($statements_analyzer->getSource(), $stmt);
 
         if ($on_this) {
@@ -275,6 +283,34 @@ final class PropertyAccessAnalyzer
         }
 
         IssueBuffer::maybeAdd($issue, $statements_analyzer->getSuppressedIssues());
+    }
+
+    /**
+     * A property a docblock of its class declares is only read through `__get()` (written through `__set()`) unless
+     * the config says otherwise: the message of an undefined one says so
+     *
+     * @psalm-capabilities read-props
+     */
+    private static function getPseudoPropertyHint(Codebase $codebase, string $property_id, bool $is_write): string
+    {
+        $parts = explode('::$', $property_id, 2);
+
+        if (count($parts) !== 2 || !$codebase->classlike_storage_provider->has($parts[0])) {
+            return '';
+        }
+
+        $class_storage = $codebase->classlike_storage_provider->get($parts[0]);
+        $pseudo_property_types = $is_write
+            ? $class_storage->pseudo_property_set_types
+            : $class_storage->pseudo_property_get_types;
+
+        if (!isset($pseudo_property_types['$' . $parts[1]])) {
+            return '';
+        }
+
+        return ', but a docblock of ' . $class_storage->name . ' declares it: add '
+            . ($is_write ? '__set()' : '__get()') . ' to ' . $class_storage->name
+            . ', or set usePhpDocPropertiesWithoutMagicCall="true" in the config';
     }
 
     public static function reportUndefinedClass(

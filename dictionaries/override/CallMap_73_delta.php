@@ -111,6 +111,70 @@ return array (
     array (
       0 => 'string',
     ),
+    'ldap_add_ext' => 
+    array (
+      0 => 'false|resource',
+      'link_identifier' => 'resource',
+      'dn' => 'string',
+      'entry' => 'array<array-key, mixed>',
+      'servercontrols=' => 'array<array-key, mixed>',
+    ),
+    'ldap_bind_ext' => 
+    array (
+      0 => 'false|resource',
+      'link_identifier' => 'resource',
+      'bind_rdn=' => 'null|string',
+      'bind_password=' => 'null|string',
+      'servercontrols=' => 'array<array-key, mixed>',
+    ),
+    'ldap_delete_ext' => 
+    array (
+      0 => 'false|resource',
+      'link_identifier' => 'resource',
+      'dn' => 'string',
+      'servercontrols=' => 'array<array-key, mixed>',
+    ),
+    'ldap_exop_refresh' => 
+    array (
+      0 => 'false|int',
+      'link' => 'resource',
+      'dn' => 'string',
+      'ttl' => 'int',
+    ),
+    'ldap_mod_add_ext' => 
+    array (
+      0 => 'false|resource',
+      'link_identifier' => 'resource',
+      'dn' => 'string',
+      'entry' => 'array<array-key, mixed>',
+      'servercontrols=' => 'array<array-key, mixed>',
+    ),
+    'ldap_mod_del_ext' => 
+    array (
+      0 => 'false|resource',
+      'link_identifier' => 'resource',
+      'dn' => 'string',
+      'entry' => 'array<array-key, mixed>',
+      'servercontrols=' => 'array<array-key, mixed>',
+    ),
+    'ldap_mod_replace_ext' => 
+    array (
+      0 => 'false|resource',
+      'link_identifier' => 'resource',
+      'dn' => 'string',
+      'entry' => 'array<array-key, mixed>',
+      'servercontrols=' => 'array<array-key, mixed>',
+    ),
+    'ldap_rename_ext' => 
+    array (
+      0 => 'false|resource',
+      'link_identifier' => 'resource',
+      'dn' => 'string',
+      'newrdn' => 'string',
+      'newparent' => 'string',
+      'deleteoldrdn' => 'bool',
+      'servercontrols=' => 'array<array-key, mixed>',
+    ),
     'net_get_interfaces' => 
     array (
       0 => 'array<string, array<string, mixed>>|false',
@@ -471,12 +535,30 @@ return array (
         'foreground=' => 'int',
       ),
     ),
+    'ldap_add' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'link_identifier' => 'resource',
+        'dn' => 'string',
+        'entry' => 'array<array-key, mixed>',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'link_identifier' => 'resource',
+        'dn' => 'string',
+        'entry' => 'array<array-key, mixed>',
+        'servercontrols=' => 'array<array-key, mixed>',
+      ),
+    ),
     'ldap_compare' => 
     array (
       'old' => 
       array (
         0 => 'bool|int',
-        'ldap' => 'resource',
+        'link_identifier' => 'resource',
         'dn' => 'string',
         'attribute' => 'string',
         'value' => 'string',
@@ -484,11 +566,11 @@ return array (
       'new' => 
       array (
         0 => 'bool|int',
-        'ldap' => 'resource',
+        'link_identifier' => 'resource',
         'dn' => 'string',
         'attribute' => 'string',
         'value' => 'string',
-        'controls=' => 'array<array-key, mixed>',
+        'servercontrols=' => 'array<array-key, mixed>',
       ),
     ),
     'ldap_delete' => 
@@ -496,15 +578,15 @@ return array (
       'old' => 
       array (
         0 => 'bool',
-        'ldap' => 'resource',
+        'link_identifier' => 'resource',
         'dn' => 'string',
       ),
       'new' => 
       array (
         0 => 'bool',
-        'ldap' => 'resource',
+        'link_identifier' => 'resource',
         'dn' => 'string',
-        'controls=' => 'array<array-key, mixed>',
+        'servercontrols=' => 'array<array-key, mixed>',
       ),
     ),
     'ldap_exop_passwd' => 
@@ -512,19 +594,19 @@ return array (
       'old' => 
       array (
         0 => 'bool|string',
-        'ldap' => 'resource',
-        'user=' => 'string',
-        'old_password=' => 'string',
-        'new_password=' => 'string',
+        'link' => 'resource',
+        'user' => 'string',
+        'oldpw' => 'string',
+        'newpw' => 'string',
       ),
       'new' => 
       array (
         0 => 'bool|string',
-        'ldap' => 'resource',
+        'link' => 'resource',
         'user=' => 'string',
-        'old_password=' => 'string',
-        'new_password=' => 'string',
-        '&w controls=' => 'array<array-key, mixed>',
+        'oldpw=' => 'string',
+        'newpw=' => 'string',
+        '&w serverctrls=' => 'array<array-key, mixed>',
       ),
     ),
     'ldap_list' => 
@@ -532,11 +614,11 @@ return array (
       'old' => 
       array (
         0 => 'false|resource',
-        'ldap' => 'array<array-key, mixed>|resource',
-        'base' => 'array<array-key, mixed>|string',
+        'link_identifier' => 'array<array-key, mixed>|resource',
+        'base_dn' => 'array<array-key, mixed>|string',
         'filter' => 'array<array-key, mixed>|string',
         'attributes=' => 'array<array-key, mixed>',
-        'attributes_only=' => 'int',
+        'attrsonly=' => 'int',
         'sizelimit=' => 'int',
         'timelimit=' => 'int',
         'deref=' => 'int',
@@ -544,15 +626,15 @@ return array (
       'new' => 
       array (
         0 => 'false|resource',
-        'ldap' => 'array<array-key, mixed>|resource',
-        'base' => 'array<array-key, mixed>|string',
+        'link_identifier' => 'array<array-key, mixed>|resource',
+        'base_dn' => 'array<array-key, mixed>|string',
         'filter' => 'array<array-key, mixed>|string',
         'attributes=' => 'array<array-key, mixed>',
-        'attributes_only=' => 'int',
+        'attrsonly=' => 'int',
         'sizelimit=' => 'int',
         'timelimit=' => 'int',
         'deref=' => 'int',
-        'controls=' => 'array<array-key, mixed>',
+        'servercontrols=' => 'array<array-key, mixed>',
       ),
     ),
     'ldap_mod_add' => 
@@ -560,17 +642,17 @@ return array (
       'old' => 
       array (
         0 => 'bool',
-        'ldap' => 'resource',
+        'link_identifier' => 'resource',
         'dn' => 'string',
         'entry' => 'array<array-key, mixed>',
       ),
       'new' => 
       array (
         0 => 'bool',
-        'ldap' => 'resource',
+        'link_identifier' => 'resource',
         'dn' => 'string',
         'entry' => 'array<array-key, mixed>',
-        'controls=' => 'array<array-key, mixed>',
+        'servercontrols=' => 'array<array-key, mixed>',
       ),
     ),
     'ldap_mod_del' => 
@@ -578,17 +660,17 @@ return array (
       'old' => 
       array (
         0 => 'bool',
-        'ldap' => 'resource',
+        'link_identifier' => 'resource',
         'dn' => 'string',
         'entry' => 'array<array-key, mixed>',
       ),
       'new' => 
       array (
         0 => 'bool',
-        'ldap' => 'resource',
+        'link_identifier' => 'resource',
         'dn' => 'string',
         'entry' => 'array<array-key, mixed>',
-        'controls=' => 'array<array-key, mixed>',
+        'servercontrols=' => 'array<array-key, mixed>',
       ),
     ),
     'ldap_mod_replace' => 
@@ -596,17 +678,17 @@ return array (
       'old' => 
       array (
         0 => 'bool',
-        'ldap' => 'resource',
+        'link_identifier' => 'resource',
         'dn' => 'string',
         'entry' => 'array<array-key, mixed>',
       ),
       'new' => 
       array (
         0 => 'bool',
-        'ldap' => 'resource',
+        'link_identifier' => 'resource',
         'dn' => 'string',
         'entry' => 'array<array-key, mixed>',
-        'controls=' => 'array<array-key, mixed>',
+        'servercontrols=' => 'array<array-key, mixed>',
       ),
     ),
     'ldap_modify' => 
@@ -614,17 +696,17 @@ return array (
       'old' => 
       array (
         0 => 'bool',
-        'ldap' => 'resource',
+        'link_identifier' => 'resource',
         'dn' => 'string',
         'entry' => 'array<array-key, mixed>',
       ),
       'new' => 
       array (
         0 => 'bool',
-        'ldap' => 'resource',
+        'link_identifier' => 'resource',
         'dn' => 'string',
         'entry' => 'array<array-key, mixed>',
-        'controls=' => 'array<array-key, mixed>',
+        'servercontrols=' => 'array<array-key, mixed>',
       ),
     ),
     'ldap_modify_batch' => 
@@ -632,17 +714,41 @@ return array (
       'old' => 
       array (
         0 => 'bool',
-        'ldap' => 'resource',
+        'link_identifier' => 'resource',
         'dn' => 'string',
         'modifications_info' => 'array<array-key, mixed>',
       ),
       'new' => 
       array (
         0 => 'bool',
-        'ldap' => 'resource',
+        'link_identifier' => 'resource',
         'dn' => 'string',
         'modifications_info' => 'array<array-key, mixed>',
-        'controls=' => 'array<array-key, mixed>',
+        'servercontrols=' => 'array<array-key, mixed>',
+      ),
+    ),
+    'ldap_parse_result' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'link' => 'resource',
+        'result' => 'resource',
+        '&w errcode' => 'int',
+        '&w matcheddn=' => 'string',
+        '&w errmsg=' => 'string',
+        '&w referrals=' => 'array<array-key, mixed>',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'link' => 'resource',
+        'result' => 'resource',
+        '&w errcode' => 'int',
+        '&w matcheddn=' => 'string',
+        '&w errmsg=' => 'string',
+        '&w referrals=' => 'array<array-key, mixed>',
+        '&w serverctrls=' => 'array<array-key, mixed>',
       ),
     ),
     'ldap_read' => 
@@ -650,11 +756,11 @@ return array (
       'old' => 
       array (
         0 => 'false|resource',
-        'ldap' => 'array<array-key, mixed>|resource',
-        'base' => 'array<array-key, mixed>|string',
+        'link_identifier' => 'array<array-key, mixed>|resource',
+        'base_dn' => 'array<array-key, mixed>|string',
         'filter' => 'array<array-key, mixed>|string',
         'attributes=' => 'array<array-key, mixed>',
-        'attributes_only=' => 'int',
+        'attrsonly=' => 'int',
         'sizelimit=' => 'int',
         'timelimit=' => 'int',
         'deref=' => 'int',
@@ -662,15 +768,15 @@ return array (
       'new' => 
       array (
         0 => 'false|resource',
-        'ldap' => 'array<array-key, mixed>|resource',
-        'base' => 'array<array-key, mixed>|string',
+        'link_identifier' => 'array<array-key, mixed>|resource',
+        'base_dn' => 'array<array-key, mixed>|string',
         'filter' => 'array<array-key, mixed>|string',
         'attributes=' => 'array<array-key, mixed>',
-        'attributes_only=' => 'int',
+        'attrsonly=' => 'int',
         'sizelimit=' => 'int',
         'timelimit=' => 'int',
         'deref=' => 'int',
-        'controls=' => 'array<array-key, mixed>',
+        'servercontrols=' => 'array<array-key, mixed>',
       ),
     ),
     'ldap_rename' => 
@@ -678,21 +784,21 @@ return array (
       'old' => 
       array (
         0 => 'bool',
-        'ldap' => 'resource',
+        'link_identifier' => 'resource',
         'dn' => 'string',
-        'new_rdn' => 'string',
-        'new_parent' => 'string',
-        'delete_old_rdn' => 'bool',
+        'newrdn' => 'string',
+        'newparent' => 'string',
+        'deleteoldrdn' => 'bool',
       ),
       'new' => 
       array (
         0 => 'bool',
-        'ldap' => 'resource',
+        'link_identifier' => 'resource',
         'dn' => 'string',
-        'new_rdn' => 'string',
-        'new_parent' => 'string',
-        'delete_old_rdn' => 'bool',
-        'controls=' => 'array<array-key, mixed>',
+        'newrdn' => 'string',
+        'newparent' => 'string',
+        'deleteoldrdn' => 'bool',
+        'servercontrols=' => 'array<array-key, mixed>',
       ),
     ),
     'ldap_search' => 
@@ -700,11 +806,11 @@ return array (
       'old' => 
       array (
         0 => 'array<array-key, resource>|false|resource',
-        'ldap' => 'array<array-key, resource>|resource',
-        'base' => 'array<array-key, mixed>|string',
+        'link_identifier' => 'array<array-key, resource>|resource',
+        'base_dn' => 'array<array-key, mixed>|string',
         'filter' => 'array<array-key, mixed>|string',
         'attributes=' => 'array<array-key, mixed>',
-        'attributes_only=' => 'int',
+        'attrsonly=' => 'int',
         'sizelimit=' => 'int',
         'timelimit=' => 'int',
         'deref=' => 'int',
@@ -712,15 +818,15 @@ return array (
       'new' => 
       array (
         0 => 'array<array-key, resource>|false|resource',
-        'ldap' => 'array<array-key, resource>|resource',
-        'base' => 'array<array-key, mixed>|string',
+        'link_identifier' => 'array<array-key, resource>|resource',
+        'base_dn' => 'array<array-key, mixed>|string',
         'filter' => 'array<array-key, mixed>|string',
         'attributes=' => 'array<array-key, mixed>',
-        'attributes_only=' => 'int',
+        'attrsonly=' => 'int',
         'sizelimit=' => 'int',
         'timelimit=' => 'int',
         'deref=' => 'int',
-        'controls=' => 'array<array-key, mixed>',
+        'servercontrols=' => 'array<array-key, mixed>',
       ),
     ),
     'mkdir' => 
