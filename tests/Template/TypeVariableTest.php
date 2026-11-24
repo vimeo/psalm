@@ -2358,6 +2358,57 @@ final class TypeVariableTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            // Known limit: an item read out of a construction is resolved to what its type variable stands for at
+            // the read (as what a call returns is), and keeps no link to the variable. What the read requires
+            // (`string` here) is no longer a bound of the variable, so the widening that follows isn't reported
+            'knownLimitItemReadBeforeAWideningDoesNotConstrainIt' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class Bag {
+                        /** @param iterable<T> $items */
+                        public function __construct(iterable $items) {}
+
+                        /** @param T $item */
+                        public function add(mixed $item): void {}
+
+                        /** @return list<T> */
+                        public function all(): array { return []; }
+                    }
+
+                    function takesString(string $s): void {}
+
+                    /** @param list<string> $names */
+                    function f(array $names): void {
+                        $bag = new Bag($names);
+                        foreach ($bag->all() as $name) {
+                            takesString($name);
+                        }
+                        $bag->add(42);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            // Known limit: the item a foreach reads is resolved once, before the loop is analysed, so what the body
+            // adds to the iterated construction (`B` here) isn't seen by the reads of the item in later iterations
+            'knownLimitForeachItemDoesNotSeeWhatTheLoopAdds' => [
+                'code' => '<?php
+                    final class A { public function a(): void {} }
+                    final class B {}
+
+                    function f(): void {
+                        $it = new ArrayObject([new A()]);
+                        foreach ($it as $item) {
+                            if (count($it) === 1) {
+                                $it->append(new B());
+                            }
+                            $item->a();
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'constructorWithSiblingImplementationsSatisfiesInvariantProperty' => [
                 'code' => '<?php
                     /** @template V */

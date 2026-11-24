@@ -66,7 +66,10 @@ final class TypeVariableResolver extends MutableTypeVisitor
      *
      * Used where a value is read out of a construction (an item of its
      * `list<`_0>`, the return of a call), since most uses of a value only know
-     * concrete types.
+     * concrete types. The value keeps no link to the variable: what its uses
+     * require doesn't constrain a later widening of the construction, and a
+     * foreach item doesn't see what the loop body adds (the `knownLimit` cases
+     * of TypeVariableTest).
      *
      * @psalm-external-mutation-free
      */
