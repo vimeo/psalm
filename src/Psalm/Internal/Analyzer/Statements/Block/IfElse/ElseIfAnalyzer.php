@@ -255,6 +255,8 @@ final class ElseIfAnalyzer
 
         // if the elseif has an || in the conditional, we cannot easily reason about it
         if ($reconcilable_elseif_types) {
+            $types_before = $elseif_context->vars_in_scope;
+
             [$elseif_context->vars_in_scope, $elseif_context->references_in_scope] = Reconciler::reconcileKeyedTypes(
                 $reconcilable_elseif_types,
                 $active_elseif_types,
@@ -292,6 +294,13 @@ final class ElseIfAnalyzer
                         )
                             && !array_key_exists($var_id, $newly_reconciled_var_ids)
                             && !array_key_exists($var_id, $cond_referenced_var_ids)
+                            && !Reconciler::narrowingKeepsProperty(
+                                $statements_analyzer->getCodebase(),
+                                $types_before[$changed_var_id] ?? null,
+                                $elseif_context->vars_in_scope[$changed_var_id] ?? null,
+                                $changed_var_id,
+                                $var_id,
+                            )
                         ) {
                             $elseif_context->removePossibleReference($var_id);
                         }
