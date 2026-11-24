@@ -158,6 +158,37 @@ final class ComparisonAssertionTest extends TestCase
                 ],
                 'ignored_issues' => ['LessSpecificReturnType'],
             ],
+            'looseEqualityToAnIntKeepsTheLooselyEqualFloatsBoolsAndNull' => [
+                'code' => '<?php
+                    /** @return int|float|bool|null */
+                    function scalarOrNull() { return 1; }
+
+                    function anInt(): int { return 1; }
+
+                    $a = scalarOrNull();
+                    $i = anInt();
+                    $equal = $a == $i ? $a : "no";',
+                'assertions' => [
+                    '$equal===' => "'no'|bool|float|int|null",
+                ],
+                'ignored_issues' => ['LessSpecificReturnType'],
+            ],
+            'looseEqualityLeavingATemplateWithABoolUnchangedKeepsTheOtherTypes' => [
+                'code' => '<?php
+                    /**
+                     * @template T of array-key|true
+                     * @param T|Stringable $x
+                     */
+                    function f($x): ?Stringable {
+                        if ($x == "1" && is_object($x)) {
+                            return $x;
+                        }
+                        return null;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'looseEqualityKeepsEveryNumericallyEqualLiteral' => [
                 'code' => '<?php
                     /** @return \'1\'|\'01\' */
@@ -696,6 +727,20 @@ final class ComparisonAssertionTest extends TestCase
                         if ($a !== $b) {}
                     }',
                 'error_message' => 'RedundantConditionGivenDocblockType - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:29 - Docblock-defined type 2 can never contain 1',
+            ],
+            'looseEqualityOfATemplateToZeroKeepsFalse' => [
+                'code' => '<?php
+                    /**
+                     * @template T of int|false
+                     * @param T $x
+                     */
+                    function f($x): int {
+                        if ($x == 0) {
+                            return $x;
+                        }
+                        return 1;
+                    }',
+                'error_message' => 'FalsableReturnStatement',
             ],
             'looseEqualityOfTrueToZeroIsImpossible' => [
                 'code' => '<?php

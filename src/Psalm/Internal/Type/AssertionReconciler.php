@@ -1683,6 +1683,9 @@ final class AssertionReconciler extends Reconciler
 
             if ($loosely_equal_bools_and_null !== []) {
                 $other_atomic_types = array_diff_key($existing_var_atomic_types, $bools_and_null);
+                $other_types = new Union(array_values($other_atomic_types), [
+                    'from_docblock' => $existing_var_type->from_docblock,
+                ]);
 
                 // the other types are reconciled without reporting: the comparison may be true for a bool or null
                 $other_type = $other_atomic_types === []
@@ -1691,15 +1694,20 @@ final class AssertionReconciler extends Reconciler
                         $statements_analyzer,
                         $assertion,
                         $assertion_type,
-                        new Union(array_values($other_atomic_types), [
-                            'from_docblock' => $existing_var_type->from_docblock,
-                        ]),
+                        $other_types,
                         $old_var_type_string,
                         null,
                         $negated,
                         null,
                         $suppressed_issues,
                     );
+
+                // nothing narrowed: the same type tells the caller that the comparison didn't reconcile it
+                if (($other_atomic_types === [] || $other_type === $other_types)
+                    && $loosely_equal_bools_and_null === array_values($bools_and_null)
+                ) {
+                    return $existing_var_type;
+                }
 
                 return new Union([
                     ...$other_type->isNever() ? [] : array_values($other_type->getAtomicTypes()),
