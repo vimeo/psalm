@@ -459,6 +459,7 @@ final class PluginTest extends DeferredAnalyzerTestCase
                 '<?xml version="1.0"?>
                 <psalm
                     errorLevel="1"
+                    loadLibraryPlugins="false"
                 >
                     <projectFiles>
                         <directory name="src" />
