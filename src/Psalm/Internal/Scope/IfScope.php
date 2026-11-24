@@ -56,6 +56,14 @@ final class IfScope
     public ?array $redefined_vars = null;
 
     /**
+     * The redefined variables a branch gave only another data flow, not another type (e.g. the negation of an
+     * `isset()` removing an offset from the taints of an array)
+     *
+     * @var array<string, true>
+     */
+    public array $data_flow_only_redefined_vars = [];
+
+    /**
      * @var array<string, int>|null
      */
     public ?array $assigned_var_ids = null;

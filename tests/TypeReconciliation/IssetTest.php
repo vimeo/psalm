@@ -75,6 +75,60 @@ final class IssetTest extends TestCase
     }
 
     /**
+     * Taint analysis tracks an offset the negation of `isset()` removes, which changes only the data flow of the
+     * array in the implicit else: the array keeps its type from before the if, as without taint analysis.
+     */
+    public function testArrayTypeAfterNestedNarrowingOfAnIssetOffsetWithTaintAnalysis(): void
+    {
+        $this->project_analyzer->trackTaintedInputs();
+        $this->testValidCode(
+            '<?php
+                final class Definition {}
+
+                function getService(): array {
+                    return [];
+                }
+
+                $service = getService();
+                $definition = isset($service[0]) && $service[0] instanceof Definition ? array_shift($service) : null;
+                if (isset($service["from_callable"])) {
+                    $service["class"] = "Closure";
+                }
+                if (isset($service["lazy"])) {
+                    if (is_string($service["lazy"])) {}
+                }',
+            ['$service===' => "array<array-key, 'Closure'|Definition|mixed>"],
+            ['MixedAssignment'],
+        );
+    }
+
+    public function testArrayTypeAfterNestedNarrowingOfAnIssetOffsetInAnIfElseChainWithTaintAnalysis(): void
+    {
+        $this->project_analyzer->trackTaintedInputs();
+        $this->testValidCode(
+            '<?php
+                final class Definition {}
+
+                function getService(): array {
+                    return [];
+                }
+
+                $service = getService();
+                $definition = isset($service[0]) && $service[0] instanceof Definition ? array_shift($service) : null;
+                if (isset($service["from_callable"])) {
+                    $service["class"] = "Closure";
+                }
+                if (isset($service["lazy"])) {
+                    if (is_string($service["lazy"])) {}
+                } elseif (rand(0, 1)) {
+                } else {
+                }',
+            ['$service===' => "array<array-key, 'Closure'|Definition|mixed>"],
+            ['MixedAssignment'],
+        );
+    }
+
+    /**
      * @psalm-pure
      */
     #[Override]
