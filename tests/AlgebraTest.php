@@ -233,7 +233,8 @@ final class AlgebraTest extends TestCase
             $statements_analyzer,
         );
 
-        $this->assertCount(6_561, $dnf_clauses);
+        // 3^8 = 6 561 combinations, of which 229 are distinct
+        $this->assertCount(229, $dnf_clauses);
 
         $simplified_dnf_clauses = Algebra::simplifyCNF($dnf_clauses);
 

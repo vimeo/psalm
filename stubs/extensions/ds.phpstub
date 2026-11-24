@@ -262,6 +262,56 @@ final class Deque implements Sequence
     public function sorted(callable $comparator = null): Deque
     {
     }
+
+    /**
+     * @psalm-purity-template P
+     * @param callable[P](TValue): TValue $callback
+     * @psalm-capabilities read-props|write-this-props
+     * @psalm-purity-from-template P
+     */
+    public function apply(callable $callback): void
+    {
+    }
+
+    /**
+     * @param TValue ...$values
+     * @throws \OutOfRangeException
+     */
+    public function insert(int $index, ...$values): void
+    {
+    }
+
+    /**
+     * @param TValue ...$values
+     */
+    public function push(...$values): void
+    {
+    }
+
+    /**
+     * @param TValue $value
+     * @throws \OutOfRangeException
+     */
+    public function set(int $index, $value): void
+    {
+    }
+
+    /**
+     * @psalm-purity-template P
+     * @param (callable[P](TValue, TValue): int)|null $comparator
+     * @psalm-capabilities read-props|write-this-props
+     * @psalm-purity-from-template P
+     */
+    public function sort(callable $comparator = null): void
+    {
+    }
+
+    /**
+     * @param TValue ...$values
+     */
+    public function unshift(...$values): void
+    {
+    }
 }
 
 /**
@@ -1055,6 +1105,56 @@ final class Vector implements Sequence
      * @psalm-purity-from-template P
      */
     public function sorted(callable $comparator = null): Vector
+    {
+    }
+
+    /**
+     * @psalm-purity-template P
+     * @param callable[P](TValue): TValue $callback
+     * @psalm-capabilities read-props|write-this-props
+     * @psalm-purity-from-template P
+     */
+    public function apply(callable $callback): void
+    {
+    }
+
+    /**
+     * @param TValue ...$values
+     * @throws \OutOfRangeException
+     */
+    public function insert(int $index, ...$values): void
+    {
+    }
+
+    /**
+     * @param TValue ...$values
+     */
+    public function push(...$values): void
+    {
+    }
+
+    /**
+     * @param TValue $value
+     * @throws \OutOfRangeException
+     */
+    public function set(int $index, $value): void
+    {
+    }
+
+    /**
+     * @psalm-purity-template P
+     * @param (callable[P](TValue, TValue): int)|null $comparator
+     * @psalm-capabilities read-props|write-this-props
+     * @psalm-purity-from-template P
+     */
+    public function sort(callable $comparator = null): void
+    {
+    }
+
+    /**
+     * @param TValue ...$values
+     */
+    public function unshift(...$values): void
     {
     }
 }

@@ -62,6 +62,34 @@ final class IntersectionTypeTest extends TestCase
                         return $card->last4 . $card->brand;
                     }',
             ],
+            'propertyOfAnObjectIntersectedWithAShapeHasTheTypeOfBoth' => [
+                'code' => '<?php
+                    final class V {
+                        public ?string $x = null;
+                    }
+
+                    /**
+                     * @param V&object{x: string} $v
+                     */
+                    function narrowed(V $v): string {
+                        return $v->x;
+                    }
+
+                    /**
+                     * @param V&object{x: mixed} $v
+                     */
+                    function notWidened(V $v): ?string {
+                        return $v->x;
+                    }
+
+                    /**
+                     * @param V&object{x: string} $v
+                     */
+                    function read(V $v): void {
+                        $x = $v->x;
+                        echo $x;
+                    }',
+            ],
             'genericWithoutArgumentsInIntersectionGetsItsDefaultsLikeAlone' => [
                 'code' => '<?php
                     interface I {}
