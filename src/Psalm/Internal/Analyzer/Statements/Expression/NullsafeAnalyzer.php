@@ -148,10 +148,14 @@ final class NullsafeAnalyzer
             $statements_analyzer->node_data->getType($ternary) ?? Type::getMixed(),
         );
 
-        // the call is null when the receiver is, and otherwise as the chain without the nullsafe operator is
-        NullsafeChainState::ShortCircuit
-            ->afterLink($statements_analyzer->node_data->getType($ternary->else))
-            ->markOn($stmt);
+        // the call is null when the receiver is, and otherwise as the chain without the nullsafe operator is, whose
+        // own later `?->` short-circuits the whole chain as well
+        $else_state = NullsafeChainState::of($ternary->else);
+
+        ($else_state === NullsafeChainState::None
+            ? NullsafeChainState::ShortCircuit->afterLink($statements_analyzer->node_data->getType($ternary->else))
+            : $else_state
+        )->markOn($stmt);
 
         return true;
     }
