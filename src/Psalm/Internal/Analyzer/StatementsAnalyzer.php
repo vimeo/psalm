@@ -52,6 +52,7 @@ use Psalm\Internal\Provider\TypeVariableResolvingNodeTypeProvider;
 use Psalm\Internal\ReferenceConstraint;
 use Psalm\Internal\Scanner\ParsedDocblock;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
+use Psalm\Internal\Type\TypeExpander;
 use Psalm\Internal\Type\TypeParser;
 use Psalm\Internal\Type\TypeTokenizer;
 use Psalm\Internal\Type\TypeVariableTracker;
@@ -89,6 +90,7 @@ use function explode;
 use function fwrite;
 use function hrtime;
 use function is_string;
+use function preg_match;
 use function preg_replace;
 use function preg_split;
 use function reset;
@@ -452,6 +454,67 @@ final class StatementsAnalyzer extends SourceAnalyzer
     }
 
     /**
+     * The type of a static property a trace names (`self::$items`, `Foo::$items`): what the context knows of it, or
+     * its declared type
+     */
+    private static function getStaticPropertyTraceType(
+        StatementsAnalyzer $statements_analyzer,
+        Context $context,
+        string $traced_variable,
+    ): ?Union {
+        if (preg_match('/^([\\w\\\\]+)::\\$(\\w+)$/D', $traced_variable, $matches) !== 1) {
+            return null;
+        }
+
+        [, $class_name, $property_name] = $matches;
+        $codebase = $statements_analyzer->getCodebase();
+
+        $fq_class_name = match (strtolower($class_name)) {
+            'self', 'static' => $context->self,
+            'parent' => $statements_analyzer->getParentFQCLN(),
+            default => Type::getFQCLNFromString($class_name, $statements_analyzer->getAliases()),
+        };
+
+        if ($fq_class_name === null || !$codebase->classOrInterfaceOrEnumExists($fq_class_name)) {
+            return null;
+        }
+
+        $property_id = $fq_class_name . '::$' . $property_name;
+
+        // `static::$x` is kept under its own key, which the caller has already looked up
+        if (strtolower($class_name) !== 'static' && isset($context->vars_in_scope[$property_id])) {
+            return $context->vars_in_scope[$property_id];
+        }
+
+        $declaring_class = $codebase->properties->getDeclaringClassForProperty(
+            $property_id,
+            true,
+            $statements_analyzer,
+        );
+
+        if ($declaring_class === null) {
+            return null;
+        }
+
+        $class_storage = $codebase->classlike_storage_provider->get($declaring_class);
+        $property = $class_storage->properties[$property_name];
+
+        if (!$property->is_static) {
+            return null;
+        }
+
+        return $property->type
+            ? TypeExpander::expandUnion(
+                $codebase,
+                $property->type,
+                $class_storage->name,
+                $class_storage->name,
+                $class_storage->parent_class,
+            )
+            : Type::getMixed();
+    }
+
+    /**
      * @param list<array{string, bool}> $checked_types
      */
     private static function analyzeCheckedTypes(
@@ -495,7 +558,7 @@ final class StatementsAnalyzer extends SourceAnalyzer
                     try {
                         $checked_type = $context->vars_in_scope[$checked_var_id];
 
-                        $path = $statements_analyzer->getRootFilePath();
+                        $path = $statements_analyzer->getFilePath();
                         $file_storage = $codebase->file_storage_provider->get($path);
 
                         $check_tokens = TypeTokenizer::getFullyQualifiedTokens(
@@ -709,7 +772,7 @@ final class StatementsAnalyzer extends SourceAnalyzer
                 && !$stmt instanceof PhpParser\Node\Stmt\Return_
                 && !$stmt instanceof PhpParser\Node\Stmt\Property
             ) {
-                $file_path = $statements_analyzer->getRootFilePath();
+                $file_path = $statements_analyzer->getFilePath();
 
                 $file_storage_provider = $codebase->file_storage_provider;
 
@@ -758,11 +821,14 @@ final class StatementsAnalyzer extends SourceAnalyzer
                         $context,
                     );
 
-                    if ($var_comment->var_id === '$this'
-                        && $var_comment->type
-                        && $codebase->classExists((string)$var_comment->type, null, $context)
+                    $this_type = $var_comment->var_id === '$this' && $var_comment->type?->isSingle()
+                        ? $var_comment->type->getSingleAtomic()
+                        : null;
+
+                    if ($this_type instanceof TNamedObject
+                        && $codebase->classExists($this_type->value, null, $context)
                     ) {
-                        $statements_analyzer->setFQCLN((string)$var_comment->type);
+                        $statements_analyzer->setFQCLN($this_type->value);
                     }
                 }
             }
@@ -892,10 +958,13 @@ final class StatementsAnalyzer extends SourceAnalyzer
         }
 
         foreach ($traced_variables as $traced_variable) {
-            if (isset($context->vars_in_scope[$traced_variable])) {
+            $traced_type = $context->vars_in_scope[$traced_variable]
+                ?? self::getStaticPropertyTraceType($statements_analyzer, $context, $traced_variable);
+
+            if ($traced_type !== null) {
                 IssueBuffer::maybeAdd(
                     new Trace(
-                        $traced_variable . ': ' . $context->vars_in_scope[$traced_variable]->getId(),
+                        $traced_variable . ': ' . $traced_type->getId(),
                         new CodeLocation($statements_analyzer->source, $stmt),
                     ),
                     $statements_analyzer->getSuppressedIssues(),

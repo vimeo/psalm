@@ -317,15 +317,18 @@ final class ArrayFetchAnalyzer
                 $stmt_var_type = $non_null_var_type->freeze();
             }
 
-            $stmt_type = self::getArrayAccessTypeGivenOffset(
-                $statements_analyzer,
-                $stmt,
-                $stmt_var_type,
-                $used_key_type,
-                false,
-                $extended_var_id,
-                $context,
-                null,
+            $stmt_type = TypeVariableResolver::resolveTopLevel(
+                self::getArrayAccessTypeGivenOffset(
+                    $statements_analyzer,
+                    $stmt,
+                    $stmt_var_type,
+                    $used_key_type,
+                    false,
+                    $extended_var_id,
+                    $context,
+                    null,
+                ),
+                $codebase,
             );
 
             $own_type = $stmt_type;
@@ -346,7 +349,8 @@ final class ArrayFetchAnalyzer
                 }
             }
 
-            if ($context->inside_isset && !$stmt_type->hasMixed()) {
+            // an item of a value that cannot be is not there to be missing either
+            if ($context->inside_isset && !$stmt_type->hasMixed() && !$stmt_var_type->isNever()) {
                 // a key of a sealed shape is there, unlike one of an array of unknown keys
                 $dim_type = $stmt->dim ? $statements_analyzer->node_data->getType($stmt->dim) : null;
                 $key_is_declared = !$stmt_type->possibly_undefined
@@ -1009,9 +1013,16 @@ final class ArrayFetchAnalyzer
                 }
             }
 
+            // a value that cannot be has no item either
+            if ($type instanceof TNever) {
+                $array_access_type = Type::combineUnionTypes($array_access_type, Type::getNever());
+                $has_valid_expected_offset = true;
+
+                continue;
+            }
+
             if ($type instanceof TMixed
                 || $type instanceof TTemplateParam
-                || $type instanceof TNever
             ) {
                 if (!$type instanceof TTemplateParam || $type->as->isMixed() || !$type->as->isSingle()) {
                     $array_access_type = self::handleMixedArrayAccess(
@@ -1150,6 +1161,7 @@ final class ArrayFetchAnalyzer
                     // nothing replaces an item an assignment writes into, which is modified in place as well
                     $by_reference || $replacement_type === null,
                     $offset_call_receiver_type,
+                    $replacement_type,
                 );
             } elseif (!$array_type->hasMixed()) {
                 $non_array_types[] = (string)$type;
@@ -1210,22 +1222,29 @@ final class ArrayFetchAnalyzer
             }
         }
 
+        // an expression that is read and written (`$a[$k]++`, a by-reference argument) is analyzed twice: its offset
+        // is reported by the first analysis only
+        $offset_reported = $statements_analyzer->node_data->isOffsetChecked($stmt);
+
         if ($offset_type->hasMixed()) {
             $statements_analyzer->countMixed($context, true);
 
-            IssueBuffer::maybeAdd(
-                new MixedArrayOffset(
-                    'Cannot access value on variable ' .
-                        self::describeArrayVar($extended_var_id, $stmt) . ' using mixed offset',
-                    new CodeLocation($statements_analyzer->getSource(), $stmt),
-                ),
-                $statements_analyzer->getSuppressedIssues(),
-            );
+            if (!$offset_reported) {
+                $statements_analyzer->node_data->markOffsetChecked($stmt);
+
+                IssueBuffer::maybeAdd(
+                    new MixedArrayOffset(
+                        'Cannot access value on variable ' .
+                            self::describeArrayVar($extended_var_id, $stmt) . ' using mixed offset',
+                        new CodeLocation($statements_analyzer->getSource(), $stmt),
+                    ),
+                    $statements_analyzer->getSuppressedIssues(),
+                );
+            }
         } else {
             $statements_analyzer->countMixed($context, false);
 
             if ($expected_offset_types) {
-                $statements_analyzer->node_data->markOffsetChecked($stmt);
                 $invalid_offset_type = $expected_offset_types[0];
 
                 $used_offset = 'using a ' . $offset_type->getId() . ' offset';
@@ -1239,7 +1258,9 @@ final class ArrayFetchAnalyzer
                 if ($has_valid_expected_offset && $has_valid_absolute_offset && $context->inside_isset) {
                     // do nothing
                 } elseif ($has_valid_expected_offset && $has_valid_absolute_offset) {
-                    if (!$context->inside_unset) {
+                    if (!$context->inside_unset && !$offset_reported) {
+                        $statements_analyzer->node_data->markOffsetChecked($stmt);
+
                         IssueBuffer::maybeAdd(
                             new PossiblyInvalidArrayOffset(
                                 'Cannot access value on variable ' .
@@ -1260,25 +1281,27 @@ final class ArrayFetchAnalyzer
                         );
                     }
 
-                    IssueBuffer::maybeAdd(
-                        new InvalidArrayOffset(
-                            'Cannot access value on variable ' .
-                                self::describeArrayVar($extended_var_id, $stmt) . ' ' . $used_offset
-                                . ', expecting ' . $invalid_offset_type,
-                            new CodeLocation($statements_analyzer->getSource(), $stmt),
-                        ),
-                        $statements_analyzer->getSuppressedIssues(),
-                    );
+                    if (!$offset_reported) {
+                        $statements_analyzer->node_data->markOffsetChecked($stmt);
+
+                        IssueBuffer::maybeAdd(
+                            new InvalidArrayOffset(
+                                'Cannot access value on variable ' .
+                                    self::describeArrayVar($extended_var_id, $stmt) . ' ' . $used_offset
+                                    . ', expecting ' . $invalid_offset_type,
+                                new CodeLocation($statements_analyzer->getSource(), $stmt),
+                            ),
+                            $statements_analyzer->getSuppressedIssues(),
+                        );
+                    }
                 }
             } elseif (!$context->inside_isset
                 && $array_type->isArray()
                 && !$offset_type->ignore_falsable_issues
                 && isset($offset_type->getAtomicTypes()['false'])
-                && !$statements_analyzer->node_data->isOffsetChecked($stmt)
+                && !$offset_reported
             ) {
-                // PHP turns a false offset of an array into 0, and `false` alone is already an invalid offset. An
-                // expression that is read and written (`$a[$k]++`, a by-reference argument) is analyzed twice: it
-                // is reported once, and not when the other analysis already reported its offset
+                // PHP turns a false offset of an array into 0, and `false` alone is already an invalid offset
                 $statements_analyzer->node_data->markOffsetChecked($stmt);
 
                 IssueBuffer::maybeAdd(
@@ -1503,7 +1526,7 @@ final class ArrayFetchAnalyzer
     }
 
     /**
-     * @param  TMixed|TTemplateParam|TNever $type
+     * @param  TMixed|TTemplateParam $type
      */
     public static function handleMixedArrayAccess(
         Context $context,
@@ -1568,7 +1591,7 @@ final class ArrayFetchAnalyzer
 
         return Type::combineUnionTypes(
             $array_access_type,
-            Type::getMixed($type instanceof TNever || ($type instanceof TMixed && $type->from_loop_isset)),
+            Type::getMixed($type instanceof TMixed && $type->from_loop_isset),
         );
     }
 
@@ -2080,6 +2103,91 @@ final class ArrayFetchAnalyzer
     }
 
     /**
+     * A shape that surely has an item keeps, when written under a key whose value isn't known, the items the key can't
+     * be: they are what they were. An append writes under a key the shape doesn't have yet
+     *
+     * @psalm-capabilities read-props|write-this-props
+     */
+    public static function writeUnknownKeyOfAShape(
+        TKeyedArray $type,
+        Union $key_type,
+        Union $value_type,
+        bool $appends = false,
+    ): ?TKeyedArray {
+        if ($type->is_list || !$type->isNonEmpty()) {
+            return null;
+        }
+
+        // an append is under the int key after the largest one, none of which is negative unless one is
+        if ($appends) {
+            $key_type = Type::getListKey();
+
+            foreach ($type->properties as $key => $_) {
+                if (is_int($key) && $key < 0) {
+                    $key_type = Type::getInt();
+                }
+            }
+        }
+
+        [$can_be_int, $can_be_string] = $appends ? [false, false] : self::getKindsOfAWrittenKey($key_type);
+
+        $properties = [];
+
+        foreach ($type->properties as $key => $property) {
+            // an item the write may not have reached may still be missing
+            $properties[$key] = (is_int($key) ? $can_be_int : $can_be_string)
+                ? Type::combineUnionTypes($property, $value_type, null, false, true, 500, $property->possibly_undefined)
+                : $property;
+        }
+
+        $shape = TKeyedArray::make(
+            $properties,
+            $type->class_strings,
+            $type->fallback_params === null
+                ? [$key_type, $value_type]
+                : [
+                    Type::combineUnionTypes($type->fallback_params[0], $key_type),
+                    Type::combineUnionTypes($type->fallback_params[1], $value_type),
+                ],
+        );
+
+        return $shape instanceof TKeyedArray ? $shape : null;
+    }
+
+    /**
+     * Whether a written key can be an int and a string. PHP writes a string of a decimal int (`'0'`) under the int key,
+     * and a key type that isn't known to be only one of them can be both.
+     *
+     * @return array{bool, bool}
+     * @psalm-pure
+     */
+    private static function getKindsOfAWrittenKey(Union $key_type): array
+    {
+        $can_be_int = false;
+        $can_be_string = false;
+
+        foreach ($key_type->getAtomicTypes() as $key_atomic_type) {
+            if ($key_atomic_type instanceof TTemplateParam) {
+                [$bound_can_be_int, $bound_can_be_string] = self::getKindsOfAWrittenKey($key_atomic_type->as);
+                $can_be_int = $can_be_int || $bound_can_be_int;
+                $can_be_string = $can_be_string || $bound_can_be_string;
+            } elseif ($key_atomic_type instanceof TInt) {
+                $can_be_int = true;
+            } elseif ($key_atomic_type instanceof TLiteralString) {
+                $can_be_string = true;
+                $can_be_int = $can_be_int || (string) (int) $key_atomic_type->value === $key_atomic_type->value;
+            } elseif ($key_atomic_type instanceof TClassString) {
+                $can_be_string = true;
+            } else {
+                $can_be_int = true;
+                $can_be_string = true;
+            }
+        }
+
+        return [$can_be_int, $can_be_string];
+    }
+
+    /**
      * @param list<string> $expected_offset_types
      * @param list<TLiteralString|TLiteralInt> $key_values
      * @param-out TArray|TKeyedArray $type
@@ -2319,14 +2427,24 @@ final class ArrayFetchAnalyzer
                                 true,
                             );
                         } else {
-                            $type = new TNonEmptyArray([
-                                $new_key_type,
-                                $generic_params,
-                            ], null, $type->getMinCount()+1);
+                            $type = self::writeUnknownKeyOfAShape($type, Type::getInt(), $replacement_type, true)
+                                ?? new TNonEmptyArray([
+                                    $new_key_type,
+                                    $generic_params,
+                                ], null, $type->getMinCount()+1);
                         }
                     } else {
                         $min_count = $type->getMinCount();
-                        if ($min_count) {
+                        $shape = self::writeUnknownKeyOfAShape(
+                            $type,
+                            $offset_type->hasMixed()
+                                ? Type::getArrayKey()
+                                : self::castOffsetTypeOfAWrite($offset_type->freeze()),
+                            $replacement_type,
+                        );
+                        if ($shape) {
+                            $type = $shape;
+                        } elseif ($min_count) {
                             $type = new TNonEmptyArray([
                                 $new_key_type,
                                 $generic_params,
@@ -2501,6 +2619,7 @@ final class ArrayFetchAnalyzer
         bool &$has_array_access,
         bool $in_place,
         ?Union $receiver_type,
+        ?Union $replacement_type,
     ): void {
         $codebase = $statements_analyzer->getCodebase();
         if (strtolower($type->value) === 'simplexmlelement'
@@ -2583,6 +2702,25 @@ final class ArrayFetchAnalyzer
 
                 $statements_analyzer->node_data = clone $statements_analyzer->node_data;
 
+                // the value of a destructured item or of a `foreach` target is not that of the expression the
+                // assignment was given: the call has no value to check
+                $assign_value_type = $assign_value !== null
+                    ? $statements_analyzer->node_data->getType($assign_value)
+                    : null;
+                $value_is_given = $assign_value !== null
+                    && ($replacement_type === null
+                        || $assign_value_type === null
+                        || $assign_value_type->getId() === $replacement_type->getId());
+                $value_expr = $assign_value;
+
+                // the type assigned is that of the item, which the call checks like a value it was given
+                if (!$value_is_given && $replacement_type !== null && !$in_place) {
+                    $value_expr = new VirtualConstFetch(new VirtualName('null'), $stmt->getAttributes());
+                    $statements_analyzer->node_data->setType($value_expr, $replacement_type);
+                    $statements_analyzer->node_data->markEvaluated([$value_expr]);
+                    $value_is_given = true;
+                }
+
                 $fake_set_method_call = new VirtualMethodCall(
                     $stmt->var,
                     new VirtualIdentifier('offsetSet', $stmt->var->getAttributes()),
@@ -2596,11 +2734,13 @@ final class ArrayFetchAnalyzer
                             attributes: $arg_attributes,
                         ),
                         new VirtualArg(
-                            $assign_value ?? new VirtualConstFetch(
+                            $value_expr ?? new VirtualConstFetch(
                                 new VirtualName('null'),
                                 $stmt->var->getAttributes(),
                             ),
-                            attributes: $arg_attributes,
+                            attributes: $value_is_given
+                                ? $arg_attributes
+                                : [ArgumentAnalyzer::NOT_PASSED => true],
                         ),
                     ],
                 );

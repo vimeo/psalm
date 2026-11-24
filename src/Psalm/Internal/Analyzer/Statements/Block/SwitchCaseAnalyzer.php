@@ -217,7 +217,7 @@ final class SwitchCaseAnalyzer
                 $case_if_stmt = new VirtualIf(
                     $switch_scope->leftover_case_equality_expr,
                     ['stmts' => $case_stmts],
-                    $case->getAttributes(),
+                    [...$case->getAttributes(), 'switchFallthrough' => true],
                 );
 
                 $switch_scope->leftover_statements = [$case_if_stmt];

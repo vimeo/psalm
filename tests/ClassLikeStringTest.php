@@ -324,6 +324,75 @@ final class ClassLikeStringTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'getClassCombinedWithOtherStringsIsNonFalsy' => [
+                'code' => '<?php
+                    interface Shape {}
+
+                    function shape(): Shape {
+                        return new class implements Shape {};
+                    }
+
+                    $shape = shape();
+
+                    $key = get_class($shape);
+                    if (rand(0, 1)) {
+                        $key = $key . "|";
+                    }
+
+                    $literal = get_class($shape);
+                    if (rand(0, 1)) {
+                        $literal = "x";
+                    }
+
+                    $ternary = rand(0, 1) ? get_class($shape) : "|" . get_class($shape);
+
+                    $empty = get_class($shape);
+                    if (rand(0, 1)) {
+                        $empty = "";
+                    }
+
+                    $same = rand(0, 1) ? get_class($shape) : get_class($shape);',
+                'assertions' => [
+                    '$key===' => 'non-falsy-string',
+                    '$literal===' => 'non-falsy-string',
+                    '$ternary===' => 'non-falsy-string',
+                    '$empty===' => 'string',
+                    '$same===' => 'class-string<Shape>',
+                ],
+                'ignored_issues' => [],
+            ],
+            'getClassCombinedWithANumericStringIsNonEmpty' => [
+                'code' => '<?php
+                    interface Shape {}
+
+                    function shape(): Shape {
+                        return new class implements Shape {};
+                    }
+
+                    $shape = shape();
+
+                    /** @var numeric-string $n */
+                    $n = "1";
+
+                    $first = rand(0, 1) ? get_class($shape) : $n;
+                    $second = rand(0, 1) ? $n : get_class($shape);
+
+                    $reverse = "1";
+                    if (rand(0, 1)) {
+                        $reverse = get_class($shape);
+                    }
+
+                    $assigned = $n;
+                    if (rand(0, 1)) {
+                        $assigned = get_class($shape);
+                    }',
+                'assertions' => [
+                    '$first===' => 'non-empty-string',
+                    '$second===' => 'non-empty-string',
+                    '$assigned===' => 'non-empty-string',
+                ],
+                'ignored_issues' => [],
+            ],
             'getClassOfAUnionWithAnIntersectionIsComparedWithAClassOfTheUnion' => [
                 'code' => '<?php
                     interface Shape {}
@@ -1498,6 +1567,46 @@ final class ClassLikeStringTest extends TestCase
                     '$c===' => 'class-string<A>|class-string<B>',
                 ],
             ],
+            'classStringOfUnionTypeArrayOrObject' => [
+                'code' => '<?php
+
+                    class A {}
+
+                    /**
+                     * @template T as array|object
+                     *
+                     * @param class-string<T> $class
+                     * @return class-string<T>
+                     */
+                    function test(string $class): string {
+                        return $class;
+                    }
+
+                    $r = test(A::class);',
+                'assertions' => [
+                    '$r' => 'class-string<A>',
+                ],
+            ],
+            'classStringOfUnionTypeNullOrObject' => [
+                'code' => '<?php
+
+                    class A {}
+
+                    /**
+                     * @template T as null|object
+                     *
+                     * @param class-string<T> $class
+                     * @return class-string<T>
+                     */
+                    function test(string $class): string {
+                        return $class;
+                    }
+
+                    $r = test(A::class);',
+                'assertions' => [
+                    '$r' => 'class-string<A>',
+                ],
+            ],
         ];
     }
 
@@ -1855,6 +1964,17 @@ final class ClassLikeStringTest extends TestCase
                         return $s;
                     }',
                 'error_message' => 'InvalidReturnStatement',
+            ],
+            'genericTypeWithoutAnyValidType' => [
+                'code' => '<?php
+                    /**
+                     * @param class-string<T> $s
+                     * @template T as string|bool
+                     */
+                    function foo(string $s) : string {
+                        return $s;
+                    }',
+                'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:31 - Invalid templated classname \'string\' in docblock for foo',
             ],
         ];
     }

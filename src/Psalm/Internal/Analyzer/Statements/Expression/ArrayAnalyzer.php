@@ -50,10 +50,12 @@ use Psalm\Type\TaintKind;
 use Psalm\Type\Union;
 
 use function count;
+use function filter_var;
 use function is_int;
 use function is_string;
 use function substr;
 
+use const FILTER_VALIDATE_INT;
 use const PHP_INT_MAX;
 
 /**
@@ -177,7 +179,7 @@ final class ArrayAnalyzer
                 ) {
                     IssueBuffer::maybeAdd(
                         new InvalidArrayOffset(
-                            'Cannot create offset of type ' . $item_key_type->getKey() . ', expecting array-key',
+                            'Cannot create offset of type ' . $item_key_type->getId() . ', expecting array-key',
                             new CodeLocation($statements_analyzer->getSource(), $stmt),
                         ),
                         $statements_analyzer->getSuppressedIssues(),
@@ -237,9 +239,10 @@ final class ArrayAnalyzer
         }
 
         // only an int in its canonical decimal form is cast to an int, e.g. not '015', '+5', '5 ' or '-0'
-        $int_array_key = (int) $literal_array_key;
+        // (int) warns on PHP 8.5.0 and 8.5.1 for strings like '6e5212ed-...' that parse as an out-of-range float
+        $int_array_key = filter_var($literal_array_key, FILTER_VALIDATE_INT);
 
-        return (string) $int_array_key === $literal_array_key ? $int_array_key : false;
+        return $int_array_key !== false && (string) $int_array_key === $literal_array_key ? $int_array_key : false;
     }
 
     /**
@@ -278,7 +281,7 @@ final class ArrayAnalyzer
         $has_int = false;
         foreach ($input_types as $atomic_type) {
             if ($atomic_type instanceof TNumericString
-                || ($atomic_type instanceof TInt && $atomic_type->getKey() === 'int')
+                || $atomic_type::class === TInt::class
             ) {
                 $has_int = true;
             }

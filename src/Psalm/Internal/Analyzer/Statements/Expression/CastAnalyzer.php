@@ -69,6 +69,7 @@ use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTrue;
 use Psalm\Type\Atomic\TTypeVariable;
 use Psalm\Type\Union;
+use UnexpectedValueException;
 
 use function array_merge;
 use function array_pop;
@@ -514,9 +515,17 @@ final class CastAnalyzer
         if ($atomic_type instanceof TString) {
             // a numeric string can be any number, and any other string is technically 0,
             // however we cannot be certain that it's not inferred, therefore less strict
-            return $atomic_type instanceof TLiteralString
-                ? [self::getNumericLiteral($atomic_type->value, $is_int)]
-                : [];
+            if (!$atomic_type instanceof TLiteralString) {
+                return [];
+            }
+
+            if (!$is_int) {
+                return [new TLiteralFloat((float) $atomic_type->value)];
+            }
+
+            $int = LiteralCast::toInt($atomic_type->value);
+
+            return $int === null ? [] : [new TLiteralInt($int)];
         }
 
         if ($atomic_type instanceof TNull || $atomic_type instanceof TFalse) {
@@ -575,9 +584,9 @@ final class CastAnalyzer
     /**
      * @psalm-pure
      */
-    private static function getNumericLiteral(int|string $value, bool $is_int): TLiteralInt|TLiteralFloat
+    private static function getNumericLiteral(int $value, bool $is_int): TLiteralInt|TLiteralFloat
     {
-        return $is_int ? new TLiteralInt((int) $value) : new TLiteralFloat((float) $value);
+        return $is_int ? new TLiteralInt($value) : new TLiteralFloat((float) $value);
     }
 
     /**
@@ -1249,10 +1258,21 @@ final class CastAnalyzer
         $codebase = $statements_analyzer->getCodebase();
         $project_analyzer = $statements_analyzer->getProjectAnalyzer();
 
+        $cast = match (true) {
+            $stmt instanceof PhpParser\Node\Expr\Cast\Int_ => 'int',
+            $stmt instanceof PhpParser\Node\Expr\Cast\Double => 'float',
+            $stmt instanceof PhpParser\Node\Expr\Cast\Bool_ => 'bool',
+            $stmt instanceof PhpParser\Node\Expr\Cast\String_ => 'string',
+            $stmt instanceof PhpParser\Node\Expr\Cast\Object_ => 'object',
+            $stmt instanceof PhpParser\Node\Expr\Cast\Array_ => 'array',
+            default => throw new UnexpectedValueException('Unexpected redundant cast ' . $stmt::class),
+        };
+        $message = 'Redundant cast (' . $cast . ') applied to ' . $maybe_type->getId();
+
         $file_manipulation = null;
         if ($maybe_type->from_docblock) {
             $issue = new RedundantCastGivenDocblockType(
-                'Redundant cast to ' . $maybe_type->getKey() . ' given docblock-provided type',
+                $message . ' given docblock-provided type',
                 new CodeLocation($statements_analyzer->getSource(), $stmt),
             );
 
@@ -1267,7 +1287,7 @@ final class CastAnalyzer
             }
         } else {
             $issue = new RedundantCast(
-                'Redundant cast to ' . $maybe_type->getKey(),
+                $message,
                 new CodeLocation($statements_analyzer->getSource(), $stmt),
             );
 

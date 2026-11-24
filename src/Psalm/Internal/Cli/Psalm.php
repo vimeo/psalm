@@ -129,6 +129,7 @@ final class Psalm
         'debug',
         'debug-by-line',
         'debug-performance::',
+        'profile::',
         'debug-emitted-issues',
         'diff',
         'disable-extension:',
@@ -475,20 +476,30 @@ final class Psalm
      */
     private static function startPerformanceCollector(array $options, array $given_option_names): void
     {
-        if (!array_key_exists('debug-performance', $options)) {
+        if (isset($options['debug-performance'])) {
+            if (isset($options['profile'])) {
+                fwrite(STDERR, 'Only one of --debug-performance and --profile can be given' . PHP_EOL);
+                exit(1);
+            }
+
+            $name = 'debug-performance';
+            /** @var list<string>|string|false $path type guaranteed by argument to getopt() */
+            $path = $options['debug-performance'];
+        } elseif (isset($options['profile'])) {
+            $name = 'profile';
+            /** @var list<string>|string|false $path type guaranteed by argument to getopt() */
+            $path = $options['profile'];
+        } else {
             return;
         }
 
-        /** @var list<string>|string|false $path type guaranteed by argument to getopt() */
-        $path = $options['debug-performance'];
-
         if (is_array($path)) {
-            fwrite(STDERR, 'Only one --debug-performance path can be given' . PHP_EOL);
+            fwrite(STDERR, 'Only one --' . $name . ' path can be given' . PHP_EOL);
             exit(1);
         }
 
         if ($path === '') {
-            fwrite(STDERR, '--debug-performance= needs a path: use --debug-performance=PATH or no value' . PHP_EOL);
+            fwrite(STDERR, '--' . $name . '= needs a path: use --' . $name . '=PATH or no value' . PHP_EOL);
             exit(1);
         }
 
@@ -1494,6 +1505,9 @@ final class Psalm
                 Print where the time and memory went: stages, slowest files, hottest statements and functions.
                 With =PATH, also write all of it as a JSON performance profile to PATH. The path needs the `=`: after a space it is
                 a file to analyse. Debug output (--debug) distorts the timings.
+
+            --profile[=PATH]
+                Alias of --debug-performance.
 
             --debug-emitted-issues
                 Print a php backtrace to stderr when emitting issues.

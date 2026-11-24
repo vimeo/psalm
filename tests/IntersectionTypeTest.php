@@ -620,6 +620,21 @@ final class IntersectionTypeTest extends TestCase
                 'assertions' => [],
                 'ignored_issues' => ['MixedMethodCall'],
             ],
+            'propertyOfAnArrayWithFewerKeysThanAListKeepsItsType' => [
+                'code' => '<?php
+                    final class C {
+                        /** @var array<0, string> */
+                        public array $x = [];
+                    }
+
+                    /**
+                     * @param C&object{x: list<string>} $v
+                     * @return array<0, string>
+                     */
+                    function f(object $v): array {
+                        return $v->x;
+                    }',
+            ],
         ];
     }
 
@@ -635,6 +650,55 @@ final class IntersectionTypeTest extends TestCase
                     /** @param object{id: int}&object{id: string} $o */
                     function id(object $o): void {}',
                 'error_message' => 'InvalidDocblock',
+            ],
+            'objectIntersectedWithTemplateShowsTemplateInParentheses' => [
+                'code' => '<?php
+                    interface I {}
+
+                    /**
+                     * @template T of object
+                     * @param I&T $x
+                     */
+                    function f(object $x): int {
+                        return strlen($x);
+                    }',
+                'error_message' => 'but I&(T:fn-f as object) provided',
+            ],
+            'genericObjectIntersectedWithTemplateShowsTemplateInParentheses' => [
+                'code' => '<?php
+                    /** @template V */
+                    interface I {}
+
+                    /**
+                     * @template T of object
+                     * @param I<int>&T $x
+                     */
+                    function f(object $x): int {
+                        return strlen($x);
+                    }',
+                'error_message' => 'but I<int>&(T:fn-f as object) provided',
+            ],
+            'iterableIntersectedWithTemplateShowsTemplateInParentheses' => [
+                'code' => '<?php
+                    /**
+                     * @template T of object
+                     * @param iterable<int>&T $x
+                     */
+                    function f(object $x): int {
+                        return strlen($x);
+                    }',
+                'error_message' => 'but iterable<mixed, int>&(T:fn-f as object) provided',
+            ],
+            'shapeIntersectedWithTemplateShowsTemplateInParentheses' => [
+                'code' => '<?php
+                    /**
+                     * @template T of object
+                     * @param object{a: int}&T $x
+                     */
+                    function f(object $x): int {
+                        return strlen($x);
+                    }',
+                'error_message' => 'but object{a:int}&(T:fn-f as object) provided',
             ],
             'missingPropertyOfAnIntersectionWithAnInterface' => [
                 'code' => '<?php

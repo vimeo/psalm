@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Psalm\Internal\Type;
 
 use InvalidArgumentException;
-use LogicException;
 use Psalm\Codebase;
 use Psalm\Exception\TypeParseTreeException;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
@@ -696,9 +695,7 @@ final class TypeParser
             }
 
             if (!$t instanceof TNamedObject) {
-                throw new TypeParseTreeException(
-                    'Invalid templated classname \'' . $t->getId() . '\'',
-                );
+                continue;
             }
 
             return new TTemplateParamClass(
@@ -710,7 +707,9 @@ final class TypeParser
             );
         }
 
-        throw new LogicException('Should never get here');
+        throw new TypeParseTreeException(
+            'Invalid templated classname \'' . $as->getSingleAtomic()->getId() . '\'',
+        );
     }
 
     /**
@@ -1173,17 +1172,12 @@ final class TypeParser
                 throw new TypeParseTreeException($generic_type_value . ' requires exactly one parameter.');
             }
 
-            $param_name = (string) $generic_params[0];
+            $template_param = $generic_params[0]->isSingle() ? $generic_params[0]->getSingleAtomic() : null;
 
-            if (isset($template_type_map[$param_name])
+            if ($template_param instanceof TTemplateParam
+                && isset($template_type_map[$param_name = $template_param->param_name])
                 && ($defining_class = array_key_first($template_type_map[$param_name])) !== null
             ) {
-                $template_param = $generic_params[0]->getSingleAtomic();
-                if (!$template_param instanceof TTemplateParam) {
-                    throw new TypeParseTreeException(
-                        $generic_type_value . '<' . $param_name . '> must be a TTemplateParam.',
-                    );
-                }
                 if ($template_param->getIntersectionTypes()) {
                     throw new TypeParseTreeException(
                         $generic_type_value . '<' . $param_name . '> must be a TTemplateParam'
