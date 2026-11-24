@@ -524,6 +524,12 @@ final class Refactor
                 . ($is_property ? 'Foo\\Bar::$baz' : 'Foo\\Bar::baz') . ', got ' . $destination;
         }
 
+        $destination_segments = explode('\\', $destination_parts[0]);
+        $short_name = end($destination_segments);
+        if (self::isReservedClassName($short_name)) {
+            return 'Cannot use ' . $short_name . ' as a class name as it is reserved';
+        }
+
         return null;
     }
 }

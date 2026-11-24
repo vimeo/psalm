@@ -383,6 +383,14 @@ final class PsalterEndToEndTest extends PsalmEndToEndTestCase
             ['--rename', 'Ns\A', '--to', 'Ns\Int'],
             'Cannot use Int as a class name as it is reserved',
         ];
+        yield 'reserved class name as the class of a renamed member' => [
+            ['--rename', 'Ns\A::foo', '--to', 'Ns\List::foo'],
+            'Cannot use List as a class name as it is reserved',
+        ];
+        yield 'reserved class name as the class a member is moved into' => [
+            ['--move', 'Ns\A::foo', '--into', 'Ns\List'],
+            'Cannot use List as a class name as it is reserved',
+        ];
     }
 
     /**

@@ -558,7 +558,7 @@ final class StatementsAnalyzer extends SourceAnalyzer
                     try {
                         $checked_type = $context->vars_in_scope[$checked_var_id];
 
-                        $path = $statements_analyzer->getRootFilePath();
+                        $path = $statements_analyzer->getFilePath();
                         $file_storage = $codebase->file_storage_provider->get($path);
 
                         $check_tokens = TypeTokenizer::getFullyQualifiedTokens(
@@ -772,7 +772,7 @@ final class StatementsAnalyzer extends SourceAnalyzer
                 && !$stmt instanceof PhpParser\Node\Stmt\Return_
                 && !$stmt instanceof PhpParser\Node\Stmt\Property
             ) {
-                $file_path = $statements_analyzer->getRootFilePath();
+                $file_path = $statements_analyzer->getFilePath();
 
                 $file_storage_provider = $codebase->file_storage_provider;
 
