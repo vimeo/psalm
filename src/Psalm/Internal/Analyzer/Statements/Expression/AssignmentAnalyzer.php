@@ -34,7 +34,6 @@ use Psalm\Internal\Analyzer\Statements\Expression\Fetch\VariableFetchAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\Statements\GlobalAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
-use Psalm\Internal\Analyzer\TraitAnalyzer;
 use Psalm\Internal\Clause;
 use Psalm\Internal\Codebase\CombinedFlowGraph;
 use Psalm\Internal\Codebase\DataFlowGraph;
@@ -214,10 +213,10 @@ final class AssignmentAnalyzer
     }
 
     /**
-     * Writing a property of a constant (`CONFIG->debug = true`, `CONFIG->items[] = 1`) is a compile error before
-     * PHP 8.6, whatever the types are
+     * Writing a property of a constant (`CONFIG->debug = true`, `CONFIG->items[] = 1`, `unset(CONFIG->debug)`, passing
+     * or binding it by reference) is a compile error before PHP 8.6, whatever the types are
      */
-    private static function checkConstantObjectWrite(StatementsAnalyzer $statements_analyzer, Expr $assign_var): void
+    public static function checkConstantObjectWrite(StatementsAnalyzer $statements_analyzer, Expr $assign_var): void
     {
         if ($statements_analyzer->getCodebase()->analysis_php_version_id >= 8_06_00) {
             return;
@@ -764,14 +763,7 @@ final class AssignmentAnalyzer
                 $statements_analyzer,
             );
 
-            if (!$context->collect_initializations
-                && $statements_analyzer->getFilePath() === $statements_analyzer->getRootFilePath()
-                && (!(($parent_source = $statements_analyzer->getSource())
-                            instanceof FunctionLikeAnalyzer)
-                        || !$parent_source->getSource() instanceof TraitAnalyzer)
-            ) {
-                $codebase->analyzer->incrementMixedCount($statements_analyzer->getFilePath());
-            }
+            $statements_analyzer->countMixed($context, true);
 
             if (!$assign_var instanceof PhpParser\Node\Expr\PropertyFetch
                 && !strpos($root_var_id ?? '', '->')
@@ -811,14 +803,7 @@ final class AssignmentAnalyzer
                 );
             }
         } else {
-            if (!$context->collect_initializations
-                && $statements_analyzer->getFilePath() === $statements_analyzer->getRootFilePath()
-                && (!(($parent_source = $statements_analyzer->getSource())
-                        instanceof FunctionLikeAnalyzer)
-                    || !$parent_source->getSource() instanceof TraitAnalyzer)
-            ) {
-                $codebase->analyzer->incrementNonMixedCount($statements_analyzer->getFilePath());
-            }
+            $statements_analyzer->countMixed($context, false);
 
             if ($var_id
                 && isset($context->byref_constraints[$var_id])
@@ -1435,6 +1420,8 @@ final class AssignmentAnalyzer
         Context $context,
         ?PhpParser\Node\Stmt $from_stmt,
     ): bool {
+        self::checkConstantObjectWrite($statements_analyzer, $stmt->expr);
+
         // Usage through a reference held by a property or array item can't be tracked, so the referenced
         // variable counts as used, like the value of a regular assignment to one.
         $was_inside_general_use = $context->inside_general_use;

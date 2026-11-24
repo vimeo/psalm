@@ -217,6 +217,56 @@ final class WhileTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'varUnsetBeforeContinueAndAssignedByTheConditionStaysDefined' => [
+                'code' => '<?php
+                    function nextRow(): ?array {
+                        return rand(0, 1) ? [] : null;
+                    }
+                    function f(): ?array {
+                        while ($row = nextRow()) {
+                            if (rand(0, 1)) {
+                                unset($row);
+                                continue;
+                            }
+                        }
+                        return $row;
+                    }',
+            ],
+            'whileChainOfPropertyAssignmentsCarriesTheTypeToTheFirstOne' => [
+                'code' => '<?php
+                    final class P {
+                        public static int|string $first = 0;
+                        public static int|string $second = 0;
+
+                        public int|string $a = 0;
+                        public int|string $b = 0;
+                    }
+
+                    $p = new P();
+                    $p->a = 0;
+                    $p->b = 0;
+                    P::$first = 0;
+                    P::$second = 0;
+                    $c = 0;
+
+                    while (rand(0, 1)) {
+                        $z = 1;
+                        $p->a = $p->b;
+                        $p->b = $c;
+                        P::$first = P::$second;
+                        P::$second = $c;
+                        $c = "s";
+                    }
+
+                    $a = $p->a;
+                    $first = P::$first;',
+                'assertions' => [
+                    '$a===' => "'s'|0",
+                    '$first===' => "'s'|0",
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'barePostDecrementConditionIsMinusOneAfterTheLoop' => [
                 'code' => '<?php
                     $i = 3;
@@ -418,6 +468,22 @@ final class WhileTest extends TestCase
                         /** @psalm-check-type-exact $v = null */;
                     }
                     PHP,
+            ],
+            'whileOneIsOnlyLeftByABreak' => [
+                'code' => '<?php
+                    function withOne(): string {
+                        while (1) {
+                            $x = rand(0, 1) ? "s" : null;
+
+                            if ($x === null) {
+                                continue;
+                            }
+
+                            break;
+                        }
+
+                        return $x;
+                    }',
             ],
             'whileVariableBoundByReferenceInTheConditionOfALoopLeftByABreakIsDefinedAfterTheLoop' => [
                 'code' => <<<'PHP'
@@ -2564,6 +2630,48 @@ final class WhileTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'varUnsetBeforeContinueIsPossiblyUndefinedAfterTheLoop' => [
+                'code' => '<?php
+                    function f(int $n): void {
+                        $x = 0;
+                        while ($n-- > 0) {
+                            if ($n % 2) {
+                                unset($x);
+                                continue;
+                            }
+                            $x = 5;
+                        }
+                        echo $x;
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable',
+            ],
+            'whileChainOfThisPropertyAssignmentsCarriesTheTypeToTheFirstOne' => [
+                'code' => '<?php
+                    function takesInt(int $i): void {}
+
+                    final class P {
+                        public int|string $a = 0;
+                        public int|string $b = 0;
+
+                        public function f(): void {
+                            $this->a = 0;
+                            $this->b = 0;
+                            $c = 0;
+
+                            while (rand(0, 1)) {
+                                $z = 1;
+                                $this->a = $this->b;
+                                $this->b = $c;
+                                $c = "s";
+                            }
+
+                            takesInt($this->a);
+                        }
+                    }',
+                'error_message' => 'InvalidScalarArgument',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
             'whileAnonymousClassPropertyNotSetInConstructor' => [
                 'code' => <<<'PHP'
                     <?php
