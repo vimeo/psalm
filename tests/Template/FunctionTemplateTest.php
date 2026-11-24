@@ -155,6 +155,34 @@ final class FunctionTemplateTest extends TestCase
                     '$value===' => 'int',
                 ],
             ],
+            'templateBoundNamingATemplateDeclaredBeforeAndAfterIt' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class Box {
+                        /** @param T $v */
+                        public function __construct(private mixed $v) {}
+
+                        /** @return T */
+                        public function get(): mixed {
+                            return $this->v;
+                        }
+                    }
+
+                    function takesInt(int $i): void {}
+
+                    /**
+                     * @template TB of Box<TC>
+                     * @template TC of int
+                     * @template TD of Box<TB>
+                     * @param TD $d
+                     */
+                    function dep(Box $d): void {
+                        takesInt($d->get()->get());
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.2',
+            ],
             'templateBoundNamingALaterTemplateWithABoundOfItsOwn' => [
                 'code' => '<?php
                     /** @template-covariant TValue */

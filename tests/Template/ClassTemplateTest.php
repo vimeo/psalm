@@ -160,6 +160,36 @@ final class ClassTemplateTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'classTemplateBoundNamingATemplateDeclaredBeforeAndAfterIt' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class Box {
+                        /** @param T $v */
+                        public function __construct(private mixed $v) {}
+
+                        /** @return T */
+                        public function get(): mixed {
+                            return $this->v;
+                        }
+                    }
+
+                    /**
+                     * @template TB of Box<TC>
+                     * @template TC of int
+                     * @template TD of Box<TB>
+                     */
+                    final class DepHolder {
+                        /** @param TD $d */
+                        public function __construct(public Box $d) {}
+
+                        public function v(): int {
+                            return $this->d->get()->get();
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.2',
+            ],
             'classTemplateBoundNamingAnEarlierTemplateWithAForwardBound' => [
                 'code' => '<?php
                     /** @template-covariant TValue */
