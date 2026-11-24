@@ -46,7 +46,7 @@ class Redis {
      */
     public function append(string $key, string $value) {}
 
-    /** @param array{string,string}|array{string}|string $credentials */
+    /** @param array{pass: string}|array{string, string}|array{string}|array{user: string, pass: string}|string $credentials */
     public function auth(mixed $credentials): bool {}
 
     public function bgSave(): bool {}
@@ -830,6 +830,7 @@ class RedisCluster {
     public const FAILOVER_DISTRIBUTE = 2;
     public const FAILOVER_DISTRIBUTE_SLAVES = 3;
 
+    /** @param array{pass: string}|array{string, string}|array{string}|array{user: string, pass: string}|string|null $auth */
     public function __construct(?string $name, ?array $seeds = null, int|float $timeout = 0, int|float $read_timeout = 0, bool $persistent = false, mixed $auth = null, ?array $context = null) {}
 
     public function _compress(string $value): string {}
