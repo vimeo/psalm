@@ -44,6 +44,9 @@ final class TemplateResult
      */
     public bool $readonly = false;
 
+    /** Declared return type of the callable whose arguments are being inferred. */
+    public ?Union $conditional_return_context = null;
+
     /**
      * The bindings are the type arguments of the receiver of a call, which replace the templates of the declared
      * parameter types, even in code of the receiver's class. The argument types stay rigid.

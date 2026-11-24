@@ -19,6 +19,7 @@ use Psalm\Internal\TypeVisitor\TypeChecker;
 use Psalm\Internal\TypeVisitor\TypeScanner;
 use Psalm\StatementsSource;
 use Psalm\Storage\FileStorage;
+use Psalm\Storage\TemplateVariance;
 use Psalm\Type\Atomic\Scalar;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TArrayKey;
@@ -253,41 +254,12 @@ trait UnionTrait
      */
     public function __toString(): string
     {
-        $types = [];
-
-        $printed_int = false;
-        $printed_float = false;
-        $printed_string = false;
-
-        foreach ($this->types as $type) {
-            if ($type instanceof TLiteralFloat) {
-                if ($printed_float) {
-                    continue;
-                }
-
-                $printed_float = true;
-            } elseif ($type instanceof TLiteralString) {
-                if ($printed_string) {
-                    continue;
-                }
-
-                $printed_string = true;
-            } elseif ($type instanceof TLiteralInt) {
-                if ($printed_int) {
-                    continue;
-                }
-
-                $printed_int = true;
-            }
-
-            $types[] = $type->getId(false);
-        }
-
-        sort($types);
-        return implode('|', $types);
+        return $this->getId();
     }
 
     /**
+     * @deprecated A union has no key of its own: use getId() to identify a type, and Atomic::getKey() for the slot
+     *     of an atomic type in a union. Will be removed in Psalm 8.
      * @psalm-mutation-free
      */
     public function getKey(): string
@@ -1510,7 +1482,7 @@ trait UnionTrait
             $phantom_classes,
             $inferred,
             $inherited,
-            $prevent_template_covariance,
+            $prevent_template_covariance ? TemplateVariance::Contravariant : null,
             $context,
         );
 

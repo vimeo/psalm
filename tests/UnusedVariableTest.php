@@ -58,6 +58,27 @@ final class UnusedVariableTest extends TestCase
     public static function providerValidCodeParse(): array
     {
         return [
+            'variableIncrementedInTheConditionOfAnIfInALoopIsUsed' => [
+                'code' => '<?php
+                    /**
+                     * @param array<string, int> $items
+                     */
+                    function increment(int $remainder, array $items): array {
+                        if ($remainder > 0) {
+                            $i = 0;
+
+                            foreach ($items as &$item) {
+                                if ($i++ >= $remainder) {
+                                    break;
+                                }
+
+                                $item++;
+                            }
+                        }
+
+                        return $items;
+                    }',
+            ],
             'variableUsedInArgumentOfStaticCallOnUndefinedClass' => [
                 'code' => '<?php
                     $foo = "foo";
@@ -77,6 +98,20 @@ final class UnusedVariableTest extends TestCase
                     echo f("x");',
                 'assertions' => [],
                 'ignored_issues' => ['UndefinedClass', 'MixedReturnStatement', 'MixedInferredReturnType'],
+            ],
+            'paramWrittenToAnArrayInAnImpossibleBranchIsUsed' => [
+                'code' => '<?php
+                    function f(int $v): void {
+                        $a = ["test" => null];
+
+                        if ($a["test"] !== null) {
+                            $a["x"] = $v;
+                        }
+
+                        echo $a["test"];
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['TypeDoesNotContainType'],
             ],
             'assignmentBeforeABreakInTheElseIsReadAfterTheIf' => [
                 'code' => '<?php

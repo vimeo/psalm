@@ -19,7 +19,7 @@ final class TNonEmptyNonspecificLiteralString extends TNonspecificLiteralString
      * @psalm-pure
      */
     #[Override]
-    public function getId(bool $exact = true, bool $nested = false): string
+    public function getId(bool $exact = true): string
     {
         if (!$exact) {
             return 'string';

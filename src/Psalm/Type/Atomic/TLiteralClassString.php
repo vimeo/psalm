@@ -60,7 +60,7 @@ final class TLiteralClassString extends TLiteralString
     }
 
     #[Override]
-    public function getId(bool $exact = true, bool $nested = false): string
+    public function getId(bool $exact = true): string
     {
         if (!$exact) {
             return 'class-string';

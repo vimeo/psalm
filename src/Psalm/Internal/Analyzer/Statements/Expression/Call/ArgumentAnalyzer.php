@@ -235,6 +235,21 @@ final class ArgumentAnalyzer
                         $statements_analyzer->getSuppressedIssues(),
                     );
                 }
+
+                // what the param's templates stand for is not known either: they are bound to `mixed`, not left
+                // unbound (which would make them `never`), wherever they appear in the param (`list<T>`)
+                if ($template_result && $param_type) {
+                    foreach ($param_type->getTemplateTypes() as $template_type) {
+                        if (isset($template_result->template_types[$template_type->param_name]
+                            [$template_type->defining_class])
+                            && !isset($class_generic_params[$template_type->param_name]
+                                [$template_type->defining_class])
+                        ) {
+                            $template_result->lower_bounds[$template_type->param_name][$template_type->defining_class][]
+                                = new TemplateBound(Type::getMixed(), 1, $argument_offset);
+                        }
+                    }
+                }
             }
 
             return null;

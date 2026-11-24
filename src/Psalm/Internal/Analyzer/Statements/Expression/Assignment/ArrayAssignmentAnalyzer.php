@@ -12,6 +12,7 @@ use Psalm\Codebase;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ArrayAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodCallPurityAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ArrayFetchAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\InstancePropertyFetchAnalyzer;
@@ -32,9 +33,13 @@ use Psalm\Issue\InvalidArrayAssignment;
 use Psalm\IssueBuffer;
 use Psalm\Storage\Capabilities;
 use Psalm\Type;
+use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArray;
+use Psalm\Type\Atomic\TBool;
 use Psalm\Type\Atomic\TClassStringMap;
 use Psalm\Type\Atomic\TFalse;
+use Psalm\Type\Atomic\TFloat;
+use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TIntRange;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TLiteralClassString;
@@ -64,6 +69,7 @@ use function assert;
 use function count;
 use function end;
 use function implode;
+use function is_int;
 use function is_string;
 use function preg_match;
 use function sort;
@@ -160,6 +166,12 @@ final class ArrayAssignmentAnalyzer
         $codebase = $statements_analyzer->getCodebase();
 
         $root_type = $statements_analyzer->node_data->getType($root_array_expr) ?? Type::getMixed();
+
+        // an array that cannot be (in code a condition proved unreachable) is not made by writing to it; a property is
+        // also never where it is not initialized yet (`!isset($this->p)`), which the write initializes
+        $root_is_never = $root_type->isNever()
+            && !$root_array_expr instanceof PhpParser\Node\Expr\PropertyFetch
+            && !$root_array_expr instanceof PhpParser\Node\Expr\StaticPropertyFetch;
 
         if ($root_type->hasMixed()) {
             $vars_before_read = $context->vars_in_scope;
@@ -301,7 +313,9 @@ final class ArrayAssignmentAnalyzer
         $new_child_type->removeType('null');
         $new_child_type = $new_child_type->freeze();
 
-        if (!$root_type->hasObjectType()) {
+        if ($root_is_never) {
+            $root_type = Type::getNever()->setParentNodes($new_child_type->parent_nodes);
+        } elseif (!$root_type->hasObjectType()) {
             $root_type = $new_child_type;
         }
 
@@ -582,8 +596,10 @@ final class ArrayAssignmentAnalyzer
 
         $key = ExpressionIdentifier::unquoteOffset($offset);
 
-        // PHP takes a decimal integer string key as that integer
-        return preg_match('/^(0|-?[1-9][0-9]*)$/', $key) === 1 ? (int) $key : $key;
+        // PHP takes a decimal integer string key in the int range as that integer
+        $int_key = ArrayAnalyzer::getLiteralArrayKeyInt($key);
+
+        return $int_key === false ? $key : $int_key;
     }
 
     /**
@@ -802,15 +818,18 @@ final class ArrayAssignmentAnalyzer
             return;
         }
 
+        $is_this = MethodCallPurityAnalyzer::isReceiverThis($property_fetch->var);
+        $mutations = $is_this ? Capabilities::WRITE_THIS_PROPS : Capabilities::WRITE_PROPS;
+
         $statements_analyzer->signalMutation(
-            $statements_analyzer->node_data->isPureCompatible($property_fetch->var)
+            !$is_this && $statements_analyzer->node_data->isPureCompatible($property_fetch->var)
                 ? Capabilities::NONE
-                : Capabilities::WRITE_PROPS,
+                : $mutations,
             $context,
             'property assignment',
             ImpurePropertyAssignment::class,
             $property_fetch,
-            Capabilities::WRITE_PROPS,
+            $mutations,
         );
     }
 
@@ -1539,8 +1558,13 @@ final class ArrayAssignmentAnalyzer
 
         $from_countable_object_like = false;
 
-        $array_atomic_type = null;
-        if (!$current_dim && !$context->inside_loop) {
+        $array_atomic_type = self::writeUnknownKeyOfTheRootShape(
+            $root_type,
+            $current_dim,
+            $array_atomic_type_array,
+            $array_atomic_type_list,
+        );
+        if ($array_atomic_type === null && !$current_dim && !$context->inside_loop) {
             $atomic_root_types = $root_type->getAtomicTypes();
 
             if (isset($atomic_root_types['array'])) {
@@ -1722,6 +1746,33 @@ final class ArrayAssignmentAnalyzer
     }
 
     /**
+     * The shape an array is after a write under a key whose value isn't known, or an append
+     *
+     * @param array{Union, Union}|null $written
+     * @psalm-capabilities read-props|write-this-props
+     */
+    private static function writeUnknownKeyOfTheRootShape(
+        Union $root_type,
+        ?PhpParser\Node\Expr $current_dim,
+        ?array $written,
+        ?Union $appended,
+    ): ?TKeyedArray {
+        $root_array_type = $root_type->getAtomicTypes()['array'] ?? null;
+
+        if (!$root_array_type instanceof TKeyedArray) {
+            return null;
+        }
+
+        if ($written !== null) {
+            return ArrayFetchAnalyzer::writeUnknownKeyOfAShape($root_array_type, $written[0], $written[1]);
+        }
+
+        return !$current_dim && $appended !== null
+            ? ArrayFetchAnalyzer::writeUnknownKeyOfAShape($root_array_type, Type::getInt(), $appended, true)
+            : null;
+    }
+
+    /**
      * @param  non-empty-list<PhpParser\Node\Expr\ArrayDimFetch>  $child_stmts
      * @param-out PhpParser\Node\Expr $child_stmt
      */
@@ -1782,10 +1833,10 @@ final class ArrayAssignmentAnalyzer
                 );
 
                 $var_id_additions[] = $var_id_addition;
-                $written_offsets[] = [$var_id_addition, $offset_type !== null];
+                $written_offset = [$var_id_addition, self::getArrayKeysOfOffsetType($child_stmt_dim_type)];
             } else {
                 $var_id_additions[] = '';
-                $written_offsets[] = null;
+                $written_offset = null;
                 $full_var_id = false;
             }
 
@@ -1807,6 +1858,13 @@ final class ArrayAssignmentAnalyzer
                 $array_type = $context->vars_in_scope[$parent_var_id];
                 $statements_analyzer->node_data->setType($child_stmt->var, $array_type);
             }
+
+            // a string's negative offset counts from its end; an ArrayAccess is taken to key its items as an array does
+            if ($written_offset !== null && !self::isArrayOnWrite($array_type)) {
+                $written_offset[1] = self::getStringOffsetsOfKeyType($written_offset[1]);
+            }
+
+            $written_offsets[] = $written_offset;
 
             $is_last = $i === count($child_stmts) - 1;
 
@@ -1897,7 +1955,7 @@ final class ArrayAssignmentAnalyzer
         }
 
         if ($root_var_id !== null) {
-            self::removeAliasedOffsets($context, $root_var_id, $written_offsets);
+            self::removeAliasedOffsets($codebase, $context, $root_var_id, $written_offsets);
         }
 
         self::markExternalReferenceAsUsed($statements_analyzer, $context, $root_var_id, $root_var);
@@ -1990,12 +2048,12 @@ final class ArrayAssignmentAnalyzer
                             && ($existing_offsets[spl_object_id($previous_child_stmt)] ?? false),
                     )
                 ) {
-                    $array_assignment_type = Type::getList($current_type);
+                    $array_assignment_type = Type::getNonEmptyList($current_type);
                 } else {
                     $key_type = $statements_analyzer->node_data->getType($current_dim);
 
                     $array_assignment_type = new Union([
-                        new TArray([
+                        new TNonEmptyArray([
                             $key_type && !$key_type->hasMixed()
                                 ? $key_type
                                 : Type::getArrayKey(),
@@ -2004,13 +2062,32 @@ final class ArrayAssignmentAnalyzer
                     ]);
                 }
 
-                $new_child_type = Type::combineUnionTypes(
+                $written_key_type = $current_dim ? $statements_analyzer->node_data->getType($current_dim) : null;
+                $child_shape = self::writeUnknownKeyOfTheRootShape(
                     $child_stmt_type,
-                    $array_assignment_type,
-                    $codebase,
-                    true,
-                    true,
+                    $current_dim,
+                    $written_key_type
+                        ? [
+                            $written_key_type->hasMixed()
+                                ? Type::getArrayKey()
+                                : ArrayFetchAnalyzer::castOffsetTypeOfAWrite(
+                                    ArrayFetchAnalyzer::replaceOffsetTypeWithInts($written_key_type),
+                                ),
+                            $current_type,
+                        ]
+                        : null,
+                    $current_type,
                 );
+
+                $new_child_type = $child_shape
+                    ? $child_stmt_type->setTypes([$child_shape])
+                    : Type::combineUnionTypes(
+                        $child_stmt_type,
+                        $array_assignment_type,
+                        $codebase,
+                        true,
+                        true,
+                    );
             }
             if ($new_child_type->hasNull() || $new_child_type->possibly_undefined) {
                 $new_child_type = $new_child_type->getBuilder();
@@ -2111,15 +2188,22 @@ final class ArrayAssignmentAnalyzer
 
     /**
      * Forgets what is known about the offsets of an array that the write may overwrite. A known offset at some
-     * depth may be overwritten when, at every depth down to it, its key and the written one may be the same:
-     * they are equal, or either isn't a literal. What is under the written offset is overwritten with it. An appended
-     * offset is a new one, so no known offset is under it.
+     * depth may be overwritten when, at every depth down to it, its key and the written one may be the same: they
+     * are equal, or their types may hold the same key. What is under the written offset is overwritten with it. An
+     * appended offset is a new one, so no known offset is under it.
      *
-     * @param list<array{string, bool}|null> $written_offsets each written key with whether it's a literal,
-     *     null for an appended one
+     * @param list<array{string, Union}|null> $written_offsets each written key with the keys it may write to (see
+     *     getArrayKeysOfOffsetType()), with the offsets of a string it may write to when what it is written to may
+     *     not be an array, null for an appended one
      */
-    private static function removeAliasedOffsets(Context $context, string $root_var_id, array $written_offsets): void
-    {
+    private static function removeAliasedOffsets(
+        Codebase $codebase,
+        Context $context,
+        string $root_var_id,
+        array $written_offsets,
+    ): void {
+        $key_types = [];
+
         foreach ($context->vars_in_scope as $var_id => $_) {
             if (!str_starts_with($var_id, $root_var_id . '[')) {
                 continue;
@@ -2134,7 +2218,7 @@ final class ArrayAssignmentAnalyzer
                     continue 2;
                 }
 
-                [$written_key, $written_key_is_literal] = $written_offset;
+                [$written_key, $written_key_type] = $written_offset;
                 $key = self::getKeyAt($var_id, $position);
 
                 if ($key === null) {
@@ -2143,7 +2227,15 @@ final class ArrayAssignmentAnalyzer
                 }
 
                 if ($key !== $written_key) {
-                    if ($written_key_is_literal && preg_match('/^\[(-?\d+|\'.*\')\]$/', $key) === 1) {
+                    $key_types[$key] ??= self::getArrayKeysOfOffsetType(
+                        self::getTypeOfOffset($context, substr($key, 1, -1)),
+                    );
+
+                    if (!UnionTypeComparator::canExpressionTypesBeIdentical(
+                        $codebase,
+                        $written_key_type,
+                        $key_types[$key],
+                    )) {
                         continue 2;
                     }
 
@@ -2158,6 +2250,122 @@ final class ArrayAssignmentAnalyzer
                 $context->removeVarFromConflictingClauses($var_id);
             }
         }
+    }
+
+    /**
+     * The type of the offset of a var id (`'k'`, `0`, `$k`), array-key when it isn't known
+     */
+    private static function getTypeOfOffset(Context $context, string $offset): Union
+    {
+        $key = self::getLiteralKeyOfOffset($offset);
+
+        if ($key !== null) {
+            return is_int($key) ? Type::getInt(false, $key) : Type::getString($key);
+        }
+
+        return $context->vars_in_scope[$offset] ?? Type::getArrayKey();
+    }
+
+    /**
+     * The keys an offset of this type writes to, an int for a string that may be a decimal integer, any key for an
+     * offset that isn't a scalar
+     */
+    private static function getArrayKeysOfOffsetType(Union $offset_type): Union
+    {
+        $atomic_types = self::getAtomicTypesOfBounds($offset_type);
+
+        foreach ($atomic_types as $atomic_type) {
+            if (!$atomic_type instanceof TInt
+                && !$atomic_type instanceof TString
+                && !$atomic_type instanceof TBool
+                && !$atomic_type instanceof TFloat
+                && !$atomic_type instanceof TNull
+            ) {
+                return Type::getArrayKey();
+            }
+        }
+
+        $key_type = ArrayFetchAnalyzer::castOffsetTypeOfAWrite(
+            ArrayFetchAnalyzer::replaceOffsetTypeWithInts(new Union($atomic_types)),
+        );
+
+        foreach ($key_type->getAtomicTypes() as $atomic_type) {
+            if ($atomic_type instanceof TString && !$atomic_type instanceof TLiteralString) {
+                return Type::combineUnionTypes($key_type, Type::getInt());
+            }
+        }
+
+        return $key_type;
+    }
+
+    /**
+     * The atomic types of a type with each template param replaced by those of its bound
+     *
+     * @return non-empty-list<Atomic>
+     * @psalm-pure
+     */
+    private static function getAtomicTypesOfBounds(Union $type): array
+    {
+        $atomic_types = [];
+
+        foreach ($type->getAtomicTypes() as $atomic_type) {
+            if ($atomic_type instanceof TTemplateParam) {
+                $atomic_types = [...$atomic_types, ...self::getAtomicTypesOfBounds($atomic_type->as)];
+            } else {
+                $atomic_types[] = $atomic_type;
+            }
+        }
+
+        return $atomic_types;
+    }
+
+    /**
+     * Whether a write to an offset of the type writes to an array: the type is one, or null or false that the write
+     * makes one
+     *
+     * @psalm-pure
+     */
+    private static function isArrayOnWrite(Union $type): bool
+    {
+        foreach (self::getAtomicTypesOfBounds($type) as $atomic_type) {
+            if (!$atomic_type instanceof TArray
+                && !$atomic_type instanceof TKeyedArray
+                && !$atomic_type instanceof TClassStringMap
+                && !$atomic_type instanceof TNull
+                && !$atomic_type instanceof TFalse
+                && !$atomic_type instanceof TNever
+            ) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * The offsets of a string the key may write to: a negative int offset counts from its end, so it may be any
+     * non-negative one, and a non-negative one any negative one
+     *
+     * @psalm-pure
+     */
+    private static function getStringOffsetsOfKeyType(Union $key_type): Union
+    {
+        $atomic_types = $key_type->getAtomicTypes();
+
+        foreach ($key_type->getAtomicTypes() as $atomic_type) {
+            if ($atomic_type instanceof TLiteralInt) {
+                $offsets = $atomic_type->value < 0 ? new TIntRange(0, null) : new TIntRange(null, -1);
+            } elseif ($atomic_type instanceof TInt) {
+                $offsets = new TInt();
+            } else {
+                continue;
+            }
+
+            // not combined: the range would take in the literal, and the offsets between them
+            $atomic_types[$offsets->getKey()] = $offsets;
+        }
+
+        return new Union($atomic_types);
     }
 
     /**
@@ -2343,7 +2551,7 @@ final class ArrayAssignmentAnalyzer
             if ($object_id) {
                 $var_id_addition = '[' . $object_id . '->' . $child_stmt->dim->name->name . ']';
             } else {
-                $var_id_addition = '[' . $child_stmt_dim_type . ']';
+                $var_id_addition = '[' . $child_stmt_dim_type->getId(false) . ']';
             }
 
             return [null, $var_id_addition, true];
@@ -2362,7 +2570,7 @@ final class ArrayAssignmentAnalyzer
             return [null, $var_id_addition, true];
         }
 
-        $var_id_addition = '[' . $child_stmt_dim_type . ']';
+        $var_id_addition = '[' . $child_stmt_dim_type->getId(false) . ']';
 
         return [null, $var_id_addition, false];
     }

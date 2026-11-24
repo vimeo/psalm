@@ -113,6 +113,7 @@ abstract class TypeMismatchReporter
             $this->expected_type,
             true,
             true,
+            coerced_parts_match: true,
         );
     }
 
