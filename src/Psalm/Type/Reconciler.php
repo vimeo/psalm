@@ -1111,12 +1111,16 @@ class Reconciler
 
     /**
      * Whether the keys of the array include the narrowed index, which a fetch reports otherwise. The index is cast as
-     * PHP casts a key: '1' is 1.
+     * PHP casts a key: '1' is 1. An index still mixed is no more invalid than before it was narrowed.
      */
     private static function hasKeyType(Codebase $codebase, Union $array_type, ?Union $index_type): bool
     {
         if ($index_type === null) {
             return false;
+        }
+
+        if ($index_type->hasMixed()) {
+            return true;
         }
 
         $key_type = ArrayFetchAnalyzer::replaceOffsetTypeWithInts($index_type);

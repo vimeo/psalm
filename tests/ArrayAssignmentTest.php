@@ -3615,6 +3615,23 @@ final class ArrayAssignmentTest extends TestCase
                     }
                 PHP,
             ],
+            'itemWrittenUnderAMixedKeyIsKeptWhenTheKeyIsNarrowed' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @param array<array-key, mixed> $form
+                     * @param mixed $value
+                     */
+                    function f(array $form, $value): int {
+                        /** @psalm-suppress MixedArrayOffset */
+                        $form[$value] = ['a' => 1];
+                        if ($value != 'value') {
+                            unset($form['value']);
+                        }
+                        return count($form[$value]);
+                    }
+                PHP,
+            ],
             'itemWrittenUnderANarrowedKeyInALoop' => [
                 'code' => <<<'PHP'
                     <?php
