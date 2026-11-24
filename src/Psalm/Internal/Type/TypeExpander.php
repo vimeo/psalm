@@ -53,6 +53,7 @@ use ReflectionProperty;
 
 use function array_all;
 use function array_any;
+use function array_fill;
 use function array_filter;
 use function array_keys;
 use function array_map;
@@ -126,7 +127,7 @@ final class TypeExpander
 
         // combining can still simplify the parts, e.g. drop a subclass of another class of the union
         if (!$changed && count($new_return_type_parts) > 1) {
-            $fleshed_out_type = TypeCombiner::combine($new_return_type_parts, $codebase);
+            $fleshed_out_type = TypeCombiner::combineKeepingNeverBoundVariables($new_return_type_parts, $codebase);
             $changed = $fleshed_out_type->getAtomicTypes() !== $return_type->getAtomicTypes();
         }
 
@@ -147,7 +148,7 @@ final class TypeExpander
             ]);
         }
 
-        $fleshed_out_type ??= TypeCombiner::combine(
+        $fleshed_out_type ??= TypeCombiner::combineKeepingNeverBoundVariables(
             $new_return_type_parts,
             $codebase,
         );
@@ -671,25 +672,33 @@ final class TypeExpander
                 $type_params[0] = ArrayAnalyzer::castArrayKeyType($type_params[0]);
             }
 
-            // `Foo<A>` leaving out trailing templates with a default, `Foo[pure]` for a class with type templates
+            // `Foo<A>` leaving out trailing templates with a default, `Foo[pure]` for a class with type templates,
+            // `Foo<*>` knowing the template's bound
             if ($return_type instanceof TGenericObject
                 && $codebase->classlike_storage_provider->has($return_type->value)
             ) {
                 $class_storage = $codebase->classlike_storage_provider->get($return_type->value);
 
-                $type_params = PurityArguments::align(
-                    TemplateDefaults::fillAndExpandTypeArguments(
-                        $type_params,
+                $type_params = StarProjection::boundStars(
+                    $return_type,
+                    PurityArguments::align(
+                        TemplateDefaults::fillAndExpandTypeArguments(
+                            $type_params,
+                            $class_storage,
+                            $codebase,
+                            $return_type->from_docblock,
+                        ),
                         $class_storage,
-                        $codebase,
-                        $return_type->from_docblock,
                     ),
                     $class_storage,
+                    $codebase,
                 );
             }
 
             /** @psalm-suppress InvalidArgument Psalm bug */
-            $return_type = $return_type->setTypeParams($type_params);
+            $return_type = $return_type instanceof TGenericObject
+                ? $return_type->setHeldTypes($type_params)
+                : $return_type->setTypeParams($type_params);
 
             // the purity of an iterable may name a type alias (`iterable[Storage]`)
             if ($return_type instanceof TIterable) {
@@ -904,7 +913,7 @@ final class TypeExpander
                     static fn($type_map): bool => !reset($type_map)->hasMixed(),
                 )
             ) {
-                $return_type = new TGenericObject(
+                $return_type = (new TGenericObject(
                     $return_type->value,
                     array_values(
                         array_map(
@@ -912,7 +921,11 @@ final class TypeExpander
                             $container_class_storage->template_types,
                         ),
                     ),
-                );
+                ))->setProjections(array_fill(
+                    0,
+                    PurityArguments::countTypeTemplates($container_class_storage),
+                    TypeArgumentProjection::Omitted,
+                ));
 
                 // we don't want to expand generic types recursively
                 $expand_generic = false;
@@ -935,25 +948,48 @@ final class TypeExpander
                     $is_static_resolved,
                 );
             } else {
+                $generic_receiver = $static_class_type instanceof TTemplateParam
+                    ? self::getGenericBound($static_class_type)
+                    : $static_class_type;
+
+                // a template receiver is its bound with the other type arguments: `C` only stands for itself
                 if ($return_type instanceof TGenericObject
-                    && $static_class_type instanceof TGenericObject
+                    && $generic_receiver instanceof TGenericObject
+                    && ($generic_receiver === $static_class_type
+                        || !self::haveSameTypeParams($return_type, $generic_receiver))
                 ) {
+                    $receiver_storage = $codebase->classlike_storage_provider->has($generic_receiver->value)
+                        ? $codebase->classlike_storage_provider->get($generic_receiver->value)
+                        : null;
+
+                    // a template bound by a final class can only be that class
+                    if ($generic_receiver !== $static_class_type && $receiver_storage?->final) {
+                        $is_static = $return_type->is_static;
+                        $is_static_resolved = null;
+                    }
+
                     $return_type = $return_type->setValueIsStatic(
-                        $static_class_type->value,
+                        $generic_receiver->value,
                         $is_static,
                         $is_static_resolved,
                     );
 
-                    if ($codebase->classlike_storage_provider->has($static_class_type->value)) {
+                    if ($receiver_storage !== null) {
                         $type_params = PurityArguments::trim(
                             $return_type->type_params,
-                            $codebase->classlike_storage_provider->get($static_class_type->value),
+                            $receiver_storage,
                         );
 
                         if ($type_params !== [] && count($type_params) !== count($return_type->type_params)) {
                             $return_type = $return_type->setTypeParams($type_params);
                         }
                     }
+
+                    $return_type = $return_type->setIntersectionTypes(array_merge(
+                        $return_type->extra_types,
+                        $generic_receiver->extra_types,
+                        $static_class_type->extra_types,
+                    ));
                 } elseif ($static_class_type instanceof TNamedObject) {
                     $return_type = $static_class_type->setIsStatic(
                         $is_static,
@@ -1029,6 +1065,35 @@ final class TypeExpander
         }
 
         return $return_type;
+    }
+
+    /**
+     * @psalm-pure
+     */
+    private static function getGenericBound(TTemplateParam $template): ?TGenericObject
+    {
+        $bound_types = $template->as->getAtomicTypes();
+        $bound = reset($bound_types);
+
+        return count($bound_types) === 1 && $bound instanceof TGenericObject ? $bound : null;
+    }
+
+    /**
+     * @psalm-pure
+     */
+    private static function haveSameTypeParams(TGenericObject $a, TGenericObject $b): bool
+    {
+        if (count($a->type_params) !== count($b->type_params)) {
+            return false;
+        }
+
+        foreach ($a->type_params as $offset => $type_param) {
+            if ($type_param->getId() !== $b->type_params[$offset]->getId()) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /**
@@ -1410,6 +1475,7 @@ final class TypeExpander
                         $return_type->classlike_type,
                         $storage,
                         $storage,
+                        false,
                     )
                     : $property_type
                 ;
@@ -1516,10 +1582,6 @@ final class TypeExpander
                 array_values($constant_type->getAtomicTypes()),
             );
         }
-        if ($type_atomics === []) {
-            return [$return_type];
-        }
-
         if ($return_type instanceof TKeyOf) {
             $new_return_types = TKeyOf::getArrayKeyType(new Union($type_atomics));
         } else {

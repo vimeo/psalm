@@ -1387,12 +1387,12 @@ return array (
       'old' => 
       array (
         0 => 'bool',
-        'auth' => 'string',
+        'auth' => 'array{0?: string, 1?: string, pass?: string, user?: string}|string',
       ),
       'new' => 
       array (
         0 => 'bool',
-        'credentials' => 'string',
+        'credentials' => 'array{0?: string, 1?: string, pass?: string, user?: string}|string',
       ),
     ),
     'redis::bitcount' => 
@@ -3252,7 +3252,7 @@ return array (
         'timeout=' => 'float',
         'read_timeout=' => 'float',
         'persistent=' => 'bool',
-        'auth=' => 'null|string',
+        'auth=' => 'array{0?: string, 1?: string, pass?: string, user?: string}|null|string',
       ),
       'new' => 
       array (
@@ -3262,7 +3262,7 @@ return array (
         'timeout=' => 'float',
         'read_timeout=' => 'float',
         'persistent=' => 'bool',
-        'auth=' => 'null|string',
+        'auth=' => 'array{0?: string, 1?: string, pass?: string, user?: string}|null|string',
         'context=' => 'mixed',
       ),
     ),

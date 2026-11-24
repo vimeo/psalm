@@ -12,6 +12,7 @@ use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Codebase\Analyzer;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Internal\FileManipulation\FunctionDocblockManipulator;
+use Psalm\Internal\Perf;
 use Psalm\IssueBuffer;
 
 /**
@@ -34,6 +35,8 @@ final class ShutdownAnalyzerTask implements Task
 
         $project_analyzer->progress->debug('Gathering data for forked process'."\n");
 
+        $perf = Perf\Collector::workerData();
+
         // @codingStandardsIgnoreStart
         return [
             'issues'                                     => IssueBuffer::getAllIssuesData(),
@@ -43,7 +46,6 @@ final class ShutdownAnalyzerTask implements Task
             'mixed_member_names'                         => $analyzer->getMixedMemberNames(),
             'file_manipulations'                         => FileManipulationBuffer::getAll(),
             'mixed_counts'                               => $analyzer->getMixedCounts(),
-            'function_timings'                           => $analyzer->getFunctionTimings(),
             'analyzed_methods'                           => $analyzer->getAnalyzedMethods(),
             'file_maps'                                  => $analyzer->getFileMaps(),
             'possible_method_param_types'                => $analyzer->getPossibleMethodParamTypes(),
@@ -54,7 +56,7 @@ final class ShutdownAnalyzerTask implements Task
             'function_docblock_manipulators'             => FunctionDocblockManipulator::getManipulators(),
             'mutable_classes'                            => $codebase->analyzer->mutable_classes,
             'issue_handlers'                             => $codebase->config->getIssueHandlerSuppressions()
-        ];
+        ] + ($perf !== null ? ['perf' => $perf] : []);
         // @codingStandardsIgnoreEnd
     }
 }

@@ -51,6 +51,7 @@ use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\LanguageServer\PHPMarkdownContent;
 use Psalm\Internal\LanguageServer\Reference;
 use Psalm\Internal\MethodIdentifier;
+use Psalm\Internal\Perf;
 use Psalm\Internal\Provider\ClassLikeStorageProvider;
 use Psalm\Internal\Provider\FileProvider;
 use Psalm\Internal\Provider\FileReferenceProvider;
@@ -169,6 +170,13 @@ final class Codebase
      * @var array<string, UnresolvedConstantComponent>
      */
     private static array $unresolved_stubbed_constants = [];
+
+    /**
+     * The global constants of stubs and autoloaded files that are deprecated
+     *
+     * @var array<string, true>
+     */
+    private static array $deprecated_stubbed_constants = [];
 
     /**
      * Whether to register autoloaded information
@@ -361,6 +369,7 @@ final class Codebase
 
         self::$stubbed_constants = [];
         self::$unresolved_stubbed_constants = [];
+        self::$deprecated_stubbed_constants = [];
 
         $reflection = new Reflection($providers->classlike_storage_provider, $this);
 
@@ -1042,8 +1051,11 @@ final class Codebase
 
     /**
      * Scans all files their related files
+     *
+     * @param string $step what the round scans, for the performance summary: `scan.project`, `scan.stubs` or
+     *        `scan.extra`
      */
-    public function scanFiles(int $threads = 1): void
+    public function scanFiles(int $threads = 1, string $step = 'scan.extra'): void
     {
         // the classes of the global variables of the config are named nowhere else
         foreach ($this->config->globals as $global_type) {
@@ -1052,6 +1064,8 @@ final class Codebase
             );
         }
 
+        $previous_stage = Perf\Collector::stage('scan.files');
+        Perf\Collector::step($step);
         $has_changes = $this->scanner->scanFiles($this->classlikes, $threads);
 
         // a taint analysis analyzes the bodies of inherited methods again, for the classes inheriting them (see
@@ -1062,6 +1076,8 @@ final class Codebase
             }
         }
 
+        Perf\Collector::stage('scan.populate');
+
         if ($has_changes) {
             // the classes scanned again may make other `new`
             $this->constructor_argument_starts = null;
@@ -1069,6 +1085,8 @@ final class Codebase
             // the files scanned again may declare other constants
             $this->global_constant_types_by_wildcard = [];
         }
+
+        Perf\Collector::stage($previous_stage);
     }
 
     /**
@@ -1168,6 +1186,8 @@ final class Codebase
             throw new UnexpectedValueException('Should not be checking references');
         }
 
+        $symbol = ltrim($symbol, '\\');
+
         if (str_contains($symbol, '::$')) {
             return $this->findReferencesToProperty($symbol);
         }
@@ -1177,7 +1197,8 @@ final class Codebase
                 + $this->findReferencesToClassConstant($symbol);
         }
 
-        return $this->findReferencesToClassLike($symbol);
+        // a name without `::` is a class-like's or a function's
+        return $this->findReferencesToClassLike($symbol) + $this->findReferencesToMethod($symbol);
     }
 
     /**
@@ -1271,6 +1292,24 @@ final class Codebase
     public function addGlobalConstantType(string $const_id, Union $type): void
     {
         self::$stubbed_constants[$const_id] = $type;
+    }
+
+    /**
+     * @internal
+     * @psalm-capabilities read-globals|write-globals
+     */
+    public function addDeprecatedGlobalConstant(string $const_id): void
+    {
+        self::$deprecated_stubbed_constants[$const_id] = true;
+    }
+
+    /**
+     * @internal
+     * @psalm-capabilities read-globals
+     */
+    public function isDeprecatedGlobalConstant(string $const_id): bool
+    {
+        return isset(self::$deprecated_stubbed_constants[$const_id]);
     }
 
     /**
@@ -3450,11 +3489,13 @@ final class Codebase
      * Whether a native class-like stubbed with a newer `@since` than the analysed PHP version is
      * provided by a polyfill the project's composer autoloader can load (e.g. `Stringable` from
      * symfony/polyfill-php80). Such polyfills are usually never scanned, since the stub already
-     * defines the class, so the autoloader is asked directly.
+     * defines the class, so the autoloader is asked directly. The polyfills Psalm itself requires don't count.
      */
     public function isClassLikePolyfilled(string $fq_classlike_name): bool
     {
-        return $this->config->getComposerFilePathForClassLike($fq_classlike_name) !== false;
+        $file_path = $this->config->getComposerFilePathForClassLike($fq_classlike_name);
+
+        return $file_path !== false && !$this->config->isInUnrequiredPackage($file_path);
     }
 
     /**

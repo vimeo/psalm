@@ -4,18 +4,15 @@ declare(strict_types=1);
 
 namespace Psalm\Internal\ExecutionEnvironment;
 
-use Psalm\SourceControl\Git\CommitInfo;
+use Psalm\Internal\ExecutionEnvironment\Ci\AppVeyor;
+use Psalm\Internal\ExecutionEnvironment\Ci\CiProvider;
+use Psalm\Internal\ExecutionEnvironment\Ci\CircleCi;
+use Psalm\Internal\ExecutionEnvironment\Ci\GenericCi;
+use Psalm\Internal\ExecutionEnvironment\Ci\GithubActions;
+use Psalm\Internal\ExecutionEnvironment\Ci\Jenkins;
+use Psalm\Internal\ExecutionEnvironment\Ci\Scrutinizer;
+use Psalm\Internal\ExecutionEnvironment\Ci\TravisCi;
 use Psalm\SourceControl\Git\GitInfo;
-
-use function assert;
-use function explode;
-use function file_get_contents;
-use function json_decode;
-use function str_contains;
-use function str_replace;
-use function strtotime;
-
-use const JSON_THROW_ON_ERROR;
 
 /**
  * Environment variables collector for CI environment.
@@ -25,303 +22,52 @@ use const JSON_THROW_ON_ERROR;
  */
 final class BuildInfoCollector
 {
-    /**
-     * Read environment variables.
-     */
-    private array $readEnv = [];
+    private readonly Env $env;
 
     /**
+     * The first provider that matches the environment wins. The known CI services come first and the generic
+     * one, which matches any CI service, last; the order of the known ones only matters when the environment
+     * has the variables of several of them.
+     *
+     * @var list<CiProvider>
+     */
+    private readonly array $providers;
+
+    /**
+     * @param array<array-key, mixed> $env environment variables
      * @psalm-mutation-free
      */
-    public function __construct(
-        /**
-         * Environment variables.
-         *
-         * Overwritten through collection process.
-         */
-        protected array $env,
-    ) {
-    }
-
-    // API
-
-    /**
-     * Collect environment variables.
-     */
-    public function collect(): array
+    public function __construct(array $env)
     {
-        $this->readEnv = [];
-
-        $this
-            ->fillTravisCi()
-            ->fillCircleCi()
-            ->fillAppVeyor()
-            ->fillJenkins()
-            ->fillScrutinizer()
-            ->fillGithubActions();
-
-        return $this->readEnv;
-    }
-
-    // internal method
-
-    /**
-     * Fill Travis CI environment variables.
-     *
-     * "TRAVIS", "TRAVIS_JOB_ID" must be set.
-     *
-     * @return $this
-     * @psalm-suppress PossiblyUndefinedStringArrayOffset
-     * @psalm-external-mutation-free
-     */
-    private function fillTravisCi(): self
-    {
-        if (isset($this->env['TRAVIS']) && $this->env['TRAVIS'] && isset($this->env['TRAVIS_JOB_ID'])) {
-            $this->readEnv['CI_JOB_ID'] = $this->env['TRAVIS_JOB_ID'];
-            $this->env['CI_NAME'] = 'travis-ci';
-
-            // backup
-            $this->readEnv['TRAVIS'] = $this->env['TRAVIS'];
-            $this->readEnv['TRAVIS_JOB_ID'] = $this->env['TRAVIS_JOB_ID'];
-            $this->readEnv['CI_NAME'] = $this->env['CI_NAME'];
-            $this->readEnv['TRAVIS_TAG'] = $this->env['TRAVIS_TAG'] ?? '';
-
-            $repo_slug = (string) $this->env['TRAVIS_REPO_SLUG'];
-
-            if ($repo_slug) {
-                $slug_parts = explode('/', $repo_slug);
-                $this->readEnv['CI_REPO_OWNER'] = $slug_parts[0];
-                $this->readEnv['CI_REPO_NAME'] = $slug_parts[1];
-            }
-
-            $pr_slug = (string) ($this->env['TRAVIS_PULL_REQUEST_SLUG'] ?? '');
-
-            if ($pr_slug) {
-                $slug_parts = explode('/', $pr_slug);
-
-                $this->readEnv['CI_PR_REPO_OWNER'] = $slug_parts[0];
-                $this->readEnv['CI_PR_REPO_NAME'] = $slug_parts[1];
-            }
-
-            $this->readEnv['CI_PR_NUMBER'] = $this->env['TRAVIS_PULL_REQUEST'];
-            $this->readEnv['CI_BRANCH'] = $this->env['TRAVIS_BRANCH'];
-        }
-
-        return $this;
+        $this->env = new Env($env);
+        $this->providers = [
+            new GithubActions(),
+            new Scrutinizer(),
+            new Jenkins(),
+            new AppVeyor(),
+            new CircleCi(),
+            new TravisCi(),
+            new GenericCi(),
+        ];
     }
 
     /**
-     * Fill CircleCI environment variables.
+     * Collect the build info of the CI service the environment variables are the ones of, as Shepherd reads it.
      *
-     * "CIRCLECI", "CIRCLE_BUILD_NUM" must be set.
+     * The git info of the checkout names the repository of a CI service Psalm does not know.
      *
-     * @return $this
-     * @psalm-external-mutation-free
+     * @return array<string, mixed> empty when it is not a CI service
      */
-    private function fillCircleCi(): self
+    public function collect(?GitInfo $git_info = null): array
     {
-        if (isset($this->env['CIRCLECI']) && $this->env['CIRCLECI'] && isset($this->env['CIRCLE_BUILD_NUM'])) {
-            $this->env['CI_BUILD_NUMBER'] = $this->env['CIRCLE_BUILD_NUM'];
-            $this->env['CI_NAME'] = 'circleci';
+        foreach ($this->providers as $provider) {
+            $build_info = $provider->collect($this->env, $git_info);
 
-            // backup
-            $this->readEnv['CIRCLECI'] = $this->env['CIRCLECI'];
-            $this->readEnv['CIRCLE_BUILD_NUM'] = $this->env['CIRCLE_BUILD_NUM'];
-            $this->readEnv['CI_NAME'] = $this->env['CI_NAME'];
-
-            $this->readEnv['CI_PR_REPO_OWNER'] = $this->env['CIRCLE_PR_USERNAME'] ?? null;
-            $this->readEnv['CI_PR_REPO_NAME'] = $this->env['CIRCLE_PR_REPONAME'] ?? null;
-
-            $this->readEnv['CI_REPO_OWNER'] = $this->env['CIRCLE_PROJECT_USERNAME'] ?? null;
-            $this->readEnv['CI_REPO_NAME'] = $this->env['CIRCLE_PROJECT_REPONAME'] ?? null;
-
-            $this->readEnv['CI_PR_NUMBER'] = $this->env['CIRCLE_PR_NUMBER'] ?? null;
-
-            $this->readEnv['CI_BRANCH'] = $this->env['CIRCLE_BRANCH'] ?? null;
-        }
-
-        return $this;
-    }
-
-    /**
-     * Fill AppVeyor environment variables.
-     *
-     * "APPVEYOR", "APPVEYOR_BUILD_NUMBER" must be set.
-     *
-     * @psalm-suppress PossiblyUndefinedStringArrayOffset
-     * @return $this
-     * @psalm-external-mutation-free
-     */
-    private function fillAppVeyor(): self
-    {
-        if (isset($this->env['APPVEYOR']) && $this->env['APPVEYOR'] && isset($this->env['APPVEYOR_BUILD_NUMBER'])) {
-            $this->readEnv['CI_BUILD_NUMBER'] = $this->env['APPVEYOR_BUILD_NUMBER'];
-            $this->readEnv['CI_JOB_ID'] = $this->env['APPVEYOR_JOB_NUMBER'];
-            $this->readEnv['CI_PR_NUMBER'] = $this->env['APPVEYOR_PULL_REQUEST_NUMBER'] ?? '';
-            $this->env['CI_NAME'] = 'AppVeyor';
-
-            // backup
-            $this->readEnv['APPVEYOR'] = $this->env['APPVEYOR'];
-            $this->readEnv['APPVEYOR_BUILD_NUMBER'] = $this->env['APPVEYOR_BUILD_NUMBER'];
-            $this->readEnv['APPVEYOR_JOB_NUMBER'] = $this->env['APPVEYOR_JOB_NUMBER'];
-            $this->readEnv['APPVEYOR_REPO_BRANCH'] = $this->env['APPVEYOR_REPO_BRANCH'];
-            $this->readEnv['CI_NAME'] = $this->env['CI_NAME'];
-
-            $repo_slug = (string) ($this->env['APPVEYOR_REPO_NAME'] ?? '');
-
-            if ($repo_slug) {
-                $slug_parts = explode('/', $repo_slug);
-
-                $this->readEnv['CI_REPO_OWNER'] = $slug_parts[0];
-                $this->readEnv['CI_REPO_NAME'] = $slug_parts[1];
-            }
-
-            $pr_slug = (string) ($this->env['APPVEYOR_PULL_REQUEST_HEAD_REPO_NAME'] ?? '');
-
-            if ($pr_slug) {
-                $slug_parts = explode('/', $pr_slug);
-
-                $this->readEnv['CI_PR_REPO_OWNER'] = $slug_parts[0];
-                $this->readEnv['CI_PR_REPO_NAME'] = $slug_parts[1];
-            }
-
-            $this->readEnv['CI_BRANCH'] = $this->env['APPVEYOR_PULL_REQUEST_HEAD_REPO_BRANCH']
-                ?? $this->env['APPVEYOR_REPO_BRANCH'];
-        }
-
-        return $this;
-    }
-
-    /**
-     * Fill Jenkins environment variables.
-     *
-     * "JENKINS_URL", "BUILD_NUMBER" must be set.
-     *
-     * @return $this
-     * @psalm-external-mutation-free
-     */
-    private function fillJenkins(): self
-    {
-        if (isset($this->env['JENKINS_URL']) && isset($this->env['BUILD_NUMBER'])) {
-            $this->readEnv['CI_BUILD_NUMBER'] = $this->env['BUILD_NUMBER'];
-            $this->readEnv['CI_BUILD_URL'] = $this->env['JENKINS_URL'];
-            $this->env['CI_NAME'] = 'jenkins';
-
-            // backup
-            $this->readEnv['BUILD_NUMBER'] = $this->env['BUILD_NUMBER'];
-            $this->readEnv['JENKINS_URL'] = $this->env['JENKINS_URL'];
-            $this->readEnv['CI_NAME'] = $this->env['CI_NAME'];
-        }
-
-        return $this;
-    }
-
-    /**
-     * Fill Scrutinizer environment variables.
-     *
-     * "JENKINS_URL", "BUILD_NUMBER" must be set.
-     *
-     * @psalm-suppress PossiblyUndefinedStringArrayOffset
-     * @return $this
-     * @psalm-external-mutation-free
-     */
-    private function fillScrutinizer(): self
-    {
-        if (isset($this->env['SCRUTINIZER']) && $this->env['SCRUTINIZER']) {
-            $this->readEnv['CI_JOB_ID'] = $this->env['SCRUTINIZER_INSPECTION_UUID'];
-            $this->readEnv['CI_BRANCH'] = $this->env['SCRUTINIZER_BRANCH'];
-            $this->readEnv['CI_PR_NUMBER'] = $this->env['SCRUTINIZER_PR_NUMBER'] ?? '';
-
-            // backup
-            $this->readEnv['CI_NAME'] = 'Scrutinizer';
-
-            $repo_slug = (string) ($this->env['SCRUTINIZER_PROJECT'] ?? '');
-
-            if ($repo_slug) {
-                $slug_parts = explode('/', $repo_slug);
-
-                if ($this->readEnv['CI_PR_NUMBER']) {
-                    $this->readEnv['CI_PR_REPO_OWNER'] = $slug_parts[1];
-                    $this->readEnv['CI_PR_REPO_NAME'] = $slug_parts[2];
-                } else {
-                    $this->readEnv['CI_REPO_OWNER'] = $slug_parts[1];
-                    $this->readEnv['CI_REPO_NAME'] = $slug_parts[2];
-                }
+            if ($build_info !== null) {
+                return $build_info->toArray();
             }
         }
 
-        return $this;
-    }
-
-    /**
-     * Fill GitHub Actions environment variables.
-     *
-     * @return $this
-     * @psalm-suppress PossiblyUndefinedStringArrayOffset
-     */
-    private function fillGithubActions(): BuildInfoCollector
-    {
-        if (isset($this->env['GITHUB_ACTIONS'])) {
-            $this->env['CI_NAME'] = 'github-actions';
-            $this->env['CI_JOB_ID'] = $this->env['GITHUB_ACTIONS'];
-
-            $githubRef = (string) $this->env['GITHUB_REF'];
-            if (str_contains($githubRef, 'refs/heads/')) {
-                $githubRef = str_replace('refs/heads/', '', $githubRef);
-            } elseif (str_contains($githubRef, 'refs/tags/')) {
-                $githubRef = str_replace('refs/tags/', '', $githubRef);
-            }
-
-            $this->env['CI_BRANCH'] = $githubRef;
-
-            $this->readEnv['GITHUB_ACTIONS'] = $this->env['GITHUB_ACTIONS'];
-            $this->readEnv['GITHUB_REF'] = $this->env['GITHUB_REF'];
-            $this->readEnv['CI_NAME'] = $this->env['CI_NAME'];
-            $this->readEnv['CI_BRANCH'] = $this->env['CI_BRANCH'];
-
-            $slug_parts = explode('/', (string) $this->env['GITHUB_REPOSITORY']);
-
-            $this->readEnv['CI_REPO_OWNER'] = $slug_parts[0];
-            $this->readEnv['CI_REPO_NAME'] = $slug_parts[1];
-
-            if (isset($this->env['GITHUB_EVENT_PATH'])) {
-                $event_json = file_get_contents((string) $this->env['GITHUB_EVENT_PATH']);
-                assert($event_json !== false);
-                /** @var array */
-                $event_data = json_decode($event_json, true, 512, JSON_THROW_ON_ERROR);
-
-                if (isset($event_data['head_commit'])) {
-                    /**
-                     * @var array{
-                     *    id: string,
-                     *    author: array{name: string, email: string},
-                     *    committer: array{name: string, email: string},
-                     *    message: string,
-                     *    timestamp: string
-                     * }
-                     */
-                    $head_commit_data = $event_data['head_commit'];
-                    $gitinfo = new GitInfo(
-                        $githubRef,
-                        (new CommitInfo())
-                            ->setId($head_commit_data['id'])
-                            ->setAuthorName($head_commit_data['author']['name'])
-                            ->setAuthorEmail($head_commit_data['author']['email'])
-                            ->setCommitterName($head_commit_data['committer']['name'])
-                            ->setCommitterEmail($head_commit_data['committer']['email'])
-                            ->setMessage($head_commit_data['message'])
-                            ->setDate((int) strtotime($head_commit_data['timestamp'])),
-                        [],
-                    );
-
-                    $this->readEnv['git'] = $gitinfo->toArray();
-                }
-
-                if ($this->env['GITHUB_EVENT_PATH'] === 'pull_request') {
-                    $this->readEnv['CI_PR_NUMBER'] = $event_data['number'];
-                }
-            }
-        }
-        return $this;
+        return [];
     }
 }

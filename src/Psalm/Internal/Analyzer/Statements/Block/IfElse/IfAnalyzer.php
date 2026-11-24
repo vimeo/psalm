@@ -45,7 +45,6 @@ use function array_reduce;
 use function count;
 use function in_array;
 use function preg_match;
-use function preg_quote;
 use function spl_object_id;
 use function str_ends_with;
 
@@ -140,7 +139,12 @@ final class IfAnalyzer
 
                 foreach ($changed_var_ids as $changed_var_id => $_) {
                     foreach ($if_context->vars_in_scope as $var_id => $_) {
-                        if (preg_match('/' . preg_quote($changed_var_id, '/') . '[\]\[\-]/', $var_id)
+                        if (Reconciler::dependsOnNarrowedVar(
+                            $statements_analyzer->getCodebase(),
+                            $var_id,
+                            $changed_var_id,
+                            $if_context->vars_in_scope,
+                        )
                             && !array_key_exists($var_id, $changed_var_ids)
                             && !array_key_exists($var_id, $cond_referenced_var_ids)
                         ) {
@@ -196,6 +200,10 @@ final class IfAnalyzer
 
         $if_scope->if_actions = $final_actions;
         $if_scope->final_actions = $final_actions;
+
+        if (in_array(ScopeAnalyzer::ACTION_NONE, $final_actions, true)) {
+            $if_scope->phantom_classes_of_blocks[] = $if_context->phantom_classes;
+        }
 
         /** @var array<string, int> */
         $new_assigned_var_ids = $if_context->assigned_var_ids;
@@ -460,7 +468,6 @@ final class IfAnalyzer
     {
         if ($stmt instanceof PhpParser\Node\Expr\BinaryOp\BooleanOr
             || $stmt instanceof PhpParser\Node\Expr\BinaryOp\LogicalOr
-            || $stmt instanceof PhpParser\Node\Expr\BinaryOp\LogicalXor
         ) {
             return [
                 ...self::getDefinitelyEvaluatedOredExpressions($stmt->left),
