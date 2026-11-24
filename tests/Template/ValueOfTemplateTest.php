@@ -9,6 +9,8 @@ use Psalm\Tests\TestCase;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
+use const DIRECTORY_SEPARATOR;
+
 final class ValueOfTemplateTest extends TestCase
 {
     use InvalidCodeAnalysisTestTrait;
@@ -139,6 +141,38 @@ final class ValueOfTemplateTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'itemOfATemplateArrayAtItsKeyIsItsValue' => [
+                'code' => '<?php
+                    /**
+                     * @template T of array<string, int>
+                     * @param T $arr
+                     * @param key-of<T> $k
+                     * @return value-of<T>
+                     */
+                    function item(array $arr, $k) {
+                        return $arr[$k];
+                    }
+
+                    /**
+                     * @template T of array{a: int, b: string}
+                     * @param T $arr
+                     * @param key-of<T> $k
+                     * @return value-of<T>
+                     */
+                    function shapeItem(array $arr, $k) {
+                        return $arr[$k];
+                    }
+
+                    /**
+                     * @template T of array<string, int>
+                     * @param key-of<T> $k
+                     * @param value-of<T> $v
+                     * @return array<key-of<T>, value-of<T>>
+                     */
+                    function pair($k, $v): array {
+                        return [$k => $v];
+                    }',
+            ],
             'acceptsArrayValuesFn' => [
                 'code' => '<?php
                     /**
@@ -197,6 +231,35 @@ final class ValueOfTemplateTest extends TestCase
                         return 0;
                     }
                 ',
+            ],
+            'keyOfAndValueOfAFunctionTemplateBoundedByAShapeAreThoseOfTheBound' => [
+                'code' => '<?php
+                    /** @template TArr of array{foo: int, bar: string} */
+                    final class Holder {
+                        /** @return value-of<TArr> */
+                        public function value(): mixed {
+                            throw new Exception();
+                        }
+
+                        /** @return key-of<TArr> */
+                        public function key(): string {
+                            throw new Exception();
+                        }
+                    }
+
+                    function useScalar(int|string $s): void {}
+
+                    /**
+                     * @template A of array{foo: int, bar: string}
+                     * @param Holder<A> $h
+                     */
+                    function f(Holder $h): void {
+                        useScalar($h->value());
+                        echo $h->key() === "foo" ? 1 : 2;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'typeCheckAfterInArrayOnTemplate' => [
                 'code' => '<?php
@@ -727,6 +790,38 @@ final class ValueOfTemplateTest extends TestCase
                 'error_message' => 'MismatchingDocblockReturnType',
                 'error_levels' => [],
                 'php_version' => '8.1',
+            ],
+            'writeUnderTheKeyOfATemplateBoundedByAShapeWidensTheArray' => [
+                'code' => '<?php
+                    /**
+                     * @template T of array{a: int, b: string}
+                     * @param T $t
+                     * @param key-of<T> $k
+                     * @return T
+                     */
+                    function w(array $t, string $k): array {
+                        $t[$k] = 1;
+
+                        return $t;
+                    }',
+                'error_message' => 'InvalidReturnStatement - src' . DIRECTORY_SEPARATOR
+                    . "somefile.php:11:32 - The inferred type 'non-empty-array<'a'|'b'|(key-of",
+                'error_levels' => [],
+                'php_version' => '8.2',
+            ],
+            'itemOfATemplateArrayAtTheKeyOfAnotherTemplateIsNotItsValue' => [
+                'code' => '<?php
+                    /**
+                     * @template T of array<string, int>
+                     * @template U of array<string, int>
+                     * @param T $arr
+                     * @param key-of<U> $k
+                     * @return value-of<T>
+                     */
+                    function item(array $arr, $k) {
+                        return $arr[$k];
+                    }',
+                'error_message' => 'InvalidReturnStatement',
             ],
             'valueOfTemplateIdenticalToImpossibleLiteral' => [
                 'code' => '<?php

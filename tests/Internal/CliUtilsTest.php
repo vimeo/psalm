@@ -184,6 +184,25 @@ final class CliUtilsTest extends TestCase
         self::assertEquals($expected, $result);
     }
 
+    public function testSyncShortOptionsCopiesGivenLongOptionsOntoTheirShortAliases(): void
+    {
+        $options = ['help' => false, 'config' => 'psalm.xml', 'root' => ['a', 'b'], 'c' => 'ignored.xml'];
+
+        CliUtils::syncShortOptions($options, ['help' => 'h', 'monochrome' => 'm', 'config' => 'c', 'root' => 'r']);
+
+        self::assertSame(
+            [
+                'help' => false,
+                'config' => 'psalm.xml',
+                'root' => ['a', 'b'],
+                'c' => 'psalm.xml',
+                'h' => false,
+                'r' => ['a', 'b'],
+            ],
+            $options,
+        );
+    }
+
     public function testUseColorWithoutAnyEnvironmentHintFollowsTheTtyRule(): void
     {
         $this->withEnv([], static function (): void {
@@ -319,6 +338,31 @@ final class CliUtilsTest extends TestCase
             chdir($cwd);
             unlink($file);
             rmdir($dir);
+        }
+    }
+
+    #[DataProvider('provideMissingRootDirectories')]
+    public function testRootDirectoryNotFoundMessage(string $root, string $shown): void
+    {
+        self::assertSame(
+            'Could not locate root directory ' . $shown,
+            CliUtils::getRootDirectoryNotFoundMessage('C:\project', $root),
+        );
+    }
+
+    /**
+     * @return iterable<string, array{string, string}>
+     * @psalm-pure
+     */
+    public static function provideMissingRootDirectories(): iterable
+    {
+        yield 'a path from the root' => ['/does-not-exist', '/does-not-exist'];
+        yield 'a relative path' => ['does-not-exist', 'C:\project' . DIRECTORY_SEPARATOR . 'does-not-exist'];
+        yield 'a drive path' => ['D:\does-not-exist', 'D:\does-not-exist'];
+        yield 'a drive path with a slash' => ['D:/does-not-exist', 'D:/does-not-exist'];
+
+        if (DIRECTORY_SEPARATOR === '\\') {
+            yield 'a backslash path from the root of the drive' => ['\does-not-exist', '\does-not-exist'];
         }
     }
 

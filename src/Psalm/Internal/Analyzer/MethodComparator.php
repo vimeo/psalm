@@ -185,8 +185,7 @@ final class MethodComparator
 
         // a trait method takes the docblock of the parent method per using class (see Populator), not per storage
         $inherits_return_type = $implementer_method_storage->inherited_return_type
-            || (!$implementer_method_storage->has_docblock_param_types
-                && !$implementer_method_storage->has_docblock_return_type
+            || (!$implementer_method_storage->has_docblock_return_type
                 && isset($codebase->classlike_storage_provider->get($implementer_called_class_name)
                     ->documenting_method_ids[strtolower($guide_method_storage->cased_name ?? '')]));
 
@@ -803,57 +802,52 @@ final class MethodComparator
             // a variadic parameter takes the arguments that follow it by position, whatever their names
             if ($guide_param->name !== $implementer_param->name
                 && !$implementer_param->is_variadic
-                && $guide_method_storage->allowsNamedArguments()
                 && $implementer_classlike_storage->user_defined
                 && $implementer_param->location
-                && $guide_method_storage->cased_name
-                && (!str_starts_with($guide_method_storage->cased_name, '__')
-                    || ($guide_classlike_storage->preserve_constructor_signature
-                        && $guide_method_storage->cased_name === '__construct'))
+                && self::isParamNameBinding($config, $guide_classlike_storage, $guide_method_storage, $guide_param)
                 && $config->isInProjectDirs(
                     $implementer_param->location->file_path,
                 )
+                && !self::isNamedAsInAnotherOverriddenMethod(
+                    $codebase,
+                    $implementer_classlike_storage,
+                    $implementer_method_storage,
+                    $i,
+                    $implementer_param->name,
+                )
             ) {
                 // even if it's just a single arg, it needs to be renamed in case it's called with a single named arg
-                if ($config->allow_named_arg_calls
-                    || ($guide_classlike_storage->location
-                        && !$config->isInProjectDirs($guide_classlike_storage->location->file_path)
-                    )
-                    || $guide_method_storage->named_arguments === NamedArguments::STABLE
-                    || $guide_method_storage->requiresNamedArgument($guide_param)
-                ) {
-                    if ($codebase->alter_code) {
-                        $project_analyzer = ProjectAnalyzer::getInstance();
+                if ($codebase->alter_code) {
+                    $project_analyzer = ProjectAnalyzer::getInstance();
 
-                        if ($stmt && isset($project_analyzer->getIssuesToFix()['ParamNameMismatch'])) {
-                            $param_replacer = new ParamReplacementVisitor(
-                                $implementer_param->name,
-                                $guide_param->name,
-                            );
-
-                            $traverser = new NodeTraverser();
-                            $traverser->addVisitor($param_replacer);
-                            $traverser->traverse([$stmt]);
-
-                            if ($replacements = $param_replacer->getReplacements()) {
-                                FileManipulationBuffer::add(
-                                    $implementer_param->location->file_path,
-                                    $replacements,
-                                );
-                            }
-                        }
-                    } else {
-                        IssueBuffer::maybeAdd(
-                            new ParamNameMismatch(
-                                'Argument ' . ($i + 1) . ' of ' . $cased_implementer_method_id . ' has wrong name $'
-                                    . $implementer_param->name . ', expecting $'
-                                    . $guide_param->name . ' as defined by '
-                                    . $cased_guide_method_id,
-                                $implementer_param->location,
-                            ),
-                            $suppressed_issues + $implementer_classlike_storage->suppressed_issues,
+                    if ($stmt && isset($project_analyzer->getIssuesToFix()['ParamNameMismatch'])) {
+                        $param_replacer = new ParamReplacementVisitor(
+                            $implementer_param->name,
+                            $guide_param->name,
                         );
+
+                        $traverser = new NodeTraverser();
+                        $traverser->addVisitor($param_replacer);
+                        $traverser->traverse([$stmt]);
+
+                        if ($replacements = $param_replacer->getReplacements()) {
+                            FileManipulationBuffer::add(
+                                $implementer_param->location->file_path,
+                                $replacements,
+                            );
+                        }
                     }
+                } else {
+                    IssueBuffer::maybeAdd(
+                        new ParamNameMismatch(
+                            'Argument ' . ($i + 1) . ' of ' . $cased_implementer_method_id . ' has wrong name $'
+                                . $implementer_param->name . ', expecting $'
+                                . $guide_param->name . ' as defined by '
+                                . $cased_guide_method_id,
+                            $implementer_param->location,
+                        ),
+                        $suppressed_issues + $implementer_classlike_storage->suppressed_issues,
+                    );
                 }
             }
 
@@ -992,50 +986,6 @@ final class MethodComparator
                     : $guide_classlike_storage->parent_class,
             )
             : null;
-
-        // CallMapHandler needed due to https://github.com/vimeo/psalm/issues/10378
-        if (!$guide_param->signature_type
-            && $guide_param->type
-            && InternalCallMapHandler::inCallMap($cased_guide_method_id)) {
-            $guide_method_storage_param_type = TypeExpander::expandUnion(
-                $codebase,
-                $guide_param->type,
-                $guide_classlike_storage->is_trait && $guide_method_storage->abstract
-                    ? $implementer_classlike_storage->name
-                    : $guide_classlike_storage->name,
-                $guide_classlike_storage->is_trait && $guide_method_storage->abstract
-                    ? $implementer_classlike_storage->name
-                    : $guide_classlike_storage->name,
-                $guide_classlike_storage->is_trait && $guide_method_storage->abstract
-                    ? $implementer_classlike_storage->parent_class
-                    : $guide_classlike_storage->parent_class,
-            );
-
-            $builder = $guide_method_storage_param_type->getBuilder();
-            foreach ($builder->getAtomicTypes() as $k => $t) {
-                if ($t instanceof TTemplateParam) {
-                    $builder->removeType($k);
-
-                    foreach ($t->as->getAtomicTypes() as $as_t) {
-                        $builder->addType($as_t);
-                    }
-                }
-            }
-
-            if ($builder->hasMixed()) {
-                foreach ($builder->getAtomicTypes() as $k => $_) {
-                    if ($k !== 'mixed') {
-                        $builder->removeType($k);
-                    }
-                }
-            }
-            $guide_method_storage_param_type = $builder->freeze();
-            unset($builder);
-
-            if (!$guide_method_storage_param_type->hasMixed() || $codebase->analysis_php_version_id >= 8_00_00) {
-                $guide_param_signature_type = $guide_method_storage_param_type;
-            }
-        }
 
         $implementer_param_signature_type = TypeExpander::expandUnion(
             $codebase,
@@ -1786,5 +1736,71 @@ final class MethodComparator
                 $codebase,
             );
         }
+    }
+
+    /**
+     * Whether another method the implementer overrides names the parameter as the implementer does: the methods it
+     * overrides disagree, and no name fits them all
+     *
+     * @psalm-capabilities read-props
+     */
+    private static function isNamedAsInAnotherOverriddenMethod(
+        Codebase $codebase,
+        ClassLikeStorage $implementer_classlike_storage,
+        MethodStorage $implementer_method_storage,
+        int $offset,
+        string $name,
+    ): bool {
+        if ($implementer_method_storage->cased_name === null) {
+            return false;
+        }
+
+        $method_name = strtolower($implementer_method_storage->cased_name);
+
+        foreach ($implementer_classlike_storage->overridden_method_ids[$method_name] ?? [] as $overridden_method_id) {
+            if (!$codebase->methods->hasStorage($overridden_method_id)) {
+                continue;
+            }
+
+            $overridden_storage = $codebase->methods->getStorage($overridden_method_id);
+            $overridden_param = $overridden_storage->params[$offset] ?? null;
+
+            if ($overridden_param !== null
+                && $overridden_param->name === $name
+                && self::isParamNameBinding(
+                    $codebase->config,
+                    $codebase->classlike_storage_provider->get($overridden_method_id->fq_class_name),
+                    $overridden_storage,
+                    $overridden_param,
+                )
+            ) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Whether an override has to keep the name of this parameter, as it can be passed by name
+     *
+     * @psalm-capabilities read-props
+     */
+    private static function isParamNameBinding(
+        Config $config,
+        ClassLikeStorage $guide_classlike_storage,
+        MethodStorage $guide_method_storage,
+        FunctionLikeParameter $guide_param,
+    ): bool {
+        return $guide_method_storage->allowsNamedArguments()
+            && $guide_method_storage->cased_name
+            && (!str_starts_with($guide_method_storage->cased_name, '__')
+                || ($guide_classlike_storage->preserve_constructor_signature
+                    && $guide_method_storage->cased_name === '__construct'))
+            && ($config->allow_named_arg_calls
+                || ($guide_classlike_storage->location
+                    && !$config->isInProjectDirs($guide_classlike_storage->location->file_path))
+                || $guide_method_storage->named_arguments === NamedArguments::STABLE
+                || $guide_method_storage->requiresNamedArgument($guide_param));
     }
 }
