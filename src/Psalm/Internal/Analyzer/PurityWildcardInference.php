@@ -9,6 +9,7 @@ use Psalm\Codebase;
 use Psalm\Internal\Type\PurityWildcardPaths;
 use Psalm\Storage\Capabilities;
 use Psalm\Storage\ClassLikeStorage;
+use Psalm\Storage\TemplateVariance;
 use Psalm\Type\Atomic\TCapabilities;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TTemplateParam;
@@ -128,7 +129,7 @@ final class PurityWildcardInference
             foreach ($bounds as $bound) {
                 if (!Capabilities::isPurityType($bound)) {
                     $type_args_required = $type_args_required
-                        || !($receiver_storage->template_covariants[$template_index] ?? false);
+                        || $receiver_storage->getTemplateVariance($template_index) !== TemplateVariance::Covariant;
                 } else {
                     $standing_for = self::getTemplatesStandingFor($receiver_storage, $template_name);
                     $purity_templates[] = $standing_for;
