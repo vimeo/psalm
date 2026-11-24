@@ -3490,6 +3490,11 @@ final class ForeachTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'invalidIteratorQuotesTheLiteralType' => [
+                'code' => '<?php
+                    foreach (5 as $x) {}',
+                'error_message' => 'Cannot iterate over \'5',
+            ],
             'invalidGeneratorIteratorShowsTheRefinedSendType' => [
                 'code' => '<?php
                     /** @return Generator<int, int, non-empty-string, void> */
@@ -3499,7 +3504,7 @@ final class ForeachTest extends TestCase
                     }
 
                     foreach (g() as $_) {}',
-                'error_message' => 'non-null send() type Generator<int, int, non-empty-string',
+                'error_message' => 'non-null send() type \'Generator<int, int, non-empty-string',
             ],
             'propertyNarrowedBeforeTheLoopIsForgottenAfterABreakReassigningItsObject' => [
                 'code' => '<?php
