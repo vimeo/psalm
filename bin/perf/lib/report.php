@@ -6,6 +6,12 @@ const REPORT_MAX_BYTES = 60_000;
 const DETAILS_BUDGET_BYTES = 40_000;
 const LOG_TAIL_LINES = 15;
 const LOG_TAIL_BYTES = 2_000;
+/** Cap on an added or removed issue line, after class names are shortened. */
+const EXAMPLE_CHARS = 300;
+/** Unchanged text kept on each side of a change. */
+const CONTEXT_CHARS = 40;
+/** Cap on each side of one change. */
+const CHANGE_CHARS = 300;
 /** Wall changes within ±this are runner noise; a larger drop counts as an improvement. */
 const WALL_NOISE_PCT = 10.0;
 const VERDICT_ICONS = ['pass' => '✅', 'warn' => '⚠️', 'fail' => '❌', 'skip' => '💥'];
@@ -14,7 +20,7 @@ const VERDICT_ORDER = ['fail' => 0, 'warn' => 1, 'skip' => 2, 'pass' => 3];
 const TABLE_LEGEND = "<details><summary>How to read this table</summary>\n\n"
     . "- **Memory**: Psalm's own peak figure, `threads=1`. More than +5 % fails, unless the PR changes "
     . "`composer.json`.\n"
-    . '- **Wall**: base and head run on the same runner; ±10 % is noise. Above +20 % warns, never fails. '
+    . '- **Wall**: base and head run on the same runner; ±10 % is noise. Above +10 % warns, never fails. '
     . "*re-run*: a reversed second run was taken and the faster kept.\n"
     . '- **Issues**: head count over all categories, then $\color{red}{\textsf{+added}}$ '
     . '$\color{green}{\textsf{-removed}}$ against base.' . "\n"
@@ -27,7 +33,10 @@ const TABLE_LEGEND = "<details><summary>How to read this table</summary>\n\n"
     . "be new detection or false positives, fewer can be fixed false positives or lost detection.\n"
     . "- **Dead code**: head count of unused-code issues, shown only when a run reported some (`findUnusedCode`). "
     . "More is red, fewer is green.\n"
-    . "- **Total**: sum over the projects compared on both sides. Thresholds apply per project, not to the total.\n"
+    . "- **Total**: sum over the projects compared on both sides. Its wall time warns above +5 % (±5 % is noise); "
+    . "the other thresholds apply per project.\n"
+    . '- **Profiling**: when both sides support it, the measured runs use `--debug-performance=PATH` for the hot-files '
+    . "block, which adds the same small CPU and memory cost to both sides.\n"
     . '- **Colors**: $\color{red}{\textsf{red}}$ past a fail or warn threshold (or more issues), '
     . '$\color{green}{\textsf{green}}$ an improvement past noise (or fewer issues), '
     . '$\color{orange}{\textsf{orange}}$ needs review, '
@@ -312,7 +321,7 @@ function totalRow(array $projects, bool $deadCode): ?string
         '**Total**',
         fmtInt((int) round($mb['head'])) . pctBadge(pctDelta($mb['base'], $mb['head']), MB_FAIL_PCT, MB_FAIL_PCT),
         sprintf('%.1f', $wall['head'])
-            . pctBadge(pctDelta($wall['base'], $wall['head']), WALL_WARN_PCT, WALL_NOISE_PCT),
+            . pctBadge(pctDelta($wall['base'], $wall['head']), TOTAL_WALL_WARN_PCT, TOTAL_WALL_WARN_PCT),
         fmtInt($issues['head']) . addedRemovedBadge($issues['added'], $issues['removed']),
         fmtInt($weighted['head']) . countBadge($weighted['delta']),
         $category('taint'),
@@ -347,7 +356,16 @@ function performanceWord(array $projects): string
         $improved = $improved || $mb < -MB_FAIL_PCT || $wall < -WALL_NOISE_PCT;
     }
 
-    return $compared ? ($improved ? 'improved' : 'unchanged') : 'not compared';
+    if (!$compared) {
+        return 'not compared';
+    }
+
+    $totalWall = totalWallDelta($projects) ?? 0.0;
+    if ($totalWall > TOTAL_WALL_WARN_PCT) {
+        return 'regressed';
+    }
+
+    return $improved || $totalWall < -TOTAL_WALL_WARN_PCT ? 'improved' : 'unchanged';
 }
 
 /**
@@ -437,11 +455,27 @@ function detailsBody(array $p): string
 
         $parts[] = implode("\n", $rows);
 
+        if ($i['changed'] > 0) {
+            $shown = array_sum(array_column($i['changed_examples'], 'count'));
+            $hunks = implode("\n\n", array_map(changeHunk(...), $i['changed_examples']));
+            $parts[] = "**Changed in place** ({$i['changed']})"
+                . (str_contains($hunks, '{self}') ? '; `{self}` is the class named after the file' : '')
+                . "\n\n```diff\n{$hunks}\n```"
+                . ($i['changed'] > $shown ? "\n\n… and " . ($i['changed'] - $shown) . ' more' : '');
+        }
+
         foreach (['added', 'removed'] as $kind) {
             if ($i["{$kind}_examples"] !== []) {
-                $more = $i[$kind] - count($i["{$kind}_examples"]);
-                $items = array_map(static fn(string $e): string => '- ' . inlineCode($e), $i["{$kind}_examples"]);
-                $parts[] = '**' . ucfirst($kind) . "** ({$i[$kind]})\n\n" . implode("\n", $items)
+                $total = $i["unpaired_{$kind}"];
+                $more = $total - count($i["{$kind}_examples"]);
+                $items = array_map(static fn(array $e): string => '- ' . inlineCode(mb_strimwidth(
+                    "{$e['file']}:{$e['line']} {$e['type']} ({$e['severity']}): "
+                        . shortClassNames([$e['message']])[0],
+                    0,
+                    EXAMPLE_CHARS,
+                    '…',
+                )), $i["{$kind}_examples"]);
+                $parts[] = '**' . ucfirst($kind) . "** ({$total})\n\n" . implode("\n", $items)
                     . ($more > 0 ? "\n- … and {$more} more" : '');
             }
         }
@@ -482,6 +516,90 @@ function detailsBody(array $p): string
 }
 
 /**
+ * One hunk for a group of identical in-place changes: `@@ location type @@` (several locations as context lines),
+ * then the old messages as `-` lines and the new ones as `+` lines, their shared text trimmed alike.
+ *
+ * @param array{
+ *     old: list<array{type: string, message: string}>, new: list<array{type: string, message: string}>,
+ *     locations: list<string>, count: int
+ * } $g
+ */
+function changeHunk(array $g): string
+{
+    $issues = [...$g['old'], ...$g['new']];
+    $messages = shortClassNames(array_column($issues, 'message'));
+    $oldCount = count($g['old']);
+    $segments = changeSegments(array_slice($messages, 0, $oldCount), array_slice($messages, $oldCount));
+    $types = array_values(array_unique(array_column($issues, 'type')));
+    $type = count($types) === 1 ? " {$types[0]}" : '';
+    if ($g['count'] === 1) {
+        $lines = ["@@ {$g['locations'][0]}{$type} @@"];
+    } else {
+        $more = $g['count'] - count($g['locations']);
+        $lines = [
+            "@@ {$g['count']} places{$type} @@",
+            ...array_map(static fn(string $location): string => "  {$location}", $g['locations']),
+            ...($more > 0 ? ["  … and {$more} more"] : []),
+        ];
+    }
+
+    $width = max(array_map(strlen(...), $types));
+    foreach ($issues as $k => $issue) {
+        $lines[] = ($k < $oldCount ? '- ' : '+ ') . ($type === '' ? str_pad("{$issue['type']}:", $width + 2) : '')
+            . changeLine($segments, $k);
+    }
+
+    return implode("\n", $lines);
+}
+
+/**
+ * Message $k of the segments: shared text cut to whole words around the changes, CONTEXT_CHARS or a bit more on
+ * each side, so that the `-` and `+` lines are trimmed alike.
+ *
+ * @param list<list<string>> $segments
+ */
+function changeLine(array $segments, int $k): string
+{
+    $line = '';
+    $last = count($segments) - 1;
+    foreach ($segments as $s => $segment) {
+        $text = $segment[$k];
+        if (!isShared($segment)) {
+            $line .= mb_strimwidth($text, 0, CHANGE_CHARS, '…');
+            continue;
+        }
+
+        $start = contextTokens($text, false);
+        $end = contextTokens($text, true);
+        $line .= match (true) {
+            $last === 0 => mb_strimwidth($text, 0, EXAMPLE_CHARS, '…'),
+            $s === 0 => $end === $text ? $text : "…{$end}",
+            $s === $last => $start === $text ? $text : "{$start}…",
+            mb_strlen($start) + mb_strlen($end) < mb_strlen($text) => "{$start}…{$end}",
+            default => $text,
+        };
+    }
+
+    return $line;
+}
+
+/** Whole tokens from the start (or the end) of $text, at least CONTEXT_CHARS long. */
+function contextTokens(string $text, bool $fromEnd): string
+{
+    $tokens = messageTokens($text);
+    $kept = '';
+    foreach ($fromEnd ? array_reverse($tokens) : $tokens as $token) {
+        if (mb_strlen($kept) >= CONTEXT_CHARS) {
+            break;
+        }
+
+        $kept = $fromEnd ? $token . $kept : $kept . $token;
+    }
+
+    return $kept;
+}
+
+/**
  * "Psalm memory +7.7 % (limit +5 %); issues +9 −3": notes and issue changes.
  *
  * @param array<string, mixed> $p
@@ -498,7 +616,7 @@ function detailsTitle(array $p): string
 }
 
 /**
- * @param array<string, mixed> $summary result of compareAll() plus base_sha and head_sha
+ * @param array<string, mixed> $summary result of compareAll() plus base_sha, head_sha and hot_files
  */
 function renderReport(array $summary, ?string $runUrl): string
 {
@@ -533,7 +651,7 @@ function renderReport(array $summary, ?string $runUrl): string
     }
 
     $out .= totalRow($projects, $deadCode) ?? '';
-    $out .= "\n" . TABLE_LEGEND . "\n";
+    $out .= "\n" . TABLE_LEGEND . "\n" . renderHotFiles($summary['hot_files']);
 
     $footer = $summary['deps_changed']
         ? "\ncomposer.json changed in this PR, so head dependencies were re-resolved; "
@@ -600,9 +718,15 @@ function runCompare(array $args): int
     $names = ['plan', 'in', 'base-sha', 'head-sha', 'deps-changed', 'out-md', 'out-json', 'run-url'];
     $options = parseOptions($args, $names);
     requireOptions($options, array_slice($names, 0, 7));
-    $summary = compareAll(readJsonFile($options['plan']), $options['in'], $options['deps-changed'] === '1');
+    $plan = readJsonFile($options['plan']);
+    $summary = compareAll($plan, $options['in'], $options['deps-changed'] === '1');
     $summary += ['base_sha' => $options['base-sha'], 'head_sha' => $options['head-sha']];
-    writeJsonFile($options['out-json'], ['schema' => 1] + $summary);
+    try {
+        $summary['hot_files'] = collectHotFiles($plan, $options['in'], $summary['projects']);
+    } catch (Throwable $e) {
+        $summary['hot_files'] = ['failed' => $e->getMessage()]; // informational: never lose the report or the verdict
+    }
+    writeJsonFile($options['out-json'], ['schema' => 2] + $summary);
     if (file_put_contents($options['out-md'], renderReport($summary, $options['run-url'] ?? null)) === false) {
         throw new RuntimeException("cannot write {$options['out-md']}");
     }

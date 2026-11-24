@@ -63,9 +63,7 @@ class intList {
 
 $list = new intList([1,2,3]);
 
-// This is ok, as the callable is pure
-echo $list->walk(fn (int $c, int $v): int => $c + $v);
+echo $list->walk(fn (int $c, int $v): int => $c + $v); // no issue: the closure is pure
 
-// This will cause an InvalidArgument error, as the closure calls an impure function
-echo $list->walk(fn (int $c, int $v): int => $c + random_int(1, $v));
+echo $list->walk(fn (int $c, int $v): int => $c + random_int(1, $v)); // ArgumentTypeCoercion: the closure calls random_int(), which requires io
 ```

@@ -8,6 +8,7 @@ use Closure;
 use PhpParser\Node\Arg;
 use Psalm\CodeLocation;
 use Psalm\Context;
+use Psalm\Internal\Perf;
 use Psalm\Internal\Provider\ParamsProvider\FfiMemcmpParamsProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\PdoStatementSetFetchMode;
 use Psalm\Plugin\EventHandler\Event\MethodParamsProviderEvent;
@@ -56,11 +57,12 @@ final class MethodParamsProvider
 
     /**
      * @param Closure(MethodParamsProviderEvent): ?array<int, FunctionLikeParameter> $c
-     * @psalm-external-mutation-free
      */
     public function registerClosure(string $fq_classlike_name, Closure $c): void
     {
-        self::$handlers[strtolower($fq_classlike_name)][] = $c;
+        self::$handlers[strtolower($fq_classlike_name)][] = Perf\Collector::$enabled
+            ? Perf\Collector::wrap($c, 'MethodParams')
+            : $c;
     }
 
     /**

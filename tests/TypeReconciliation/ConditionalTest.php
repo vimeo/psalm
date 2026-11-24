@@ -196,6 +196,319 @@ final class ConditionalTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'countComparedToAClassConstantNarrowsTheArray' => [
+                'code' => '<?php
+                    final class Terms {
+                        private const LIMIT = 4;
+                        private const ONE = 1;
+                        private const ZERO = 0;
+
+                        /** @param non-empty-list<int> $terms */
+                        private static function widen(array $terms): int {
+                            return 0;
+                        }
+
+                        /** @param list<int> $terms */
+                        public static function greater(array $terms): int {
+                            return count($terms) > self::LIMIT ? self::widen($terms) : 0;
+                        }
+
+                        /** @param list<int> $terms */
+                        public static function greaterOrEqual(array $terms): int {
+                            return count($terms) >= self::ONE ? self::widen($terms) : 0;
+                        }
+
+                        /** @param list<int> $terms */
+                        public static function constantOnTheLeft(array $terms): int {
+                            return self::ZERO < count($terms) ? self::widen($terms) : 0;
+                        }
+
+                        /** @param list<int> $terms */
+                        public static function equal(array $terms): int {
+                            return count($terms) === self::ONE ? self::widen($terms) : 0;
+                        }
+
+                        /** @param list<int> $terms */
+                        public static function smaller(array $terms): int {
+                            if (count($terms) < self::ONE) {
+                                return 0;
+                            }
+
+                            return self::widen($terms);
+                        }
+
+                        /** @param list<int> $terms */
+                        public static function smallerOrEqual(array $terms): int {
+                            if (count($terms) <= self::ZERO) {
+                                return 0;
+                            }
+
+                            return self::widen($terms);
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
+            'negativeCountComparisonsDoNotNarrowTheArray' => [
+                'code' => '<?php
+                    final class Counts {
+                        private const NEG = -1;
+
+                        /** @param list<int> $a */
+                        public static function equalToMinusOne(array $a): int {
+                            if (count($a) === -1) {
+                                return 0;
+                            }
+
+                            /** @psalm-check-type-exact $a = list<int> */
+                            return 0;
+                        }
+
+                        /** @param list<int> $a */
+                        public static function looselyEqualToMinusOne(array $a): int {
+                            if (count($a) == -1) {
+                                return 0;
+                            }
+
+                            /** @psalm-check-type-exact $a = list<int> */
+                            return 0;
+                        }
+
+                        /** @param list<int> $a */
+                        public static function equalToANegativeConstant(array $a): int {
+                            if (count($a) === self::NEG) {
+                                return 0;
+                            }
+
+                            /** @psalm-check-type-exact $a = list<int> */
+                            return 0;
+                        }
+
+                        /** @param list<int> $a */
+                        public static function minusOneOnTheLeft(array $a): int {
+                            if (-1 === count($a)) {
+                                return 0;
+                            }
+
+                            /** @psalm-check-type-exact $a = list<int> */
+                            return 0;
+                        }
+
+                        /** @param list<int> $a */
+                        public static function smallerThanMinusOne(array $a): int {
+                            if (count($a) < -1) {
+                                return 0;
+                            }
+
+                            /** @psalm-check-type-exact $a = list<int> */
+                            return 0;
+                        }
+
+                        /** @param list<int> $a */
+                        public static function smallerThanANegativeConstant(array $a): int {
+                            if (count($a) < self::NEG) {
+                                return 0;
+                            }
+
+                            /** @psalm-check-type-exact $a = list<int> */
+                            return 0;
+                        }
+
+                        /** @param list<int> $a */
+                        public static function smallerThanZero(array $a): int {
+                            if (count($a) < 0) {
+                                return 0;
+                            }
+
+                            /** @psalm-check-type-exact $a = list<int> */
+                            return 0;
+                        }
+
+                        /** @param list<int> $a */
+                        public static function smallerOrEqualToANegativeConstant(array $a): int {
+                            if (count($a) <= self::NEG) {
+                                return 0;
+                            }
+
+                            /** @psalm-check-type-exact $a = list<int> */
+                            return 0;
+                        }
+
+                        /** @param list<int> $a */
+                        public static function greaterThanZeroOnTheLeft(array $a): int {
+                            if (0 > count($a)) {
+                                return 0;
+                            }
+
+                            /** @psalm-check-type-exact $a = list<int> */
+                            return 0;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['TypeDoesNotContainType', 'RedundantCondition'],
+                'php_version' => '8.3',
+            ],
+            'strlenComparedToAClassConstant' => [
+                'code' => '<?php
+                    final class Lengths {
+                        private const ZERO = 0;
+                        private const NEG = -1;
+
+                        public static function greater(string $s): void {
+                            if (strlen($s) > self::ZERO) {
+                                /** @psalm-check-type-exact $s = non-empty-string */
+                            }
+                        }
+
+                        public static function equalToZero(string $s): void {
+                            if (strlen($s) === self::ZERO) {
+                                return;
+                            }
+
+                            /** @psalm-check-type-exact $s = non-empty-string */
+                        }
+
+                        public static function zeroOnTheLeft(string $s): void {
+                            if (self::ZERO < strlen($s)) {
+                                /** @psalm-check-type-exact $s = non-empty-string */
+                            }
+                        }
+
+                        public static function greaterThanANegativeConstant(string $s): void {
+                            if (strlen($s) > self::NEG) {
+                                /** @psalm-check-type-exact $s = string */
+                            }
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
+            'instanceofParentNarrowsToTheParentClass' => [
+                'code' => '<?php
+                    interface Shape {}
+
+                    class Box implements Shape {
+                        public function getSize(): int {
+                            return 1;
+                        }
+                    }
+
+                    final class TaggedBox extends Box {
+                        public function narrowed(Shape $shape): int {
+                            if ($shape instanceof parent) {
+                                /** @psalm-check-type-exact $shape = Box */
+                                return $shape->getSize();
+                            }
+
+                            return 0;
+                        }
+
+                        public function negated(Shape $shape): int {
+                            if (!$shape instanceof parent) {
+                                return 0;
+                            }
+
+                            return $shape->getSize();
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+            ],
+            'parentOfTheClassUsingATraitNarrowsInTheTraitCode' => [
+                'code' => '<?php
+                    interface Shape {}
+
+                    class Box implements Shape {
+                        public function getSize(): int {
+                            return 1;
+                        }
+                    }
+
+                    trait T {
+                        public function viaInstanceof(Shape $shape): int {
+                            if ($shape instanceof parent) {
+                                return $shape->getSize();
+                            }
+
+                            return 0;
+                        }
+                    }
+
+                    final class UsesTrait extends Box {
+                        use T;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+            ],
+            'isAParentClassNarrowsToTheParentClass' => [
+                'code' => '<?php
+                    interface Shape {}
+
+                    class Box implements Shape {
+                        public function getSize(): int {
+                            return 1;
+                        }
+                    }
+
+                    final class TaggedBox extends Box {
+                        public function narrowed(Shape $shape): int {
+                            if (is_a($shape, parent::class)) {
+                                /** @psalm-check-type-exact $shape = Box */
+                                return $shape->getSize();
+                            }
+
+                            return 0;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+            ],
+            'getClassIdenticalToParentClassNarrowsToTheParentClass' => [
+                'code' => '<?php
+                    interface Shape {}
+
+                    class Box implements Shape {
+                        public function getSize(): int {
+                            return 1;
+                        }
+                    }
+
+                    final class TaggedBox extends Box {
+                        public function narrowed(Shape $shape): int {
+                            if (get_class($shape) === parent::class) {
+                                return $shape->getSize();
+                            }
+
+                            return 0;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+            ],
+            'classConstantIdenticalToParentClassNarrowsToTheParentClass' => [
+                'code' => '<?php
+                    interface Shape {}
+
+                    class Box implements Shape {
+                        public function getSize(): int {
+                            return 1;
+                        }
+                    }
+
+                    final class TaggedBox extends Box {
+                        public function narrowed(Shape $shape): int {
+                            if ($shape::class === parent::class) {
+                                return $shape->getSize();
+                            }
+
+                            return 0;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+            ],
             'negatedIsFloatCombinesTheRemainingTypes' => [
                 'code' => '<?php
                     /** @var numeric|"a" $x */
@@ -218,6 +531,19 @@ final class ConditionalTest extends TestCase
                             echo $x;
                         }
                     }',
+            ],
+            'varAssignedInTheRightOperandOfAnOrIsDefinedUnderTheSameOr' => [
+                'code' => '<?php
+                    final class Progress {
+                        public function advance(): void {
+                            echo ".";
+                        }
+                    }
+
+                    $a = rand(0, 1) === 1;
+
+                    $a || $p = new Progress;
+                    $a || $p->advance();',
             ],
             'varAssignedUnderNotNullIsDefinedUnderTheSameCheck' => [
                 'code' => '<?php
@@ -6505,6 +6831,35 @@ final class ConditionalTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'classNotEqualToAFinalClassExcludesIt' => [
+                'code' => '<?php
+                    final class A {}
+                    class B {}
+
+                    /** @var A|stdClass $final */;
+                    if ($final::class === A::class) {
+                        $final_if = $final;
+                    } else {
+                        $final_else = $final;
+                    }
+
+                    /** @var A|stdClass $by_get_class */;
+                    if (get_class($by_get_class) !== A::class) {
+                        $get_class_if = $by_get_class;
+                    }
+
+                    /** @var B|stdClass $not_final */;
+                    if ($not_final::class === B::class) {
+                        $not_final_if = $not_final;
+                    } else {
+                        $not_final_else = $not_final;
+                    }',
+                'assertions' => [
+                    '$final_else===' => 'stdClass',
+                    '$get_class_if===' => 'stdClass',
+                    '$not_final_else===' => 'B|stdClass',
+                ],
+            ],
             'classEqualToTheClassOfAnotherClassStillNarrows' => [
                 'code' => '<?php
                     class Bar {}
@@ -8304,7 +8659,8 @@ final class ConditionalTest extends TestCase
                     function getData(): ?array { return null; }
                     function check(): bool { return true; }
                     $r = (check() && ($data = getData()) !== null) ? 1 : $data;',
-                'error_message' => 'UndefinedGlobalVariable',
+                // assigned only when check() is true, so possibly undefined
+                'error_message' => 'PossiblyUndefinedGlobalVariable',
             ],
             'orWhoseLeftSideIsAConjunctionAndRightSideReassignsAVariableKeepsTheLeftNullable' => [
                 'code' => '<?php
