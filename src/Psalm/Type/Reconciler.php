@@ -376,10 +376,12 @@ class Reconciler
                         $has_unnested_alternative = true;
                     }
 
-                    // the isset of an offset that the keyed array has, and that isn't null, is always true
+                    // the isset of an offset that the keyed array has, and that isn't null, is always true (and its
+                    // negation never is)
                     if ($offsets_are_set
                         && $report_location
-                        && $new_type_part_part instanceof IsIsset
+                        && ($new_type_part_part instanceof IsIsset
+                            || ($new_type_part_part instanceof IsNotIsset && !$negated))
                         && $result_type
                         && !$is_equality
                         && !$inside_loop
@@ -392,7 +394,7 @@ class Reconciler
                             $result_type->getId(),
                             $key,
                             $new_type_part_part,
-                            true,
+                            $new_type_part_part instanceof IsIsset,
                             $negated,
                             $report_location,
                             $suppressed_issues,

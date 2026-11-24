@@ -3043,6 +3043,19 @@ final class RedundantConditionTest extends TestCase
                     }',
                 'error_message' => 'RedundantCondition - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:32 - Type \'v\' for $a[\'k\'] is always isset',
             ],
+            'negatedIssetOfAnArrayShapeKeyThatAlwaysExists' => [
+                'code' => '<?php
+                    function f(): string {
+                        $a = ["k" => "v"];
+
+                        if (!isset($a["k"])) {
+                            return "x";
+                        }
+
+                        return $a["k"];
+                    }',
+                'error_message' => 'TypeDoesNotContainType - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:30 - Type \'v\' for $a[\'k\'] is always isset, so its negation can never be true',
+            ],
             'issetOfAnArrayShapeKeyThatAlwaysExistsFromADocblock' => [
                 'code' => '<?php
                     /** @param array{k: int} $a */
