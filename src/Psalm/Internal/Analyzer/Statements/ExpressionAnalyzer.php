@@ -285,6 +285,14 @@ final class ExpressionAnalyzer
             return AssignmentAnalyzer::analyzeAssignmentOperation($statements_analyzer, $stmt, $context);
         }
 
+        if (($stmt instanceof PhpParser\Node\Expr\MethodCall || $stmt instanceof PhpParser\Node\Expr\NullsafeMethodCall)
+            && $statements_analyzer->getCodebase()->analysis_php_version_id >= 8_00_00
+            && ($short_circuited = NullsafeAnalyzer::analyzeShortCircuitedCall($statements_analyzer, $stmt, $context))
+                !== null
+        ) {
+            return $short_circuited;
+        }
+
         if ($stmt instanceof PhpParser\Node\Expr\MethodCall) {
             return MethodCallAnalyzer::analyze($statements_analyzer, $stmt, $context, true, $template_result);
         }

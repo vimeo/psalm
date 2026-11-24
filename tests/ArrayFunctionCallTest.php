@@ -163,6 +163,38 @@ final class ArrayFunctionCallTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'writeUnderTheLastKeyTwiceAndOfAPropertyKeepsAList' => [
+                'code' => '<?php
+                    /**
+                     * @param non-empty-list<int> $l
+                     * @return list<int>
+                     */
+                    function twice(array $l): array {
+                        $k = array_key_last($l);
+                        $l[$k] = 1;
+                        $l[$k] = 2;
+
+                        return $l;
+                    }
+
+                    final class Bag {
+                        /** @var list<int> */
+                        public array $items = [];
+
+                        public function m(): void {
+                            $k = array_key_last($this->items);
+
+                            if ($k === null) {
+                                return;
+                            }
+
+                            $this->items[$k] = 1;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MoreSpecificReturnType'],
+                'php_version' => '8.2',
+            ],
             'arrayColumnAndGetObjectVarsResolveClassConstantsOfThePropertyType' => [
                 'code' => '<?php
                     class Level {
@@ -2124,6 +2156,27 @@ final class ArrayFunctionCallTest extends TestCase
                     '$foo' => 'float',
                 ],
             ],
+            'arrayProductOfBools' => [
+                'code' => '<?php
+                    /** @param array<bool> $a */
+                    function allTrue(array $a): int {
+                        return array_product($a);
+                    }
+                    /** @param list<true> $a */
+                    function product(array $a): int {
+                        return array_product($a);
+                    }
+                    /** @var array<bool> $bools */
+                    $all = array_product($bools);
+                    /** @var list<true> $trues */
+                    $one = array_product($trues);
+                    $empty = array_product([]);',
+                'assertions' => [
+                    '$all===' => '0|1',
+                    '$one===' => '1',
+                    '$empty===' => '1',
+                ],
+            ],
             'arrayMapWithArrayAndCallable' => [
                 'code' => '<?php
                     /**
@@ -3331,6 +3384,16 @@ final class ArrayFunctionCallTest extends TestCase
                 'assertions' => [
                     '$d' => 'array<int, list{string}|string>',
                 ],
+            ],
+            'arraySpliceOffsetNotRepresentableAsIntIsNotZero' => [
+                'code' => '<?php
+                    /** @param list<int> $d */
+                    function f(array $d): void {
+                        array_splice($d, "1e999");
+                        /** @psalm-check-type-exact $d = list<int> */
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['InvalidScalarArgument'],
             ],
             'arraySpliceRefWithoutReplacement' => [
                 'code' => '<?php
@@ -4983,6 +5046,112 @@ final class ArrayFunctionCallTest extends TestCase
                     '$merged===' => "array<'age'|'name', 'a'|'b'|1>",
                 ],
             ],
+            'writeUnderTheLastKeyOfAListKeepsAList' => [
+                'code' => '<?php
+                    /**
+                     * @param list<string> $names
+                     * @return list<array{name: string, note: ?string}>
+                     */
+                    function annotate(array $names, string $note): array {
+                        $entries = [];
+                        foreach ($names as $name) {
+                            $entries[] = ["name" => $name, "note" => null];
+                            $key = array_key_last($entries);
+                            $entries[$key]["note"] = $note;
+                        }
+                        return $entries;
+                    }
+
+                    /** @param list<array{n: int}> $l */
+                    function maybeEmpty(array $l): void {
+                        $k = array_key_first($l);
+                        if ($k !== null) {
+                            $l[$k]["n"] = 2;
+                        }
+                        /** @psalm-check-type-exact $l = list<array{n: int}> */;
+                    }
+
+                    /** @param list<array{n: int}> $l */
+                    function anyKey(array $l, int $k): void {
+                        $l[$k]["n"] = 2;
+                        /** @psalm-check-type-exact $l = non-empty-array<int, array{n: int}> */;
+                    }',
+            ],
+            'writeUnderTheLastKeyOfAListPassedByNameKeepsAList' => [
+                'code' => '<?php
+                    /** @param non-empty-list<array{n: int}> $l */
+                    function named(array $l): void {
+                        $l[array_key_last(array: $l)]["n"] = 2;
+                        /** @psalm-check-type-exact $l = non-empty-list<array{n: int}> */;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'arrayFunctionsOfAnInvokableLaterInIntersection' => [
+                'code' => '<?php
+                    interface Named {}
+                    class StringHandlerClass { public function __invoke(string $value): int { return 1; } }
+
+                    /** @var list<string> $xs */
+                    $xs = [];
+                    /** @var Named&StringHandlerClass $class */
+                    $class = null;
+                    array_map($class, $xs);
+                    array_walk($xs, $class);
+                    $filtered = array_filter($xs, $class);',
+                'assertions' => [
+                    '$filtered===' => 'array<int<0, max>, string>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'arrayMapOfAnInvokableObject' => [
+                'code' => '<?php
+                    final class IsLong {
+                        public function __invoke(string $value): bool { return strlen($value) > 3; }
+                    }
+
+                    final class Notify {
+                        public function __invoke(string $value): void {}
+                    }
+
+                    /** @template T */
+                    final class Box {
+                        /** @param T $value */
+                        public function __construct(private mixed $value) {}
+
+                        /** @return T */
+                        public function __invoke(string $key): mixed { return $this->value; }
+                    }
+
+                    final class Identity {
+                        /**
+                         * @template T
+                         * @param T $value
+                         * @return T
+                         */
+                        public function __invoke(mixed $value): mixed { return $value; }
+                    }
+
+                    /** @var list<string> $xs */
+                    $xs = [];
+                    /** @var Box<int> $box */
+                    $box = new Box(1);
+
+                    $long = array_map(new IsLong(), $xs);
+                    $notified = array_map(new Notify(), $xs);
+                    $boxed = array_map($box, $xs);
+                    $same = array_map(new Identity(), $xs);',
+                'assertions' => [
+                    '$long===' => 'list<bool>',
+                    '$notified===' => 'list<null>',
+                    '$boxed===' => 'list<int>',
+                    '$same===' => 'list<mixed>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
         ];
     }
 
@@ -4993,6 +5162,139 @@ final class ArrayFunctionCallTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'closureParameterSharingOnlyNullWithTheArrayValuesIsInvalid' => [
+                'code' => '<?php
+                    final class Foo {}
+                    final class Bar {}
+
+                    /** @param list<?Foo> $l */
+                    function f(array $l): void {
+                        array_map(function (?Bar $b): int { return 1; }, $l);
+                    }',
+                'error_message' => 'InvalidArgument',
+            ],
+            'closureParameterSharingOnlyFalseWithTheArrayValuesIsInvalid' => [
+                'code' => '<?php
+                    final class Foo {}
+                    final class Bar {}
+
+                    /** @param list<Foo|false> $l */
+                    function f(array $l): void {
+                        array_map(
+                            /** @param Bar|false $b */
+                            function ($b): int { return 1; },
+                            $l,
+                        );
+                    }',
+                'error_message' => 'InvalidArgument',
+            ],
+            'closureParameterSharingAnObjectWithTheArrayValuesIsPossiblyInvalid' => [
+                'code' => '<?php
+                    final class Foo {}
+                    final class Bar {}
+
+                    /** @param list<Foo|Bar|null> $l */
+                    function f(array $l): void {
+                        array_map(function (?Bar $b): int { return 1; }, $l);
+                    }',
+                'error_message' => 'PossiblyInvalidArgument',
+            ],
+            'keyOfAListTakenBeforeTheListShrinksIsNoKeyAnyMore' => [
+                'code' => '<?php
+                    /**
+                     * @param non-empty-list<int> $l
+                     * @return list<int>
+                     */
+                    function popTwice(array $l): array {
+                        $k = array_key_last($l);
+                        array_pop($l);
+                        array_pop($l);
+                        $l[$k] = 1;
+
+                        return $l;
+                    }',
+                'error_message' => 'LessSpecificReturnStatement',
+                'error_levels' => [],
+                'php_version' => '8.2',
+            ],
+            'keyOfAListTakenBeforeTheListIsReassignedIsNoKeyAnyMore' => [
+                'code' => '<?php
+                    /**
+                     * @param list<int> $a
+                     * @param non-empty-list<int> $b
+                     * @return list<int>
+                     */
+                    function reassign(array $a, array $b): array {
+                        $k = array_key_last($b);
+                        $b = $a;
+                        $b[$k] = 1;
+
+                        return $b;
+                    }',
+                'error_message' => 'LessSpecificReturnStatement',
+                'error_levels' => [],
+                'php_version' => '8.2',
+            ],
+            'keyOfAListTakenBeforeTheListIsSlicedIsNoKeyAnyMore' => [
+                'code' => '<?php
+                    /**
+                     * @param non-empty-list<int> $l
+                     * @return list<int>
+                     */
+                    function sliced(array $l): array {
+                        $k = array_key_last($l);
+                        $l = array_slice($l, 1);
+                        $l[$k] = 1;
+
+                        return $l;
+                    }',
+                'error_message' => 'LessSpecificReturnStatement',
+                'error_levels' => [],
+                'php_version' => '8.2',
+            ],
+            'keyOfAListPropertyTakenBeforeAMethodCallIsNoKeyAnyMore' => [
+                'code' => '<?php
+                    final class Bag {
+                        /** @var list<int> */
+                        public array $items = [];
+
+                        public function reset(): void {
+                            $this->items = [];
+                        }
+
+                        public function m(): void {
+                            $k = array_key_last($this->items);
+
+                            if ($k === null) {
+                                return;
+                            }
+
+                            $this->reset();
+                            $this->items[$k] = 1;
+                        }
+                    }',
+                'error_message' => 'PropertyTypeCoercion',
+                'error_levels' => [],
+                'php_version' => '8.2',
+            ],
+            'foreachKeyOfAListIsNoKeyAnyMoreOnceTheListIsReassigned' => [
+                'code' => '<?php
+                    /**
+                     * @param list<int> $l
+                     * @return list<int>
+                     */
+                    function f(array $l): array {
+                        foreach ($l as $k => $_) {
+                            $l = [];
+                            $l[$k] = 1;
+                        }
+
+                        return $l;
+                    }',
+                'error_message' => 'LessSpecificReturnStatement',
+                'error_levels' => [],
+                'php_version' => '8.2',
+            ],
             'arrayMapOnAUnionOfAnArrayAndATemplateBoundedByAListIsNotAList' => [
                 'code' => '<?php
                     /**
@@ -5838,6 +6140,19 @@ final class ArrayFunctionCallTest extends TestCase
                         return !array_key_exists("a", $a);
                     }',
                 'error_message' => 'InvalidArrayOffset - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:50 - Cannot check offset',
+            ],
+            'arrayFilterWithAnInvokableLaterInIntersectionWithAWrongParamType' => [
+                'code' => '<?php
+                    interface Named {}
+                    class StringHandler { public function __invoke(string $value): int { return 1; } }
+
+                    /** @param list<int> $xs */
+                    function f(Named&StringHandler $h, array $xs): void {
+                        array_filter($xs, $h);
+                    }',
+                'error_message' => 'InvalidScalarArgument',
+                'error_levels' => [],
+                'php_version' => '8.1',
             ],
         ];
     }
