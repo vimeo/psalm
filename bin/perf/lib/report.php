@@ -35,6 +35,8 @@ const TABLE_LEGEND = "<details><summary>How to read this table</summary>\n\n"
     . "More is red, fewer is green.\n"
     . "- **Total**: sum over the projects compared on both sides. Its wall time warns above +5 % (±5 % is noise); "
     . "the other thresholds apply per project.\n"
+    . '- **Profiling**: when both sides support it, the measured runs use `--debug-performance=PATH` for the hot-files '
+    . "block, which adds the same small CPU and memory cost to both sides.\n"
     . '- **Colors**: $\color{red}{\textsf{red}}$ past a fail or warn threshold (or more issues), '
     . '$\color{green}{\textsf{green}}$ an improvement past noise (or fewer issues), '
     . '$\color{orange}{\textsf{orange}}$ needs review, '
@@ -719,7 +721,11 @@ function runCompare(array $args): int
     $plan = readJsonFile($options['plan']);
     $summary = compareAll($plan, $options['in'], $options['deps-changed'] === '1');
     $summary += ['base_sha' => $options['base-sha'], 'head_sha' => $options['head-sha']];
-    $summary['hot_files'] = collectHotFiles($plan, $options['in'], $summary['projects']);
+    try {
+        $summary['hot_files'] = collectHotFiles($plan, $options['in'], $summary['projects']);
+    } catch (Throwable $e) {
+        $summary['hot_files'] = ['failed' => $e->getMessage()]; // informational: never lose the report or the verdict
+    }
     writeJsonFile($options['out-json'], ['schema' => 2] + $summary);
     if (file_put_contents($options['out-md'], renderReport($summary, $options['run-url'] ?? null)) === false) {
         throw new RuntimeException("cannot write {$options['out-md']}");

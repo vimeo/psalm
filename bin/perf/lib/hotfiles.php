@@ -20,19 +20,29 @@ const HOT_STAGE_LABELS = ['scan' => 'scan stages', 'analysis.files' => 'analysis
  */
 function readProfile(string $file): array
 {
-    $profile = readJsonFile($file);
+    if (!is_file($file)) {
+        throw new RuntimeException('profile file absent');
+    }
+
+    try {
+        $profile = readJsonFile($file);
+    } catch (RuntimeException) {
+        throw new RuntimeException('invalid JSON');
+    }
+
     if (($profile['schema'] ?? null) !== 1 || !is_array($profile['files'] ?? null)
         || !is_array($profile['stages'] ?? null)
     ) {
-        throw new RuntimeException("{$file} is not a schema 1 performance profile");
+        throw new RuntimeException('not a schema 1 performance profile');
     }
 
     return $profile;
 }
 
 /**
- * CPU microseconds per analysed file and per stage group (HOT_STAGE_LABELS keys). Needs `--threads=1`, else the
- * file records of forked workers are summed per path as well.
+ * CPU microseconds per analysed file and per stage group (HOT_STAGE_LABELS keys). The stage figures are the main
+ * process's CPU, so a run with forked workers (`--threads` above 1) would leave their analysis out of the stage rows;
+ * run-shard.sh uses `--threads=1`.
  *
  * @param array<mixed> $profile
  * @return array{files: array<string, int>, stages: array<string, int>}
@@ -86,34 +96,36 @@ function diffProfiles(array $base, array $head): array
     foreach (array_intersect_key($h['files'], $b['files']) as $path => $headUs) {
         $delta = $headUs - $b['files'][$path];
         if ($delta >= HOT_FILE_MIN_DELTA_US && $headUs * 100.0 >= $b['files'][$path] * (100.0 + HOT_FILE_MIN_PCT)) {
-            $grown[(string) $path] = $delta;
+            $grown[(string) $path] = $delta; // digit-only paths are int keys, cast back below
         }
     }
 
     arsort($grown);
     $files = [];
     foreach (array_slice(array_keys($grown), 0, HOT_FILES_PER_PROJECT) as $path) {
-        $files[] = $row($path, $b['files'][$path], $h['files'][$path]);
+        $files[] = $row((string) $path, $b['files'][$path], $h['files'][$path]);
     }
 
     return ['stages' => $stages, 'files' => $files];
 }
 
 /**
- * Hot files of every project compared on both sides, from the profiles run-shard.sh keeps. `unsupported` groups the
- * projects of jobs that were not profiled by the sides whose Psalm lacks the option; `missing` lists the projects
- * without readable profiles.
+ * Projects with slower files, from the profiles run-shard.sh keeps, the project with the largest total growth first,
+ * and the reasons (`{project, side, reason}`) why a compared project has no data: option unsupported, profiling
+ * skipped, or an absent or unreadable profile.
  *
  * @param array<mixed> $plan
  * @param array<string, array<string, mixed>> $projects judged projects
  * @return array{
- *     unsupported: list<array{sides: list<string>, projects: list<string>}>, missing: list<string>,
- *     projects: array<string, array{stages: list<array<string, mixed>>, files: list<array<string, mixed>>}>
+ *     failures: list<array{project: string, side: string, reason: string}>,
+ *     projects: array<string, array{
+ *         stages: list<array<string, mixed>>, files: list<array<string, mixed>>, delta_us: int
+ *     }>
  * }
  */
 function collectHotFiles(array $plan, string $inDir, array $projects): array
 {
-    $unsupported = $missing = $hot = [];
+    $failures = $hot = [];
     foreach ($plan['jobs'] as $job) {
         $dir = "{$inDir}/perf-{$job['job']}";
         try {
@@ -122,38 +134,46 @@ function collectHotFiles(array $plan, string $inDir, array $projects): array
             continue; // the measure job lost its results; the report already warns about it
         }
 
-        $lacking = array_values(array_filter(
-            ['base', 'head'],
-            static fn(string $side): bool => ($support[$side] ?? false) !== true,
-        ));
+        $reasons = is_array($support['reasons'] ?? null) && $support['reasons'] !== []
+            ? $support['reasons']
+            : ['both' => 'profiling skipped'];
         foreach ($job['projects'] as $name) {
-            $p = $projects[$name];
-            if ($p['base']['status'] !== 'ok' || $p['head']['status'] !== 'ok') {
+            if ($projects[$name]['base']['status'] !== 'ok' || $projects[$name]['head']['status'] !== 'ok') {
                 continue;
             }
 
-            if ($lacking !== []) {
-                $unsupported[implode(' and ', $lacking)][] = $name;
+            if (($support['profiled'] ?? false) !== true) {
+                foreach ($reasons as $side => $reason) {
+                    $failures[] = ['project' => $name, 'side' => (string) $side, 'reason' => (string) $reason];
+                }
+
                 continue;
             }
 
-            try {
-                $hot[$name] = diffProfiles(
-                    readProfile("{$dir}/base/{$name}.profile.json"),
-                    readProfile("{$dir}/head/{$name}.profile.json"),
-                );
-            } catch (RuntimeException) {
-                $missing[] = $name;
+            $profiles = [];
+            foreach (['base', 'head'] as $side) {
+                try {
+                    $profiles[$side] = readProfile("{$dir}/{$side}/{$name}.profile.json");
+                } catch (RuntimeException $e) {
+                    $failures[] = ['project' => $name, 'side' => $side, 'reason' => $e->getMessage()];
+                }
+            }
+
+            if (count($profiles) === 2) {
+                $diff = diffProfiles($profiles['base'], $profiles['head']);
+                if ($diff['files'] !== []) {
+                    $hot[$name] = $diff + ['delta_us' => array_sum(array_map(
+                        static fn(array $f): int => $f['head_us'] - $f['base_us'],
+                        $diff['files'],
+                    ))];
+                }
             }
         }
     }
 
-    $groups = [];
-    foreach ($unsupported as $sides => $names) {
-        $groups[] = ['sides' => explode(' and ', (string) $sides), 'projects' => $names];
-    }
+    uasort($hot, static fn(array $a, array $b): int => $b['delta_us'] <=> $a['delta_us']);
 
-    return ['unsupported' => $groups, 'missing' => $missing, 'projects' => $hot];
+    return ['failures' => $failures, 'projects' => $hot];
 }
 
 /**
@@ -181,7 +201,7 @@ function hotPathCell(string $path): string
  */
 function hotRow(array $r, bool $isFile): string
 {
-    $delta = round(($r['head_us'] - $r['base_us']) / 1e6, 2) + 0.0; // no "-0.00"
+    $delta = round(($r['head_us'] - $r['base_us']) / 1e6, 2);
 
     return sprintf(
         '| %s | %.2f | %.2f | %s | %s |',
@@ -193,29 +213,53 @@ function hotRow(array $r, bool $isFile): string
     );
 }
 
+/** "No hot-files data for: symfony (head: invalid JSON), laravel (base: --help failed)"; '' without failures. */
+function hotFailuresLine(array $failures): string
+{
+    $byProject = [];
+    foreach ($failures as $f) {
+        $byProject[$f['project']][] = "{$f['side']}: {$f['reason']}";
+    }
+
+    $items = [];
+    foreach ($byProject as $name => $reasons) {
+        $items[] = "{$name} (" . implode(', ', $reasons) . ')';
+    }
+
+    return $items === [] ? '' : "\nNo hot-files data for: " . implode(', ', $items) . ".\n";
+}
+
+function hotFilesFailed(string $message): string
+{
+    return "\nHot files failed: " . trim((string) preg_replace('/\s+/', ' ', $message)) . "\n";
+}
+
 /**
- * Informational "hot files" block: a collapsed details block with a table per profiled project, then one line per
- * group of projects that were not profiled (unsupported option) and one for those without a readable profile; the
- * lines stand alone when no table renders. Empty when there is nothing to say.
+ * Informational "hot files" block: a collapsed details block with a table per project that has slower files (none when
+ * nothing grew), then one line listing the projects without data. A failure here shows as one line, so that it never
+ * costs the rest of the report.
  *
- * @param array<string, mixed> $hot collectHotFiles() result
+ * @param array<string, mixed> $hot collectHotFiles() result, or ['failed' => message]
  */
 function renderHotFiles(array $hot): string
 {
-    $notes = '';
-    foreach ($hot['unsupported'] as $group) {
-        $sides = implode(' and ', array_map(
-            static fn(string $side): string => $side === 'base' ? 'base (merge-base)' : $side,
-            $group['sides'],
-        ));
-        $for = $hot['projects'] === [] ? '' : ' for ' . implode(', ', $group['projects']);
-        $notes .= "\nHot files are not shown{$for}: {$sides} Psalm lacks `--debug-performance=PATH`.\n";
+    if (isset($hot['failed'])) {
+        return hotFilesFailed((string) $hot['failed']);
     }
 
-    if ($hot['missing'] !== []) {
-        $notes .= "\nNo readable performance profile for: " . implode(', ', $hot['missing']) . ".\n";
+    try {
+        return renderHotFilesBlock($hot);
+    } catch (Throwable $e) {
+        return hotFilesFailed($e->getMessage());
     }
+}
 
+/**
+ * @param array<string, mixed> $hot collectHotFiles() result
+ */
+function renderHotFilesBlock(array $hot): string
+{
+    $notes = hotFailuresLine($hot['failures']);
     if ($hot['projects'] === []) {
         return $notes;
     }
@@ -227,8 +271,7 @@ function renderHotFiles(array $hot): string
     foreach ($hot['projects'] as $name => $p) {
         $rows = [...array_map(static fn(array $r): string => hotRow($r, false), $p['stages']),
             ...array_map(static fn(array $r): string => hotRow($r, true), $p['files'])];
-        $section = "**{$name}**\n\n{$header}\n" . implode("\n", $rows) . "\n"
-            . ($p['files'] === [] ? "\nNo file grew.\n" : '');
+        $section = "**{$name}**\n\n{$header}\n" . implode("\n", $rows) . "\n";
         if ($size + strlen($section) > HOT_FILES_BYTES) {
             $omitted++;
             continue;
@@ -238,15 +281,23 @@ function renderHotFiles(array $hot): string
         $sections[] = $section;
     }
 
-    return "\n<details><summary>Hot files: analysis CPU per file, base → head</summary>\n\n"
-        . sprintf(
-            'Up to %d files whose analysis CPU grew by at least %.1f s and %.0f %%, plus the CPU of the stages. '
-            . 'Informational, never changes the result. Profiles of both sides are in the `perf-report` artifact '
-            . "(`profiles/`); open them at https://psalm.dev/perf/.\n\n",
-            HOT_FILES_PER_PROJECT,
-            HOT_FILE_MIN_DELTA_US / 1e6,
-            HOT_FILE_MIN_PCT,
-        )
+    $names = array_keys($hot['projects']);
+    $count = count($names);
+
+    return sprintf(
+        "\n<details><summary>Hot files: %d project%s with slower files (%s)</summary>\n\n",
+        $count,
+        $count === 1 ? '' : 's',
+        implode(', ', array_slice($names, 0, 5)) . ($count > 5 ? ', …' : ''),
+    ) . sprintf(
+        'Up to %d files per project whose analysis CPU grew by at least %.1f s and %.0f %%, most grown first, '
+        . 'with the CPU of the scan stages, analysis.files and taint. Informational, never changes the result. '
+        . 'Profiles of both sides are in the `perf-report` artifact (`profiles/`); open them at '
+        . "https://psalm.dev/profile/.\n\n",
+        HOT_FILES_PER_PROJECT,
+        HOT_FILE_MIN_DELTA_US / 1e6,
+        HOT_FILE_MIN_PCT,
+    )
         . implode("\n", $sections)
         . ($omitted > 0 ? "\n{$omitted} project(s) omitted for size; see the profiles.\n" : '')
         . "\n</details>\n" . $notes;
