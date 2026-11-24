@@ -1091,6 +1091,14 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                         ))
                 ) {
                     $new_closure_return_type = $closure_return_type;
+                } elseif ($storage->return_type
+                    && !$storage->return_type_location
+                    && $closure_return_type->isNullable()
+                    && !UnionTypeComparator::isContainedBy($codebase, Type::getNull(), $storage->return_type)
+                ) {
+                    // a return type taken from the callable the closure is returned as lets it return null like a
+                    // declared one, but the callable does not: keep what the closure returns, to be checked there
+                    $new_closure_return_type = $closure_return_type;
                 }
 
                 // the closure's purity: what its body does, plus the purity templates of the
@@ -1722,6 +1730,23 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
     }
 
     /**
+     * A template without a bound may be given null as a parameter's default value (#2431), although null is not
+     * contained by it elsewhere: the caller may pick a type without null
+     *
+     * @psalm-pure
+     */
+    private static function hasTemplateWithoutBound(Union $param_type): bool
+    {
+        foreach ($param_type->getAtomicTypes() as $atomic_type) {
+            if ($atomic_type instanceof TTemplateParam && $atomic_type->as->isMixed()) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
      * @param list<FunctionLikeParameter> $params
      * @param list<Param> $param_stmts
      */
@@ -2298,6 +2323,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
 
                 if ($default_type
                     && !$default_type->hasMixed()
+                    && !($default_type->isNull() && self::hasTemplateWithoutBound($param_type))
                     && !UnionTypeComparator::isContainedBy(
                         $codebase,
                         $default_type,
