@@ -292,11 +292,11 @@ final class InstancePropertyFetchAnalyzer
             && $template->as->getSingleAtomic() instanceof TNamedObject
             && TValueOf::getValueType($template->as, $codebase) !== null
         ) {
-            $stmt_type = new Union([new TTemplateValueOf(
+            $stmt_type = (new Union([new TTemplateValueOf(
                 $template->param_name,
                 $template->defining_class,
                 new Union([$template]),
-            )]);
+            )]))->setParentNodes($stmt_type->parent_nodes);
             $statements_analyzer->node_data->setType($stmt, $stmt_type);
         }
 
