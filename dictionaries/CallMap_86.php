@@ -22782,7 +22782,7 @@ return array (
   'ds\\hashable::equals' => 
   array (
     0 => 'bool',
-    'object' => 'mixed',
+    'obj' => 'mixed',
   ),
   'ds\\hashable::hash' => 
   array (
