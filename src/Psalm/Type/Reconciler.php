@@ -28,6 +28,7 @@ use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Internal\Type\TypeExpander;
 use Psalm\Internal\TypeVisitor\TemplateTypeCollector;
+use Psalm\Internal\TypeVisitor\TypeVariableResolver;
 use Psalm\Issue\DocblockTypeContradiction;
 use Psalm\Issue\PsalmInternalError;
 use Psalm\Issue\RedundantCondition;
@@ -1730,6 +1731,9 @@ class Reconciler
                             }
                         } elseif ($existing_key_type_part instanceof TClassStringMap) {
                             return Type::getMixed();
+                        } elseif ($existing_key_type_part instanceof TNever && !$inside_loop) {
+                            // a value that cannot be has no item either
+                            return Type::getNever();
                         } elseif ($existing_key_type_part instanceof TNever
                             || ($existing_key_type_part instanceof TMixed
                                 && $existing_key_type_part->from_loop_isset)
@@ -1833,7 +1837,7 @@ class Reconciler
 
                         $new_base_type = Type::combineUnionTypes(
                             $new_base_type,
-                            $new_base_type_candidate,
+                            TypeVariableResolver::resolveTopLevel($new_base_type_candidate, $codebase),
                             $codebase,
                         );
 
@@ -2610,6 +2614,13 @@ class Reconciler
                     ) {
                         $new_base_type = $existing_types[$base_key];
 
+                        // a key the array always has cannot be left without a value: no array of that shape can be
+                        $shape_is_impossible = $base_atomic_type instanceof TKeyedArray
+                            && count($array_key_offsets) === 1
+                            && $result_type->isNever()
+                            && isset($base_atomic_type->properties[$array_key_offset])
+                            && !$base_atomic_type->properties[$array_key_offset]->possibly_undefined;
+
                         if ($base_atomic_type instanceof TArray) {
                             $fallback_key_type = $base_atomic_type->type_params[0];
                             $fallback_value_type = $base_atomic_type->type_params[1];
@@ -2623,7 +2634,7 @@ class Reconciler
                             );
                         } elseif ($base_atomic_type instanceof TClassStringMap) {
                             // do nothing
-                        } else {
+                        } elseif (!$shape_is_impossible) {
                             $properties = $base_atomic_type->properties;
 
                             // only one of the keys the offset can be holds what the assertion says, and which one is
@@ -2682,7 +2693,17 @@ class Reconciler
                             }
                         }
 
-                        $new_base_type = $new_base_type->getBuilder()->addType($base_atomic_type)->freeze();
+                        $new_base_type_builder = $new_base_type->getBuilder();
+
+                        if ($shape_is_impossible) {
+                            $new_base_type_builder->removeType($base_atomic_type->getKey());
+                        } else {
+                            $new_base_type_builder->addType($base_atomic_type);
+                        }
+
+                        $new_base_type = $new_base_type_builder->isUnionEmpty()
+                            ? Type::getNever()
+                            : $new_base_type_builder->freeze();
 
                         $changed_var_ids[$base_key . '[' . $array_key . ']'] = true;
 

@@ -3014,6 +3014,22 @@ final class ConditionalReturnTypeTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.2',
             ],
+            'templateElseBranchExcludesTheConditionFromItsBound' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @template T of string|null
+                     * @param T $s
+                     * @return (T is null ? never : T)
+                     */
+                    function example(?string $s): string {
+                        if ($s === null) {
+                            throw new Exception();
+                        }
+                        return $s;
+                    }
+                    PHP,
+            ],
             'unknownTraversableConditionalKeepsBothBranches' => [
                 'code' => <<<'PHP'
                     <?php

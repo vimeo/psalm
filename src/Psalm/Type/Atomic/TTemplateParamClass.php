@@ -38,7 +38,7 @@ final class TTemplateParamClass extends TClassString
     }
 
     #[Override]
-    public function getId(bool $exact = true, bool $nested = false): string
+    public function getId(bool $exact = true): string
     {
         return 'class-string<' . $this->param_name . ':' . $this->defining_class
             . ' as ' . ($this->as_type ? $this->as_type->getId($exact) : $this->as) . '>';

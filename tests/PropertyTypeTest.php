@@ -840,6 +840,35 @@ final class PropertyTypeTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'assignedUnionHasItsWidenedGenericReplaced' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     */
+                    final class Box {
+                        /**
+                         * @param list<T> $v
+                         */
+                        public function __construct(public array $v) {}
+                    }
+
+                    final class H {
+                        /** @var Box<int>|null */
+                        public ?Box $b = null;
+                    }
+
+                    /** @return Box<never>|null */
+                    function emptyBox(): ?Box {
+                        return null;
+                    }
+
+                    $h = new H();
+                    $h->b = emptyBox();
+                    $b = $h->b;',
+                'assertions' => [
+                    '$b===' => 'Box<int>|null',
+                ],
+            ],
             'offsetWriteInitializesAnUninitializedArrayProperty' => [
                 'code' => '<?php
                     final class Bag

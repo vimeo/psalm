@@ -778,7 +778,7 @@ abstract class Atomic implements TypeNode, Stringable
      *
      * @psalm-mutation-free
      */
-    public function getId(bool $exact = true, bool $nested = false): string
+    public function getId(bool $exact = true): string
     {
         return $this->getKey();
     }
@@ -795,7 +795,7 @@ abstract class Atomic implements TypeNode, Stringable
 
     /**
      * Returns the detailed description of the type, either in phpdoc standard format or Psalm format depending on flag
-     * Default to self::getKey()
+     * Defaults to the id, without literals and refinements in phpdoc format, like an int literal written as `int`
      *
      * @param array<lowercase-string, string> $aliased_classes
      * @psalm-mutation-free
@@ -806,7 +806,7 @@ abstract class Atomic implements TypeNode, Stringable
         ?string $this_class,
         bool $use_phpdoc_format,
     ): string {
-        return $this->getKey();
+        return $this->getId(!$use_phpdoc_format);
     }
 
     /**

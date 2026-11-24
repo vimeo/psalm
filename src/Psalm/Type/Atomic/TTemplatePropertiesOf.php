@@ -41,7 +41,7 @@ final class TTemplatePropertiesOf extends Atomic
     }
 
     #[Override]
-    public function getId(bool $exact = true, bool $nested = false): string
+    public function getId(bool $exact = true): string
     {
         if (!$exact) {
             return $this->getKey();
@@ -98,5 +98,20 @@ final class TTemplatePropertiesOf extends Atomic
             $param,
             $this->visibility_filter,
         );
+    }
+
+    /**
+     * Written with its template, not the bound of the template
+     *
+     * @param array<lowercase-string, string> $aliased_classes
+     */
+    #[Override]
+    public function toNamespacedString(
+        ?string $namespace,
+        array $aliased_classes,
+        ?string $this_class,
+        bool $use_phpdoc_format,
+    ): string {
+        return TPropertiesOf::tokenNameForFilter($this->visibility_filter) . '<' . $this->param_name . '>';
     }
 }

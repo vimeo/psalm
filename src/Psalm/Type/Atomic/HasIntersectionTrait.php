@@ -26,6 +26,28 @@ trait HasIntersectionTrait
     public array $extra_types = [];
 
     /**
+     * A template param is parenthesised so that `(T as A)&B` doesn't read as `T as A&B`
+     */
+    protected function getIntersectionTypesId(bool $exact): string
+    {
+        if (!$this->extra_types) {
+            return '';
+        }
+
+        return '&' . implode(
+            '&',
+            array_map(
+                static fn(Atomic $extra_type): string => $exact
+                    && $extra_type instanceof TTemplateParam
+                    && !$extra_type->extra_types
+                        ? '(' . $extra_type->getId() . ')'
+                        : $extra_type->getId($exact),
+                $this->extra_types,
+            ),
+        );
+    }
+
+    /**
      * @param  array<lowercase-string, string> $aliased_classes
      */
     private function getNamespacedIntersectionTypes(

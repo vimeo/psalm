@@ -51,6 +51,127 @@ final class MissingReturnTypeTest extends FileManipulationTestCase
                 'issues_to_fix' => ['MissingReturnType'],
                 'safe_types' => true,
             ],
+            'addMissingReturnTypeKeepsTheStringRefinement' => [
+                'input' => '<?php
+                    /**
+                     * @param non-empty-string $s
+                     */
+                    function foo(string $s) {
+                        return $s;
+                    }',
+                'output' => '<?php
+                    /**
+                     * @param non-empty-string $s
+                     *
+                     * @psalm-return non-empty-string
+                     */
+                    function foo(string $s): string {
+                        return $s;
+                    }',
+                'php_version' => '8.0',
+                'issues_to_fix' => ['MissingReturnType'],
+                'safe_types' => true,
+            ],
+            'addMissingReturnTypeKeepsTheRefinementOfListValues' => [
+                'input' => '<?php
+                    /**
+                     * @param list<lowercase-string> $s
+                     */
+                    function foo(array $s) {
+                        return $s;
+                    }',
+                'output' => '<?php
+                    /**
+                     * @param list<lowercase-string> $s
+                     *
+                     * @return lowercase-string[]
+                     *
+                     * @psalm-return list<lowercase-string>
+                     */
+                    function foo(array $s): array {
+                        return $s;
+                    }',
+                'php_version' => '8.0',
+                'issues_to_fix' => ['MissingReturnType'],
+                'safe_types' => true,
+            ],
+            'addMissingReturnTypeWritesACompoundStringRefinementOfListValuesAsStringInPhpdoc' => [
+                'input' => '<?php
+                    /**
+                     * @param list<non-falsy-string&numeric-string> $s
+                     */
+                    function foo(array $s) {
+                        return $s;
+                    }',
+                'output' => '<?php
+                    /**
+                     * @param list<non-falsy-string&numeric-string> $s
+                     *
+                     * @return string[]
+                     *
+                     * @psalm-return list<non-falsy-string&numeric-string>
+                     */
+                    function foo(array $s): array {
+                        return $s;
+                    }',
+                'php_version' => '8.0',
+                'issues_to_fix' => ['MissingReturnType'],
+                'safe_types' => true,
+            ],
+            'addMissingReturnTypeParenthesisesAnIntersectionOfListValues' => [
+                'input' => '<?php
+                    interface Foo {}
+                    interface Bar {}
+                    /**
+                     * @param list<Foo&Bar> $s
+                     */
+                    function foo(array $s) {
+                        return $s;
+                    }',
+                'output' => '<?php
+                    interface Foo {}
+                    interface Bar {}
+                    /**
+                     * @param list<Foo&Bar> $s
+                     *
+                     * @return (Foo&Bar)[]
+                     *
+                     * @psalm-return list<Foo&Bar>
+                     */
+                    function foo(array $s): array {
+                        return $s;
+                    }',
+                'php_version' => '8.0',
+                'issues_to_fix' => ['MissingReturnType'],
+                'safe_types' => true,
+            ],
+            'addMissingReturnTypeWritesEmptyNumericAsNumeric' => [
+                'input' => '<?php
+                    /**
+                     * @param numeric $m
+                     */
+                    function foo($m) {
+                        if (!$m) {
+                            return $m;
+                        }
+                        return null;
+                    }',
+                'output' => '<?php
+                    /**
+                     * @param numeric $m
+                     *
+                     * @return null|numeric
+                     */
+                    function foo($m) {
+                        if (!$m) {
+                            return $m;
+                        }
+                        return null;
+                    }',
+                'php_version' => '8.0',
+                'issues_to_fix' => ['MissingReturnType'],
+                'safe_types' => true,
+            ],
             'addMissingStringReturnType56' => [
                 'input' => '<?php
                     function foo() {

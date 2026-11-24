@@ -603,6 +603,55 @@ final class IntersectionTypeTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'objectIntersectedWithTemplateShowsTemplateInParentheses' => [
+                'code' => '<?php
+                    interface I {}
+
+                    /**
+                     * @template T of object
+                     * @param I&T $x
+                     */
+                    function f(object $x): int {
+                        return strlen($x);
+                    }',
+                'error_message' => 'but I&(T:fn-f as object) provided',
+            ],
+            'genericObjectIntersectedWithTemplateShowsTemplateInParentheses' => [
+                'code' => '<?php
+                    /** @template V */
+                    interface I {}
+
+                    /**
+                     * @template T of object
+                     * @param I<int>&T $x
+                     */
+                    function f(object $x): int {
+                        return strlen($x);
+                    }',
+                'error_message' => 'but I<int>&(T:fn-f as object) provided',
+            ],
+            'iterableIntersectedWithTemplateShowsTemplateInParentheses' => [
+                'code' => '<?php
+                    /**
+                     * @template T of object
+                     * @param iterable<int>&T $x
+                     */
+                    function f(object $x): int {
+                        return strlen($x);
+                    }',
+                'error_message' => 'but iterable<mixed, int>&(T:fn-f as object) provided',
+            ],
+            'shapeIntersectedWithTemplateShowsTemplateInParentheses' => [
+                'code' => '<?php
+                    /**
+                     * @template T of object
+                     * @param object{a: int}&T $x
+                     */
+                    function f(object $x): int {
+                        return strlen($x);
+                    }',
+                'error_message' => 'but object{a:int}&(T:fn-f as object) provided',
+            ],
             'missingPropertyOfAnIntersectionWithAnInterface' => [
                 'code' => '<?php
                     interface I {}
