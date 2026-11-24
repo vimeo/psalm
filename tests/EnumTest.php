@@ -157,6 +157,35 @@ final class EnumTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'matchOnTheValueOfAUnionOfEnums' => [
+                'code' => '<?php
+                    enum Foo1: string {
+                        case one = "one";
+                    }
+
+                    enum Foo2: string {
+                        case one = "one";
+                        case two = "two";
+                    }
+
+                    function test1(Foo1|Foo2 $value): int {
+                        return match ($value->value) {
+                            "one" => 1,
+                            "two" => 2,
+                        };
+                    }
+
+                    function test2(Foo1|Foo2|null $value): int {
+                        return match ($value?->value) {
+                            "one" => 1,
+                            "two" => 2,
+                            null => 0,
+                        };
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'enumCaseWithInvokeIsCallable' => [
                 'code' => '<?php
                     /**

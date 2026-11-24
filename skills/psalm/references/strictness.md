@@ -56,7 +56,7 @@ LessSpecificReturnType,MismatchingDocblockReturnType,RedundantCast,UnnecessaryVa
   --php-version=<phpv> --dry-run
 ```
 
-1. Read the diff, then run it without `--dry-run`.
+1. Read the diff (exit code `2` only means it would change files), then run it without `--dry-run`.
 2. `MissingParamType` takes its types from today's callers: run it on its own and review each type.
 3. Fixes that delete code (`Unused*`, `PossiblyUnused*`) and `ClassMustBeFinal` follow the unused-code rule
    in SKILL.md, not Psalter.

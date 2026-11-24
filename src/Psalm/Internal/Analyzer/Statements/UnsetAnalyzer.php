@@ -10,6 +10,7 @@ use Psalm\Codebase;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Assignment\ArrayAssignmentAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\AssignmentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\DestructorAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\VariableFetchAnalyzer;
@@ -84,6 +85,8 @@ final class UnsetAnalyzer
         $context->inside_unset = true;
 
         foreach ($stmt->vars as $var) {
+            AssignmentAnalyzer::checkConstantObjectWrite($statements_analyzer, $var);
+
             $var->setAttribute(self::TARGET_ATTRIBUTE, true);
 
             $chain_node = $var;
