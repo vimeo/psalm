@@ -11497,6 +11497,40 @@ final class TaintTest extends TestCase
                     }',
                 'error_message' => 'TaintedHtml',
             ],
+            'magicPropertyKeepsWhatItHeldAfterCallWritingAnotherProperty' => [
+                'code' => '<?php
+                    /** @property string|null $p */
+                    final class Bag {
+                        /** @var array<string, string|null> */
+                        private array $data = [];
+
+                        private int $count = 0;
+
+                        public function __get(string $name): ?string {
+                            return $this->data[$name] ?? null;
+                        }
+
+                        public function __set(string $name, ?string $value): void {
+                            $this->data[$name] = $value;
+                        }
+
+                        public function touch(): void {
+                            $this->count++;
+                        }
+                    }
+
+                    function t(Bag $m): void {
+                        $m->p = (string) $_GET["x"];
+                        $m->touch();
+
+                        if ($m->{"p"} === null) {
+                            return;
+                        }
+
+                        echo $m->{"p"};
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
             'propertyBagElementSetIsTheProperty' => [
                 'code' => '<?php
                     /** @psalm-taint-property-bag $properties */
