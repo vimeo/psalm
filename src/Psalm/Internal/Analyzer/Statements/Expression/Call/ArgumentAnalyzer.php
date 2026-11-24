@@ -236,32 +236,19 @@ final class ArgumentAnalyzer
                     );
                 }
 
-                // binds the param's templates like a mixed argument, as ArgumentsAnalyzer::analyze() does
-                if ($function_param->type && $template_result && $template_result->template_types) {
-                    [$bound_param_type] = self::bindClassTemplates(
-                        $statements_analyzer,
-                        $codebase,
-                        $context,
-                        $function_param->type,
-                        Type::getMixed(),
-                        $argument_offset,
-                        $class_generic_params,
-                        $template_result,
-                    );
-
-                    TemplateStandinTypeReplacer::replace(
-                        $bound_param_type,
-                        $template_result,
-                        $codebase,
-                        $statements_analyzer,
-                        Type::getMixed(),
-                        $argument_offset,
-                        !$statements_analyzer->isStatic()
-                            && (!$method_id || $method_id->method_name !== '__construct')
-                            ? $context->self
-                            : null,
-                        $context->calling_method_id ?? $context->calling_function_id,
-                    );
+                // what the param's templates stand for is not known either: they are bound to `mixed`, not left
+                // unbound (which would make them `never`), wherever they appear in the param (`list<T>`)
+                if ($template_result && $param_type) {
+                    foreach ($param_type->getTemplateTypes() as $template_type) {
+                        if (isset($template_result->template_types[$template_type->param_name]
+                            [$template_type->defining_class])
+                            && !isset($class_generic_params[$template_type->param_name]
+                                [$template_type->defining_class])
+                        ) {
+                            $template_result->lower_bounds[$template_type->param_name][$template_type->defining_class][]
+                                = new TemplateBound(Type::getMixed(), 1, $argument_offset);
+                        }
+                    }
                 }
             }
 

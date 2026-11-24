@@ -36,6 +36,7 @@ use Psalm\StatementsSource;
 use Psalm\Storage\Capabilities;
 use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Storage\MethodStorage;
+use Psalm\Storage\TemplateVariance;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TClassConstant;
 use Psalm\Type\Atomic\TGenericObject;
@@ -55,6 +56,7 @@ use Psalm\Type\Union;
 use ReflectionProperty;
 
 use function array_any;
+use function array_key_exists;
 use function array_keys;
 use function array_map;
 use function array_search;
@@ -62,6 +64,7 @@ use function array_slice;
 use function array_values;
 use function count;
 use function explode;
+use function spl_object_id;
 use function str_contains;
 use function str_starts_with;
 use function strtolower;
@@ -75,7 +78,7 @@ final class TypeChecker extends TypeVisitor
 
     /**
      * Whether the result of the check holds wherever the type is: not when a phantom class (a class_exists() check
-     * around the code) let a class pass
+     * around the code) let a class pass, or the type holds a template with a variance
      */
     private bool $context_free = true;
 
@@ -87,19 +90,34 @@ final class TypeChecker extends TypeVisitor
     private array $checked_types = [];
 
     /**
-     * Whether the node being visited is in an invariant type param of a generic object, where entering a
-     * callable's parameter types doesn't change the position
+     * The positions each type this checker marked was in, by object id: a type it meets again in another position
+     * (the bound of a method's template, one type for all its occurrences) is checked again
+     *
+     * @var array<int, array{?TemplateVariance, ?TemplateVariance}>
      */
-    private bool $in_invariant_position = false;
+    private array $checked_positions = [];
+
+    /**
+     * In the bound of a method's template, the position a contravariant template is checked in: Hack checks the
+     * bound (`@template U of T`) as an input position of the method, wherever the method's template is used.
+     * A covariant template is still checked where the method's template is used, as it always was
+     */
+    private ?TemplateVariance $bound_position = null;
 
     /**
      * @param array<string>    $suppressed_issues
      * @param array<string, bool> $phantom_classes
-     * @param bool $prevent_template_covariance whether the type is in an input position, a method's parameter
-     * @param bool $in_output_position whether the type is in an output position, a method's return type, or one
-     *                                 an input position turns into: a covariant template may be there (a method's
-     *                                 `Closure(T): void` parameter hands T out), but the parameter types of a
-     *                                 callable in there are an input position
+     * @param ?TemplateVariance $position the variance a template must have to be where the type is: covariant for
+     *                                    an output position (a method's return type, a property only the class
+     *                                    writes), contravariant for an input one (a method's parameter), invariant
+     *                                    for one that is both (a writable property). Null where templates are not
+     *                                    checked (a constructor's parameters, a private property, what isn't the
+     *                                    signature of a member)
+     * @param bool $only_contravariant whether only contravariant templates are checked: a covariant one may be in
+     *                                 a property's type, and was never checked in `@param-out`, by-ref output and
+     *                                 assertion types
+     * @param bool $from_overridden_method whether the type is one a method takes from the method it overrides,
+     *                                     where its templates are checked
      * @psalm-mutation-free
      */
     public function __construct(
@@ -109,9 +127,10 @@ final class TypeChecker extends TypeVisitor
         private array $phantom_classes = [],
         private readonly bool $inferred = true,
         private readonly bool $inherited = false,
-        private bool $prevent_template_covariance = false,
+        private ?TemplateVariance $position = null,
         private readonly ?Context $context = null,
-        private bool $in_output_position = false,
+        private readonly bool $only_contravariant = false,
+        private readonly bool $from_overridden_method = false,
     ) {
     }
 
@@ -125,18 +144,20 @@ final class TypeChecker extends TypeVisitor
             return null;
         }
 
-        if ($type->checked) {
+        if ($type->checked
+            && (!array_key_exists($id = spl_object_id($type), $this->checked_positions)
+                || $this->checked_positions[$id] === [$this->position, $this->bound_position])
+        ) {
             return self::DONT_TRAVERSE_CHILDREN;
         }
 
         if ($type instanceof TNamedObject) {
-            $prevents_covariance = $this->checkNamedObject($type);
+            $param_variances = $this->checkNamedObject($type);
 
-            if ($type instanceof TGenericObject && $prevents_covariance !== null) {
-                // each type param is checked with its own variance, and the siblings with the outer one. Variance
-                // composes: a covariant type param is in the position of the type, an invariant one in neither
-                $outer_prevents_covariance = $this->prevent_template_covariance;
-                $outer_in_invariant_position = $this->in_invariant_position;
+            if ($type instanceof TGenericObject && $param_variances !== null) {
+                // each type param is checked with its own variance, and the siblings with the outer one
+                $outer_position = $this->position;
+                $outer_bound_position = $this->bound_position;
 
                 foreach ($type->extra_types as $extra_type) {
                     $this->traverse($extra_type);
@@ -148,13 +169,15 @@ final class TypeChecker extends TypeVisitor
                         continue;
                     }
 
-                    $this->prevent_template_covariance = $prevents_covariance[$i] ?? $outer_prevents_covariance;
-                    $this->in_invariant_position = $outer_in_invariant_position || ($prevents_covariance[$i] ?? false);
+                    $this->position = $this->getTypeParamPosition($outer_position, $param_variances[$i]);
+                    $this->bound_position = $outer_bound_position === null
+                        ? null
+                        : $this->getTypeParamPosition($outer_bound_position, $param_variances[$i]);
                     $this->traverse($type_param);
                 }
 
-                $this->prevent_template_covariance = $outer_prevents_covariance;
-                $this->in_invariant_position = $outer_in_invariant_position;
+                $this->position = $outer_position;
+                $this->bound_position = $outer_bound_position;
 
                 $this->markChecked($type);
 
@@ -168,6 +191,21 @@ final class TypeChecker extends TypeVisitor
             $this->checkIntMaskConstants($type);
         } elseif ($type instanceof TTemplateParam) {
             $this->checkTemplateParam($type);
+
+            if (str_starts_with($type->defining_class, 'fn-')) {
+                $this->markChecked($type);
+
+                foreach ($type->extra_types as $extra_type) {
+                    $this->traverse($extra_type);
+                }
+
+                $outer_bound_position = $this->bound_position;
+                $this->bound_position = TemplateVariance::Contravariant;
+                $this->traverse($type->as);
+                $this->bound_position = $outer_bound_position;
+
+                return self::DONT_TRAVERSE_CHILDREN;
+            }
         } elseif ($type instanceof TResource) {
             $this->checkResource($type);
         } elseif ($type instanceof TIntersection) {
@@ -191,27 +229,53 @@ final class TypeChecker extends TypeVisitor
             return parent::traverse($node);
         }
 
-        // a callable's parameter types are in the opposite position. Positions that are neither (constructor
-        // parameters, and what isn't a method's signature) stay unchecked
-        $outer_prevents_covariance = $this->prevent_template_covariance;
-        $outer_in_output_position = $this->in_output_position;
-
-        if (!$this->in_invariant_position) {
-            if ($outer_prevents_covariance) {
-                $this->prevent_template_covariance = false;
-                $this->in_output_position = true;
-            } elseif ($outer_in_output_position) {
-                $this->prevent_template_covariance = true;
-                $this->in_output_position = false;
-            }
-        }
+        // a callable's parameter types are in the opposite position
+        $outer_position = $this->position;
+        $outer_bound_position = $this->bound_position;
+        $this->position = self::getOppositePosition($outer_position);
+        $this->bound_position = self::getOppositePosition($outer_bound_position);
 
         $result = parent::traverse($node);
 
-        $this->prevent_template_covariance = $outer_prevents_covariance;
-        $this->in_output_position = $outer_in_output_position;
+        $this->position = $outer_position;
+        $this->bound_position = $outer_bound_position;
 
         return $result;
+    }
+
+    /**
+     * Variance composes: a covariant type param is in the position of the type, a contravariant one in the
+     * opposite position, and an invariant one in both an input and an output position. In a method's signature
+     * that holds wherever the type is.
+     *
+     * @psalm-capabilities read-props
+     */
+    private function getTypeParamPosition(
+        ?TemplateVariance $outer_position,
+        TemplateVariance $variance,
+    ): ?TemplateVariance {
+        return match ($variance) {
+            TemplateVariance::Covariant => $outer_position,
+            TemplateVariance::Contravariant => self::getOppositePosition($outer_position),
+            TemplateVariance::Invariant => $outer_position !== null
+                || ($this->source instanceof MethodAnalyzer
+                    && $this->source->getMethodName() !== '__construct'
+                    && !$this->from_overridden_method)
+                    ? TemplateVariance::Invariant
+                    : null,
+        };
+    }
+
+    /**
+     * @psalm-pure
+     */
+    private static function getOppositePosition(?TemplateVariance $position): ?TemplateVariance
+    {
+        return match ($position) {
+            TemplateVariance::Covariant => TemplateVariance::Contravariant,
+            TemplateVariance::Contravariant => TemplateVariance::Covariant,
+            default => $position,
+        };
     }
 
     /**
@@ -244,12 +308,12 @@ final class TypeChecker extends TypeVisitor
         /** @psalm-suppress InaccessibleProperty Doesn't affect anything else */
         $type->checked = true;
         $this->checked_types[] = $type;
+        $this->checked_positions[spl_object_id($type)] = [$this->position, $this->bound_position];
     }
 
     /**
-     * @return array<int, ?bool>|null whether each type param of a generic object is in a position where a covariant
-     *                                template is not allowed, null for one in the position of the generic object, or
-     *                                for all if its type params weren't checked
+     * @return list<TemplateVariance>|null the variance of each type param of a generic object, null if its type
+     *                                     params weren't checked
      */
     private function checkNamedObject(TNamedObject $atomic): ?array
     {
@@ -341,9 +405,7 @@ final class TypeChecker extends TypeVisitor
     }
 
     /**
-     * @return array<int, ?bool>|null whether each type param is in a position where a covariant template is not
-     *                                allowed, null for one in the position of the generic object (a covariant one),
-     *                                or for all for an unknown class
+     * @return list<TemplateVariance>|null the variance of each type param, null for an unknown class
      */
     private function checkGenericParams(TGenericObject $atomic): ?array
     {
@@ -356,7 +418,6 @@ final class TypeChecker extends TypeVisitor
         }
 
         $expected_type_params = $class_storage->template_types ?: [];
-        $expected_param_covariants = $class_storage->template_covariants;
 
         $template_type_count = count($expected_type_params);
         $template_param_count = count($atomic->type_params);
@@ -417,12 +478,9 @@ final class TypeChecker extends TypeVisitor
             }
         }
       
-        $prevents_covariance = [];
+        $param_variances = [];
         foreach ($atomic->type_params as $i => $type_param) {
-            // a covariant type param is in the position of the type (null): an invariant one is in neither
-            $prevents_covariance[$i] = empty($expected_param_covariants[$i])
-                ? $this->source instanceof MethodAnalyzer && $this->source->getMethodName() !== '__construct'
-                : null;
+            $param_variances[] = $class_storage->getTemplateVariance($i);
 
             if (isset($expected_type_param_keys[$i])) {
                 $expected_template_name = $expected_type_param_keys[$i];
@@ -494,7 +552,7 @@ final class TypeChecker extends TypeVisitor
             }
         }
 
-        return $prevents_covariance;
+        return $param_variances;
     }
 
     public function checkScalarClassConstant(TClassConstant $atomic): void
@@ -653,43 +711,73 @@ final class TypeChecker extends TypeVisitor
 
     public function checkTemplateParam(TTemplateParam $atomic): void
     {
-        if ($this->prevent_template_covariance
-            && !str_starts_with($atomic->defining_class, 'fn-')
-            && $atomic->defining_class !== 'class-string-map'
+        if (str_starts_with($atomic->defining_class, 'fn-')
+            || $atomic->defining_class === 'class-string-map'
         ) {
-            $codebase = $this->source->getCodebase();
+            return;
+        }
 
-            $class_storage = $codebase->classlike_storage_provider->get($atomic->defining_class);
+        $codebase = $this->source->getCodebase();
 
-            $template_offset = $class_storage->template_types
-                ? array_search($atomic->param_name, array_keys($class_storage->template_types), true)
-                : false;
+        if (!$codebase->classlike_storage_provider->has($atomic->defining_class)) {
+            return;
+        }
 
-            if ($template_offset !== false
-                && isset($class_storage->template_covariants[$template_offset])
-                && $class_storage->template_covariants[$template_offset]
+        $class_storage = $codebase->classlike_storage_provider->get($atomic->defining_class);
+
+        $template_offset = $class_storage->template_types
+            ? array_search($atomic->param_name, array_keys($class_storage->template_types), true)
+            : false;
+
+        if ($template_offset === false) {
+            return;
+        }
+
+        $variance = $class_storage->getTemplateVariance($template_offset);
+
+        if ($variance === TemplateVariance::Invariant) {
+            return;
+        }
+
+        // whether the template may be here depends on the position, so the result doesn't hold for the same type
+        // elsewhere: the bound of a method's template is one type for all of the method's params and its return type
+        $this->context_free = false;
+
+        $position = $variance === TemplateVariance::Contravariant && $this->bound_position !== null
+            ? $this->bound_position
+            : $this->position;
+
+        if ($this->position === null || $variance === $position) {
+            return;
+        }
+
+        if ($variance === TemplateVariance::Covariant) {
+            if ($this->only_contravariant) {
+                return;
+            }
+
+            $method_storage = $this->source instanceof MethodAnalyzer
+                ? $this->source->getFunctionLikeStorage()
+                : null;
+
+            // a method that changes nothing may take a covariant template
+            if ($method_storage instanceof MethodStorage
+                && $method_storage->isMutationFree()
+                && !$method_storage->mutation_free_assumed
             ) {
-                $method_storage = $this->source instanceof MethodAnalyzer
-                    ? $this->source->getFunctionLikeStorage()
-                    : null;
-
-                if ($method_storage instanceof MethodStorage
-                    && $method_storage->isMutationFree()
-                    && !$method_storage->mutation_free_assumed
-                ) {
-                    // do nothing
-                } else {
-                    IssueBuffer::maybeAdd(
-                        new InvalidTemplateParam(
-                            'Template param ' . $atomic->param_name . ' of '
-                                . $atomic->defining_class . ' is marked covariant and cannot be used here',
-                            $this->code_location,
-                        ),
-                        $this->source->getSuppressedIssues(),
-                    );
-                }
+                return;
             }
         }
+
+        IssueBuffer::maybeAdd(
+            new InvalidTemplateParam(
+                'Template param ' . $atomic->param_name . ' of ' . $atomic->defining_class . ' is marked '
+                    . ($variance === TemplateVariance::Covariant ? 'covariant' : 'contravariant')
+                    . ' and cannot be used here',
+                $this->code_location,
+            ),
+            $this->source->getSuppressedIssues(),
+        );
     }
 
     /**
@@ -710,7 +798,7 @@ final class TypeChecker extends TypeVisitor
         $collector->traverseArray($type->getAtomicTypes());
 
         foreach ($collector->getIntersections() as $intersection) {
-            (new self($source, $code_location, $suppressed_issues, [], false, false, false, $context))
+            (new self($source, $code_location, $suppressed_issues, [], false, false, null, $context))
                 ->traverse($intersection);
         }
     }
