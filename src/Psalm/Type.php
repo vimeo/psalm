@@ -1134,33 +1134,40 @@ abstract class Type
     }
 
     /**
-     * Containment can leave wider generic parameters: the intersection of arrays intersects their keys and values too
+     * $target with the intersection of the keys and of the values of two arrays; a non-empty array of never is no
+     * array
      */
     private static function intersectArrayParams(
-        TArray $intersection_atomic,
-        TArray $wider_type,
+        TArray $target,
+        TArray $type_1_atomic,
+        TArray $type_2_atomic,
         Codebase $codebase,
         bool $allow_interface_equality,
         bool $allow_float_int_equality,
     ): ?TArray {
-        $key_type = self::intersectUnionTypes(
-            $intersection_atomic->type_params[0],
-            $wider_type->type_params[0],
+        $key_intersection = self::intersectUnionTypes(
+            $type_1_atomic->type_params[0],
+            $type_2_atomic->type_params[0],
             $codebase,
             $allow_interface_equality,
             $allow_float_int_equality,
         );
-        $value_type = self::intersectUnionTypes(
-            $intersection_atomic->type_params[1],
-            $wider_type->type_params[1],
+        $value_intersection = self::intersectUnionTypes(
+            $type_1_atomic->type_params[1],
+            $type_2_atomic->type_params[1],
             $codebase,
             $allow_interface_equality,
             $allow_float_int_equality,
         );
-        if ($key_type === null || $value_type === null) {
+
+        if ($key_intersection === null
+            || $value_intersection === null
+            || ($target instanceof TNonEmptyArray && ($key_intersection->isNever() || $value_intersection->isNever()))
+        ) {
             return null;
         }
-        return $intersection_atomic->setTypeParams([$key_type, $value_type]);
+
+        return $target->setTypeParams([$key_intersection, $value_intersection]);
     }
 
     private static function intersectAtomicTypes(
@@ -1249,35 +1256,15 @@ abstract class Type
                     && ($type_1_atomic instanceof TNonEmptyArray || $type_2_atomic instanceof TNonEmptyArray)
                 ) {
                     // e.g. array<string, int> and non-empty-array are non-empty-array<string, int>
-                    $key_intersection = self::intersectUnionTypes(
-                        $type_1_atomic->type_params[0],
-                        $type_2_atomic->type_params[0],
+                    $intersection_atomic = self::intersectArrayParams(
+                        $type_1_atomic instanceof TNonEmptyArray ? $type_1_atomic : $type_2_atomic,
+                        $type_1_atomic,
+                        $type_2_atomic,
                         $codebase,
                         $allow_interface_equality,
                         $allow_float_int_equality,
                     );
-                    $value_intersection = self::intersectUnionTypes(
-                        $type_1_atomic->type_params[1],
-                        $type_2_atomic->type_params[1],
-                        $codebase,
-                        $allow_interface_equality,
-                        $allow_float_int_equality,
-                    );
-
-                    // a non-empty array of never is no array
-                    if ($key_intersection !== null
-                        && $value_intersection !== null
-                        && !$key_intersection->isNever()
-                        && !$value_intersection->isNever()
-                    ) {
-                        $non_empty_array = $type_1_atomic instanceof TNonEmptyArray
-                            ? $type_1_atomic
-                            : $type_2_atomic;
-                        $intersection_atomic = $non_empty_array->setTypeParams(
-                            [$key_intersection, $value_intersection],
-                        );
-                        $intersection_performed = true;
-                    }
+                    $intersection_performed = $intersection_performed || $intersection_atomic !== null;
                 } elseif (($array_iterable_intersection = self::intersectArrayWithIterable(
                     $codebase,
                     $type_1_atomic,
@@ -1308,7 +1295,9 @@ abstract class Type
                     && !self::hasIntersection($type_2_atomic)
                 ) {
                     if ($intersection_atomic instanceof TArray && $wider_type instanceof TArray) {
+                        // containment can leave wider generic params
                         return self::intersectArrayParams(
+                            $intersection_atomic,
                             $intersection_atomic,
                             $wider_type,
                             $codebase,

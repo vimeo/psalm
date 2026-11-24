@@ -27,6 +27,8 @@ use Psalm\Type\Atomic\TNonEmptyMixed;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TNumeric;
 use Psalm\Type\Atomic\TObjectWithProperties;
+use Psalm\Type\Atomic\TScalar;
+use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateKeyOf;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTemplateValueOf;
@@ -148,20 +150,26 @@ final class UnionTypeComparator
             }
 
 
-            if ($input_type_part instanceof Atomic\TIterable && !$compare_iterable_directly) {
-                if (!self::isIterableContainedBy(
+            if ($input_type_part instanceof TIterable) {
+                $iterable_contained = self::isIterablePartContainedBy(
                     $codebase,
                     $input_type_part,
                     $container_type,
+                    $compare_iterable_directly,
                     $ignore_null,
                     $ignore_false,
                     $union_comparison_result,
                     $allow_interface_equality,
                     $allow_float_int_equality,
-                )) {
+                );
+
+                if ($iterable_contained === false) {
                     return false;
                 }
-                continue;
+
+                if ($iterable_contained) {
+                    continue;
+                }
             }
 
             $type_match_found = false;
@@ -191,35 +199,6 @@ final class UnionTypeComparator
                 }
             }
 
-            if ($input_type_part instanceof TIterable
-                && !$input_type_part->extra_types
-                && $container_type->hasArray()
-                && ($container_type->hasObject() || $container_type->containsClassLike('traversable'))
-            ) {
-                // an iterable is an array or a Traversable
-                [$key_type, $value_type] = $input_type_part->type_params;
-
-                if (self::isContainedBy(
-                    $codebase,
-                    new Union([
-                        new TArray([
-                            self::isContainedBy($codebase, $key_type, Type::getArrayKey())
-                                ? $key_type
-                                : Type::getArrayKey(),
-                            $value_type,
-                        ]),
-                        new TGenericObject('Traversable', [$key_type, $value_type]),
-                    ]),
-                    $container_type,
-                    $ignore_null,
-                    $ignore_false,
-                    $union_comparison_result,
-                    $allow_interface_equality,
-                    $allow_float_int_equality,
-                )) {
-                    continue;
-                }
-            }
 
             if ($input_type_part instanceof TIntRange && $container_type->hasInt()) {
                 if (IntegerRangeComparator::isContainedByUnion(
@@ -606,7 +585,7 @@ final class UnionTypeComparator
     private static function hasIterableOrSymbolicPart(array $container_parts): bool
     {
         foreach ($container_parts as $container_part) {
-            if ($container_part instanceof Atomic\TIterable
+            if ($container_part instanceof TIterable
                 || $container_part instanceof TTemplateParam
                 || $container_part instanceof TTypeVariable
             ) {
@@ -618,13 +597,70 @@ final class UnionTypeComparator
     }
 
     /**
+     * An iterable is an array or a Traversable: whether the container holds the input part, or null when that
+     * is decided as for any other part
+     */
+    private static function isIterablePartContainedBy(
+        Codebase $codebase,
+        TIterable $input,
+        Union $container,
+        bool $compare_directly,
+        bool $ignore_null,
+        bool $ignore_false,
+        ?TypeComparisonResult $comparison_result,
+        bool $allow_interface_equality,
+        bool $allow_float_int_equality,
+    ): ?bool {
+        if (!$compare_directly) {
+            return self::isIterableContainedBy(
+                $codebase,
+                $input,
+                $container,
+                $ignore_null,
+                $ignore_false,
+                $comparison_result,
+                $allow_interface_equality,
+                $allow_float_int_equality,
+            );
+        }
+
+        if ($input->extra_types
+            || !$container->hasArray()
+            || (!$container->hasObject() && !$container->containsClassLike('traversable'))
+        ) {
+            return null;
+        }
+
+        [$key_type, $value_type] = $input->type_params;
+
+        return self::isContainedBy(
+            $codebase,
+            new Union([
+                new TArray([
+                    self::isContainedBy($codebase, $key_type, Type::getArrayKey())
+                        ? $key_type
+                        : Type::getArrayKey(),
+                    $value_type,
+                ]),
+                new TGenericObject('Traversable', [$key_type, $value_type]),
+            ]),
+            $container,
+            $ignore_null,
+            $ignore_false,
+            $comparison_result,
+            $allow_interface_equality,
+            $allow_float_int_equality,
+        ) ?: null;
+    }
+
+    /**
      * Compare the Traversable form and, unless an object intersection excludes it,
      * the array form with keys restricted to array-key. Merge diagnostics only after
      * both comparisons: a coercion cannot hide a hard mismatch in the other half.
      */
     private static function isIterableContainedBy(
         Codebase $codebase,
-        Atomic\TIterable $input,
+        TIterable $input,
         Union $container,
         bool $ignore_null,
         bool $ignore_false,
@@ -632,7 +668,7 @@ final class UnionTypeComparator
         bool $allow_interface_equality,
         bool $allow_float_int_equality,
     ): bool {
-        $parts = [new Atomic\TGenericObject(
+        $parts = [new TGenericObject(
             'Traversable',
             [...$input->type_params, $input->purity],
             extra_types: $input->extra_types,
@@ -650,7 +686,7 @@ final class UnionTypeComparator
             // Impossible keys or values permit only the empty array, not arbitrary array keys.
             $parts[] = $key->isNever() || $input->type_params[1]->isNever()
                 ? Type::getEmptyArray()->getSingleAtomic()
-                : new Atomic\TArray([$key, $input->type_params[1]]);
+                : new TArray([$key, $input->type_params[1]]);
         }
 
         $all_contained = true;
@@ -816,8 +852,8 @@ final class UnionTypeComparator
 
                 // Element conversions do not change the outer array or object type.
                 $outer_string_cast = $atomic_comparison_result->to_string_cast
-                    && ($container_type_part instanceof Atomic\TString
-                        || $container_type_part instanceof Atomic\TScalar);
+                    && ($container_type_part instanceof TString
+                        || $container_type_part instanceof TScalar);
                 if (($is_atomic_contained_by && !$outer_string_cast)
                     || $atomic_comparison_result->type_coerced_from_mixed
                 ) {
