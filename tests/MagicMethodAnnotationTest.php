@@ -771,6 +771,21 @@ final class MagicMethodAnnotationTest extends TestCase
                     '$plain===' => 'PlainResult',
                 ],
             ],
+            'firstClassCallableOfAnOverloadedMethodTagOfAnInterface' => [
+                'code' => '<?php
+                    /**
+                     * @method int search(string $q)
+                     * @method string search(int $q)
+                     */
+                    interface Searcher {}
+
+                    function f(Searcher $searcher): Closure {
+                        return $searcher->search(...);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'magicMethodOverloadsAreChosenByTheNumberOfArguments' => [
                 'code' => '<?php
                     /**

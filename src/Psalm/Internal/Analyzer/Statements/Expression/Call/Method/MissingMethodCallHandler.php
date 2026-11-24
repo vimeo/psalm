@@ -546,9 +546,11 @@ final class MissingMethodCallHandler
             $pseudo_method_storage = self::selectOverload(
                 $statements_analyzer,
                 $codebase,
-                $stmt->getArgs(),
+                $stmt->isFirstClassCallable() ? [] : $stmt->getArgs(),
                 $context,
-                $defining_class_storage->pseudo_method_overloads[$method_name_lc] ?? null,
+                $stmt->isFirstClassCallable()
+                    ? null
+                    : $defining_class_storage->pseudo_method_overloads[$method_name_lc] ?? null,
                 $pseudo_method_storage,
                 $lhs_type_part instanceof Atomic\TNamedObject
                     ? static fn(MethodStorage $storage): MethodStorage => self::resolveStaticInParams(
