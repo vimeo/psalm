@@ -212,23 +212,28 @@ final class ArgumentTypeMismatchReporter extends TypeMismatchReporter
     #[Override]
     protected function acceptsNull(): bool
     {
-        if ($this->casts_to_string || parent::acceptsNull()) {
-            return true;
-        }
-
-        foreach ($this->expected_type->getAtomicTypes() as $atomic_type) {
-            if ($atomic_type instanceof TTypeVariable) {
-                // a null argument against a type variable records a bound like any other value
-                return true;
-            }
-        }
-
-        return false;
+        return $this->casts_to_string || parent::acceptsNull() || $this->expectsTypeVariable();
     }
 
     #[Override]
     protected function acceptsFalse(): bool
     {
-        return $this->casts_to_string || parent::acceptsFalse();
+        return $this->casts_to_string || parent::acceptsFalse() || $this->expectsTypeVariable();
+    }
+
+    /**
+     * A null or false argument against a type variable records a bound like any other value
+     *
+     * @psalm-capabilities read-props
+     */
+    private function expectsTypeVariable(): bool
+    {
+        foreach ($this->expected_type->getAtomicTypes() as $atomic_type) {
+            if ($atomic_type instanceof TTypeVariable) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }

@@ -1133,6 +1133,146 @@ abstract class Type
         return $intersection_atomics;
     }
 
+    /**
+     * $target with the intersection of the keys and of the values of two arrays; a non-empty array of never is no
+     * array
+     */
+    private static function intersectArrayParams(
+        TArray $target,
+        TArray $type_1_atomic,
+        TArray $type_2_atomic,
+        Codebase $codebase,
+        bool $allow_interface_equality,
+        bool $allow_float_int_equality,
+    ): ?TArray {
+        $key_intersection = self::intersectUnionTypes(
+            $type_1_atomic->type_params[0],
+            $type_2_atomic->type_params[0],
+            $codebase,
+            $allow_interface_equality,
+            $allow_float_int_equality,
+        );
+        $value_intersection = self::intersectUnionTypes(
+            $type_1_atomic->type_params[1],
+            $type_2_atomic->type_params[1],
+            $codebase,
+            $allow_interface_equality,
+            $allow_float_int_equality,
+        );
+
+        if ($key_intersection === null
+            || $value_intersection === null
+            || ($target instanceof TNonEmptyArray && ($key_intersection->isNever() || $value_intersection->isNever()))
+        ) {
+            return null;
+        }
+
+        return $target->setTypeParams([$key_intersection, $value_intersection]);
+    }
+
+    /**
+     * A list contained by an array or a list, with the intersection of their values, e.g. non-empty-list and
+     * list<T> are non-empty-list<T>
+     */
+    private static function intersectListValues(
+        TKeyedArray $list,
+        ?Atomic $wider_type,
+        Codebase $codebase,
+        bool $allow_interface_equality,
+        bool $allow_float_int_equality,
+    ): TKeyedArray|TArray|null {
+        if (!$list->isGenericList()) {
+            return $list;
+        }
+
+        if ($wider_type instanceof TArray) {
+            $wider_value_type = $wider_type->type_params[1];
+        } elseif ($wider_type instanceof TKeyedArray && $wider_type->isGenericList()) {
+            $wider_value_type = $wider_type->fallback_params[1];
+        } else {
+            return $list;
+        }
+
+        $value_intersection = self::intersectUnionTypes(
+            $list->fallback_params[1],
+            $wider_value_type,
+            $codebase,
+            $allow_interface_equality,
+            $allow_float_int_equality,
+        );
+
+        if ($value_intersection === null || ($list->isNonEmpty() && $value_intersection->isNever())) {
+            return null;
+        }
+
+        return $list->isNonEmpty()
+            ? self::getNonEmptyListAtomic($value_intersection, $list->from_docblock)
+            : self::getListAtomic($value_intersection, $list->from_docblock);
+    }
+
+    /**
+     * The intersection of two atomic types neither of which contains the other
+     */
+    private static function intersectOverlappingAtomics(
+        Atomic $type_1_atomic,
+        Atomic $type_2_atomic,
+        Codebase $codebase,
+        bool $allow_interface_equality,
+        bool $allow_float_int_equality,
+    ): ?Atomic {
+        if ($type_1_atomic instanceof TString
+            && $type_2_atomic instanceof TString
+            && ($refined_string = StringRefinement::intersect($type_1_atomic, $type_2_atomic)) !== null
+        ) {
+            return $refined_string;
+        }
+
+        if ($type_1_atomic instanceof TArray
+            && $type_2_atomic instanceof TArray
+            && ($type_1_atomic instanceof TNonEmptyArray || $type_2_atomic instanceof TNonEmptyArray)
+        ) {
+            // e.g. array<string, int> and non-empty-array are non-empty-array<string, int>
+            return self::intersectArrayParams(
+                $type_1_atomic instanceof TNonEmptyArray ? $type_1_atomic : $type_2_atomic,
+                $type_1_atomic,
+                $type_2_atomic,
+                $codebase,
+                $allow_interface_equality,
+                $allow_float_int_equality,
+            );
+        }
+
+        $array_iterable_intersection = self::intersectArrayWithIterable(
+            $codebase,
+            $type_1_atomic,
+            $type_2_atomic,
+            $allow_interface_equality,
+            $allow_float_int_equality,
+        );
+
+        if ($array_iterable_intersection !== null) {
+            return $array_iterable_intersection;
+        }
+
+        if (($type_1_atomic instanceof TNonspecificLiteralString
+                && $type_2_atomic instanceof TNonEmptyString)
+            || ($type_1_atomic instanceof TNonEmptyString
+                && $type_2_atomic instanceof TNonspecificLiteralString)
+        ) {
+            return new TNonEmptyNonspecificLiteralString();
+        }
+
+        if (($type_1_atomic instanceof TLowercaseString
+                && $type_2_atomic instanceof TNonEmptyString)
+            || ($type_1_atomic instanceof TNonEmptyString
+                && $type_2_atomic instanceof TLowercaseString)
+        ) {
+            return new TNonEmptyLowercaseString();
+        }
+
+        return null;
+    }
+
     private static function intersectAtomicTypes(
         Atomic $type_1_atomic,
         Atomic $type_2_atomic,
@@ -1208,75 +1348,41 @@ abstract class Type
                     $intersection_atomic = $type_1_atomic;
                     $wider_type = $type_2_atomic;
                     $intersection_performed = true;
-                } elseif ($type_1_atomic instanceof TString
-                    && $type_2_atomic instanceof TString
-                    && ($refined_string = StringRefinement::intersect($type_1_atomic, $type_2_atomic)) !== null
-                ) {
-                    $intersection_atomic = $refined_string;
-                    $intersection_performed = true;
-                } elseif ($type_1_atomic instanceof TArray
-                    && $type_2_atomic instanceof TArray
-                    && ($type_1_atomic instanceof TNonEmptyArray || $type_2_atomic instanceof TNonEmptyArray)
-                ) {
-                    // e.g. array<string, int> and non-empty-array are non-empty-array<string, int>
-                    $key_intersection = self::intersectUnionTypes(
-                        $type_1_atomic->type_params[0],
-                        $type_2_atomic->type_params[0],
+                } else {
+                    $intersection_atomic = self::intersectOverlappingAtomics(
+                        $type_1_atomic,
+                        $type_2_atomic,
                         $codebase,
                         $allow_interface_equality,
                         $allow_float_int_equality,
                     );
-                    $value_intersection = self::intersectUnionTypes(
-                        $type_1_atomic->type_params[1],
-                        $type_2_atomic->type_params[1],
-                        $codebase,
-                        $allow_interface_equality,
-                        $allow_float_int_equality,
-                    );
-
-                    // a non-empty array of never is no array
-                    if ($key_intersection !== null
-                        && $value_intersection !== null
-                        && !$key_intersection->isNever()
-                        && !$value_intersection->isNever()
-                    ) {
-                        $non_empty_array = $type_1_atomic instanceof TNonEmptyArray
-                            ? $type_1_atomic
-                            : $type_2_atomic;
-                        $intersection_atomic = $non_empty_array->setTypeParams(
-                            [$key_intersection, $value_intersection],
-                        );
-                        $intersection_performed = true;
-                    }
-                } elseif (($array_iterable_intersection = self::intersectArrayWithIterable(
-                    $codebase,
-                    $type_1_atomic,
-                    $type_2_atomic,
-                    $allow_interface_equality,
-                    $allow_float_int_equality,
-                )) !== null) {
-                    $intersection_atomic = $array_iterable_intersection;
-                    $intersection_performed = true;
-                } elseif (($type_1_atomic instanceof TNonspecificLiteralString
-                        && $type_2_atomic instanceof TNonEmptyString)
-                    || ($type_1_atomic instanceof TNonEmptyString
-                        && $type_2_atomic instanceof TNonspecificLiteralString)
-                ) {
-                    $intersection_atomic = new TNonEmptyNonspecificLiteralString();
-                    $intersection_performed = true;
-                } elseif (($type_1_atomic instanceof TLowercaseString
-                        && $type_2_atomic instanceof TNonEmptyString)
-                    || ($type_1_atomic instanceof TNonEmptyString
-                        && $type_2_atomic instanceof TLowercaseString)
-                ) {
-                    $intersection_atomic = new TNonEmptyLowercaseString();
-                    $intersection_performed = true;
+                    $intersection_performed = $intersection_performed || $intersection_atomic !== null;
                 }
 
                 if ($intersection_atomic
                     && !self::hasIntersection($type_1_atomic)
                     && !self::hasIntersection($type_2_atomic)
                 ) {
+                    if ($intersection_atomic instanceof TArray && $wider_type instanceof TArray) {
+                        // containment can leave wider generic params
+                        return self::intersectArrayParams(
+                            $intersection_atomic,
+                            $intersection_atomic,
+                            $wider_type,
+                            $codebase,
+                            $allow_interface_equality,
+                            $allow_float_int_equality,
+                        );
+                    }
+                    if ($intersection_atomic instanceof TKeyedArray) {
+                        return self::intersectListValues(
+                            $intersection_atomic,
+                            $wider_type,
+                            $codebase,
+                            $allow_interface_equality,
+                            $allow_float_int_equality,
+                        );
+                    }
                     return $intersection_atomic;
                 }
             } catch (InvalidArgumentException) {

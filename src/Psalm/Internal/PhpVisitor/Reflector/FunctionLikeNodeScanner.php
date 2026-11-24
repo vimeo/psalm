@@ -766,7 +766,7 @@ final class FunctionLikeNodeScanner
 
     /**
      * Gives the constructor $stmt scanned (see start()), if it is unannotated and trivial, what it needs (see
-     * getTrivialConstructorCapabilities())
+     * getTrivialConstructorCapabilities()). The body of a stubbed constructor is not what runs, so it is never trivial.
      */
     public function applyTrivialConstructorCapabilities(PhpParser\Node\FunctionLike $stmt): void
     {
@@ -775,6 +775,7 @@ final class FunctionLikeNodeScanner
 
         if ($stmt instanceof PhpParser\Node\Stmt\ClassMethod
             && $storage instanceof MethodStorage
+            && !$storage->stubbed
             && $classlike_storage !== null
             && !$classlike_storage->is_trait
             && strtolower($stmt->name->name) === '__construct'
@@ -1365,7 +1366,9 @@ final class FunctionLikeNodeScanner
                 $storage = $this->storage = new MethodStorage();
             }
 
-            $storage->stubbed = $this->codebase->register_stub_files;
+            // a real file can be scanned during stub registration (a stub extending one of its classes)
+            $storage->stubbed = $this->codebase->register_stub_files
+                && $this->codebase->scanner->isStubFile($this->file_path);
             $storage->defining_fqcln = $fq_classlike_name;
 
             $class_name_parts = explode('\\', $fq_classlike_name);
