@@ -34,14 +34,12 @@ use function array_any;
 use function array_filter;
 use function array_key_first;
 use function array_keys;
-use function array_unique;
 use function array_values;
 use function count;
 use function implode;
 use function preg_match;
 use function preg_quote;
 use function reset;
-use function sort;
 use function spl_object_id;
 use function strpbrk;
 
@@ -351,8 +349,7 @@ final class AlgebraAnalyzer
         }
 
         // a condition with an operand of an || that can never be true is no paradox as a whole, but the operand is
-        // dead code, unless the operands are the alternatives of one variable (`$a === 'x' || $a === 'y'`), of which
-        // some may be excluded already
+        // dead code
         $operands = self::getOrOperands($stmt);
 
         if ($operands === []) {
@@ -360,7 +357,6 @@ final class AlgebraAnalyzer
         }
 
         $operand_formulas = [];
-        $operand_variable_sets = [];
 
         foreach ($operands as $operand) {
             $operand_id = spl_object_id($operand);
@@ -378,19 +374,6 @@ final class AlgebraAnalyzer
             } catch (ComplicatedExpressionException) {
                 return;
             }
-
-            $variables = [];
-
-            foreach ($operand_formula as $clause) {
-                $variables = [...$variables, ...array_keys($clause->possibilities)];
-            }
-
-            sort($variables);
-            $operand_variable_sets[implode(',', array_unique($variables))] = true;
-        }
-
-        if (count($operand_variable_sets) === 1) {
-            return;
         }
 
         $assigned_var_ids = [];
