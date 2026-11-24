@@ -14,12 +14,14 @@ use Psalm\Internal\Analyzer\Statements\Expression\BinaryOp\CoalesceAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\ClassTemplateParamCollector;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodCallReturnTypeFetcher;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
+use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ArrayFetchAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ConstFetchAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Clause;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\AssertionReconciler;
+use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Internal\Type\TypeExpander;
@@ -605,7 +607,12 @@ class Reconciler
                         }
 
                         if ((!isset($new_types[$new_key]) || str_contains($new_key, '[' . $key . ']'))
-                            && self::dependsOnNarrowedVar($new_key, $key, $existing_types)
+                            && self::dependsOnNarrowedVar(
+                                $codebase,
+                                $new_key,
+                                $key,
+                                [$key => $result_type] + $existing_types,
+                            )
                             && $is_real
                         ) {
                             // Fix any references to the type before removing it.
@@ -1066,14 +1073,18 @@ class Reconciler
 
     /**
      * Whether what is known about $var_id may be stale after $narrowed_var_id has been narrowed. It is not when
-     * $narrowed_var_id is only an index of $var_id into an array whose value type is the same for every key.
+     * $narrowed_var_id is only an index of $var_id into an array whose value type is the same for every key and whose
+     * keys include the narrowed index.
      *
      * @internal
      * @param array<string, Union> $types
-     * @psalm-pure
      */
-    public static function dependsOnNarrowedVar(string $var_id, string $narrowed_var_id, array $types): bool
-    {
+    public static function dependsOnNarrowedVar(
+        Codebase $codebase,
+        string $var_id,
+        string $narrowed_var_id,
+        array $types,
+    ): bool {
         $index = '[' . $narrowed_var_id . ']';
 
         if (preg_match('/' . preg_quote($narrowed_var_id, '/') . '[\]\[\-]/', str_replace($index, '[]', $var_id))) {
@@ -1085,7 +1096,10 @@ class Reconciler
         while ($position !== false) {
             $array_type = $types[substr($var_id, 0, $position)] ?? null;
 
-            if ($array_type === null || !self::hasSameValueTypeForEveryKey($array_type)) {
+            if ($array_type === null
+                || !self::hasSameValueTypeForEveryKey($array_type)
+                || !self::hasKeyType($codebase, $array_type, $types[$narrowed_var_id] ?? null)
+            ) {
                 return true;
             }
 
@@ -1093,6 +1107,43 @@ class Reconciler
         }
 
         return false;
+    }
+
+    /**
+     * Whether the keys of the array include the narrowed index, which a fetch reports otherwise. The index is cast as
+     * PHP casts a key: '1' is 1. An index still mixed is no more invalid than before it was narrowed.
+     */
+    private static function hasKeyType(Codebase $codebase, Union $array_type, ?Union $index_type): bool
+    {
+        if ($index_type === null) {
+            return false;
+        }
+
+        if ($index_type->hasMixed()) {
+            return true;
+        }
+
+        $key_type = ArrayFetchAnalyzer::replaceOffsetTypeWithInts($index_type);
+
+        foreach ($array_type->getAtomicTypes() as $atomic_type) {
+            if ($atomic_type instanceof TMixed) {
+                continue;
+            }
+
+            $array_key_type = match (true) {
+                $atomic_type instanceof TArray => $atomic_type->type_params[0],
+                $atomic_type instanceof TKeyedArray => $atomic_type->getGenericKeyType(),
+                default => null,
+            };
+
+            if ($array_key_type === null
+                || !UnionTypeComparator::isContainedBy($codebase, $key_type, $array_key_type)
+            ) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /**
