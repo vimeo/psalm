@@ -415,7 +415,8 @@ Such a constructor needs `write-this-props` without being annotated (nothing at 
 neither `new` nor its class needs an annotation for the waiver. Any other statement makes it non-trivial:
 a call (`parent::__construct()` included), a by-reference parameter, a default value that creates an
 object or calls something, a property with hooks or one the class doesn't declare before the
-constructor, or `$this` stored anywhere. A non-trivial constructor without an annotation may do
+constructor, or `$this` stored anywhere. A constructor declared in a stub is never trivial: its body is
+not what runs. A non-trivial constructor without an annotation may do
 anything, as any unannotated method. So may a trivial constructor run for a class that redeclares one
 of the properties it assigns with a hook (PHP 8.4), or by `new static()` / `new $class()` where the
 class may be extended: the hook may do anything.
@@ -1144,7 +1145,7 @@ This applies to function calls, method calls, static calls and `new`. With
 `rememberPropertyAssignmentsAfterCall="false"`, this code reports one issue:
 
 ```php
-<?php
+<?php // rememberPropertyAssignmentsAfterCall="false"
 final class Order {
     public ?int $total = null;
     public static ?string $currency = null;
@@ -1232,7 +1233,7 @@ and a constructor.
 Given this code:
 
 ```php
-<?php
+<?php // suggestPurityAnnotations="true"
 function slug(string $title): string { // MissingPureAnnotation: slug could be marked @psalm-pure to aid security analysis, run with --alter --issues=MissingPureAnnotation to fix this
     return strtolower(trim($title));
 }
@@ -1269,7 +1270,7 @@ bound is left as `impure`, gets no class-level suggestion. A subclass without an
 suggested a contract on the next run, once its parent has one.
 
 ```php
-<?php
+<?php // suggestPurityAnnotations="true"
 abstract class Shape { // fine: no suggestion, as only impure covers Circle
     /** @psalm-pure */
     public function name(): string {

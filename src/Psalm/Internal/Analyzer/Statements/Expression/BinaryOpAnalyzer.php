@@ -46,6 +46,7 @@ use Psalm\Type\Union;
 use UnexpectedValueException;
 
 use function strlen;
+use function strtolower;
 
 /**
  * @internal
@@ -133,7 +134,17 @@ final class BinaryOpAnalyzer
                 return false;
             }
         } else {
-            if (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->left, $context) === false) {
+            $was_inside_negation = $context->inside_negation;
+            $context->inside_negation = $context->inside_conditional
+                && self::isCallComparedToFalse($stmt, $stmt->left, $stmt->right)
+                ? !$was_inside_negation
+                : $was_inside_negation;
+
+            $left_result = ExpressionAnalyzer::analyze($statements_analyzer, $stmt->left, $context);
+
+            $context->inside_negation = $was_inside_negation;
+
+            if ($left_result === false) {
                 return false;
             }
         }
@@ -143,7 +154,17 @@ final class BinaryOpAnalyzer
                 return false;
             }
         } else {
-            if (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->right, $context) === false) {
+            $was_inside_negation = $context->inside_negation;
+            $context->inside_negation = $context->inside_conditional
+                && self::isCallComparedToFalse($stmt, $stmt->right, $stmt->left)
+                ? !$was_inside_negation
+                : $was_inside_negation;
+
+            $right_result = ExpressionAnalyzer::analyze($statements_analyzer, $stmt->right, $context);
+
+            $context->inside_negation = $was_inside_negation;
+
+            if ($right_result === false) {
                 return false;
             }
         }
@@ -560,72 +581,46 @@ final class BinaryOpAnalyzer
         Union $stmt_left_type,
         Union $stmt_right_type,
     ): void {
+        if ($stmt_left_type->hasString() && $stmt_right_type->hasObjectType()) {
+            [$object_expr, $object_type] = [$stmt->right, $stmt_right_type];
+        } elseif ($stmt_right_type->hasString() && $stmt_left_type->hasObjectType()) {
+            [$object_expr, $object_type] = [$stmt->left, $stmt_left_type];
+        } else {
+            return;
+        }
+
         $codebase = $statements_analyzer->getCodebase();
 
-        if ($stmt_left_type->hasString() && $stmt_right_type->hasObjectType()) {
-            foreach ($stmt_right_type->getAtomicTypes() as $atomic_type) {
-                if ($atomic_type instanceof TNamedObject) {
-                    try {
-                        $storage = $codebase->methods->getStorage(
-                            new MethodIdentifier(
-                                $atomic_type->value,
-                                '__tostring',
-                            ),
-                        );
-                    } catch (UnexpectedValueException) {
-                        continue;
-                    }
-                    $var_id = ExpressionIdentifier::getExtendedVarId(
-                        $stmt->right,
-                        $statements_analyzer->getFQCLN(),
-                        $statements_analyzer,
+        foreach ($object_type->getAtomicTypes() as $atomic_type) {
+            if ($atomic_type instanceof TNamedObject) {
+                try {
+                    $storage = $codebase->methods->getStorage(
+                        new MethodIdentifier(
+                            $atomic_type->value,
+                            '__tostring',
+                        ),
                     );
-
-                    $statements_analyzer->signalMutation(
-                        $storage->capabilities,
-                        $context,
-                        'possibly-mutating method '
-                                    . $atomic_type->value . '::__toString',
-                        ImpureMethodCall::class,
-                        $stmt,
-                        null,
-                        false,
-                        $var_id === '$this' ? $storage : null,
-                    );
+                } catch (UnexpectedValueException) {
+                    continue;
                 }
-            }
-        } elseif ($stmt_right_type->hasString() && $stmt_left_type->hasObjectType()) {
-            foreach ($stmt_left_type->getAtomicTypes() as $atomic_type) {
-                if ($atomic_type instanceof TNamedObject) {
-                    try {
-                        $storage = $codebase->methods->getStorage(
-                            new MethodIdentifier(
-                                $atomic_type->value,
-                                '__tostring',
-                            ),
-                        );
-                    } catch (UnexpectedValueException) {
-                        continue;
-                    }
 
-                    $var_id = ExpressionIdentifier::getExtendedVarId(
-                        $stmt->left,
-                        $statements_analyzer->getFQCLN(),
-                        $statements_analyzer,
-                    );
+                $var_id = ExpressionIdentifier::getExtendedVarId(
+                    $object_expr,
+                    $statements_analyzer->getFQCLN(),
+                    $statements_analyzer,
+                );
 
-                    $statements_analyzer->signalMutation(
-                        $storage->capabilities,
-                        $context,
-                        'possibly-mutating method '
-                                    . $atomic_type->value . '::__toString',
-                        ImpureMethodCall::class,
-                        $stmt,
-                        null,
-                        false,
-                        $var_id === '$this' ? $storage : null,
-                    );
-                }
+                $statements_analyzer->signalMutation(
+                    $storage->capabilities,
+                    $context,
+                    'possibly-mutating method '
+                                . $atomic_type->value . '::__toString',
+                    ImpureMethodCall::class,
+                    $stmt,
+                    null,
+                    false,
+                    $var_id === '$this' ? $storage : null,
+                );
             }
         }
     }
@@ -726,5 +721,19 @@ final class BinaryOpAnalyzer
         }
 
         return $stmt_type;
+    }
+
+    /**
+     * `false === is_int($x)` holds exactly when `!is_int($x)` does, so the call is analysed as a negated one
+     */
+    private static function isCallComparedToFalse(
+        PhpParser\Node\Expr\BinaryOp $stmt,
+        PhpParser\Node\Expr $call,
+        PhpParser\Node\Expr $other,
+    ): bool {
+        return $stmt instanceof PhpParser\Node\Expr\BinaryOp\Identical
+            && $call instanceof PhpParser\Node\Expr\FuncCall
+            && $other instanceof PhpParser\Node\Expr\ConstFetch
+            && strtolower($other->name->getLast()) === 'false';
     }
 }

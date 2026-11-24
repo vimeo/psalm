@@ -12,6 +12,7 @@ use Psalm\Internal\Algebra;
 use Psalm\Internal\Algebra\FormulaGenerator;
 use Psalm\Internal\Analyzer\AlgebraAnalyzer;
 use Psalm\Internal\Analyzer\ClosureAnalyzer;
+use Psalm\Internal\Analyzer\ExtensionRequirementAnalyzer;
 use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\PurityWildcardInference;
 use Psalm\Internal\Analyzer\Statements\Expression\ArrayAnalyzer;
@@ -26,7 +27,6 @@ use Psalm\Internal\Analyzer\Statements\Expression\IntMaskComparisonAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\Statements\GlobalAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
-use Psalm\Internal\Analyzer\TraitAnalyzer;
 use Psalm\Internal\Codebase\CliOutput;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Internal\Codebase\PhpDeprecations;
@@ -118,6 +118,8 @@ use function str_ends_with;
 use function strpos;
 use function strtolower;
 
+use const SORT_ASC;
+use const SORT_DESC;
 use const SORT_FLAG_CASE;
 use const SORT_NATURAL;
 use const SORT_REGULAR;
@@ -155,6 +157,7 @@ final class FunctionCallAnalyzer extends CallAnalyzer
         'array_intersect_assoc' => 0,
         'array_intersect_uassoc' => 1,
         'array_fill_keys' => [[0, 'keys']],
+        'strtr' => [[1, 'from']],
     ];
 
     /**
@@ -200,10 +203,10 @@ final class FunctionCallAnalyzer extends CallAnalyzer
             && isset($args[0])
             && !$args[0]->unpack
         ) {
-            $original_function_id = implode('\\', $function_name->getParts());
+            $original_function_id = strtolower(implode('\\', $function_name->getParts()));
 
             // PHP 8.5 clone(...) form: parsed as a FuncCall, not Clone_, so route it in.
-            if (strtolower($original_function_id) === 'clone') {
+            if ($original_function_id === 'clone') {
                 return CloneAnalyzer::analyzeFuncCall($statements_analyzer, $stmt, $context);
             }
 
@@ -305,6 +308,21 @@ final class FunctionCallAnalyzer extends CallAnalyzer
 
         $function_storage = $function_call_info->function_storage;
 
+        // record the call sites of user functions, as Methods::methodExists() does for methods
+        if ($codebase->collect_locations
+            && $function_storage !== null
+            && $function_storage->location !== null
+            && $function_call_info->function_id !== null
+        ) {
+            $codebase->addReferenceToFunctionLike(
+                strtolower($function_call_info->function_id),
+                new CodeLocation($statements_analyzer->getSource(), $stmt->name),
+                $context,
+                $context->insideUse(),
+                $statements_analyzer->getFilePath(),
+            );
+        }
+
         // a function requiring an instance of a class with @psalm-cli-only-instances is called with one: from the
         // command line
         if ($function_storage !== null
@@ -341,6 +359,8 @@ final class FunctionCallAnalyzer extends CallAnalyzer
         if (!$is_first_class_callable) {
             $template_result->template_types += $function_call_info->callable_template_types;
 
+            $template_result->conditional_return_context = $function_call_info->function_storage->return_type ?? null;
+
             if (isset($function_call_info->function_storage->template_types)) {
                 $template_result->template_types += $function_call_info->function_storage->template_types ?: [];
             }
@@ -367,7 +387,10 @@ final class FunctionCallAnalyzer extends CallAnalyzer
             && $function_name instanceof PhpParser\Node\Name
             && $function_call_info->function_id
         ) {
-            if (!$function_call_info->is_stubbed && $function_call_info->in_call_map) {
+            // a stub that declares no return type keeps the callmap's
+            if ($function_call_info->in_call_map
+                && (!$function_call_info->is_stubbed || !$function_call_info->function_storage?->return_type)
+            ) {
                 $function_callable = InternalCallMapHandler::getCallableFromCallMapById(
                     $codebase,
                     $function_call_info->function_id,
@@ -375,7 +398,9 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                     $statements_analyzer->node_data,
                 );
 
-                if (!$codebase->functions->params_provider->has($function_call_info->function_id)) {
+                if (!$function_call_info->is_stubbed
+                    && !$codebase->functions->params_provider->has($function_call_info->function_id)
+                ) {
                     $function_call_info->function_params = $function_callable->params;
                 }
             }
@@ -964,6 +989,17 @@ final class FunctionCallAnalyzer extends CallAnalyzer
 
         $function_call_info->function_exists
             = $function_call_info->is_stubbed || $function_call_info->in_call_map || $namespaced_function_exists;
+
+        if ($function_call_info->in_call_map || $function_call_info->is_stubbed) {
+            ExtensionRequirementAnalyzer::check(
+                $codebase,
+                $function_call_info->function_id,
+                false,
+                new CodeLocation($statements_analyzer->getSource(), $function_name),
+                $context,
+                $statements_analyzer->getSuppressedIssues(),
+            );
+        }
 
         if ($function_call_info->function_exists
             && !$stmt->isFirstClassCallable()
@@ -1845,13 +1881,8 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                 } elseif ($var_type_part instanceof TNull) {
                     // handled above
                 } elseif (!$var_type_part instanceof TNamedObject
-                    || !$codebase->classlikes->classOrInterfaceExists($var_type_part->value, null, $context)
-                    || !$codebase->methodExists(
-                        new MethodIdentifier(
-                            $var_type_part->value,
-                            '__invoke',
-                        ),
-                    )
+                    || ($invoke_member = CallableTypeComparator::getInvokeMember($codebase, $var_type_part)) === null
+                    || !$codebase->classlikes->classOrInterfaceOrEnumExists($invoke_member->value, null, $context)
                 ) {
                     $invalid_function_call_types[] = (string)$var_type_part;
                 } else {
@@ -1949,6 +1980,12 @@ final class FunctionCallAnalyzer extends CallAnalyzer
         Context $context,
         Atomic $atomic_type,
     ): void {
+        // a first-class callable of a method is looked up in the first member of an intersection only
+        if ($stmt->isFirstClassCallable() && $atomic_type instanceof TNamedObject) {
+            $atomic_type = CallableTypeComparator::getInvokeMember($statements_analyzer->getCodebase(), $atomic_type)
+                ?? $atomic_type;
+        }
+
         $old_data_provider = $statements_analyzer->node_data;
 
         $statements_analyzer->node_data = clone $statements_analyzer->node_data;
@@ -2056,12 +2093,7 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                     && isset($context->vars_in_scope[$var_id])
                     && $context->vars_in_scope[$var_id]->hasMixed()
                 ) {
-                    if (!$context->collect_initializations
-                        && $statements_analyzer->getFilePath() === $statements_analyzer->getRootFilePath()
-                        && (!(($parent_source = $statements_analyzer->getSource())
-                                    instanceof FunctionLikeAnalyzer)
-                                || !$parent_source->getSource() instanceof TraitAnalyzer)
-                    ) {
+                    if ($statements_analyzer->shouldCountMixed($context)) {
                         $codebase->analyzer->decrementMixedCount($statements_analyzer->getFilePath());
                     }
 
@@ -2214,8 +2246,16 @@ final class FunctionCallAnalyzer extends CallAnalyzer
             return;
         }
 
+        if ($function_id === 'array_multisort') {
+            self::chargeMultisortConversions($statements_analyzer, $stmt, $context);
+
+            return;
+        }
+
         // compared with SORT_REGULAR, an object is only converted to be compared to a string
         $only_compared_to_strings = false;
+        // whether the values of an unpacked argument are each an argument whose values are converted
+        $unpacked_values_are_converted = false;
 
         if (isset(self::SORT_FLAGS_DEFAULTS[$function_id])) {
             $flags = self::SORT_FLAGS_DEFAULTS[$function_id];
@@ -2246,6 +2286,8 @@ final class FunctionCallAnalyzer extends CallAnalyzer
             if (is_int($converted_args)) {
                 $args = $stmt->getArgs();
                 $array_args = array_slice($args, 0, count($args) - $converted_args);
+                // with callbacks at the end, which of the unpacked values are arrays to convert isn't known
+                $unpacked_values_are_converted = $converted_args === 0;
             } else {
                 $array_args = [];
 
@@ -2262,11 +2304,17 @@ final class FunctionCallAnalyzer extends CallAnalyzer
         }
 
         foreach ($array_args as $array_arg) {
+            $array_type = $statements_analyzer->node_data->getType($array_arg->value);
+
             if ($array_arg->unpack) {
-                continue;
+                if (!$unpacked_values_are_converted) {
+                    continue;
+                }
+
+                $array_type = CastAnalyzer::getArrayValueType($array_type);
             }
 
-            $value_type = CastAnalyzer::getArrayValueType($statements_analyzer->node_data->getType($array_arg->value));
+            $value_type = CastAnalyzer::getArrayValueType($array_type);
 
             if (!$value_type
                 || !$value_type->hasObjectType()
@@ -2283,6 +2331,83 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                 false,
                 false,
             );
+        }
+    }
+
+    /**
+     * array_multisort() compares the values of each array as the flags after it say, SORT_REGULAR by default
+     */
+    private static function chargeMultisortConversions(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr\FuncCall $stmt,
+        Context $context,
+    ): void {
+        /** @var list<array{PhpParser\Node\Arg, Union, non-empty-list<int>}> $arrays */
+        $arrays = [];
+
+        foreach ($stmt->getArgs() as $arg) {
+            // which of the unpacked values are arrays, orders or flags isn't known
+            if ($arg->unpack) {
+                return;
+            }
+
+            $type = $statements_analyzer->node_data->getType($arg->value);
+
+            if (!$type) {
+                continue;
+            }
+
+            $value_type = CastAnalyzer::getArrayValueType($type);
+
+            if ($value_type) {
+                $arrays[] = [$arg, $value_type, [SORT_REGULAR]];
+            } elseif ($arrays) {
+                $last = count($arrays) - 1;
+
+                if (!$type->allIntLiterals()) {
+                    // flags that aren't known may be SORT_STRING
+                    $arrays[$last][2] = [SORT_STRING];
+                    continue;
+                }
+
+                $possible_flags = [];
+
+                foreach ($type->getLiteralInts() as $literal) {
+                    if ($literal->value === SORT_ASC || $literal->value === SORT_DESC) {
+                        // an order leaves the flags as they are
+                        $possible_flags = [...$possible_flags, ...$arrays[$last][2]];
+                    } else {
+                        $possible_flags[] = $literal->value & ~SORT_FLAG_CASE;
+                    }
+                }
+
+                if ($possible_flags) {
+                    $arrays[$last][2] = $possible_flags;
+                }
+            }
+        }
+
+        foreach ($arrays as [$arg, $value_type, $possible_flags]) {
+            if (!$value_type->hasObjectType()) {
+                continue;
+            }
+
+            foreach ($possible_flags as $flags) {
+                if ($flags === SORT_REGULAR
+                    ? self::mayBeString($value_type)
+                    : $flags === SORT_STRING || $flags === self::SORT_LOCALE_STRING || $flags === SORT_NATURAL
+                ) {
+                    CastAnalyzer::castStringAttempt(
+                        $statements_analyzer,
+                        $context,
+                        $value_type,
+                        $arg->value,
+                        false,
+                        false,
+                    );
+                    break;
+                }
+            }
         }
     }
 

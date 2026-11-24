@@ -1,6 +1,8 @@
 ---
 name: psalm-repro
 description: Use when reproducing a Psalm bug from the CLI, showing a test fails on the base branch, comparing behaviour between a branch, master, 6.x or an old release (e.g. 7.0.0-beta19), or measuring Psalm's speed and memory (self-analysis, WordPress taint benchmark).
+metadata:
+  internal: "true"
 ---
 
 # CLI repros, version comparisons and measurements

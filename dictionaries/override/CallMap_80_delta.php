@@ -130,6 +130,19 @@ return array (
   ),
   'changed' => 
   array (
+    '_' => 
+    array (
+      'old' => 
+      array (
+        0 => 'string',
+        'msgid' => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'string',
+        'message' => 'string',
+      ),
+    ),
     'abs' => 
     array (
       'old' => 
@@ -1424,8 +1437,8 @@ return array (
       'old' => 
       array (
         0 => 'string',
-        'domain' => 'string',
-        'directory' => 'string',
+        'domain_name' => 'string',
+        'dir' => 'string',
       ),
       'new' => 
       array (
@@ -1447,13 +1460,43 @@ return array (
         'value' => 'mixed',
       ),
     ),
+    'bzclose' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'fp' => 'resource',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'bz' => 'resource',
+      ),
+    ),
+    'bzcompress' => 
+    array (
+      'old' => 
+      array (
+        0 => 'int|string',
+        'source' => 'string',
+        'blocksize=' => 'int',
+        'workfactor=' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'int|string',
+        'data' => 'string',
+        'block_size=' => 'int',
+        'work_factor=' => 'int',
+      ),
+    ),
     'bzdecompress' => 
     array (
       'old' => 
       array (
         0 => 'false|int|string',
-        'data' => 'string',
-        'use_less_memory=' => 'int',
+        'source' => 'string',
+        'small=' => 'int',
       ),
       'new' => 
       array (
@@ -1462,13 +1505,26 @@ return array (
         'use_less_memory=' => 'bool',
       ),
     ),
+    'bzflush' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'fp' => 'resource',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'bz' => 'resource',
+      ),
+    ),
     'bzwrite' => 
     array (
       'old' => 
       array (
         0 => 'false|int',
-        'bz' => 'resource',
-        'data' => 'string',
+        'fp' => 'resource',
+        'str' => 'string',
         'length=' => 'int',
       ),
       'new' => 
@@ -1531,6 +1587,21 @@ return array (
       array (
         0 => 'void',
         'key' => 'string',
+      ),
+    ),
+    'cal_from_jd' => 
+    array (
+      'old' => 
+      array (
+        0 => 'array{abbrevdayname: string, abbrevmonth: string, date: string, day: int, dayname: string, dow: int, month: int, monthname: string, year: int}',
+        'jd' => 'int',
+        'calendar' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'array{abbrevdayname: string, abbrevmonth: string, date: string, day: int, dayname: string, dow: int, month: int, monthname: string, year: int}',
+        'julian_day' => 'int',
+        'calendar' => 'int',
       ),
     ),
     'call_user_func' => 
@@ -3801,6 +3872,228 @@ return array (
         'connection' => 'resource',
       ),
     ),
+    'dba_close' => 
+    array (
+      'old' => 
+      array (
+        0 => 'void',
+        'handle' => 'resource',
+      ),
+      'new' => 
+      array (
+        0 => 'void',
+        'dba' => 'resource',
+      ),
+    ),
+    'dba_delete' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'key' => 'array<array-key, mixed>|string',
+        'handle' => 'resource',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'key' => 'array<array-key, mixed>|string',
+        'dba' => 'resource',
+      ),
+    ),
+    'dba_exists' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'key' => 'array<array-key, mixed>|string',
+        'handle' => 'resource',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'key' => 'array<array-key, mixed>|string',
+        'dba' => 'resource',
+      ),
+    ),
+    'dba_fetch' => 
+    array (
+      'old' => 
+      array (
+        0 => 'false|string',
+        'key' => 'array<array-key, mixed>|string',
+        'skip' => 'int',
+        'handle=' => 'resource',
+      ),
+      'new' => 
+      array (
+        0 => 'false|string',
+        'key' => 'array<array-key, mixed>|string',
+        'skip' => 'int',
+        'dba=' => 'resource',
+      ),
+    ),
+    'dba_firstkey' => 
+    array (
+      'old' => 
+      array (
+        0 => 'string',
+        'handle' => 'resource',
+      ),
+      'new' => 
+      array (
+        0 => 'string',
+        'dba' => 'resource',
+      ),
+    ),
+    'dba_insert' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'key' => 'array<array-key, mixed>|string',
+        'value' => 'string',
+        'handle' => 'resource',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'key' => 'array<array-key, mixed>|string',
+        'value' => 'string',
+        'dba' => 'resource',
+      ),
+    ),
+    'dba_nextkey' => 
+    array (
+      'old' => 
+      array (
+        0 => 'string',
+        'handle' => 'resource',
+      ),
+      'new' => 
+      array (
+        0 => 'string',
+        'dba' => 'resource',
+      ),
+    ),
+    'dba_open' => 
+    array (
+      'old' => 
+      array (
+        0 => 'resource',
+        'path' => 'string',
+        'mode' => 'string',
+        'handlername=' => 'string',
+        '...handler_parameters=' => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'resource',
+        'path' => 'string',
+        'mode' => 'string',
+        'handler=' => 'string',
+        '...handler_params=' => 'string',
+      ),
+    ),
+    'dba_optimize' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'handle' => 'resource',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'dba' => 'resource',
+      ),
+    ),
+    'dba_popen' => 
+    array (
+      'old' => 
+      array (
+        0 => 'resource',
+        'path' => 'string',
+        'mode' => 'string',
+        'handlername=' => 'string',
+        '...handler_parameters=' => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'resource',
+        'path' => 'string',
+        'mode' => 'string',
+        'handler=' => 'string',
+        '...handler_params=' => 'string',
+      ),
+    ),
+    'dba_replace' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'key' => 'array<array-key, mixed>|string',
+        'value' => 'string',
+        'handle' => 'resource',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'key' => 'array<array-key, mixed>|string',
+        'value' => 'string',
+        'dba' => 'resource',
+      ),
+    ),
+    'dba_sync' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'handle' => 'resource',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'dba' => 'resource',
+      ),
+    ),
+    'dcgettext' => 
+    array (
+      'old' => 
+      array (
+        0 => 'string',
+        'domain_name' => 'string',
+        'msgid' => 'string',
+        'category' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'string',
+        'domain' => 'string',
+        'message' => 'string',
+        'category' => 'int',
+      ),
+    ),
+    'dcngettext' => 
+    array (
+      'old' => 
+      array (
+        0 => 'string',
+        'domain' => 'string',
+        'msgid1' => 'string',
+        'msgid2' => 'string',
+        'count' => 'int',
+        'category' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'string',
+        'domain' => 'string',
+        'singular' => 'string',
+        'plural' => 'string',
+        'count' => 'int',
+        'category' => 'int',
+      ),
+    ),
     'decbin' => 
     array (
       'old' => 
@@ -3883,6 +4176,21 @@ return array (
       array (
         0 => 'float',
         'num' => 'float',
+      ),
+    ),
+    'dgettext' => 
+    array (
+      'old' => 
+      array (
+        0 => 'string',
+        'domain_name' => 'string',
+        'msgid' => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'string',
+        'domain' => 'string',
+        'message' => 'string',
       ),
     ),
     'directory::close' => 
@@ -4053,6 +4361,25 @@ return array (
       array (
         0 => 'false|float',
         'directory' => 'string',
+      ),
+    ),
+    'dngettext' => 
+    array (
+      'old' => 
+      array (
+        0 => 'string',
+        'domain' => 'string',
+        'msgid1' => 'string',
+        'msgid2' => 'string',
+        'count' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'string',
+        'domain' => 'string',
+        'singular' => 'string',
+        'plural' => 'string',
+        'count' => 'int',
       ),
     ),
     'dns_check_record' => 
@@ -5080,7 +5407,6 @@ return array (
       array (
         0 => 'int',
         'year=' => 'int',
-        'mode=' => 'int',
       ),
       'new' => 
       array (
@@ -5095,7 +5421,7 @@ return array (
       array (
         0 => 'int',
         'year=' => 'int',
-        'mode=' => 'int',
+        'method=' => 'int',
       ),
       'new' => 
       array (
@@ -5150,7 +5476,7 @@ return array (
       'old' => 
       array (
         0 => 'bool',
-        'dictionary' => 'resource',
+        'dict' => 'resource',
       ),
       'new' => 
       array (
@@ -5164,7 +5490,7 @@ return array (
       array (
         0 => 'string',
         'broker' => 'resource',
-        'type' => 'int',
+        'name' => 'int',
       ),
       'new' => 
       array (
@@ -5246,8 +5572,8 @@ return array (
       array (
         0 => 'bool',
         'broker' => 'resource',
-        'type' => 'int',
-        'path' => 'string',
+        'name' => 'int',
+        'value' => 'string',
       ),
       'new' => 
       array (
@@ -5279,7 +5605,7 @@ return array (
       'old' => 
       array (
         0 => 'void',
-        'dictionary' => 'resource',
+        'dict' => 'resource',
         'word' => 'string',
       ),
       'new' => 
@@ -5294,7 +5620,7 @@ return array (
       'old' => 
       array (
         0 => 'void',
-        'dictionary' => 'resource',
+        'dict' => 'resource',
         'word' => 'string',
       ),
       'new' => 
@@ -5309,7 +5635,7 @@ return array (
       'old' => 
       array (
         0 => 'bool',
-        'dictionary' => 'resource',
+        'dict' => 'resource',
         'word' => 'string',
       ),
       'new' => 
@@ -5324,7 +5650,7 @@ return array (
       'old' => 
       array (
         0 => 'array<array-key, mixed>',
-        'dictionary' => 'resource',
+        'dict' => 'resource',
       ),
       'new' => 
       array (
@@ -5337,7 +5663,7 @@ return array (
       'old' => 
       array (
         0 => 'string',
-        'dictionary' => 'resource',
+        'dict' => 'resource',
       ),
       'new' => 
       array (
@@ -5350,7 +5676,7 @@ return array (
       'old' => 
       array (
         0 => 'bool',
-        'dictionary' => 'resource',
+        'dict' => 'resource',
         'word' => 'string',
       ),
       'new' => 
@@ -5365,7 +5691,7 @@ return array (
       'old' => 
       array (
         0 => 'bool',
-        'dictionary' => 'resource',
+        'dict' => 'resource',
         'word' => 'string',
         '&w suggestions=' => 'array<int, string>',
       ),
@@ -5382,9 +5708,9 @@ return array (
       'old' => 
       array (
         0 => 'void',
-        'dictionary' => 'resource',
-        'misspelled' => 'string',
-        'correct' => 'string',
+        'dict' => 'resource',
+        'mis' => 'string',
+        'cor' => 'string',
       ),
       'new' => 
       array (
@@ -5399,7 +5725,7 @@ return array (
       'old' => 
       array (
         0 => 'array<array-key, mixed>',
-        'dictionary' => 'resource',
+        'dict' => 'resource',
         'word' => 'string',
       ),
       'new' => 
@@ -6466,14 +6792,27 @@ return array (
         '&w result_code=' => 'int',
       ),
     ),
+    'exif_imagetype' => 
+    array (
+      'old' => 
+      array (
+        0 => 'false|int',
+        'imagefile' => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'false|int',
+        'filename' => 'string',
+      ),
+    ),
     'exif_read_data' => 
     array (
       'old' => 
       array (
         0 => 'array<array-key, mixed>|false',
-        'file' => 'resource|string',
-        'required_sections=' => 'string',
-        'as_arrays=' => 'bool',
+        'filename' => 'resource|string',
+        'sections_needed=' => 'string',
+        'sub_arrays=' => 'bool',
         'read_thumbnail=' => 'bool',
       ),
       'new' => 
@@ -6483,6 +6822,25 @@ return array (
         'required_sections=' => 'null|string',
         'as_arrays=' => 'bool',
         'read_thumbnail=' => 'bool',
+      ),
+    ),
+    'exif_thumbnail' => 
+    array (
+      'old' => 
+      array (
+        0 => 'false|string',
+        'filename' => 'string',
+        '&w width=' => 'int',
+        '&w height=' => 'int',
+        '&w imagetype=' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'false|string',
+        'file' => 'string',
+        '&w width=' => 'int',
+        '&w height=' => 'int',
+        '&w image_type=' => 'int',
       ),
     ),
     'exp' => 
@@ -7910,6 +8268,19 @@ return array (
       array (
         0 => 'array<array-key, mixed>',
         'mode=' => 'int',
+      ),
+    ),
+    'gettext' => 
+    array (
+      'old' => 
+      array (
+        0 => 'string',
+        'msgid' => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'string',
+        'message' => 'string',
       ),
     ),
     'gettimeofday' => 
@@ -12957,16 +13328,29 @@ return array (
         0 => 'int',
       ),
     ),
+    'imap_8bit' => 
+    array (
+      'old' => 
+      array (
+        0 => 'false|string',
+        'text' => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'false|string',
+        'string' => 'string',
+      ),
+    ),
     'imap_append' => 
     array (
       'old' => 
       array (
         0 => 'bool',
-        'imap' => 'resource',
+        'stream_id' => 'resource',
         'folder' => 'string',
         'message' => 'string',
         'options=' => 'string',
-        'internal_date=' => 'string',
+        'date=' => 'string',
       ),
       'new' => 
       array (
@@ -12978,13 +13362,395 @@ return array (
         'internal_date=' => 'null|string',
       ),
     ),
+    'imap_base64' => 
+    array (
+      'old' => 
+      array (
+        0 => 'false|string',
+        'text' => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'false|string',
+        'string' => 'string',
+      ),
+    ),
+    'imap_binary' => 
+    array (
+      'old' => 
+      array (
+        0 => 'false|string',
+        'text' => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'false|string',
+        'string' => 'string',
+      ),
+    ),
+    'imap_body' => 
+    array (
+      'old' => 
+      array (
+        0 => 'false|string',
+        'stream_id' => 'resource',
+        'msg_no' => 'int',
+        'options=' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'false|string',
+        'imap' => 'resource',
+        'message_num' => 'int',
+        'flags=' => 'int',
+      ),
+    ),
+    'imap_bodystruct' => 
+    array (
+      'old' => 
+      array (
+        0 => 'false|stdClass',
+        'stream_id' => 'resource',
+        'msg_no' => 'int',
+        'section' => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'false|stdClass',
+        'imap' => 'resource',
+        'message_num' => 'int',
+        'section' => 'string',
+      ),
+    ),
+    'imap_check' => 
+    array (
+      'old' => 
+      array (
+        0 => 'false|stdClass',
+        'stream_id' => 'resource',
+      ),
+      'new' => 
+      array (
+        0 => 'false|stdClass',
+        'imap' => 'resource',
+      ),
+    ),
+    'imap_clearflag_full' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'stream_id' => 'resource',
+        'sequence' => 'string',
+        'flag' => 'string',
+        'options=' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'imap' => 'resource',
+        'sequence' => 'string',
+        'flag' => 'string',
+        'options=' => 'int',
+      ),
+    ),
+    'imap_close' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'stream_id' => 'resource',
+        'options=' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'imap' => 'resource',
+        'flags=' => 'int',
+      ),
+    ),
+    'imap_create' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'stream_id' => 'resource',
+        'mailbox' => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'imap' => 'resource',
+        'mailbox' => 'string',
+      ),
+    ),
+    'imap_createmailbox' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'stream_id' => 'resource',
+        'mailbox' => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'imap' => 'resource',
+        'mailbox' => 'string',
+      ),
+    ),
+    'imap_delete' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'stream_id' => 'resource',
+        'msg_no' => 'string',
+        'options=' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'imap' => 'resource',
+        'message_nums' => 'string',
+        'flags=' => 'int',
+      ),
+    ),
+    'imap_deletemailbox' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'stream_id' => 'resource',
+        'mailbox' => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'imap' => 'resource',
+        'mailbox' => 'string',
+      ),
+    ),
+    'imap_expunge' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'stream_id' => 'resource',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'imap' => 'resource',
+      ),
+    ),
+    'imap_fetch_overview' => 
+    array (
+      'old' => 
+      array (
+        0 => 'array<array-key, mixed>|false',
+        'stream_id' => 'resource',
+        'sequence' => 'string',
+        'options=' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'array<array-key, mixed>|false',
+        'imap' => 'resource',
+        'sequence' => 'string',
+        'flags=' => 'int',
+      ),
+    ),
+    'imap_fetchbody' => 
+    array (
+      'old' => 
+      array (
+        0 => 'false|string',
+        'stream_id' => 'resource',
+        'msg_no' => 'int',
+        'section' => 'string',
+        'options=' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'false|string',
+        'imap' => 'resource',
+        'message_num' => 'int',
+        'section' => 'string',
+        'flags=' => 'int',
+      ),
+    ),
+    'imap_fetchheader' => 
+    array (
+      'old' => 
+      array (
+        0 => 'false|string',
+        'stream_id' => 'resource',
+        'msg_no' => 'int',
+        'options=' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'false|string',
+        'imap' => 'resource',
+        'message_num' => 'int',
+        'flags=' => 'int',
+      ),
+    ),
+    'imap_fetchmime' => 
+    array (
+      'old' => 
+      array (
+        0 => 'false|string',
+        'stream_id' => 'resource',
+        'msg_no' => 'int',
+        'section' => 'string',
+        'options=' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'false|string',
+        'imap' => 'resource',
+        'message_num' => 'int',
+        'section' => 'string',
+        'flags=' => 'int',
+      ),
+    ),
+    'imap_fetchstructure' => 
+    array (
+      'old' => 
+      array (
+        0 => 'false|stdClass',
+        'stream_id' => 'resource',
+        'msg_no' => 'int',
+        'options=' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'false|stdClass',
+        'imap' => 'resource',
+        'message_num' => 'int',
+        'flags=' => 'int',
+      ),
+    ),
+    'imap_fetchtext' => 
+    array (
+      'old' => 
+      array (
+        0 => 'false|string',
+        'stream_id' => 'resource',
+        'msg_no' => 'int',
+        'options=' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'false|string',
+        'imap' => 'resource',
+        'message_num' => 'int',
+        'flags=' => 'int',
+      ),
+    ),
+    'imap_gc' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'stream_id' => 'resource',
+        'flags=' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'imap' => 'resource',
+        'flags' => 'int',
+      ),
+    ),
+    'imap_get_quota' => 
+    array (
+      'old' => 
+      array (
+        0 => 'array<array-key, mixed>|false',
+        'stream_id' => 'resource',
+        'qroot' => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'array<array-key, mixed>|false',
+        'imap' => 'resource',
+        'quota_root' => 'string',
+      ),
+    ),
+    'imap_get_quotaroot' => 
+    array (
+      'old' => 
+      array (
+        0 => 'array<array-key, mixed>|false',
+        'stream_id' => 'resource',
+        'mbox' => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'array<array-key, mixed>|false',
+        'imap' => 'resource',
+        'mailbox' => 'string',
+      ),
+    ),
+    'imap_getacl' => 
+    array (
+      'old' => 
+      array (
+        0 => 'array<array-key, mixed>|false',
+        'stream_id' => 'resource',
+        'mailbox' => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'array<array-key, mixed>|false',
+        'imap' => 'resource',
+        'mailbox' => 'string',
+      ),
+    ),
+    'imap_getmailboxes' => 
+    array (
+      'old' => 
+      array (
+        0 => 'array<array-key, mixed>|false',
+        'stream_id' => 'resource',
+        'ref' => 'string',
+        'pattern' => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'array<array-key, mixed>|false',
+        'imap' => 'resource',
+        'reference' => 'string',
+        'pattern' => 'string',
+      ),
+    ),
+    'imap_getsubscribed' => 
+    array (
+      'old' => 
+      array (
+        0 => 'array<array-key, mixed>|false',
+        'stream_id' => 'resource',
+        'ref' => 'string',
+        'pattern' => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'array<array-key, mixed>|false',
+        'imap' => 'resource',
+        'reference' => 'string',
+        'pattern' => 'string',
+      ),
+    ),
     'imap_headerinfo' => 
     array (
       'old' => 
       array (
         0 => 'false|stdClass',
-        'imap' => 'resource',
-        'message_num' => 'int',
+        'stream_id' => 'resource',
+        'msg_no' => 'int',
         'from_length=' => 'int',
         'subject_length=' => 'int',
         'default_host=' => 'null|string',
@@ -12998,6 +13764,106 @@ return array (
         'subject_length=' => 'int',
       ),
     ),
+    'imap_headers' => 
+    array (
+      'old' => 
+      array (
+        0 => 'array<array-key, mixed>|false',
+        'stream_id' => 'resource',
+      ),
+      'new' => 
+      array (
+        0 => 'array<array-key, mixed>|false',
+        'imap' => 'resource',
+      ),
+    ),
+    'imap_list' => 
+    array (
+      'old' => 
+      array (
+        0 => 'array<array-key, mixed>|false',
+        'stream_id' => 'resource',
+        'ref' => 'string',
+        'pattern' => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'array<array-key, mixed>|false',
+        'imap' => 'resource',
+        'reference' => 'string',
+        'pattern' => 'string',
+      ),
+    ),
+    'imap_listmailbox' => 
+    array (
+      'old' => 
+      array (
+        0 => 'array<array-key, mixed>|false',
+        'stream_id' => 'resource',
+        'ref' => 'string',
+        'pattern' => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'array<array-key, mixed>|false',
+        'imap' => 'resource',
+        'reference' => 'string',
+        'pattern' => 'string',
+      ),
+    ),
+    'imap_listscan' => 
+    array (
+      'old' => 
+      array (
+        0 => 'array<array-key, mixed>|false',
+        'stream_id' => 'resource',
+        'ref' => 'string',
+        'pattern' => 'string',
+        'content' => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'array<array-key, mixed>|false',
+        'imap' => 'resource',
+        'reference' => 'string',
+        'pattern' => 'string',
+        'content' => 'string',
+      ),
+    ),
+    'imap_listsubscribed' => 
+    array (
+      'old' => 
+      array (
+        0 => 'array<array-key, mixed>|false',
+        'stream_id' => 'resource',
+        'ref' => 'string',
+        'pattern' => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'array<array-key, mixed>|false',
+        'imap' => 'resource',
+        'reference' => 'string',
+        'pattern' => 'string',
+      ),
+    ),
+    'imap_lsub' => 
+    array (
+      'old' => 
+      array (
+        0 => 'array<array-key, mixed>|false',
+        'stream_id' => 'resource',
+        'ref' => 'string',
+        'pattern' => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'array<array-key, mixed>|false',
+        'imap' => 'resource',
+        'reference' => 'string',
+        'pattern' => 'string',
+      ),
+    ),
     'imap_mail' => 
     array (
       'old' => 
@@ -13009,7 +13875,7 @@ return array (
         'additional_headers=' => 'string',
         'cc=' => 'string',
         'bcc=' => 'string',
-        'return_path=' => 'string',
+        'rpath=' => 'string',
       ),
       'new' => 
       array (
@@ -13023,15 +13889,430 @@ return array (
         'return_path=' => 'null|string',
       ),
     ),
+    'imap_mail_compose' => 
+    array (
+      'old' => 
+      array (
+        0 => 'false|string',
+        'envelope' => 'array<array-key, mixed>',
+        'body' => 'array<array-key, mixed>',
+      ),
+      'new' => 
+      array (
+        0 => 'false|string',
+        'envelope' => 'array<array-key, mixed>',
+        'bodies' => 'array<array-key, mixed>',
+      ),
+    ),
+    'imap_mail_copy' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'stream_id' => 'resource',
+        'msglist' => 'string',
+        'mailbox' => 'string',
+        'options=' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'imap' => 'resource',
+        'message_nums' => 'string',
+        'mailbox' => 'string',
+        'flags=' => 'int',
+      ),
+    ),
+    'imap_mail_move' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'stream_id' => 'resource',
+        'sequence' => 'string',
+        'mailbox' => 'string',
+        'options=' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'imap' => 'resource',
+        'message_nums' => 'string',
+        'mailbox' => 'string',
+        'flags=' => 'int',
+      ),
+    ),
+    'imap_mailboxmsginfo' => 
+    array (
+      'old' => 
+      array (
+        0 => 'stdClass',
+        'stream_id' => 'resource',
+      ),
+      'new' => 
+      array (
+        0 => 'stdClass',
+        'imap' => 'resource',
+      ),
+    ),
+    'imap_mime_header_decode' => 
+    array (
+      'old' => 
+      array (
+        0 => 'array<array-key, mixed>|false',
+        'str' => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'array<array-key, mixed>|false',
+        'string' => 'string',
+      ),
+    ),
+    'imap_msgno' => 
+    array (
+      'old' => 
+      array (
+        0 => 'int',
+        'stream_id' => 'resource',
+        'unique_msg_id' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'int',
+        'imap' => 'resource',
+        'message_uid' => 'int',
+      ),
+    ),
+    'imap_mutf7_to_utf8' => 
+    array (
+      'old' => 
+      array (
+        0 => 'false|string',
+        'in' => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'false|string',
+        'string' => 'string',
+      ),
+    ),
+    'imap_num_msg' => 
+    array (
+      'old' => 
+      array (
+        0 => 'false|int',
+        'stream_id' => 'resource',
+      ),
+      'new' => 
+      array (
+        0 => 'false|int',
+        'imap' => 'resource',
+      ),
+    ),
+    'imap_num_recent' => 
+    array (
+      'old' => 
+      array (
+        0 => 'int',
+        'stream_id' => 'resource',
+      ),
+      'new' => 
+      array (
+        0 => 'int',
+        'imap' => 'resource',
+      ),
+    ),
+    'imap_open' => 
+    array (
+      'old' => 
+      array (
+        0 => 'false|resource',
+        'mailbox' => 'string',
+        'user' => 'string',
+        'password' => 'string',
+        'options=' => 'int',
+        'n_retries=' => 'int',
+        'params=' => 'array<array-key, mixed>',
+      ),
+      'new' => 
+      array (
+        0 => 'false|resource',
+        'mailbox' => 'string',
+        'user' => 'string',
+        'password' => 'string',
+        'flags=' => 'int',
+        'retries=' => 'int',
+        'options=' => 'array<array-key, mixed>',
+      ),
+    ),
+    'imap_ping' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'stream_id' => 'resource',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'imap' => 'resource',
+      ),
+    ),
+    'imap_qprint' => 
+    array (
+      'old' => 
+      array (
+        0 => 'false|string',
+        'text' => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'false|string',
+        'string' => 'string',
+      ),
+    ),
+    'imap_rename' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'stream_id' => 'resource',
+        'old_name' => 'string',
+        'new_name' => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'imap' => 'resource',
+        'from' => 'string',
+        'to' => 'string',
+      ),
+    ),
+    'imap_renamemailbox' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'stream_id' => 'resource',
+        'old_name' => 'string',
+        'new_name' => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'imap' => 'resource',
+        'from' => 'string',
+        'to' => 'string',
+      ),
+    ),
+    'imap_reopen' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'stream_id' => 'resource',
+        'mailbox' => 'string',
+        'options=' => 'int',
+        'n_retries=' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'imap' => 'resource',
+        'mailbox' => 'string',
+        'flags=' => 'int',
+        'retries=' => 'int',
+      ),
+    ),
+    'imap_rfc822_parse_adrlist' => 
+    array (
+      'old' => 
+      array (
+        0 => 'array<array-key, mixed>',
+        'address_string' => 'string',
+        'default_host' => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'array<array-key, mixed>',
+        'string' => 'string',
+        'default_hostname' => 'string',
+      ),
+    ),
+    'imap_rfc822_parse_headers' => 
+    array (
+      'old' => 
+      array (
+        0 => 'stdClass',
+        'headers' => 'string',
+        'default_host=' => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'stdClass',
+        'headers' => 'string',
+        'default_hostname=' => 'string',
+      ),
+    ),
+    'imap_rfc822_write_address' => 
+    array (
+      'old' => 
+      array (
+        0 => 'false|string',
+        'mailbox' => 'string',
+        'host' => 'string',
+        'personal' => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'false|string',
+        'mailbox' => 'string',
+        'hostname' => 'string',
+        'personal' => 'string',
+      ),
+    ),
+    'imap_savebody' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'stream_id' => 'resource',
+        'file' => 'resource|string',
+        'msg_no' => 'int',
+        'section=' => 'string',
+        'options=' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'imap' => 'resource',
+        'file' => 'resource|string',
+        'message_num' => 'int',
+        'section=' => 'string',
+        'flags=' => 'int',
+      ),
+    ),
+    'imap_scan' => 
+    array (
+      'old' => 
+      array (
+        0 => 'array<array-key, mixed>|false',
+        'stream_id' => 'resource',
+        'ref' => 'string',
+        'pattern' => 'string',
+        'content' => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'array<array-key, mixed>|false',
+        'imap' => 'resource',
+        'reference' => 'string',
+        'pattern' => 'string',
+        'content' => 'string',
+      ),
+    ),
+    'imap_scanmailbox' => 
+    array (
+      'old' => 
+      array (
+        0 => 'array<array-key, mixed>|false',
+        'stream_id' => 'resource',
+        'ref' => 'string',
+        'pattern' => 'string',
+        'content' => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'array<array-key, mixed>|false',
+        'imap' => 'resource',
+        'reference' => 'string',
+        'pattern' => 'string',
+        'content' => 'string',
+      ),
+    ),
+    'imap_search' => 
+    array (
+      'old' => 
+      array (
+        0 => 'array<array-key, mixed>|false',
+        'stream_id' => 'resource',
+        'criteria' => 'string',
+        'options=' => 'int',
+        'charset=' => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'array<array-key, mixed>|false',
+        'imap' => 'resource',
+        'criteria' => 'string',
+        'flags=' => 'int',
+        'charset=' => 'string',
+      ),
+    ),
+    'imap_set_quota' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'stream_id' => 'resource',
+        'qroot' => 'string',
+        'mailbox_size' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'imap' => 'resource',
+        'quota_root' => 'string',
+        'mailbox_size' => 'int',
+      ),
+    ),
+    'imap_setacl' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'stream_id' => 'resource',
+        'mailbox' => 'string',
+        'id' => 'string',
+        'rights' => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'imap' => 'resource',
+        'mailbox' => 'string',
+        'user_id' => 'string',
+        'rights' => 'string',
+      ),
+    ),
+    'imap_setflag_full' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'stream_id' => 'resource',
+        'sequence' => 'string',
+        'flag' => 'string',
+        'options=' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'imap' => 'resource',
+        'sequence' => 'string',
+        'flag' => 'string',
+        'options=' => 'int',
+      ),
+    ),
     'imap_sort' => 
     array (
       'old' => 
       array (
         0 => 'array<array-key, mixed>|false',
-        'imap' => 'resource',
+        'stream_id' => 'resource',
         'criteria' => 'int',
         'reverse' => 'int',
-        'flags=' => 'int',
+        'options=' => 'int',
         'search_criteria=' => 'string',
         'charset=' => 'string',
       ),
@@ -13044,6 +14325,139 @@ return array (
         'flags=' => 'int',
         'search_criteria=' => 'null|string',
         'charset=' => 'null|string',
+      ),
+    ),
+    'imap_status' => 
+    array (
+      'old' => 
+      array (
+        0 => 'false|stdClass',
+        'stream_id' => 'resource',
+        'mailbox' => 'string',
+        'options' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'false|stdClass',
+        'imap' => 'resource',
+        'mailbox' => 'string',
+        'flags' => 'int',
+      ),
+    ),
+    'imap_subscribe' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'stream_id' => 'resource',
+        'mailbox' => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'imap' => 'resource',
+        'mailbox' => 'string',
+      ),
+    ),
+    'imap_thread' => 
+    array (
+      'old' => 
+      array (
+        0 => 'array<array-key, mixed>|false',
+        'stream_id' => 'resource',
+        'options=' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'array<array-key, mixed>|false',
+        'imap' => 'resource',
+        'flags=' => 'int',
+      ),
+    ),
+    'imap_uid' => 
+    array (
+      'old' => 
+      array (
+        0 => 'false|int',
+        'stream_id' => 'resource',
+        'msg_no' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'false|int',
+        'imap' => 'resource',
+        'message_num' => 'int',
+      ),
+    ),
+    'imap_undelete' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'stream_id' => 'resource',
+        'msg_no' => 'string',
+        'flags=' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'imap' => 'resource',
+        'message_nums' => 'string',
+        'flags=' => 'int',
+      ),
+    ),
+    'imap_unsubscribe' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'stream_id' => 'resource',
+        'mailbox' => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'imap' => 'resource',
+        'mailbox' => 'string',
+      ),
+    ),
+    'imap_utf7_decode' => 
+    array (
+      'old' => 
+      array (
+        0 => 'false|string',
+        'buf' => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'false|string',
+        'string' => 'string',
+      ),
+    ),
+    'imap_utf7_encode' => 
+    array (
+      'old' => 
+      array (
+        0 => 'string',
+        'buf' => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'string',
+        'string' => 'string',
+      ),
+    ),
+    'imap_utf8_to_mutf7' => 
+    array (
+      'old' => 
+      array (
+        0 => 'false|string',
+        'in' => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'false|string',
+        'string' => 'string',
       ),
     ),
     'implode' => 
@@ -15329,12 +16743,98 @@ return array (
         'preserve_keys=' => 'bool',
       ),
     ),
+    'jddayofweek' => 
+    array (
+      'old' => 
+      array (
+        0 => 'int|string',
+        'juliandaycount' => 'int',
+        'mode=' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'int|string',
+        'julian_day' => 'int',
+        'mode=' => 'int',
+      ),
+    ),
+    'jdmonthname' => 
+    array (
+      'old' => 
+      array (
+        0 => 'string',
+        'juliandaycount' => 'int',
+        'mode' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'string',
+        'julian_day' => 'int',
+        'mode' => 'int',
+      ),
+    ),
+    'jdtofrench' => 
+    array (
+      'old' => 
+      array (
+        0 => 'string',
+        'juliandaycount' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'string',
+        'julian_day' => 'int',
+      ),
+    ),
+    'jdtogregorian' => 
+    array (
+      'old' => 
+      array (
+        0 => 'string',
+        'juliandaycount' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'string',
+        'julian_day' => 'int',
+      ),
+    ),
+    'jdtojewish' => 
+    array (
+      'old' => 
+      array (
+        0 => 'string',
+        'juliandaycount' => 'int',
+        'hebrew=' => 'bool',
+        'fl=' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'string',
+        'julian_day' => 'int',
+        'hebrew=' => 'bool',
+        'flags=' => 'int',
+      ),
+    ),
+    'jdtojulian' => 
+    array (
+      'old' => 
+      array (
+        0 => 'string',
+        'juliandaycount' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'string',
+        'julian_day' => 'int',
+      ),
+    ),
     'jdtounix' => 
     array (
       'old' => 
       array (
         0 => 'false|int',
-        'julian_day' => 'int',
+        'jday' => 'int',
       ),
       'new' => 
       array (
@@ -15469,10 +16969,10 @@ return array (
       'old' => 
       array (
         0 => 'bool',
-        'ldap' => 'resource',
+        'link_identifier' => 'resource',
         'dn' => 'string',
         'entry' => 'array<array-key, mixed>',
-        'controls=' => 'array<array-key, mixed>',
+        'servercontrols=' => 'array<array-key, mixed>',
       ),
       'new' => 
       array (
@@ -15488,10 +16988,10 @@ return array (
       'old' => 
       array (
         0 => 'false|resource',
-        'ldap' => 'resource',
+        'link_identifier' => 'resource',
         'dn' => 'string',
         'entry' => 'array<array-key, mixed>',
-        'controls=' => 'array<array-key, mixed>',
+        'servercontrols=' => 'array<array-key, mixed>',
       ),
       'new' => 
       array (
@@ -15500,6 +17000,23 @@ return array (
         'dn' => 'string',
         'entry' => 'array<array-key, mixed>',
         'controls=' => 'array<array-key, mixed>|null',
+      ),
+    ),
+    'ldap_bind' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'link_identifier' => 'resource',
+        'bind_rdn=' => 'null|string',
+        'bind_password=' => 'null|string',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'ldap' => 'resource',
+        'dn=' => 'null|string',
+        'password=' => 'null|string',
       ),
     ),
     'ldap_bind_ext' => 
@@ -15507,10 +17024,10 @@ return array (
       'old' => 
       array (
         0 => 'false|resource',
-        'ldap' => 'resource',
-        'dn=' => 'null|string',
-        'password=' => 'null|string',
-        'controls=' => 'array<array-key, mixed>',
+        'link_identifier' => 'resource',
+        'bind_rdn=' => 'null|string',
+        'bind_password=' => 'null|string',
+        'servercontrols=' => 'array<array-key, mixed>',
       ),
       'new' => 
       array (
@@ -15521,16 +17038,29 @@ return array (
         'controls=' => 'array<array-key, mixed>|null',
       ),
     ),
+    'ldap_close' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'link_identifier' => 'resource',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'ldap' => 'resource',
+      ),
+    ),
     'ldap_compare' => 
     array (
       'old' => 
       array (
         0 => 'bool|int',
-        'ldap' => 'resource',
+        'link_identifier' => 'resource',
         'dn' => 'string',
         'attribute' => 'string',
         'value' => 'string',
-        'controls=' => 'array<array-key, mixed>',
+        'servercontrols=' => 'array<array-key, mixed>',
       ),
       'new' => 
       array (
@@ -15542,14 +17072,44 @@ return array (
         'controls=' => 'array<array-key, mixed>|null',
       ),
     ),
+    'ldap_connect' => 
+    array (
+      'old' => 
+      array (
+        0 => 'false|resource',
+        'hostname=' => 'null|string',
+        'port=' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'false|resource',
+        'uri=' => 'null|string',
+        'port=' => 'int',
+      ),
+    ),
+    'ldap_count_entries' => 
+    array (
+      'old' => 
+      array (
+        0 => 'int',
+        'link_identifier' => 'resource',
+        'result_identifier' => 'resource',
+      ),
+      'new' => 
+      array (
+        0 => 'int',
+        'ldap' => 'resource',
+        'result' => 'resource',
+      ),
+    ),
     'ldap_delete' => 
     array (
       'old' => 
       array (
         0 => 'bool',
-        'ldap' => 'resource',
+        'link_identifier' => 'resource',
         'dn' => 'string',
-        'controls=' => 'array<array-key, mixed>',
+        'servercontrols=' => 'array<array-key, mixed>',
       ),
       'new' => 
       array (
@@ -15564,9 +17124,9 @@ return array (
       'old' => 
       array (
         0 => 'false|resource',
-        'ldap' => 'resource',
+        'link_identifier' => 'resource',
         'dn' => 'string',
-        'controls=' => 'array<array-key, mixed>',
+        'servercontrols=' => 'array<array-key, mixed>',
       ),
       'new' => 
       array (
@@ -15576,16 +17136,65 @@ return array (
         'controls=' => 'array<array-key, mixed>|null',
       ),
     ),
+    'ldap_errno' => 
+    array (
+      'old' => 
+      array (
+        0 => 'int',
+        'link_identifier' => 'resource',
+      ),
+      'new' => 
+      array (
+        0 => 'int',
+        'ldap' => 'resource',
+      ),
+    ),
+    'ldap_error' => 
+    array (
+      'old' => 
+      array (
+        0 => 'string',
+        'link_identifier' => 'resource',
+      ),
+      'new' => 
+      array (
+        0 => 'string',
+        'ldap' => 'resource',
+      ),
+    ),
+    'ldap_exop' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool|resource',
+        'link' => 'resource',
+        'reqoid' => 'string',
+        'reqdata=' => 'null|string',
+        'servercontrols=' => 'array<array-key, mixed>|null',
+        '&w retdata=' => 'string',
+        '&w retoid=' => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'bool|resource',
+        'ldap' => 'resource',
+        'request_oid' => 'string',
+        'request_data=' => 'null|string',
+        'controls=' => 'array<array-key, mixed>|null',
+        '&w response_data=' => 'string',
+        '&w response_oid=' => 'string',
+      ),
+    ),
     'ldap_exop_passwd' => 
     array (
       'old' => 
       array (
         0 => 'bool|string',
-        'ldap' => 'resource',
+        'link' => 'resource',
         'user=' => 'string',
-        'old_password=' => 'string',
-        'new_password=' => 'string',
-        '&w controls=' => 'array<array-key, mixed>',
+        'oldpw=' => 'string',
+        'newpw=' => 'string',
+        '&w serverctrls=' => 'array<array-key, mixed>',
       ),
       'new' => 
       array (
@@ -15597,20 +17206,204 @@ return array (
         '&w controls=' => 'array<array-key, mixed>|null',
       ),
     ),
+    'ldap_exop_refresh' => 
+    array (
+      'old' => 
+      array (
+        0 => 'false|int',
+        'link' => 'resource',
+        'dn' => 'string',
+        'ttl' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'false|int',
+        'ldap' => 'resource',
+        'dn' => 'string',
+        'ttl' => 'int',
+      ),
+    ),
+    'ldap_exop_whoami' => 
+    array (
+      'old' => 
+      array (
+        0 => 'false|string',
+        'link' => 'resource',
+      ),
+      'new' => 
+      array (
+        0 => 'false|string',
+        'ldap' => 'resource',
+      ),
+    ),
+    'ldap_first_attribute' => 
+    array (
+      'old' => 
+      array (
+        0 => 'false|string',
+        'link_identifier' => 'resource',
+        'result_entry_identifier' => 'resource',
+      ),
+      'new' => 
+      array (
+        0 => 'false|string',
+        'ldap' => 'resource',
+        'entry' => 'resource',
+      ),
+    ),
+    'ldap_first_entry' => 
+    array (
+      'old' => 
+      array (
+        0 => 'false|resource',
+        'link_identifier' => 'resource',
+        'result_identifier' => 'resource',
+      ),
+      'new' => 
+      array (
+        0 => 'false|resource',
+        'ldap' => 'resource',
+        'result' => 'resource',
+      ),
+    ),
+    'ldap_first_reference' => 
+    array (
+      'old' => 
+      array (
+        0 => 'false|resource',
+        'link' => 'resource',
+        'result' => 'resource',
+      ),
+      'new' => 
+      array (
+        0 => 'false|resource',
+        'ldap' => 'resource',
+        'result' => 'resource',
+      ),
+    ),
+    'ldap_free_result' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'link_identifier' => 'resource',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'ldap' => 'resource',
+      ),
+    ),
+    'ldap_get_attributes' => 
+    array (
+      'old' => 
+      array (
+        0 => 'array<array-key, mixed>',
+        'link_identifier' => 'resource',
+        'result_entry_identifier' => 'resource',
+      ),
+      'new' => 
+      array (
+        0 => 'array<array-key, mixed>',
+        'ldap' => 'resource',
+        'entry' => 'resource',
+      ),
+    ),
+    'ldap_get_dn' => 
+    array (
+      'old' => 
+      array (
+        0 => 'false|string',
+        'link_identifier' => 'resource',
+        'result_entry_identifier' => 'resource',
+      ),
+      'new' => 
+      array (
+        0 => 'false|string',
+        'ldap' => 'resource',
+        'entry' => 'resource',
+      ),
+    ),
+    'ldap_get_entries' => 
+    array (
+      'old' => 
+      array (
+        0 => 'array<array-key, mixed>|false',
+        'link_identifier' => 'resource',
+        'result_identifier' => 'resource',
+      ),
+      'new' => 
+      array (
+        0 => 'array<array-key, mixed>|false',
+        'ldap' => 'resource',
+        'result' => 'resource',
+      ),
+    ),
+    'ldap_get_option' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'link_identifier' => 'resource',
+        'option' => 'int',
+        '&w retval' => 'array<array-key, mixed>|int|string',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'ldap' => 'resource',
+        'option' => 'int',
+        '&w value=' => 'array<array-key, mixed>|int|string',
+      ),
+    ),
+    'ldap_get_values' => 
+    array (
+      'old' => 
+      array (
+        0 => 'array<array-key, mixed>|false',
+        'link_identifier' => 'resource',
+        'result_entry_identifier' => 'resource',
+        'attribute' => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'array<array-key, mixed>|false',
+        'ldap' => 'resource',
+        'entry' => 'resource',
+        'attribute' => 'string',
+      ),
+    ),
+    'ldap_get_values_len' => 
+    array (
+      'old' => 
+      array (
+        0 => 'array<array-key, mixed>|false',
+        'link_identifier' => 'resource',
+        'result_entry_identifier' => 'resource',
+        'attribute' => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'array<array-key, mixed>|false',
+        'ldap' => 'resource',
+        'entry' => 'resource',
+        'attribute' => 'string',
+      ),
+    ),
     'ldap_list' => 
     array (
       'old' => 
       array (
         0 => 'false|resource',
-        'ldap' => 'array<array-key, mixed>|resource',
-        'base' => 'array<array-key, mixed>|string',
+        'link_identifier' => 'array<array-key, mixed>|resource',
+        'base_dn' => 'array<array-key, mixed>|string',
         'filter' => 'array<array-key, mixed>|string',
         'attributes=' => 'array<array-key, mixed>',
-        'attributes_only=' => 'int',
+        'attrsonly=' => 'int',
         'sizelimit=' => 'int',
         'timelimit=' => 'int',
         'deref=' => 'int',
-        'controls=' => 'array<array-key, mixed>',
+        'servercontrols=' => 'array<array-key, mixed>',
       ),
       'new' => 
       array (
@@ -15631,10 +17424,10 @@ return array (
       'old' => 
       array (
         0 => 'bool',
-        'ldap' => 'resource',
+        'link_identifier' => 'resource',
         'dn' => 'string',
         'entry' => 'array<array-key, mixed>',
-        'controls=' => 'array<array-key, mixed>',
+        'servercontrols=' => 'array<array-key, mixed>',
       ),
       'new' => 
       array (
@@ -15650,10 +17443,10 @@ return array (
       'old' => 
       array (
         0 => 'false|resource',
-        'ldap' => 'resource',
+        'link_identifier' => 'resource',
         'dn' => 'string',
         'entry' => 'array<array-key, mixed>',
-        'controls=' => 'array<array-key, mixed>',
+        'servercontrols=' => 'array<array-key, mixed>',
       ),
       'new' => 
       array (
@@ -15669,10 +17462,10 @@ return array (
       'old' => 
       array (
         0 => 'bool',
-        'ldap' => 'resource',
+        'link_identifier' => 'resource',
         'dn' => 'string',
         'entry' => 'array<array-key, mixed>',
-        'controls=' => 'array<array-key, mixed>',
+        'servercontrols=' => 'array<array-key, mixed>',
       ),
       'new' => 
       array (
@@ -15688,10 +17481,10 @@ return array (
       'old' => 
       array (
         0 => 'false|resource',
-        'ldap' => 'resource',
+        'link_identifier' => 'resource',
         'dn' => 'string',
         'entry' => 'array<array-key, mixed>',
-        'controls=' => 'array<array-key, mixed>',
+        'servercontrols=' => 'array<array-key, mixed>',
       ),
       'new' => 
       array (
@@ -15707,10 +17500,10 @@ return array (
       'old' => 
       array (
         0 => 'bool',
-        'ldap' => 'resource',
+        'link_identifier' => 'resource',
         'dn' => 'string',
         'entry' => 'array<array-key, mixed>',
-        'controls=' => 'array<array-key, mixed>',
+        'servercontrols=' => 'array<array-key, mixed>',
       ),
       'new' => 
       array (
@@ -15726,10 +17519,10 @@ return array (
       'old' => 
       array (
         0 => 'false|resource',
-        'ldap' => 'resource',
+        'link_identifier' => 'resource',
         'dn' => 'string',
         'entry' => 'array<array-key, mixed>',
-        'controls=' => 'array<array-key, mixed>',
+        'servercontrols=' => 'array<array-key, mixed>',
       ),
       'new' => 
       array (
@@ -15745,10 +17538,10 @@ return array (
       'old' => 
       array (
         0 => 'bool',
-        'ldap' => 'resource',
+        'link_identifier' => 'resource',
         'dn' => 'string',
         'entry' => 'array<array-key, mixed>',
-        'controls=' => 'array<array-key, mixed>',
+        'servercontrols=' => 'array<array-key, mixed>',
       ),
       'new' => 
       array (
@@ -15764,10 +17557,10 @@ return array (
       'old' => 
       array (
         0 => 'bool',
-        'ldap' => 'resource',
+        'link_identifier' => 'resource',
         'dn' => 'string',
         'modifications_info' => 'array<array-key, mixed>',
-        'controls=' => 'array<array-key, mixed>',
+        'servercontrols=' => 'array<array-key, mixed>',
       ),
       'new' => 
       array (
@@ -15778,20 +17571,126 @@ return array (
         'controls=' => 'array<array-key, mixed>|null',
       ),
     ),
+    'ldap_next_attribute' => 
+    array (
+      'old' => 
+      array (
+        0 => 'false|string',
+        'link_identifier' => 'resource',
+        'result_entry_identifier' => 'resource',
+      ),
+      'new' => 
+      array (
+        0 => 'false|string',
+        'ldap' => 'resource',
+        'entry' => 'resource',
+      ),
+    ),
+    'ldap_next_entry' => 
+    array (
+      'old' => 
+      array (
+        0 => 'false|resource',
+        'link_identifier' => 'resource',
+        'result_identifier' => 'resource',
+      ),
+      'new' => 
+      array (
+        0 => 'false|resource',
+        'ldap' => 'resource',
+        'entry' => 'resource',
+      ),
+    ),
+    'ldap_next_reference' => 
+    array (
+      'old' => 
+      array (
+        0 => 'false|resource',
+        'link' => 'resource',
+        'entry' => 'resource',
+      ),
+      'new' => 
+      array (
+        0 => 'false|resource',
+        'ldap' => 'resource',
+        'entry' => 'resource',
+      ),
+    ),
+    'ldap_parse_exop' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'link' => 'resource',
+        'result' => 'resource',
+        '&w retdata' => 'string',
+        '&w retoid' => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'ldap' => 'resource',
+        'result' => 'resource',
+        '&w response_data=' => 'string',
+        '&w response_oid=' => 'string',
+      ),
+    ),
+    'ldap_parse_reference' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'link' => 'resource',
+        'entry' => 'resource',
+        '&w referrals' => 'array<array-key, mixed>',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'ldap' => 'resource',
+        'entry' => 'resource',
+        '&w referrals' => 'array<array-key, mixed>',
+      ),
+    ),
+    'ldap_parse_result' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'link' => 'resource',
+        'result' => 'resource',
+        '&w errcode' => 'int',
+        '&w matcheddn=' => 'string',
+        '&w errmsg=' => 'string',
+        '&w referrals=' => 'array<array-key, mixed>',
+        '&w serverctrls=' => 'array<array-key, mixed>',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'ldap' => 'resource',
+        'result' => 'resource',
+        '&w error_code' => 'int',
+        '&w matched_dn=' => 'string',
+        '&w error_message=' => 'string',
+        '&w referrals=' => 'array<array-key, mixed>',
+        '&w controls=' => 'array<array-key, mixed>',
+      ),
+    ),
     'ldap_read' => 
     array (
       'old' => 
       array (
         0 => 'false|resource',
-        'ldap' => 'array<array-key, mixed>|resource',
-        'base' => 'array<array-key, mixed>|string',
+        'link_identifier' => 'array<array-key, mixed>|resource',
+        'base_dn' => 'array<array-key, mixed>|string',
         'filter' => 'array<array-key, mixed>|string',
         'attributes=' => 'array<array-key, mixed>',
-        'attributes_only=' => 'int',
+        'attrsonly=' => 'int',
         'sizelimit=' => 'int',
         'timelimit=' => 'int',
         'deref=' => 'int',
-        'controls=' => 'array<array-key, mixed>',
+        'servercontrols=' => 'array<array-key, mixed>',
       ),
       'new' => 
       array (
@@ -15812,12 +17711,12 @@ return array (
       'old' => 
       array (
         0 => 'bool',
-        'ldap' => 'resource',
+        'link_identifier' => 'resource',
         'dn' => 'string',
-        'new_rdn' => 'string',
-        'new_parent' => 'string',
-        'delete_old_rdn' => 'bool',
-        'controls=' => 'array<array-key, mixed>',
+        'newrdn' => 'string',
+        'newparent' => 'string',
+        'deleteoldrdn' => 'bool',
+        'servercontrols=' => 'array<array-key, mixed>',
       ),
       'new' => 
       array (
@@ -15835,12 +17734,12 @@ return array (
       'old' => 
       array (
         0 => 'false|resource',
-        'ldap' => 'resource',
+        'link_identifier' => 'resource',
         'dn' => 'string',
-        'new_rdn' => 'string',
-        'new_parent' => 'string',
-        'delete_old_rdn' => 'bool',
-        'controls=' => 'array<array-key, mixed>',
+        'newrdn' => 'string',
+        'newparent' => 'string',
+        'deleteoldrdn' => 'bool',
+        'servercontrols=' => 'array<array-key, mixed>',
       ),
       'new' => 
       array (
@@ -15885,15 +17784,15 @@ return array (
       'old' => 
       array (
         0 => 'array<array-key, resource>|false|resource',
-        'ldap' => 'array<array-key, resource>|resource',
-        'base' => 'array<array-key, mixed>|string',
+        'link_identifier' => 'array<array-key, resource>|resource',
+        'base_dn' => 'array<array-key, mixed>|string',
         'filter' => 'array<array-key, mixed>|string',
         'attributes=' => 'array<array-key, mixed>',
-        'attributes_only=' => 'int',
+        'attrsonly=' => 'int',
         'sizelimit=' => 'int',
         'timelimit=' => 'int',
         'deref=' => 'int',
-        'controls=' => 'array<array-key, mixed>',
+        'servercontrols=' => 'array<array-key, mixed>',
       ),
       'new' => 
       array (
@@ -15909,12 +17808,29 @@ return array (
         'controls=' => 'array<array-key, mixed>|null',
       ),
     ),
+    'ldap_set_option' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'link_identifier' => 'null|resource',
+        'option' => 'int',
+        'newval' => 'mixed',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'ldap' => 'null|resource',
+        'option' => 'int',
+        'value' => 'mixed',
+      ),
+    ),
     'ldap_set_rebind_proc' => 
     array (
       'old' => 
       array (
         0 => 'bool',
-        'ldap' => 'resource',
+        'link' => 'resource',
         'callback' => 'callable[impure]',
       ),
       'new' => 
@@ -15922,6 +17838,32 @@ return array (
         0 => 'bool',
         'ldap' => 'resource',
         'callback' => 'callable[impure]|null',
+      ),
+    ),
+    'ldap_start_tls' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'link_identifier' => 'resource',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'ldap' => 'resource',
+      ),
+    ),
+    'ldap_unbind' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'link_identifier' => 'resource',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'ldap' => 'resource',
       ),
     ),
     'levenshtein' => 
@@ -17588,7 +19530,7 @@ return array (
       array (
         0 => 'false|resource',
         'key' => 'int',
-        'permissions=' => 'int',
+        'perms=' => 'int',
       ),
       'new' => 
       array (
@@ -17603,13 +19545,13 @@ return array (
       array (
         0 => 'bool',
         'queue' => 'resource',
-        'desired_message_type' => 'int',
-        '&w received_message_type' => 'int',
-        'max_message_size' => 'int',
+        'desiredmsgtype' => 'int',
+        '&w msgtype' => 'int',
+        'maxsize' => 'int',
         '&w message' => 'mixed',
         'unserialize=' => 'bool',
         'flags=' => 'int',
-        '&w error_code=' => 'int',
+        '&w errorcode=' => 'int',
       ),
       'new' => 
       array (
@@ -17643,11 +19585,11 @@ return array (
       array (
         0 => 'bool',
         'queue' => 'resource',
-        'message_type' => 'int',
+        'msgtype' => 'int',
         'message' => 'mixed',
         'serialize=' => 'bool',
         'blocking=' => 'bool',
-        '&w error_code=' => 'int',
+        '&w errorcode=' => 'int',
       ),
       'new' => 
       array (
@@ -19526,6 +21468,23 @@ return array (
         '&r array' => 'array<array-key, mixed>|object',
       ),
     ),
+    'ngettext' => 
+    array (
+      'old' => 
+      array (
+        0 => 'string',
+        'msgid1' => 'string',
+        'msgid2' => 'string',
+        'count' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'string',
+        'singular' => 'string',
+        'plural' => 'string',
+        'count' => 'int',
+      ),
+    ),
     'nl2br' => 
     array (
       'old' => 
@@ -20099,6 +22058,1342 @@ return array (
         'flags=' => 'int',
       ),
     ),
+    'oci_bind_array_by_name' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'statement_resource' => 'resource',
+        'column_name' => 'string',
+        '&variable' => 'array<array-key, mixed>',
+        'maximum_array_length' => 'int',
+        'maximum_item_length=' => 'int',
+        'type=' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'statement' => 'resource',
+        'param' => 'string',
+        '&var' => 'array<array-key, mixed>',
+        'max_array_length' => 'int',
+        'max_item_length=' => 'int',
+        'type=' => 'int',
+      ),
+    ),
+    'oci_bind_by_name' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'statement_resource' => 'resource',
+        'column_name' => 'string',
+        '&variable' => 'mixed',
+        'maximum_length=' => 'int',
+        'type=' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'statement' => 'resource',
+        'param' => 'string',
+        '&var' => 'mixed',
+        'max_length=' => 'int',
+        'type=' => 'int',
+      ),
+    ),
+    'oci_cancel' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'statement_resource' => 'resource',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'statement' => 'resource',
+      ),
+    ),
+    'oci_close' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'connection_resource' => 'resource',
+      ),
+      'new' => 
+      array (
+        0 => 'bool|null',
+        'connection' => 'resource',
+      ),
+    ),
+    'oci_collection_append' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'collection' => 'string',
+        'value' => 'mixed',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'collection' => 'OCICollection',
+        'value' => 'string',
+      ),
+    ),
+    'oci_collection_assign' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'collection_to' => 'object',
+        'collection_from' => 'mixed',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'to' => 'OCICollection',
+        'from' => 'OCICollection',
+      ),
+    ),
+    'oci_collection_element_assign' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'collection' => 'int',
+        'index' => 'string',
+        'value' => 'mixed',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'collection' => 'OCICollection',
+        'index' => 'int',
+        'value' => 'string',
+      ),
+    ),
+    'oci_collection_element_get' => 
+    array (
+      'old' => 
+      array (
+        0 => 'string',
+        'collection' => 'int',
+        'index' => 'mixed',
+      ),
+      'new' => 
+      array (
+        0 => 'null|string',
+        'collection' => 'OCICollection',
+        'index' => 'int',
+      ),
+    ),
+    'oci_collection_max' => 
+    array (
+      'old' => 
+      array (
+        0 => 'int',
+        'collection' => 'mixed',
+      ),
+      'new' => 
+      array (
+        0 => 'int',
+        'collection' => 'OCICollection',
+      ),
+    ),
+    'oci_collection_size' => 
+    array (
+      'old' => 
+      array (
+        0 => 'int',
+        'collection' => 'mixed',
+      ),
+      'new' => 
+      array (
+        0 => 'int',
+        'collection' => 'OCICollection',
+      ),
+    ),
+    'oci_collection_trim' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'collection' => 'int',
+        'number' => 'mixed',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'collection' => 'OCICollection',
+        'num' => 'int',
+      ),
+    ),
+    'oci_commit' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'connection_resource' => 'resource',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'connection' => 'resource',
+      ),
+    ),
+    'oci_connect' => 
+    array (
+      'old' => 
+      array (
+        0 => 'false|resource',
+        'username' => 'string',
+        'password' => 'string',
+        'connection_string=' => 'string',
+        'character_set=' => 'string',
+        'session_mode=' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'false|resource',
+        'username' => 'string',
+        'password' => 'string',
+        'connection_string=' => 'null|string',
+        'encoding=' => 'string',
+        'session_mode=' => 'int',
+      ),
+    ),
+    'oci_define_by_name' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'statement_resource' => 'resource',
+        'column_name' => 'string',
+        '&w variable' => 'mixed',
+        'type=' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'statement' => 'resource',
+        'column' => 'string',
+        '&w var' => 'mixed',
+        'type=' => 'int',
+      ),
+    ),
+    'oci_error' => 
+    array (
+      'old' => 
+      array (
+        0 => 'array<array-key, mixed>|false',
+        'connection_or_statement_resource=' => 'resource',
+      ),
+      'new' => 
+      array (
+        0 => 'array<array-key, mixed>|false',
+        'connection_or_statement=' => 'resource',
+      ),
+    ),
+    'oci_execute' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'statement_resource' => 'resource',
+        'mode=' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'statement' => 'resource',
+        'mode=' => 'int',
+      ),
+    ),
+    'oci_fetch' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'statement_resource' => 'resource',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'statement' => 'resource',
+      ),
+    ),
+    'oci_fetch_all' => 
+    array (
+      'old' => 
+      array (
+        0 => 'false|int',
+        'statement_resource' => 'resource',
+        '&w output' => 'array<array-key, mixed>',
+        'skip=' => 'int',
+        'maximum_rows=' => 'int',
+        'flags=' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'int',
+        'statement' => 'resource',
+        '&w output' => 'array<array-key, mixed>',
+        'offset=' => 'int',
+        'limit=' => 'int',
+        'flags=' => 'int',
+      ),
+    ),
+    'oci_fetch_array' => 
+    array (
+      'old' => 
+      array (
+        0 => 'array<array-key, mixed>|false',
+        'statement_resource' => 'resource',
+        'mode=' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'array<array-key, mixed>|false',
+        'statement' => 'resource',
+        'mode=' => 'int',
+      ),
+    ),
+    'oci_fetch_assoc' => 
+    array (
+      'old' => 
+      array (
+        0 => 'array<array-key, mixed>|false',
+        'statement_resource' => 'resource',
+      ),
+      'new' => 
+      array (
+        0 => 'array<array-key, mixed>|false',
+        'statement' => 'resource',
+      ),
+    ),
+    'oci_fetch_object' => 
+    array (
+      'old' => 
+      array (
+        0 => 'false|object',
+        'statement_resource' => 'resource',
+      ),
+      'new' => 
+      array (
+        0 => 'false|stdClass',
+        'statement' => 'resource',
+        'mode=' => 'int',
+      ),
+    ),
+    'oci_fetch_row' => 
+    array (
+      'old' => 
+      array (
+        0 => 'array<array-key, mixed>|false',
+        'statement_resource' => 'resource',
+      ),
+      'new' => 
+      array (
+        0 => 'array<array-key, mixed>|false',
+        'statement' => 'resource',
+      ),
+    ),
+    'oci_field_is_null' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'statement_resource' => 'resource',
+        'column_number_or_name' => 'mixed',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'statement' => 'resource',
+        'column' => 'int|string',
+      ),
+    ),
+    'oci_field_name' => 
+    array (
+      'old' => 
+      array (
+        0 => 'false|string',
+        'statement_resource' => 'resource',
+        'column_number_or_name' => 'mixed',
+      ),
+      'new' => 
+      array (
+        0 => 'false|string',
+        'statement' => 'resource',
+        'column' => 'int|string',
+      ),
+    ),
+    'oci_field_precision' => 
+    array (
+      'old' => 
+      array (
+        0 => 'false|int',
+        'statement_resource' => 'resource',
+        'column_number_or_name' => 'mixed',
+      ),
+      'new' => 
+      array (
+        0 => 'false|int',
+        'statement' => 'resource',
+        'column' => 'int|string',
+      ),
+    ),
+    'oci_field_scale' => 
+    array (
+      'old' => 
+      array (
+        0 => 'false|int',
+        'statement_resource' => 'resource',
+        'column_number_or_name' => 'mixed',
+      ),
+      'new' => 
+      array (
+        0 => 'false|int',
+        'statement' => 'resource',
+        'column' => 'int|string',
+      ),
+    ),
+    'oci_field_size' => 
+    array (
+      'old' => 
+      array (
+        0 => 'false|int',
+        'statement_resource' => 'resource',
+        'column_number_or_name' => 'mixed',
+      ),
+      'new' => 
+      array (
+        0 => 'false|int',
+        'statement' => 'resource',
+        'column' => 'int|string',
+      ),
+    ),
+    'oci_field_type' => 
+    array (
+      'old' => 
+      array (
+        0 => 'false|mixed',
+        'statement_resource' => 'resource',
+        'column_number_or_name' => 'mixed',
+      ),
+      'new' => 
+      array (
+        0 => 'false|int|string',
+        'statement' => 'resource',
+        'column' => 'int|string',
+      ),
+    ),
+    'oci_field_type_raw' => 
+    array (
+      'old' => 
+      array (
+        0 => 'false|int',
+        'statement_resource' => 'resource',
+        'column_number_or_name' => 'mixed',
+      ),
+      'new' => 
+      array (
+        0 => 'false|int',
+        'statement' => 'resource',
+        'column' => 'int|string',
+      ),
+    ),
+    'oci_free_collection' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'collection' => 'mixed',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'collection' => 'OCICollection',
+      ),
+    ),
+    'oci_free_cursor' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'statement_resource' => 'resource',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'statement' => 'resource',
+      ),
+    ),
+    'oci_free_descriptor' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'lob_descriptor' => 'mixed',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'lob' => 'OCILob',
+      ),
+    ),
+    'oci_free_statement' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'statement_resource' => 'resource',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'statement' => 'resource',
+      ),
+    ),
+    'oci_get_implicit_resultset' => 
+    array (
+      'old' => 
+      array (
+        0 => 'false|resource',
+        'statement_resource' => 'resource',
+      ),
+      'new' => 
+      array (
+        0 => 'false|resource',
+        'statement' => 'resource',
+      ),
+    ),
+    'oci_internal_debug' => 
+    array (
+      'old' => 
+      array (
+        0 => 'void',
+        'mode' => 'bool',
+      ),
+      'new' => 
+      array (
+        0 => 'void',
+        'onoff' => 'bool',
+      ),
+    ),
+    'oci_lob_append' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'lob_descriptor_to' => 'object',
+        'lob_descriptor_from' => 'mixed',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'to' => 'OCILob',
+        'from' => 'OCILob',
+      ),
+    ),
+    'oci_lob_copy' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'lob_descriptor_to' => 'OCILob',
+        'lob_descriptor_from' => 'OCILob',
+        'length=' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'to' => 'OCILob',
+        'from' => 'OCILob',
+        'length=' => 'int|null',
+      ),
+    ),
+    'oci_lob_eof' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'lob_descriptor' => 'mixed',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'lob' => 'OCILob',
+      ),
+    ),
+    'oci_lob_erase' => 
+    array (
+      'old' => 
+      array (
+        0 => 'int',
+        'lob_descriptor' => 'int',
+        'offset=' => 'int',
+        'length=' => 'mixed',
+      ),
+      'new' => 
+      array (
+        0 => 'int',
+        'lob' => 'OCILob',
+        'offset=' => 'int|null',
+        'length=' => 'int|null',
+      ),
+    ),
+    'oci_lob_export' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'lob_descriptor' => 'string',
+        'filename' => 'int',
+        'start=' => 'int',
+        'length=' => 'mixed',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'lob' => 'OCILob',
+        'filename' => 'string',
+        'offset=' => 'int|null',
+        'length=' => 'int|null',
+      ),
+    ),
+    'oci_lob_flush' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'lob_descriptor' => 'int',
+        'flag=' => 'mixed',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'lob' => 'OCILob',
+        'flag=' => 'int',
+      ),
+    ),
+    'oci_lob_import' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'lob_descriptor' => 'string',
+        'filename' => 'mixed',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'lob' => 'OCILob',
+        'filename' => 'string',
+      ),
+    ),
+    'oci_lob_is_equal' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'lob_descriptor' => 'OCILob',
+        'lob_descriptor_2' => 'OCILob',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'lob1' => 'OCILob',
+        'lob2' => 'OCILob',
+      ),
+    ),
+    'oci_lob_load' => 
+    array (
+      'old' => 
+      array (
+        0 => 'string',
+        'lob_descriptor' => 'mixed',
+      ),
+      'new' => 
+      array (
+        0 => 'string',
+        'lob' => 'OCILob',
+      ),
+    ),
+    'oci_lob_read' => 
+    array (
+      'old' => 
+      array (
+        0 => 'string',
+        'lob_descriptor' => 'int',
+        'length' => 'mixed',
+      ),
+      'new' => 
+      array (
+        0 => 'string',
+        'lob' => 'OCILob',
+        'length' => 'int',
+      ),
+    ),
+    'oci_lob_rewind' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'lob_descriptor' => 'mixed',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'lob' => 'OCILob',
+      ),
+    ),
+    'oci_lob_save' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'lob_descriptor' => 'string',
+        'data' => 'int',
+        'offset=' => 'mixed',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'lob' => 'OCILob',
+        'data' => 'string',
+        'offset=' => 'int',
+      ),
+    ),
+    'oci_lob_seek' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'lob_descriptor' => 'int',
+        'offset' => 'int',
+        'whence=' => 'mixed',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'lob' => 'OCILob',
+        'offset' => 'int',
+        'whence=' => 'int',
+      ),
+    ),
+    'oci_lob_size' => 
+    array (
+      'old' => 
+      array (
+        0 => 'int',
+        'lob_descriptor' => 'mixed',
+      ),
+      'new' => 
+      array (
+        0 => 'int',
+        'lob' => 'OCILob',
+      ),
+    ),
+    'oci_lob_tell' => 
+    array (
+      'old' => 
+      array (
+        0 => 'int',
+        'lob_descriptor' => 'mixed',
+      ),
+      'new' => 
+      array (
+        0 => 'int',
+        'lob' => 'OCILob',
+      ),
+    ),
+    'oci_lob_truncate' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'lob_descriptor' => 'int',
+        'length=' => 'mixed',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'lob' => 'OCILob',
+        'length=' => 'int',
+      ),
+    ),
+    'oci_lob_write' => 
+    array (
+      'old' => 
+      array (
+        0 => 'int',
+        'lob_descriptor' => 'string',
+        'string' => 'int',
+        'length=' => 'mixed',
+      ),
+      'new' => 
+      array (
+        0 => 'int',
+        'lob' => 'OCILob',
+        'data' => 'string',
+        'length=' => 'int|null',
+      ),
+    ),
+    'oci_new_collection' => 
+    array (
+      'old' => 
+      array (
+        0 => 'OCICollection|false',
+        'connection_resource' => 'resource',
+        'type_name' => 'string',
+        'schema_name=' => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'OCICollection|false',
+        'connection' => 'resource',
+        'type_name' => 'string',
+        'schema=' => 'null|string',
+      ),
+    ),
+    'oci_new_connect' => 
+    array (
+      'old' => 
+      array (
+        0 => 'false|resource',
+        'username' => 'string',
+        'password' => 'string',
+        'connection_string=' => 'string',
+        'character_set=' => 'string',
+        'session_mode=' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'false|resource',
+        'username' => 'string',
+        'password' => 'string',
+        'connection_string=' => 'null|string',
+        'encoding=' => 'string',
+        'session_mode=' => 'int',
+      ),
+    ),
+    'oci_new_cursor' => 
+    array (
+      'old' => 
+      array (
+        0 => 'false|resource',
+        'connection_resource' => 'resource',
+      ),
+      'new' => 
+      array (
+        0 => 'false|resource',
+        'connection' => 'resource',
+      ),
+    ),
+    'oci_new_descriptor' => 
+    array (
+      'old' => 
+      array (
+        0 => 'OCILob|false',
+        'connection_resource' => 'resource',
+        'type=' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'OCILob|null',
+        'connection' => 'resource',
+        'type=' => 'int',
+      ),
+    ),
+    'oci_num_fields' => 
+    array (
+      'old' => 
+      array (
+        0 => 'false|int',
+        'statement_resource' => 'resource',
+      ),
+      'new' => 
+      array (
+        0 => 'int',
+        'statement' => 'resource',
+      ),
+    ),
+    'oci_num_rows' => 
+    array (
+      'old' => 
+      array (
+        0 => 'false|int',
+        'statement_resource' => 'resource',
+      ),
+      'new' => 
+      array (
+        0 => 'false|int',
+        'statement' => 'resource',
+      ),
+    ),
+    'oci_parse' => 
+    array (
+      'old' => 
+      array (
+        0 => 'false|resource',
+        'connection_resource' => 'resource',
+        'sql_text' => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'false|resource',
+        'connection' => 'resource',
+        'sql' => 'string',
+      ),
+    ),
+    'oci_password_change' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'connection_resource_or_connection_string' => 'resource',
+        'username' => 'string',
+        'old_password' => 'string',
+        'new_password' => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'connection' => 'resource',
+        'username' => 'string',
+        'old_password' => 'string',
+        'new_password' => 'string',
+      ),
+    ),
+    'oci_pconnect' => 
+    array (
+      'old' => 
+      array (
+        0 => 'false|resource',
+        'username' => 'string',
+        'password' => 'string',
+        'connection_string=' => 'string',
+        'character_set=' => 'string',
+        'session_mode=' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'false|resource',
+        'username' => 'string',
+        'password' => 'string',
+        'connection_string=' => 'null|string',
+        'encoding=' => 'string',
+        'session_mode=' => 'int',
+      ),
+    ),
+    'oci_register_taf_callback' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'connection_resource' => 'resource',
+        'function_name=' => 'callable[impure]',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'connection' => 'resource',
+        'callback' => 'callable[impure]|null',
+      ),
+    ),
+    'oci_result' => 
+    array (
+      'old' => 
+      array (
+        0 => 'false|mixed',
+        'statement_resource' => 'resource',
+        'column_number_or_name' => 'mixed',
+      ),
+      'new' => 
+      array (
+        0 => 'false|mixed',
+        'statement' => 'resource',
+        'column' => 'int|string',
+      ),
+    ),
+    'oci_rollback' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'connection_resource' => 'resource',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'connection' => 'resource',
+      ),
+    ),
+    'oci_server_version' => 
+    array (
+      'old' => 
+      array (
+        0 => 'false|string',
+        'connection_resource' => 'resource',
+      ),
+      'new' => 
+      array (
+        0 => 'false|string',
+        'connection' => 'resource',
+      ),
+    ),
+    'oci_set_action' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'connection_resource' => 'resource',
+        'action' => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'connection' => 'resource',
+        'action' => 'string',
+      ),
+    ),
+    'oci_set_call_timeout' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'connection_resource' => 'resource',
+        'call_timeout' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'connection' => 'resource',
+        'timeout' => 'int',
+      ),
+    ),
+    'oci_set_client_identifier' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'connection_resource' => 'resource',
+        'client_identifier' => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'connection' => 'resource',
+        'client_id' => 'string',
+      ),
+    ),
+    'oci_set_client_info' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'connection_resource' => 'resource',
+        'client_information' => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'connection' => 'resource',
+        'client_info' => 'string',
+      ),
+    ),
+    'oci_set_db_operation' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'connection_resource' => 'resource',
+        'action' => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'connection' => 'resource',
+        'action' => 'string',
+      ),
+    ),
+    'oci_set_edition' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'edition_name' => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'edition' => 'string',
+      ),
+    ),
+    'oci_set_module_name' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'connection_resource' => 'resource',
+        'module_name' => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'connection' => 'resource',
+        'name' => 'string',
+      ),
+    ),
+    'oci_set_prefetch' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'statement_resource' => 'resource',
+        'number_of_rows' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'statement' => 'resource',
+        'rows' => 'int',
+      ),
+    ),
+    'oci_statement_type' => 
+    array (
+      'old' => 
+      array (
+        0 => 'false|string',
+        'statement_resource' => 'resource',
+      ),
+      'new' => 
+      array (
+        0 => 'false|string',
+        'statement' => 'resource',
+      ),
+    ),
+    'oci_unregister_taf_callback' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'connection_resource' => 'resource',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'connection' => 'resource',
+      ),
+    ),
+    'ocicollection::append' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'value' => 'mixed',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'value' => 'string',
+      ),
+    ),
+    'ocicollection::assign' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'from' => 'OCI_Collection',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'from' => 'OCICollection',
+      ),
+    ),
+    'ocicollection::assignelem' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'index' => 'int',
+        'value' => 'mixed',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'index' => 'int',
+        'value' => 'string',
+      ),
+    ),
+    'ocifetchinto' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool|int',
+        'statement_resource' => 'resource',
+        '&w result' => 'array<array-key, mixed>',
+        'mode=' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'false|int',
+        'statement' => 'resource',
+        '&w result' => 'array<array-key, mixed>',
+        'mode=' => 'int',
+      ),
+    ),
+    'ocigetbufferinglob' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'lob_descriptor' => 'mixed',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'lob' => 'OCILob',
+      ),
+    ),
+    'ocilob::append' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'lob_from' => 'OCILob',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'from' => 'OCILob',
+      ),
+    ),
+    'ocilob::erase' => 
+    array (
+      'old' => 
+      array (
+        0 => 'false|int',
+        'offset=' => 'int',
+        'length=' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'false|int',
+        'offset=' => 'int|null',
+        'length=' => 'int|null',
+      ),
+    ),
+    'ocilob::export' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'filename' => 'string',
+        'start=' => 'int',
+        'length=' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'filename' => 'string',
+        'offset=' => 'int|null',
+        'length=' => 'int|null',
+      ),
+    ),
+    'ocilob::savefile' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'filename' => 'mixed',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'filename' => 'string',
+      ),
+    ),
+    'ocilob::setbuffering' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'on_off' => 'bool',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'mode' => 'bool',
+      ),
+    ),
+    'ocilob::write' => 
+    array (
+      'old' => 
+      array (
+        0 => 'false|int',
+        'data' => 'string',
+        'length=' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'false|int',
+        'data' => 'string',
+        'length=' => 'int|null',
+      ),
+    ),
+    'ocilob::writetemporary' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'data' => 'string',
+        'lob_type=' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'data' => 'string',
+        'type=' => 'int',
+      ),
+    ),
+    'ocilob::writetofile' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'filename' => 'mixed',
+        'start' => 'mixed',
+        'length' => 'mixed',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'filename' => 'string',
+        'offset=' => 'int|null',
+        'length=' => 'int|null',
+      ),
+    ),
+    'ocisetbufferinglob' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'lob_descriptor' => 'bool',
+        'mode' => 'mixed',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'lob' => 'OCILob',
+        'mode' => 'bool',
+      ),
+    ),
     'octdec' => 
     array (
       'old' => 
@@ -20112,12 +23407,138 @@ return array (
         'octal_string' => 'string',
       ),
     ),
+    'odbc_autocommit' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool|int',
+        'connection_id' => 'resource',
+        'onoff=' => 'bool',
+      ),
+      'new' => 
+      array (
+        0 => 'bool|int',
+        'odbc' => 'resource',
+        'enable=' => 'bool',
+      ),
+    ),
+    'odbc_binmode' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'result_id' => 'resource',
+        'mode' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'statement' => 'resource',
+        'mode' => 'int',
+      ),
+    ),
+    'odbc_close' => 
+    array (
+      'old' => 
+      array (
+        0 => 'void',
+        'connection_id' => 'resource',
+      ),
+      'new' => 
+      array (
+        0 => 'void',
+        'odbc' => 'resource',
+      ),
+    ),
+    'odbc_columnprivileges' => 
+    array (
+      'old' => 
+      array (
+        0 => 'false|resource',
+        'connection_id' => 'resource',
+        'catalog' => 'null|string',
+        'schema' => 'string',
+        'table' => 'string',
+        'column' => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'false|resource',
+        'odbc' => 'resource',
+        'catalog' => 'null|string',
+        'schema' => 'string',
+        'table' => 'string',
+        'column' => 'string',
+      ),
+    ),
+    'odbc_columns' => 
+    array (
+      'old' => 
+      array (
+        0 => 'false|resource',
+        'connection_id' => 'resource',
+        'qualifier=' => 'null|string',
+        'owner=' => 'null|string',
+        'table_name=' => 'null|string',
+        'column_name=' => 'null|string',
+      ),
+      'new' => 
+      array (
+        0 => 'false|resource',
+        'odbc' => 'resource',
+        'catalog=' => 'null|string',
+        'schema=' => 'null|string',
+        'table=' => 'null|string',
+        'column=' => 'null|string',
+      ),
+    ),
+    'odbc_commit' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'connection_id' => 'resource',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'odbc' => 'resource',
+      ),
+    ),
+    'odbc_cursor' => 
+    array (
+      'old' => 
+      array (
+        0 => 'string',
+        'result_id' => 'resource',
+      ),
+      'new' => 
+      array (
+        0 => 'string',
+        'statement' => 'resource',
+      ),
+    ),
+    'odbc_data_source' => 
+    array (
+      'old' => 
+      array (
+        0 => 'array<array-key, mixed>|false',
+        'connection_id' => 'resource',
+        'fetch_type' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'array<array-key, mixed>|false',
+        'odbc' => 'resource',
+        'fetch_type' => 'int',
+      ),
+    ),
     'odbc_do' => 
     array (
       'old' => 
       array (
         0 => 'resource',
-        'odbc' => 'resource',
+        'connection_id' => 'resource',
         'query' => 'string',
         'flags=' => 'int',
       ),
@@ -20126,6 +23547,32 @@ return array (
         0 => 'resource',
         'odbc' => 'resource',
         'query' => 'string',
+      ),
+    ),
+    'odbc_error' => 
+    array (
+      'old' => 
+      array (
+        0 => 'string',
+        'connection_id=' => 'resource',
+      ),
+      'new' => 
+      array (
+        0 => 'string',
+        'odbc=' => 'resource',
+      ),
+    ),
+    'odbc_errormsg' => 
+    array (
+      'old' => 
+      array (
+        0 => 'string',
+        'connection_id=' => 'resource',
+      ),
+      'new' => 
+      array (
+        0 => 'string',
+        'odbc=' => 'resource',
       ),
     ),
     'odbc_exec' => 
@@ -20133,7 +23580,7 @@ return array (
       'old' => 
       array (
         0 => 'resource',
-        'odbc' => 'resource',
+        'connection_id' => 'resource',
         'query' => 'string',
         'flags=' => 'int',
       ),
@@ -20144,13 +23591,75 @@ return array (
         'query' => 'string',
       ),
     ),
+    'odbc_execute' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'result_id' => 'resource',
+        'parameters_array=' => 'array<array-key, mixed>',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'statement' => 'resource',
+        'params=' => 'array<array-key, mixed>',
+      ),
+    ),
+    'odbc_fetch_array' => 
+    array (
+      'old' => 
+      array (
+        0 => 'array<array-key, mixed>|false',
+        'result' => 'resource',
+        'rownumber=' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'array<array-key, mixed>|false',
+        'statement' => 'resource',
+        'row=' => 'int',
+      ),
+    ),
+    'odbc_fetch_into' => 
+    array (
+      'old' => 
+      array (
+        0 => 'int',
+        'result_id' => 'resource',
+        '&w result_array' => 'array<array-key, mixed>',
+        'rownumber=' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'int',
+        'statement' => 'resource',
+        '&w array' => 'array<array-key, mixed>',
+        'row=' => 'int',
+      ),
+    ),
+    'odbc_fetch_object' => 
+    array (
+      'old' => 
+      array (
+        0 => 'false|stdClass',
+        'result' => 'resource',
+        'rownumber=' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'false|stdClass',
+        'statement' => 'resource',
+        'row=' => 'int',
+      ),
+    ),
     'odbc_fetch_row' => 
     array (
       'old' => 
       array (
         0 => 'bool',
-        'statement' => 'resource',
-        'row=' => 'int',
+        'result_id' => 'resource',
+        'row_number=' => 'int',
       ),
       'new' => 
       array (
@@ -20159,16 +23668,416 @@ return array (
         'row=' => 'int|null',
       ),
     ),
+    'odbc_field_len' => 
+    array (
+      'old' => 
+      array (
+        0 => 'false|int',
+        'result_id' => 'resource',
+        'field_number' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'false|int',
+        'statement' => 'resource',
+        'field' => 'int',
+      ),
+    ),
+    'odbc_field_name' => 
+    array (
+      'old' => 
+      array (
+        0 => 'false|string',
+        'result_id' => 'resource',
+        'field_number' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'false|string',
+        'statement' => 'resource',
+        'field' => 'int',
+      ),
+    ),
+    'odbc_field_num' => 
+    array (
+      'old' => 
+      array (
+        0 => 'false|int',
+        'result_id' => 'resource',
+        'field_name' => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'false|int',
+        'statement' => 'resource',
+        'field' => 'string',
+      ),
+    ),
+    'odbc_field_precision' => 
+    array (
+      'old' => 
+      array (
+        0 => 'int',
+        'result_id' => 'resource',
+        'field_number' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'int',
+        'statement' => 'resource',
+        'field' => 'int',
+      ),
+    ),
+    'odbc_field_scale' => 
+    array (
+      'old' => 
+      array (
+        0 => 'false|int',
+        'result_id' => 'resource',
+        'field_number' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'false|int',
+        'statement' => 'resource',
+        'field' => 'int',
+      ),
+    ),
+    'odbc_field_type' => 
+    array (
+      'old' => 
+      array (
+        0 => 'false|string',
+        'result_id' => 'resource',
+        'field_number' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'false|string',
+        'statement' => 'resource',
+        'field' => 'int',
+      ),
+    ),
+    'odbc_foreignkeys' => 
+    array (
+      'old' => 
+      array (
+        0 => 'false|resource',
+        'connection_id' => 'resource',
+        'pk_qualifier' => 'null|string',
+        'pk_owner' => 'string',
+        'pk_table' => 'string',
+        'fk_qualifier' => 'string',
+        'fk_owner' => 'string',
+        'fk_table' => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'false|resource',
+        'odbc' => 'resource',
+        'pk_catalog' => 'null|string',
+        'pk_schema' => 'string',
+        'pk_table' => 'string',
+        'fk_catalog' => 'string',
+        'fk_schema' => 'string',
+        'fk_table' => 'string',
+      ),
+    ),
+    'odbc_free_result' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'result_id' => 'resource',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'statement' => 'resource',
+      ),
+    ),
+    'odbc_gettypeinfo' => 
+    array (
+      'old' => 
+      array (
+        0 => 'resource',
+        'connection_id' => 'resource',
+        'data_type=' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'resource',
+        'odbc' => 'resource',
+        'data_type=' => 'int',
+      ),
+    ),
+    'odbc_longreadlen' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'result_id' => 'resource',
+        'length' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'statement' => 'resource',
+        'length' => 'int',
+      ),
+    ),
+    'odbc_next_result' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'result_id' => 'resource',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'statement' => 'resource',
+      ),
+    ),
+    'odbc_num_fields' => 
+    array (
+      'old' => 
+      array (
+        0 => 'int',
+        'result_id' => 'resource',
+      ),
+      'new' => 
+      array (
+        0 => 'int',
+        'statement' => 'resource',
+      ),
+    ),
+    'odbc_num_rows' => 
+    array (
+      'old' => 
+      array (
+        0 => 'int',
+        'result_id' => 'resource',
+      ),
+      'new' => 
+      array (
+        0 => 'int',
+        'statement' => 'resource',
+      ),
+    ),
+    'odbc_prepare' => 
+    array (
+      'old' => 
+      array (
+        0 => 'false|resource',
+        'connection_id' => 'resource',
+        'query' => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'false|resource',
+        'odbc' => 'resource',
+        'query' => 'string',
+      ),
+    ),
+    'odbc_primarykeys' => 
+    array (
+      'old' => 
+      array (
+        0 => 'false|resource',
+        'connection_id' => 'resource',
+        'qualifier' => 'null|string',
+        'owner' => 'string',
+        'table' => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'false|resource',
+        'odbc' => 'resource',
+        'catalog' => 'null|string',
+        'schema' => 'string',
+        'table' => 'string',
+      ),
+    ),
+    'odbc_procedurecolumns' => 
+    array (
+      'old' => 
+      array (
+        0 => 'false|resource',
+        'connection_id' => 'resource',
+        'qualifier=' => 'null|string',
+        'owner=' => 'null|string',
+        'proc=' => 'null|string',
+        'column=' => 'null|string',
+      ),
+      'new' => 
+      array (
+        0 => 'false|resource',
+        'odbc' => 'resource',
+        'catalog=' => 'null|string',
+        'schema=' => 'null|string',
+        'procedure=' => 'null|string',
+        'column=' => 'null|string',
+      ),
+    ),
+    'odbc_procedures' => 
+    array (
+      'old' => 
+      array (
+        0 => 'false|resource',
+        'connection_id' => 'resource',
+        'qualifier=' => 'null|string',
+        'owner=' => 'null|string',
+        'name=' => 'null|string',
+      ),
+      'new' => 
+      array (
+        0 => 'false|resource',
+        'odbc' => 'resource',
+        'catalog=' => 'null|string',
+        'schema=' => 'null|string',
+        'procedure=' => 'null|string',
+      ),
+    ),
+    'odbc_result' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool|null|string',
+        'result_id' => 'resource',
+        'field' => 'int|string',
+      ),
+      'new' => 
+      array (
+        0 => 'bool|null|string',
+        'statement' => 'resource',
+        'field' => 'int|string',
+      ),
+    ),
+    'odbc_result_all' => 
+    array (
+      'old' => 
+      array (
+        0 => 'false|int',
+        'result_id' => 'resource',
+        'format=' => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'false|int',
+        'statement' => 'resource',
+        'format=' => 'string',
+      ),
+    ),
+    'odbc_rollback' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'connection_id' => 'resource',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'odbc' => 'resource',
+      ),
+    ),
+    'odbc_setoption' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'conn_id' => 'resource',
+        'which' => 'int',
+        'option' => 'int',
+        'value' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'odbc' => 'resource',
+        'which' => 'int',
+        'option' => 'int',
+        'value' => 'int',
+      ),
+    ),
+    'odbc_specialcolumns' => 
+    array (
+      'old' => 
+      array (
+        0 => 'false|resource',
+        'connection_id' => 'resource',
+        'type' => 'int',
+        'qualifier' => 'null|string',
+        'owner' => 'string',
+        'table' => 'string',
+        'scope' => 'int',
+        'nullable' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'false|resource',
+        'odbc' => 'resource',
+        'type' => 'int',
+        'catalog' => 'null|string',
+        'schema' => 'string',
+        'table' => 'string',
+        'scope' => 'int',
+        'nullable' => 'int',
+      ),
+    ),
+    'odbc_statistics' => 
+    array (
+      'old' => 
+      array (
+        0 => 'false|resource',
+        'connection_id' => 'resource',
+        'qualifier' => 'null|string',
+        'owner' => 'string',
+        'name' => 'string',
+        'unique' => 'int',
+        'accuracy' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'false|resource',
+        'odbc' => 'resource',
+        'catalog' => 'null|string',
+        'schema' => 'string',
+        'table' => 'string',
+        'unique' => 'int',
+        'accuracy' => 'int',
+      ),
+    ),
+    'odbc_tableprivileges' => 
+    array (
+      'old' => 
+      array (
+        0 => 'false|resource',
+        'connection_id' => 'resource',
+        'qualifier' => 'null|string',
+        'owner' => 'string',
+        'name' => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'false|resource',
+        'odbc' => 'resource',
+        'catalog' => 'null|string',
+        'schema' => 'string',
+        'table' => 'string',
+      ),
+    ),
     'odbc_tables' => 
     array (
       'old' => 
       array (
         0 => 'false|resource',
-        'odbc' => 'resource',
-        'catalog=' => 'null|string',
-        'schema=' => 'string',
-        'table=' => 'string',
-        'types=' => 'string',
+        'connection_id' => 'resource',
+        'qualifier=' => 'null|string',
+        'owner=' => 'string',
+        'name=' => 'string',
+        'table_types=' => 'string',
       ),
       'new' => 
       array (
@@ -24184,6 +28093,252 @@ return array (
         'property' => 'string',
       ),
     ),
+    'pspell_add_to_personal' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'pspell' => 'int',
+        'word' => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'dictionary' => 'int',
+        'word' => 'string',
+      ),
+    ),
+    'pspell_add_to_session' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'pspell' => 'int',
+        'word' => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'dictionary' => 'int',
+        'word' => 'string',
+      ),
+    ),
+    'pspell_check' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'pspell' => 'int',
+        'word' => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'dictionary' => 'int',
+        'word' => 'string',
+      ),
+    ),
+    'pspell_clear_session' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'pspell' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'dictionary' => 'int',
+      ),
+    ),
+    'pspell_config_data_dir' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'conf' => 'int',
+        'directory' => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'config' => 'int',
+        'directory' => 'string',
+      ),
+    ),
+    'pspell_config_dict_dir' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'conf' => 'int',
+        'directory' => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'config' => 'int',
+        'directory' => 'string',
+      ),
+    ),
+    'pspell_config_ignore' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'conf' => 'int',
+        'ignore' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'config' => 'int',
+        'min_length' => 'int',
+      ),
+    ),
+    'pspell_config_mode' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'conf' => 'int',
+        'mode' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'config' => 'int',
+        'mode' => 'int',
+      ),
+    ),
+    'pspell_config_personal' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'conf' => 'int',
+        'personal' => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'config' => 'int',
+        'filename' => 'string',
+      ),
+    ),
+    'pspell_config_repl' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'conf' => 'int',
+        'repl' => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'config' => 'int',
+        'filename' => 'string',
+      ),
+    ),
+    'pspell_config_runtogether' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'conf' => 'int',
+        'runtogether' => 'bool',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'config' => 'int',
+        'allow' => 'bool',
+      ),
+    ),
+    'pspell_config_save_repl' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'conf' => 'int',
+        'save' => 'bool',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'config' => 'int',
+        'save' => 'bool',
+      ),
+    ),
+    'pspell_new_personal' => 
+    array (
+      'old' => 
+      array (
+        0 => 'false|int',
+        'personal' => 'string',
+        'language' => 'string',
+        'spelling=' => 'string',
+        'jargon=' => 'string',
+        'encoding=' => 'string',
+        'mode=' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'false|int',
+        'filename' => 'string',
+        'language' => 'string',
+        'spelling=' => 'string',
+        'jargon=' => 'string',
+        'encoding=' => 'string',
+        'mode=' => 'int',
+      ),
+    ),
+    'pspell_save_wordlist' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'pspell' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'dictionary' => 'int',
+      ),
+    ),
+    'pspell_store_replacement' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'pspell' => 'int',
+        'misspell' => 'string',
+        'correct' => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'dictionary' => 'int',
+        'misspelled' => 'string',
+        'correct' => 'string',
+      ),
+    ),
+    'pspell_suggest' => 
+    array (
+      'old' => 
+      array (
+        0 => 'array<array-key, mixed>',
+        'pspell' => 'int',
+        'word' => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'array<array-key, mixed>',
+        'dictionary' => 'int',
+        'word' => 'string',
+      ),
+    ),
     'putenv' => 
     array (
       'old' => 
@@ -26176,7 +30331,7 @@ return array (
         'timeout=' => 'float',
         'read_timeout=' => 'float',
         'persistent=' => 'bool',
-        'auth=' => 'null|string',
+        'auth=' => 'array{0?: string, 1?: string, pass?: string, user?: string}|null|string',
         'context=' => 'mixed',
       ),
       'new' => 
@@ -26187,7 +30342,7 @@ return array (
         'timeout=' => 'float',
         'read_timeout=' => 'float',
         'persistent=' => 'bool',
-        'auth=' => 'null|string',
+        'auth=' => 'array{0?: string, 1?: string, pass?: string, user?: string}|null|string',
         'context=' => 'array<array-key, mixed>|null',
       ),
     ),
@@ -27842,8 +31997,8 @@ return array (
       'old' => 
       array (
         0 => 'bool',
-        'semaphore' => 'resource',
-        'non_blocking=' => 'bool',
+        'sem_identifier' => 'resource',
+        'nowait=' => 'bool',
       ),
       'new' => 
       array (
@@ -27859,7 +32014,7 @@ return array (
         0 => 'false|resource',
         'key' => 'int',
         'max_acquire=' => 'int',
-        'permissions=' => 'int',
+        'perm=' => 'int',
         'auto_release=' => 'bool',
       ),
       'new' => 
@@ -27876,7 +32031,7 @@ return array (
       'old' => 
       array (
         0 => 'bool',
-        'semaphore' => 'resource',
+        'sem_identifier' => 'resource',
       ),
       'new' => 
       array (
@@ -27889,7 +32044,7 @@ return array (
       'old' => 
       array (
         0 => 'bool',
-        'semaphore' => 'resource',
+        'sem_identifier' => 'resource',
       ),
       'new' => 
       array (
@@ -28309,8 +32464,8 @@ return array (
       array (
         0 => 'false|resource',
         'key' => 'int',
-        'size=' => 'int',
-        'permissions=' => 'int',
+        'memsize=' => 'int',
+        'perm=' => 'int',
       ),
       'new' => 
       array (
@@ -28325,7 +32480,7 @@ return array (
       'old' => 
       array (
         0 => 'bool',
-        'shm' => 'resource',
+        'shm_identifier' => 'resource',
       ),
       'new' => 
       array (
@@ -28338,8 +32493,8 @@ return array (
       'old' => 
       array (
         0 => 'mixed',
-        'shm' => 'resource',
-        'key' => 'int',
+        'id' => 'resource',
+        'variable_key' => 'int',
       ),
       'new' => 
       array (
@@ -28353,8 +32508,8 @@ return array (
       'old' => 
       array (
         0 => 'bool',
-        'shm' => 'resource',
-        'key' => 'int',
+        'id' => 'resource',
+        'variable_key' => 'int',
       ),
       'new' => 
       array (
@@ -28368,9 +32523,9 @@ return array (
       'old' => 
       array (
         0 => 'bool',
-        'shm' => 'resource',
-        'key' => 'int',
-        'value' => 'mixed',
+        'shm_identifier' => 'resource',
+        'variable_key' => 'int',
+        'variable' => 'mixed',
       ),
       'new' => 
       array (
@@ -28385,7 +32540,7 @@ return array (
       'old' => 
       array (
         0 => 'bool',
-        'shm' => 'resource',
+        'shm_identifier' => 'resource',
       ),
       'new' => 
       array (
@@ -28398,8 +32553,8 @@ return array (
       'old' => 
       array (
         0 => 'bool',
-        'shm' => 'resource',
-        'key' => 'int',
+        'id' => 'resource',
+        'variable_key' => 'int',
       ),
       'new' => 
       array (
@@ -28413,7 +32568,7 @@ return array (
       'old' => 
       array (
         0 => 'void',
-        'shmop' => 'resource',
+        'shmid' => 'resource',
       ),
       'new' => 
       array (
@@ -28426,7 +32581,7 @@ return array (
       'old' => 
       array (
         0 => 'bool',
-        'shmop' => 'resource',
+        'shmid' => 'resource',
       ),
       'new' => 
       array (
@@ -28440,8 +32595,8 @@ return array (
       array (
         0 => 'false|resource',
         'key' => 'int',
-        'mode' => 'string',
-        'permissions' => 'int',
+        'flags' => 'string',
+        'mode' => 'int',
         'size' => 'int',
       ),
       'new' => 
@@ -28458,9 +32613,9 @@ return array (
       'old' => 
       array (
         0 => 'false|string',
-        'shmop' => 'resource',
-        'offset' => 'int',
-        'size' => 'int',
+        'shmid' => 'resource',
+        'start' => 'int',
+        'count' => 'int',
       ),
       'new' => 
       array (
@@ -28475,7 +32630,7 @@ return array (
       'old' => 
       array (
         0 => 'int',
-        'shmop' => 'resource',
+        'shmid' => 'resource',
       ),
       'new' => 
       array (
@@ -28488,7 +32643,7 @@ return array (
       'old' => 
       array (
         0 => 'false|int',
-        'shmop' => 'resource',
+        'shmid' => 'resource',
         'data' => 'string',
         'offset' => 'int',
       ),
@@ -29558,7 +33713,7 @@ return array (
       'old' => 
       array (
         0 => 'null|resource',
-        'addrinfo' => 'resource',
+        'addr' => 'resource',
       ),
       'new' => 
       array (
@@ -29571,7 +33726,7 @@ return array (
       'old' => 
       array (
         0 => 'resource',
-        'addrinfo' => 'resource',
+        'addr' => 'resource',
       ),
       'new' => 
       array (
@@ -29584,7 +33739,7 @@ return array (
       'old' => 
       array (
         0 => 'array<array-key, mixed>',
-        'addrinfo' => 'resource',
+        'addr' => 'resource',
       ),
       'new' => 
       array (
@@ -29615,7 +33770,7 @@ return array (
       array (
         0 => 'bool',
         'socket' => 'resource',
-        'address' => 'string',
+        'addr' => 'string',
         'port=' => 'int',
       ),
       'new' => 
@@ -29652,13 +33807,29 @@ return array (
         'socket' => 'Socket',
       ),
     ),
+    'socket_cmsg_space' => 
+    array (
+      'old' => 
+      array (
+        0 => 'int|null',
+        'level' => 'int',
+        'type' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'int|null',
+        'level' => 'int',
+        'type' => 'int',
+        'num=' => 'int',
+      ),
+    ),
     'socket_connect' => 
     array (
       'old' => 
       array (
         0 => 'bool',
         'socket' => 'resource',
-        'address' => 'string',
+        'addr' => 'string',
         'port=' => 'int',
       ),
       'new' => 
@@ -29709,7 +33880,7 @@ return array (
         'domain' => 'int',
         'type' => 'int',
         'protocol' => 'int',
-        '&w pair' => 'array<array-key, resource>',
+        '&w fd' => 'array<array-key, resource>',
       ),
       'new' => 
       array (
@@ -29740,7 +33911,7 @@ return array (
         0 => 'array<array-key, mixed>|false|int',
         'socket' => 'resource',
         'level' => 'int',
-        'option' => 'int',
+        'optname' => 'int',
       ),
       'new' => 
       array (
@@ -29770,7 +33941,7 @@ return array (
         0 => 'array<array-key, mixed>|false|int',
         'socket' => 'resource',
         'level' => 'int',
-        'option' => 'int',
+        'optname' => 'int',
       ),
       'new' => 
       array (
@@ -29786,7 +33957,7 @@ return array (
       array (
         0 => 'bool',
         'socket' => 'resource',
-        '&w address' => 'string',
+        '&w addr' => 'string',
         '&w port=' => 'int',
       ),
       'new' => 
@@ -29803,7 +33974,7 @@ return array (
       array (
         0 => 'bool',
         'socket' => 'resource',
-        '&w address' => 'string',
+        '&w addr' => 'string',
         '&w port=' => 'int',
       ),
       'new' => 
@@ -29862,7 +34033,7 @@ return array (
         0 => 'false|string',
         'socket' => 'resource',
         'length' => 'int',
-        'mode=' => 'int',
+        'type=' => 'int',
       ),
       'new' => 
       array (
@@ -29878,8 +34049,8 @@ return array (
       array (
         0 => 'false|int',
         'socket' => 'resource',
-        '&w data' => 'string',
-        'length' => 'int',
+        '&w buf' => 'string',
+        'len' => 'int',
         'flags' => 'int',
       ),
       'new' => 
@@ -29897,10 +34068,10 @@ return array (
       array (
         0 => 'false|int',
         'socket' => 'resource',
-        '&w data' => 'string',
-        'length' => 'int',
+        '&w buf' => 'string',
+        'len' => 'int',
         'flags' => 'int',
-        '&w address' => 'string',
+        '&w name' => 'string',
         '&w port=' => 'int',
       ),
       'new' => 
@@ -29920,8 +34091,8 @@ return array (
       array (
         0 => 'false|int',
         'socket' => 'resource',
-        '&w message' => 'array<array-key, mixed>',
-        'flags=' => 'int',
+        '&w msghdr' => 'array<array-key, mixed>',
+        'flags' => 'int',
       ),
       'new' => 
       array (
@@ -29936,18 +34107,18 @@ return array (
       'old' => 
       array (
         0 => 'false|int',
-        '&rw read' => 'array<array-key, resource>|null',
-        '&rw write' => 'array<array-key, resource>|null',
-        '&rw except' => 'array<array-key, resource>|null',
-        'seconds' => 'int|null',
-        'microseconds=' => 'int',
+        '&read_fds' => 'array<array-key, resource>|null',
+        '&write_fds' => 'array<array-key, resource>|null',
+        '&except_fds' => 'array<array-key, resource>|null',
+        'tv_sec' => 'int|null',
+        'tv_usec=' => 'int',
       ),
       'new' => 
       array (
         0 => 'false|int',
-        '&rw read' => 'array<array-key, Socket>|null',
-        '&rw write' => 'array<array-key, Socket>|null',
-        '&rw except' => 'array<array-key, Socket>|null',
+        '&read' => 'array<array-key, Socket>|null',
+        '&write' => 'array<array-key, Socket>|null',
+        '&except' => 'array<array-key, Socket>|null',
         'seconds' => 'int|null',
         'microseconds=' => 'int',
       ),
@@ -29958,8 +34129,8 @@ return array (
       array (
         0 => 'false|int',
         'socket' => 'resource',
-        'data' => 'string',
-        'length' => 'int',
+        'buf' => 'string',
+        'len' => 'int',
         'flags' => 'int',
       ),
       'new' => 
@@ -29977,8 +34148,8 @@ return array (
       array (
         0 => 'false|int',
         'socket' => 'resource',
-        'message' => 'array<array-key, mixed>',
-        'flags=' => 'int',
+        'msghdr' => 'array<array-key, mixed>',
+        'flags' => 'int',
       ),
       'new' => 
       array (
@@ -29994,10 +34165,10 @@ return array (
       array (
         0 => 'false|int',
         'socket' => 'resource',
-        'data' => 'string',
-        'length' => 'int',
+        'buf' => 'string',
+        'len' => 'int',
         'flags' => 'int',
-        'address' => 'string',
+        'addr' => 'string',
         'port=' => 'int',
       ),
       'new' => 
@@ -30059,8 +34230,8 @@ return array (
         0 => 'bool',
         'socket' => 'resource',
         'level' => 'int',
-        'option' => 'int',
-        'value' => 'array<array-key, mixed>|int|string',
+        'optname' => 'int',
+        'optval' => 'array<array-key, mixed>|int|string',
       ),
       'new' => 
       array (
@@ -30078,8 +34249,8 @@ return array (
         0 => 'bool',
         'socket' => 'resource',
         'level' => 'int',
-        'option' => 'int',
-        'value' => 'array<array-key, mixed>|int|string',
+        'optname' => 'int',
+        'optval' => 'array<array-key, mixed>|int|string',
       ),
       'new' => 
       array (
@@ -30096,7 +34267,7 @@ return array (
       array (
         0 => 'bool',
         'socket' => 'resource',
-        'mode=' => 'int',
+        'how=' => 'int',
       ),
       'new' => 
       array (
@@ -30105,13 +34276,26 @@ return array (
         'mode=' => 'int',
       ),
     ),
+    'socket_strerror' => 
+    array (
+      'old' => 
+      array (
+        0 => 'string',
+        'errno' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'string',
+        'error_code' => 'int',
+      ),
+    ),
     'socket_write' => 
     array (
       'old' => 
       array (
         0 => 'false|int',
         'socket' => 'resource',
-        'data' => 'string',
+        'buf' => 'string',
         'length=' => 'int',
       ),
       'new' => 
@@ -30708,7 +34892,8 @@ return array (
       array (
         0 => 'array<array-key, mixed>|false',
         '&r state' => 'string',
-        'string=' => 'string',
+        'string' => 'string',
+        'string_3=' => 'mixed',
       ),
       'new' => 
       array (
@@ -30724,7 +34909,8 @@ return array (
       array (
         0 => 'string',
         '&w state' => 'string',
-        'string=' => 'string',
+        'string' => 'string',
+        'string_3=' => 'string',
         'long=' => 'string',
       ),
       'new' => 
@@ -37739,7 +41925,7 @@ return array (
     'ldap_control_paged_result' => 
     array (
       0 => 'bool',
-      'link_identifier' => 'resource',
+      'link' => 'resource',
       'pagesize' => 'int',
       'iscritical=' => 'bool',
       'cookie=' => 'string',
@@ -37747,16 +41933,16 @@ return array (
     'ldap_control_paged_result_response' => 
     array (
       0 => 'bool',
-      'link_identifier' => 'resource',
-      'result_identifier' => 'resource',
-      '&w cookie' => 'string',
-      '&w estimated' => 'int',
+      'link' => 'resource',
+      'result' => 'resource',
+      '&w cookie=' => 'string',
+      '&w estimated=' => 'int',
     ),
     'ldap_sort' => 
     array (
       0 => 'bool',
-      'link_identifier' => 'resource',
-      'result_identifier' => 'resource',
+      'link' => 'resource',
+      'result' => 'resource',
       'sortfilter' => 'string',
     ),
     'lengthexception::__clone' => 
@@ -38166,7 +42352,7 @@ return array (
     'xmlrpc_decode' => 
     array (
       0 => 'mixed',
-      'xml' => 'string',
+      'value' => 'string',
       'encoding=' => 'string',
     ),
     'xmlrpc_decode_request' => 
@@ -38242,7 +42428,7 @@ return array (
     'xmlrpc_set_type' => 
     array (
       0 => 'bool',
-      '&rw value' => 'DateTime|string',
+      '&value' => 'DateTime|string',
       'type' => 'string',
     ),
   ),

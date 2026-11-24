@@ -96,6 +96,321 @@ final class TypeAlgebraTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'instanceofNarrowingATemplateOfTheClassGivesItsPropertyAMorePreciseType' => [
+                'code' => '<?php
+                    interface I {
+                        public static function foo(): array;
+                    }
+
+                    function h(ReflectionClass $c): array {
+                        echo $c->name;
+                        if ($c->isSubclassOf(I::class)) {
+                            return $c->name::foo();
+                        }
+                        return [];
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'instanceofNarrowingAUnionOfClassesReadsThePropertyOfTheClassKept' => [
+                'code' => '<?php
+                    final class IntValue {
+                        public function __construct(public int $value) {}
+                    }
+
+                    final class StringValue {
+                        public function __construct(public string $value) {}
+                    }
+
+                    function f(IntValue|StringValue $v): bool {
+                        $any = $v->value;
+                        if ($v instanceof StringValue) {
+                            return ctype_digit($v->value);
+                        }
+                        return $any > 0;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'instanceofNarrowingAnObjectKeepsWhatIsKnownOfItsProperties' => [
+                'code' => '<?php
+                    class A {
+                        public ?C $value = null;
+                    }
+
+                    final class B extends A {}
+
+                    final class C {
+                        public function yay(): string {
+                            return "yay";
+                        }
+                    }
+
+                    function t(A $v): void {
+                        if ($v->value) {
+                            if ($v instanceof B && "yay" === $v->value->yay()) {
+                                echo "yay";
+                            }
+                        }
+                    }',
+            ],
+            'instanceofInANestedIfKeepsWhatIsKnownOfAProperty' => [
+                'code' => '<?php
+                    class A {
+                        public ?C $value = null;
+                    }
+                    final class B extends A {}
+                    final class C {
+                        public function yay(): string {
+                            return "yay";
+                        }
+                    }
+
+                    function nested(A $v): string {
+                        if ($v->value) {
+                            if ($v instanceof B) {
+                                return $v->value->yay();
+                            }
+                        }
+                        return "";
+                    }',
+            ],
+            'instanceofAfterAnEarlyReturnKeepsWhatIsKnownOfAProperty' => [
+                'code' => '<?php
+                    class A {
+                        public ?C $value = null;
+                    }
+                    final class B extends A {}
+                    final class C {
+                        public function yay(): string {
+                            return "yay";
+                        }
+                    }
+
+                    function early(A $v): string {
+                        if (!$v->value) {
+                            return "";
+                        }
+                        if ($v instanceof B) {
+                            return $v->value->yay();
+                        }
+                        return "";
+                    }',
+            ],
+            'instanceofAfterAnAssignmentKeepsThePropertyType' => [
+                'code' => '<?php
+                    class A {
+                        public ?C $value = null;
+                    }
+                    final class B extends A {}
+                    final class C {
+                        public function yay(): string {
+                            return "yay";
+                        }
+                    }
+
+                    function assigned(A $v): string {
+                        $v->value = new C();
+                        if ($v instanceof B) {
+                            return $v->value->yay();
+                        }
+                        return "";
+                    }',
+            ],
+            'instanceofInAnElseifKeepsWhatIsKnownOfAProperty' => [
+                'code' => '<?php
+                    class A {
+                        public ?C $value = null;
+                    }
+                    final class B extends A {}
+                    final class D extends A {}
+                    final class C {
+                        public function yay(): string {
+                            return "yay";
+                        }
+                    }
+
+                    function chain(A $v): string {
+                        if (!$v->value) {
+                            return "";
+                        }
+                        if ($v instanceof D) {
+                            return "d";
+                        } elseif ($v instanceof B) {
+                            return $v->value->yay();
+                        }
+                        return "";
+                    }',
+            ],
+            'negatedInstanceofInAnElseKeepsWhatIsKnownOfAProperty' => [
+                'code' => '<?php
+                    class A {
+                        public ?C $value = null;
+                    }
+                    final class B extends A {}
+                    final class C {
+                        public function yay(): string {
+                            return "yay";
+                        }
+                    }
+
+                    function otherwise(A $v): string {
+                        if (!$v->value) {
+                            return "";
+                        }
+                        if (!$v instanceof B) {
+                            return "";
+                        } else {
+                            return $v->value->yay();
+                        }
+                    }',
+            ],
+            'instanceofReadsThePropertyASubclassRedeclares' => [
+                'code' => '<?php
+                    final class C {
+                        public function yay(): string {
+                            return "yay";
+                        }
+                    }
+                    class A {
+                        /** @var object */
+                        public $value;
+                        public function __construct() {
+                            $this->value = new C();
+                        }
+                    }
+                    final class B extends A {
+                        /** @var C */
+                        public $value;
+                    }
+
+                    function redeclared(A $v): string {
+                        $before = $v->value;
+                        if ($v instanceof B) {
+                            return $v->value->yay();
+                        }
+                        return $before::class;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['NonInvariantDocblockPropertyType'],
+            ],
+            'instanceofForgetsTheResultOfAMethodASubclassMayOverride' => [
+                'code' => '<?php
+                    class A {
+                        /** @psalm-mutation-free */
+                        public function value(): ?string {
+                            return null;
+                        }
+                    }
+                    final class B extends A {
+                        /** @psalm-mutation-free */
+                        public function value(): string {
+                            return "b";
+                        }
+                    }
+
+                    function method(A $v): string {
+                        if ($v->value() === null && $v instanceof B) {
+                            return $v->value();
+                        }
+                        return "";
+                    }',
+            ],
+            'falsyStoredConditionThatReadsTheVariableItselfDoesNotNarrow' => [
+                'code' => '<?php
+                    final class Node {}
+
+                    function selfRef(?Node $x, bool $ok): void {
+                        $ok = $x !== null && $ok;
+                        if (!$ok) {
+                            if ($x !== null) {
+                                echo "reachable";
+                            }
+                        }
+                    }',
+            ],
+            'falsyStoredConditionNarrowsToItsNegation' => [
+                'code' => '<?php
+                    final class Node {}
+                    final class Leaf {}
+
+                    function takesNode(Node $n): void {}
+                    function takesLeaf(Leaf $l): void {}
+
+                    function earlyReturn(?Node $initial): void {
+                        $missing = $initial === null;
+                        if ($missing) {
+                            return;
+                        }
+                        takesNode($initial);
+                    }
+
+                    function negatedFlag(?Node $initial): void {
+                        $missing = $initial === null;
+                        if (!$missing) {
+                            takesNode($initial);
+                        }
+                    }
+
+                    function elseOfAnInstanceofFlag(Node|Leaf $n): void {
+                        $is_node = $n instanceof Node;
+                        if ($is_node) {
+                            takesNode($n);
+                        } else {
+                            takesLeaf($n);
+                        }
+                    }
+
+                    function orFlag(?Node $a, ?Node $b): void {
+                        $either = $a === null || $b === null;
+                        if ($either) {
+                            return;
+                        }
+                        takesNode($a);
+                        takesNode($b);
+                    }
+
+                    function andFlag(?Node $a, ?Node $b): void {
+                        $both = $a !== null && $b !== null;
+                        if (!$both) {
+                            /** @psalm-check-type-exact $a = Node|null */;
+                            return;
+                        }
+                        takesNode($a);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'stringCheckedInTheRightOperandOfAnOrKeepsTheTypeOfANullCoalescedOffset' => [
+                'code' => '<?php
+                    final class VO {
+                        public function __construct(
+                            private readonly string|null $value
+                        ) {
+                        }
+                    }
+
+                    /** @var array{key?: mixed} */
+                    $array = [];
+
+                    $value = $array[\'key\'] ?? null;
+
+                    if (
+                        ($value !== null && ! is_string($value))
+                        ||
+                        (is_string($value) && empty($value))
+                    ) {
+                        throw new \\Exception();
+                    }
+
+                    new VO($value);',
+                'assertions' => [],
+                'ignored_issues' => ['MixedAssignment', 'RiskyTruthyFalsyComparison'],
+                'php_version' => '8.1',
+            ],
             'isArrayAndNotListThatDoesNotHoldKeepsTheOtherTypesOfTheUnion' => [
                 'code' => '<?php
                     function test(array|int $value): void {
@@ -588,6 +903,61 @@ final class TypeAlgebraTest extends TestCase
                             /** @psalm-check-type-exact $b = int|null */
                             echo "in";
                         }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'matchingAnotherPatternThatRemovesTheSameTaintsIsADifferentCondition' => [
+                'code' => '<?php
+                    function f(string $value): int {
+                        if ("transparent" === $value) {
+                            return 0;
+                        }
+                        if (preg_match("/^light-dark\\((.+)\\)$/s", $value)) {
+                            return 1;
+                        }
+                        if (preg_match("/^color-mix\\((.+)\\)$/s", $value)) {
+                            return 2;
+                        }
+
+                        return 3;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'matchingTwoPatternsThatRemoveTheSameTaintsIsNotRedundant' => [
+                'code' => '<?php
+                    function f(string $v): int {
+                        if (preg_match(\'/^a\((.+)\)$/s\', $v) && preg_match(\'/^b\((.+)\)$/s\', $v)) {
+                            return 1;
+                        }
+                        return 0;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'notMatchingTwoPatternsThatRemoveTheSameTaintsIsNotRedundant' => [
+                'code' => '<?php
+                    function f(string $v): int {
+                        if (!preg_match(\'/^a\((.+)\)$/s\', $v) && !preg_match(\'/^b\((.+)\)$/s\', $v)) {
+                            return 1;
+                        }
+                        return 0;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'startingWithTwoPrefixesThatFixTheUrlSchemeIsNotRedundant' => [
+                'code' => '<?php
+                    function f(string $u): int {
+                        if (str_starts_with($u, "https://") && str_starts_with($u, "https://example.com/")) {
+                            return 1;
+                        }
+                        return 0;
                     }',
                 'assertions' => [],
                 'ignored_issues' => [],
@@ -1108,6 +1478,18 @@ final class TypeAlgebraTest extends TestCase
                 'assertions' => [],
                 'ignored_issues' => [],
                 'php_version' => '8.0',
+            ],
+            'aConditionReassigningAVariableComparedLooselyToZeroIsNoParadox' => [
+                'code' => '<?php
+                    function f(string $n): int {
+                        if (($h = fopen($n, "wb")) == 0) {
+                            return 1;
+                        }
+                        if (($h = fopen($n, "rb")) == 0) {
+                            return 2;
+                        }
+                        return 0;
+                    }',
             ],
             'anIfConditionAssigningAnAndKeepsTheNarrowingOfItsOperands' => [
                 'code' => '<?php
@@ -2845,10 +3227,25 @@ final class TypeAlgebraTest extends TestCase
                     }',
                 'assertions' => [],
             ],
-            'orOfAValueAnEarlierConditionExcludedAndAnotherIsNotParadoxical' => [
+            'inArrayOfLiteralsWithAValueAnEarlierConditionExcludedIsNotParadoxical' => [
                 'code' => '<?php
                     function test(string $value): int {
                         if ($value === "a") {
+                            return 1;
+                        }
+
+                        if (in_array($value, ["a", "b"], true)) {
+                            return 2;
+                        }
+
+                        return 3;
+                    }',
+                'assertions' => [],
+            ],
+            'orOfValuesOfOneVariableNoneExcludedIsNotParadoxical' => [
+                'code' => '<?php
+                    function test(string $value): int {
+                        if ($value === "c") {
                             return 1;
                         }
 
@@ -5118,6 +5515,48 @@ final class TypeAlgebraTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'contradictionAfterAnIfThatConditionallyDefinesAVariable' => [
+                'code' => '<?php
+                    function a(array $l): bool {
+                        if (is_array($l) && isset($l["a"])) {
+                            $after = $l["a"];
+                        }
+
+                        if (!is_array($l)) {
+                            return false;
+                        }
+
+                        return true;
+                    }',
+                'error_message' => 'TypeDoesNotContainType',
+                'error_levels' => ['RedundantCondition', 'MixedAssignment'],
+            ],
+            'contradictionAfterAnIfThatLeavesWhenItsConditionHolds' => [
+                'code' => '<?php
+                    function a(array $l, bool $b): bool {
+                        if (is_array($l) && $b) {
+                            return true;
+                        }
+
+                        if (!is_array($l)) {
+                            return false;
+                        }
+
+                        return true;
+                    }',
+                'error_message' => 'TypeDoesNotContainType',
+                'error_levels' => ['RedundantCondition'],
+            ],
+            'contradictionInAnElseIfAfterAnIfOnTheSameVariable' => [
+                'code' => '<?php
+                    function a(array $l, bool $b): void {
+                        if (is_array($l) && $b) {
+                        } elseif (!is_array($l)) {
+                        }
+                    }',
+                'error_message' => 'TypeDoesNotContainType',
+                'error_levels' => ['RedundantCondition'],
+            ],
             'aTernaryConditionReassigningAVariableDropsTheEarlierClausesOfIt' => [
                 'code' => '<?php
                     function g(): ?int {
@@ -5836,7 +6275,7 @@ final class TypeAlgebraTest extends TestCase
                         }
                     }
                     PHP,
-                'error_message' => 'PossiblyNullReference',
+                'error_message' => 'NullReference - src' . DIRECTORY_SEPARATOR . 'somefile.php:13:18',
                 'error_levels' => [],
                 'php_version' => '8.1',
             ],
@@ -5914,6 +6353,79 @@ final class TypeAlgebraTest extends TestCase
                         return 0;
                     }',
                 'error_message' => 'ParadoxicalCondition - src' . DIRECTORY_SEPARATOR . 'somefile.php:9:52',
+            ],
+            'deadOperandNextToAnotherValueOfTheSameVariableIsParadoxical' => [
+                'code' => '<?php
+                    function f(string $o): string {
+                        if ("term_id" === $o) {
+                            return "a";
+                        }
+
+                        if ("id" === $o || "term_id" === $o) {
+                            return "b";
+                        }
+
+                        return "c";
+                    }',
+                'error_message' => 'ParadoxicalCondition - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:44',
+            ],
+            'deadLeftOperandNextToAnotherValueOfTheSameVariableIsParadoxical' => [
+                'code' => '<?php
+                    function f(string $o): string {
+                        if ($o === "a") {
+                            return "a";
+                        }
+
+                        if ($o === "a" || $o === "b") {
+                            return "b";
+                        }
+
+                        return "c";
+                    }',
+                'error_message' => 'ParadoxicalCondition - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:29',
+            ],
+            'deadOperandOfTheSameVariableInAnElseIfIsParadoxical' => [
+                'code' => '<?php
+                    function f(string $o): string {
+                        if ($o === "a") {
+                            return "a";
+                        } elseif ($o === "b" || $o === "a") {
+                            return "b";
+                        }
+
+                        return "c";
+                    }',
+                'error_message' => 'ParadoxicalCondition - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:49',
+            ],
+            'deadOperandOfAValueAnInArrayExcludedIsParadoxical' => [
+                'code' => '<?php
+                    function f(string $o): string {
+                        if (in_array($o, ["term_id", "slug"], true)) {
+                            return "a";
+                        }
+
+                        if ($o === "id" || $o === "term_id") {
+                            return "b";
+                        }
+
+                        return "c";
+                    }',
+                'error_message' => 'ParadoxicalCondition - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:44',
+            ],
+            'deadOperandOfTheSameVariableInAChainOfOrsIsParadoxical' => [
+                'code' => '<?php
+                    function f(string $o): string {
+                        if ($o === "c") {
+                            return "a";
+                        }
+
+                        if ($o === "a" || $o === "c" || $o === "b") {
+                            return "b";
+                        }
+
+                        return "c";
+                    }',
+                'error_message' => 'ParadoxicalCondition - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:43',
             ],
             'deadOperandNextToAnAssignmentOfAnotherVariableIsParadoxical' => [
                 'code' => '<?php
@@ -6951,6 +7463,18 @@ final class TypeAlgebraTest extends TestCase
                 'code' => '<?php
                     function f(?int $x): void {
                         if ($x) {
+                            if (!$x) {
+                                echo "never";
+                            }
+                        }
+                    }',
+                'error_message' => 'ParadoxicalCondition - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:33',
+                'error_levels' => ['RiskyTruthyFalsyComparison'],
+            ],
+            'truthyNullableIntOnTheLeftOfAndContradictsItsNegationInTheIf' => [
+                'code' => '<?php
+                    function f(?int $x, ?int $y): void {
+                        if ($x && $y) {
                             if (!$x) {
                                 echo "never";
                             }

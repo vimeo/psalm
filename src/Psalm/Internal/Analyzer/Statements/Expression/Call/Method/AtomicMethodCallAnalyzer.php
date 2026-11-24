@@ -18,7 +18,6 @@ use Psalm\Internal\Analyzer\Statements\Expression\Call\ClassTemplateParamCollect
 use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
-use Psalm\Internal\Analyzer\TraitAnalyzer;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Internal\Codebase\MixinLookup;
 use Psalm\Internal\DataFlow\DataFlowNode;
@@ -44,6 +43,7 @@ use Psalm\Type\Atomic\TObjectWithProperties;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
 
+use function array_any;
 use function array_merge;
 use function array_shift;
 use function array_values;
@@ -177,14 +177,7 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
             return;
         }
 
-        if (!$context->collect_initializations
-            && $statements_analyzer->getFilePath() === $statements_analyzer->getRootFilePath()
-            && (!(($parent_source = $statements_analyzer->getSource())
-                    instanceof FunctionLikeAnalyzer)
-                || !$parent_source->getSource() instanceof TraitAnalyzer)
-        ) {
-            $codebase->analyzer->incrementNonMixedCount($statements_analyzer->getFilePath());
-        }
+        $statements_analyzer->countMixed($context, false);
 
         $result->has_valid_method_call_type = true;
 
@@ -752,14 +745,7 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
             case TNonEmptyMixed::class:
             case TObject::class:
             case TObjectWithProperties::class:
-                if (!$context->collect_initializations
-                    && $statements_analyzer->getFilePath() === $statements_analyzer->getRootFilePath()
-                    && (!(($parent_source = $statements_analyzer->getSource())
-                            instanceof FunctionLikeAnalyzer)
-                        || !$parent_source->getSource() instanceof TraitAnalyzer)
-                ) {
-                    $codebase->analyzer->incrementMixedCount($statements_analyzer->getFilePath());
-                }
+                $statements_analyzer->countMixed($context, true);
 
                 $result->has_mixed_method_call = true;
 
@@ -778,11 +764,24 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
                     }
 
                     if ($context->check_methods) {
-                        $message = 'Cannot determine the type of the object'
-                            . ' on the left hand side of this expression';
+                        // `object` and an object shape are known types that have no method table; the wording is
+                        // that of the whole receiver, so that all its parts give one message
+                        $known_type = $lhs_type_part instanceof TObject
+                            && !array_any(
+                                $lhs_type->getAtomicTypes(),
+                                static fn(Atomic $part): bool => $part instanceof TMixed
+                                    || ($part instanceof TTemplateParam
+                                        && ($part->as->hasMixed() || $part->as->hasTemplate())),
+                            )
+                            ? ' (' . $lhs_type_part->getId() . ')'
+                            : '';
+                        $what = $known_type !== '' ? 'the methods of' : 'the type of';
+
+                        $message = 'Cannot determine ' . $what . ' the object'
+                            . ' on the left hand side of this expression' . $known_type;
 
                         if ($lhs_var_id) {
-                            $message = 'Cannot determine the type of ' . $lhs_var_id;
+                            $message = 'Cannot determine ' . $what . ' ' . $lhs_var_id . $known_type;
 
                             if ($stmt->name instanceof PhpParser\Node\Identifier) {
                                 $message .= ' when calling method ' . $stmt->name->name;

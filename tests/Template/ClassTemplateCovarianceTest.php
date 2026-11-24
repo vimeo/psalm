@@ -9,6 +9,8 @@ use Psalm\Tests\TestCase;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
+use const DIRECTORY_SEPARATOR;
+
 final class ClassTemplateCovarianceTest extends TestCase
 {
     use InvalidCodeAnalysisTestTrait;
@@ -21,6 +23,71 @@ final class ClassTemplateCovarianceTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'covariantTemplateInAParamTypeTakenFromTheOverriddenMethod' => [
+                'code' => '<?php
+                    /** @template-covariant T */
+                    interface Src {
+                        /**
+                         * @param list<T> $items
+                         * @psalm-suppress InvalidTemplateParam
+                         */
+                        public function each(array $items): void;
+                    }
+                    /**
+                     * @template-covariant T
+                     * @implements Src<T>
+                     */
+                    final class Impl implements Src {
+                        public function each(array $items): void {}
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MissingOverrideAttribute'],
+                'php_version' => '8.0',
+            ],
+            'covariantTemplateInAnInvariantArgOfAParamTypeTakenFromTheOverriddenMethod' => [
+                'code' => '<?php
+                    /** @template T */
+                    interface Inv {
+                        /** @param T $value */
+                        public function set(mixed $value): void;
+                    }
+                    /** @template-covariant T */
+                    interface Src {
+                        /**
+                         * @param Inv<T> $items
+                         * @psalm-suppress InvalidTemplateParam
+                         */
+                        public function merge(Inv $items): void;
+                    }
+                    /**
+                     * @template-covariant T
+                     * @implements Src<T>
+                     */
+                    final class Impl implements Src {
+                        public function merge(Inv $items): void {}
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MissingOverrideAttribute'],
+                'php_version' => '8.0',
+            ],
+            'covariantTemplateInOutputsOtherThanTheReturnType' => [
+                'code' => '<?php
+                    /** @template-covariant T */
+                    interface C {
+                        /** @param Closure(T): void $callback */
+                        public function swap(Closure &$callback): void;
+                        /**
+                         * @param mixed $value
+                         * @param-out T $value
+                         */
+                        public function fill(mixed &$value): void;
+                        /** @psalm-assert-if-true T $value */
+                        public function accepts(mixed $value): bool;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'allowBoundedType' => [
                 'code' => '<?php
                     class Base {}
@@ -683,6 +750,51 @@ final class ClassTemplateCovarianceTest extends TestCase
                         public function set($value): void {}
                     }',
                 'error_message' => 'InvalidTemplateParam',
+            ],
+            'preventCovariantTemplateInTheBoundOfAMethodTemplateAfterACallableParam' => [
+                'code' => '<?php
+                    /** @template-covariant T */
+                    interface C {
+                        /**
+                         * @template U of T
+                         * @param Closure(U): void $f
+                         * @param U $x
+                         */
+                        public function put(Closure $f, mixed $x): void;
+                    }',
+                'error_message' => 'InvalidTemplateParam - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:35'
+                    . ' - Template param T of C is marked covariant and cannot be used here',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'preventCovariantTemplateInTheBoundOfAMethodTemplateInACallableParam' => [
+                'code' => '<?php
+                    /** @template-covariant T */
+                    interface C {
+                        /**
+                         * @template U of T
+                         * @param Closure(U): U $f
+                         */
+                        public function put(Closure $f): void;
+                    }',
+                'error_message' => 'InvalidTemplateParam - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:35'
+                    . ' - Template param T of C is marked covariant and cannot be used here',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'preventCovariantTemplateInAnInvariantArgOfASelfOutType' => [
+                'code' => '<?php
+                    /** @template T */
+                    interface Inv {}
+                    /** @template-covariant T */
+                    final class C {
+                        /** @psalm-self-out self<Inv<T>> */
+                        public function wrap(): void {}
+                    }',
+                'error_message' => 'InvalidTemplateParam - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:29'
+                    . ' - Template param T of C is marked covariant and cannot be used here',
+                'error_levels' => [],
+                'php_version' => '8.0',
             ],
             'preventExtendingWithCovariance' => [
                 'code' => '<?php

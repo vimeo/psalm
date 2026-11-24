@@ -78,6 +78,167 @@ final class ComparisonAssertionTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'looseComparisonOfNumericStringLiteralsIsByTheirNumbers' => [
+                'code' => '<?php
+                    $one = "1";
+                    $padded = "01";
+                    $ten = "10";
+                    $exponent = "1e1";
+                    $spaced = " 1";
+
+                    $matches = 0;
+
+                    if ($one == $padded) {
+                        $matches++;
+                    }
+
+                    if ($ten == $exponent) {
+                        $matches++;
+                    }
+
+                    if ($one == $spaced) {
+                        $matches++;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.2',
+            ],
+            'looseEqualityToAScalarKeepsTheLooselyEqualBoolsAndNull' => [
+                'code' => '<?php
+                    /** @return int|false */
+                    function intOrFalse() { return 1; }
+
+                    /** @return int|bool */
+                    function intOrBool() { return 1; }
+
+                    /** @return string|null */
+                    function stringOrNull() { return null; }
+
+                    /** @return string|false */
+                    function stringOrFalse() { return false; }
+
+                    /** @return float|null */
+                    function floatOrNull() { return null; }
+
+                    /** @return 0|false */
+                    function zeroOrFalse() { return 0; }
+
+                    $a = intOrFalse();
+                    $zeroOrFalse = $a == 0 ? $a : null;
+                    $elseBranch = $a != 0 ? null : $a;
+
+                    $b = intOrBool();
+                    $zeroOrFalseFromBool = $b == 0 ? $b : null;
+                    $fiveOrTrue = $b == 5 ? $b : null;
+
+                    $c = stringOrNull();
+                    $emptyOrNull = $c == "" ? $c : 1;
+                    $zeroStringWithoutNull = $c == "0" ? $c : 1;
+
+                    $d = stringOrFalse();
+                    $zeroStringOrFalse = $d == "0" ? $d : null;
+                    $nonFalsyString = $d == "a" ? $d : null;
+
+                    $e = floatOrNull();
+                    $zeroFloatOrNull = $e == 0.0 ? $e : 1;
+
+                    $f = zeroOrFalse();
+                    $unchanged = $f == 0 ? $f : null;',
+                'assertions' => [
+                    '$zeroOrFalse===' => '0|false|null',
+                    '$elseBranch===' => '0|false|null',
+                    '$zeroOrFalseFromBool===' => '0|false|null',
+                    '$fiveOrTrue===' => '5|null|true',
+                    '$emptyOrNull===' => "''|1|null",
+                    '$zeroStringWithoutNull===' => "'0'|1",
+                    '$zeroStringOrFalse===' => "'0'|false|null",
+                    '$nonFalsyString===' => "'a'|null",
+                    '$zeroFloatOrNull===' => '1|float(0)|null',
+                    '$unchanged===' => '0|false|null',
+                ],
+                'ignored_issues' => ['LessSpecificReturnType'],
+            ],
+            'looseEqualityToAnIntKeepsTheLooselyEqualFloatsBoolsAndNull' => [
+                'code' => '<?php
+                    /** @return int|float|bool|null */
+                    function scalarOrNull() { return 1; }
+
+                    function anInt(): int { return 1; }
+
+                    $a = scalarOrNull();
+                    $i = anInt();
+                    $equal = $a == $i ? $a : "no";',
+                'assertions' => [
+                    '$equal===' => "'no'|bool|float|int|null",
+                ],
+                'ignored_issues' => ['LessSpecificReturnType'],
+            ],
+            'looseEqualityLeavingATemplateWithABoolUnchangedKeepsTheOtherTypes' => [
+                'code' => '<?php
+                    /**
+                     * @template T of array-key|true
+                     * @param T|Stringable $x
+                     */
+                    function f($x): ?Stringable {
+                        if ($x == "1" && is_object($x)) {
+                            return $x;
+                        }
+                        return null;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'looseEqualityKeepsEveryNumericallyEqualLiteral' => [
+                'code' => '<?php
+                    /** @return \'1\'|\'01\' */
+                    function both(): string { return "1"; }
+
+                    /** @return \'1\'|\'2\' */
+                    function oneOrTwo(): string { return "1"; }
+
+                    /** @return \'1\'|int */
+                    function oneOrInt(): string|int { return 1; }
+
+                    /** @return \'01\'|\'1\'|\'2\' */
+                    function three(): string { return "1"; }
+
+                    $a = both();
+                    $sameNumber = $a == "01" ? $a : null;
+
+                    $b = oneOrTwo();
+                    $onlyOne = $b == "01" ? $b : null;
+                    $notOne = $b != "01" ? $b : null;
+
+                    $c = oneOrInt();
+                    $withInt = $c == "01" ? $c : null;
+
+                    $d = three();
+                    $elseBranch = $d != "1" ? null : $d;',
+                'assertions' => [
+                    '$sameNumber===' => "'01'|'1'|null",
+                    '$onlyOne===' => "'1'|null",
+                    '$notOne===' => "'2'|null",
+                    '$withInt===' => "'1'|int|null",
+                    '$elseBranch===' => "'01'|'1'|null",
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.2',
+            ],
+            'looseEqualityOfNumericStringsWithATrailingWhitespaceIsByTheirNumbersAsOfPhp8' => [
+                'code' => '<?php
+                    $one = "1";
+                    $spaced = "1 ";
+
+                    $matches = 0;
+
+                    if ($one == $spaced) {
+                        $matches++;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.2',
+            ],
             'identicalToNull' => [
                 'code' => '<?php
                     function f(?int $n): void {
@@ -143,6 +304,38 @@ final class ComparisonAssertionTest extends TestCase
                         } else {
                             /** @psalm-check-type-exact $a = A */;
                         }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'nullsafePropertyNotIdenticalToAValueNarrowsTheReceiverWhereItIsIdentical' => [
+                'code' => '<?php
+                    final class Item {
+                        public bool $flag = true;
+
+                        public function ok(): bool {
+                            return true;
+                        }
+                    }
+
+                    function f(?Item $item): bool {
+                        if ($item?->flag !== true) {
+                            /** @psalm-check-type-exact $item = Item|null */;
+                            return false;
+                        }
+
+                        /** @psalm-check-type-exact $item = Item */;
+                        return $item->flag;
+                    }
+
+                    function g(?Item $item, ?bool $maybe): bool {
+                        if ($item?->flag !== $maybe) {
+                            return false;
+                        }
+
+                        /** @psalm-check-type-exact $item = Item|null */;
+                        return true;
                     }',
                 'assertions' => [],
                 'ignored_issues' => [],
@@ -414,6 +607,59 @@ final class ComparisonAssertionTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'nullsafePropertyNeverIdenticalToAValueStaysARedundantCondition' => [
+                'code' => '<?php
+                    final class Item {
+                        public bool $flag = true;
+                    }
+
+                    function f(?Item $item): bool {
+                        if ($item?->flag !== "x") {
+                            return false;
+                        }
+
+                        return true;
+                    }',
+                'error_message' => 'RedundantCondition',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'looseComparisonOfDifferentNonNumericStringLiteralsIsNeverTrue' => [
+                'code' => '<?php
+                    $first = "abc";
+                    $second = "abd";
+
+                    if ($first == $second) {
+                        echo 1;
+                    }',
+                'error_message' => 'TypeDoesNotContainType',
+                'error_levels' => [],
+                'php_version' => '8.2',
+            ],
+            'looseInequalityOfNumericStringLiteralsWithTheSameNumberIsNeverTrue' => [
+                'code' => '<?php
+                    $one = "1";
+                    $padded = "01";
+
+                    if ($one != $padded) {
+                        echo 1;
+                    }',
+                'error_message' => 'TypeDoesNotContainType',
+                'error_levels' => [],
+                'php_version' => '8.2',
+            ],
+            'looseEqualityOfNumericStringsWithATrailingWhitespaceIsNotByTheirNumbersBeforePhp8' => [
+                'code' => '<?php
+                    $one = "1";
+                    $spaced = "1 ";
+
+                    if ($one == $spaced) {
+                        echo 1;
+                    }',
+                'error_message' => 'TypeDoesNotContainType',
+                'error_levels' => [],
+                'php_version' => '7.4',
+            ],
             'nullNeverIdenticalToANonNullableValue' => [
                 'code' => '<?php
                     function f(string $s): void {
@@ -530,6 +776,28 @@ final class ComparisonAssertionTest extends TestCase
                         if ($a !== $b) {}
                     }',
                 'error_message' => 'RedundantConditionGivenDocblockType - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:29 - Docblock-defined type 2 can never contain 1',
+            ],
+            'looseEqualityOfATemplateToZeroKeepsFalse' => [
+                'code' => '<?php
+                    /**
+                     * @template T of int|false
+                     * @param T $x
+                     */
+                    function f($x): int {
+                        if ($x == 0) {
+                            return $x;
+                        }
+                        return 1;
+                    }',
+                'error_message' => 'FalsableReturnStatement',
+            ],
+            'looseEqualityOfTrueToZeroIsImpossible' => [
+                'code' => '<?php
+                    /** @param true|resource $x */
+                    function f($x): void {
+                        if ($x == 0) {}
+                    }',
+                'error_message' => 'DocblockTypeContradiction - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:29',
             ],
             'looseEqualityOfIntsThatCannotBeIdentical' => [
                 'code' => '<?php

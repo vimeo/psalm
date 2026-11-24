@@ -233,20 +233,20 @@ class SoapClient  {
      /**
       * Calls a SOAP function (deprecated)
       * @link https://php.net/manual/en/soapclient.call.php
-      * @param string $function_name
-      * @param array $arguments
+      * @param string $name
+      * @param array $args
       * @return mixed
       * @since 5.0.1
       */
-     public function __call ($function_name, $arguments) {}
+     public function __call ($name, $args) {}
 
      /**
       * Calls a SOAP function
       * @link https://php.net/manual/en/soapclient.soapcall.php
-      * @param string $function_name <p>
+      * @param string $name <p>
       * The name of the SOAP function to call.
       * </p>
-      * @param array $arguments <p>
+      * @param array $args <p>
       * An array of the arguments to pass to the function. This can be either
       * an ordered or an associative array. Note that most SOAP servers require
       * parameter names to be provided, in which case this must be an
@@ -264,10 +264,10 @@ class SoapClient  {
       * <p>
       * The soapaction option is the action to call.
       * </p>
-      * @param mixed $input_headers [optional] <p>
+      * @param mixed $inputHeaders [optional] <p>
       * An array of headers to be sent along with the SOAP request.
       * </p>
-      * @param array $output_headers [optional] <p>
+      * @param array $outputHeaders [optional] <p>
       * If supplied, this array will be filled with the headers from the SOAP response.
       * </p>
       * @return mixed SOAP functions may return one, or multiple values. If only one value is returned
@@ -281,7 +281,7 @@ class SoapClient  {
       * option set to <b>FALSE</b>, a SoapFault object will be returned.
       * @since 5.0.1
       */
-     public function __soapCall (string $function_name, array $arguments, array $options = null, $input_headers = null, &$output_headers = null) {}
+     public function __soapCall (string $name, array $args, array $options = null, $inputHeaders = null, &$outputHeaders = null) {}
 
      /**
       * Returns last SOAP request
@@ -357,21 +357,21 @@ class SoapClient  {
      /**
       * Sets the location of the Web service to use
       * @link https://php.net/manual/en/soapclient.setlocation.php
-      * @param string $new_location [optional] <p>
+      * @param string $location [optional] <p>
       * The new endpoint URL.
       * </p>
       * @return string The old endpoint URL.
       * @since 5.0.1
-      * @psalm-taint-sink ssrf $new_location
-      * @psalm-taint-sink url_component $new_location
-      * @psalm-taint-sink url_path $new_location
+      * @psalm-taint-sink ssrf $location
+      * @psalm-taint-sink url_component $location
+      * @psalm-taint-sink url_path $location
      */
-     public function __setLocation ($new_location = null) {}
+     public function __setLocation ($location = null) {}
 
      /**
       * Sets SOAP headers for subsequent calls
       * @link https://php.net/manual/en/soapclient.setsoapheaders.php
-      * @param mixed $soapheaders [optional] <p>
+      * @param mixed $headers [optional] <p>
       * The headers to be set. It could be <b>SoapHeader</b>
       * object or array of <b>SoapHeader</b> objects.
       * If not specified or set to <b>NULL</b>, the headers will be deleted.
@@ -379,7 +379,7 @@ class SoapClient  {
       * @return bool <b>TRUE</b> on success or <b>FALSE</b> on failure.
       * @since 5.0.5
       */
-     public function __setSoapHeaders ($soapheaders = null) {}
+     public function __setSoapHeaders ($headers = null) {}
 
 }
 
