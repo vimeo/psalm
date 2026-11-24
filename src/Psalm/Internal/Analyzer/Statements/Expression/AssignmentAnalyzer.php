@@ -3384,7 +3384,7 @@ final class AssignmentAnalyzer
 
     /**
      * The clauses without those on an offset or a property of a mixed variable, which say nothing (see
-     * Clause::forgetItemsOfMixedVars())
+     * Clause::forgetItemsOfMixedVars()), unless a clause is about the variable itself, as in an if condition
      *
      * @param list<Clause> $clauses
      * @param array<string, bool> $mixed_vars whether each mixed variable may be unset
@@ -3392,10 +3392,13 @@ final class AssignmentAnalyzer
      */
     private static function forgetItemsOfMixedVars(array $clauses, array $mixed_vars, int $cond_object_id): array
     {
+        foreach ($clauses as $clause) {
+            $mixed_vars = array_diff_key($mixed_vars, $clause->possibilities);
+        }
+
         $known_clauses = [];
 
         foreach ($clauses as $clause) {
-            $mixed_vars = array_diff_key($mixed_vars, $clause->possibilities);
             $clause = $clause->forgetItemsOfMixedVars($mixed_vars, $cond_object_id);
 
             if (!$clause->wedge) {

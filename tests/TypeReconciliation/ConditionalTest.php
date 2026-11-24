@@ -7578,6 +7578,16 @@ final class ConditionalTest extends TestCase
                         }
                     }',
             ],
+            'issetOfAnOffsetStoredInAVariableNarrowsAMixedVariableCheckedAsArrayAfterwards' => [
+                'code' => '<?php
+                    /** @param mixed $p */
+                    function f($p): void {
+                        $has = isset($p["a"]) && is_array($p);
+                        if ($has) {
+                            /** @psalm-check-type-exact $p = array{a: mixed, ...<array-key, mixed>} */;
+                        }
+                    }',
+            ],
         ];
     }
 
