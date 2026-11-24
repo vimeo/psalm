@@ -10,6 +10,7 @@ use function array_shift;
 use function array_slice;
 use function count;
 use function ctype_digit;
+use function explode;
 use function in_array;
 use function preg_match;
 use function strlen;
@@ -21,8 +22,9 @@ use function substr;
  * What an SQL query writes into the database and reads from it, by table and column: the values an INSERT, REPLACE or
  * UPDATE stores in each column, and the columns of the rows a SELECT gives. A value is made of the parts of the query
  * the analysis doesn't know the text of (holes, numbered in the order they appear in the text, where the text has
- * HOLE_MARKER, the number and HOLE_MARKER again), of its placeholders (`?`, numbered from 0, `:name` and `$1`, named
- * without `:` and numbered from 0), and of the columns it copies.
+ * HOLE_MARKER, the number and HOLE_MARKER again), of its placeholders (`?`, numbered from 0, `:name`, `{name}` and
+ * `{name:Type}` (ClickHouse), named without `:`, `{`, the type and `}`, and `$1`, numbered from 0), and of the columns
+ * it copies.
  *
  * A table or column the query doesn't name (`INSERT INTO t VALUES (...)`, `SELECT *`, a name with a hole) is null:
  * any of them. Tables, and the columns of values, are lowercase; the column of a write and the keys of a read are
@@ -60,7 +62,12 @@ final class SqlStatement
     private const FROM_ENDS = [
         'where', 'group', 'having', 'order', 'limit', 'offset', 'union', 'intersect', 'except', 'for', 'lock',
         'window', 'fetch', 'returning', 'set', 'into', 'procedure',
+        // ClickHouse
+        'prewhere', 'settings', 'format',
     ];
+
+    /** The words after a table that aren't its alias: index hints (MySQL), FINAL and SAMPLE (ClickHouse) */
+    private const TABLE_MODIFIERS = ['lateral', 'force', 'ignore', 'use', 'final', 'sample'];
 
     /** @var list<Token> */
     private array $tokens;
@@ -732,12 +739,30 @@ final class SqlStatement
             if (isset($tokens[$offset])
                 && ($alias = self::getIdentifier($tokens[$offset])) !== null
                 && !in_array(strtolower($tokens[$offset][1]), self::KEYWORDS, true)
-                && !in_array(strtolower($tokens[$offset][1]), ['lateral', 'force', 'ignore', 'use'], true)
+                && !in_array(strtolower($tokens[$offset][1]), self::TABLE_MODIFIERS, true)
             ) {
                 $tables[strtolower($alias)] = $table;
                 $offset++;
             } elseif ($table === null) {
                 $tables[] = null;
+            }
+
+            // FINAL, SAMPLE 1/10 OFFSET 1/2 (ClickHouse)
+            if (isset($tokens[$offset]) && $tokens[$offset][0] === 'word'
+                && strtolower($tokens[$offset][1]) === 'final'
+            ) {
+                $offset++;
+            }
+
+            if (isset($tokens[$offset]) && $tokens[$offset][0] === 'word'
+                && strtolower($tokens[$offset][1]) === 'sample'
+            ) {
+                $offset++;
+                while (isset($tokens[$offset]) && ($tokens[$offset][0] === 'number' || $tokens[$offset][0] === '/'
+                    || ($tokens[$offset][0] === 'word' && strtolower($tokens[$offset][1]) === 'offset'))
+                ) {
+                    $offset++;
+                }
             }
 
             // index hints (MySQL): USE INDEX (...), FORCE INDEX (...)
@@ -938,6 +963,11 @@ final class SqlStatement
 
         if ($text[0] === '$') {
             return (int) substr($text, 1) - 1;
+        }
+
+        // {name:Type}
+        if ($text[0] === '{') {
+            return explode(':', substr($text, 1, -1), 2)[0];
         }
 
         return substr($text, 1);
@@ -1304,6 +1334,12 @@ final class SqlStatement
             } elseif ($char === ':' && ($sql[$offset + 1] ?? '') !== ':' && ($offset === 0 || $sql[$offset - 1] !== ':')
                 && ($text = self::matchAt('/\G:[A-Za-z_][A-Za-z0-9_]*/', $sql, $offset)) !== null
             ) {
+                $type = 'placeholder';
+                $offset += strlen($text);
+            } elseif ($char === '{'
+                && ($text = self::matchAt('/\G\{[A-Za-z_][A-Za-z0-9_]*(?::[^{}]*)?\}/', $sql, $offset)) !== null
+            ) {
+                // {name} and {name:Type} (ClickHouse)
                 $type = 'placeholder';
                 $offset += strlen($text);
             } elseif ($char === '$' && ($text = self::matchAt('/\G\$[1-9][0-9]*/', $sql, $offset)) !== null) {

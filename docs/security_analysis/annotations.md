@@ -83,7 +83,7 @@ return. Psalm reads the SQL at each call and ignores the queries the annotated m
 ### `@psalm-database-query $sql [$params] [result]`
 
 The method runs the SQL given to `$sql`, with the values of its placeholders given to `$params`: a list for `?`, an
-array keyed by name for `:name`.
+array keyed by name for `:name` and `{name:Type}`.
 
 ```php
 <?php // --taint-analysis

@@ -2259,6 +2259,30 @@ final class TaintTest extends TestCase
                         echo (string) $row["Nick"];
                     }',
             ],
+            'clickHouseClausesAndQueryParametersOfASelectAreParsed' => [
+                'code' => '<?php
+                    final class Client {
+                        /**
+                         * @psalm-database-query $sql $bindings none
+                         */
+                        public function write(string $sql, array $bindings = []): void {}
+
+                        /**
+                         * @return list<array<string, mixed>>
+                         * @psalm-database-query $sql $bindings rows
+                         */
+                        public function select(string $sql, array $bindings = []): array {
+                            return [];
+                        }
+                    }
+
+                    function run(Client $db): void {
+                        $db->write("INSERT INTO users (name, bio) VALUES (:name, :bio)", ["name" => "admin", "bio" => $_GET["bio"]]);
+                        foreach ($db->select("SELECT name FROM users FINAL PREWHERE id = {id:UInt64}", ["id" => 1]) as $user) {
+                            echo (string) $user["name"];
+                        }
+                    }',
+            ],
             'pgSelectKeepsTheColumnsApart' => [
                 'code' => '<?php
                     function store(PgSql\Connection $connection): void {
@@ -8693,6 +8717,31 @@ final class TaintTest extends TestCase
                     function run(Db $db): void {
                         $db->all("UPDATE users SET bio = ? WHERE id = ?", [$_GET["bio"], 1]);
                         foreach ($db->all("SELECT bio, name FROM users") as $user) {
+                            echo (string) $user["bio"];
+                        }
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'clickHouseQueryParameterIsStoredInItsColumn' => [
+                'code' => '<?php
+                    final class Client {
+                        /**
+                         * @psalm-database-query $sql $bindings none
+                         */
+                        public function write(string $sql, array $bindings = []): void {}
+
+                        /**
+                         * @return list<array<string, mixed>>
+                         * @psalm-database-query $sql $bindings rows
+                         */
+                        public function select(string $sql, array $bindings = []): array {
+                            return [];
+                        }
+                    }
+
+                    function run(Client $db): void {
+                        $db->write("INSERT INTO users (name, bio) VALUES ({name:String}, {bio:String})", ["name" => "admin", "bio" => $_GET["bio"]]);
+                        foreach ($db->select("SELECT bio FROM users") as $user) {
                             echo (string) $user["bio"];
                         }
                     }',
