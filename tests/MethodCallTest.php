@@ -3568,7 +3568,9 @@ final class MethodCallTest extends TestCase
                     /** @param class-string $name */
                     function f(MyEnumReflection $r, ReflectionEnum $core, string $name): bool
                     {
-                        return $core->isSubclassOf($name) || $r->isSubclassOf($name);
+                        $core->isSubclassOf($name);
+
+                        return $r->isSubclassOf($name);
                     }
                 PHP,
                 'assertions' => [],
