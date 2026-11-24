@@ -236,6 +236,30 @@ final class ArrayAssignmentTest extends TestCase
                     '$sealedAppended===' => 'array{a: int, ...<int<0, max>, \'v\'>}',
                 ],
             ],
+            'uuidLikeStringKeyStaysString' => [
+                'code' => '<?php
+                    $a = ["6e5212ed-a197-4339-99aa-5654798a4854" => 1, "1e999" => 2];',
+                'assertions' => [
+                    '$a===' => "array{'1e999': 2, '6e5212ed-a197-4339-99aa-5654798a4854': 1}",
+                ],
+            ],
+            'constArrayKeyThatStaysStringDoesNotMoveTheNextKey' => [
+                'code' => '<?php
+                    class A {
+                        const B = [K::BIG => 1, 2];
+                        const C = [K::OCTAL => 1, 2];
+                    }
+                    class K {
+                        const BIG = "99999999999999999999";
+                        const OCTAL = "015";
+                    }
+                    $b = A::B;
+                    $c = A::C;',
+                'assertions' => [
+                    '$b===' => "array{'99999999999999999999': 1, 0: 2}",
+                    '$c===' => "array{'015': 1, 0: 2}",
+                ],
+            ],
             'appendsStopGrowingAListShapeAtTheMaximumSize' => [
                 'code' => '<?php
                     $a = [];' . str_repeat('

@@ -251,6 +251,16 @@ jobs:
             --base-sha "$BASE_SHA" --head-sha "$HEAD_SHA" --deps-changed "$DEPS_CHANGED" \
             --out-md "$report/report.md" --out-json "$report/summary.json" --run-url "$RUN_URL"
           cat "$report/report.md" >> "$GITHUB_STEP_SUMMARY"
+          # Performance profiles of both sides, for https://psalm.dev/profile/.
+          mkdir -p "$report/profiles"
+          for side in base head; do
+            for f in "$RUNNER_TEMP"/in/perf-*/"$side"/*.profile.json; do
+              if [ -f "$f" ]; then
+                cp "$f" "$report/profiles/$(basename "$f" .profile.json).$side.json" \
+                  || echo "::warning title=Perf::Cannot keep $f in the report"
+              fi
+            done
+          done
           # Untrusted input for perf-comment.yml.
           printf '%s' "$PR_NUMBER" > "$report/pr_number"
           printf '%s' "$HEAD_SHA" > "$report/head_sha"

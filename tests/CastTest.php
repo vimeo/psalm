@@ -21,6 +21,30 @@ final class CastTest extends TestCase
     #[Override]
     public static function providerValidCodeParse(): iterable
     {
+        yield 'intCastOfStringNotRepresentableAsInt' => [
+            'code' => '<?php
+                $a = (int) "1e999";
+                $b = (int) "9223372036854775807";
+                $c = (int) "1e3";
+                $d = (float) "1e999";',
+            'assertions' => [
+                '$a===' => 'int',
+                '$b===' => '9223372036854775807',
+                '$c===' => '1000',
+                '$d===' => 'float(INF)',
+            ],
+        ];
+
+        yield 'arithmeticOnDigitStringOutsideIntRangeIsFloat' => [
+            'code' => '<?php
+                $a = "99999999999999999999" + 1;
+                $b = "9223372036854775807" - 1;',
+            'assertions' => [
+                '$a===' => 'float',
+                '$b===' => 'int',
+            ],
+        ];
+
         yield 'castOfAnIntersectionToStringIsWhatTheNarrowestToStringReturns' => [
             'code' => '<?php
                 interface PlainString {
