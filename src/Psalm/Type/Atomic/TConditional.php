@@ -8,6 +8,7 @@ use Override;
 use Psalm\Codebase;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
+use Psalm\Internal\Type\TypeArgumentKey;
 use Psalm\Storage\UnserializeMemoryUsageSuppressionTrait;
 use Psalm\Type\Atomic;
 use Psalm\Type\Union;
@@ -65,7 +66,7 @@ final class TConditional extends Atomic
     public function getKey(bool $include_extra = true): string
     {
         return 'TConditional<'
-            . ($this->subject_type !== null ? $this->subject_type->getKey() : $this->param_name)
+            . ($this->subject_type !== null ? TypeArgumentKey::get($this->subject_type) : $this->param_name)
             . '>';
     }
 

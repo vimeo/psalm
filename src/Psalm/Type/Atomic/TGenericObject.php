@@ -9,6 +9,7 @@ use Psalm\Codebase;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Type\PurityArguments;
 use Psalm\Internal\Type\TemplateResult;
+use Psalm\Internal\Type\TypeArgumentKey;
 use Psalm\Internal\Type\TypeArgumentProjection;
 use Psalm\Internal\TypeVisitor\TemplateTypeCollector;
 use Psalm\Storage\TemplateVariance;
@@ -196,7 +197,7 @@ final class TGenericObject extends TNamedObject
         $s = self::formatTypeParams(
             $type_params,
             $purity_args,
-            static fn(Union $type_param): string => $type_param->getKey(),
+            TypeArgumentKey::get(...),
             $this,
         );
 

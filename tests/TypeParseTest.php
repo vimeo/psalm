@@ -1562,6 +1562,30 @@ final class TypeParseTest extends TestCase
         );
     }
 
+    public function testKeyOfGenericObjectReadsLiteralArgumentsAsTheirType(): void
+    {
+        $this->assertSame(
+            'Foo<int|string>',
+            Type::parseString('Foo<5|6|"a"|"b"|non-empty-string>')->getSingleAtomic()->getKey(),
+        );
+        $this->assertSame(
+            'Foo<float, array>&Bar<5>',
+            Type::parseString('Foo<1.5|2.5, array{a: int}>&Bar<5>')->getSingleAtomic()->getKey(),
+        );
+    }
+
+    public function testKeyOfConditionalNamesItsSubject(): void
+    {
+        $this->assertSame(
+            'TConditional<value-of<T>>',
+            Type::parseString(
+                '(value-of<T> is string ? string : int)',
+                null,
+                ['T' => ['' => Type::getArray()]],
+            )->getSingleAtomic()->getKey(),
+        );
+    }
+
     public function testValueOfTemplate(): void
     {
         $this->assertSame(
