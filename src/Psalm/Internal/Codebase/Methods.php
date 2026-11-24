@@ -474,6 +474,33 @@ final class Methods
                     $inherited_type = $inherited_type->getBuilder()->addType(new TNull)->freeze();
                 }
 
+                // the docblock of an overridden method only documents what its own native type accepts: what the
+                // native type of the override accepts beyond that keeps its native type
+                if ($param->signature_type) {
+                    $codebase = $source ? $source->getCodebase() : ProjectAnalyzer::getInstance()->getCodebase();
+                    $builder = null;
+
+                    foreach ($param->signature_type->getAtomicTypes() as $atomic_type) {
+                        foreach ($documenting_params as [, $overridden_param]) {
+                            if ($overridden_param->signature_type
+                                && !UnionTypeComparator::isContainedBy(
+                                    $codebase,
+                                    new Union([$atomic_type]),
+                                    $overridden_param->signature_type,
+                                )
+                            ) {
+                                $builder ??= $inherited_type->getBuilder();
+                                $builder->addType($atomic_type);
+                                break;
+                            }
+                        }
+                    }
+
+                    if ($builder) {
+                        $inherited_type = $builder->freeze();
+                    }
+                }
+
                 // a type the native type of the override doesn't contain is not the type of the override's parameter
                 // (the documenting method's types are applied as they always were)
                 if (!$is_from_documenting_method

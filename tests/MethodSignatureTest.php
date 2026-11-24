@@ -1013,6 +1013,103 @@ final class MethodSignatureTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.3',
             ],
+            'inheritedParamTypeKeepsWhatAPartiallyDocumentedOverrideWidensItsNativeTypeWith' => [
+                'code' => '<?php
+                    final class D {}
+
+                    interface I {
+                        /** @param D|null $d */
+                        public function decide(?D $d = null): bool;
+                    }
+
+                    final class M implements I {
+                        /** @param bool $x */
+                        #[\Override]
+                        public function decide(bool|D|null $d = null, bool $x = false): bool {
+                            /** @psalm-check-type-exact $d = bool|D|null */;
+                            if (\is_bool($d)) {
+                                $x = $d;
+                            }
+                            return $x;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
+            'inheritedParamTypeKeepsWhatAnUndocumentedOverrideWidensItsNativeTypeWith' => [
+                'code' => '<?php
+                    final class D {}
+
+                    interface I {
+                        /** @param D|null $d */
+                        public function decide(?D $d = null): bool;
+                    }
+
+                    final class M implements I {
+                        #[\Override]
+                        public function decide(bool|D|null $d = null): bool {
+                            /** @psalm-check-type-exact $d = bool|D|null */;
+                            return \is_bool($d);
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
+            'inheritedParamTypeRefinesOnlyThePartOfTheWidenedNativeTypeThatTheParentDocuments' => [
+                'code' => '<?php
+                    class P {
+                        /** @param positive-int $x */
+                        public function f(int $x): void {}
+                    }
+
+                    final class Q extends P {
+                        #[\Override]
+                        public function f(int|string $x): void {
+                            /** @psalm-check-type-exact $x = positive-int|string */;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
+            'inheritedParamTypeStillRefinesAnOverrideWithTheSameNativeType' => [
+                'code' => '<?php
+                    class P {
+                        /** @param positive-int $x */
+                        public function f(int $x): void {}
+                    }
+
+                    final class Q extends P {
+                        /** @return void */
+                        #[\Override]
+                        public function f(int $x): void {
+                            /** @psalm-check-type-exact $x = positive-int */;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
+            'inheritedParamTypeOfAParameterWithoutNativeTypeRefinesTheOverride' => [
+                'code' => '<?php
+                    class P {
+                        /** @param positive-int $x */
+                        public function f($x): void {}
+                    }
+
+                    final class Q extends P {
+                        /** @return void */
+                        #[\Override]
+                        public function f(int $x): void {
+                            /** @psalm-check-type-exact $x = positive-int */;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
             'inheritedParamTypeThatTheNativeTypeDoesNotContainIsNotApplied' => [
                 'code' => '<?php
                     class P {
