@@ -369,12 +369,14 @@ final class CliUtils
     }
 
     /**
-     * Exits with code 1 when $args hold an option that isn't in $short_options or $long_options
+     * Exits with code 1 when $args hold an option that isn't in $short_options or $long_options, or a long
+     * option that requires a value but was given an empty one, like "--threads="
      *
      * @param list<string> $args the arguments, without the script name
      * @param list<string> $short_options
      * @param list<string> $long_options
-     * @param list<string> $ignored_options options of the psalm command that forwarded the call, like "--alter"
+     * @param list<string> $ignored_options options of the psalm command that forwarded the call, like "--alter",
+     *      and those the command validates itself
      */
     public static function rejectUnrecognisedOptions(
         array $args,
@@ -382,7 +384,9 @@ final class CliUtils
         array $long_options,
         array $ignored_options = [],
     ): void {
-        foreach (self::parseOptions($args, $short_options, $long_options)[1] as $option) {
+        [, $unrecognised, $empty] = self::parseOptions($args, $short_options, $long_options);
+
+        foreach ($unrecognised as $option) {
             if (in_array($option, $ignored_options, true)) {
                 continue;
             }
@@ -394,20 +398,36 @@ final class CliUtils
             );
             exit(1);
         }
+
+        foreach ($empty as $option) {
+            if (in_array($option, $ignored_options, true)) {
+                continue;
+            }
+
+            fwrite(
+                STDERR,
+                'Argument "' . $option . '" requires a value' . PHP_EOL
+                . 'Type --help to see a list of supported arguments' . PHP_EOL,
+            );
+            exit(1);
+        }
     }
 
     /**
      * @param list<string> $args
      * @param list<string> $short_options
      * @param list<string> $long_options
-     * @return array{array<string, false|list<false|string>|string>, list<string>} the options like getopt()
-     *      returns them, and the options that aren't in $short_options and $long_options, like "-z"
+     * @return array{array<string, false|list<false|string>|string>, list<string>, list<string>} the options like
+     *      getopt() returns them, the options that aren't in $short_options and $long_options, like "-z", and
+     *      the options that require a value but were given an empty one or none, like "--threads=" or a
+     *      trailing "--threads"
      * @psalm-capabilities read-props|write-this-props|write-refs
      */
     private static function parseOptions(array $args, array $short_options, array $long_options): array
     {
         $options = [];
         $unrecognised = [];
+        $empty = [];
 
         for ($i = 0, $count = count($args); $i < $count; ++$i) {
             $arg = $args[$i];
@@ -436,6 +456,10 @@ final class CliUtils
                     $unrecognised[] = '--' . $name;
                 } elseif ($value === '') {
                     // getopt() drops an option given as --name=
+                    if ($arity === ':') {
+                        $empty[] = '--' . $name;
+                    }
+
                     continue;
                 } elseif ($arity === '') {
                     self::addOption($options, $name, false);
@@ -445,6 +469,8 @@ final class CliUtils
                     self::addOption($options, $name, $value);
                 } elseif (isset($args[$i + 1])) {
                     self::addOption($options, $name, $args[++$i]);
+                } else {
+                    $empty[] = '--' . $name;
                 }
 
                 continue;
@@ -471,13 +497,15 @@ final class CliUtils
                     self::addOption($options, $name, $value[0] === '=' ? substr($value, 1) : $value);
                 } elseif ($arity === ':' && isset($args[$i + 1])) {
                     self::addOption($options, $name, $args[++$i]);
+                } elseif ($arity === ':') {
+                    $empty[] = '-' . $name;
                 }
 
                 break;
             }
         }
 
-        return [$options, $unrecognised];
+        return [$options, $unrecognised, $empty];
     }
 
     /**
