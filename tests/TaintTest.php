@@ -14059,6 +14059,19 @@ final class TaintTest extends TestCase
                     echo $matches[1];',
                 'error_message' => 'TaintedHtml',
             ],
+            'taintParseStrResultBeforeThePhpVersionNamingItsInput' => [
+                'code' => '<?php // --taint-analysis
+                    parse_str((string) $_GET["value"], $result);
+                    echo (string) $result["key"];',
+                'error_message' => 'TaintedHtml',
+                'php_version' => '7.4',
+            ],
+            'taintFlowsThroughAParameterPhp8Renamed' => [
+                'code' => '<?php // --taint-analysis
+                    echo count_chars((string) $_GET["value"], 3);',
+                'error_message' => 'TaintedHtml',
+                'php_version' => '7.4',
+            ],
             'taintParseStrResult' => [
                 'code' => '<?php // --taint-analysis
                     parse_str((string) $_GET["value"], $result);
@@ -17190,6 +17203,19 @@ final class TaintTest extends TestCase
                     $run = Shell::run(...);
                     $run((string) $_GET["bad"]);',
                 'error_message' => 'TaintedShell',
+                'php_version' => '8.1',
+            ],
+            'taintReturnedByAFirstClassCallableOfAStaticMethod' => [
+                'code' => '<?php // --taint-analysis
+                    final class K {
+                        public static function id(string $s): string {
+                            return $s;
+                        }
+                    }
+
+                    $f = K::id(...);
+                    echo $f((string) $_GET["a"]);',
+                'error_message' => 'TaintedHtml',
                 'php_version' => '8.1',
             ],
             'taintPassedToTheSinkOfACalledInstanceMethodClosure' => [

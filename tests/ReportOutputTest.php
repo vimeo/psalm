@@ -520,6 +520,52 @@ final class ReportOutputTest extends TestCase
         );
     }
 
+    public function testPhpStormReportShowsWhereTheMixedTypeComesFrom(): void
+    {
+        $this->project_analyzer->getCodebase()->reportUnusedVariables();
+
+        $this->addFile(
+            'somefile.php',
+            '<?php function g($m): void { $a = $m; echo $a; }',
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+
+        $report_options = new ReportOptions();
+        $report_options->format = Report::TYPE_PHP_STORM;
+        $report_options->use_color = false;
+
+        $this->assertSame(
+            <<<'EOF'
+            ERROR: MixedAssignment
+            at somefile.php:1:30
+            Unable to determine the type that $a is being assigned to (see https://psalm.dev/032)
+            <?php function g($m): void { $a
+              The type of $a is sourced from here - somefile.php:1:18
+            <?php function g($m
+
+
+
+            ERROR: MixedArgument
+            at somefile.php:1:44
+            Argument 1 of echo cannot be mixed, expecting string (see https://psalm.dev/030)
+            <?php function g($m): void { $a = $m; echo $a
+              The type of $a is sourced from here - somefile.php:1:18
+            <?php function g($m
+
+
+
+            ERROR: MissingParamType
+            at somefile.php:1:18
+            Parameter $m has no provided type (see https://psalm.dev/154)
+            <?php function g($m
+
+
+            EOF,
+            IssueBuffer::getOutput(IssueBuffer::getIssuesData(), $report_options),
+        );
+    }
+
     public function testByIssueLevelAndTypeReport(): void
     {
         $this->analyzeFileForReport();
