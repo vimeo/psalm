@@ -202,6 +202,33 @@ final class TraitTest extends TestCase
                     '$vars===' => 'array{kind: 5}',
                 ],
             ],
+            'selfConstantInTheTypeOfAStaticTraitPropertyIsTheOneOfTheUsingClass' => [
+                'code' => '<?php
+                    trait HasKind {
+                        /** @var self::KIND */
+                        public static int $kind = 5;
+                    }
+                    class UsesTrait {
+                        use HasKind;
+                        /** @var 5 */
+                        public const KIND = 5;
+                    }
+                    final class OtherUser {
+                        use HasKind;
+                        /** @var 6 */
+                        public const KIND = 6;
+                    }
+                    final class Child extends UsesTrait {}
+                    $kind = UsesTrait::$kind;
+                    $other = OtherUser::$kind;
+                    $inherited = Child::$kind;',
+                'assertions' => [
+                    '$kind===' => '5',
+                    '$other===' => '6',
+                    '$inherited===' => '5',
+                ],
+                'ignored_issues' => ['InvalidPropertyAssignmentValue'],
+            ],
             'adaptationsOfMethodsTheTraitsHave' => [
                 'code' => '<?php
                     trait Greets {
