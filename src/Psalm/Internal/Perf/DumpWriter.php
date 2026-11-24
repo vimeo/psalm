@@ -65,7 +65,7 @@ final class DumpWriter
     private const SUMMARY_ROWS = 10;
 
     /** A static page that reads the profile in the browser and sends it nowhere */
-    private const VIEWER = 'https://psalm.dev/perf/';
+    private const VIEWER = 'https://psalm.dev/profile/';
 
     /** A statement or function-like that took less of its own time is left out of the summary */
     private const MIN_ROW_US = 10_000;
