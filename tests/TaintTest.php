@@ -1388,7 +1388,7 @@ final class TaintTest extends TestCase
             . "\$values->send((string) \$_GET['value']);\n";
 
         // without the cap on the call stacks per node, the search takes gigabytes
-        $memory_limit = (string) ini_get('memory_limit');
+        $memory_limit = ini_get('memory_limit');
         ini_set('memory_limit', (string) (memory_get_usage() + 256 * 1024 * 1024));
 
         try {
@@ -17203,6 +17203,19 @@ final class TaintTest extends TestCase
                     $run = Shell::run(...);
                     $run((string) $_GET["bad"]);',
                 'error_message' => 'TaintedShell',
+                'php_version' => '8.1',
+            ],
+            'taintReturnedByAFirstClassCallableOfAStaticMethod' => [
+                'code' => '<?php // --taint-analysis
+                    final class K {
+                        public static function id(string $s): string {
+                            return $s;
+                        }
+                    }
+
+                    $f = K::id(...);
+                    echo $f((string) $_GET["a"]);',
+                'error_message' => 'TaintedHtml',
                 'php_version' => '8.1',
             ],
             'taintPassedToTheSinkOfACalledInstanceMethodClosure' => [

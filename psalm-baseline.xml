@@ -1043,7 +1043,6 @@
     <RiskyTruthyFalsyComparison>
       <code><![CDATA[$dim_var_id]]></code>
       <code><![CDATA[$dim_var_id]]></code>
-      <code><![CDATA[$extended_var_id]]></code>
       <code><![CDATA[$keyed_array_var_id]]></code>
       <code><![CDATA[$keyed_array_var_id]]></code>
     </RiskyTruthyFalsyComparison>

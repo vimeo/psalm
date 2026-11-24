@@ -148,6 +148,30 @@ final class ArrayAssignmentTest extends TestCase
                     '$c===' => 'array{x: 2, y: 1}',
                 ],
             ],
+            'uuidLikeStringKeyStaysString' => [
+                'code' => '<?php
+                    $a = ["6e5212ed-a197-4339-99aa-5654798a4854" => 1, "1e999" => 2];',
+                'assertions' => [
+                    '$a===' => "array{'1e999': 2, '6e5212ed-a197-4339-99aa-5654798a4854': 1}",
+                ],
+            ],
+            'constArrayKeyThatStaysStringDoesNotMoveTheNextKey' => [
+                'code' => '<?php
+                    class A {
+                        const B = [K::BIG => 1, 2];
+                        const C = [K::OCTAL => 1, 2];
+                    }
+                    class K {
+                        const BIG = "99999999999999999999";
+                        const OCTAL = "015";
+                    }
+                    $b = A::B;
+                    $c = A::C;',
+                'assertions' => [
+                    '$b===' => "array{'99999999999999999999': 1, 0: 2}",
+                    '$c===' => "array{'015': 1, 0: 2}",
+                ],
+            ],
             'appendsStopGrowingAListShapeAtTheMaximumSize' => [
                 'code' => '<?php
                     $a = [];' . str_repeat('
@@ -3674,6 +3698,27 @@ final class ArrayAssignmentTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'offsetUnsetInABranchAfterALoopWritingItIsPossiblyUndefined' => [
+                'code' => '<?php
+                    /**
+                     * @param array{a?: array<string>} $t
+                     */
+                    function f(array $t): void {
+                        $a = $t["a"] ?? [];
+                        $t["a"] = [];
+
+                        foreach ($a as $b) {
+                            $t["a"][] = $b;
+                        }
+                        if (0 === count($t["a"])) {
+                            unset($t["a"]);
+                        }
+
+                        foreach ($t["a"] as $_) {
+                        }
+                    }',
+                'error_message' => 'PossiblyUndefinedArrayOffset',
+            ],
             'byReferenceArgumentUnderAKeyTheListDoesNotHaveIsNull' => [
                 'code' => '<?php
                     function takesArray(array &$x): void {}

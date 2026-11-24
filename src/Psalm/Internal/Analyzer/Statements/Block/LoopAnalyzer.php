@@ -341,7 +341,8 @@ final class LoopAnalyzer
                             $has_changes = true;
                         }
                     } elseif (isset($original_parent_context->vars_in_scope[$var_id])
-                        // what assigning the loop variables forgot (`$a[$k]` for a foreach key `$k`) is not restored
+                        // what assigning the loop variables forgot (`$a[$k]` for a foreach key `$k`, `$v['k']` for a
+                        // foreach value `$v`) is not restored
                         && isset($pre_loop_context->vars_in_scope[$var_id])
                     ) {
                         if (!$type->equals($original_parent_context->vars_in_scope[$var_id])) {
@@ -702,6 +703,10 @@ final class LoopAnalyzer
 
                 $loop_parent_context->possibly_assigned_var_ids[$var] = true;
             }
+        }
+
+        foreach ($loop_scope->forgotten_at_breaks as $var_id => $_) {
+            $loop_parent_context->remove($var_id, false);
         }
 
         foreach ($loop_parent_context->vars_in_scope as $var_id => $type) {

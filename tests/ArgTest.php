@@ -73,6 +73,68 @@ final class ArgTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'namedArgumentsOfExtensionClassesUseThePhp8Names' => [
+                'code' => '<?php
+                    function soap(SoapClient $client): void {
+                        $client->__call(name: "f", args: []);
+                        $client->__soapCall(name: "f", args: [], inputHeaders: null);
+                        $client->__setLocation(location: "http://example.com");
+                        $client->__setSoapHeaders(headers: null);
+                    }
+
+                    function cache(Memcached $cache): void {
+                        $cache->get("a", get_flags: 0);
+                        $cache->getByKey("s", "a", get_flags: 0);
+                        $cache->getMulti(["a"], get_flags: 0);
+                        $cache->getMultiByKey("s", ["a"], get_flags: 0);
+                        new MemcachedException(message: "x", code: 1);
+                    }
+
+                    function rows(PDOStatement $statement): void {
+                        $statement->fetchObject(constructorArgs: []);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'namedArgumentsOfSplClassesUseThePhp8Names' => [
+                'code' => '<?php
+                    $fixed = SplFixedArray::fromArray([1, 2], preserveKeys: false);
+                    $fixed->offsetSet(index: 0, value: 1);
+                    $exists = $fixed->offsetExists(index: 0);
+                    $fixed->offsetUnset(index: 0);
+
+                    $list = new SplDoublyLinkedList();
+                    $list->add(index: 0, value: 1);
+                    $list->offsetSet(index: 0, value: 2);
+                    $exists = $list->offsetExists(index: 0);
+                    $list->offsetUnset(index: 0);
+
+                    $directory = new DirectoryIterator(directory: ".");
+                    $directory->seek(offset: 0);
+                    $files = new FilesystemIterator(directory: ".");
+                    $recursive = new RecursiveDirectoryIterator(directory: ".");
+
+                    $regex = new RegexIterator(new ArrayIterator([]), pattern: "/a/", pregFlags: 0);
+                    $recursiveRegex = new RecursiveRegexIterator(
+                        new RecursiveArrayIterator([]),
+                        pattern: "/a/",
+                        pregFlags: 0,
+                    );
+                    $tree = new RecursiveTreeIterator(iterator: new RecursiveArrayIterator([]), cachingIteratorFlags: 16);
+
+                    $multiple = new MultipleIterator();
+                    $multiple->attachIterator(new ArrayIterator([]), info: "a");
+
+                    $map = new WeakMap();
+                    $key = new stdClass();
+                    $map->offsetSet(object: $key, value: 1);
+                    $exists = $map->offsetExists(object: $key);
+                    $map->offsetUnset(object: $key);',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'namedArgumentsOfArrayObjectAndArrayIteratorUseThePhp8Names' => [
                 'code' => '<?php
                     $object = new ArrayObject(array: [3, 1, 2]);
