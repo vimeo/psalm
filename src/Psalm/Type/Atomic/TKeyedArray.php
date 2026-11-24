@@ -211,7 +211,7 @@ final class TKeyedArray extends Atomic
     }
 
     #[Override]
-    public function getId(bool $exact = true, bool $nested = false): string
+    public function getId(bool $exact = true): string
     {
         return $this->format(
             static fn(Union $type): string => $type->getId($exact),

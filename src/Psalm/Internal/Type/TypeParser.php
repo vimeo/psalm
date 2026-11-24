@@ -1172,17 +1172,12 @@ final class TypeParser
                 throw new TypeParseTreeException($generic_type_value . ' requires exactly one parameter.');
             }
 
-            $param_name = (string) $generic_params[0];
+            $template_param = $generic_params[0]->isSingle() ? $generic_params[0]->getSingleAtomic() : null;
 
-            if (isset($template_type_map[$param_name])
+            if ($template_param instanceof TTemplateParam
+                && isset($template_type_map[$param_name = $template_param->param_name])
                 && ($defining_class = array_key_first($template_type_map[$param_name])) !== null
             ) {
-                $template_param = $generic_params[0]->getSingleAtomic();
-                if (!$template_param instanceof TTemplateParam) {
-                    throw new TypeParseTreeException(
-                        $generic_type_value . '<' . $param_name . '> must be a TTemplateParam.',
-                    );
-                }
                 if ($template_param->getIntersectionTypes()) {
                     throw new TypeParseTreeException(
                         $generic_type_value . '<' . $param_name . '> must be a TTemplateParam'
