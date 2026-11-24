@@ -735,10 +735,11 @@ final class SwitchCaseAnalyzer
             return [];
         }
 
-        $vars_before = $case_context->vars_in_scope;
         $changed_var_ids = [];
 
-        [$case_context->vars_in_scope] = Reconciler::reconcileKeyedTypes(
+        // reconciled on a copy: only the types the condition narrows are copied back, so the reference slots of
+        // $case_context->vars_in_scope and the offsets of the narrowed variables stay as they were
+        [$narrowed_vars] = Reconciler::reconcileKeyedTypes(
             $truths,
             [],
             $case_context->vars_in_scope,
@@ -752,8 +753,9 @@ final class SwitchCaseAnalyzer
 
         $narrowed = [];
 
-        foreach ($case_context->vars_in_scope as $var_id => $type) {
-            if (($vars_before[$var_id] ?? null) !== $type) {
+        foreach ($narrowed_vars as $var_id => $type) {
+            if (($case_context->vars_in_scope[$var_id] ?? null) !== $type) {
+                $case_context->vars_in_scope[$var_id] = $type;
                 $narrowed[$var_id] = $type;
             }
         }
