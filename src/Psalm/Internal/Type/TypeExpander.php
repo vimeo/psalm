@@ -1415,6 +1415,8 @@ final class TypeExpander
 
     /**
      * Whether a branch of the conditional is its template itself, as `T` in `(T is list ? T : null)`
+     *
+     * @psalm-pure
      */
     private static function isTheConditionalTemplate(TConditional $conditional, Union $branch): bool
     {
