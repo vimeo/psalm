@@ -7524,6 +7524,60 @@ final class ConditionalTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'issetOfAnOffsetStoredInAVariableSetsAPossiblyUndefinedMixedVariable' => [
+                'code' => '<?php
+                    /** @return mixed */
+                    function dec(string $s) { return json_decode($s, true); }
+
+                    function f(string $s): void {
+                        if (rand(0, 1)) {
+                            $data = dec($s);
+                        }
+                        $has = isset($data["a"]);
+                        if ($has) {
+                            echo $data["a"];
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedAssignment', 'MixedArgument', 'MixedArrayAccess'],
+            ],
+            'emptyOfAnOffsetStoredInAVariableSetsAPossiblyUndefinedMixedVariableWhereFalsy' => [
+                'code' => '<?php
+                    /** @return mixed */
+                    function dec(string $s) { return json_decode($s, true); }
+
+                    function f(string $s): void {
+                        if (rand(0, 1)) {
+                            $data = dec($s);
+                        }
+                        $empty = empty($data["a"]);
+                        if (!$empty) {
+                            echo $data["a"];
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedAssignment', 'MixedArgument', 'MixedArrayAccess'],
+            ],
+            'issetOfAnOffsetStoredInAVariableNarrowsAnArray' => [
+                'code' => '<?php
+                    /** @param array{a?: int} $p */
+                    function f(array $p): void {
+                        $has = isset($p["a"]);
+                        if ($has) {
+                            /** @psalm-check-type-exact $p = array{a: int} */;
+                        }
+                    }',
+            ],
+            'issetOfAnOffsetStoredInAVariableNarrowsAMixedVariableCheckedAsArray' => [
+                'code' => '<?php
+                    /** @param mixed $p */
+                    function f($p): void {
+                        $has = is_array($p) && isset($p["a"]);
+                        if ($has) {
+                            /** @psalm-check-type-exact $p = array{a: mixed, ...<array-key, mixed>} */;
+                        }
+                    }',
+            ],
         ];
     }
 
@@ -7716,6 +7770,63 @@ final class ConditionalTest extends TestCase
                         if (!empty($u["a"])) {
                             echo (string) $u["a"];
                         }
+                    }',
+                'error_message' => 'MixedArrayAccess',
+            ],
+            'mixedOffsetReadWhereNotEmptyOfAnOffsetStoredInAVariableIsTrue' => [
+                'code' => '<?php
+                    /** @param mixed $x */
+                    function g($x): void {}
+
+                    /** @param mixed $p */
+                    function f($p): void {
+                        $has = !empty($p["a"]);
+                        if ($has) {
+                            g($p["b"]);
+                        }
+                    }',
+                'error_message' => 'MixedArrayAccess',
+            ],
+            'mixedOffsetReadWhereIssetOfAnOffsetStoredInAVariableIsTrue' => [
+                'code' => '<?php
+                    /** @param mixed $x */
+                    function g($x): void {}
+
+                    /** @param mixed $p */
+                    function f($p): void {
+                        $has = isset($p["a"]);
+                        if ($has) {
+                            g($p["b"]);
+                        }
+                    }',
+                'error_message' => 'MixedArrayAccess',
+            ],
+            'mixedOffsetReadWhereEmptyOfAnOffsetStoredInAVariableIsFalse' => [
+                'code' => '<?php
+                    /** @param mixed $x */
+                    function g($x): void {}
+
+                    /** @param mixed $p */
+                    function f($p): void {
+                        $empty = empty($p["a"]);
+                        if (!$empty) {
+                            g($p["b"]);
+                        }
+                    }',
+                'error_message' => 'MixedArrayAccess',
+            ],
+            'mixedOffsetReadWhereIssetOfAnOffsetStoredInAVariableIsFalse' => [
+                'code' => '<?php
+                    /** @param mixed $x */
+                    function g($x): void {}
+
+                    /** @param mixed $p */
+                    function f($p, bool $b): void {
+                        $missing = !isset($p["a"]) || $b;
+                        if ($missing) {
+                            return;
+                        }
+                        g($p["b"]);
                     }',
                 'error_message' => 'MixedArrayAccess',
             ],

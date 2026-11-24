@@ -115,6 +115,7 @@ use Psalm\Type\TaintKind;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
+use function array_diff_key;
 use function array_filter;
 use function array_map;
 use function array_values;
@@ -3277,6 +3278,16 @@ final class AssignmentAnalyzer
                     $var_object_id = spl_object_id($assign_var);
                     $cond_object_id = spl_object_id($assign_value);
 
+                    // whether each mixed variable may be unset
+                    $mixed_vars = [];
+
+                    foreach ($context->vars_in_scope as $context_var_id => $context_type) {
+                        if ($context_type->isMixed()) {
+                            $mixed_vars[$context_var_id] = $context_type->possibly_undefined
+                                || $context_type->possibly_undefined_from_try;
+                        }
+                    }
+
                     try {
                         $cond_clauses = FormulaGenerator::getFormula(
                             $cond_object_id,
@@ -3289,7 +3300,7 @@ final class AssignmentAnalyzer
 
                         $right_clauses = Context::filterClauses(
                             $var_id,
-                            $cond_clauses,
+                            self::forgetItemsOfMixedVars($cond_clauses, $mixed_vars, $cond_object_id),
                         );
 
                         $assignment_clauses = Algebra::combineOredClauses(
@@ -3307,13 +3318,17 @@ final class AssignmentAnalyzer
                         try {
                             $negated_clauses = Context::filterClauses(
                                 $var_id,
-                                FormulaGenerator::getNegatedFormula(
-                                    $cond_clauses,
-                                    $assign_value,
+                                self::forgetItemsOfMixedVars(
+                                    FormulaGenerator::getNegatedFormula(
+                                        $cond_clauses,
+                                        $assign_value,
+                                        $cond_object_id,
+                                        $context->self,
+                                        $statements_analyzer,
+                                        $codebase,
+                                    ),
+                                    $mixed_vars,
                                     $cond_object_id,
-                                    $context->self,
-                                    $statements_analyzer,
-                                    $codebase,
                                 ),
                             );
 
@@ -3365,6 +3380,30 @@ final class AssignmentAnalyzer
                 }
             }
         }
+    }
+
+    /**
+     * The clauses without those on an offset or a property of a mixed variable, which say nothing (see
+     * Clause::forgetItemsOfMixedVars())
+     *
+     * @param list<Clause> $clauses
+     * @param array<string, bool> $mixed_vars whether each mixed variable may be unset
+     * @return list<Clause>
+     */
+    private static function forgetItemsOfMixedVars(array $clauses, array $mixed_vars, int $cond_object_id): array
+    {
+        $known_clauses = [];
+
+        foreach ($clauses as $clause) {
+            $mixed_vars = array_diff_key($mixed_vars, $clause->possibilities);
+            $clause = $clause->forgetItemsOfMixedVars($mixed_vars, $cond_object_id);
+
+            if (!$clause->wedge) {
+                $known_clauses[] = $clause;
+            }
+        }
+
+        return $known_clauses;
     }
 
     /**
