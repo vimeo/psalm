@@ -1304,14 +1304,30 @@ final class MissingReturnTypeTest extends FileManipulationTestCase
                 'output' => '<?php
                     class A {}
 
-                    /**
-                     * @return A
-                     */
-                    function f()
+                    function f(): A
                     {
                         return new class extends A {};
                     }',
                 'php_version' => '7.0',
+                'issues_to_fix' => ['MissingReturnType'],
+                'safe_types' => false,
+                'allow_backwards_incompatible_changes' => true,
+            ],
+            'returnAnonymClassOld' => [
+                'input' => '<?php
+                    function f()
+                    {
+                        return new class {};
+                    }',
+                'output' => '<?php
+                    /**
+                     * @return object
+                     */
+                    function f()
+                    {
+                        return new class {};
+                    }',
+                'php_version' => '7.1',
                 'issues_to_fix' => ['MissingReturnType'],
                 'safe_types' => false,
                 'allow_backwards_incompatible_changes' => true,
