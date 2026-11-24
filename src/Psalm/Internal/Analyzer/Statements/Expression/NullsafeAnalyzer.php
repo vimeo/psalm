@@ -150,12 +150,16 @@ final class NullsafeAnalyzer
 
         // the call is null when the receiver is, and otherwise as the chain without the nullsafe operator is, whose
         // own later `?->` short-circuits the whole chain as well
-        $else_state = NullsafeChainState::of($ternary->else);
+        $chain_state = NullsafeChainState::of($ternary->else);
 
-        ($else_state === NullsafeChainState::None
-            ? NullsafeChainState::ShortCircuit->afterLink($statements_analyzer->node_data->getType($ternary->else))
-            : $else_state
-        )->markOn($stmt);
+        if ($chain_state === NullsafeChainState::None) {
+            $chain_state = NullsafeChainState::ShortCircuit->afterLink(
+                $statements_analyzer->getCodebase(),
+                $statements_analyzer->node_data->getType($ternary->else),
+            );
+        }
+
+        $chain_state->markOn($stmt);
 
         return true;
     }
@@ -332,7 +336,7 @@ final class NullsafeAnalyzer
         $chain_state = NullsafeChainState::None;
 
         if ($ternary_type && $ternary_type->isNullable()) {
-            $chain_state = NullsafeChainState::ShortCircuit->afterLink($call_type);
+            $chain_state = NullsafeChainState::ShortCircuit->afterLink($statements_analyzer->getCodebase(), $call_type);
         }
 
         $chain_state->markOn($stmt);

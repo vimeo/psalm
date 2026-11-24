@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Psalm\Internal\Analyzer\Statements\Expression;
 
 use PhpParser\Node\Expr;
+use Psalm\Codebase;
+use Psalm\Internal\Type\TypeExpander;
 use Psalm\Type\Atomic\TConditional;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNonEmptyMixed;
@@ -73,11 +75,13 @@ enum NullsafeChainState
      *
      * @param ?Union $own_type the link's own result, analysed on the non-null receiver parts
      * @param bool $own_nullable whether that result is nullable for another reason (a possibly undefined offset)
-     * @psalm-capabilities read-props
      */
-    public function afterLink(?Union $own_type, bool $own_nullable = false): self
+    public function afterLink(Codebase $codebase, ?Union $own_type, bool $own_nullable = false): self
     {
-        if ($own_nullable || ($own_type && $own_type->isNullable())) {
+        // `void` evaluates to null, and `value-of<T>` is nullable when T's values are
+        $own_type = $own_type ? TypeExpander::expandTemplateKeyOfAndValueOf($codebase, $own_type) : null;
+
+        if ($own_nullable || ($own_type && ($own_type->isNullable() || $own_type->hasType('void')))) {
             return self::ShortCircuitAndNull;
         }
 

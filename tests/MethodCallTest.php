@@ -4679,6 +4679,88 @@ final class MethodCallTest extends TestCase
                 'error_levels' => [],
                 'php_version' => '8.0',
             ],
+            'nullsafeChainReportsStaticCallOnTheResultOfAVoidMethod' => [
+                'code' => '<?php
+                    abstract class B {
+                        abstract public function run(int $x): void;
+                    }
+
+                    function f(?B $b): void {
+                        $b?->run(1)::done();
+                    }',
+                'error_message' => 'UndefinedClass',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'nullsafeChainWithSeveralHopsReportsStaticCallOnTheResultOfAVoidMethod' => [
+                'code' => '<?php
+                    abstract class B {
+                        abstract public function run(int $x): void;
+                    }
+                    abstract class A {
+                        public ?B $b = null;
+                    }
+
+                    function f(?A $a): void {
+                        $a?->b?->run(1)::done();
+                    }',
+                'error_message' => 'UndefinedClass',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'nullsafeChainReportsNullValueOfATemplate' => [
+                'code' => '<?php
+                    abstract class C {
+                        abstract public function c(): int;
+                    }
+                    abstract class B {
+                        /**
+                         * @template U
+                         * @param U $u
+                         * @return U
+                         */
+                        abstract public function id(mixed $u): mixed;
+                    }
+
+                    /**
+                     * @template T of array<string, C|null>
+                     * @param value-of<T> $value
+                     */
+                    function f(?B $b, mixed $value): void {
+                        $b?->id($value)->c();
+                    }',
+                'error_message' => 'PossiblyNullReference',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'nullsafeChainWithSeveralHopsReportsNullValueOfATemplate' => [
+                'code' => '<?php
+                    abstract class C {
+                        abstract public function c(): int;
+                    }
+                    abstract class B {
+                        /**
+                         * @template U
+                         * @param U $u
+                         * @return U
+                         */
+                        abstract public function id(mixed $u): mixed;
+                    }
+                    abstract class A {
+                        public ?B $b = null;
+                    }
+
+                    /**
+                     * @template T of array<string, C|null>
+                     * @param value-of<T> $value
+                     */
+                    function f(?A $a, mixed $value): void {
+                        $a?->b?->id($value)->c();
+                    }',
+                'error_message' => 'PossiblyNullReference',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
             'nullsafeChainReportsNullArrayElementMethodCall' => [
                 'code' => '<?php
                     abstract class C {
