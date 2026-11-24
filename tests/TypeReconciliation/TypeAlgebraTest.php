@@ -4743,6 +4743,108 @@ final class TypeAlgebraTest extends TestCase
                     '$var===' => "''|'x'",
                 ],
             ],
+            'arrayIsReplacedWhenTheConditionOnAnOffsetAlwaysHolds' => [
+                'code' => '<?php
+                    $dummy = ["test" => ""];
+
+                    $a = ["test" => null];
+
+                    if ($a["test"] === null) {
+                        $a = $dummy;
+                    }
+                    $var = $a["test"];',
+                'assertions' => [
+                    '$a===' => "array{test: ''}",
+                    '$var===' => "''",
+                ],
+            ],
+            'offsetIsStillSetWhenTheConditionOnItAlwaysHolds' => [
+                'code' => '<?php
+                    /** @param array{test: null} $a */
+                    function f(array $a): void {
+                        if ($a["test"] === null) {
+                            echo "x";
+                        }
+                        /** @psalm-check-type-exact $a = array{test: null} */
+                    }',
+            ],
+            'offsetIsStillSetWhenTheConditionOnItNeverHolds' => [
+                'code' => '<?php
+                    /** @param array{test: int} $a */
+                    function f(array $a): void {
+                        if (is_string($a["test"])) {
+                            echo "x";
+                        }
+                        /** @psalm-check-type-exact $a = array{test: int} */
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['DocblockTypeContradiction'],
+            ],
+            'offsetIsWrittenWhenTheConditionOnItAlwaysHolds' => [
+                'code' => '<?php
+                    /** @param array{test: null} $a */
+                    function f(array $a): void {
+                        if ($a["test"] === null) {
+                            $a["test"] = "";
+                        }
+                        /** @psalm-check-type-exact $a = array{test: \'\'} */
+                    }',
+            ],
+            'nestedArrayIsReplacedWhenTheConditionOnItsOffsetAlwaysHolds' => [
+                'code' => '<?php
+                    /** @param array{x: array{test: null}, y: int} $a */
+                    function f(array $a): void {
+                        if ($a["x"]["test"] === null) {
+                            $a = ["x" => ["test" => ""], "y" => 1];
+                        }
+                        /** @psalm-check-type-exact $a = array{x: array{test: \'\'}, y: 1} */
+                    }',
+            ],
+            'listIsReplacedWhenTheConditionOnAnOffsetAlwaysHolds' => [
+                'code' => '<?php
+                    /** @param list{null, int} $a */
+                    function f(array $a): void {
+                        if ($a[0] === null) {
+                            $a = [1, 2];
+                        }
+                        /** @psalm-check-type-exact $a = list{1, 2} */
+                    }',
+            ],
+            'unsealedArrayIsReplacedWhenTheConditionOnAnOffsetAlwaysHolds' => [
+                'code' => '<?php
+                    /** @param array{test: null, ...<string, int>} $a */
+                    function f(array $a): void {
+                        if ($a["test"] === null) {
+                            $a = ["test" => ""];
+                        }
+                        /** @psalm-check-type-exact $a = array{test: \'\'} */
+                    }',
+            ],
+            'optionalOffsetIsKeptWhenTheConditionOnItNeverHolds' => [
+                'code' => '<?php
+                    /** @param array{test?: int, other: int} $a */
+                    function f(array $a): void {
+                        if (isset($a["test"]) && is_string($a["test"])) {
+                            return;
+                        }
+                        /** @psalm-check-type-exact $a = array{other: int, test?: int} */
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['DocblockTypeContradiction'],
+            ],
+            'otherTypesOfAUnionAreKeptWhenTheArrayCannotBeTheValue' => [
+                'code' => '<?php
+                    /** @param array{test: null}|string $a */
+                    function f($a): void {
+                        if (is_array($a) && $a["test"] !== null) {
+                            /** @psalm-check-type-exact $a = never */
+                            return;
+                        }
+                        /** @psalm-check-type-exact $a = array{test: null}|string */
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['DocblockTypeContradiction'],
+            ],
             'offsetKnownFromTheConditionIsKeptWhenTheArrayIsNotReassigned' => [
                 'code' => '<?php
                     $a = ["test" => rand(0, 1) ? null : "x"];
