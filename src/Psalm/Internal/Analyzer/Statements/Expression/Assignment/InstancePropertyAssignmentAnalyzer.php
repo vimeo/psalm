@@ -46,6 +46,7 @@ use Psalm\Issue\NoInterfaceProperties;
 use Psalm\Issue\NullPropertyAssignment;
 use Psalm\Issue\PossiblyInvalidPropertyAssignment;
 use Psalm\Issue\PossiblyNullPropertyAssignment;
+use Psalm\Issue\PropertyTypeCoercion;
 use Psalm\IssueBuffer;
 use Psalm\Node\Expr\VirtualMethodCall;
 use Psalm\Node\Scalar\VirtualString;
