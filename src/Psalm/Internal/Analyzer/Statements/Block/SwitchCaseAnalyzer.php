@@ -97,6 +97,23 @@ final class SwitchCaseAnalyzer
         $case_scope = $case_context->case_scope = new CaseScope($case_context);
         $case_scope->outer_case_scope = $original_context->case_scope;
 
+        // what the earlier cases said of a variable this case condition assigns is not true of the new value
+        if ($case->cond) {
+            $switch_scope->negated_clauses = FormulaGenerator::withoutClausesOfVarsAssignedIn(
+                $switch_scope->negated_clauses,
+                $case->cond,
+                $context->self,
+                $statements_analyzer->node_data,
+            );
+
+            $switch_scope->fall_through_negated_clauses = FormulaGenerator::withoutClausesOfVarsAssignedIn(
+                $switch_scope->fall_through_negated_clauses,
+                $case->cond,
+                $context->self,
+                $statements_analyzer->node_data,
+            );
+        }
+
         $entry_formula = $switch_scope->negated_clauses && count($switch_scope->negated_clauses) < 50
             ? Algebra::simplifyCNF([...$original_context->clauses, ...$switch_scope->negated_clauses])
             : $original_context->clauses;

@@ -2010,6 +2010,48 @@ final class SwitchTypeTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'switchTrueCaseThatReassignsAVariableDropsTheEarlierNegations' => [
+                'code' => '<?php
+                    final class O {
+                        public function isEmpty(): bool { return true; }
+                    }
+
+                    function g(): ?O { return rand(0, 1) ? new O() : null; }
+
+                    function reassigned(?O $v): void {
+                        switch (true) {
+                            case $v === null:
+                            case ($v = g()) instanceof Exception:
+                            case $v->isEmpty():
+                                return;
+                        }
+                    }',
+                'error_message' => 'PossiblyNullReference',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'switchTrueCaseThatReassignsAVariableAfterReturningCasesDropsTheEarlierNegations' => [
+                'code' => '<?php
+                    final class O {
+                        public function isEmpty(): bool { return true; }
+                    }
+
+                    function g(): ?O { return rand(0, 1) ? new O() : null; }
+
+                    function reassigned(?O $v): void {
+                        switch (true) {
+                            case $v === null:
+                                return;
+                            case ($v = g()) instanceof Exception:
+                                return;
+                            case $v->isEmpty():
+                                return;
+                        }
+                    }',
+                'error_message' => 'PossiblyNullReference',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
             'bodySharedByGroupedCasesIsNotNarrowedByTheCaseBeforeIt' => [
                 'code' => '<?php
                     final class O {
