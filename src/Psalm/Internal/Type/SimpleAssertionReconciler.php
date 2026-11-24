@@ -2667,21 +2667,17 @@ final class SimpleAssertionReconciler extends Reconciler
             return null;
         }
 
-        if ($bound->hasCallableType() || $bound->hasMixed()) {
-            return $type->replaceAs(self::reconcileCallable(
-                $assertion,
-                $codebase,
-                $type->as,
-                null,
-                $negated,
-                null,
-                $suppressed_issues,
-                $failed_reconciliation,
-                $is_equality,
-            ));
-        }
-
-        return $type;
+        return $type->replaceAs(self::reconcileCallable(
+            $assertion,
+            $codebase,
+            $type->as,
+            null,
+            $negated,
+            null,
+            $suppressed_issues,
+            $failed_reconciliation,
+            $is_equality,
+        ));
     }
 
     /**

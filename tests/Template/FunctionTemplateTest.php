@@ -342,6 +342,23 @@ final class FunctionTemplateTest extends TestCase
                         throw $exception ?? new RuntimeException("No value");
                     }',
                 'assertions' => [],
+                'ignored_issues' => ['MixedAssignment'],
+                'php_version' => '8.1',
+            ],
+            'isCallableKeepsATemplateOfANonFinalClassWithoutInvoke' => [
+                'code' => '<?php
+                    /**
+                     * @template E of Exception
+                     * @param E $exception
+                     */
+                    function check($exception): bool {
+                        if (is_callable($exception)) {
+                            return (bool) $exception();
+                        }
+
+                        return false;
+                    }',
+                'assertions' => [],
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
@@ -3888,10 +3905,12 @@ final class FunctionTemplateTest extends TestCase
                 'error_levels' => [],
                 'php_version' => '8.0',
             ],
-            'isCallableOfATemplateOfAClassWithoutInvoke' => [
+            'isCallableOfATemplateOfAFinalClassWithoutInvoke' => [
                 'code' => '<?php
+                    final class Failure {}
+
                     /**
-                     * @template E of Exception
+                     * @template E of Failure
                      * @param E $exception
                      */
                     function check($exception): void {
