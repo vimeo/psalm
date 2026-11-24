@@ -3385,6 +3385,16 @@ final class ArrayFunctionCallTest extends TestCase
                     '$d' => 'array<int, list{string}|string>',
                 ],
             ],
+            'arraySpliceOffsetNotRepresentableAsIntIsNotZero' => [
+                'code' => '<?php
+                    /** @param list<int> $d */
+                    function f(array $d): void {
+                        array_splice($d, "1e999");
+                        /** @psalm-check-type-exact $d = list<int> */
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['InvalidScalarArgument'],
+            ],
             'arraySpliceRefWithoutReplacement' => [
                 'code' => '<?php
                     $d = [1,2];
