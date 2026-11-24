@@ -740,6 +740,33 @@ final class FormulaGenerator
             }
         }
 
+        // `$x !== $a?->p` with an `$x` that can't be null is also true where `$a` is null
+        if ($conditional instanceof PhpParser\Node\Expr\BinaryOp\NotIdentical) {
+            $receiver_id = self::getReceiverOfANullsafeFetchIdenticalToANonNull(
+                new VirtualIdentical($conditional->left, $conditional->right, $conditional->getAttributes()),
+                $this_class_name,
+                $source,
+            );
+
+            if ($receiver_id !== null) {
+                $null = new IsType(new TNull());
+                $clauses = array_map(
+                    static fn(Clause $clause): Clause => isset($clause->possibilities[$receiver_id])
+                        ? $clause
+                        : new Clause(
+                            [...$clause->possibilities, $receiver_id => [(string) $null => $null]],
+                            $conditional_object_id,
+                            $creating_object_id,
+                            false,
+                            $clause->reconcilable,
+                            $clause->generated,
+                            $clause->redefined_vars,
+                        ),
+                    $clauses,
+                );
+            }
+        }
+
         return $clauses;
     }
 
