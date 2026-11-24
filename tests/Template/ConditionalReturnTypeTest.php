@@ -21,6 +21,97 @@ final class ConditionalReturnTypeTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'conditionalReturnOnAnArgumentWithoutTypeTakesBothBranches' => [
+                'code' => '<?php
+                    /** @return ($value is object ? true : false) */
+                    function isObjectValue(mixed $value): bool {
+                        return is_object($value);
+                    }
+
+                    /**
+                     * @template T
+                     * @param T $v
+                     * @return list<T>
+                     */
+                    function wrap($v): array {
+                        return [$v];
+                    }
+
+                    function getCountable(): Countable {
+                        throw new Exception();
+                    }
+
+                    /**
+                     * @template T
+                     * @param list<T> $list
+                     * @return list<T>
+                     */
+                    function same(array $list): array {
+                        return $list;
+                    }
+
+                    /**
+                     * @template T
+                     * @param T ...$values
+                     * @return list<T>
+                     */
+                    function variadic(...$values): array {
+                        return array_values($values);
+                    }
+
+                    $c = getCountable();
+                    $inline = isObjectValue($c->missing());
+                    $wrapped = wrap($c->missing());
+                    $nested = same($c->missing());
+                    $unpacked = variadic($c->missing());',
+                'assertions' => [
+                    '$inline===' => 'bool',
+                    '$wrapped===' => 'list<mixed>',
+                    '$nested===' => 'list<mixed>',
+                    '$unpacked===' => 'list<mixed>',
+                ],
+                'ignored_issues' => ['MixedArgument', 'UndefinedInterfaceMethod'],
+                'php_version' => '8.0',
+            ],
+            'argumentWithoutTypeKeepsTheClassTemplateOfTheObject' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class Box {
+                        /** @param T $v */
+                        public function __construct(public mixed $v) {}
+
+                        /**
+                         * @param T $v
+                         * @return Box<T>
+                         */
+                        public function with(mixed $v): Box {
+                            return new Box($v);
+                        }
+
+                        /**
+                         * @param list<T> $v
+                         * @return Box<T>
+                         */
+                        public function withList(array $v): Box {
+                            return $this;
+                        }
+                    }
+
+                    function getCountable(): Countable {
+                        throw new Exception();
+                    }
+
+                    /** @var Box<int> $bi */
+                    $bi = new Box(1);
+                    $b = $bi->with(getCountable()->missing());
+                    $l = $bi->withList(getCountable()->missing());',
+                'assertions' => [
+                    '$b===' => 'Box<int>',
+                    '$l===' => 'Box<int>',
+                ],
+                'ignored_issues' => ['MixedArgument', 'UndefinedInterfaceMethod'],
+                'php_version' => '8.0',
+            ],
             'conditionalOnAnUnresolvedBoolClassTemplateKeepsBothBranches' => [
                 'code' => <<<'PHP'
                     <?php
@@ -52,6 +143,23 @@ final class ConditionalReturnTypeTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'conditionalOnANonEmptyListReturnsTheArrayMapOfTheList' => [
+                'code' => '<?php
+                    /**
+                     * @param list $items
+                     * @return ($items is non-empty-list ? non-empty-list : list)
+                     */
+                    function test(array $items): array
+                    {
+                        return array_map(
+                            static fn (mixed $item): mixed => $item,
+                            $items,
+                        );
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'conditionalOnClosureKeepsTheIfBranchForAnInterfaceNarrowedToClosure' => [
                 'code' => <<<'PHP'
                     <?php
@@ -71,7 +179,7 @@ final class ConditionalReturnTypeTest extends TestCase
                         $plain = kind($factory);
 
                         if ($factory instanceof Closure) {
-                            /** @psalm-check-type-exact $narrowed = 'closure'|'other' */
+                            /** @psalm-check-type-exact $narrowed = 'closure' */
                             $narrowed = kind($factory);
                         }
                     }
@@ -966,6 +1074,63 @@ final class ConditionalReturnTypeTest extends TestCase
                     function bar(SerializerInterface $i, string $data): array {
                         return $i->deserialize($data, \'array\');
                     }',
+            ],
+            'implementationWideningAParamReturnsTheGuidesTypeForTheGuidesValues' => [
+                'code' => '<?php
+                    interface Manager {
+                        /**
+                         * @template T of object
+                         * @param class-string<T> $className
+                         * @return T
+                         */
+                        public function get(string $className): object;
+                    }
+
+                    interface WideManager extends Manager {
+                        /**
+                         * @template T of object
+                         * @param string|class-string<T> $className
+                         * @return ($className is class-string<T> ? T : object)
+                         */
+                        #[Override]
+                        public function get(string $className): object;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
+            'implementedMethodWithTheConditionalReturnTypeOfTheInterface' => [
+                'code' => '<?php
+                    /** @template T = mixed */
+                    interface Box {
+                        /**
+                         * @template U = never
+                         * @param (callable(T): U)|null $f
+                         * @return Box<($f is null ? T : U)>
+                         */
+                        public function map(?callable $f = null): Box;
+                    }
+
+                    /**
+                     * @template T = mixed
+                     * @implements Box<T>
+                     */
+                    final class Just implements Box {
+                        /** @param T $value */
+                        public function __construct(private mixed $value) {}
+
+                        /**
+                         * @template U = never
+                         * @param (callable(T): U)|null $f
+                         * @return Box<($f is null ? T : U)>
+                         */
+                        public function map(?callable $f = null): Box {
+                            return $f === null ? $this : new Just($f($this->value));
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'inheritConditional' => [
                 'code' => '<?php
@@ -2178,7 +2343,7 @@ final class ConditionalReturnTypeTest extends TestCase
                     $node = new Node();
                     $result = $node->cmp($node);',
                 'assertions' => [
-                    '$result===' => 'int|string',
+                    '$result===' => 'string',
                 ],
                 'ignored_issues' => ['ArgumentTypeCoercion'],
             ],
@@ -2684,6 +2849,27 @@ final class ConditionalReturnTypeTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'conditionOnAParamIsAboutAnArgumentThatDoesNotFitIt' => [
+                'code' => '<?php
+                    final class Name {
+                        public function __toString(): string {
+                            return "n";
+                        }
+                    }
+
+                    /** @var list<Name> $names */
+                    $names = [new Name()];
+
+                    $r = preg_replace("/a/", "b", $names);
+                    $s = str_replace("a", "b", $names);
+                    $t = str_replace("a", "b", "abc");',
+                'assertions' => [
+                    '$r===' => 'array<int<0, max>, string>|null',
+                    '$s===' => 'array<int<0, max>, string>',
+                    '$t===' => "'bbc'",
+                ],
+                'ignored_issues' => ['ImplicitToStringCast'],
+            ],
             'conditionalReturnOfAMixedTemplateArgumentKeepsBothBranches' => [
                 'code' => '<?php
                     /**
@@ -2707,6 +2893,465 @@ final class ConditionalReturnTypeTest extends TestCase
                 'assertions' => [],
                 'ignored_issues' => [],
                 'php_version' => '8.1',
+            ],
+            'wrapPreservesUnknownArrayValues' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @template T
+                     * @param T $value
+                     * @return (T is null ? array{} : (T is array ? T : array{T}))
+                     */
+                    function wrap($value): array {
+                        if ($value === null) {
+                            return [];
+                        }
+                        return is_array($value) ? $value : [$value];
+                    }
+                    /** @param array|callable|null $value */
+                    function test($value): void {
+                        $result = wrap($value);
+                        /** @psalm-check-type-exact $result = array<array-key, mixed> */
+                    }
+                    PHP,
+            ],
+            'partiallyMatchingTemplateKeepsBothBranches' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @param string|array<string> $value
+                     * @return ($value is array ? array<string> : string)
+                     */
+                    function conditional($value) { return $value; }
+                    /**
+                     * @template T of string|array<string>
+                     * @param T $value
+                     */
+                    function test($value): void {
+                        $result = conditional($value);
+                        /** @psalm-check-type-exact $result = array<array-key, string>|string */
+                    }
+                    PHP,
+            ],
+            'possiblyEmptyArrayConditionKeepsBool' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @param array<mixed> $needles
+                     * @return ($needles is array{} ? false : bool)
+                     */
+                    function contains(array $needles): bool { return (bool) $needles; }
+                    /** @param array<mixed> $needles */
+                    function test(array $needles): void {
+                        $result = contains($needles);
+                        /** @psalm-check-type-exact $result = bool */
+                    }
+                    PHP,
+            ],
+            'overlappingIterableConditional' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @param iterable<mixed, mixed> $i
+                     * @return ($i is list ? 'list' : 'iter')
+                     */
+                    function describe(iterable $i) {
+                        return is_array($i) && array_is_list($i) ? 'list' : 'iter';
+                    }
+                    /** @return list<int>|iterable<mixed, mixed> */
+                    function source(): iterable { return []; }
+                    $value = describe(source());
+                    PHP,
+                'assertions' => ['$value===' => "'iter'|'list'"],
+                'ignored_issues' => [],
+                'php_version' => '8.2',
+            ],
+            'incompatibleIterableConditional' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @param iterable<string, string> $i
+                     * @return ($i is list<int>|Traversable<int, int> ? 'yes' : 'no')
+                     */
+                    function describe(iterable $i) { return 'no'; }
+                    /** @return iterable<string, string> */
+                    function source(): iterable { return []; }
+                    $value = describe(source());
+                    PHP,
+                'assertions' => ['$value===' => "'no'"],
+            ],
+            'overlapAlongsideFalseCandidate' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @template T
+                     * @param T $i
+                     * @return (T is list ? 'list' : 'iter')
+                     */
+                    function describe($i) { return is_array($i) && array_is_list($i) ? 'list' : 'iter'; }
+                    /** @return string|iterable<mixed, mixed> */
+                    function source() { return []; }
+                    $value = describe(source());
+                    PHP,
+                'assertions' => ['$value===' => "'iter'|'list'"],
+                'ignored_issues' => [],
+                'php_version' => '8.2',
+            ],
+            'overlapRefinesTemplateBranch' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @template T
+                     * @param T $i
+                     * @return (T is list ? T : null)
+                     */
+                    function describe($i) { return is_array($i) && array_is_list($i) ? $i : null; }
+                    /** @return list<int>|iterable<mixed, mixed> */
+                    function source() { return []; }
+                    $value = describe(source());
+                    PHP,
+                'assertions' => ['$value===' => "list<int|mixed>|null"],
+                'ignored_issues' => [],
+                'php_version' => '8.2',
+            ],
+            'unknownTraversableConditionalKeepsBothBranches' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @template T
+                     * @param T $value
+                     * @return (T is iterable<int, int> ? 'yes' : 'no')
+                     */
+                    function describe($value) { throw new Exception(); }
+                    /** @return Traversable */
+                    function source(): Traversable { return new ArrayIterator([]); }
+                    $value = describe(source());
+                    PHP,
+                'assertions' => ['$value===' => "'no'|'yes'"],
+            ],
+            'conditionalElsePreservesContainedIterableTemplate' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @template X of iterable<int, mixed>
+                     * @param X $values
+                     * @return (X is array ? never : X)
+                     */
+                    function nonArray($values) {
+                        if (is_array($values)) {
+                            throw new InvalidArgumentException();
+                        }
+                        return $values;
+                    }
+                    /**
+                     * @template T
+                     * @param iterable<int, T> $values
+                     * @return T|null
+                     */
+                    function firstValue(iterable $values) {
+                        $result = nonArray($values);
+                        foreach ($result as $value) {
+                            /** @psalm-check-type-exact $value = T */
+                            return $value;
+                        }
+                        return null;
+                    }
+                    PHP,
+            ],
+            'stringableUserConditional' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @template T of array|string
+                     * @param T $s
+                     * @return (T is array<int, string> ? array<int, string> : string|false)
+                     */
+                    function convert(array|string $s) { return false; }
+                    function test(Throwable $e): void {
+                        $r = convert($e);
+                        /** @psalm-check-type-exact $r = false|string */
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => ['ImplicitToStringCast'],
+                'php_version' => '8.2',
+            ],
+            'stringableNestedUserConditional' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @template T of array|string
+                     * @param T $s
+                     * @return (T is array ? (T is array<int, string> ? array<int, string> : array<array-key, mixed>) : string|false)
+                     */
+                    function convert(array|string $s) { return false; }
+                    function test(Throwable $e): void {
+                        $r = convert($e);
+                        /** @psalm-check-type-exact $r = false|string */
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => ['ImplicitToStringCast'],
+                'php_version' => '8.2',
+            ],
+            'stringableElementsDoNotConvertOuterArray' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @template T of string|array<string>
+                     * @param T $value
+                     * @return (T is array ? 'array' : 'string')
+                     */
+                    function describe($value) { return is_array($value) ? 'array' : 'string'; }
+                    $r = describe([new Exception()]);
+                    /** @psalm-check-type-exact $r = 'array' */
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => ['ImplicitToStringCast'],
+                'php_version' => '8.2',
+            ],
+            'stringableElementsInGenericArray' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @template T of string|array<string>
+                     * @param T $value
+                     * @return (T is array ? 'array' : 'string')
+                     */
+                    function describe($value) { return is_array($value) ? 'array' : 'string'; }
+                    /** @param array<Throwable> $items */
+                    function test(array $items): void {
+                        $r = describe($items);
+                        /** @psalm-check-type-exact $r = 'array' */
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => ['ImplicitToStringCast'],
+                'php_version' => '8.2',
+            ],
+            'stringableObjectAndArrayKeepBothBranches' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @template T of string|array<string>
+                     * @param T $value
+                     * @return (T is array ? 'array' : 'string')
+                     */
+                    function describe($value) { return is_array($value) ? 'array' : 'string'; }
+                    /** @param Throwable|array<Throwable> $items */
+                    function test($items): void {
+                        $r = describe($items);
+                        /** @psalm-check-type-exact $r = 'array'|'string' */
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => ['ImplicitToStringCast'],
+                'php_version' => '8.2',
+            ],
+            'stringableAcceptedAsObjectKeepsObjectBranch' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @template T of string|Throwable
+                     * @param T $value
+                     * @return (T is object ? 'object' : 'string')
+                     */
+                    function describe($value) { return is_object($value) ? 'object' : 'string'; }
+                    $r = describe(new Exception());
+                    /** @psalm-check-type-exact $r = 'object' */
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.2',
+            ],
+            'owningSideAssertionPreservesManyToManyConditionalReturn' => [
+                'code' => <<<'PHP'
+                    <?php
+                    abstract class Association {
+                        /**
+                         * @psalm-assert-if-true Owning $this
+                         * @psalm-assert-if-false Inverse $this
+                         */
+                        public function isOwning(): bool {
+                            return $this instanceof Owning;
+                        }
+                    }
+                    interface Many {}
+                    abstract class Owning extends Association {}
+                    abstract class Inverse extends Association {}
+                    final class InverseMany extends Inverse implements Many {}
+                    final class OwningMany extends Owning implements Many {
+                        public string $joinTable = '';
+                        public string $joinTableColumns = '';
+                    }
+                    final class Other extends Owning {}
+
+                    final class Factory {
+                        /**
+                         * @template A of Association
+                         * @param A $mapping
+                         * @return (A is Many ? OwningMany : Other)
+                         */
+                        public function getOwningSide(Association $mapping): Owning {
+                            if ($mapping instanceof Many) {
+                                return new OwningMany();
+                            }
+                            return new Other();
+                        }
+                    }
+
+                    function acceptMany(Many $mapping): void {}
+
+                    /** @param Association&Many $mapping */
+                    function test(Factory $factory, Association $mapping): string {
+                        if (!$mapping->isOwning()) {
+                            acceptMany($mapping);
+                            return '';
+                        }
+                        /** @psalm-check-type-exact $mapping = Owning&Many */
+                        $owning = $factory->getOwningSide($mapping);
+                        /** @psalm-check-type-exact $owning = OwningMany */
+                        return $owning->joinTable . $owning->joinTableColumns;
+                    }
+                    PHP,
+            ],
+            'stringableMethodWithConditionalReturn' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class Converter {
+                        /**
+                         * @template T of array|string
+                         * @param T $value
+                         * @return (T is array ? array : false|string)
+                         */
+                        public function convert(array|string $value): array|false|string {
+                            return $value;
+                        }
+                    }
+                    function test(Converter $converter, Throwable $error): void {
+                        $value = $converter->convert($error);
+                        /** @psalm-check-type-exact $value = false|string */
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => ['ImplicitToStringCast'],
+                'php_version' => '8.2',
+            ],
+            'stringableOrdinaryGenericReturnKeepsExistingInference' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @template T of array|string
+                     * @param T $value
+                     * @return T
+                     */
+                    function identity(array|string $value): array|string {
+                        return $value;
+                    }
+                    function test(Throwable $error): void {
+                        $value = identity($error);
+                        /** @psalm-check-type-exact $value = array<array-key, mixed>|string */
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => ['ImplicitToStringCast'],
+                'php_version' => '8.2',
+            ],
+            'stringableTemplateUsedOnlyInNestedConditional' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @template T of array|string
+                     * @template U of bool
+                     * @param T $value
+                     * @param U $keep
+                     * @return (U is true ? (T is array ? array : string) : null)
+                     */
+                    function choose(array|string $value, bool $keep): array|string|null {
+                        return $keep ? $value : null;
+                    }
+                    function test(Throwable $error): void {
+                        $value = choose($error, true);
+                        /** @psalm-check-type-exact $value = string */
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => ['ImplicitToStringCast'],
+                'php_version' => '8.2',
+            ],
+            'stringableUnrelatedTemplateKeepsExistingInference' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @template T of array|string
+                     * @template U of bool
+                     * @param T $value
+                     * @param U $keep
+                     * @return (U is true ? T : null)
+                     */
+                    function choose(array|string $value, bool $keep): array|string|null {
+                        return $keep ? $value : null;
+                    }
+                    function test(Throwable $error): void {
+                        $value = choose($error, true);
+                        /** @psalm-check-type-exact $value = array<array-key, mixed>|string */
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => ['ImplicitToStringCast'],
+                'php_version' => '8.2',
+            ],
+            'nonEmptyConditionOnATemplatedListKeepsItsTemplate' => [
+                'code' => '<?php
+                    /**
+                     * @template TList of list
+                     * @param TList $list
+                     * @return (TList is non-empty-list ? non-empty-list<value-of<TList>> : list<value-of<TList>>)
+                     */
+                    function listValues(array $list): array {
+                        throw new RuntimeException();
+                    }
+
+                    /**
+                     * @template T
+                     * @param list<T> $list
+                     * @return T
+                     */
+                    function first(array $list): mixed {
+                        $values = listValues($list);
+
+                        return $values[0] ?? throw new RuntimeException();
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'listConditionOnATemplatedArrayKeepsItsTemplate' => [
+                'code' => '<?php
+                    /**
+                     * @template TArray of array
+                     * @param TArray $array
+                     * @return (TArray is list ? list<value-of<TArray>> : array<value-of<TArray>>)
+                     */
+                    function sameValues(array $array): array {
+                        throw new RuntimeException();
+                    }
+
+                    /**
+                     * @template T
+                     * @param array<int, T> $array
+                     * @return T
+                     */
+                    function first(array $array): mixed {
+                        foreach (sameValues($array) as $value) {
+                            return $value;
+                        }
+
+                        throw new RuntimeException();
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
         ];
     }
@@ -2764,6 +3409,47 @@ final class ConditionalReturnTypeTest extends TestCase
                         return $key === null ? "a" : $key;
                     }',
                 'error_message' => 'InvalidDocblock',
+            ],
+            'conditionalOfAnImplementationOnPartOfTheGuidesValuesIsComparedByBothBranches' => [
+                'code' => '<?php
+                    interface Narrow {
+                        /** @return int */
+                        public function f(string $s): int|string;
+                    }
+
+                    final class NarrowImpl implements Narrow {
+                        /** @return ($s is "x" ? int : string) */
+                        #[Override]
+                        public function f(string $s): int|string {
+                            return $s === "x" ? 1 : "a";
+                        }
+                    }',
+                'error_message' => 'ImplementedReturnTypeMismatch',
+                'error_levels' => [],
+                'php_version' => '8.3',
+            ],
+            'implementedMethodWithAConditionalReturnTypeOutsideTheInterfaces' => [
+                'code' => '<?php
+                    interface Box {
+                        /**
+                         * @param int|null $f
+                         * @return ($f is null ? string : int)
+                         */
+                        public function map(?int $f = null): mixed;
+                    }
+
+                    final class Wrong implements Box {
+                        /**
+                         * @param int|null $f
+                         * @return ($f is null ? array : int)
+                         */
+                        public function map(?int $f = null): mixed {
+                            return $f ?? [];
+                        }
+                    }',
+                'error_message' => 'ImplementedReturnTypeMismatch',
+                'error_levels' => [],
+                'php_version' => '8.0',
             ],
             'typedClosureParamOfCallableOfStaticKeepsItsDeclaredType' => [
                 'code' => '<?php

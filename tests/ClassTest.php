@@ -15,6 +15,7 @@ use function array_any;
 use function array_column;
 use function array_filter;
 use function array_values;
+use function getcwd;
 use function str_contains;
 
 use const DIRECTORY_SEPARATOR;
@@ -23,6 +24,38 @@ final class ClassTest extends TestCase
 {
     use InvalidCodeAnalysisTestTrait;
     use ValidCodeAnalysisTestTrait;
+
+    public function testParamNamedAsInAProjectAncestorMismatchesAnAncestorOutsideTheProject(): void
+    {
+        $this->testConfig->throw_exception = false;
+        $this->project_analyzer->getConfig()->allow_named_arg_calls = false;
+
+        $file_path = self::$src_dir_path . 'somefile.php';
+        $outside_path = (string) getcwd() . DIRECTORY_SEPARATOR . 'vendor' . DIRECTORY_SEPARATOR . 'outside.php';
+
+        $this->addFile($outside_path, '<?php
+            interface B {
+                public function foo(string $b): void;
+            }');
+        $this->addFile($file_path, '<?php
+            abstract class A {
+                public function foo(string $a): void {}
+            }
+
+            final class KeepsA extends A implements B {
+                public function foo(string $a): void {}
+            }');
+
+        $codebase = $this->project_analyzer->getCodebase();
+        $codebase->scanner->addFilesToShallowScan([$outside_path => $outside_path]);
+
+        $this->analyzeFile($file_path, new Context());
+
+        $this->assertSame(
+            ['ParamNameMismatch'],
+            array_column(IssueBuffer::getIssuesDataForFile($file_path), 'type'),
+        );
+    }
 
     public function testAnUndefinedClassOfTheSameNativeAndDocblockTypeIsReportedOnce(): void
     {
@@ -159,6 +192,24 @@ final class ClassTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'paramNamedAsInOneOfTwoConflictingAncestors' => [
+                'code' => '<?php
+                    class A {
+                        public function foo(string $a): void {}
+                    }
+
+                    interface B {
+                        public function foo(string $b): void;
+                    }
+
+                    final class KeepsTheNameOfTheParent extends A implements B {
+                        public function foo(string $a): void {}
+                    }
+
+                    final class KeepsTheNameOfTheInterface extends A implements B {
+                        public function foo(string $b): void {}
+                    }',
+            ],
             'aLazyGhostInitializerPassedByNameOrToReflectionObject' => [
                 'code' => '<?php
                     final class Example {
@@ -1935,6 +1986,37 @@ final class ClassTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'paramNamedAsInNoneOfTwoConflictingAncestors' => [
+                'code' => '<?php
+                    class A {
+                        public function foo(string $a): void {}
+                    }
+
+                    interface B {
+                        public function foo(string $b): void;
+                    }
+
+                    final class M extends A implements B {
+                        public function foo(string $c): void {}
+                    }',
+                'error_message' => 'ParamNameMismatch',
+            ],
+            'paramNamedAsInAnAncestorWithoutNamedArgumentsStillMismatchesTheOther' => [
+                'code' => '<?php
+                    class X {
+                        /** @no-named-arguments */
+                        public function foo(string $a): void {}
+                    }
+
+                    interface B {
+                        public function foo(string $b): void;
+                    }
+
+                    final class KeepsX extends X implements B {
+                        public function foo(string $a): void {}
+                    }',
+                'error_message' => 'expecting $b as defined by B::foo',
+            ],
             'classExistsDoesNotCoverTheCodeAfterTheIf' => [
                 'code' => '<?php
                     function foo(): void {
@@ -3007,6 +3089,18 @@ final class ClassTest extends TestCase
                     <?php
                     /**
                      * @psalm-inheritors FooClass|BarClass
+                     */
+                    class BaseClass {}
+                    class BazClass extends BaseClass {} // this is an error
+                    PHP,
+                'error_message' => 'InheritorViolation',
+                'error_levels' => [],
+            ],
+            'classCannotExtendIfNotInInheritorsUsingPhpstanSealed' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @phpstan-sealed FooClass|BarClass
                      */
                     class BaseClass {}
                     class BazClass extends BaseClass {} // this is an error

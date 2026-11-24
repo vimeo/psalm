@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Psalm\Internal\Type;
 
 use InvalidArgumentException;
-use LogicException;
 use Psalm\Codebase;
 use Psalm\Exception\TypeParseTreeException;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
@@ -122,7 +121,6 @@ use function reset;
 use function str_contains;
 use function str_ends_with;
 use function str_starts_with;
-use function stripslashes;
 use function strlen;
 use function strpos;
 use function strtolower;
@@ -697,9 +695,7 @@ final class TypeParser
             }
 
             if (!$t instanceof TNamedObject) {
-                throw new TypeParseTreeException(
-                    'Invalid templated classname \'' . $t->getId() . '\'',
-                );
+                continue;
             }
 
             return new TTemplateParamClass(
@@ -711,7 +707,9 @@ final class TypeParser
             );
         }
 
-        throw new LogicException('Should never get here');
+        throw new TypeParseTreeException(
+            'Invalid templated classname \'' . $as->getSingleAtomic()->getId() . '\'',
+        );
     }
 
     /**
@@ -2585,8 +2583,9 @@ final class TypeParser
                 $had_explicit = true;
                 $previous_property_key = $property_key;
 
+                // a quoted key is the string PHP reads from the literal (`"a\nb"` holds a line break)
                 if ($property_key[0] === '\'' || $property_key[0] === '"') {
-                    $property_key = stripslashes(substr($property_key, 1, -1));
+                    $property_key = self::unescapeStringLiteral(substr($property_key, 1, -1), $property_key[0]);
                 }
             } else {
                 throw new TypeParseTreeException(

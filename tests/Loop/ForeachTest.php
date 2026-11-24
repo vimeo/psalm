@@ -210,6 +210,113 @@ final class ForeachTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'propertyNarrowedBeforeTheLoopIsKeptAfterABreakNotReassigningItsObject' => [
+                'code' => '<?php
+                    final class D {
+                        public function imm(): string {
+                            return "";
+                        }
+                    }
+
+                    final class O {
+                        public ?D $p = null;
+                    }
+
+                    /** @param list<int> $l */
+                    function keep(O $o, array $l): string {
+                        if ($o->p === null) {
+                            return "";
+                        }
+
+                        foreach ($l as $_) {
+                            if (rand(0, 1)) {
+                                break;
+                            }
+                        }
+
+                        return $o->p->imm();
+                    }',
+            ],
+            'varUnsetAndRedefinedBeforeAJumpStaysDefined' => [
+                'code' => '<?php
+                    /** @param list<int> $items */
+                    function f(array $items): int {
+                        $x = 0;
+                        foreach ($items as $i) {
+                            if ($i > 1) {
+                                unset($x);
+                                $x = 4;
+                                break;
+                            }
+                            if ($i) {
+                                unset($x);
+                                $x = 2;
+                                continue;
+                            }
+                        }
+                        return $x;
+                    }',
+            ],
+            'varUnsetBeforeAContinueThroughFinallyAssigningItStaysDefined' => [
+                'code' => '<?php
+                    /** @param list<int> $items */
+                    function f(array $items): int {
+                        $x = 0;
+                        foreach ($items as $_) {
+                            try {
+                                unset($x);
+                                continue;
+                            } finally {
+                                $x = 3;
+                            }
+                        }
+                        return $x;
+                    }',
+            ],
+            'foreachValueKeyIsNotWhatTheLastIterationWrote' => [
+                'code' => '<?php
+                    final class Id {}
+                    final class Photo {}
+
+                    function takesId(Id $_id): void {}
+
+                    /** @param non-empty-list<array{photo: Id}> $links */
+                    function f(array $links): void {
+                        foreach ($links as $link) {
+                            takesId($link["photo"]);
+                        }
+
+                        foreach ($links as $link) {
+                            takesId($link["photo"]);
+                            $link["photo"] = new Photo();
+                        }
+                    }',
+            ],
+            'whileConditionValueKeyIsNotWhatTheLastIterationWrote' => [
+                'code' => '<?php
+                    final class Id {}
+                    final class Photo {}
+
+                    function takesId(Id $_id): void {}
+
+                    /** @return array{photo: Id}|null */
+                    function nextLink(): ?array {
+                        return rand(0, 1) ? ["photo" => new Id()] : null;
+                    }
+
+                    function f(): void {
+                        $link = nextLink();
+                        if ($link === null) {
+                            return;
+                        }
+                        takesId($link["photo"]);
+
+                        while ($link = nextLink()) {
+                            takesId($link["photo"]);
+                            $link["photo"] = new Photo();
+                        }
+                    }',
+            ],
             'foreachOverAnIteratorAggregateGivenByACoalesceAssignment' => [
                 'code' => '<?php
                     /** @implements IteratorAggregate<int, string> */
@@ -1123,6 +1230,36 @@ final class ForeachTest extends TestCase
 
                     function iterate(AttributeReader $reader): void {
                         foreach ($reader->read() as $class => $attribute) {
+                            /** @psalm-check-type-exact $class = class-string<MappingAttribute> */
+                            /** @psalm-check-type-exact $attribute = MappingAttribute|RepeatableAttributeCollection<MappingAttribute> */
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'foreachOverAClassStringMapReturnedByAStaticMethodWithATemplateOfTheSameName' => [
+                'code' => <<<'PHP'
+                    <?php
+                    interface MappingAttribute {}
+
+                    /** @template T of MappingAttribute */
+                    final class RepeatableAttributeCollection {}
+
+                    final class AttributeReader {
+                        /**
+                         * @return class-string-map<T, T|RepeatableAttributeCollection<T>>
+                         *
+                         * @template T of MappingAttribute
+                         */
+                        public static function read(): array {
+                            return [];
+                        }
+                    }
+
+                    function iterate(): void {
+                        foreach (AttributeReader::read() as $class => $attribute) {
                             /** @psalm-check-type-exact $class = class-string<MappingAttribute> */
                             /** @psalm-check-type-exact $attribute = MappingAttribute|RepeatableAttributeCollection<MappingAttribute> */
                         }
@@ -3305,6 +3442,44 @@ final class ForeachTest extends TestCase
                         return $seen;
                     }',
             ],
+            'itemKeyedByTheValueIsForgottenOnEachIteration' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @param array<string, int|string> $r
+                     * @param list<string> $keys
+                     */
+                    function f(array $r, array $keys): void {
+                        $k = 'z';
+                        $r[$k] = 1;
+                        foreach ($keys as $k) {
+                            $y = $r[$k];
+                            /** @psalm-check-type-exact $y = int|string */;
+                            $r[$k] = 1;
+                        }
+                    }
+                PHP,
+            ],
+            'itemKeyedByTheValueIsForgottenOnEachIterationUnderANarrowedKey' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @param array<string, int|string> $r
+                     * @param list<string> $keys
+                     */
+                    function f(array $r, array $keys): void {
+                        $k = 'z';
+                        $r[$k] = 1;
+                        foreach ($keys as $k) {
+                            if ($k === 'a') {
+                                $y = $r[$k];
+                                /** @psalm-check-type-exact $y = int|string */;
+                            }
+                            $r[$k] = 1;
+                        }
+                    }
+                PHP,
+            ],
         ];
     }
 
@@ -3315,6 +3490,182 @@ final class ForeachTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'propertyNarrowedBeforeTheLoopIsForgottenAfterABreakReassigningItsObject' => [
+                'code' => '<?php
+                    final class D {
+                        public function imm(): string {
+                            return "";
+                        }
+                    }
+
+                    final class O {
+                        public ?D $p = null;
+                    }
+
+                    /** @param list<int> $l */
+                    function reassign(O $o, array $l): string {
+                        if ($o->p === null) {
+                            return "";
+                        }
+
+                        foreach ($l as $_) {
+                            $o = new O();
+                            break;
+                        }
+
+                        return $o->p->imm();
+                    }',
+                'error_message' => 'PossiblyNullReference',
+            ],
+            'propertyNarrowedBeforeNestedLoopsIsForgottenAfterABreak2ReassigningItsObject' => [
+                'code' => '<?php
+                    final class D {
+                        public function imm(): string {
+                            return "";
+                        }
+                    }
+
+                    final class O {
+                        public ?D $p = null;
+                    }
+
+                    /** @param list<int> $l */
+                    function reassign(O $o, array $l): string {
+                        if ($o->p === null) {
+                            return "";
+                        }
+
+                        foreach ($l as $_) {
+                            while (true) {
+                                $o = new O();
+                                break 2;
+                            }
+                        }
+
+                        return $o->p->imm();
+                    }',
+                'error_message' => 'PossiblyNullReference',
+            ],
+            'offsetNarrowedBeforeTheLoopIsForgottenAfterABreakReassigningItsArray' => [
+                'code' => '<?php
+                    /** @param array{k: int|null} $a */
+                    function reassign(array $a): int {
+                        if ($a["k"] === null) {
+                            return 0;
+                        }
+
+                        foreach ([1] as $_) {
+                            $a = ["k" => null];
+                            break;
+                        }
+
+                        return $a["k"] + 1;
+                    }',
+                'error_message' => 'PossiblyNullOperand',
+            ],
+            'varUnsetBeforeContinueIsPossiblyUndefinedAfterTheLoop' => [
+                'code' => '<?php
+                    /** @param non-empty-list<int> $items */
+                    function f(array $items): void {
+                        $x = 0;
+                        foreach ($items as $i) {
+                            if ($i) {
+                                unset($x);
+                                continue;
+                            }
+                            $x = 5;
+                        }
+                        echo $x;
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable',
+            ],
+            'varConditionallyUnsetInTheBodyIsPossiblyUndefinedAfterTheLoop' => [
+                'code' => '<?php
+                    /** @param list<int> $items */
+                    function f(array $items): void {
+                        $x = 0;
+                        foreach ($items as $i) {
+                            if ($i) {
+                                unset($x);
+                            }
+                            echo $i;
+                        }
+                        echo $x;
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable',
+            ],
+            'varUnsetBeforeBreakIsPossiblyUndefinedAfterTheLoop' => [
+                'code' => '<?php
+                    /** @param list<int> $items */
+                    function f(array $items): void {
+                        $x = 0;
+                        foreach ($items as $i) {
+                            if ($i) {
+                                unset($x);
+                                break;
+                            }
+                        }
+                        echo $x;
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable',
+            ],
+            'varUnsetBeforeOneOfSeveralBreaksIsPossiblyUndefinedAfterTheLoop' => [
+                'code' => '<?php
+                    /** @param list<int> $items */
+                    function f(array $items, bool $other): void {
+                        $x = 0;
+                        foreach ($items as $i) {
+                            if ($i) {
+                                unset($x);
+                                break;
+                            }
+                            if ($other) {
+                                break;
+                            }
+                        }
+                        echo $x;
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable',
+            ],
+            'varUnsetBeforeOneOfSeveralContinuesIsPossiblyUndefinedAfterTheLoop' => [
+                'code' => '<?php
+                    /** @param list<int> $items */
+                    function f(array $items, bool $other): void {
+                        $x = 0;
+                        foreach ($items as $i) {
+                            if ($i) {
+                                unset($x);
+                                continue;
+                            }
+                            if ($other) {
+                                continue;
+                            }
+                        }
+                        echo $x;
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable',
+            ],
+            'varUnsetBeforeContinueOfTheOuterLoopIsPossiblyUndefinedAfterIt' => [
+                'code' => '<?php
+                    /**
+                     * @param list<int> $a
+                     * @param list<int> $b
+                     */
+                    function f(array $a, array $b): void {
+                        $x = 0;
+                        foreach ($a as $v) {
+                            foreach ($b as $w) {
+                                if ($w) {
+                                    unset($x);
+                                    continue 2;
+                                }
+                            }
+                            $x = 1;
+                        }
+                        echo $x;
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable',
+            ],
             'foreachIteratedExpressionAssertedTwiceInTheLoop' => [
                 'code' => '<?php
                     class Entity {

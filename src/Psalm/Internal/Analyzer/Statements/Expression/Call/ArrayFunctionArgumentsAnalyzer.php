@@ -612,36 +612,18 @@ final class ArrayFunctionArgumentsAnalyzer
         }
 
         if (!isset($args[2])) {
-            if ($offset_arg_is_zero) {
-                $array_type = Type::getEmptyArray();
-                AssignmentAnalyzer::assignByRefParam(
-                    $statements_analyzer,
-                    $array_arg,
-                    $array_type,
-                    $array_type,
-                    $context,
-                    false,
-                );
-            } elseif ($array_type) {
-                AssignmentAnalyzer::assignByRefParam(
-                    $statements_analyzer,
-                    $array_arg,
-                    new Union([$array_type]),
-                    new Union([$array_type]),
-                    $context,
-                    false,
-                );
-            } else {
-                $default_array_type = Type::getArray();
-                AssignmentAnalyzer::assignByRefParam(
-                    $statements_analyzer,
-                    $array_arg,
-                    $default_array_type,
-                    $default_array_type,
-                    $context,
-                    false,
-                );
-            }
+            $spliced_type = $offset_arg_is_zero
+                ? Type::getEmptyArray()
+                : ($array_type ? new Union([$array_type]) : Type::getArray());
+
+            AssignmentAnalyzer::assignByRefParam(
+                $statements_analyzer,
+                $array_arg,
+                $spliced_type,
+                $spliced_type,
+                $context,
+                false,
+            );
 
             return null;
         }
@@ -687,36 +669,18 @@ final class ArrayFunctionArgumentsAnalyzer
         }
 
         if (!isset($args[3])) {
-            if ($cover_whole_arr) {
-                $array_type = Type::getEmptyArray();
-                AssignmentAnalyzer::assignByRefParam(
-                    $statements_analyzer,
-                    $array_arg,
-                    $array_type,
-                    $array_type,
-                    $context,
-                    false,
-                );
-            } elseif ($array_type) {
-                AssignmentAnalyzer::assignByRefParam(
-                    $statements_analyzer,
-                    $array_arg,
-                    new Union([$array_type]),
-                    new Union([$array_type]),
-                    $context,
-                    false,
-                );
-            } else {
-                $default_array_type = Type::getArray();
-                AssignmentAnalyzer::assignByRefParam(
-                    $statements_analyzer,
-                    $array_arg,
-                    $default_array_type,
-                    $default_array_type,
-                    $context,
-                    false,
-                );
-            }
+            $spliced_type = $cover_whole_arr
+                ? Type::getEmptyArray()
+                : ($array_type ? new Union([$array_type]) : Type::getArray());
+
+            AssignmentAnalyzer::assignByRefParam(
+                $statements_analyzer,
+                $array_arg,
+                $spliced_type,
+                $spliced_type,
+                $context,
+                false,
+            );
 
             return null;
         }
@@ -1327,10 +1291,13 @@ final class ArrayFunctionArgumentsAnalyzer
             }
 
             if (!$union_comparison_results->type_coerced && !$type_match_found) {
-                $types_can_be_identical = UnionTypeComparator::canExpressionTypesBeIdentical(
+                $can_fit = UnionTypeComparator::canBeContainedBy(
                     $codebase,
                     $input_type,
                     $closure_param_type,
+                    true,
+                    true,
+                    coerced_parts_match: true,
                 );
 
                 if ($union_comparison_results->scalar_type_match_found) {
@@ -1343,7 +1310,7 @@ final class ArrayFunctionArgumentsAnalyzer
                         ),
                         $statements_analyzer->getSuppressedIssues(),
                     );
-                } elseif ($types_can_be_identical) {
+                } elseif ($can_fit) {
                     IssueBuffer::maybeAdd(
                         new PossiblyInvalidArgument(
                             'Parameter ' . ($i + 1) . ' of closure passed to function ' . $method_id . ' expects '
