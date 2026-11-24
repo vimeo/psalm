@@ -4124,6 +4124,57 @@ final class ArrayAssignmentTest extends TestCase
                     }',
                 'error_message' => 'InvalidReturnStatement',
             ],
+            'templateStringKeyAssignmentForgetsTheIntOffsetsItMayBe' => [
+                'code' => '<?php
+                    /**
+                     * @template T of string
+                     * @param array<array-key, int|string> $a
+                     * @param T $k
+                     */
+                    function f(array $a, string $k): int {
+                        $a[3] = 5;
+                        $a[$k] = "s";
+                        return $a[3];
+                    }',
+                'error_message' => 'InvalidReturnStatement',
+            ],
+            'intKeyAssignmentForgetsTheOffsetOfATemplateStringItMayBe' => [
+                'code' => '<?php
+                    /**
+                     * @template T of string
+                     * @param array<array-key, int|string> $a
+                     * @param T $k
+                     */
+                    function f(array $a, string $k): int {
+                        $a[$k] = 5;
+                        $a[3] = "s";
+                        return $a[$k];
+                    }',
+                'error_message' => 'InvalidReturnStatement',
+            ],
+            'negativeStringOffsetAssignmentForgetsThePositiveOffsets' => [
+                'code' => '<?php
+                    /** @return "x" */
+                    function f(): string {
+                        $s = "ab";
+                        $s[1] = "x";
+                        $i = -1;
+                        $s[$i] = "y";
+                        return $s[1];
+                    }',
+                'error_message' => 'LessSpecificReturnStatement',
+            ],
+            'outOfRangeDecimalKeyAssignmentForgetsTheSameStringOffset' => [
+                'code' => '<?php
+                    /** @param array<array-key, int|string> $a */
+                    function f(array $a, string $s): int {
+                        $a["9223372036854775808"] = 5;
+                        $k = "9223372036854775808";
+                        $a[$k] = "s";
+                        return $a["9223372036854775808"];
+                    }',
+                'error_message' => 'InvalidReturnStatement',
+            ],
             'objectAssignment' => [
                 'code' => '<?php
                     class A {}

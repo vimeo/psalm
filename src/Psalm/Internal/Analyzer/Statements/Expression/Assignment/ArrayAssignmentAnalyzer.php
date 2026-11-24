@@ -32,9 +32,13 @@ use Psalm\Issue\InvalidArrayAssignment;
 use Psalm\IssueBuffer;
 use Psalm\Storage\Capabilities;
 use Psalm\Type;
+use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArray;
+use Psalm\Type\Atomic\TBool;
 use Psalm\Type\Atomic\TClassStringMap;
 use Psalm\Type\Atomic\TFalse;
+use Psalm\Type\Atomic\TFloat;
+use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TIntRange;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TLiteralClassString;
@@ -56,6 +60,7 @@ use Psalm\Type\Union;
 use function array_fill;
 use function array_key_last;
 use function array_keys;
+use function array_map;
 use function array_pop;
 use function array_reverse;
 use function array_shift;
@@ -583,8 +588,10 @@ final class ArrayAssignmentAnalyzer
 
         $key = ExpressionIdentifier::unquoteOffset($offset);
 
-        // PHP takes a decimal integer string key as that integer
-        return preg_match('/^(0|-?[1-9][0-9]*)$/', $key) === 1 ? (int) $key : $key;
+        // PHP takes a decimal integer string key in the int range as that integer
+        $int_key = ArrayAnalyzer::getLiteralArrayKeyInt($key);
+
+        return $int_key === false ? $key : $int_key;
     }
 
     /**
@@ -1783,10 +1790,10 @@ final class ArrayAssignmentAnalyzer
                 );
 
                 $var_id_additions[] = $var_id_addition;
-                $written_offsets[] = [$var_id_addition, $child_stmt_dim_type];
+                $written_offset = [$var_id_addition, $child_stmt_dim_type];
             } else {
                 $var_id_additions[] = '';
-                $written_offsets[] = null;
+                $written_offset = null;
                 $full_var_id = false;
             }
 
@@ -1808,6 +1815,13 @@ final class ArrayAssignmentAnalyzer
                 $array_type = $context->vars_in_scope[$parent_var_id];
                 $statements_analyzer->node_data->setType($child_stmt->var, $array_type);
             }
+
+            // e.g. -1 is the last character of a string
+            if ($written_offset !== null && !self::isArrayOrNull($array_type)) {
+                $written_offset[1] = Type::getArrayKey();
+            }
+
+            $written_offsets[] = $written_offset;
 
             $is_last = $i === count($child_stmts) - 1;
 
@@ -2116,8 +2130,8 @@ final class ArrayAssignmentAnalyzer
      * are equal, or their types may hold the same key. What is under the written offset is overwritten with it. An
      * appended offset is a new one, so no known offset is under it.
      *
-     * @param list<array{string, Union}|null> $written_offsets each written key with its type, null for an appended
-     *     one
+     * @param list<array{string, Union}|null> $written_offsets each written key with its type (any key when what it is
+     *     written to isn't an array), null for an appended one
      */
     private static function removeAliasedOffsets(
         Codebase $codebase,
@@ -2125,6 +2139,14 @@ final class ArrayAssignmentAnalyzer
         string $root_var_id,
         array $written_offsets,
     ): void {
+        $written_offsets = array_map(
+            static fn(?array $written_offset): ?array => $written_offset === null
+                ? null
+                : [$written_offset[0], self::getArrayKeysOfOffsetType($written_offset[1])],
+            $written_offsets,
+        );
+        $key_types = [];
+
         foreach ($context->vars_in_scope as $var_id => $_) {
             if (!str_starts_with($var_id, $root_var_id . '[')) {
                 continue;
@@ -2148,10 +2170,14 @@ final class ArrayAssignmentAnalyzer
                 }
 
                 if ($key !== $written_key) {
+                    $key_types[$key] ??= self::getArrayKeysOfOffsetType(
+                        self::getTypeOfOffset($context, substr($key, 1, -1)),
+                    );
+
                     if (!UnionTypeComparator::canExpressionTypesBeIdentical(
                         $codebase,
-                        self::getArrayKeysOfOffsetType($written_key_type),
-                        self::getArrayKeysOfOffsetType(self::getTypeOfOffset($context, substr($key, 1, -1))),
+                        $written_key_type,
+                        $key_types[$key],
                     )) {
                         continue 2;
                     }
@@ -2184,14 +2210,26 @@ final class ArrayAssignmentAnalyzer
     }
 
     /**
-     * The keys an offset of this type writes to, an int for a string that may be a decimal integer
-     *
-     * @psalm-mutation-free
+     * The keys an offset of this type writes to, an int for a string that may be a decimal integer, any key for an
+     * offset that isn't a scalar
      */
     private static function getArrayKeysOfOffsetType(Union $offset_type): Union
     {
+        $atomic_types = self::getAtomicTypesOfBounds($offset_type);
+
+        foreach ($atomic_types as $atomic_type) {
+            if (!$atomic_type instanceof TInt
+                && !$atomic_type instanceof TString
+                && !$atomic_type instanceof TBool
+                && !$atomic_type instanceof TFloat
+                && !$atomic_type instanceof TNull
+            ) {
+                return Type::getArrayKey();
+            }
+        }
+
         $key_type = ArrayFetchAnalyzer::castOffsetTypeOfAWrite(
-            ArrayFetchAnalyzer::replaceOffsetTypeWithInts($offset_type),
+            ArrayFetchAnalyzer::replaceOffsetTypeWithInts(new Union($atomic_types)),
         );
 
         foreach ($key_type->getAtomicTypes() as $atomic_type) {
@@ -2201,6 +2239,49 @@ final class ArrayAssignmentAnalyzer
         }
 
         return $key_type;
+    }
+
+    /**
+     * The atomic types of a type with each template param replaced by those of its bound
+     *
+     * @return non-empty-list<Atomic>
+     * @psalm-mutation-free
+     */
+    private static function getAtomicTypesOfBounds(Union $type): array
+    {
+        $atomic_types = [];
+
+        foreach ($type->getAtomicTypes() as $atomic_type) {
+            if ($atomic_type instanceof TTemplateParam) {
+                $atomic_types = [...$atomic_types, ...self::getAtomicTypesOfBounds($atomic_type->as)];
+            } else {
+                $atomic_types[] = $atomic_type;
+            }
+        }
+
+        return $atomic_types;
+    }
+
+    /**
+     * Whether every value of the type is an array, or null that a write makes one: the keys of other values (a string,
+     * an ArrayAccess) aren't cast as those of an array
+     *
+     * @psalm-mutation-free
+     */
+    private static function isArrayOrNull(Union $type): bool
+    {
+        foreach (self::getAtomicTypesOfBounds($type) as $atomic_type) {
+            if (!$atomic_type instanceof TArray
+                && !$atomic_type instanceof TKeyedArray
+                && !$atomic_type instanceof TClassStringMap
+                && !$atomic_type instanceof TNull
+                && !$atomic_type instanceof TNever
+            ) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /**
