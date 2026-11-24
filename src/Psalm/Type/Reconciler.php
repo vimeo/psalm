@@ -20,11 +20,13 @@ use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Clause;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\MethodIdentifier;
+use Psalm\Internal\Type\ArrayType;
 use Psalm\Internal\Type\AssertionReconciler;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Internal\Type\TypeExpander;
+use Psalm\Internal\TypeVisitor\TemplateTypeCollector;
 use Psalm\Issue\DocblockTypeContradiction;
 use Psalm\Issue\PsalmInternalError;
 use Psalm\Issue\RedundantCondition;
@@ -61,7 +63,6 @@ use Psalm\Storage\Assertion\Truthy;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArray;
-use Psalm\Type\Atomic\TArrayKey;
 use Psalm\Type\Atomic\TBool;
 use Psalm\Type\Atomic\TClassStringMap;
 use Psalm\Type\Atomic\TFalse;
@@ -318,6 +319,7 @@ class Reconciler
                 $report_location = $code_location
                     && isset($referenced_var_ids[$key])
                     && isset($active_new_types[$key][$offset])
+                    && !Context::isSymbolCheckVarId($key)
                     ? $code_location
                     : null;
                 // of several alternatives, one that cannot be the value is only a problem when none can
@@ -602,7 +604,9 @@ class Reconciler
                     );
                 } elseif ($key !== '$this') {
                     foreach ($existing_types as $new_key => $_) {
-                        if ($new_key === $key) {
+                        if ($new_key === $key
+                            || self::narrowingKeepsProperty($codebase, $before_adjustment, $result_type, $key, $new_key)
+                        ) {
                             continue;
                         }
 
@@ -1261,6 +1265,67 @@ class Reconciler
                 && !$atomic_type instanceof TNever
                 && (!$atomic_type instanceof TArray || !$atomic_type->type_params[1]->isNever())
             ) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * Whether what is known of `$property_var_id` still holds after its object was narrowed: the object is the same,
+     * unless it was narrowed to one of several classes or to a class that redeclares the property
+     */
+    public static function narrowingKeepsProperty(
+        Codebase $codebase,
+        ?Union $before,
+        ?Union $after,
+        string $object_id,
+        string $property_var_id,
+    ): bool {
+        if ($before === null
+            || $after === null
+            || !str_starts_with($property_var_id, $object_id . '->')
+            || !preg_match('/\G(\w+)(?=$|->|\[)/', $property_var_id, $match, 0, strlen($object_id) + 2)
+            || !isset($match[1])
+        ) {
+            return false;
+        }
+
+        $declaring_class = null;
+
+        foreach ([...array_values($before->getAtomicTypes()), ...array_values($after->getAtomicTypes())] as $atomic) {
+            if (!$atomic instanceof TNamedObject || !$codebase->classlike_storage_provider->has($atomic->value)) {
+                return false;
+            }
+
+            $declaring = $codebase->properties->getDeclaringClassForProperty(
+                $atomic->value . '::$' . $match[1],
+                true,
+            );
+
+            if ($declaring === null || ($declaring_class !== null && $declaring !== $declaring_class)) {
+                return false;
+            }
+
+            $declaring_class = $declaring;
+        }
+
+        // narrowing a template of the class gives its property a more precise type
+        $property_type = $codebase->classlike_storage_provider->get($declaring_class)->properties[$match[1]]->type
+            ?? null;
+
+        if ($property_type !== null) {
+            $template_collector = new TemplateTypeCollector(true);
+            $template_collector->traverse($property_type);
+
+            if ($template_collector->getTemplateTypes() !== []) {
+                return false;
+            }
+        }
+
+        foreach ($before->getAtomicTypes() as $before_part) {
+            if (!UnionTypeComparator::isContainedBy($codebase, $after, new Union([$before_part]))) {
                 return false;
             }
         }
@@ -2543,36 +2608,7 @@ class Reconciler
      */
     protected static function refineArrayKey(Union $key_type): Union
     {
-        return self::refineArrayKeyInner($key_type) ?? $key_type;
-    }
-    /**
-     * @psalm-capabilities read-props
-     */
-    private static function refineArrayKeyInner(Union $key_type): ?Union
-    {
-        $refined = false;
-        $types = [];
-        foreach ($key_type->getAtomicTypes() as $cat) {
-            if ($cat instanceof TTemplateParam) {
-                $as = self::refineArrayKeyInner($cat->as);
-                if ($as) {
-                    $refined = true;
-                    $types []= $cat->replaceAs($as);
-                } else {
-                    $types []= $cat;
-                }
-            } elseif ($cat instanceof TArrayKey || $cat instanceof TString || $cat instanceof TInt) {
-                $types []= $cat;
-            } else {
-                $refined = true;
-                $types []= new TArrayKey;
-            }
-        }
-
-        if ($refined) {
-            return $key_type->getBuilder()->setTypes($types)->freeze();
-        }
-        return null;
+        return ArrayType::refineKeyType($key_type);
     }
 
     /**

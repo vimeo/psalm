@@ -49,6 +49,7 @@ use UnexpectedValueException;
 use function array_pop;
 use function array_values;
 use function strlen;
+use function strtolower;
 
 /**
  * @internal
@@ -136,7 +137,17 @@ final class BinaryOpAnalyzer
                 return false;
             }
         } else {
-            if (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->left, $context) === false) {
+            $was_inside_negation = $context->inside_negation;
+            $context->inside_negation = $context->inside_conditional
+                && self::isCallComparedToFalse($stmt, $stmt->left, $stmt->right)
+                ? !$was_inside_negation
+                : $was_inside_negation;
+
+            $left_result = ExpressionAnalyzer::analyze($statements_analyzer, $stmt->left, $context);
+
+            $context->inside_negation = $was_inside_negation;
+
+            if ($left_result === false) {
                 return false;
             }
         }
@@ -146,7 +157,17 @@ final class BinaryOpAnalyzer
                 return false;
             }
         } else {
-            if (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->right, $context) === false) {
+            $was_inside_negation = $context->inside_negation;
+            $context->inside_negation = $context->inside_conditional
+                && self::isCallComparedToFalse($stmt, $stmt->right, $stmt->left)
+                ? !$was_inside_negation
+                : $was_inside_negation;
+
+            $right_result = ExpressionAnalyzer::analyze($statements_analyzer, $stmt->right, $context);
+
+            $context->inside_negation = $was_inside_negation;
+
+            if ($right_result === false) {
                 return false;
             }
         }
@@ -732,5 +753,19 @@ final class BinaryOpAnalyzer
         }
 
         return $stmt_type;
+    }
+
+    /**
+     * `false === is_int($x)` holds exactly when `!is_int($x)` does, so the call is analysed as a negated one
+     */
+    private static function isCallComparedToFalse(
+        PhpParser\Node\Expr\BinaryOp $stmt,
+        PhpParser\Node\Expr $call,
+        PhpParser\Node\Expr $other,
+    ): bool {
+        return $stmt instanceof PhpParser\Node\Expr\BinaryOp\Identical
+            && $call instanceof PhpParser\Node\Expr\FuncCall
+            && $other instanceof PhpParser\Node\Expr\ConstFetch
+            && strtolower($other->name->getLast()) === 'false';
     }
 }

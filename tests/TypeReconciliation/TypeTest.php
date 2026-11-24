@@ -1925,6 +1925,20 @@ final class TypeTest extends TestCase
                     function takesI(I $i): void {}',
                 'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:12:32 - Argument 1 of takesI expects I, but A&static provided',
             ],
+            'finalSubclassCannotSatisfyExistingInterfaceConstraint' => [
+                'code' => <<<'PHP'
+                    <?php
+                    class Association {}
+                    interface Many {}
+                    final class Other extends Association {}
+
+                    /** @param Association&Many $mapping */
+                    function test(Association $mapping): void {
+                        if ($mapping instanceof Other) {}
+                    }
+                    PHP,
+                'error_message' => 'DocblockTypeContradiction',
+            ],
         ];
     }
 }

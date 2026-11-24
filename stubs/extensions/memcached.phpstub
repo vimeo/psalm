@@ -694,10 +694,10 @@ class Memcached
      * Create a Memcached instance
      * @link https://php.net/manual/en/memcached.construct.php, https://github.com/php-memcached-dev/php-memcached/blob/v3.1.5/php_memcached.c
      * @param string $persistent_id [optional]
-     * @param callable $on_new_object_cb [optional]
+     * @param callable $callback [optional]
      * @param string $connection_str [optional]
      */
-    public function __construct($persistent_id = '', $on_new_object_cb = null, $connection_str = '') {}
+    public function __construct($persistent_id = '', $callback = null, $connection_str = '') {}
 
     /**
      * (PECL memcached &gt;= 0.1.0)<br/>
@@ -725,14 +725,14 @@ class Memcached
      * @param callable $cache_cb [optional] 
      * Read-through caching callback or NULL.
      * 
-     * @param int $flags [optional] 
+     * @param int $get_flags [optional] 
      * The flags for the get operation.
      * 
      * @return mixed the value stored in the cache or FALSE otherwise.
      * The Memcached::getResultCode will return
      * Memcached::RES_NOTFOUND if the key does not exist.
      */
-    public function get($key, callable $cache_cb = null, $flags = 0) {}
+    public function get($key, callable $cache_cb = null, $get_flags = 0) {}
 
     /**
      * (PECL memcached &gt;= 0.1.0)<br/>
@@ -747,14 +747,14 @@ class Memcached
      * @param callable $cache_cb [optional] 
      * Read-through caching callback or NULL
      * 
-     * @param int $flags [optional] 
+     * @param int $get_flags [optional] 
      * The flags for the get operation.
      * 
      * @return mixed the value stored in the cache or FALSE otherwise.
      * The Memcached::getResultCode will return
      * Memcached::RES_NOTFOUND if the key does not exist.
      */
-    public function getByKey($server_key, $key, callable $cache_cb = null, $flags = 0) {}
+    public function getByKey($server_key, $key, callable $cache_cb = null, $get_flags = 0) {}
 
     /**
      * (PECL memcached &gt;= 0.1.0)<br/>
@@ -763,13 +763,13 @@ class Memcached
      * @param array $keys 
      * Array of keys to retrieve.
      * 
-     * @param int $flags [optional] 
+     * @param int $get_flags [optional] 
      * The flags for the get operation.
      * 
      * @return mixed the array of found items or FALSE on failure.
      * Use Memcached::getResultCode if necessary.
      */
-    public function getMulti(array $keys, $flags = 0) {}
+    public function getMulti(array $keys, $get_flags = 0) {}
 
     /**
      * (PECL memcached &gt;= 0.1.0)<br/>
@@ -781,13 +781,13 @@ class Memcached
      * @param array $keys 
      * Array of keys to retrieve.
      * 
-     * @param int $flags [optional] 
+     * @param int $get_flags [optional] 
      * The flags for the get operation.
      * 
      * @return array|false the array of found items or FALSE on failure.
      * Use Memcached::getResultCode if necessary.
      */
-    public function getMultiByKey($server_key, array $keys, $flags = 0) {}
+    public function getMultiByKey($server_key, array $keys, $get_flags = 0) {}
 
     /**
      * (PECL memcached &gt;= 0.1.0)<br/>
@@ -1548,5 +1548,5 @@ class Memcached
  */
 class MemcachedException extends RuntimeException
 {
-    public function __construct($errmsg = "", $errcode = 0) {}
+    public function __construct($message = "", $code = 0) {}
 }
