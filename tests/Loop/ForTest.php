@@ -23,6 +23,31 @@ final class ForTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'varAssignedRightOfAndInTheConditionIsDefinedInTheBodyAndStep' => [
+                'code' => '<?php
+                    function f(string $s): void {
+                        for ($i = 0; $i < 9 && false !== $j = strpos($s, ":"); $i = $j) {
+                            echo $j;
+                        }
+                    }',
+            ],
+            'varAssignedRightOfAndInTheLastOfTheCommaSeparatedConditionsIsDefinedInTheBody' => [
+                'code' => '<?php
+                    function f(string $s): void {
+                        for ($i = 0; $k = $i, $i < 9 && false !== $j = strpos($s, ":", $k); $i = $j + 1) {
+                            echo $j;
+                        }
+                    }',
+            ],
+            'operandOfTheAndOfTheConditionNarrowsTheNextOnes' => [
+                'code' => '<?php
+                    function g(): ?string {
+                        return rand(0, 1) ? "abcd" : null;
+                    }
+                    for ($x = g(); $x !== null && strlen($x) > 3 && $x[0] === "a"; $x = g()) {
+                        echo $x;
+                    }',
+            ],
             'varUnsetBeforeContinueAndAssignedByThePostExpressionStaysDefined' => [
                 'code' => '<?php
                     function f(): int {
@@ -632,6 +657,32 @@ final class ForTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'varAssignedRightOfAndInTheConditionIsPossiblyUndefinedAfterTheLoop' => [
+                'code' => '<?php
+                    function f(string $s, bool $b): void {
+                        for (; $b && false !== $j = strpos($s, ":");) {
+                            echo $j;
+                        }
+                        echo $j;
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:30',
+            ],
+            'operandOfTheAndOfTheConditionIsRiskyTruthyFalsy' => [
+                'code' => '<?php
+                    function f(string $s): void {
+                        for ($i = 0; $i < 9 && ($j = strpos($s, ":")); $i++) {
+                            echo $j;
+                        }
+                    }',
+                'error_message' => 'RiskyTruthyFalsyComparison - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:49',
+            ],
+            'operandOfTheAndOfTheConditionIsRedundant' => [
+                'code' => '<?php
+                    function f(stdClass $o): void {
+                        for ($i = 0; $o && $i < 3; $i++) {}
+                    }',
+                'error_message' => 'RedundantCondition - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:38',
+            ],
             'forBreakBeforeDefinitionAndBreakAfter' => [
                 'code' => '<?php
                     for ($i = 0; $i < 4; $i++) {

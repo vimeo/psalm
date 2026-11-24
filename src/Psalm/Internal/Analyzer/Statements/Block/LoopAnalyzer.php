@@ -69,8 +69,10 @@ final class LoopAnalyzer
      * Checks an array of statements in a loop
      *
      * @param  list<PhpParser\Node\Stmt>    $stmts
-     * @param  list<PhpParser\Node\Expr>    $pre_conditions
+     * @param  list<PhpParser\Node\Expr>    $pre_conditions the `&&` operands of the condition, after the comma
+     *                                                      separated conditions of a for that don't decide
      * @param  PhpParser\Node\Expr[]        $post_expressions
+     * @param  int                          $deciding_conditions_start the offset of the first `&&` operand
      * @return false|null
      */
     public static function analyze(
@@ -82,7 +84,7 @@ final class LoopAnalyzer
         ?Context &$continue_context = null,
         bool $is_do = false,
         bool $always_enters_loop = false,
-        bool $only_last_condition_decides = false,
+        int $deciding_conditions_start = 0,
     ): ?bool {
         $traverser = new PhpParser\NodeTraverser;
 
@@ -117,7 +119,7 @@ final class LoopAnalyzer
         if ($pre_conditions) {
             foreach ($pre_conditions as $i => $pre_condition) {
                 // only the last of the comma separated conditions of a for decides whether the loop goes on
-                if ($only_last_condition_decides && $i !== count($pre_conditions) - 1) {
+                if ($i < $deciding_conditions_start) {
                     $pre_condition_clauses[$i] = [];
 
                     continue;
@@ -791,8 +793,8 @@ final class LoopAnalyzer
             $post_expressions,
         );
 
-        // all the comma separated conditions of a for are evaluated, but only the first operand of the && of a while
-        foreach ($only_last_condition_decides ? $pre_conditions : array_slice($pre_conditions, 0, 1) as $evaluated) {
+        // all the comma separated conditions of a for are evaluated, but only the first operand of the `&&`
+        foreach (array_slice($pre_conditions, 0, $deciding_conditions_start + 1) as $evaluated) {
             self::addAlwaysWrittenVarIds(
                 $evaluated,
                 $loop_context->self,
@@ -808,7 +810,7 @@ final class LoopAnalyzer
             $deciding_condition = null;
 
             foreach ($pre_conditions as $i => $pre_condition) {
-                if (!$only_last_condition_decides || $i === count($pre_conditions) - 1) {
+                if ($i >= $deciding_conditions_start) {
                     $deciding_condition = $deciding_condition
                         ? new VirtualBooleanAnd($deciding_condition, $pre_condition, $pre_condition->getAttributes())
                         : $pre_condition;
@@ -1065,6 +1067,9 @@ final class LoopAnalyzer
             $context->protected_var_ids,
         );
 
+        // the operands of the `&&` of the last condition of a for are the ones that decide
+        $deciding_conditions_start = $stmt instanceof PhpParser\Node\Stmt\For_ ? max(0, count($stmt->cond) - 1) : 0;
+
         if (self::analyze(
             $statements_analyzer,
             $stmt->stmts,
@@ -1074,7 +1079,7 @@ final class LoopAnalyzer
             $inner_loop_context,
             false,
             false,
-            $stmt instanceof PhpParser\Node\Stmt\For_,
+            $deciding_conditions_start,
         ) === false) {
             return false;
         }
@@ -1109,10 +1114,8 @@ final class LoopAnalyzer
             self::addVarsWrittenByTheExitingCondition($context, $loop_scope);
 
             // the condition is evaluated before the loop is left, whatever happens in the body: all the
-            // comma separated expressions of a for, but only the first operand of the && of a while
-            $evaluated_conditions = $stmt instanceof PhpParser\Node\Stmt\For_
-                ? $pre_conditions
-                : array_slice($pre_conditions, 0, 1);
+            // comma separated expressions of a for, but only the first operand of the `&&`
+            $evaluated_conditions = array_slice($pre_conditions, 0, $deciding_conditions_start + 1);
 
             $defined_here = [];
 
