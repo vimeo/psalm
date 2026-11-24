@@ -383,8 +383,13 @@ final class IfElseAnalyzer
             foreach ($if_scope->redefined_vars as $var_id => $type) {
                 $previous_type = $context->vars_in_scope[$var_id] ?? null;
 
-                // the type stays as if the variable wasn't redefined, its data flow is that of the branches
-                if ($previous_type && isset($if_scope->data_flow_only_redefined_vars[$var_id])) {
+                // a variable no branch assigns keeps its type as if it wasn't redefined, with the data flow of the
+                // branches
+                if ($previous_type
+                    && isset($if_scope->data_flow_only_redefined_vars[$var_id])
+                    && !isset($if_scope->possibly_assigned_var_ids[$var_id])
+                    && !isset($if_scope->updated_vars[$var_id])
+                ) {
                     $context->vars_in_scope[$var_id] = $previous_type->setParentNodes($type->parent_nodes);
                     continue;
                 }

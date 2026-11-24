@@ -7507,6 +7507,24 @@ final class TaintTest extends TestCase
                     f($_GET);',
                 'error_message' => 'TaintedHtml',
             ],
+            'mixedAssignedInTheElseOfAnIfReassigningTheSameTypeIsTainted' => [
+                'code' => '<?php
+                    /** @return mixed */
+                    function input() {
+                        return $_GET["x"];
+                    }
+
+                    function f(int $a): void {
+                        $saved = $a;
+                        if ($a > 0) {
+                            $a = $saved;
+                        } else {
+                            $a = input();
+                        }
+                        echo $a;
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
             'urldecodeKeepsTheTaintOfItsArgument' => [
                 'code' => '<?php
                     echo urldecode($_GET["x"]);',
