@@ -60,7 +60,6 @@ use Psalm\Type\Union;
 use function array_fill;
 use function array_key_last;
 use function array_keys;
-use function array_map;
 use function array_pop;
 use function array_reverse;
 use function array_shift;
@@ -1790,7 +1789,7 @@ final class ArrayAssignmentAnalyzer
                 );
 
                 $var_id_additions[] = $var_id_addition;
-                $written_offset = [$var_id_addition, $child_stmt_dim_type];
+                $written_offset = [$var_id_addition, self::getArrayKeysOfOffsetType($child_stmt_dim_type)];
             } else {
                 $var_id_additions[] = '';
                 $written_offset = null;
@@ -1816,9 +1815,11 @@ final class ArrayAssignmentAnalyzer
                 $statements_analyzer->node_data->setType($child_stmt->var, $array_type);
             }
 
-            // e.g. -1 is the last character of a string
-            if ($written_offset !== null && !self::isArrayOrNull($array_type)) {
-                $written_offset[1] = Type::getArrayKey();
+            if ($written_offset !== null && !self::isArrayOnWrite($array_type)) {
+                // an ArrayAccess takes the key as it is
+                $written_offset[1] = $array_type->hasObjectType()
+                    ? Type::getArrayKey()
+                    : self::getStringOffsetsOfKeyType($written_offset[1]);
             }
 
             $written_offsets[] = $written_offset;
@@ -2130,8 +2131,9 @@ final class ArrayAssignmentAnalyzer
      * are equal, or their types may hold the same key. What is under the written offset is overwritten with it. An
      * appended offset is a new one, so no known offset is under it.
      *
-     * @param list<array{string, Union}|null> $written_offsets each written key with its type (any key when what it is
-     *     written to isn't an array), null for an appended one
+     * @param list<array{string, Union}|null> $written_offsets each written key with the keys it may write to (see
+     *     getArrayKeysOfOffsetType()), with the offsets of a string it may write to when what it is written to may
+     *     not be an array, null for an appended one
      */
     private static function removeAliasedOffsets(
         Codebase $codebase,
@@ -2139,12 +2141,6 @@ final class ArrayAssignmentAnalyzer
         string $root_var_id,
         array $written_offsets,
     ): void {
-        $written_offsets = array_map(
-            static fn(?array $written_offset): ?array => $written_offset === null
-                ? null
-                : [$written_offset[0], self::getArrayKeysOfOffsetType($written_offset[1])],
-            $written_offsets,
-        );
         $key_types = [];
 
         foreach ($context->vars_in_scope as $var_id => $_) {
@@ -2245,7 +2241,7 @@ final class ArrayAssignmentAnalyzer
      * The atomic types of a type with each template param replaced by those of its bound
      *
      * @return non-empty-list<Atomic>
-     * @psalm-mutation-free
+     * @psalm-pure
      */
     private static function getAtomicTypesOfBounds(Union $type): array
     {
@@ -2263,18 +2259,19 @@ final class ArrayAssignmentAnalyzer
     }
 
     /**
-     * Whether every value of the type is an array, or null that a write makes one: the keys of other values (a string,
-     * an ArrayAccess) aren't cast as those of an array
+     * Whether a write to an offset of the type writes to an array: the type is one, or null or false that the write
+     * makes one
      *
-     * @psalm-mutation-free
+     * @psalm-pure
      */
-    private static function isArrayOrNull(Union $type): bool
+    private static function isArrayOnWrite(Union $type): bool
     {
         foreach (self::getAtomicTypesOfBounds($type) as $atomic_type) {
             if (!$atomic_type instanceof TArray
                 && !$atomic_type instanceof TKeyedArray
                 && !$atomic_type instanceof TClassStringMap
                 && !$atomic_type instanceof TNull
+                && !$atomic_type instanceof TFalse
                 && !$atomic_type instanceof TNever
             ) {
                 return false;
@@ -2282,6 +2279,30 @@ final class ArrayAssignmentAnalyzer
         }
 
         return true;
+    }
+
+    /**
+     * The offsets of a string the key may write to: a negative int offset counts from its end, so it may be any
+     * non-negative one, and a non-negative one any negative one
+     */
+    private static function getStringOffsetsOfKeyType(Union $key_type): Union
+    {
+        $atomic_types = $key_type->getAtomicTypes();
+
+        foreach ($key_type->getAtomicTypes() as $atomic_type) {
+            if ($atomic_type instanceof TLiteralInt) {
+                $offsets = $atomic_type->value < 0 ? new TIntRange(0, null) : new TIntRange(null, -1);
+            } elseif ($atomic_type instanceof TInt) {
+                $offsets = new TInt();
+            } else {
+                continue;
+            }
+
+            // not combined: the range would take in the literal, and the offsets between them
+            $atomic_types[$offsets->getKey()] = $offsets;
+        }
+
+        return new Union($atomic_types);
     }
 
     /**

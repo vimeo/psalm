@@ -1173,9 +1173,39 @@ final class ArrayAssignmentTest extends TestCase
                         $p["3b"] = 1;
                         $b = $p[$i];
                         /** @psalm-check-type-exact $b = false|int */;
+                    }
+
+                    /** @param mixed $p */
+                    function mixedRoot($p): void {
+                        $p["a"] = f();
+                        $p["b"] = 1;
+                        $b = $p["a"];
+                        /** @psalm-check-type-exact $b = false|int */;
+                    }
+
+                    function untypedRoot($p): void {
+                        $p["a"] = f();
+                        $p["b"] = 1;
+                        $b = $p["a"];
+                        /** @psalm-check-type-exact $b = false|int */;
+                    }
+
+                    /** @param array<string, mixed> $p */
+                    function mixedChild(array $p): void {
+                        $p["x"]["a"] = f();
+                        $p["x"]["b"] = 1;
+                        $b = $p["x"]["a"];
+                        /** @psalm-check-type-exact $b = false|int */;
+                    }
+
+                    function stringOffsets(string $s): void {
+                        $s[0] = "x";
+                        $s[1] = "y";
+                        $b = $s[0];
+                        /** @psalm-check-type-exact $b = \'x\' */;
                     }',
                 'assertions' => [],
-                'ignored_issues' => ['MixedAssignment', 'MixedArrayAssignment'],
+                'ignored_issues' => ['MixedAssignment', 'MixedArrayAssignment', 'MixedArrayAccess', 'MissingParamType'],
             ],
             'unknownKeyAssignmentKeepsTheOffsetsItCannotBe' => [
                 'code' => '<?php
