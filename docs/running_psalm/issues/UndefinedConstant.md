@@ -8,7 +8,7 @@ Emitted when referencing a constant that does not exist
 echo FOO_BAR;
 ```
 
-Is also emitted when using extension constants not added to the `composer.json` requirements or to the [enableExtensions](https://psalm.dev/docs/running_psalm/configuration/#enableextensions) config key.  
+Is also emitted for a constant of an extension Psalm has no stub for, when the PHP running Psalm doesn't load the extension.  
 A native constant newer than the analysed PHP version is also reported, unless a check guards it or the code defines it:
 
 ```php

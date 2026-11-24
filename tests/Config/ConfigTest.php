@@ -2581,49 +2581,46 @@ final class ConfigTest extends DeferredAnalyzerTestCase
     }
 
     /**
-     * @return array<string, array{0: string, 1: string, 2: string, 3?: string}>
-     * @psalm-pure
+     * A config of the project of this repository, which tests often use, without TestConfig loading only the
+     * extension stubs a test uses
      */
-    public static function providerSinksOfExtensionsWithoutTheirStubs(): array
+    private function getProjectAnalyzerWithAConfigOfThisRepository(string $php_version): ProjectAnalyzer
     {
-        return [
-            'PDO::query' => ['PDO', 'query', 'TaintedSql'],
-            'PDO::exec' => ['PDO', 'exec', 'TaintedSql'],
-            'PDO::prepare' => ['PDO', 'prepare', 'TaintedSql'],
-            'PDOStatement::fetchObject' => ['PDOStatement', 'fetchObject', 'TaintedCallable'],
-            'mysqli::execute_query' => ['mysqli', 'execute_query', 'TaintedSql'],
-            'mysqli_result::fetch_object' => ['mysqli_result', 'fetch_object', 'TaintedCallable'],
-            'DOMXPath::query' => ['DOMXPath', 'query', 'TaintedXpath'],
-            'DOMXPath::evaluate' => ['DOMXPath', 'evaluate', 'TaintedXpath'],
-            'SimpleXMLElement::xpath' => ['SimpleXMLElement', 'xpath', 'TaintedXpath'],
-            // a value in a string literal of the query keeps the taint of what can end it
-            'DOMXPath::query in a string literal' => ['DOMXPath', 'query', 'TaintedXpath', '"//u[@id=\'" . $input . "\']"'],
-            'DOMXPath::evaluate in a string literal'
-                => ['DOMXPath', 'evaluate', 'TaintedXpath', '"//u[@id=\'" . $input . "\']"'],
-            'SimpleXMLElement::xpath in a string literal'
-                => ['SimpleXMLElement', 'xpath', 'TaintedXpath', '"//u[@id=\'" . $input . "\']"'],
-            'SoapClient::__setLocation' => ['SoapClient', '__setLocation', 'TaintedSSRF'],
-        ];
+        $config = Config::loadFromXML(
+            dirname(__DIR__, 2),
+            '<?xml version="1.0"?>
+            <psalm errorLevel="1">
+                <projectFiles>
+                    <directory name="src" />
+                </projectFiles>
+            </psalm>',
+        );
+        $config->throw_exception = true;
+
+        $project_analyzer = $this->getProjectAnalyzerWithConfig($config);
+        $project_analyzer->setPhpVersion($php_version, 'tests');
+
+        return $project_analyzer;
     }
 
-    /**
-     * The extension stubs are only loaded when composer.json requires their extension, which projects often leave
-     * out for the bundled ones: the sinks of their functions still apply
-     */
-    #[DataProvider('providerSinksOfExtensionsWithoutTheirStubs')]
-    public function testSinksOfExtensionsWithoutTheirStubs(
-        string $class,
-        string $method,
-        string $error,
-        string $argument = '$input',
-    ): void {
-        if (!class_exists($class)) {
-            // without its stub, Psalm only knows the class of an extension that PHP loads
-            $this->markTestSkipped('The extension of ' . $class . ' is not loaded');
-        }
+    public function testStubOfEveryExtensionIsLoaded(): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithAConfigOfThisRepository('8.4');
+        $config = $this->project_analyzer->getConfig();
+        $config->visitStubFiles($this->project_analyzer->getCodebase());
 
+        $stubs = glob(dirname(__DIR__, 2) . '/stubs/extensions/*.phpstub');
+        $this->assertIsArray($stubs);
+        $this->assertNotEmpty($stubs);
+        foreach ($stubs as $stub) {
+            $this->assertContains((string) realpath($stub), $config->internal_stubs);
+        }
+    }
+
+    public function testStubOfADisabledExtensionIsNotLoaded(): void
+    {
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
-            TestConfig::loadFromXML(
+            Config::loadFromXML(
                 dirname(__DIR__, 2),
                 '<?xml version="1.0"?>
                 <psalm>
@@ -2631,36 +2628,139 @@ final class ConfigTest extends DeferredAnalyzerTestCase
                         <directory name="src" />
                     </projectFiles>
                     <disableExtensions>
-                        <extension name="pdo" />
-                        <extension name="mysqli" />
-                        <extension name="dom" />
-                        <extension name="simplexml" />
-                        <extension name="soap" />
+                        <extension name="redis" />
                     </disableExtensions>
                 </psalm>',
             ),
         );
-        $this->project_analyzer->setPhpVersion('8.4', 'tests');
+        $config = $this->project_analyzer->getConfig();
+        $config->visitStubFiles($this->project_analyzer->getCodebase());
+
+        $this->assertNotContains((string) realpath('stubs/extensions/redis.phpstub'), $config->internal_stubs);
+        $this->assertContains((string) realpath('stubs/extensions/mongodb.phpstub'), $config->internal_stubs);
+    }
+
+    /**
+     * @return array<string, array{string, string, string}>
+     * @psalm-pure
+     */
+    public static function providerSinksOfExtensionsComposerJsonDoesntRequire(): array
+    {
+        return [
+            'PDO::query' => ['PDO $pdo', '$pdo->query($input)', 'TaintedSql'],
+            'PDO::exec' => ['PDO $pdo', '$pdo->exec($input)', 'TaintedSql'],
+            'PDO::prepare' => ['PDO $pdo', '$pdo->prepare($input)', 'TaintedSql'],
+            'PDOStatement::fetchObject' => ['PDOStatement $s', '$s->fetchObject($input)', 'TaintedCallable'],
+            'mysqli::execute_query' => ['mysqli $db', '$db->execute_query($input)', 'TaintedSql'],
+            'mysqli_execute_query' => ['mysqli $db', 'mysqli_execute_query($db, $input)', 'TaintedSql'],
+            'mysqli_result::fetch_object' => ['mysqli_result $r', '$r->fetch_object($input)', 'TaintedCallable'],
+            'mysqli_fetch_object' => ['mysqli_result $r', 'mysqli_fetch_object($r, $input)', 'TaintedCallable'],
+            'SoapClient::__setLocation' => ['SoapClient $c', '$c->__setLocation($input)', 'TaintedSSRF'],
+            'MongoDB\\Driver\\Query::__construct'
+                => ['', 'new MongoDB\\Driver\\Query(json_decode($input, true))', 'TaintedNosql'],
+            'MongoDB\\Driver\\Command::__construct'
+                => ['', 'new MongoDB\\Driver\\Command(json_decode($input, true))', 'TaintedNosql'],
+            'MongoDB\\Driver\\BulkWrite::insert'
+                => ['MongoDB\\Driver\\BulkWrite $w', '$w->insert(json_decode($input, true))', 'TaintedNosql'],
+            'MongoDB\\Driver\\BulkWrite::update'
+                => ['MongoDB\\Driver\\BulkWrite $w', '$w->update([], json_decode($input, true))', 'TaintedNosql'],
+            'MongoDB\\Driver\\BulkWrite::delete'
+                => ['MongoDB\\Driver\\BulkWrite $w', '$w->delete(json_decode($input, true))', 'TaintedNosql'],
+        ];
+    }
+
+    /**
+     * The extensions of these sinks, which the composer.json of this repository doesn't require, may also be missing
+     * from the PHP running the tests
+     */
+    #[DataProvider('providerSinksOfExtensionsComposerJsonDoesntRequire')]
+    public function testSinksOfExtensionsComposerJsonDoesntRequire(string $param, string $call, string $error): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithAConfigOfThisRepository('8.4');
+        $this->project_analyzer->getConfig()->declared_extensions = null;
         $this->project_analyzer->trackTaintedInputs();
 
         $file_path = (string) getcwd() . '/src/somefile.php';
         $this->addFile(
             $file_path,
             '<?php
-                /** @psalm-suppress ArgumentTypeCoercion, PossiblyUnusedReturnValue, UnusedFunctionCall */
-                function run(' . $class . ' $object): void {
+                /** @psalm-suppress ArgumentTypeCoercion, MixedArgument, PossiblyUnusedReturnValue, UnusedFunctionCall */
+                function run(' . $param . '): void {
                     $input = $_GET["input"] ?? "";
                     if (!is_string($input)) {
                         return;
                     }
-                    $object->' . $method . '(' . $argument . ');
+                    ' . $call . ';
                 }',
         );
 
         $this->expectException(CodeException::class);
-        $this->expectExceptionMessageMatches('/\b' . $error . '\b/');
+        $this->expectExceptionMessageMatches('/^' . $error . '\b/');
 
         $this->analyzeFile($file_path, new Context());
+    }
+
+    public function testClassOfAnExtensionComposerJsonDoesntRequire(): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithAConfigOfThisRepository('8.4');
+
+        $file_path = (string) getcwd() . '/src/somefile.php';
+        $this->addFile(
+            $file_path,
+            '<?php
+                function connect(): Redis {
+                    return new Redis();
+                }',
+        );
+
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessage(
+            'MissingExtensionRequirement - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:32'
+                . ' - Redis is part of the ext-redis extension',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+    }
+
+    public function testClassOfAnExtensionComposerJsonDoesntRequireBeforeItsPhpVersion(): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithAConfigOfThisRepository('8.1');
+
+        $file_path = (string) getcwd() . '/src/somefile.php';
+        $this->addFile(
+            $file_path,
+            '<?php
+                function connect(): object {
+                    return Pdo\\Sqlite::connect("sqlite::memory:");
+                }',
+        );
+
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessage(
+            'UndefinedClass - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:28 - Pdo\\Sqlite is not defined for the'
+                . ' analysed PHP version 8.1 (it was introduced in PHP 8.4)',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+    }
+
+    public function testFetchOfAPdoStatementComposerJsonDoesntRequire(): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithAConfigOfThisRepository('8.4');
+        $this->project_analyzer->getConfig()->declared_extensions = null;
+
+        $file_path = (string) getcwd() . '/src/somefile.php';
+        $this->addFile(
+            $file_path,
+            '<?php
+                $statement = (new PDO("sqlite::memory:"))->query("SELECT 1");
+                $row = $statement === false ? false : $statement->fetch(PDO::FETCH_ASSOC);',
+        );
+
+        $context = new Context();
+        $this->analyzeFile($file_path, $context);
+
+        $this->assertSame('array<string, null|scalar>|false', $context->vars_in_scope['$row']->getId());
     }
 
     /**

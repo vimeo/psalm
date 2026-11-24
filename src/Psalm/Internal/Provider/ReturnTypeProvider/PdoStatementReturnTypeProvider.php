@@ -37,7 +37,7 @@ final class PdoStatementReturnTypeProvider implements MethodReturnTypeProviderIn
         $config = Config::getInstance();
         $method_name_lowercase = $event->getMethodNameLowercase();
 
-        if (!$config->php_extensions["pdo"]) {
+        if ($config->php_extensions["pdo"] === false) {
             return null;
         }
 

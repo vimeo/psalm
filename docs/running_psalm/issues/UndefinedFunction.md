@@ -8,4 +8,4 @@ Emitted when referencing a function that doesn't exist
 foo();
 ```
 
-Is also emitted when using extension functions not added to the `composer.json` requirements or to the [enableExtensions](https://psalm.dev/docs/running_psalm/configuration/#enableextensions) config key.  
+The use of an extension `composer.json` doesn't declare is reported as [MissingExtensionRequirement](MissingExtensionRequirement.md).  

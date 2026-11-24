@@ -478,7 +478,8 @@ final class InternalCallMapHandler
      * PHP 8.1, of `random` from 8.2. A class belongs to the extension of most of its methods: some come from others
      * (`PDO::sqliteCreateFunction()` from `pdo_sqlite`). The stub image of the analysed version may not build an
      * extension yet (zmq for PHP 8.6): its symbols then take their extension from the nearest version whose image
-     * builds it.
+     * builds it. A symbol no callmap has (`zstd_compress()`) takes the extension of the stub of stubs/extensions
+     * declaring it.
      *
      * @return array<string, int>
      */
@@ -522,6 +523,18 @@ final class InternalCallMapHandler
 
             if ($extension !== null && !isset($extensions[$extension])) {
                 $extensions[$extension] = intdiv($version, 10) * 10_000 + $version % 10 * 100;
+            }
+        }
+
+        if ($extensions === []) {
+            $location = $is_class
+                ? ($codebase->classlike_storage_provider->has($key)
+                    ? $codebase->classlike_storage_provider->get($key)->location
+                    : null)
+                : ($codebase->functions->getAllStubbedFunctions()[$key] ?? null)?->location;
+            $extension = $location !== null ? $codebase->config->getExtensionOfStub($location->file_path) : null;
+            if ($extension !== null) {
+                $extensions[$extension] = $lowest_version_id;
             }
         }
 

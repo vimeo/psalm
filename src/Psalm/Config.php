@@ -655,12 +655,11 @@ final class Config
     public ?int $lowest_composer_php_version_id = null;
 
     /**
-     * A list of php extensions supported by Psalm.
-     * Where key - extension name (without ext- prefix), value - whether to load extension’s stub.
-     * Values:
-     *  - true: ext enabled explicitly or bundled with PHP (should load stubs)
-     *  - false: ext disabled explicitly (should not load stubs)
-     *  - null: state is unknown (e.g. config not processed yet) or ext neither explicitly enabled or disabled.
+     * The extensions Psalm has a stub for in stubs/extensions, by name (without `ext-`). Every stub is loaded, unless
+     * `<disableExtensions>` lists its extension. Values:
+     *  - true: composer.json requires the extension, or `<enableExtensions>` lists it
+     *  - false: `<disableExtensions>` lists it, so its stub isn't loaded
+     *  - null: neither
      *
      * @psalm-readonly-allow-private-mutation
      * @var array<string, bool|null>
@@ -779,6 +778,13 @@ final class Config
 
     /** @var list<string> */
     public array $config_warnings = [];
+
+    /**
+     * The extension of each loaded stub of stubs/extensions, by the path the scanner gives it
+     *
+     * @var array<string, string>
+     */
+    private array $extension_stub_paths = [];
 
     /**
      * @internal
@@ -3165,14 +3171,15 @@ final class Config
             $this->internal_stubs[] = $stubsDir . 'Php86Functions.phpstub';
         }
 
+        // also the extensions composer.json doesn't require: MissingExtensionRequirement reports their use
         $ext_stubs_dir = $dir_lvl_2 . DIRECTORY_SEPARATOR . "stubs" . DIRECTORY_SEPARATOR . "extensions";
+        $extension_stubs = [];
         foreach ($this->php_extensions as $ext => $enabled) {
-            if ($enabled) {
-                $this->internal_stubs[] = $ext_stubs_dir . DIRECTORY_SEPARATOR . "$ext.phpstub";
+            if ($enabled !== false) {
+                $extension_stubs[$ext_stubs_dir . DIRECTORY_SEPARATOR . "$ext.phpstub"] = $ext;
             }
         }
-
-        $this->internal_stubs = [...$this->internal_stubs, ...$library_stubs];
+        $this->internal_stubs = [...$this->internal_stubs, ...array_keys($extension_stubs), ...$library_stubs];
 
         foreach ($this->internal_stubs as $stub_path) {
             if (!file_exists($stub_path)) {
@@ -3200,14 +3207,18 @@ final class Config
         }
 
         $user_stub_paths = [];
-        foreach ($stub_files as $file_path) {
-            $is_user_stub = isset($this->stub_files[$file_path]);
-            $file_path = str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $file_path);
+        $this->extension_stub_paths = [];
+        foreach ($stub_files as $original_path) {
+            $is_user_stub = isset($this->stub_files[$original_path]);
+            $file_path = str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $original_path);
             // fix mangled phar paths on Windows
             if (str_starts_with($file_path, 'phar:\\\\')) {
                 $file_path = 'phar://' . substr($file_path, 7);
             }
             $codebase->scanner->addStubFileToDeepScan($file_path);
+            if (isset($extension_stubs[$original_path])) {
+                $this->extension_stub_paths[$file_path] = $extension_stubs[$original_path];
+            }
             if ($is_user_stub) {
                 $user_stub_paths[] = $file_path;
             }
@@ -3932,6 +3943,17 @@ final class Config
     public function getStubFiles(): array
     {
         return $this->stub_files;
+    }
+
+    /**
+     * The extension whose stub of stubs/extensions is at $file_path
+     *
+     * @internal
+     * @psalm-mutation-free
+     */
+    public function getExtensionOfStub(string $file_path): ?string
+    {
+        return $this->extension_stub_paths[$file_path] ?? null;
     }
 
     /**

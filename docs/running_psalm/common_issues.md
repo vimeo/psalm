@@ -8,7 +8,7 @@ Before opening an issue, check whether one of these is the explanation.
 
 ## `UndefinedClass` for a class that exists
 
-Psalm only knows classes that are in the analysed files, in a stub, or that Composer's autoloader can find. A class of a PHP extension also needs the extension in `composer.json` (`ext-…`) or in [`enableExtensions`](configuration.md#enableextensions); see [UndefinedClass](issues/UndefinedClass.md). Files that define such classes but are not autoloaded can be listed in [`extraFiles`](configuration.md#extrafiles).
+Psalm only knows classes that are in the analysed files, in a stub, or that Composer's autoloader can find. A class of a PHP extension Psalm has no stub for is only known when the PHP running Psalm loads the extension; see [UndefinedClass](issues/UndefinedClass.md). Files that define such classes but are not autoloaded can be listed in [`extraFiles`](configuration.md#extrafiles).
 
 ## No `Mixed*` issues show up
 
