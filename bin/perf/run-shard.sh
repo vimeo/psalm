@@ -69,6 +69,20 @@ while IFS= read -r setting; do
     PHP_FLAGS+=(-d "$setting")
 done < <(jq -r '.php_ini | to_entries[] | "\(.key)=\(.value)"' "$CORPUS")
 
+# Both sides profile their measured runs only if both list the option (a 6.x PR or an old merge-base may not);
+# profile-support.json tells the report which side lacks it. `--debug-performance` alone is an older, other option.
+supports_profile() {
+    local help
+    help="$(php "${PHP_FLAGS[@]}" "$1/psalm" --help 2>/dev/null || true)"
+    grep -qF -- '--debug-performance[=PATH]' <<< "$help"
+}
+PROFILING=''
+BASE_PROFILES=false HEAD_PROFILES=false
+if supports_profile "$BASE_DIR"; then BASE_PROFILES=true; fi
+if supports_profile "$HEAD_DIR"; then HEAD_PROFILES=true; fi
+if [ "$BASE_PROFILES" = true ] && [ "$HEAD_PROFILES" = true ]; then PROFILING=1; fi
+printf '{"base": %s, "head": %s}\n' "$BASE_PROFILES" "$HEAD_PROFILES" > "$OUT/profile-support.json"
+
 cpu_model() {
     if [ "$(uname -s)" = Darwin ]; then sysctl -n machdep.cpu.brand_string
     else sed -n 's/^model name[[:space:]]*: //p' /proc/cpuinfo | sed -n '1p'
@@ -199,7 +213,7 @@ classify() {
     fi
 }
 
-# run_once <base|head> <n>: one analysis, recorded as $RUNDIR/<rev>-<n>.json (+ .log, .report.json).
+# run_once <base|head> <n>: one analysis, recorded as $RUNDIR/<rev>-<n>.json (+ .log, .report.json, .profile.json).
 run_once() {
     local rev=$1 n=$2 psalm_dir prefix rc=0 start end wall mb='' tail_text=''
     psalm_dir=$BASE_DIR
@@ -210,7 +224,7 @@ run_once() {
     (cd "$PROJ" && /usr/bin/time "$TIME_FLAG" -o "$prefix.time" "$TIMEOUT_BIN" -k 20 "$TIMEOUT" \
         php "${PHP_FLAGS[@]}" "$psalm_dir/psalm" --root="$PROJ" -c "$PROJ/psalm-perf.xml" --no-cache --no-progress \
         --ignore-baseline --threads=1 --output-format=console --report="$prefix.report.json" \
-        --memory-limit="$MEMORY_LIMIT") > "$prefix.log" 2>&1 < /dev/null || rc=$?
+        --memory-limit="$MEMORY_LIMIT" ${PROFILING:+"--debug-performance=$prefix.profile.json"}) > "$prefix.log" 2>&1 < /dev/null || rc=$?
     end="$(now)"
     wall="$(elapsed "$start" "$end")"
 
@@ -260,7 +274,8 @@ aggregate() {
         }' "$RUNDIR/$1"-[0-9].json
 }
 
-# write_result <base|head> <sha>: <out>/<rev>/<project>.json and, for an ok run, .issues.json.
+# write_result <base|head> <sha>: <out>/<rev>/<project>.json and, for an ok run, .issues.json and .profile.json
+# (from the first run, like the status).
 write_result() {
     local rev=$1 sha=$2 result report count
     result="$(aggregate "$rev" "$sha")"
@@ -268,6 +283,7 @@ write_result() {
     if [ "$(jq -r '.status' <<< "$result")" = ok ]; then
         if count="$(php "$SCRIPT_DIR/perf.php" normalize "$report" "$PROJ" "$OUT/$rev/$NAME.issues.json")"; then
             result="$(jq --argjson c "$count" '.issue_count = $c' <<< "$result")"
+            if [ -s "$RUNDIR/$rev-1.profile.json" ]; then cp "$RUNDIR/$rev-1.profile.json" "$OUT/$rev/$NAME.profile.json"; fi
         else
             rm -f "$OUT/$rev/$NAME.issues.json"
             result="$(jq '.status = "error" | .reason = "issue normalisation failed" | .psalm_mb = null' <<< "$result")"

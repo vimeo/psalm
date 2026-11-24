@@ -614,7 +614,7 @@ function detailsTitle(array $p): string
 }
 
 /**
- * @param array<string, mixed> $summary result of compareAll() plus base_sha and head_sha
+ * @param array<string, mixed> $summary result of compareAll() plus base_sha, head_sha and hot_files
  */
 function renderReport(array $summary, ?string $runUrl): string
 {
@@ -649,7 +649,7 @@ function renderReport(array $summary, ?string $runUrl): string
     }
 
     $out .= totalRow($projects, $deadCode) ?? '';
-    $out .= "\n" . TABLE_LEGEND . "\n";
+    $out .= "\n" . TABLE_LEGEND . "\n" . renderHotFiles($summary['hot_files']);
 
     $footer = $summary['deps_changed']
         ? "\ncomposer.json changed in this PR, so head dependencies were re-resolved; "
@@ -716,8 +716,10 @@ function runCompare(array $args): int
     $names = ['plan', 'in', 'base-sha', 'head-sha', 'deps-changed', 'out-md', 'out-json', 'run-url'];
     $options = parseOptions($args, $names);
     requireOptions($options, array_slice($names, 0, 7));
-    $summary = compareAll(readJsonFile($options['plan']), $options['in'], $options['deps-changed'] === '1');
+    $plan = readJsonFile($options['plan']);
+    $summary = compareAll($plan, $options['in'], $options['deps-changed'] === '1');
     $summary += ['base_sha' => $options['base-sha'], 'head_sha' => $options['head-sha']];
+    $summary['hot_files'] = collectHotFiles($plan, $options['in'], $summary['projects']);
     writeJsonFile($options['out-json'], ['schema' => 2] + $summary);
     if (file_put_contents($options['out-md'], renderReport($summary, $options['run-url'] ?? null)) === false) {
         throw new RuntimeException("cannot write {$options['out-md']}");
