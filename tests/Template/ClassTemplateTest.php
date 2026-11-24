@@ -5602,7 +5602,7 @@ final class ClassTemplateTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
-            'newUsesTheDefaultOfATemplateOnlyAnInheritedMethodTakes' => [
+            'newLeavesATemplateWithADefaultOnlyAnInheritedMethodTakesToLaterCode' => [
                 'code' => '<?php
                     /**
                      * @psalm-mutable
@@ -5639,12 +5639,22 @@ final class ClassTemplateTest extends TestCase
                         public function __construct() {}
                     }
 
-                    $inherited = new Inherited();
-                    $from_trait = new FromTrait();',
-                'assertions' => [
-                    '$inherited===' => 'Inherited<int>',
-                    '$from_trait===' => 'FromTrait<int>',
-                ],
+                    /** @return Inherited<string> */
+                    function inherited(): Inherited {
+                        $inherited = new Inherited();
+                        $inherited->set("x");
+
+                        return $inherited;
+                    }
+
+                    /** @return FromTrait<string> */
+                    function fromTrait(): FromTrait {
+                        $from_trait = new FromTrait();
+                        $from_trait->set("x");
+
+                        return $from_trait;
+                    }',
+                'assertions' => [],
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],

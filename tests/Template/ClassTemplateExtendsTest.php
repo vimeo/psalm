@@ -7769,7 +7769,7 @@ final class ClassTemplateExtendsTest extends TestCase
                     function baz($t) {
                         return new BarOfFoo("hello");
                     }',
-                'error_message' => 'InvalidReturnStatement',
+                'error_message' => 'IncompatibleTypeParameters',
             ],
             'noCrashForTooManyTemplateParams' => [
                 'code' => '<?php
