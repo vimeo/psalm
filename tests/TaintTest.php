@@ -1388,7 +1388,7 @@ final class TaintTest extends TestCase
             . "\$values->send((string) \$_GET['value']);\n";
 
         // without the cap on the call stacks per node, the search takes gigabytes
-        $memory_limit = (string) ini_get('memory_limit');
+        $memory_limit = ini_get('memory_limit');
         ini_set('memory_limit', (string) (memory_get_usage() + 256 * 1024 * 1024));
 
         try {

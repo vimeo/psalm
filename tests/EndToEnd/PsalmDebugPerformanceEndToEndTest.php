@@ -213,6 +213,22 @@ final class PsalmDebugPerformanceEndToEndTest extends PsalmEndToEndTestCase
         }
     }
 
+    public function testProfileIsAnAliasOfDebugPerformance(): void
+    {
+        $this->setUpProject(2);
+        $dump_path = self::$tmpDir . '/perf.json';
+
+        $result = $this->runPsalm(['--no-cache', '--profile=' . $dump_path], self::$tmpDir, true);
+
+        $this->assertSame(1, $this->readDump($dump_path)['schema']);
+        $this->assertStringContainsString("\nSlowest files by CPU\n", $result['STDOUT']);
+
+        $both = $this->runPsalmProcess(['--no-cache', '--profile', '--debug-performance=' . $dump_path]);
+
+        $this->assertSame(1, $both->getExitCode());
+        $this->assertStringContainsString('Only one of --debug-performance and --profile', $both->getErrorOutput());
+    }
+
     public function testWithoutAValuePrintsTheSummaryAndWritesNoFile(): void
     {
         $this->setUpProject(2);
