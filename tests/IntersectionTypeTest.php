@@ -616,6 +616,20 @@ final class IntersectionTypeTest extends TestCase
                     }',
                 'error_message' => 'but I&(T:fn-f as object) provided',
             ],
+            'genericObjectIntersectedWithTemplateShowsTemplateInParentheses' => [
+                'code' => '<?php
+                    /** @template V */
+                    interface I {}
+
+                    /**
+                     * @template T of object
+                     * @param I<int>&T $x
+                     */
+                    function f(object $x): int {
+                        return strlen($x);
+                    }',
+                'error_message' => 'but I<int>&(T:fn-f as object) provided',
+            ],
             'iterableIntersectedWithTemplateShowsTemplateInParentheses' => [
                 'code' => '<?php
                     /**

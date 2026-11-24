@@ -99,26 +99,19 @@ trait GenericTrait
     #[Override]
     public function getId(bool $exact = true): string
     {
+        return $this->value . $this->getTypeParamsId($exact);
+    }
+
+    private function getTypeParamsId(bool $exact): string
+    {
         [$type_params, $purity_args] = $this->getTypeParamsAndPurityArgs();
 
-        $s = self::formatTypeParams(
+        return self::formatTypeParams(
             $type_params,
             $purity_args,
             static fn(Union $type_param): string => $type_param->getId($exact),
             $this instanceof TGenericObject ? $this : null,
         );
-
-        $extra_types = '';
-
-        if ($this instanceof TNamedObject) {
-            $extra_types = $this->getIntersectionTypesId($exact);
-
-            if ($this->is_static) {
-                $extra_types .= '&static';
-            }
-        }
-
-        return $this->value . $s . $extra_types;
     }
 
     /**
