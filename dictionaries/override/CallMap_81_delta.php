@@ -2501,18 +2501,12 @@ return array (
         0 => 'false|resource',
         'uri=' => 'null|string',
         'port=' => 'int',
-        'wallet=' => 'string',
-        'password=' => 'string',
-        'auth_mode=' => 'int',
       ),
       'new' => 
       array (
         0 => 'LDAP\\Connection|false',
         'uri=' => 'null|string',
         'port=' => 'int',
-        'wallet=' => 'string',
-        'password=' => 'string',
-        'auth_mode=' => 'int',
       ),
     ),
     'ldap_count_entries' => 
@@ -3840,6 +3834,34 @@ return array (
       'new' => 
       array (
         0 => 'Iterator|null',
+      ),
+    ),
+    'ocicollection::getelem' => 
+    array (
+      'old' => 
+      array (
+        0 => 'mixed',
+        'index' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'false|float|null|string',
+        'index' => 'int',
+      ),
+    ),
+    'odbc_data_source' => 
+    array (
+      'old' => 
+      array (
+        0 => 'array<array-key, mixed>|false',
+        'odbc' => 'resource',
+        'fetch_type' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'array<array-key, mixed>|false|null',
+        'odbc' => 'resource',
+        'fetch_type' => 'int',
       ),
     ),
     'openssl_decrypt' => 
