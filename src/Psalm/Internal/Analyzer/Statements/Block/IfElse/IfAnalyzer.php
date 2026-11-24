@@ -95,10 +95,15 @@ final class IfAnalyzer
             $omit_keys = array_combine($omit_keys, $omit_keys);
             $omit_keys = array_diff_key($omit_keys, Algebra::getTruthsFromFormula($outer_context->clauses));
 
-            // the outer clauses only get in the way when they assert something of the variable the condition doesn't
-            foreach ($reconcilable_if_types as $var_id => $anded_types) {
-                if (count(array_intersect_key($anded_types, $active_if_types[$var_id] ?? [])) === count($anded_types)) {
-                    unset($omit_keys[$var_id]);
+            // the outer clauses only get in the way when they assert something of the variable the condition doesn't,
+            // except for the cases a switch falls through, whose conditions the case they fall into checks
+            if (!$stmt->getAttribute('switchFallthrough')) {
+                foreach ($reconcilable_if_types as $var_id => $anded_types) {
+                    if (count(array_intersect_key($anded_types, $active_if_types[$var_id] ?? []))
+                        === count($anded_types)
+                    ) {
+                        unset($omit_keys[$var_id]);
+                    }
                 }
             }
 
@@ -122,8 +127,7 @@ final class IfAnalyzer
                 $statements_analyzer,
                 $statements_analyzer->getTemplateTypeMap() ?: [],
                 $if_context->inside_loop,
-                // the case a switch falls through into checks the conditions of the cases before it
-                $outer_context->check_variables && !$stmt->getAttribute('switchFallthrough')
+                $outer_context->check_variables
                     ? new CodeLocation(
                         $statements_analyzer->getSource(),
                         $stmt->cond instanceof PhpParser\Node\Expr\BooleanNot

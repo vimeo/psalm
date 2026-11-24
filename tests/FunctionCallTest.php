@@ -4485,6 +4485,19 @@ final class FunctionCallTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'getTypeSwitchFallingThroughAnImpossibleCaseOfTheSameVariable' => [
+                'code' => '<?php
+                    function f(int $data): string {
+                        switch (gettype($data)) {
+                            case "string":
+                            case "integer":
+                                return "s";
+                        }
+
+                        return "";
+                    }',
+                'error_message' => 'TypeDoesNotContainType',
+            ],
             'strtolowerOfDocblockLiteralsKeepsFromDocblock' => [
                 'code' => '<?php
                     /** @param \'A\'|\'B\' $k */
