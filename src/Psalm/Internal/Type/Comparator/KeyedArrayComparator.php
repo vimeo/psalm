@@ -62,6 +62,14 @@ final class KeyedArrayComparator
             if (!isset($input_properties[$key])) {
                 if (!$container_property_type->possibly_undefined) {
                     $all_types_contain = false;
+
+                    // a sealed array never has a key it doesn't declare, so no value of the input fits
+                    if ($atomic_comparison_result
+                        && $input_type_part instanceof TKeyedArray
+                        && $input_type_part->fallback_params === null
+                    ) {
+                        $atomic_comparison_result->mergeFailedPart(new TypeComparisonResult());
+                    }
                 }
 
                 continue;

@@ -1704,7 +1704,7 @@ return array (
   array (
     0 => 'string',
     'domain' => 'string',
-    'codeset' => 'null|string',
+    'codeset=' => 'null|string',
   ),
   'bindec' => 
   array (
@@ -1715,7 +1715,7 @@ return array (
   array (
     0 => 'string',
     'domain' => 'string',
-    'directory' => 'null|string',
+    'directory=' => 'null|string',
   ),
   'birdstep_autocommit' => 
   array (
@@ -6090,26 +6090,26 @@ return array (
   'dba_close' => 
   array (
     0 => 'void',
-    'dba' => 'resource',
+    'dba' => 'Dba\\Connection',
   ),
   'dba_delete' => 
   array (
     0 => 'bool',
     'key' => 'array<array-key, mixed>|string',
-    'dba' => 'resource',
+    'dba' => 'Dba\\Connection',
   ),
   'dba_exists' => 
   array (
     0 => 'bool',
     'key' => 'array<array-key, mixed>|string',
-    'dba' => 'resource',
+    'dba' => 'Dba\\Connection',
   ),
   'dba_fetch' => 
   array (
     0 => 'false|string',
     'key' => 'array<array-key, mixed>|string',
-    'skip' => 'int',
     'dba' => 'resource',
+    'skip=' => 'int',
   ),
   'dba_fetch\'1' => 
   array (
@@ -6120,7 +6120,7 @@ return array (
   'dba_firstkey' => 
   array (
     0 => 'string',
-    'dba' => 'resource',
+    'dba' => 'Dba\\Connection',
   ),
   'dba_handlers' => 
   array (
@@ -6132,7 +6132,7 @@ return array (
     0 => 'bool',
     'key' => 'array<array-key, mixed>|string',
     'value' => 'string',
-    'dba' => 'resource',
+    'dba' => 'Dba\\Connection',
   ),
   'dba_key_split' => 
   array (
@@ -6146,11 +6146,11 @@ return array (
   'dba_nextkey' => 
   array (
     0 => 'string',
-    'dba' => 'resource',
+    'dba' => 'Dba\\Connection',
   ),
   'dba_open' => 
   array (
-    0 => 'resource',
+    0 => 'Dba\\Connection|false',
     'path' => 'string',
     'mode' => 'string',
     'handler=' => 'null|string',
@@ -6161,11 +6161,11 @@ return array (
   'dba_optimize' => 
   array (
     0 => 'bool',
-    'dba' => 'resource',
+    'dba' => 'Dba\\Connection',
   ),
   'dba_popen' => 
   array (
-    0 => 'resource',
+    0 => 'Dba\\Connection|false',
     'path' => 'string',
     'mode' => 'string',
     'handler=' => 'null|string',
@@ -6178,12 +6178,12 @@ return array (
     0 => 'bool',
     'key' => 'array<array-key, mixed>|string',
     'value' => 'string',
-    'dba' => 'resource',
+    'dba' => 'Dba\\Connection',
   ),
   'dba_sync' => 
   array (
     0 => 'bool',
-    'dba' => 'resource',
+    'dba' => 'Dba\\Connection',
   ),
   'dbase_add_record' => 
   array (
@@ -7804,7 +7804,7 @@ return array (
   'ds\\hashable::equals' => 
   array (
     0 => 'bool',
-    'object' => 'mixed',
+    'obj' => 'mixed',
   ),
   'ds\\hashable::hash' => 
   array (
@@ -24517,11 +24517,6 @@ return array (
     0 => 'array<array-key, mixed>|false',
     'imap' => 'IMAP\\Connection',
   ),
-  'imap_is_open' => 
-  array (
-    0 => 'bool',
-    'imap' => 'IMAP\\Connection',
-  ),
   'imap_last_error' => 
   array (
     0 => 'false|string',
@@ -28206,9 +28201,6 @@ return array (
     0 => 'LDAP\\Connection|false',
     'uri=' => 'null|string',
     'port=' => 'int',
-    'wallet=' => 'string',
-    'password=' => 'string',
-    'auth_mode=' => 'int',
   ),
   'ldap_count_entries' => 
   array (
@@ -28338,7 +28330,7 @@ return array (
   'ldap_get_option' => 
   array (
     0 => 'bool',
-    'ldap' => 'LDAP\\Connection',
+    'ldap' => 'LDAP\\Connection|null',
     'option' => 'int',
     '&w value=' => 'array<array-key, mixed>|int|string',
   ),
@@ -37521,7 +37513,7 @@ return array (
     0 => 'bool',
     'statement' => 'resource',
     'param' => 'string',
-    '&rw var' => 'array<array-key, mixed>',
+    '&var' => 'array<array-key, mixed>',
     'max_array_length' => 'int',
     'max_item_length=' => 'int',
     'type=' => 'int',
@@ -37531,7 +37523,7 @@ return array (
     0 => 'bool',
     'statement' => 'resource',
     'param' => 'string',
-    '&rw var' => 'mixed',
+    '&var' => 'mixed',
     'max_length=' => 'int',
     'type=' => 'int',
   ),
@@ -37546,42 +37538,49 @@ return array (
   ),
   'oci_close' => 
   array (
-    0 => 'bool',
+    0 => 'bool|null',
     'connection' => 'resource',
   ),
   'oci_collection_append' => 
   array (
     0 => 'bool',
-    'collection' => 'string',
+    'collection' => 'OCICollection',
+    'value' => 'string',
   ),
   'oci_collection_assign' => 
   array (
     0 => 'bool',
-    'to' => 'object',
+    'to' => 'OCICollection',
+    'from' => 'OCICollection',
   ),
   'oci_collection_element_assign' => 
   array (
     0 => 'bool',
-    'collection' => 'int',
-    'index' => 'string',
+    'collection' => 'OCICollection',
+    'index' => 'int',
+    'value' => 'string',
   ),
   'oci_collection_element_get' => 
   array (
-    0 => 'string',
-    'collection' => 'int',
+    0 => 'null|string',
+    'collection' => 'OCICollection',
+    'index' => 'int',
   ),
   'oci_collection_max' => 
   array (
     0 => 'int',
+    'collection' => 'OCICollection',
   ),
   'oci_collection_size' => 
   array (
     0 => 'int',
+    'collection' => 'OCICollection',
   ),
   'oci_collection_trim' => 
   array (
     0 => 'bool',
-    'collection' => 'int',
+    'collection' => 'OCICollection',
+    'num' => 'int',
   ),
   'oci_commit' => 
   array (
@@ -37593,7 +37592,7 @@ return array (
     0 => 'false|resource',
     'username' => 'string',
     'password' => 'string',
-    'connection_string=' => 'string',
+    'connection_string=' => 'null|string',
     'encoding=' => 'string',
     'session_mode=' => 'int',
   ),
@@ -37623,7 +37622,7 @@ return array (
   ),
   'oci_fetch_all' => 
   array (
-    0 => 'false|int',
+    0 => 'int',
     'statement' => 'resource',
     '&w output' => 'array<array-key, mixed>',
     'offset=' => 'int',
@@ -37643,8 +37642,9 @@ return array (
   ),
   'oci_fetch_object' => 
   array (
-    0 => 'false|object',
+    0 => 'false|stdClass',
     'statement' => 'resource',
+    'mode=' => 'int',
   ),
   'oci_fetch_row' => 
   array (
@@ -37655,47 +37655,48 @@ return array (
   array (
     0 => 'bool',
     'statement' => 'resource',
-    'column' => 'mixed',
+    'column' => 'int|string',
   ),
   'oci_field_name' => 
   array (
     0 => 'false|string',
     'statement' => 'resource',
-    'column' => 'mixed',
+    'column' => 'int|string',
   ),
   'oci_field_precision' => 
   array (
     0 => 'false|int',
     'statement' => 'resource',
-    'column' => 'mixed',
+    'column' => 'int|string',
   ),
   'oci_field_scale' => 
   array (
     0 => 'false|int',
     'statement' => 'resource',
-    'column' => 'mixed',
+    'column' => 'int|string',
   ),
   'oci_field_size' => 
   array (
     0 => 'false|int',
     'statement' => 'resource',
-    'column' => 'mixed',
+    'column' => 'int|string',
   ),
   'oci_field_type' => 
   array (
-    0 => 'false|mixed',
+    0 => 'false|int|string',
     'statement' => 'resource',
-    'column' => 'mixed',
+    'column' => 'int|string',
   ),
   'oci_field_type_raw' => 
   array (
     0 => 'false|int',
     'statement' => 'resource',
-    'column' => 'mixed',
+    'column' => 'int|string',
   ),
   'oci_free_collection' => 
   array (
     0 => 'bool',
+    'collection' => 'OCICollection',
   ),
   'oci_free_cursor' => 
   array (
@@ -37705,6 +37706,7 @@ return array (
   'oci_free_descriptor' => 
   array (
     0 => 'bool',
+    'lob' => 'OCILob',
   ),
   'oci_free_statement' => 
   array (
@@ -37729,7 +37731,8 @@ return array (
   'oci_lob_append' => 
   array (
     0 => 'bool',
-    'to' => 'object',
+    'to' => 'OCILob',
+    'from' => 'OCILob',
   ),
   'oci_lob_close' => 
   array (
@@ -37740,34 +37743,39 @@ return array (
     0 => 'bool',
     'to' => 'OCILob',
     'from' => 'OCILob',
-    'length=' => 'int',
+    'length=' => 'int|null',
   ),
   'oci_lob_eof' => 
   array (
     0 => 'bool',
+    'lob' => 'OCILob',
   ),
   'oci_lob_erase' => 
   array (
     0 => 'int',
-    'lob' => 'int',
-    'offset' => 'int',
+    'lob' => 'OCILob',
+    'offset=' => 'int|null',
+    'length=' => 'int|null',
   ),
   'oci_lob_export' => 
   array (
     0 => 'bool',
-    'lob' => 'string',
-    'filename' => 'int',
-    'offset' => 'int',
+    'lob' => 'OCILob',
+    'filename' => 'string',
+    'offset=' => 'int|null',
+    'length=' => 'int|null',
   ),
   'oci_lob_flush' => 
   array (
     0 => 'bool',
-    'lob' => 'int',
+    'lob' => 'OCILob',
+    'flag=' => 'int',
   ),
   'oci_lob_import' => 
   array (
     0 => 'bool',
-    'lob' => 'string',
+    'lob' => 'OCILob',
+    'filename' => 'string',
   ),
   'oci_lob_is_equal' => 
   array (
@@ -37778,46 +37786,55 @@ return array (
   'oci_lob_load' => 
   array (
     0 => 'string',
+    'lob' => 'OCILob',
   ),
   'oci_lob_read' => 
   array (
     0 => 'string',
-    'lob' => 'int',
+    'lob' => 'OCILob',
+    'length' => 'int',
   ),
   'oci_lob_rewind' => 
   array (
     0 => 'bool',
+    'lob' => 'OCILob',
   ),
   'oci_lob_save' => 
   array (
     0 => 'bool',
-    'lob' => 'string',
-    'data' => 'int',
+    'lob' => 'OCILob',
+    'data' => 'string',
+    'offset=' => 'int',
   ),
   'oci_lob_seek' => 
   array (
     0 => 'bool',
-    'lob' => 'int',
+    'lob' => 'OCILob',
     'offset' => 'int',
+    'whence=' => 'int',
   ),
   'oci_lob_size' => 
   array (
     0 => 'int',
+    'lob' => 'OCILob',
   ),
   'oci_lob_tell' => 
   array (
     0 => 'int',
+    'lob' => 'OCILob',
   ),
   'oci_lob_truncate' => 
   array (
     0 => 'bool',
-    'lob' => 'int',
+    'lob' => 'OCILob',
+    'length=' => 'int',
   ),
   'oci_lob_write' => 
   array (
     0 => 'int',
-    'lob' => 'string',
-    'data' => 'int',
+    'lob' => 'OCILob',
+    'data' => 'string',
+    'length=' => 'int|null',
   ),
   'oci_lob_write_temporary' => 
   array (
@@ -37830,14 +37847,14 @@ return array (
     0 => 'OCICollection|false',
     'connection' => 'resource',
     'type_name' => 'string',
-    'schema=' => 'string',
+    'schema=' => 'null|string',
   ),
   'oci_new_connect' => 
   array (
     0 => 'false|resource',
     'username' => 'string',
     'password' => 'string',
-    'connection_string=' => 'string',
+    'connection_string=' => 'null|string',
     'encoding=' => 'string',
     'session_mode=' => 'int',
   ),
@@ -37848,13 +37865,13 @@ return array (
   ),
   'oci_new_descriptor' => 
   array (
-    0 => 'OCILob|false',
+    0 => 'OCILob|null',
     'connection' => 'resource',
     'type=' => 'int',
   ),
   'oci_num_fields' => 
   array (
-    0 => 'false|int',
+    0 => 'int',
     'statement' => 'resource',
   ),
   'oci_num_rows' => 
@@ -37881,7 +37898,7 @@ return array (
     0 => 'false|resource',
     'username' => 'string',
     'password' => 'string',
-    'connection_string=' => 'string',
+    'connection_string=' => 'null|string',
     'encoding=' => 'string',
     'session_mode=' => 'int',
   ),
@@ -37889,13 +37906,13 @@ return array (
   array (
     0 => 'bool',
     'connection' => 'resource',
-    'callback=' => 'callable[impure]',
+    'callback' => 'callable[impure]|null',
   ),
   'oci_result' => 
   array (
     0 => 'false|mixed',
     'statement' => 'resource',
-    'column' => 'mixed',
+    'column' => 'int|string',
   ),
   'oci_rollback' => 
   array (
@@ -37967,18 +37984,18 @@ return array (
   'ocicollection::append' => 
   array (
     0 => 'bool',
-    'value' => 'mixed',
+    'value' => 'string',
   ),
   'ocicollection::assign' => 
   array (
     0 => 'bool',
-    'from' => 'OCI_Collection',
+    'from' => 'OCICollection',
   ),
   'ocicollection::assignelem' => 
   array (
     0 => 'bool',
     'index' => 'int',
-    'value' => 'mixed',
+    'value' => 'string',
   ),
   'ocicollection::free' => 
   array (
@@ -37986,7 +38003,7 @@ return array (
   ),
   'ocicollection::getelem' => 
   array (
-    0 => 'mixed',
+    0 => 'false|float|null|string',
     'index' => 'int',
   ),
   'ocicollection::max' => 
@@ -38004,7 +38021,7 @@ return array (
   ),
   'ocifetchinto' => 
   array (
-    0 => 'bool|int',
+    0 => 'false|int',
     'statement' => 'resource',
     '&w result' => 'array<array-key, mixed>',
     'mode=' => 'int',
@@ -38012,11 +38029,12 @@ return array (
   'ocigetbufferinglob' => 
   array (
     0 => 'bool',
+    'lob' => 'OCILob',
   ),
   'ocilob::append' => 
   array (
     0 => 'bool',
-    'lob_from' => 'OCILob',
+    'from' => 'OCILob',
   ),
   'ocilob::close' => 
   array (
@@ -38029,15 +38047,15 @@ return array (
   'ocilob::erase' => 
   array (
     0 => 'false|int',
-    'offset=' => 'int',
-    'length=' => 'int',
+    'offset=' => 'int|null',
+    'length=' => 'int|null',
   ),
   'ocilob::export' => 
   array (
     0 => 'bool',
     'filename' => 'string',
-    'start=' => 'int',
-    'length=' => 'int',
+    'offset=' => 'int|null',
+    'length=' => 'int|null',
   ),
   'ocilob::flush' => 
   array (
@@ -38079,7 +38097,7 @@ return array (
   'ocilob::savefile' => 
   array (
     0 => 'bool',
-    'filename' => 'mixed',
+    'filename' => 'string',
   ),
   'ocilob::seek' => 
   array (
@@ -38090,7 +38108,7 @@ return array (
   'ocilob::setbuffering' => 
   array (
     0 => 'bool',
-    'on_off' => 'bool',
+    'mode' => 'bool',
   ),
   'ocilob::size' => 
   array (
@@ -38109,25 +38127,26 @@ return array (
   array (
     0 => 'false|int',
     'data' => 'string',
-    'length=' => 'int',
+    'length=' => 'int|null',
   ),
   'ocilob::writetemporary' => 
   array (
     0 => 'bool',
     'data' => 'string',
-    'lob_type=' => 'int',
+    'type=' => 'int',
   ),
   'ocilob::writetofile' => 
   array (
     0 => 'bool',
-    'filename' => 'mixed',
-    'start' => 'mixed',
-    'length' => 'mixed',
+    'filename' => 'string',
+    'offset=' => 'int|null',
+    'length=' => 'int|null',
   ),
   'ocisetbufferinglob' => 
   array (
     0 => 'bool',
-    'lob' => 'bool',
+    'lob' => 'OCILob',
+    'mode' => 'bool',
   ),
   'octdec' => 
   array (
@@ -38137,19 +38156,19 @@ return array (
   'odbc_autocommit' => 
   array (
     0 => 'bool|int',
-    'odbc' => 'resource',
-    'enable=' => 'bool',
+    'odbc' => 'Odbc\\Connection',
+    'enable=' => 'bool|null',
   ),
   'odbc_binmode' => 
   array (
-    0 => 'bool',
-    'statement' => 'resource',
+    0 => 'true',
+    'statement' => 'Odbc\\Result',
     'mode' => 'int',
   ),
   'odbc_close' => 
   array (
     0 => 'void',
-    'odbc' => 'resource',
+    'odbc' => 'Odbc\\Connection',
   ),
   'odbc_close_all' => 
   array (
@@ -38157,8 +38176,8 @@ return array (
   ),
   'odbc_columnprivileges' => 
   array (
-    0 => 'false|resource',
-    'odbc' => 'resource',
+    0 => 'Odbc\\Result|false',
+    'odbc' => 'Odbc\\Connection',
     'catalog' => 'null|string',
     'schema' => 'string',
     'table' => 'string',
@@ -38166,8 +38185,8 @@ return array (
   ),
   'odbc_columns' => 
   array (
-    0 => 'false|resource',
-    'odbc' => 'resource',
+    0 => 'Odbc\\Result|false',
+    'odbc' => 'Odbc\\Connection',
     'catalog=' => 'null|string',
     'schema=' => 'null|string',
     'table=' => 'null|string',
@@ -38176,120 +38195,120 @@ return array (
   'odbc_commit' => 
   array (
     0 => 'bool',
-    'odbc' => 'resource',
+    'odbc' => 'Odbc\\Connection',
   ),
   'odbc_connect' => 
   array (
-    0 => 'false|resource',
+    0 => 'Odbc\\Connection|false',
     'dsn' => 'string',
-    'user' => 'string',
-    'password' => 'string',
+    'user=' => 'null|string',
+    'password=' => 'null|string',
     'cursor_option=' => 'int',
   ),
   'odbc_cursor' => 
   array (
     0 => 'string',
-    'statement' => 'resource',
+    'statement' => 'Odbc\\Result',
   ),
   'odbc_data_source' => 
   array (
-    0 => 'array<array-key, mixed>|false',
-    'odbc' => 'resource',
+    0 => 'array<array-key, mixed>|false|null',
+    'odbc' => 'Odbc\\Connection',
     'fetch_type' => 'int',
   ),
   'odbc_do' => 
   array (
-    0 => 'resource',
-    'odbc' => 'resource',
+    0 => 'Odbc\\Result|false',
+    'odbc' => 'Odbc\\Connection',
     'query' => 'string',
   ),
   'odbc_error' => 
   array (
     0 => 'string',
-    'odbc=' => 'resource',
+    'odbc=' => 'Odbc\\Connection|null',
   ),
   'odbc_errormsg' => 
   array (
     0 => 'string',
-    'odbc=' => 'resource',
+    'odbc=' => 'Odbc\\Connection|null',
   ),
   'odbc_exec' => 
   array (
-    0 => 'resource',
-    'odbc' => 'resource',
+    0 => 'Odbc\\Result|false',
+    'odbc' => 'Odbc\\Connection',
     'query' => 'string',
   ),
   'odbc_execute' => 
   array (
     0 => 'bool',
-    'statement' => 'resource',
+    'statement' => 'Odbc\\Result',
     'params=' => 'array<array-key, mixed>',
   ),
   'odbc_fetch_array' => 
   array (
     0 => 'array<array-key, mixed>|false',
-    'statement' => 'resource',
-    'row=' => 'int',
+    'statement' => 'Odbc\\Result',
+    'row=' => 'int|null',
   ),
   'odbc_fetch_into' => 
   array (
     0 => 'int',
-    'statement' => 'resource',
+    'statement' => 'Odbc\\Result',
     '&w array' => 'array<array-key, mixed>',
-    'row=' => 'int',
+    'row=' => 'int|null',
   ),
   'odbc_fetch_object' => 
   array (
     0 => 'false|stdClass',
-    'statement' => 'resource',
-    'row=' => 'int',
+    'statement' => 'Odbc\\Result',
+    'row=' => 'int|null',
   ),
   'odbc_fetch_row' => 
   array (
     0 => 'bool',
-    'statement' => 'resource',
+    'statement' => 'Odbc\\Result',
     'row=' => 'int|null',
   ),
   'odbc_field_len' => 
   array (
     0 => 'false|int',
-    'statement' => 'resource',
+    'statement' => 'Odbc\\Result',
     'field' => 'int',
   ),
   'odbc_field_name' => 
   array (
     0 => 'false|string',
-    'statement' => 'resource',
+    'statement' => 'Odbc\\Result',
     'field' => 'int',
   ),
   'odbc_field_num' => 
   array (
     0 => 'false|int',
-    'statement' => 'resource',
+    'statement' => 'Odbc\\Result',
     'field' => 'string',
   ),
   'odbc_field_precision' => 
   array (
     0 => 'int',
-    'statement' => 'resource',
+    'statement' => 'Odbc\\Result',
     'field' => 'int',
   ),
   'odbc_field_scale' => 
   array (
     0 => 'false|int',
-    'statement' => 'resource',
+    'statement' => 'Odbc\\Result',
     'field' => 'int',
   ),
   'odbc_field_type' => 
   array (
     0 => 'false|string',
-    'statement' => 'resource',
+    'statement' => 'Odbc\\Result',
     'field' => 'int',
   ),
   'odbc_foreignkeys' => 
   array (
-    0 => 'false|resource',
-    'odbc' => 'resource',
+    0 => 'Odbc\\Result|false',
+    'odbc' => 'Odbc\\Connection',
     'pk_catalog' => 'null|string',
     'pk_schema' => 'string',
     'pk_table' => 'string',
@@ -38299,62 +38318,62 @@ return array (
   ),
   'odbc_free_result' => 
   array (
-    0 => 'bool',
-    'statement' => 'resource',
+    0 => 'true',
+    'statement' => 'Odbc\\Result',
   ),
   'odbc_gettypeinfo' => 
   array (
-    0 => 'resource',
-    'odbc' => 'resource',
+    0 => 'Odbc\\Result|false',
+    'odbc' => 'Odbc\\Connection',
     'data_type=' => 'int',
   ),
   'odbc_longreadlen' => 
   array (
-    0 => 'bool',
-    'statement' => 'resource',
+    0 => 'true',
+    'statement' => 'Odbc\\Result',
     'length' => 'int',
   ),
   'odbc_next_result' => 
   array (
     0 => 'bool',
-    'statement' => 'resource',
+    'statement' => 'Odbc\\Result',
   ),
   'odbc_num_fields' => 
   array (
     0 => 'int',
-    'statement' => 'resource',
+    'statement' => 'Odbc\\Result',
   ),
   'odbc_num_rows' => 
   array (
     0 => 'int',
-    'statement' => 'resource',
+    'statement' => 'Odbc\\Result',
   ),
   'odbc_pconnect' => 
   array (
-    0 => 'false|resource',
+    0 => 'Odbc\\Connection|false',
     'dsn' => 'string',
-    'user' => 'string',
-    'password' => 'string',
+    'user=' => 'null|string',
+    'password=' => 'null|string',
     'cursor_option=' => 'int',
   ),
   'odbc_prepare' => 
   array (
-    0 => 'false|resource',
-    'odbc' => 'resource',
+    0 => 'Odbc\\Result|false',
+    'odbc' => 'Odbc\\Connection',
     'query' => 'string',
   ),
   'odbc_primarykeys' => 
   array (
-    0 => 'false|resource',
-    'odbc' => 'resource',
+    0 => 'Odbc\\Result|false',
+    'odbc' => 'Odbc\\Connection',
     'catalog' => 'null|string',
     'schema' => 'string',
     'table' => 'string',
   ),
   'odbc_procedurecolumns' => 
   array (
-    0 => 'false|resource',
-    'odbc' => 'resource',
+    0 => 'Odbc\\Result|false',
+    'odbc' => 'Odbc\\Connection',
     'catalog=' => 'null|string',
     'schema=' => 'null|string',
     'procedure=' => 'null|string',
@@ -38362,8 +38381,8 @@ return array (
   ),
   'odbc_procedures' => 
   array (
-    0 => 'false|resource',
-    'odbc' => 'resource',
+    0 => 'Odbc\\Result|false',
+    'odbc' => 'Odbc\\Connection',
     'catalog=' => 'null|string',
     'schema=' => 'null|string',
     'procedure=' => 'null|string',
@@ -38371,32 +38390,32 @@ return array (
   'odbc_result' => 
   array (
     0 => 'bool|null|string',
-    'statement' => 'resource',
+    'statement' => 'Odbc\\Result',
     'field' => 'int|string',
   ),
   'odbc_result_all' => 
   array (
     0 => 'false|int',
-    'statement' => 'resource',
+    'statement' => 'Odbc\\Result',
     'format=' => 'string',
   ),
   'odbc_rollback' => 
   array (
     0 => 'bool',
-    'odbc' => 'resource',
+    'odbc' => 'Odbc\\Connection',
   ),
   'odbc_setoption' => 
   array (
     0 => 'bool',
-    'odbc' => 'resource',
+    'odbc' => 'Odbc\\Connection|Odbc\\Result',
     'which' => 'int',
     'option' => 'int',
     'value' => 'int',
   ),
   'odbc_specialcolumns' => 
   array (
-    0 => 'false|resource',
-    'odbc' => 'resource',
+    0 => 'Odbc\\Result|false',
+    'odbc' => 'Odbc\\Connection',
     'type' => 'int',
     'catalog' => 'null|string',
     'schema' => 'string',
@@ -38406,8 +38425,8 @@ return array (
   ),
   'odbc_statistics' => 
   array (
-    0 => 'false|resource',
-    'odbc' => 'resource',
+    0 => 'Odbc\\Result|false',
+    'odbc' => 'Odbc\\Connection',
     'catalog' => 'null|string',
     'schema' => 'string',
     'table' => 'string',
@@ -38416,16 +38435,16 @@ return array (
   ),
   'odbc_tableprivileges' => 
   array (
-    0 => 'false|resource',
-    'odbc' => 'resource',
+    0 => 'Odbc\\Result|false',
+    'odbc' => 'Odbc\\Connection',
     'catalog' => 'null|string',
     'schema' => 'string',
     'table' => 'string',
   ),
   'odbc_tables' => 
   array (
-    0 => 'false|resource',
-    'odbc' => 'resource',
+    0 => 'Odbc\\Result|false',
+    'odbc' => 'Odbc\\Connection',
     'catalog=' => 'null|string',
     'schema=' => 'null|string',
     'table=' => 'null|string',
@@ -50916,7 +50935,7 @@ return array (
   ),
   'shm_detach' => 
   array (
-    0 => 'bool',
+    0 => 'true',
     'shm' => 'SysvSharedMemory',
   ),
   'shm_get_var' => 
@@ -51774,9 +51793,9 @@ return array (
   'socket_select' => 
   array (
     0 => 'false|int',
-    '&rw read' => 'array<array-key, Socket>|null',
-    '&rw write' => 'array<array-key, Socket>|null',
-    '&rw except' => 'array<array-key, Socket>|null',
+    '&read' => 'array<array-key, Socket>|null',
+    '&write' => 'array<array-key, Socket>|null',
+    '&except' => 'array<array-key, Socket>|null',
     'seconds' => 'int|null',
     'microseconds=' => 'int',
   ),
@@ -61749,7 +61768,7 @@ return array (
   'textdomain' => 
   array (
     0 => 'string',
-    'domain' => 'null|string',
+    'domain=' => 'null|string',
   ),
   'thread::__construct' => 
   array (
