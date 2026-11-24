@@ -2284,6 +2284,8 @@ final class ArrayAssignmentAnalyzer
     /**
      * The offsets of a string the key may write to: a negative int offset counts from its end, so it may be any
      * non-negative one, and a non-negative one any negative one
+     *
+     * @psalm-pure
      */
     private static function getStringOffsetsOfKeyType(Union $key_type): Union
     {
