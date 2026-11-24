@@ -39,7 +39,7 @@ use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Internal\FileManipulation\FunctionDocblockManipulator;
 use Psalm\Internal\MethodIdentifier;
-use Psalm\Internal\PhpVisitor\NodeCounterVisitor;
+use Psalm\Internal\Perf;
 use Psalm\Internal\Provider\NodeDataProvider;
 use Psalm\Internal\Type\Comparator\TypeComparisonResult;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
@@ -114,7 +114,6 @@ use function in_array;
 use function is_string;
 use function krsort;
 use function mb_strpos;
-use function microtime;
 use function preg_match;
 use function reset;
 use function sort;
@@ -696,9 +695,10 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
         if ($storage instanceof MethodStorage && $storage->location && !$storage->allowsNamedArguments()) {
             foreach ($overridden_method_ids as $overridden_method_id) {
                 $overridden_storage = $codebase->methods->getStorage($overridden_method_id);
-                if ($overridden_storage->allowsNamedArguments()) {
+                // a method without parameters can't be passed named arguments
+                if ($overridden_storage->params && $overridden_storage->allowsNamedArguments()) {
                     IssueBuffer::maybeAdd(new MethodSignatureMismatch(
-                        'Method ' . (string) $method_id . ' should accept named arguments '
+                        'Method ' . (string) $method_id . ' should accept named arguments'
                             . ' as ' . (string) $overridden_method_id . ' does',
                         $storage->location,
                     ));
@@ -776,7 +776,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             ]);
         }
 
-        $time = microtime(true);
+        $perf_start = Perf\Collector::$enabled ? Perf\Collector::functionStart() : null;
 
         $project_analyzer = $statements_analyzer->getProjectAnalyzer();
 
@@ -958,20 +958,18 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             }
         }
 
-        if (!$context->collect_initializations
-            && $project_analyzer->debug_performance
-            && $cased_method_id
-        ) {
-            $traverser = new PhpParser\NodeTraverser;
-
-            $node_counter = new NodeCounterVisitor();
-            $traverser->addVisitor($node_counter);
-            $traverser->traverse($function_stmts);
-
-            if ($node_counter->count > 5) {
-                $time_taken = microtime(true) - $time;
-                $codebase->analyzer->addFunctionTiming($cased_method_id, $time_taken / $node_counter->count);
-            }
+        if ($perf_start !== null) {
+            // the id of a method of an anonymous class names the file, and so does the path of the record
+            Perf\Collector::functionEnd(
+                $this->getFilePath(),
+                $this->getFileName(),
+                $this->function->getLine(),
+                $appearing_class_storage?->anonymous === true
+                    ? '{anonymous-class}::' . ($storage->cased_name ?? '')
+                    : $cased_method_id ?? '{closure}',
+                $context->collect_initializations,
+                $perf_start,
+            );
         }
 
         $final_actions = ScopeAnalyzer::getControlActions(
@@ -1056,6 +1054,14 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 );
             }
 
+            $closure_return_types = ReturnTypeAnalyzer::addImplicitVoidReturn(
+                $closure_return_types,
+                $closure_yield_types !== [],
+                $function_stmts,
+                $type_provider,
+                $context->has_returned,
+            );
+
             $closure_return_type = $closure_return_types
                 ? Type::combineUnionTypeArray(
                     $closure_return_types,
@@ -1090,6 +1096,14 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                             $storage->return_type,
                         ))
                 ) {
+                    $new_closure_return_type = $closure_return_type;
+                } elseif ($storage->return_type
+                    && !$storage->return_type_location
+                    && $closure_return_type->isNullable()
+                    && !UnionTypeComparator::isContainedBy($codebase, Type::getNull(), $storage->return_type)
+                ) {
+                    // a return type taken from the callable the closure is returned as lets it return null like a
+                    // declared one, but the callable does not: keep what the closure returns, to be checked there
                     $new_closure_return_type = $closure_return_type;
                 }
 
@@ -1722,6 +1736,23 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
     }
 
     /**
+     * A template without a bound may be given null as a parameter's default value (#2431), although null is not
+     * contained by it elsewhere: the caller may pick a type without null
+     *
+     * @psalm-pure
+     */
+    private static function hasTemplateWithoutBound(Union $param_type): bool
+    {
+        foreach ($param_type->getAtomicTypes() as $atomic_type) {
+            if ($atomic_type instanceof TTemplateParam && $atomic_type->as->isMixed()) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
      * @param list<FunctionLikeParameter> $params
      * @param list<Param> $param_stmts
      */
@@ -2298,6 +2329,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
 
                 if ($default_type
                     && !$default_type->hasMixed()
+                    && !($default_type->isNull() && self::hasTemplateWithoutBound($param_type))
                     && !UnionTypeComparator::isContainedBy(
                         $codebase,
                         $default_type,
@@ -2894,6 +2926,17 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
     public function getStorage(): FunctionLikeStorage
     {
         return $this->storage;
+    }
+
+    /**
+     * The node of the function-like being analysed
+     *
+     * @return TFunction
+     * @psalm-mutation-free
+     */
+    public function getFunctionLikeNode(): Closure|Function_|ClassMethod|ArrowFunction
+    {
+        return $this->function;
     }
 
     /**

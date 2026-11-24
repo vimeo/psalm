@@ -129,6 +129,42 @@ final class ClosureTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'closureFromCallableOfAMethodReturningStaticBindsItToThis' => [
+                'code' => '<?php
+                    class Foo {
+                        public function self(): static {
+                            return $this;
+                        }
+
+                        public function test(): void {
+                            $a = box(Closure::fromCallable([$this, "self"])())->same()->same();
+                            /** @psalm-check-type-exact $a = Box<Foo&static> */;
+
+                            $b = box($this->self(...)())->same()->same();
+                            /** @psalm-check-type-exact $b = Box<Foo&static> */;
+                        }
+                    }
+
+                    /** @template T */
+                    final class Box {
+                        /** @return self<T> */
+                        public function same(): self {
+                            return $this;
+                        }
+                    }
+
+                    /**
+                     * @template T
+                     * @param T $value
+                     * @return Box<T>
+                     */
+                    function box(mixed $value): Box {
+                        return new Box();
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'closureFromAnAssertionOfAClassStringIsAClosure' => [
                 'code' => '<?php
                     /**
@@ -3414,6 +3450,90 @@ final class ClosureTest extends TestCase
                     '$viaHidden' => 'int',
                 ],
                 'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'closureThatFallsThroughAfterAThrowReturnsVoid' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @param callable():T $f
+                     * @return T
+                     */
+                    function wrap(callable $f): mixed {
+                        return $f();
+                    }
+
+                    $ok = (bool) rand(0, 1);
+                    $f = function () use ($ok): void {
+                        if (!$ok) {
+                            throw new RuntimeException();
+                        }
+                    };
+                    wrap($f);
+                    $after = 1;',
+                'assertions' => [
+                    '$after' => 'int',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'closureThatFallsThroughAfterAThrowOrExitIsNotNever' => [
+                'code' => '<?php
+                    $ok = (bool) rand(0, 1);
+                    $declared = function () use ($ok): void {
+                        if (!$ok) {
+                            throw new RuntimeException();
+                        }
+                    };
+                    $inferred = function () use ($ok) {
+                        if (!$ok) {
+                            throw new RuntimeException();
+                        }
+                    };
+                    $exits = function () use ($ok): void {
+                        if (!$ok) {
+                            exit(1);
+                        }
+                    };
+                    $elseBranch = function () use ($ok): void {
+                        if (!$ok) {
+                            throw new RuntimeException();
+                        } else {
+                            echo "x";
+                        }
+                    };
+                    $afterwards = function () use ($ok): void {
+                        if (!$ok) {
+                            throw new RuntimeException();
+                        }
+                        echo "x";
+                    };',
+                'assertions' => [
+                    '$declared' => 'Closure[pure]():void',
+                    '$inferred' => 'Closure[pure]():void',
+                    '$exits' => 'Closure[pure]():void',
+                    '$elseBranch' => 'Closure[io]():void',
+                    '$afterwards' => 'Closure[io]():void',
+                ],
+                'ignored_issues' => ['MissingClosureReturnType'],
+                'php_version' => '8.1',
+            ],
+            'closureThatAlwaysExitsStaysNever' => [
+                'code' => '<?php
+                    $ok = (bool) rand(0, 1);
+                    $throws = function () { throw new RuntimeException(); };
+                    $both = function () use ($ok) {
+                        if ($ok) {
+                            throw new RuntimeException();
+                        } else {
+                            exit(1);
+                        }
+                    };',
+                'assertions' => [
+                    '$throws' => 'Closure[pure]():never',
+                    '$both' => 'Closure[pure]():never',
+                ],
+                'ignored_issues' => ['MissingClosureReturnType'],
                 'php_version' => '8.1',
             ],
         ];
