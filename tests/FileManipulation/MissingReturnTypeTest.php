@@ -203,6 +203,24 @@ final class MissingReturnTypeTest extends FileManipulationTestCase
                 'issues_to_fix' => ['MissingReturnType'],
                 'safe_types' => true,
             ],
+            'addMissingReturnTypeEscapesAQuoteInAStringLiteral' => [
+                'input' => '<?php
+                    function foo() {
+                        return "it\'s";
+                    }',
+                'output' => '<?php
+                    /**
+                     * @return string
+                     *
+                     * @psalm-return \'it\\\'s\'
+                     */
+                    function foo() {
+                        return "it\'s";
+                    }',
+                'php_version' => '5.6',
+                'issues_to_fix' => ['MissingReturnType'],
+                'safe_types' => true,
+            ],
             'addMissingNullableStringReturnType56' => [
                 'input' => '<?php
                     function foo() {

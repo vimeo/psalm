@@ -112,7 +112,6 @@ use function explode;
 use function hexdec;
 use function in_array;
 use function is_int;
-use function is_numeric;
 use function ltrim;
 use function octdec;
 use function preg_match;
@@ -157,14 +156,7 @@ final class TypeParser
             $only_token = $type_tokens[0];
 
             // Note: valid identifiers can include class names or $this
-            if (!preg_match('@^(\$this|\\\\?[a-zA-Z_\x7f-\xff][\\\\\-0-9a-zA-Z_\x7f-\xff]*)$@', $only_token[0])) {
-                if (!is_numeric($only_token[0])
-                    && str_contains($only_token[0], '\'')
-                    && str_contains($only_token[0], '"')
-                ) {
-                    throw new TypeParseTreeException("Invalid type '$only_token[0]'");
-                }
-            } else {
+            if (preg_match('@^(\$this|\\\\?[a-zA-Z_\x7f-\xff][\\\\\-0-9a-zA-Z_\x7f-\xff]*)$@', $only_token[0])) {
                 $only_token[0] = TypeTokenizer::fixScalarTerms($only_token[0], $analysis_php_version_id);
 
                 $atomic = Atomic::create(

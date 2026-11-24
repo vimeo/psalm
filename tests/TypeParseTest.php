@@ -154,7 +154,7 @@ final class TypeParseTest extends TestCase
 
     public function testLiteralStringIdDoesNotUseEscapesPhpDoesNotHave(): void
     {
-        $this->assertSame("'\\007\\010\\177'", (new TLiteralString("\x07\x08\x7f"))->getId());
+        $this->assertSame('"\\007\\010\\177"', (new TLiteralString("\x07\x08\x7f"))->getId());
     }
 
     public function testLiteralStringIdKeepsAnEscapedBackslashBeforeAOrB(): void
@@ -164,7 +164,40 @@ final class TypeParseTest extends TestCase
 
     public function testLiteralStringIdKeepsTheEscapesPhpHas(): void
     {
-        $this->assertSame("'\\n\\t\\r\\f\\v\\033\\000'", (new TLiteralString("\n\t\r\f\v\e\0"))->getId());
+        $this->assertSame('"\\n\\t\\r\\f\\v\\033\\000"', (new TLiteralString("\n\t\r\f\v\e\0"))->getId());
+    }
+
+    /**
+     * @return iterable<string, array{string}>
+     * @psalm-pure
+     */
+    public static function literalStringProvider(): iterable
+    {
+        yield 'single quote' => ["it's"];
+        yield 'double quote' => ['a"b'];
+        yield 'both quotes' => ['a"b\'c'];
+        yield 'newline' => ["a\nb"];
+        yield 'escape' => ["\x07\x1b"];
+        yield 'end of docblock' => ['a*/b'];
+        yield 'backslash' => ['a\\'];
+    }
+
+    #[DataProvider('literalStringProvider')]
+    public function testLiteralStringReadsBackFromItsIdAndDocblockText(string $value): void
+    {
+        $type = new TLiteralString($value);
+
+        $from_id = Type::parseString($type->getId())->getSingleAtomic();
+        $this->assertInstanceOf(TLiteralString::class, $from_id);
+        $this->assertSame($value, $from_id->value);
+
+        $docblock_text = $type->toNamespacedString(null, [], null, false);
+        $this->assertStringNotContainsString('*/', $docblock_text);
+        $this->assertStringNotContainsString("\n", $docblock_text);
+
+        $from_docblock_text = Type::parseString($docblock_text)->getSingleAtomic();
+        $this->assertInstanceOf(TLiteralString::class, $from_docblock_text);
+        $this->assertSame($value, $from_docblock_text->value);
     }
 
     public function testGenericWithTrailingComma(): void
