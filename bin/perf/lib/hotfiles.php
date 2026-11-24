@@ -195,8 +195,8 @@ function hotRow(array $r, bool $isFile): string
 
 /**
  * Informational "hot files" block: a collapsed details block with a table per profiled project, then one line per
- * group of projects that were not profiled (unsupported option), or alone when no profile was read. Empty when there
- * is nothing to say.
+ * group of projects that were not profiled (unsupported option) and one for those without a readable profile; the
+ * lines stand alone when no table renders. Empty when there is nothing to say.
  *
  * @param array<string, mixed> $hot collectHotFiles() result
  */
@@ -212,10 +212,12 @@ function renderHotFiles(array $hot): string
         $notes .= "\nHot files are not shown{$for}: {$sides} Psalm lacks `--debug-performance=PATH`.\n";
     }
 
+    if ($hot['missing'] !== []) {
+        $notes .= "\nNo readable performance profile for: " . implode(', ', $hot['missing']) . ".\n";
+    }
+
     if ($hot['projects'] === []) {
-        return $notes . ($notes !== '' || $hot['missing'] === []
-            ? ''
-            : "\nHot files are not shown: no performance profile could be read.\n");
+        return $notes;
     }
 
     $header = "| | base (s) | head (s) | Δ (s) | × |\n|:--|--:|--:|--:|--:|";
@@ -247,6 +249,5 @@ function renderHotFiles(array $hot): string
         )
         . implode("\n", $sections)
         . ($omitted > 0 ? "\n{$omitted} project(s) omitted for size; see the profiles.\n" : '')
-        . ($hot['missing'] === [] ? '' : "\nNo readable profile for: " . implode(', ', $hot['missing']) . ".\n")
         . "\n</details>\n" . $notes;
 }
