@@ -15,6 +15,7 @@ declare(strict_types=1);
 const ALLOWED_PATHS = [
     '~^dictionaries/(autogen/|override/)?CallMap(_[0-9]+(_delta)?)?\.php$~',
     '~^dictionaries/autogen/CallMapExtensions_[0-9]+\.php$~',
+    '~^dictionaries/CallMapIntroductions\.php$~',
     '~^src/Psalm/Internal/PreloaderList\.php$~',
     '~^docs/running_psalm/(error_levels|issues)\.md$~',
 ];

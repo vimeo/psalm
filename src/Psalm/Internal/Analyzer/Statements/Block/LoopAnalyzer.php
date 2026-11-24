@@ -14,11 +14,13 @@ use Psalm\Internal\Algebra\FormulaGenerator;
 use Psalm\Internal\Analyzer\ScopeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\VariableFetchAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\SimpleTypeInferer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Clause;
 use Psalm\Internal\PhpVisitor\AssignmentMapVisitor;
 use Psalm\Internal\PhpVisitor\NodeCleanerVisitor;
+use Psalm\Internal\Provider\NodeDataProvider;
 use Psalm\Internal\Scope\LoopScope;
 use Psalm\IssueBuffer;
 use Psalm\Node\Expr\BinaryOp\VirtualBooleanAnd;
@@ -338,7 +340,10 @@ final class LoopAnalyzer
                         ) {
                             $has_changes = true;
                         }
-                    } elseif (isset($original_parent_context->vars_in_scope[$var_id])) {
+                    } elseif (isset($original_parent_context->vars_in_scope[$var_id])
+                        // what assigning the loop variables forgot (`$a[$k]` for a foreach key `$k`) is not restored
+                        && isset($pre_loop_context->vars_in_scope[$var_id])
+                    ) {
                         if (!$type->equals($original_parent_context->vars_in_scope[$var_id])) {
                             $has_changes = true;
 
@@ -743,7 +748,13 @@ final class LoopAnalyzer
                             $continue_context->vars_in_scope[$var_id],
                         )
                         : $continue_context->vars_in_scope[$var_id];
-                    $loop_parent_context->removeVarFromConflictingClauses($var_id);
+
+                    // what the clauses say of a variable the loop did not change still holds where it is left
+                    if (($continue_context->parent_remove_vars[$var_id] ?? 0)
+                        > ($loop_parent_context->parent_remove_vars[$var_id] ?? 0)
+                    ) {
+                        $loop_parent_context->removeVarFromConflictingClauses($var_id);
+                    }
 
                     continue;
                 }
@@ -767,6 +778,13 @@ final class LoopAnalyzer
         }
 
         $loop_scope->condition_written_vars = $condition_written_var_ids;
+
+        self::markVarsUnsetAtJumpsPossiblyUndefined(
+            $loop_parent_context,
+            $loop_scope,
+            $pre_conditions,
+            $post_expressions,
+        );
 
         // all the comma separated conditions of a for are evaluated, but only the first operand of the && of a while
         foreach ($only_last_condition_decides ? $pre_conditions : array_slice($pre_conditions, 0, 1) as $evaluated) {
@@ -890,6 +908,49 @@ final class LoopAnalyzer
     }
 
     /**
+     * A variable unset before a `break` or a `continue` is possibly undefined after the loop, unless the conditions
+     * or post-expressions evaluated after the `continue` may assign it
+     *
+     * @param list<PhpParser\Node\Expr> $pre_conditions
+     * @param array<PhpParser\Node\Expr> $post_expressions
+     */
+    private static function markVarsUnsetAtJumpsPossiblyUndefined(
+        Context $loop_parent_context,
+        LoopScope $loop_scope,
+        array $pre_conditions,
+        array $post_expressions,
+    ): void {
+        $assigned_after_continue = [];
+
+        if ($loop_scope->vars_at_continues !== null && ($pre_conditions || $post_expressions)) {
+            $assignment_mapper = new AssignmentMapVisitor($loop_parent_context->self);
+            $traverser = new PhpParser\NodeTraverser($assignment_mapper);
+            $traverser->traverse([...$pre_conditions, ...$post_expressions]);
+            $assigned_after_continue = $assignment_mapper->getAssignedVarIds();
+        }
+
+        foreach ($loop_parent_context->vars_in_scope as $var_id => $type) {
+            if ($type->possibly_undefined || !self::isLoopVar($var_id)) {
+                continue;
+            }
+
+            // unset before one jump and set at the others is possibly undefined too
+            if (($loop_scope->vars_at_breaks !== null
+                    && !$loop_scope->breaks_through_finally
+                    && (!isset($loop_scope->vars_at_breaks[$var_id])
+                        || $loop_scope->vars_at_breaks[$var_id]->possibly_undefined))
+                || ($loop_scope->vars_at_continues !== null
+                    && !$loop_scope->continues_through_finally
+                    && (!isset($loop_scope->vars_at_continues[$var_id])
+                        || $loop_scope->vars_at_continues[$var_id]->possibly_undefined)
+                    && !isset($assigned_after_continue[$var_id]))
+            ) {
+                $loop_parent_context->vars_in_scope[$var_id] = $type->setPossiblyUndefined(true);
+            }
+        }
+    }
+
+    /**
      * After the loop, an offset was read only if it was read where the loop isn't entered, at the end of the body and
      * at every `break` and `continue`
      *
@@ -940,6 +1001,22 @@ final class LoopAnalyzer
         }
 
         return false;
+    }
+
+    /**
+     * Whether a loop condition is a literal that is always truthy (`true`, `1`): the loop is then only left by a break
+     */
+    public static function isAlwaysTruthyCondition(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr $condition,
+    ): bool {
+        return SimpleTypeInferer::infer(
+            $statements_analyzer->getCodebase(),
+            new NodeDataProvider(),
+            $condition,
+            $statements_analyzer->getAliases(),
+            $statements_analyzer,
+        )?->isAlwaysTruthy() ?? false;
     }
 
     /**
@@ -1079,9 +1156,27 @@ final class LoopAnalyzer
         }
 
         foreach ($loop_scope->condition_written_vars as $var_id => $type) {
-            if (isset($context->vars_in_scope[$var_id])) {
-                $context->vars_in_scope[$var_id] = Type::combineUnionTypes($context->vars_in_scope[$var_id], $type);
+            if (!isset($context->vars_in_scope[$var_id])) {
+                continue;
             }
+
+            $type_at_breaks = $loop_scope->vars_at_breaks[$var_id] ?? null;
+
+            // a variable every evaluation of the condition writes holds what the breaks leave or what the condition
+            // wrote, not what it held before the loop or where an iteration ended
+            if ($type_at_breaks !== null
+                && isset($loop_scope->condition_always_written_var_ids[$var_id])
+                && !$loop_scope->breaks_through_finally
+                && !$type_at_breaks->isNever()
+                && !$type_at_breaks->possibly_undefined
+            ) {
+                $context->vars_in_scope[$var_id] = Type::combineUnionTypes($type_at_breaks, $type)
+                    ->addParentNodes($context->vars_in_scope[$var_id]->parent_nodes);
+
+                continue;
+            }
+
+            $context->vars_in_scope[$var_id] = Type::combineUnionTypes($context->vars_in_scope[$var_id], $type);
         }
     }
 
@@ -2234,6 +2329,7 @@ final class LoopAnalyzer
     private static function differ(Union $type, Union $other_type): bool
     {
         return $type->getId() !== $other_type->getId()
+            || $type->possibly_undefined !== $other_type->possibly_undefined
             || array_diff_key($type->getAtomicTypes(), $other_type->getAtomicTypes()) !== []
             || array_diff_key($other_type->getAtomicTypes(), $type->getAtomicTypes()) !== [];
     }

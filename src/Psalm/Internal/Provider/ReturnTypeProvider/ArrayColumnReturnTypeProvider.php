@@ -8,6 +8,7 @@ use Override;
 use Psalm\CodeLocation;
 use Psalm\Codebase;
 use Psalm\Context;
+use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\SourceAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ArrayAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
@@ -38,6 +39,7 @@ use Psalm\Type\Atomic\TTrue;
 use Psalm\Type\Union;
 
 use function count;
+use function is_string;
 
 /**
  * @internal
@@ -96,6 +98,17 @@ final class ArrayColumnReturnTypeProvider implements FunctionReturnTypeProviderI
             }
         }
 
+
+        // the columns of rows that are objects are read as their properties
+        if ($first_arg_type = $statements_source->node_data->getType($call_args[0]->value)) {
+            self::addColumnPropertyReferences(
+                $statements_source,
+                $context,
+                $code_location,
+                $first_arg_type,
+                [$value_column_name, $key_column_name],
+            );
+        }
 
         $row_type = $row_shape = null;
         $input_array_not_empty = false;
@@ -418,5 +431,63 @@ final class ArrayColumnReturnTypeProvider implements FunctionReturnTypeProviderI
             }
         }
         return null;
+    }
+
+    /**
+     * @param list<int|string|null> $column_names
+     */
+    private static function addColumnPropertyReferences(
+        StatementsAnalyzer $statements_source,
+        Context $context,
+        CodeLocation $code_location,
+        Union $array_type,
+        array $column_names,
+    ): void {
+        $codebase = $statements_source->getCodebase();
+
+        foreach ($array_type->getAtomicTypes() as $array_atomic) {
+            if ($array_atomic instanceof TArray) {
+                $row_types = $array_atomic->type_params[1]->getAtomicTypes();
+            } elseif ($array_atomic instanceof TKeyedArray) {
+                $row_types = $array_atomic->getGenericValueType()->getAtomicTypes();
+            } else {
+                continue;
+            }
+
+            foreach ($row_types as $row_atomic) {
+                if (!$row_atomic instanceof TNamedObject
+                    || !$codebase->classOrInterfaceExists($row_atomic->value)
+                ) {
+                    continue;
+                }
+
+                $declaring_property_ids = $codebase->classlike_storage_provider->get($row_atomic->value)
+                    ->declaring_property_ids;
+
+                foreach ($column_names as $column_name) {
+                    // array_column() reads the properties of an object that are visible where it is called
+                    if (is_string($column_name)
+                        && isset($declaring_property_ids[$column_name])
+                        && ClassLikeAnalyzer::checkPropertyVisibility(
+                            $row_atomic->value . '::$' . $column_name,
+                            $context,
+                            $statements_source,
+                            $code_location,
+                            $statements_source->getSuppressedIssues(),
+                            false,
+                        ) === true
+                    ) {
+                        $codebase->properties->propertyExists(
+                            $codebase,
+                            $row_atomic->value . '::$' . $column_name,
+                            true,
+                            $statements_source,
+                            $context,
+                            $code_location,
+                        );
+                    }
+                }
+            }
+        }
     }
 }
