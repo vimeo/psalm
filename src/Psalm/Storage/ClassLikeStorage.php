@@ -440,9 +440,20 @@ final class ClassLikeStorage implements HasAttributesInterface
     public ?array $template_types = null;
 
     /**
+     * Whether each template is declared with `@template-covariant`. `false` doesn't mean invariant: a contravariant
+     * template is `false` here too. Read the variance of a template with getTemplateVariance().
+     *
      * @var array<int, bool>|null
      */
     public ?array $template_covariants = null;
+
+    /**
+     * The offsets of the templates declared with `@template-contravariant`. Read the variance of a template with
+     * getTemplateVariance().
+     *
+     * @var array<int, true>|null
+     */
+    public ?array $template_contravariants = null;
 
     /**
      * The templates declared with `@psalm-purity-template` (capability sets); the others are type templates.
@@ -697,6 +708,24 @@ final class ClassLikeStorage implements HasAttributesInterface
         }
 
         return $type_params;
+    }
+
+    /**
+     * How the type arguments of the template at $offset compare.
+     *
+     * @psalm-mutation-free
+     */
+    public function getTemplateVariance(int $offset): TemplateVariance
+    {
+        if (isset($this->template_contravariants[$offset])) {
+            return TemplateVariance::Contravariant;
+        }
+
+        if ($this->template_covariants[$offset] ?? false) {
+            return TemplateVariance::Covariant;
+        }
+
+        return TemplateVariance::Invariant;
     }
 
     /**
