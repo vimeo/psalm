@@ -1257,6 +1257,18 @@ final class TypeAlgebraTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'aConditionReassigningAVariableComparedLooselyToZeroIsNoParadox' => [
+                'code' => '<?php
+                    function f(string $n): int {
+                        if (($h = fopen($n, "wb")) == 0) {
+                            return 1;
+                        }
+                        if (($h = fopen($n, "rb")) == 0) {
+                            return 2;
+                        }
+                        return 0;
+                    }',
+            ],
             'anIfConditionAssigningAnAndKeepsTheNarrowingOfItsOperands' => [
                 'code' => '<?php
                     function takesInt(int $x): void {}
