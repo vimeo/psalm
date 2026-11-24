@@ -8284,6 +8284,28 @@ final class ClassTemplateExtendsTest extends TestCase
                     }',
                 'error_message' => 'UnsafeGenericInstantiation',
             ],
+            'newStaticWithStaticInTheBoundOfAValueOfReturnType' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @psalm-consistent-constructor
+                     */
+                    class Container {
+                        /** @param T $t */
+                        public function __construct($t) {}
+
+                        /**
+                         * @template U of array<int, static>
+                         * @param U $u
+                         * @return value-of<U>
+                         */
+                        public static function first(array $u) {
+                            new static(1);
+                            return $u[0];
+                        }
+                    }',
+                'error_message' => 'UnsafeGenericInstantiation',
+            ],
             'templateExtendsSameNameWithStaticCallUnsafeInstantiationNoParameters' => [
                 'code' => '<?php
                     /**

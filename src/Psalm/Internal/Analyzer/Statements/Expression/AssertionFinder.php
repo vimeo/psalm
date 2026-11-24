@@ -3778,7 +3778,7 @@ final class AssertionFinder
                         // - The array may have one of the types but not the others.
                         //
                         // NOTE: the negation of the negation is the original assertion.
-                        if ($value_type->getId() !== '' && !$value_type->isMixed() && !$value_type->hasTemplate()) {
+                        if (!$value_type->isUnionEmpty() && !$value_type->isMixed() && !$value_type->hasTemplate()) {
                             $assertions[] = new InArray($value_type, $haystack);
                         }
                     } else {
