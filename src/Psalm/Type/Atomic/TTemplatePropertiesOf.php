@@ -112,6 +112,6 @@ final class TTemplatePropertiesOf extends Atomic
         ?string $this_class,
         bool $use_phpdoc_format,
     ): string {
-        return $this->getKey();
+        return TPropertiesOf::tokenNameForFilter($this->visibility_filter) . '<' . $this->param_name . '>';
     }
 }

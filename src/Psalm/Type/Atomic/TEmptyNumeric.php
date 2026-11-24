@@ -35,6 +35,6 @@ final class TEmptyNumeric extends TNumeric
         ?string $this_class,
         bool $use_phpdoc_format,
     ): string {
-        return $this->getKey();
+        return 'numeric';
     }
 }

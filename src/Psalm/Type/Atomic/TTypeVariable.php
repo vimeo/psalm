@@ -243,7 +243,7 @@ final class TTypeVariable extends Atomic
     }
 
     /**
-     * A type variable has no docblock syntax: its key is kept
+     * A type variable has no docblock syntax: it is written with its name
      *
      * @param array<lowercase-string, string> $aliased_classes
      */
@@ -254,6 +254,6 @@ final class TTypeVariable extends Atomic
         ?string $this_class,
         bool $use_phpdoc_format,
     ): string {
-        return $this->getKey();
+        return $this->name;
     }
 }

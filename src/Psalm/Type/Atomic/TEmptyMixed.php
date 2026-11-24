@@ -36,6 +36,6 @@ final class TEmptyMixed extends TMixed
         ?string $this_class,
         bool $use_phpdoc_format,
     ): string {
-        return $this->getKey();
+        return 'mixed';
     }
 }
