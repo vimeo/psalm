@@ -131,7 +131,7 @@ See [`@method`, `@psalm-property` and `@mixin`](supported_annotations.md).
 
 Psalm reads these tags as the `@psalm-*` equivalents, so a library that already annotates for PHPStan needs no second set:
 
-`@phpstan-param`, `@phpstan-return`, `@phpstan-var`, `@phpstan-template`, `@phpstan-template-covariant`, `@phpstan-extends`, `@phpstan-implements`, `@phpstan-assert`, `@phpstan-assert-if-true`, `@phpstan-assert-if-false`, `@phpstan-param-out`, `@phpstan-pure`, `@phpstan-type`, `@phpstan-import-type`.
+`@phpstan-param`, `@phpstan-return`, `@phpstan-var`, `@phpstan-template`, `@phpstan-template-covariant`, `@phpstan-template-contravariant`, `@phpstan-extends`, `@phpstan-implements`, `@phpstan-assert`, `@phpstan-assert-if-true`, `@phpstan-assert-if-false`, `@phpstan-param-out`, `@phpstan-pure`, `@phpstan-type`, `@phpstan-import-type`.
 
 [Supported annotations](supported_annotations.md) names a few more (`@phpstan-this-out`, `@phpstan-self-out`, `@phpstan-param-closure-this`, `@phpstan-require-extends`, `@phpstan-require-implements`).
 
