@@ -1,6 +1,8 @@
 ---
 name: plugin-api-bc
 description: Use when the "Check backward compatibility" CI check (roave/backward-compatibility-check) fails on a vimeo/psalm PR, or when a PR deliberately changes Psalm's public/plugin API. Covers telling real BC breaks from false positives, fixing false positives in .roave-backward-compatibility-check.xml, and the companion psalm/psalm-plugin-api PR (version bump + changelog).
+metadata:
+  internal: "true"
 ---
 
 # Backward-compatibility check and psalm-plugin-api

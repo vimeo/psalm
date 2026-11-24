@@ -8,11 +8,12 @@ use DOMDocument;
 use DOMElement;
 use Psalm\Exception\ConfigException;
 use Psalm\Internal\Analyzer\IssueData;
+use Psalm\Internal\BaselineMatcher;
 use Psalm\Internal\Provider\FileProvider;
 use RuntimeException;
 
+use function array_count_values;
 use function array_filter;
-use function array_intersect;
 use function array_map;
 use function array_merge;
 use function array_reduce;
@@ -162,10 +163,10 @@ final class ErrorBaseline
                     $existingIssueType['o'],
                     $newIssues[$file][$issueType]['o'],
                 );
-                $existingIssuesCount[$issueType]['s'] = array_values(array_intersect(
+                $existingIssuesCount[$issueType]['s'] = self::intersectCodeSamples(
                     $existingIssueType['s'],
                     $newIssues[$file][$issueType]['s'],
-                ));
+                );
             }
         }
 
@@ -174,6 +175,30 @@ final class ErrorBaseline
         self::writeToFile($fileProvider, $baselineFile, $groupedIssues, $include_php_versions);
 
         return $groupedIssues;
+    }
+
+    /**
+     * The code samples of the baseline that the issues still have, each kept as many times as an issue has it: a
+     * sample listed twice stays once when only one of its issues is left
+     *
+     * @param array<int, string> $existing
+     * @param array<int, string> $new
+     * @return list<string>
+     * @psalm-pure
+     */
+    private static function intersectCodeSamples(array $existing, array $new): array
+    {
+        $left = array_count_values($new);
+        $kept = [];
+
+        foreach ($existing as $sample) {
+            if (($left[$sample] ?? 0) > 0) {
+                --$left[$sample];
+                $kept[] = $sample;
+            }
+        }
+
+        return $kept;
     }
 
     /**
@@ -210,7 +235,9 @@ final class ErrorBaseline
                 }
 
                 ++$carry[$fileName][$issueType]['o'];
-                $carry[$fileName][$issueType]['s'][] = $issue->selected_text;
+                $carry[$fileName][$issueType]['s'][] = BaselineMatcher::normalizeSelectedText(
+                    trim($issue->selected_text),
+                );
 
                 return $carry;
             },
