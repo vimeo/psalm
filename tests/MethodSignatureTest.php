@@ -903,6 +903,41 @@ final class MethodSignatureTest extends TestCase
                         public function foo(Closure $d, array &$a): void {}
                     }',
             ],
+            'disableNamedArgumentsOnClassImplementingParameterlessMethods' => [
+                'code' => '<?php
+                    /**
+                     * @no-named-arguments
+                     * @implements IteratorAggregate<int, int>
+                     */
+                    final class C implements Countable, IteratorAggregate {
+                        public function count(): int {
+                            return 0;
+                        }
+
+                        public function getIterator(): Iterator {
+                            return new ArrayIterator([]);
+                        }
+
+                        public function __toString(): string {
+                            return "";
+                        }
+                    }',
+            ],
+            'disableNamedArgumentsInOverrideOfParameterlessMethod' => [
+                'code' => '<?php
+                    class A {
+                        public function foo(): void {}
+                        public function bar(): void {}
+                    }
+
+                    final class B extends A {
+                        /** @no-named-arguments */
+                        public function foo(): void {}
+
+                        /** @no-named-arguments */
+                        public function bar(int ...$_args): void {}
+                    }',
+            ],
             'overrideDocumentingSomeParamsKeepsItsOwnType' => [
                 'code' => '<?php
                     class Repository {
@@ -2163,6 +2198,15 @@ final class MethodSignatureTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'finalMethodOfAReflectedNativeClassCannotBeOverridden' => [
+                'code' => '<?php
+                    final class P extends Phar {
+                        public static function apiVersion(): string {
+                            return "1.1.1";
+                        }
+                    }',
+                'error_message' => 'MethodSignatureMismatch',
+            ],
             'overrideNativeFinalMethodOfDocblockFinalClass' => [
                 'code' => '<?php
                     /**
@@ -3067,6 +3111,20 @@ final class MethodSignatureTest extends TestCase
                     }
                 ',
                 'error_message' => 'MethodSignatureMismatch',
+            ],
+            'disableNamedArgumentsOnClassWithParameterlessMethods' => [
+                'code' => '<?php
+                    interface Foo {
+                        public function a(): void;
+                        public function b(int $x): void;
+                    }
+                    /** @no-named-arguments */
+                    final class Baz implements Foo {
+                        public function a(): void {}
+                        public function b(int $x): void {}
+                    }
+                ',
+                'error_message' => 'Method Baz::b should accept named arguments as Foo::b does',
             ],
             'SKIPPED-noMixedTypehintInDescendant' => [ // #13926
                 'code' => '<?php

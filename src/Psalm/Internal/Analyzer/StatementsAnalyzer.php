@@ -46,6 +46,7 @@ use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\Codebase\VariableUseGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
+use Psalm\Internal\Perf;
 use Psalm\Internal\Provider\NodeDataProvider;
 use Psalm\Internal\Provider\TypeVariableResolvingNodeTypeProvider;
 use Psalm\Internal\ReferenceConstraint;
@@ -86,6 +87,7 @@ use function assert;
 use function count;
 use function explode;
 use function fwrite;
+use function hrtime;
 use function is_string;
 use function preg_replace;
 use function preg_split;
@@ -294,7 +296,17 @@ final class StatementsAnalyzer extends SourceAnalyzer
             }
 
             foreach ($stmts as $stmt) {
-                if (self::analyzeStatement($this, $stmt, $context, $global_context) === false) {
+                if (Perf\Collector::$enabled) {
+                    $perf_outer_child_ns = Perf\Collector::$child_ns;
+                    Perf\Collector::$child_ns = 0;
+                    $perf_start_ns = (int) hrtime(true);
+                    $analysis_result = self::analyzeStatement($this, $stmt, $context, $global_context);
+                    Perf\Collector::statementEnd($this, $stmt, $perf_start_ns, $perf_outer_child_ns);
+
+                    if ($analysis_result === false) {
+                        return false;
+                    }
+                } elseif (self::analyzeStatement($this, $stmt, $context, $global_context) === false) {
                     return false;
                 }
 
@@ -635,7 +647,17 @@ final class StatementsAnalyzer extends SourceAnalyzer
 
         $checked_types = [];
         $hasParsed = false;
-        foreach ($stmt->getComments() as $docblock) {
+
+        $comments = $stmt->getComments();
+
+        // a short echo tag has no room for a docblock before it: one before an echoed expression is the echo's
+        if ($stmt instanceof PhpParser\Node\Stmt\Echo_) {
+            foreach ($stmt->exprs as $echoed_expr) {
+                $comments = [...$comments, ...$echoed_expr->getComments()];
+            }
+        }
+
+        foreach ($comments as $docblock) {
             if (!$docblock instanceof Doc) {
                 continue;
             }
@@ -674,7 +696,9 @@ final class StatementsAnalyzer extends SourceAnalyzer
             if (isset($statements_analyzer->parsed_docblock->tags['psalm-suppress'])) {
                 $suppressed = $statements_analyzer->parsed_docblock->tags['psalm-suppress'];
                 if ($suppressed) {
-                    $new_issues = ExpressionAnalyzer::addSuppressions($statements_analyzer, $suppressed);
+                    // the suppressions of every docblock of the statement are removed after it
+                    $new_issues = ($new_issues ?? [])
+                        + ExpressionAnalyzer::addSuppressions($statements_analyzer, $suppressed);
                 }
             }
 
@@ -1312,6 +1336,34 @@ final class StatementsAnalyzer extends SourceAnalyzer
     public function getBranchPoint(string $var_id): ?int
     {
         return $this->var_branch_points[$var_id] ?? null;
+    }
+
+    /**
+     * Whether the mixed and non-mixed counts (the inferred-type percentage) include
+     * the expressions analysed here: not in initialization passes, included files,
+     * or trait methods (they are analysed once per using class).
+     *
+     * @psalm-mutation-free
+     */
+    public function shouldCountMixed(Context $context): bool
+    {
+        return !$context->collect_initializations
+            && $this->getFilePath() === $this->getRootFilePath()
+            && (!(($parent_source = $this->getSource()) instanceof FunctionLikeAnalyzer)
+                || !$parent_source->getSource() instanceof TraitAnalyzer);
+    }
+
+    public function countMixed(Context $context, bool $is_mixed): void
+    {
+        if (!$this->shouldCountMixed($context)) {
+            return;
+        }
+
+        if ($is_mixed) {
+            $this->codebase->analyzer->incrementMixedCount($this->getFilePath());
+        } else {
+            $this->codebase->analyzer->incrementNonMixedCount($this->getFilePath());
+        }
     }
 
     /**
