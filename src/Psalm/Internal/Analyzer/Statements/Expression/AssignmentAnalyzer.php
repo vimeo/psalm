@@ -3389,6 +3389,7 @@ final class AssignmentAnalyzer
      * @param list<Clause> $clauses
      * @param array<string, bool> $mixed_vars whether each mixed variable may be unset
      * @return list<Clause>
+     * @psalm-capabilities read-props
      */
     private static function forgetItemsOfMixedVars(array $clauses, array $mixed_vars, int $cond_object_id): array
     {
