@@ -20,6 +20,38 @@ final class AssignmentTest extends TestCase
     use InvalidCodeAnalysisTestTrait;
     use ValidCodeAnalysisTestTrait;
 
+    public function testReassignedVariableKeepsTheMixedAssignmentTheIfDoesNotCheck(): void
+    {
+        $this->testConfig->throw_exception = false;
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                /** @param list $items */
+                function reassigned(array $items): string {
+                    $a = $items[0];
+                    echo (string) $a;
+                    $a = $items[1];
+                    if (!is_string($a)) { $a = ""; }
+                    return $a;
+                }',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+
+        $mixed_assignment_lines = [];
+
+        foreach (IssueBuffer::getIssuesDataForFile($file_path) as $issue) {
+            if ($issue->type === 'MixedAssignment') {
+                $mixed_assignment_lines[] = $issue->line_from;
+            }
+        }
+
+        // the assignment the if checks is not reported, the one used as mixed before it is
+        self::assertSame([4], $mixed_assignment_lines);
+    }
+
     public function testMixedAssignmentTypedOnEveryWayThroughTheFollowingIfIsNotReported(): void
     {
         $this->testConfig->throw_exception = false;

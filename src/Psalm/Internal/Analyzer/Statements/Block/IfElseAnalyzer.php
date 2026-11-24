@@ -676,7 +676,7 @@ final class IfElseAnalyzer
                 IssueBuffer::remove(
                     $statements_analyzer->getFilePath(),
                     'MixedAssignment',
-                    $first_appearance->raw_file_start,
+                    $post_if_context->assigned_var_ids[$var_id] ?? $first_appearance->raw_file_start,
                 );
             }
         }
