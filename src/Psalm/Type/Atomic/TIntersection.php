@@ -54,7 +54,7 @@ final class TIntersection extends Atomic
      * @psalm-mutation-free
      */
     #[Override]
-    public function getId(bool $exact = true, bool $nested = false): string
+    public function getId(bool $exact = true): string
     {
         return implode(
             '&',

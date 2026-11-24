@@ -62,7 +62,7 @@ final class TTypeVariable extends Atomic
      *      their current state
      */
     #[Override]
-    public function getId(bool $exact = true, bool $nested = false): string
+    public function getId(bool $exact = true): string
     {
         // Bounds are rendered through the types they hold, which may (directly
         // or through another variable) mention this variable again. A variable
