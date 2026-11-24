@@ -226,6 +226,9 @@ final class TClassStringMap extends Atomic
         return true;
     }
 
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function getAssertionString(): string
     {

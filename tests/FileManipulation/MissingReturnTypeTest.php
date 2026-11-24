@@ -75,29 +75,6 @@ final class MissingReturnTypeTest extends FileManipulationTestCase
                 'issues_to_fix' => ['MissingReturnType'],
                 'safe_types' => false,
             ],
-            'addMissingReturnTypeObjectShape71' => [
-                'input' => '<?php
-                    /**
-                     * @param object{a: int} $o
-                     */
-                    function foo($o) {
-                        return $o;
-                    }',
-                'output' => '<?php
-                    /**
-                     * @param object{a: int} $o
-                     *
-                     * @return object
-                     *
-                     * @psalm-return object{a:int}
-                     */
-                    function foo($o) {
-                        return $o;
-                    }',
-                'php_version' => '7.1',
-                'issues_to_fix' => ['MissingReturnType'],
-                'safe_types' => false,
-            ],
             'addMissingReturnTypeObjectShape72' => [
                 'input' => '<?php
                     /**

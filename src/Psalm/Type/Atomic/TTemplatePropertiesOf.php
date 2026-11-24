@@ -52,6 +52,7 @@ final class TTemplatePropertiesOf extends Atomic
 
     /**
      * @param  array<lowercase-string, string> $aliased_classes
+     * @psalm-pure
      */
     #[Override]
     public function toPhpString(
