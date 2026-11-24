@@ -61,6 +61,17 @@ final class SwitchTypeTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'switchOnAVariableNamedLikeTheTemporaryOneKeepsIt' => [
+                'code' => '<?php
+                    function bar(int $__tmp_switch__1): int {
+                        switch ($__tmp_switch__1) {
+                            case 1:
+                                break;
+                        }
+
+                        return $__tmp_switch__1;
+                    }',
+            ],
             'continueTargetingAnOuterSwitchLeavesItLikeBreak' => [
                 'code' => '<?php
                     $outer = uniqid();
@@ -2628,6 +2639,12 @@ final class SwitchTypeTest extends TestCase
                         }
                     }',
                 'error_message' => 'UndefinedMethod',
+            ],
+            'switchTemporaryVariableIsNotDefinedAfterTheSwitch' => [
+                'code' => '<?php function bar(): int { switch (rand(0, 1)) { case 1: break; }
+                        return $__tmp_switch__36;
+                    }',
+                'error_message' => 'UndefinedVariable',
             ],
         ];
     }
