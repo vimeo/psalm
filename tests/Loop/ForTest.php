@@ -48,6 +48,14 @@ final class ForTest extends TestCase
                         echo $x;
                     }',
             ],
+            'varAssignedAndNarrowedInTheConditionIsNotRedundantlyNarrowedAgain' => [
+                'code' => '<?php
+                    function f(bool $b, int $n): void {
+                        for (; $b && ($x = rand(0, 1) ? "a" : null) !== null && strlen($x) > $n;) {
+                            echo $x;
+                        }
+                    }',
+            ],
             'clauseOfTheLeftOperandOfTheAndOfTheConditionHoldsInTheBody' => [
                 'code' => '<?php
                     function f(?string $a, ?string $b, bool $more): void {
