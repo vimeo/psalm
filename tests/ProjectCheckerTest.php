@@ -163,6 +163,12 @@ final class ProjectCheckerTest extends DeferredAnalyzerTestCase
             'checkPaths' => $this->project_analyzer->checkPaths([
                 (string) realpath((string) getcwd() . '/tests/fixtures/DummyProject'),
             ]),
+            'checkDir' => $this->project_analyzer->checkDir(
+                (string) realpath((string) getcwd() . '/tests/fixtures/DummyProject'),
+            ),
+            'checkFile' => $this->project_analyzer->checkFile(
+                (string) realpath((string) getcwd() . '/tests/fixtures/DummyProject/Bar.php'),
+            ),
             'serverMode' => $this->project_analyzer->serverMode(new LanguageServer(
                 new MockProtocolStream(),
                 new MockProtocolStream(),
@@ -186,6 +192,8 @@ final class ProjectCheckerTest extends DeferredAnalyzerTestCase
     {
         yield 'check' => ['check'];
         yield 'checkPaths' => ['checkPaths'];
+        yield 'checkDir' => ['checkDir'];
+        yield 'checkFile' => ['checkFile'];
         yield 'serverMode' => ['serverMode'];
     }
 
@@ -331,6 +339,35 @@ function checkDirRegression(): int
         $this->project_analyzer->checkDir($dir_path);
 
         $this->assertGreaterThan(0, IssueBuffer::getErrorCount());
+    }
+
+    public function testCheckFileHidesErrorsOutsideThePassedFile(): void
+    {
+        $config = Config::loadFromXML(
+            (string) getcwd(),
+            '<?xml version="1.0"?>
+            <psalm hideAllErrorsExceptPassedFiles="true">
+                <projectFiles>
+                    <directory name="tests/fixtures/DummyProject" />
+                </projectFiles>
+            </psalm>',
+        );
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig($config);
+
+        $passed_file = (string) realpath((string) getcwd() . '/tests/fixtures/DummyProject/Bar.php');
+        $other_file = (string) realpath((string) getcwd() . '/tests/fixtures/DummyProject/Bat.php');
+
+        ob_start();
+        $this->project_analyzer->checkFile($passed_file);
+        ob_end_clean();
+
+        $this->assertSame(
+            ['passed file' => true, 'other file' => false],
+            [
+                'passed file' => $config->reportIssueInFile('InvalidReturnType', $passed_file),
+                'other file' => $config->reportIssueInFile('InvalidReturnType', $other_file),
+            ],
+        );
     }
 
     public function testCanReportIssuesWithoutCheckMethod(): void

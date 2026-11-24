@@ -764,27 +764,43 @@ final class SimpleNegatedAssertionReconciler extends Reconciler
             unset($types[$literal_key]);
         }
 
-        foreach ($types as &$type) {
+        foreach ($types as $k => $type) {
             if ($type instanceof TTemplateParam) {
-                $new = $type->replaceAs(self::reconcileBoolLiteral(
-                    $value,
+                $type = self::reconcileTemplateBound(
+                    $type,
+                    static fn(
+                        Assertion $assertion,
+                        Union $as,
+                        ?string $key,
+                        bool $negated,
+                        ?CodeLocation $code_location,
+                        array $suppressed_issues,
+                        int &$failed_reconciliation,
+                        bool $is_equality,
+                    ): Union => self::reconcileBoolLiteral(
+                        $value,
+                        $assertion,
+                        $as,
+                        $key,
+                        $negated,
+                        $code_location,
+                        $suppressed_issues,
+                        $failed_reconciliation,
+                        $is_equality,
+                    ),
                     $assertion,
-                    $type->as,
-                    null,
-                    false,
-                    null,
                     $suppressed_issues,
-                    $failed_reconciliation,
                     $is_equality,
-                ));
+                    $redundant,
+                );
 
-                if ($new !== $type) {
-                    $redundant = false;
+                if ($type === null) {
+                    unset($types[$k]);
+                } else {
+                    $types[$k] = $type;
                 }
-                $type = $new;
             }
         }
-        unset($type);
 
         return self::finishReconciliation(
             $types ? $existing_var_type->setTypes($types) : null,

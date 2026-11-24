@@ -20,6 +20,34 @@ final class IntersectionTypeTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'propertyOfAnObjectIntersectedWithAShapeHasTheTypeOfBoth' => [
+                'code' => '<?php
+                    final class V {
+                        public ?string $x = null;
+                    }
+
+                    /**
+                     * @param V&object{x: string} $v
+                     */
+                    function narrowed(V $v): string {
+                        return $v->x;
+                    }
+
+                    /**
+                     * @param V&object{x: mixed} $v
+                     */
+                    function notWidened(V $v): ?string {
+                        return $v->x;
+                    }
+
+                    /**
+                     * @param V&object{x: string} $v
+                     */
+                    function read(V $v): void {
+                        $x = $v->x;
+                        echo $x;
+                    }',
+            ],
             'genericWithoutArgumentsInIntersectionGetsItsDefaultsLikeAlone' => [
                 'code' => '<?php
                     interface I {}

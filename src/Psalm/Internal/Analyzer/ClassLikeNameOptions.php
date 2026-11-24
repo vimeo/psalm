@@ -27,6 +27,11 @@ final class ClassLikeNameOptions
          * Codebase::getGuardedPhpVersionId()) can make a newer native class available.
          */
         public ?Context $context = null,
+        /**
+         * Whether running the code needs the class, as `new`, a static call or fetch, `extends` and `implements` do,
+         * unlike `::class`, `instanceof`, `catch` and type declarations
+         */
+        public bool $required_at_runtime = false,
     ) {
     }
 }

@@ -96,6 +96,7 @@ use function preg_match;
 use function preg_split;
 use function reset;
 use function sprintf;
+use function str_contains;
 use function str_starts_with;
 use function strlen;
 use function strtok;
@@ -421,6 +422,24 @@ final class ClassLikeNodeScanner
         foreach ($node->getComments() as $comment) {
             if (!$comment instanceof PhpParser\Comment\Doc) {
                 continue;
+            }
+
+            // like `@psalm-type`, an import is read from any docblock before the class, not only from the last one
+            if ($comment !== $doc_comment
+                && (str_contains($comment->getText(), '@psalm-import-type')
+                    || str_contains($comment->getText(), '@phpstan-import-type'))
+            ) {
+                try {
+                    $this->type_aliases += $this->getImportedTypeAliases(
+                        ClassLikeDocblockParser::parse($node, $comment, $this->aliases),
+                        $fq_classlike_name,
+                    );
+                } catch (DocblockParseException $e) {
+                    $storage->docblock_issues[] = new InvalidDocblock(
+                        $e->getMessage() . ' in docblock for ' . $fq_classlike_name,
+                        $name_location ?? $class_location,
+                    );
+                }
             }
 
             try {
@@ -1370,7 +1389,7 @@ final class ClassLikeNodeScanner
             $implemented_class_name,
             '@template-implements',
             'Implemented class',
-            'an implemented class',
+            'an implemented interface',
             $storage->class_implements,
         );
 
@@ -1390,7 +1409,7 @@ final class ClassLikeNodeScanner
             $used_class_name,
             '@template-use',
             'Used class',
-            'an used class',
+            'a used trait',
             $storage->used_traits,
         );
 
@@ -1464,6 +1483,17 @@ final class ClassLikeNodeScanner
         $counts = [];
 
         foreach ($union_type->getAtomicTypes() as $atomic_type) {
+            if ($atomic_type instanceof TNamedObject
+                && !isset($related_classes[strtolower($atomic_type->value)])
+            ) {
+                $storage->docblock_issues[] = new InvalidDocblock(
+                    $tag . ' must include the name of ' . $related_name . ', got ' . $atomic_type->getId(),
+                    new CodeLocation($this->file_scanner, $node, null, true),
+                );
+
+                continue;
+            }
+
             if (!$atomic_type instanceof TGenericObject) {
                 $storage->docblock_issues[] = new InvalidDocblock(
                     $tag . ' has invalid class ' . $atomic_type->getId(),
@@ -1474,15 +1504,6 @@ final class ClassLikeNodeScanner
             }
 
             $generic_class_lc = strtolower($atomic_type->value);
-
-            if (!isset($related_classes[$generic_class_lc])) {
-                $storage->docblock_issues[] = new InvalidDocblock(
-                    $tag . ' must include the name of ' . $related_name . ', got ' . $atomic_type->getId(),
-                    new CodeLocation($this->file_scanner, $node, null, true),
-                );
-
-                continue;
-            }
 
             if ($this->reportStarArgument($storage, $node, $atomic_type, $tag)) {
                 continue;
