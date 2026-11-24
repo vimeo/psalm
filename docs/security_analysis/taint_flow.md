@@ -296,6 +296,7 @@ function store(PDO $pdo, int $id): void {
     $bio = $pdo->quote($_GET['bio'] ?? '');
     $pdo->exec("INSERT INTO users (bio) FORMAT JSONEachRow $bio");  // ClickHouse
     $pdo->exec("UPDATE users SET bio = $bio WHERE id = 1");
+    $pdo->exec(sprintf('UPDATE users SET bio = %s WHERE id = %d', $bio, $id));
     $pdo->exec("UPDATE users SET bio = $bio WHERE id = $id");
 }
 
@@ -313,6 +314,7 @@ A statement that ends with such a part can't be parsed, because the part can go 
 function store(PDO $pdo): void {
     $bio = $pdo->quote($_GET['bio'] ?? '');
     $pdo->exec("UPDATE users SET bio = $bio");                           // can't be parsed
+    $pdo->exec(sprintf('UPDATE users SET bio = %s', $bio));              // can't be parsed
     $pdo->exec("UPDATE users SET bio = 'none' /* $bio */ WHERE id = 1"); // can't be parsed
 }
 

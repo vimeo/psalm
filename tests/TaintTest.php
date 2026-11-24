@@ -2230,6 +2230,13 @@ final class TaintTest extends TestCase
                         echo (string) ($result->fetch_assoc() ?? [])["name"];
                     }',
             ],
+            'sprintfQueryKeepsTheColumnsApart' => [
+                'code' => '<?php
+                    function run(PDO $pdo): void {
+                        $pdo->exec(sprintf("INSERT INTO %s (name, bio) VALUES (\'admin\', %s)", "users", $pdo->quote($_GET["bio"])));
+                        echo (string) $pdo->query("SELECT name FROM users")->fetch()["name"];
+                    }',
+            ],
             'otherColumnsOfAStoredRowAreNotTainted' => [
                 'code' => '<?php
                     function store(PDO $pdo): void {
@@ -8755,6 +8762,28 @@ final class TaintTest extends TestCase
                     }',
                 'error_message' => 'TaintedHtml',
                 'php_version' => '8.1',
+            ],
+            'sprintfQueryStoresTheTextOfItsArguments' => [
+                'code' => '<?php
+                    function run(PDO $pdo): void {
+                        $pdo->exec(sprintf("INSERT INTO %s (name, bio) VALUES (\'admin\', %s)", "users", $pdo->quote($_GET["bio"])));
+                        echo (string) $pdo->query("SELECT bio FROM users")->fetch()["bio"];
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'sprintfOfAFormatInAVariableCantBeParsed' => [
+                'code' => '<?php
+                    function run(PDO $pdo, float $delta, int $id): void {
+                        $pdo->exec(sprintf("INSERT INTO users (name, bio) VALUES (\'admin\', %s)", $pdo->quote($_GET["bio"])));
+                        if ($delta > 0) {
+                            $sql = "UPDATE accounts SET balance = balance+{$delta} WHERE id=%s";
+                        } else {
+                            $sql = "UPDATE accounts SET balance = balance-" . (-$delta) . " WHERE id=%s";
+                        }
+                        $pdo->exec(sprintf($sql, $id));
+                        echo (string) $pdo->query("SELECT name FROM users")->fetch()["name"];
+                    }',
+                'error_message' => 'TaintedHtml',
             ],
             'columnCopiedByInsertSelectIsTainted' => [
                 'code' => '<?php

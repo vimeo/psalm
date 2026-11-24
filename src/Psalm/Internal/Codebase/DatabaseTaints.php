@@ -7,7 +7,9 @@ namespace Psalm\Internal\Codebase;
 use PhpParser\Node\Arg;
 use PhpParser\Node\Expr;
 use PhpParser\Node\Expr\BinaryOp\Concat;
+use PhpParser\Node\Expr\FuncCall;
 use PhpParser\Node\InterpolatedStringPart;
+use PhpParser\Node\Name;
 use PhpParser\Node\Scalar\InterpolatedString;
 use PhpParser\Node\Scalar\String_;
 use Psalm\CodeLocation;
@@ -23,14 +25,20 @@ use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Union;
 
+use function array_values;
 use function count;
 use function dirname;
 use function is_int;
 use function ltrim;
+use function preg_match_all;
 use function preg_split;
 use function str_starts_with;
+use function strlen;
 use function strtolower;
 use function substr;
+
+use const PREG_OFFSET_CAPTURE;
+use const PREG_SET_ORDER;
 
 /**
  * What the database holds: the values an INSERT, REPLACE or UPDATE stores in a column flow into what the SELECTs of
@@ -1078,9 +1086,75 @@ final class DatabaseTaints
             return $text;
         }
 
+        if ($expr instanceof FuncCall && $expr->name instanceof Name && !$expr->isFirstClassCallable()
+            && $expr->name->toLowerString() === 'sprintf'
+        ) {
+            $text = self::getSprintfText($statements_analyzer, $expr->getArgs(), $holes);
+            if ($text !== null) {
+                return $text;
+            }
+        }
+
         $holes[] = $expr;
 
         return SqlStatement::HOLE_MARKER . (count($holes) - 1) . SqlStatement::HOLE_MARKER;
+    }
+
+    /**
+     * The text sprintf() gives with a literal format, each conversion being the text of its argument, or null if the
+     * format isn't a literal or names an argument not given one by one
+     *
+     * @param array<array-key, Arg> $args
+     * @param list<Expr> $holes
+     */
+    private static function getSprintfText(StatementsAnalyzer $statements_analyzer, array $args, array &$holes): ?string
+    {
+        $args = array_values($args);
+        foreach ($args as $arg) {
+            if ($arg->unpack || $arg->name !== null) {
+                return null;
+            }
+        }
+
+        $format_type = isset($args[0]) ? $statements_analyzer->node_data->getType($args[0]->value) : null;
+        if ($format_type === null || !$format_type->isSingleStringLiteral()) {
+            return null;
+        }
+
+        $format = $format_type->getSingleStringLiteral()->value;
+        preg_match_all(
+            '/%(?:([1-9][0-9]*)\$)?[-+ 0]*(?:\'.)?-?[0-9]*(?:\.[0-9]+)?(.)/s',
+            $format,
+            $conversions,
+            PREG_SET_ORDER | PREG_OFFSET_CAPTURE,
+        );
+
+        // the argument of each conversion, null for `%%`
+        $arguments = [];
+        $next = 1;
+        foreach ($conversions as [, [$position], [$type]]) {
+            if ($type === '%') {
+                $arguments[] = null;
+                continue;
+            }
+
+            $argument = $position !== '' ? (int) $position : $next++;
+            if (!isset($args[$argument])) {
+                return null;
+            }
+
+            $arguments[] = $args[$argument]->value;
+        }
+
+        $text = '';
+        $offset = 0;
+        foreach ($conversions as $i => [[$conversion, $conversion_offset]]) {
+            $text .= substr($format, $offset, $conversion_offset - $offset);
+            $text .= $arguments[$i] === null ? '%' : self::getText($statements_analyzer, $arguments[$i], $holes);
+            $offset = $conversion_offset + strlen($conversion);
+        }
+
+        return $text . substr($format, $offset);
     }
 
     /**
