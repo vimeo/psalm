@@ -254,9 +254,10 @@ final class OrAnalyzer
             // while in an or, we allow scope to boil over to support
             // statements of the form if ($x === null || $x->foo())
             [$right_context->vars_in_scope, $right_context->references_in_scope] =
-                Reconciler::reconcileKeyedTypesExcludingAssignedVars(
+                Reconciler::reconcileKeyedTypes(
                     $negated_type_assertions,
-                    $active_negated_type_assertions,
+                    // the types of the variables the condition assigns already assume the part before it
+                    AndAnalyzer::removeAssignedVarIds($active_negated_type_assertions, $left_assigned_var_ids),
                     $right_context->vars_in_scope,
                     $right_context->references_in_scope,
                     $changed_var_ids,
@@ -266,7 +267,6 @@ final class OrAnalyzer
                     $left_context->inside_loop,
                     new CodeLocation($statements_analyzer->getSource(), $stmt->left),
                     !$context->inside_negation,
-                    $left_assigned_var_ids,
                 );
         }
 
