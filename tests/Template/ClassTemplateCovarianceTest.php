@@ -782,6 +782,20 @@ final class ClassTemplateCovarianceTest extends TestCase
                 'error_levels' => [],
                 'php_version' => '8.0',
             ],
+            'preventCovariantTemplateInAnInvariantArgOfASelfOutType' => [
+                'code' => '<?php
+                    /** @template T */
+                    interface Inv {}
+                    /** @template-covariant T */
+                    final class C {
+                        /** @psalm-self-out self<Inv<T>> */
+                        public function wrap(): void {}
+                    }',
+                'error_message' => 'InvalidTemplateParam - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:29'
+                    . ' - Template param T of C is marked covariant and cannot be used here',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
             'preventExtendingWithCovariance' => [
                 'code' => '<?php
                     /**
