@@ -132,6 +132,110 @@ final class ArrayAssignmentTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'namedSpreadOfAShapeWrittenUnderAnUnknownKeyMayPassAnyParameter' => [
+                'code' => '<?php
+                    /** @param Closure(int $mapper, mixed $from): mixed $c */
+                    function call(Closure $c, mixed $from, string $name): mixed {
+                        $data = ["from" => $from];
+                        $data[$name] = 1;
+                        return $c(...$data);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'namedSpreadOfAnUnsealedShapeMayPassAnyParameter' => [
+                'code' => '<?php
+                    /** @param array{from: mixed, ...<string, mixed>} $data */
+                    function declared(array $data): void {
+                        named(...$data);
+                    }
+
+                    function named(int $mapper, mixed $from): void {}',
+                'assertions' => [],
+                'ignored_issues' => ['MixedArgument'],
+                'php_version' => '8.1',
+            ],
+            'writeUnderATemplateKeyMayReachEveryItemOfItsBound' => [
+                'code' => '<?php
+                    /**
+                     * @template K of array-key
+                     * @param K $k
+                     */
+                    function overwrite($k): void {
+                        $a = ["a" => 1, 0 => 2];
+                        $a[$k] = "v";
+                        /** @psalm-check-type-exact $a = array{0: "v"|2, a: "v"|1, ...<K, "v">} */;
+                    }',
+            ],
+            'writeUnderAStringKeyMayReachTheIntKeyOfItsDecimalString' => [
+                'code' => '<?php
+                    /**
+                     * @return array{0: int, a: int}
+                     */
+                    function shape(): array {
+                        return [0 => 1, "a" => 2];
+                    }
+
+                    function numberedKey(): string {
+                        return "0";
+                    }
+
+                    /** @var class-string $class */
+                    $class = stdClass::class;
+                    $s = numberedKey();
+                    $any = shape();
+                    $any[$s] = "v";
+                    $byClass = shape();
+                    $byClass[$class] = "v";',
+                'assertions' => [
+                    '$any===' => "array{0: 'v'|int, a: 'v'|int, ...<string, 'v'>}",
+                    '$byClass===' => "array{0: int, a: 'v'|int, ...<class-string, 'v'>}",
+                ],
+            ],
+            'writeUnderAnUnknownKeyKeepsTheItemsTheKeyCantBe' => [
+                'code' => '<?php
+                    /**
+                     * @param array{expired: string, ...<int, list<int>>} $data
+                     * @param list<int> $ids
+                     * @return array{expired: string, ...<int, list<int>>}
+                     */
+                    function setData(array $data, int $id, array $ids): array {
+                        $data[$id] = $ids;
+                        $data["expired"] = date("Y-m-d");
+                        return $data;
+                    }
+
+                    /** @var array{0: string, name: string, ...<int, bool>} $mixedKeys */
+                    $mixedKeys[rand(0, 9)] = true;
+
+                    /** @var array{a: int} $sealed */
+                    $sealed["k" . rand()] = "v";
+
+                    /** @var array{a: int} $numericKey */
+                    $numericKey[(string) rand(0, PHP_INT_MAX)] = "v";
+
+                    /** @var array{name?: string, ...<int, bool>} $possiblyEmpty */
+                    $possiblyEmpty[rand(0, 9)] = true;
+
+                    /** @var array{a?: mixed, b: int, ...<string, mixed>} $optionalMixed */
+                    $optionalMixed["k" . rand()] = [1];
+
+                    /** @var array{0: int, 1: bool, 2: string, ...<int<3, max>, mixed>} $appended */
+                    $appended[] = "a";
+
+                    /** @var array{a: int} $sealedAppended */
+                    $sealedAppended[] = "v";',
+                'assertions' => [
+                    '$mixedKeys===' => 'array{0: string|true, name: string, ...<int, bool>}',
+                    '$sealed===' => 'array{a: \'v\'|int, ...<non-empty-lowercase-string, \'v\'>}',
+                    '$numericKey===' => 'array{a: int, ...<int, \'v\'>}',
+                    '$possiblyEmpty===' => 'non-empty-array<\'name\'|int, bool|string>',
+                    '$optionalMixed===' => 'array{a?: list{1}|mixed, b: int|list{1}, ...<string, list{1}|mixed>}',
+                    '$appended===' => 'array{0: int, 1: bool, 2: string, ...<int<0, max>, \'a\'|mixed>}',
+                    '$sealedAppended===' => 'array{a: int, ...<int<0, max>, \'v\'>}',
+                ],
+            ],
             'uuidLikeStringKeyStaysString' => [
                 'code' => '<?php
                     $a = ["6e5212ed-a197-4339-99aa-5654798a4854" => 1, "1e999" => 2];',
@@ -502,8 +606,8 @@ final class ArrayAssignmentTest extends TestCase
 
                     echo count($conditions) + count($pair);',
                 'assertions' => [
-                    '$conditions===' => "array{0?: array{C: array<never, never>}, A?: 'B', ...<int<0, max>, array{C: array<never, never>}>}",
-                    '$pair===' => "array{0?: array{E: 1}, A?: 'B', C?: 'D', ...<int<0, max>, array{E: 1}>}",
+                    '$conditions===' => "array{A: 'B', ...<int<0, max>, array{C: array<never, never>}>}",
+                    '$pair===' => "array{A: 'B', C: 'D', ...<int<0, max>, array{E: 1}>}",
                 ],
                 'ignored_issues' => [],
                 'php_version' => '8.0',
@@ -708,7 +812,7 @@ final class ArrayAssignmentTest extends TestCase
                         $keyed[$negative] = 2;
                     }',
                 'assertions' => [
-                    '$keyed' => 'non-empty-array<array-key, int>',
+                    '$keyed' => 'array{x: int, ...<array-key, int>}',
                 ],
                 'ignored_issues' => [
                     'MixedArgument', 'MixedArrayAccess', 'MixedArrayOffset', 'MixedAssignment', 'MixedOperand',
@@ -1100,14 +1204,20 @@ final class ArrayAssignmentTest extends TestCase
                     $a["x"] = 1;
                     $a[(string) rand()] = "b";
                     $b = $a["x"];
-                    /** @psalm-check-type-exact $b = 1|string */;
+                    /** @psalm-check-type-exact $b = 1 */;
+                    $a[str_repeat("x", rand(1, 3))] = "c";
+                    $b2 = $a["x"];
+                    /** @psalm-check-type-exact $b2 = \'c\'|1 */;
 
                     /** @var array<string, array<string, int|string>> $e */
                     $e = [];
                     $e["x"]["y"] = 1;
                     $e["x"][(string) rand()] = "b";
                     $f = $e["x"]["y"];
-                    /** @psalm-check-type-exact $f = int|string */;
+                    /** @psalm-check-type-exact $f = 1 */;
+                    $e["x"][str_repeat("y", rand(1, 3))] = "c";
+                    $f2 = $e["x"]["y"];
+                    /** @psalm-check-type-exact $f2 = \'c\'|1 */;
 
                     $g = ["y" => 1];
                     $g["x"] = 1;
@@ -1117,18 +1227,114 @@ final class ArrayAssignmentTest extends TestCase
 
                     /** @var array<string, int|string> $i */
                     $i = [];
-                    $k = (string) rand();
+                    $k = uniqid();
                     $i[$k] = 1;
                     $i["x"] = "b";
                     $j = $i[$k];
                     /** @psalm-check-type-exact $j = int|string */;',
+            ],
+            'keyAssignmentKeepsTheOffsetsItsTypeCannotBe' => [
+                'code' => '<?php
+                    /** @return int|false */
+                    function f() {
+                        return rand(0, 1) ? 1 : false;
+                    }
+
+                    function flat(array $p, int $i): void {
+                        $p["b"] = f();
+                        $p[$i] = 1;
+                        $b = $p["b"];
+                        /** @psalm-check-type-exact $b = false|int */;
+                    }
+
+                    function nested(array $p, int $i): void {
+                        $p["b"] = f();
+                        $p[$i]["x"] = 1;
+                        $b = $p["b"];
+                        /** @psalm-check-type-exact $b = false|int */;
+                    }
+
+                    /** @param array<array-key, array<string, int|string>> $p */
+                    function underAKnownOffset(array $p, int $i): void {
+                        $p["a"]["b"] = 1;
+                        $p["a"][$i] = "s";
+                        $b = $p["a"]["b"];
+                        /** @psalm-check-type-exact $b = 1 */;
+                    }
+
+                    function decimalIntString(array $p): void {
+                        $p["b"] = f();
+                        $p[(string) rand()] = 1;
+                        $b = $p["b"];
+                        /** @psalm-check-type-exact $b = false|int */;
+                    }
+
+                    /** @param int<0, 5> $i */
+                    function outOfRange(array $p, int $i): void {
+                        $p[10] = f();
+                        $p[$i] = 1;
+                        $b = $p[10];
+                        /** @psalm-check-type-exact $b = false|int */;
+                    }
+
+                    function knownVariableKey(array $p, int $i): void {
+                        $p[$i] = f();
+                        $p["b"] = 1;
+                        $p["3b"] = 1;
+                        $b = $p[$i];
+                        /** @psalm-check-type-exact $b = false|int */;
+                    }
+
+                    /** @param mixed $p */
+                    function mixedRoot($p): void {
+                        $p["a"] = f();
+                        $p["b"] = 1;
+                        $b = $p["a"];
+                        /** @psalm-check-type-exact $b = false|int */;
+                    }
+
+                    function untypedRoot($p): void {
+                        $p["a"] = f();
+                        $p["b"] = 1;
+                        $b = $p["a"];
+                        /** @psalm-check-type-exact $b = false|int */;
+                    }
+
+                    /** @param array<string, mixed> $p */
+                    function mixedChild(array $p): void {
+                        $p["x"]["a"] = f();
+                        $p["x"]["b"] = 1;
+                        $b = $p["x"]["a"];
+                        /** @psalm-check-type-exact $b = false|int */;
+                    }
+
+                    function stringOffsets(string $s): void {
+                        $s[0] = "x";
+                        $s[1] = "y";
+                        $b = $s[0];
+                        /** @psalm-check-type-exact $b = \'x\' */;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedAssignment', 'MixedArrayAssignment', 'MixedArrayAccess', 'MissingParamType'],
+            ],
+            'literalKeyAssignmentKeepsTheOtherLiteralOffsetsOfAnArrayOrArrayAccess' => [
+                'code' => '<?php
+                    /** @param array|ArrayAccess $c */
+                    function arrayOrArrayAccess(int $i, &$c): void {
+                        $c["sandbox"]["progress"] = $i;
+                        $c["finished"] = 1;
+                        $b = $c["sandbox"]["progress"];
+                        /** @psalm-check-type-exact $b = int */;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedArrayAccess', 'MixedArrayAssignment', 'MixedAssignment'],
             ],
             'unknownKeyAssignmentKeepsTheOffsetsItCannotBe' => [
                 'code' => '<?php
                     /** @var array{x: array<string, int>, y: int} $a */
                     $a = ["x" => [], "y" => 1];
                     $a["z"] = "z";
-                    $a["x"][(string) rand()] = 1;
+                    $a["x"][uniqid()] = 1;
                     $b = $a["y"];
                     /** @psalm-check-type-exact $b = int */;
                     $c = $a["z"];
@@ -1140,13 +1346,16 @@ final class ArrayAssignmentTest extends TestCase
                     $d["any"]["y"] = 6;
                     $d[(string) rand()]["x"] = "s";
                     $e = $d["any"]["x"];
-                    /** @psalm-check-type-exact $e = int|string */;
+                    /** @psalm-check-type-exact $e = 5 */;
+                    $d[str_repeat("a", rand(1, 3))]["x"] = "s";
+                    $e2 = $d["any"]["x"];
+                    /** @psalm-check-type-exact $e2 = \'s\'|5 */;
                     $f = $d["any"]["y"];
                     /** @psalm-check-type-exact $f = 6 */;
 
                     /** @var array<string, array<string, int|string>> $g */
                     $g = [];
-                    $k = (string) rand();
+                    $k = uniqid();
                     $g[$k]["other"] = 5;
                     $g[$k]["lit"] = 6;
                     $g["x"]["lit"] = "s";
@@ -1311,7 +1520,7 @@ final class ArrayAssignmentTest extends TestCase
                     $foo = [];
                     $foo[][][] = "hello";',
                 'assertions' => [
-                    '$foo' => 'non-empty-list<list<non-empty-list<string>>>',
+                    '$foo' => 'non-empty-list<non-empty-list<non-empty-list<string>>>',
                 ],
             ],
             'implicit4dIntArrayCreation' => [
@@ -1319,7 +1528,7 @@ final class ArrayAssignmentTest extends TestCase
                     $foo = [];
                     $foo[][][][] = "hello";',
                 'assertions' => [
-                    '$foo' => 'non-empty-list<list<list<non-empty-list<string>>>>',
+                    '$foo' => 'non-empty-list<non-empty-list<non-empty-list<non-empty-list<string>>>>',
                 ],
             ],
             'implicitIndexedIntArrayCreation' => [
@@ -3602,6 +3811,79 @@ final class ArrayAssignmentTest extends TestCase
                         return $l;
                     }',
             ],
+            'nestedAssignmentWithAnOffsetCreatesNonEmptyArrays' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @var string $k */
+                    $k = 'a';
+                    /** @var string $j */
+                    $j = 'b';
+                    /** @var int $i */
+                    $i = 1;
+
+                    $a = [];
+                    $a[$k][$i] = 1;
+
+                    $b = [];
+                    $b[$k][$j][$i] = 1;
+
+                    $c = [];
+                    $c[][][] = 1;
+
+                    $d = [];
+                    $d[][$k] = 1;
+
+                    $e = [];
+                    if (rand(0, 1)) {
+                        $e[$k][$i] = 1;
+                    }
+                PHP,
+                'assertions' => [
+                    '$a===' => 'non-empty-array<string, non-empty-array<int, 1>>',
+                    '$b===' => 'non-empty-array<string, non-empty-array<string, non-empty-array<int, 1>>>',
+                    '$c===' => 'non-empty-list<non-empty-list<non-empty-list<1>>>',
+                    '$d===' => 'non-empty-list<non-empty-array<string, 1>>',
+                    '$e===' => 'array<string, non-empty-array<int, 1>>',
+                ],
+            ],
+            'severalNestedWritesUnderOneComputedKeyKeepTheirKeysDefined' => [
+                'code' => '<?php
+                    /**
+                     * @param list<string> $jobs
+                     */
+                    function f(array $jobs, string $c, string $q): void {
+                        $groups = [];
+                        foreach ($jobs as $job) {
+                            $groups[$c . ":" . $q]["connection"] = $c;
+                            $groups[$c . ":" . $q]["queue"] = $q;
+                            $groups[$c . ":" . $q]["jobs"][] = $job;
+                        }
+                        foreach ($groups as $group) {
+                            echo $group["queue"];
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'arrayCreatedByANestedAssignmentInALoopIsNotEmpty' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param list<list<string>> $groups */
+                    function f(array $groups): int {
+                        $by_name = [];
+                        foreach ($groups as $i => $names) {
+                            foreach ($names as $name) {
+                                $by_name[$name][$i] = $name;
+                            }
+                        }
+                        foreach ($by_name as $entries) {
+                            return array_key_first($entries);
+                        }
+                        return 0;
+                    }
+                PHP,
+            ],
             'classStringKeyStaysAClassStringWhenMergedWithClassStringKeys' => [
                 'code' => <<<'PHP'
                     <?php
@@ -3682,6 +3964,19 @@ final class ArrayAssignmentTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'writeUnderATemplateKeyMayReplaceAStringItem' => [
+                'code' => '<?php
+                    /**
+                     * @template K of string
+                     * @param K $k
+                     */
+                    function readBack($k): int {
+                        $a = ["name" => 1];
+                        $a[$k] = "v";
+                        return $a["name"];
+                    }',
+                'error_message' => 'InvalidReturnStatement',
+            ],
             'offsetUnsetInABranchAfterALoopWritingItIsPossiblyUndefined' => [
                 'code' => '<?php
                     /**
@@ -4025,6 +4320,99 @@ final class ArrayAssignmentTest extends TestCase
                         $a[$k]["x"] = 5;
                         $a["y"]["x"] = "s";
                         return $a[$k]["x"];
+                    }',
+                'error_message' => 'InvalidReturnStatement',
+            ],
+            'stringKeyAssignmentForgetsTheIntOffsetsItMayBe' => [
+                'code' => '<?php
+                    /** @param array<array-key, int|string> $a */
+                    function f(array $a, string $s): int {
+                        $a[3] = 5;
+                        $a[$s] = "s";
+                        return $a[3];
+                    }',
+                'error_message' => 'InvalidReturnStatement',
+            ],
+            'boolKeyAssignmentForgetsTheIntOffsetItIsCastTo' => [
+                'code' => '<?php
+                    /** @param array<array-key, int|string> $a */
+                    function f(array $a, bool $b): int {
+                        $a[1] = 5;
+                        $a[$b] = "s";
+                        return $a[1];
+                    }',
+                'error_message' => 'InvalidReturnStatement',
+                'error_levels' => ['InvalidArrayOffset'],
+            ],
+            'floatKeyAssignmentForgetsTheIntOffsetsItMayBeCastTo' => [
+                'code' => '<?php
+                    /** @param array<array-key, int|string> $a */
+                    function f(array $a, float $f): int {
+                        $a[1] = 5;
+                        $a[$f] = "s";
+                        return $a[1];
+                    }',
+                'error_message' => 'InvalidReturnStatement',
+                'error_levels' => ['InvalidArrayOffset'],
+            ],
+            'intKeyAssignmentForgetsTheOffsetOfAStringVariableItMayBe' => [
+                'code' => '<?php
+                    /** @param array<array-key, int|string> $a */
+                    function f(array $a, string $s): int {
+                        $a[$s] = 5;
+                        $a[3] = "s";
+                        return $a[$s];
+                    }',
+                'error_message' => 'InvalidReturnStatement',
+            ],
+            'templateStringKeyAssignmentForgetsTheIntOffsetsItMayBe' => [
+                'code' => '<?php
+                    /**
+                     * @template T of string
+                     * @param array<array-key, int|string> $a
+                     * @param T $k
+                     */
+                    function f(array $a, string $k): int {
+                        $a[3] = 5;
+                        $a[$k] = "s";
+                        return $a[3];
+                    }',
+                'error_message' => 'InvalidReturnStatement',
+            ],
+            'intKeyAssignmentForgetsTheOffsetOfATemplateStringItMayBe' => [
+                'code' => '<?php
+                    /**
+                     * @template T of string
+                     * @param array<array-key, int|string> $a
+                     * @param T $k
+                     */
+                    function f(array $a, string $k): int {
+                        $a[$k] = 5;
+                        $a[3] = "s";
+                        return $a[$k];
+                    }',
+                'error_message' => 'InvalidReturnStatement',
+            ],
+            'negativeStringOffsetAssignmentForgetsThePositiveOffsets' => [
+                'code' => '<?php
+                    /** @return "x" */
+                    function f(): string {
+                        $s = "ab";
+                        $s[1] = "x";
+                        $i = -1;
+                        $s[$i] = "y";
+                        return $s[1];
+                    }',
+                'error_message' => 'LessSpecificReturnStatement',
+            ],
+            'outOfRangeDecimalKeyAssignmentForgetsTheSameStringOffset' => [
+                'code' => '<?php
+                    /** @param array<array-key, int|string> $a */
+                    function f(array $a, string $s): int {
+                        $a["9223372036854775808"] = 5;
+                        $k = "9223372036854775808";
+                        $a[$k] = "s";
+                        return $a["9223372036854775808"];
                     }',
                 'error_message' => 'InvalidReturnStatement',
             ],

@@ -1013,6 +1013,250 @@ final class MethodSignatureTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.3',
             ],
+            'inheritedParamTypeKeepsWhatAPartiallyDocumentedOverrideWidensItsNativeTypeWith' => [
+                'code' => '<?php
+                    final class D {}
+
+                    interface I {
+                        /** @param D|null $d */
+                        public function decide(?D $d = null): bool;
+                    }
+
+                    final class M implements I {
+                        /** @param bool $x */
+                        #[\Override]
+                        public function decide(bool|D|null $d = null, bool $x = false): bool {
+                            /** @psalm-check-type-exact $d = bool|D|null */;
+                            if (\is_bool($d)) {
+                                $x = $d;
+                            }
+                            return $x;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
+            'inheritedParamTypeKeepsWhatAnUndocumentedOverrideWidensItsNativeTypeWith' => [
+                'code' => '<?php
+                    final class D {}
+
+                    interface I {
+                        /** @param D|null $d */
+                        public function decide(?D $d = null): bool;
+                    }
+
+                    final class M implements I {
+                        #[\Override]
+                        public function decide(bool|D|null $d = null): bool {
+                            /** @psalm-check-type-exact $d = bool|D|null */;
+                            return \is_bool($d);
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
+            'inheritedParamTypeRefinesOnlyThePartOfTheWidenedNativeTypeThatTheParentDocuments' => [
+                'code' => '<?php
+                    class P {
+                        /** @param positive-int $x */
+                        public function f(int $x): void {}
+                    }
+
+                    final class Q extends P {
+                        #[\Override]
+                        public function f(int|string $x): void {
+                            /** @psalm-check-type-exact $x = positive-int|string */;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
+            'inheritedParamTypeStillRefinesAnOverrideWithTheSameNativeType' => [
+                'code' => '<?php
+                    class P {
+                        /** @param positive-int $x */
+                        public function f(int $x): void {}
+                    }
+
+                    final class Q extends P {
+                        /** @return void */
+                        #[\Override]
+                        public function f(int $x): void {
+                            /** @psalm-check-type-exact $x = positive-int */;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
+            'inheritedParamTypeOfAParameterWithoutNativeTypeRefinesTheOverride' => [
+                'code' => '<?php
+                    class P {
+                        /** @param positive-int $x */
+                        public function f($x): void {}
+                    }
+
+                    final class Q extends P {
+                        /** @return void */
+                        #[\Override]
+                        public function f(int $x): void {
+                            /** @psalm-check-type-exact $x = positive-int */;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
+            'inheritedParamTypeOfAnOverrideWidenedToMixedIsMixed' => [
+                'code' => '<?php
+                    final class D {
+                        public function foo(): void {}
+                    }
+
+                    interface I {
+                        /** @param D|null $d */
+                        public function decide(?D $d = null): void;
+                    }
+
+                    final class M implements I {
+                        #[\Override]
+                        public function decide(mixed $d = null): void {
+                            /** @psalm-check-type-exact $d = mixed */;
+                            $d->foo();
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedMethodCall'],
+                'php_version' => '8.3',
+            ],
+            'inheritedParamTypeCombinesWithTheWidenedNativeType' => [
+                'code' => '<?php
+                    class P {
+                        /** @param positive-int|false $x */
+                        public function f(int|false $x): void {}
+                    }
+
+                    final class Q extends P {
+                        #[\Override]
+                        public function f(int|bool $x): void {
+                            /** @psalm-check-type-exact $x = bool|positive-int */;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
+            'inheritedParamTypeKeepsWhatAnotherDocumentingParentNativelyAcceptsButDocumentsOut' => [
+                'code' => '<?php
+                    interface A {
+                        /** @param positive-int $x */
+                        public function f(int|string $x, int $y): void;
+                    }
+
+                    interface B {
+                        /** @param positive-int $x */
+                        public function f(int $x, int $y): void;
+                    }
+
+                    final class C implements A, B {
+                        /** @param int $y */
+                        #[\Override]
+                        public function f(int|string $x, int $y): void {
+                            /** @psalm-check-type-exact $x = positive-int */;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
+            'inheritedParamTypeOfAnUndocumentedOverrideKeepsWhatAnotherParentDocumentsOut' => [
+                'code' => '<?php
+                    final class D {}
+
+                    interface I {
+                        /** @param D|null $d */
+                        public function decide(?D $d = null): void;
+                    }
+
+                    interface K {
+                        /** @param D|null $d */
+                        public function decide(bool|D|null $d = null): void;
+                    }
+
+                    final class M implements I, K {
+                        #[\Override]
+                        public function decide(bool|D|null $d = null): void {
+                            /** @psalm-check-type-exact $d = D|null */;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
+            'inheritedParamTypeOfAnUndocumentedOverrideKeepsWhatAnotherParentDocumentsOutInEitherOrder' => [
+                'code' => '<?php
+                    final class D {}
+
+                    interface I {
+                        /** @param D|null $d */
+                        public function decide(?D $d = null): void;
+                    }
+
+                    interface K {
+                        /** @param D|null $d */
+                        public function decide(bool|D|null $d = null): void;
+                    }
+
+                    final class M implements K, I {
+                        #[\Override]
+                        public function decide(bool|D|null $d = null): void {
+                            /** @psalm-check-type-exact $d = D|null */;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
+            'inheritedParamTypeOfAParentNativeTypeIsNotWidenedByTheSameClass' => [
+                'code' => '<?php
+                    class A {}
+                    final class B extends A {}
+
+                    class P extends A {
+                        /** @param B $x */
+                        public function f(parent $x): void {}
+                    }
+
+                    final class Q extends P {
+                        #[\Override]
+                        public function f(A $x): void {
+                            /** @psalm-check-type-exact $x = B */;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
+            'inheritedParamTypeOfASelfNativeTypeIsNotWidenedByTheSameClass' => [
+                'code' => '<?php
+                    class P {
+                        /** @param static $x */
+                        public function f(self $x): void {}
+                    }
+
+                    final class Q extends P {
+                        #[\Override]
+                        public function f(P $x): void {
+                            /** @psalm-check-type-exact $x = Q */;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
             'inheritedParamTypeThatTheNativeTypeDoesNotContainIsNotApplied' => [
                 'code' => '<?php
                     class P {
@@ -2214,6 +2458,44 @@ final class MethodSignatureTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'undefinedClassInTheWidenedNativeTypeOfAnOverrideInheritingAParamTypeIsReportedOnTheOverride' => [
+                'code' => '<?php
+                    final class D {}
+
+                    interface I {
+                        /** @param D|null $d */
+                        public function decide(?D $d = null): void;
+                    }
+
+                    final class M implements I {
+                        #[\Override]
+                        public function decide(Unknown|D|null $d = null): void {}
+                    }',
+                'error_message' => 'UndefinedClass - src' . DIRECTORY_SEPARATOR . 'somefile.php:11:48',
+                'error_levels' => [],
+                'php_version' => '8.3',
+            ],
+            'deprecatedClassInTheNativeTypeOfAnOverrideInheritingAParamTypeIsReportedOnTheOverride' => [
+                'code' => '<?php
+                    /** @deprecated */
+                    final class Old {}
+
+                    interface I {
+                        /**
+                         * @param Old|null $o
+                         * @psalm-suppress DeprecatedClass
+                         */
+                        public function f(?Old $o): void;
+                    }
+
+                    final class M implements I {
+                        #[\Override]
+                        public function f(?Old $o): void {}
+                    }',
+                'error_message' => 'DeprecatedClass - src' . DIRECTORY_SEPARATOR . 'somefile.php:15:43',
+                'error_levels' => [],
+                'php_version' => '8.3',
+            ],
             'finalMethodOfAReflectedNativeClassCannotBeOverridden' => [
                 'code' => '<?php
                     final class P extends Phar {
