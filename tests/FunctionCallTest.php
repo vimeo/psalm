@@ -6151,6 +6151,20 @@ final class FunctionCallTest extends TestCase
                 'error_levels' => [],
                 'php_version' => '8.0',
             ],
+            'sealedShapeWithAMixedValueMissingARequiredKeyArgument' => [
+                'code' => '<?php
+                    /** @param array{a: int, b: int} $_a */
+                    function takesShape(array $_a): void {}
+
+                    /** @param array{a: mixed} $a */
+                    function passes(array $a): void {
+                        takesShape($a);
+                    }
+                ',
+                'error_message' => 'InvalidArgument',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
             'sealedShapeMissingARequiredKeyArgument' => [
                 'code' => '<?php
                     /** @param array{a: non-empty-string, b: int} $_a */
