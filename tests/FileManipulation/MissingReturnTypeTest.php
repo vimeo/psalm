@@ -245,6 +245,31 @@ final class MissingReturnTypeTest extends FileManipulationTestCase
                 'issues_to_fix' => ['MissingReturnType'],
                 'safe_types' => true,
             ],
+            'addMissingUnsealedTKeyedArrayReturnType' => [
+                'input' => '<?php
+                    /**
+                     * @param array{a: int, ...<string, string>} $a
+                     * @param list{int, ...<string>} $l
+                     */
+                    function foo(array $a, array $l) {
+                        return [$a, $l];
+                    }',
+                'output' => '<?php
+                    /**
+                     * @param array{a: int, ...<string, string>} $a
+                     * @param list{int, ...<string>} $l
+                     *
+                     * @return (int|string)[][]
+                     *
+                     * @psalm-return list{array{a: int, ...<string, string>}, list{int, ...<string>}}
+                     */
+                    function foo(array $a, array $l): array {
+                        return [$a, $l];
+                    }',
+                'php_version' => '7.0',
+                'issues_to_fix' => ['MissingReturnType'],
+                'safe_types' => true,
+            ],
             'addMissingTKeyedArrayReturnTypeWithNestedArrays' => [
                 'input' => '<?php
                     function foo() {

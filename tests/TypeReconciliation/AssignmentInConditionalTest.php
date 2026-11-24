@@ -1205,6 +1205,36 @@ final class AssignmentInConditionalTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'variableAssignedInTheLeftOfNegatedAndIsDefinedInNextAndOperand' => [
+                'code' => '<?php
+                    function check(string $s): bool {
+                        return $s === "b";
+                    }
+
+                    function f(bool $b, bool $c, string $s): bool {
+                        return $b && !(check($x = $s) && $c) && $x === "a";
+                    }',
+            ],
+            'variableAssignedInTheLeftOfDoubleNegatedAndIsDefinedInNextAndOperand' => [
+                'code' => '<?php
+                    function check(string $s): bool {
+                        return $s === "b";
+                    }
+
+                    function f(bool $b, bool $c, string $s): bool {
+                        return $b && !!(check($x = $s) && $c) && $x === "a";
+                    }',
+            ],
+            'variableAssignedInTheLeftOfAndInsideNegatedAndIsDefinedInNextAndOperand' => [
+                'code' => '<?php
+                    function check(string $s): bool {
+                        return $s === "b";
+                    }
+
+                    function f(bool $b, bool $c, string $s): bool {
+                        return $b && !(!check($x = $s) && $c) && $x === "a";
+                    }',
+            ],
             'variableAssignedInRightXorOperandIsSetInIf' => [
                 'code' => '<?php
                     function f(?string $s, bool $c): void {
