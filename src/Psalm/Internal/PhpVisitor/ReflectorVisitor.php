@@ -52,8 +52,10 @@ use function is_string;
 use function preg_match;
 use function reset;
 use function spl_object_id;
+use function str_contains;
 use function strpos;
 use function strtolower;
+use function trim;
 
 /**
  * @internal
@@ -140,10 +142,17 @@ final class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements Fi
 
         if ($node instanceof PhpParser\Node\Stmt\Namespace_) {
             $this->handleNamespace($node);
-        } elseif ($node instanceof PhpParser\Node\Stmt\Use_) {
+        } elseif ($node instanceof PhpParser\Node\Stmt\Use_ || $node instanceof PhpParser\Node\Stmt\GroupUse) {
             $this->handleUse($node);
-        } elseif ($node instanceof PhpParser\Node\Stmt\GroupUse) {
-            $this->handleGroupUse($node);
+        } elseif ($node instanceof PhpParser\Node\Stmt\Declare_) {
+            foreach ($node->declares as $declaration) {
+                if ((string) $declaration->key === 'strict_types'
+                    && $declaration->value instanceof PhpParser\Node\Scalar\Int_
+                    && $declaration->value->value === 1
+                ) {
+                    $this->file_storage->strict_types = true;
+                }
+            }
         } elseif ($node instanceof PhpParser\Node\Stmt\ClassLike) {
             if ($this->skip_if_descendants) {
                 return null;
@@ -491,6 +500,23 @@ final class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements Fi
                 /** @psalm-suppress UnusedMethodCall */
                 $var_type->queueClassLikesForScanning($this->codebase, $this->file_storage);
             }
+
+            // the class of `@psalm-scope-this` is needed to analyse the code it scopes, as the class of a `@var` is
+            if (str_contains($doc_comment->getText(), '@psalm-scope-this')) {
+                try {
+                    $scope_this = DocComment::parsePreservingLength($doc_comment, true)->tags['psalm-scope-this'] ?? [];
+                } catch (DocblockParseException) {
+                    $scope_this = [];
+                }
+
+                $scope_class = $scope_this !== [] ? trim(reset($scope_this)) : '';
+                $scope_fqcn = $scope_class !== '' ? Type::getFQCLNFromString($scope_class, $this->aliases) : '';
+
+                if ($scope_fqcn !== '') {
+                    $this->codebase->scanner->queueClassLikeForScanning($scope_fqcn, false, false);
+                    $this->file_storage->referenced_classlikes[strtolower($scope_fqcn)] = $scope_fqcn;
+                }
+            }
         }
 
         if ($node instanceof PhpParser\Node\Expr\Assign
@@ -730,44 +756,12 @@ final class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements Fi
         }
     }
 
-    private function handleUse(PhpParser\Node\Stmt\Use_ $node): void
+    private function handleUse(PhpParser\Node\Stmt\Use_|PhpParser\Node\Stmt\GroupUse $node): void
     {
-        foreach ($node->uses as $use) {
-            $use_path = $use->name->toString();
-
-            $use_alias = $use->alias->name ?? $use->name->getLast();
-
-            switch ($use->type !== PhpParser\Node\Stmt\Use_::TYPE_UNKNOWN ? $use->type : $node->type) {
-                case PhpParser\Node\Stmt\Use_::TYPE_FUNCTION:
-                    $this->aliases->functions[strtolower($use_alias)] = $use_path;
-                    $this->aliases->functions_flipped[strtolower($use_path)] = $use_alias;
-                    break;
-
-                case PhpParser\Node\Stmt\Use_::TYPE_CONSTANT:
-                    $this->aliases->constants[$use_alias] = $use_path;
-                    $this->aliases->constants_flipped[$use_path] = $use_alias;
-                    break;
-
-                case PhpParser\Node\Stmt\Use_::TYPE_NORMAL:
-                    $this->aliases->uses[strtolower($use_alias)] = $use_path;
-                    $this->aliases->uses_flipped[strtolower($use_path)] = $use_alias;
-                    break;
-            }
-        }
-
-        if (!$this->aliases->uses_start) {
-            $this->aliases->uses_start = (int) $node->getAttribute('startFilePos');
-        }
-
-        $this->aliases->uses_end = (int) $node->getAttribute('endFilePos') + 1;
-    }
-
-    private function handleGroupUse(PhpParser\Node\Stmt\GroupUse $node): void
-    {
-        $use_prefix = $node->prefix->toString();
+        $use_prefix = $node instanceof PhpParser\Node\Stmt\GroupUse ? $node->prefix->toString() . '\\' : '';
 
         foreach ($node->uses as $use) {
-            $use_path = $use_prefix . '\\' . $use->name->toString();
+            $use_path = $use_prefix . $use->name->toString();
             $use_alias = $use->alias->name ?? $use->name->getLast();
 
             switch ($use->type !== PhpParser\Node\Stmt\Use_::TYPE_UNKNOWN ? $use->type : $node->type) {

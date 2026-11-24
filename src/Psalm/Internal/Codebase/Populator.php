@@ -8,6 +8,7 @@ use BackedEnum;
 use InvalidArgumentException;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\MethodIdentifier;
+use Psalm\Internal\Perf;
 use Psalm\Internal\PhpVisitor\Reflector\FunctionLikeDocblockScanner;
 use Psalm\Internal\Provider\ClassLikeStorageProvider;
 use Psalm\Internal\Provider\FileReferenceProvider;
@@ -19,6 +20,7 @@ use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TypeAlias\ClassTypeAlias;
 use Psalm\Internal\TypeVisitor\ContainsTemplateExpressionVisitor;
+use Psalm\Internal\TypeVisitor\TypeLocalizer;
 use Psalm\Issue\CircularReference;
 use Psalm\Issue\UndefinedTrait;
 use Psalm\IssueBuffer;
@@ -43,6 +45,7 @@ use Psalm\Type\Atomic\TTypeAlias;
 use Psalm\Type\Union;
 use UnitEnum;
 
+use function array_any;
 use function array_filter;
 use function array_flip;
 use function array_intersect_key;
@@ -94,6 +97,7 @@ final class Populator
     public function populateCodebase(): void
     {
         $this->progress->debug('ClassLikeStorage is populating' . "\n");
+        Perf\Collector::step('populate.classlikes');
 
         // before the members of the classes inherit their internal namespaces
         $this->classlikes->markUnshippedCodeInternal();
@@ -106,6 +110,8 @@ final class Populator
 
         // a class populated before its parents were scanned is populated again, and bound again
         $this->iteration_purity_bound = [];
+
+        Perf\Collector::step('populate.methods');
 
         // every method's capabilities are known now: bind what consuming the generators they
         // return, and iterating the iterators their classes are, may do
@@ -123,11 +129,15 @@ final class Populator
 
         $this->progress->debug('FileStorage is populating' . "\n");
 
+        Perf\Collector::step('populate.files');
+
         $all_file_storage = $this->file_storage_provider->getNew();
 
         foreach ($all_file_storage as $file_storage) {
             $this->populateFileStorage($file_storage);
         }
+
+        Perf\Collector::step('populate.dependents');
 
         foreach ($this->classlike_storage_provider->getNew() as $class_storage) {
             // `+=` on the typed property would copy the whole array on every merge
@@ -775,30 +785,74 @@ final class Populator
     }
 
     /**
-     * Whether two methods document the same return type and parameter types, so that either of them may document
-     * a method implementing both
-     *
      * @psalm-mutation-free
      */
-    private static function documentSameSignature(MethodStorage $first, ?MethodStorage $second): bool
+    private static function returnTypeUsesAMethodTemplate(FunctionLikeStorage $method_storage): bool
     {
+        if ($method_storage->return_type === null
+            || $method_storage->template_types === null
+            || $method_storage->template_types === []
+        ) {
+            return false;
+        }
+
+        return array_any(
+            $method_storage->return_type->getTemplateTypes(),
+            static fn(TTemplateParam $template): bool => isset($method_storage->template_types[$template->param_name]),
+        );
+    }
+
+    /**
+     * Whether two methods document the same return type and parameter types, so that either of them may document
+     * a method implementing both
+     */
+    private static function documentSameSignature(
+        MethodStorage $first,
+        string $first_class,
+        ?MethodStorage $second,
+        string $second_class,
+        ClassLikeStorage $implementing_class_storage,
+    ): bool {
         if ($second === null) {
             return false;
         }
 
-        if ($first->return_type?->getId() !== $second->return_type?->getId()
+        $extends = $implementing_class_storage->template_extended_params;
+
+        if (self::getLocalizedTypeId($first->return_type, $first_class, $extends)
+                !== self::getLocalizedTypeId($second->return_type, $second_class, $extends)
             || count($first->params) !== count($second->params)
         ) {
             return false;
         }
 
         foreach ($first->params as $i => $param) {
-            if ($param->type?->getId() !== $second->params[$i]->type?->getId()) {
+            if (self::getLocalizedTypeId($param->type, $first_class, $extends)
+                !== self::getLocalizedTypeId($second->params[$i]->type, $second_class, $extends)
+            ) {
                 return false;
             }
         }
 
         return true;
+    }
+
+    /**
+     * The id of a type of a method declared in $declaring_class, as seen from a class extending it
+     *
+     * @param array<string, array<string, Union>>|null $extends
+     */
+    private static function getLocalizedTypeId(?Union $type, string $declaring_class, ?array $extends): ?string
+    {
+        if ($type === null) {
+            return null;
+        }
+
+        if ($extends !== null) {
+            (new TypeLocalizer($extends, $declaring_class))->traverse($type);
+        }
+
+        return $type->getId();
     }
 
     private function populateOverriddenMethods(
@@ -919,11 +973,15 @@ final class Populator
                         ?? $declaring_class_storage->pseudo_methods[$declaring_method_name]
                         ?? $declaring_class_storage->pseudo_static_methods[$declaring_method_name];
 
+                    // a method documenting its params takes the return type of the overridden one only when that
+                    // documents it, with no template of its own: the params of the method don't bind it
                     if (($declaring_method_storage->has_docblock_param_types
                             || $declaring_method_storage->has_docblock_return_type)
-                        && !$method_storage->has_docblock_param_types
                         && !$method_storage->has_docblock_return_type
                         && $inherited_return_type !== null
+                        && (!$method_storage->has_docblock_param_types
+                            || ($declaring_method_storage->has_docblock_return_type
+                                && !self::returnTypeUsesAMethodTemplate($declaring_method_storage)))
                     ) {
                         if (!isset($storage->documenting_method_ids[$method_name])
                             || (string) $storage->documenting_method_ids[$method_name]
@@ -948,9 +1006,12 @@ final class Populator
                                 ) && $documenting_class_storage->is_interface
                                     && !self::documentSameSignature(
                                         $declaring_method_storage,
+                                        $declaring_class,
                                         $documenting_class_storage->methods[
                                             $storage->documenting_method_ids[$method_name]->method_name
                                         ] ?? null,
+                                        $documenting_class_storage->name,
+                                        $storage,
                                     )
                                 ) {
                                     unset($storage->documenting_method_ids[$method_name]);
@@ -1096,7 +1157,28 @@ final class Populator
                     $extended_types[] = $atomic_type;
                 }
             } else {
-                $extended_types[] = $atomic_type;
+                // a template of a class in between nested in a composed argument (`@extends Base<Box<TModel>>`)
+                $nested_arguments = [];
+
+                foreach ((new Union([$atomic_type]))->getTemplateTypes() as $nested_template) {
+                    $nested_argument = $storage
+                        ->template_extended_params[$nested_template->defining_class][$nested_template->param_name]
+                            ?? null;
+
+                    if ($nested_argument) {
+                        $nested_arguments[$nested_template->param_name][$nested_template->defining_class]
+                            = $nested_argument;
+                    }
+                }
+
+                if ($nested_arguments === []) {
+                    $extended_types[] = $atomic_type;
+                } else {
+                    $extended_types[] = $atomic_type->replaceTemplateTypesWithArgTypes(
+                        new TemplateResult([], $nested_arguments),
+                        null,
+                    );
+                }
             }
         }
 

@@ -1,6 +1,8 @@
 ---
 name: hack-conformance
 description: Use when a Psalm feature is defined by matching Hack, i.e. class-template type variables, capabilities/coeffects, purity templates/contexts, or when adding a TypeVariableTest/CapabilitiesTest case whose expectation is unclear. Covers running the HHVM oracle harness (bin/hack-conformance) via docker, verified Hack facts, and where to look in the HHVM source.
+metadata:
+  internal: "true"
 ---
 
 # Hack conformance (HHVM as the oracle)
@@ -83,8 +85,16 @@ analogue and run it **before** deciding the Psalm expectation.
   `TypeVariableResolver::resolveTopLevel`) must resolve through **all** lower bounds so
   far, or `$x->onlyA()` on an `A|B` element silently loses
   PossiblyUndefinedMethod/UndefinedPropertyFetch.
-- Construction-site-only bounds (`initial_lower_bound_count`) are right only for untyped
-  closure params, the plugin node-type view and the TemplateStandinTypeReplacer gate.
+- Values a callable receives are reads too: untyped closure params and the
+  TemplateStandinTypeReplacer gate also resolve through all lower bounds
+  (`construction_site_only: false`), or folding a list after `$c->add("x")` conflicts
+  with the construction's `int` (Hack accepts it). A callable param (`callable(T)`)
+  whose variable gained values after construction is left live only for a callable that
+  takes the construction-site values but none of the later ones (`function (int $i)`
+  after `add("x")`); one that takes some of them is checked by the call's template
+  gate, so the conflict is reported once.
+- Construction-site-only bounds (`initial_lower_bound_count`) are right only for the
+  plugin node-type view and the structural template-bound checks.
 - Review check: `new Coll([new A()]); $c->add(new B());`, then read an element. The
   deferred model reports the B-side issues; 7.0.0-beta19 (eager model) rejects the `add`
   instead.
