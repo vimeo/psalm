@@ -994,7 +994,7 @@ abstract class Type
 
     /**
      * Arrays and lists by their keys and values, e.g. array<array-key, T> and non-empty-array are
-     * non-empty-array<array-key, T>: comparing them whole would take the mixed of non-empty-array for the T
+     * non-empty-array<array-key, T>, where the containment check would keep non-empty-array<array-key, mixed>
      */
     private static function intersectArrays(
         Codebase $codebase,
@@ -1008,7 +1008,7 @@ abstract class Type
 
         if ($type_1_params === null
             || $type_2_params === null
-            // which of the counts both arrays have is up to the comparison
+            // arrays with different counts are left to the containment check
             || ($type_1_atomic instanceof TNonEmptyArray
                 && $type_2_atomic instanceof TNonEmptyArray
                 && ($type_1_atomic->count !== $type_2_atomic->count
@@ -1050,6 +1050,11 @@ abstract class Type
             $array = $type_2_atomic instanceof TNonEmptyArray ? $type_2_atomic : $type_1_atomic;
 
             return $array->setTypeParams([$key_intersection, $value_intersection]);
+        }
+
+        // the only list without a key 0 is the empty one
+        if (self::intersectUnionTypes(self::getInt(false, 0), $key_intersection, $codebase) === null) {
+            return null;
         }
 
         return $is_non_empty
