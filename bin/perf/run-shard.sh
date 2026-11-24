@@ -69,12 +69,13 @@ while IFS= read -r setting; do
     PHP_FLAGS+=(-d "$setting")
 done < <(jq -r '.php_ini | to_entries[] | "\(.key)=\(.value)"' "$CORPUS")
 
-# Both sides profile their measured runs only if both list the option (a 6.x PR or an old merge-base may not);
-# profile-support.json tells the report which side lacks it. `--debug-performance` alone is an older, other option.
+# Both sides profile their measured runs only if both have a successful `--help` that declares the option (a 6.x PR
+# or an old merge-base may not); profile-support.json tells the report which side lacks it. A bare
+# `--debug-performance` is an older, other option.
 supports_profile() {
     local help
-    help="$(php "${PHP_FLAGS[@]}" "$1/psalm" --help 2>/dev/null || true)"
-    grep -qF -- '--debug-performance[=PATH]' <<< "$help"
+    help="$(php "${PHP_FLAGS[@]}" "$1/psalm" --help 2>&1)" || return 1
+    grep -qE '^[[:space:]]+--debug-performance\[=PATH\]' <<< "$help"
 }
 PROFILING=''
 BASE_PROFILES=false HEAD_PROFILES=false

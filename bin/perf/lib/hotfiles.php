@@ -59,22 +59,21 @@ function profileCpu(array $profile): array
 }
 
 /**
- * Stage CPU of both sides, and the files (present on both sides) whose analysis CPU grew most, in seconds.
+ * Stage CPU of both sides, and the files (present on both sides) whose analysis CPU grew most, in microseconds.
  *
  * @param array<mixed> $base
  * @param array<mixed> $head
  * @return array{
- *     stages: list<array{name: string, base: float, head: float}>,
- *     files: list<array{name: string, base: float, head: float}>
+ *     stages: list<array{name: string, base_us: int, head_us: int}>,
+ *     files: list<array{name: string, base_us: int, head_us: int}>
  * }
  */
 function diffProfiles(array $base, array $head): array
 {
     $b = profileCpu($base);
     $h = profileCpu($head);
-    $seconds = static fn(int $us): float => round($us / 1e6, 3);
     $row = static fn(string $name, int $baseUs, int $headUs): array
-        => ['name' => $name, 'base' => $seconds($baseUs), 'head' => $seconds($headUs)];
+        => ['name' => $name, 'base_us' => $baseUs, 'head_us' => $headUs];
 
     $stages = [];
     foreach (HOT_STAGE_LABELS as $key => $label) {
@@ -101,13 +100,14 @@ function diffProfiles(array $base, array $head): array
 }
 
 /**
- * Hot files of every project compared on both sides, from the profiles run-shard.sh keeps. `unsupported` lists the
- * sides whose Psalm lacks the option (then no side was profiled); `missing` the projects without readable profiles.
+ * Hot files of every project compared on both sides, from the profiles run-shard.sh keeps. `unsupported` groups the
+ * projects of jobs that were not profiled by the sides whose Psalm lacks the option; `missing` lists the projects
+ * without readable profiles.
  *
  * @param array<mixed> $plan
  * @param array<string, array<string, mixed>> $projects judged projects
  * @return array{
- *     unsupported: list<string>, missing: list<string>,
+ *     unsupported: list<array{sides: list<string>, projects: list<string>}>, missing: list<string>,
  *     projects: array<string, array{stages: list<array<string, mixed>>, files: list<array<string, mixed>>}>
  * }
  */
@@ -126,14 +126,14 @@ function collectHotFiles(array $plan, string $inDir, array $projects): array
             ['base', 'head'],
             static fn(string $side): bool => ($support[$side] ?? false) !== true,
         ));
-        $unsupported = array_values(array_unique([...$unsupported, ...$lacking]));
-        if ($lacking !== []) {
-            continue;
-        }
-
         foreach ($job['projects'] as $name) {
             $p = $projects[$name];
             if ($p['base']['status'] !== 'ok' || $p['head']['status'] !== 'ok') {
+                continue;
+            }
+
+            if ($lacking !== []) {
+                $unsupported[implode(' and ', $lacking)][] = $name;
                 continue;
             }
 
@@ -148,53 +148,74 @@ function collectHotFiles(array $plan, string $inDir, array $projects): array
         }
     }
 
-    return ['unsupported' => $unsupported, 'missing' => $missing, 'projects' => $hot];
-}
+    $groups = [];
+    foreach ($unsupported as $sides => $names) {
+        $groups[] = ['sides' => explode(' and ', (string) $sides), 'projects' => $names];
+    }
 
-/** Path cell: the end of the path in code font, cut from the left. */
-function hotPathCell(string $path): string
-{
-    return tableCell(inlineCode(
-        mb_strlen($path) > HOT_PATH_CHARS ? '…' . mb_substr($path, -(HOT_PATH_CHARS - 1)) : $path,
-    ));
+    return ['unsupported' => $groups, 'missing' => $missing, 'projects' => $hot];
 }
 
 /**
- * @param array{name: string, base: float, head: float} $r
+ * Path cell: the end of the path (cut from the left) as a code span whose fence is longer than any backtick run in
+ * it, so the name stays literal; CR and LF become visible markers and cannot end the row.
+ */
+function hotPathCell(string $path): string
+{
+    $text = str_replace(["\r", "\n"], ['␍', '␊'], $path);
+    if (mb_strlen($text) > HOT_PATH_CHARS) {
+        $text = '…' . mb_substr($text, -(HOT_PATH_CHARS - 1));
+    }
+
+    preg_match_all('/`+/', $text, $runs);
+    $fence = str_repeat('`', max([0, ...array_map(strlen(...), $runs[0])]) + 1);
+    $pad = str_starts_with($text, '`') || str_ends_with($text, '`') ? ' ' : '';
+
+    return tableCell("{$fence}{$pad}{$text}{$pad}{$fence}");
+}
+
+/**
+ * Delta and ratio come from the raw microseconds; only the printed figures are rounded.
+ *
+ * @param array{name: string, base_us: int, head_us: int} $r
  */
 function hotRow(array $r, bool $isFile): string
 {
-    $delta = round($r['head'] - $r['base'], 2) + 0.0; // no "-0.00"
+    $delta = round(($r['head_us'] - $r['base_us']) / 1e6, 2) + 0.0; // no "-0.00"
 
     return sprintf(
         '| %s | %.2f | %.2f | %s | %s |',
         $isFile ? hotPathCell($r['name']) : '*' . $r['name'] . '*',
-        $r['base'],
-        $r['head'],
+        $r['base_us'] / 1e6,
+        $r['head_us'] / 1e6,
         $delta === 0.0 ? '0.00' : str_replace('-', '−', sprintf('%+.2f', $delta)),
-        $r['base'] > 0 ? sprintf('%.2f×', $r['head'] / $r['base']) : 'n/a',
+        $r['base_us'] > 0 ? sprintf('%.2f×', $r['head_us'] / $r['base_us']) : 'n/a',
     );
 }
 
 /**
- * Informational "hot files" block: one line when the profile option is unsupported or no profile was read,
- * else a collapsed details block with a table per project. Empty when there is nothing to say.
+ * Informational "hot files" block: a collapsed details block with a table per profiled project, then one line per
+ * group of projects that were not profiled (unsupported option), or alone when no profile was read. Empty when there
+ * is nothing to say.
  *
  * @param array<string, mixed> $hot collectHotFiles() result
  */
 function renderHotFiles(array $hot): string
 {
-    if ($hot['unsupported'] !== []) {
+    $notes = '';
+    foreach ($hot['unsupported'] as $group) {
         $sides = implode(' and ', array_map(
             static fn(string $side): string => $side === 'base' ? 'base (merge-base)' : $side,
-            $hot['unsupported'],
+            $group['sides'],
         ));
-
-        return "\nHot files are not shown: {$sides} Psalm lacks `--debug-performance=PATH`.\n";
+        $for = $hot['projects'] === [] ? '' : ' for ' . implode(', ', $group['projects']);
+        $notes .= "\nHot files are not shown{$for}: {$sides} Psalm lacks `--debug-performance=PATH`.\n";
     }
 
     if ($hot['projects'] === []) {
-        return $hot['missing'] === [] ? '' : "\nHot files are not shown: no performance profile could be read.\n";
+        return $notes . ($notes !== '' || $hot['missing'] === []
+            ? ''
+            : "\nHot files are not shown: no performance profile could be read.\n");
     }
 
     $header = "| | base (s) | head (s) | Δ (s) | × |\n|:--|--:|--:|--:|--:|";
@@ -227,5 +248,5 @@ function renderHotFiles(array $hot): string
         . implode("\n", $sections)
         . ($omitted > 0 ? "\n{$omitted} project(s) omitted for size; see the profiles.\n" : '')
         . ($hot['missing'] === [] ? '' : "\nNo readable profile for: " . implode(', ', $hot['missing']) . ".\n")
-        . "\n</details>\n";
+        . "\n</details>\n" . $notes;
 }
