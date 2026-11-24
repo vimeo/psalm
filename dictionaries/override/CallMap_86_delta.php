@@ -3,6 +3,10 @@
 return array (
   'added' => 
   array (
+    'stream_last_errors' => 
+    array (
+      0 => 'list<StreamError>',
+    ),
   ),
   'changed' => 
   array (

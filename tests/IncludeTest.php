@@ -11,6 +11,7 @@ use PhpParser\Node\Name;
 use Psalm\Config;
 use Psalm\Exception\CodeException;
 use Psalm\Internal\Analyzer\FileAnalyzer;
+use Psalm\Internal\Analyzer\IssueData;
 use Psalm\Internal\Provider\ClassLikeStorageProvider;
 use Psalm\IssueBuffer;
 use Psalm\Plugin\EventHandler\AfterExpressionAnalysisInterface;
@@ -20,6 +21,7 @@ use ReflectionProperty;
 
 use function array_combine;
 use function array_keys;
+use function array_map;
 use function getcwd;
 use function preg_quote;
 use function set_time_limit;
@@ -1206,6 +1208,38 @@ final class IncludeTest extends TestCase
         ];
     }
 
+    public function testCallWhoseArgumentRequiresAFileThatReturnsIsStillReturned(): void
+    {
+        $codebase = $this->project_analyzer->getCodebase();
+        $codebase->reportUnusedVariables();
+        $codebase->config->throw_exception = false;
+
+        $main = (string) getcwd() . DIRECTORY_SEPARATOR . 'one.php';
+        $included = (string) getcwd() . DIRECTORY_SEPARATOR . 'two.php';
+
+        $this->addFile($main, '<?php
+            function foo(): array {
+                return array_merge([1], require __DIR__ . "/two.php");
+            }');
+        $this->addFile($included, '<?php
+            return [2];');
+
+        $codebase->scanner->addFilesToShallowScan([$included => $included]);
+        $codebase->addFilesToAnalyze([$main => $main]);
+        $codebase->scanFiles();
+
+        $file_analyzer = new FileAnalyzer($this->project_analyzer, $main, $codebase->config->shortenFileName($main));
+        $file_analyzer->analyze();
+
+        $this->assertSame(
+            [],
+            array_map(
+                static fn(IssueData $issue): string => $issue->type . ': ' . $issue->message,
+                IssueBuffer::getIssuesDataForFile($main),
+            ),
+        );
+    }
+
     /**
      * Regression test: InterfaceAnalyzer must not crash when storage was
      * overwritten by a class with the same FQCN (e.g. loaded via reflection
@@ -1684,6 +1718,67 @@ final class IncludeTest extends TestCase
         }
 
         return $issues;
+    }
+
+    /**
+     * @param list<string> $expected_issues
+     */
+    #[DataProvider('providerStrictTypesOfIncludedFiles')]
+    public function testStrictTypesAppliesPerFile(string $includer, string $included, array $expected_issues): void
+    {
+        $this->addFile((string) getcwd() . DIRECTORY_SEPARATOR . 'main.php', $includer);
+        $this->addFile((string) getcwd() . DIRECTORY_SEPARATOR . 'inc.php', $included);
+
+        $this->assertSame($expected_issues, $this->analyzeFilesInOrder(['main.php', 'inc.php']));
+    }
+
+    /**
+     * @return iterable<string, array{includer: string, included: string, expected_issues: list<string>}>
+     * @psalm-pure
+     */
+    public static function providerStrictTypesOfIncludedFiles(): iterable
+    {
+        yield 'strict includer, non-strict included file' => [
+            'includer' => '<?php
+                declare(strict_types=1);
+
+                require __DIR__ . "/inc.php";',
+            'included' => '<?php
+                strlen(5);',
+            'expected_issues' => ['inc.php: InvalidScalarArgument@2'],
+        ];
+
+        yield 'non-strict includer, strict included file' => [
+            'includer' => '<?php
+                require __DIR__ . "/inc.php";',
+            'included' => '<?php
+                declare(strict_types=1);
+
+                strlen(5);',
+            'expected_issues' => ['inc.php: InvalidArgument@4'],
+        ];
+
+        yield 'non-strict includer stays non-strict after a strict included file' => [
+            'includer' => '<?php
+                require __DIR__ . "/inc.php";
+
+                strlen(5);',
+            'included' => '<?php
+                declare(strict_types=1);',
+            'expected_issues' => ['main.php: InvalidScalarArgument@4'],
+        ];
+
+        yield 'strict includer stays strict after a non-strict included file' => [
+            'includer' => '<?php
+                declare(strict_types=1);
+
+                require __DIR__ . "/inc.php";
+
+                strlen(5);',
+            'included' => '<?php
+                echo 1;',
+            'expected_issues' => ['main.php: InvalidArgument@6'],
+        ];
     }
 
     /**

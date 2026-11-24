@@ -14,6 +14,8 @@ use Psalm\Internal\Type\TypeVariableBounds;
 use Psalm\Tests\TestCase;
 use Psalm\Type;
 use Psalm\Type\Atomic\TArray;
+use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TTypeVariable;
 use Psalm\Type\Union;
 
@@ -90,6 +92,28 @@ final class TypeExpanderTest extends TestCase
         $expanded = TypeExpander::expandUnion($this->codebase, $type, null, null, null);
 
         $this->assertSame('array<int, $T:int|string>', $expanded->getId());
+    }
+
+    public function testKeepsANeverBoundTypeVariableNextToAnUnchangedPart(): void
+    {
+        $variable = new TTypeVariable('$T', new TypeVariableBounds([new TemplateBound(Type::getNever())]));
+        $type = new Union([$variable, new TNull()]);
+
+        $expanded = TypeExpander::expandUnion($this->codebase, $type, null, null, null);
+
+        $this->assertTrue($expanded->hasType($variable->getKey()));
+        $this->assertTrue($expanded->isNullable());
+    }
+
+    public function testKeepsANeverBoundTypeVariableNextToAnExpandedPart(): void
+    {
+        $variable = new TTypeVariable('$T', new TypeVariableBounds([new TemplateBound(Type::getNever())]));
+        $type = new Union([$variable, new TNamedObject('self')]);
+
+        $expanded = TypeExpander::expandUnion($this->codebase, $type, 'Exception', null, null);
+
+        $this->assertTrue($expanded->hasType($variable->getKey()));
+        $this->assertTrue($expanded->hasType('Exception'));
     }
 
     public function testResetsFlagsOfKeptTypeLikeARebuiltType(): void
