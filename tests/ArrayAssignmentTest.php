@@ -583,6 +583,22 @@ final class ArrayAssignmentTest extends TestCase
                         return $roots;
                     }',
             ],
+            'offsetAssignedToANullableShapeMakesItsOtherOffsetsOptional' => [
+                'code' => '<?php
+                    $a = rand(0, 1) ? ["y" => 1] : null;
+                    $a["x"] = 2;
+
+                    $b = rand(0, 1) ? ["x" => 1, "y" => 1] : null;
+                    $b["x"] = 2;
+
+                    $c = ["y" => 1];
+                    $c["x"] = 2;',
+                'assertions' => [
+                    '$a===' => 'array{x: 2, y?: 1}',
+                    '$b===' => 'array{x: 2, y?: 1}',
+                    '$c===' => 'array{x: 2, y: 1}',
+                ],
+            ],
             'assignToTheItemOfAnArrayAFunctionReturnsByReference' => [
                 'code' => '<?php
                     function &ensureArray(array &$what): array {
