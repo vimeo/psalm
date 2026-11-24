@@ -2468,7 +2468,7 @@ final class ArrayFetchAnalyzer
         bool &$has_array_access,
         bool $in_place,
         ?Union $receiver_type,
-        ?Union $replacement_type = null,
+        ?Union $replacement_type,
     ): void {
         $codebase = $statements_analyzer->getCodebase();
         if (strtolower($type->value) === 'simplexmlelement'
@@ -2560,6 +2560,15 @@ final class ArrayFetchAnalyzer
                     && ($replacement_type === null
                         || $assign_value_type === null
                         || $assign_value_type->getId() === $replacement_type->getId());
+                $value_expr = $assign_value;
+
+                // the type assigned is that of the item, which the call checks like a value it was given
+                if (!$value_is_given && $replacement_type !== null && !$in_place) {
+                    $value_expr = new VirtualConstFetch(new VirtualName('null'), $stmt->getAttributes());
+                    $statements_analyzer->node_data->setType($value_expr, $replacement_type);
+                    $statements_analyzer->node_data->markEvaluated([$value_expr]);
+                    $value_is_given = true;
+                }
 
                 $fake_set_method_call = new VirtualMethodCall(
                     $stmt->var,
@@ -2574,7 +2583,7 @@ final class ArrayFetchAnalyzer
                             attributes: $arg_attributes,
                         ),
                         new VirtualArg(
-                            $assign_value ?? new VirtualConstFetch(
+                            $value_expr ?? new VirtualConstFetch(
                                 new VirtualName('null'),
                                 $stmt->var->getAttributes(),
                             ),

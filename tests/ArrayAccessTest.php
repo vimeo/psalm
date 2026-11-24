@@ -4192,6 +4192,67 @@ final class ArrayAccessTest extends TestCase
                 'error_levels' => [],
                 'php_version' => '8.3',
             ],
+            'destructuringAWronglyTypedItemIntoAnArrayAccessItemIsChecked' => [
+                'code' => '<?php
+                    /** @implements ArrayAccess<string, list<int>> */
+                    final class Bag implements ArrayAccess {
+                        #[Override]
+                        public function offsetExists(mixed $offset): bool {
+                            return true;
+                        }
+
+                        /** @return list<int> */
+                        #[Override]
+                        public function offsetGet(mixed $offset): array {
+                            return [];
+                        }
+
+                        /** @param list<int> $value */
+                        #[Override]
+                        public function offsetSet(mixed $offset, mixed $value): void {}
+
+                        #[Override]
+                        public function offsetUnset(mixed $offset): void {}
+                    }
+
+                    function fill(Bag $bag): void {
+                        [$bag["a"]] = [["x"]];
+                    }',
+                'error_message' => 'InvalidArgument',
+                'error_levels' => [],
+                'php_version' => '8.3',
+            ],
+            'foreachWithAWronglyTypedValueIntoAnArrayAccessItemIsChecked' => [
+                'code' => '<?php
+                    /** @implements ArrayAccess<string, list<int>> */
+                    final class Bag implements ArrayAccess {
+                        #[Override]
+                        public function offsetExists(mixed $offset): bool {
+                            return true;
+                        }
+
+                        /** @return list<int> */
+                        #[Override]
+                        public function offsetGet(mixed $offset): array {
+                            return [];
+                        }
+
+                        /** @param list<int> $value */
+                        #[Override]
+                        public function offsetSet(mixed $offset, mixed $value): void {}
+
+                        #[Override]
+                        public function offsetUnset(mixed $offset): void {}
+                    }
+
+                    function fill(Bag $bag): void {
+                        foreach ([["x"]] as $bag["a"]) {
+                        }
+                    }',
+                'error_message' => 'InvalidArgument',
+                'error_levels' => [],
+                'php_version' => '8.3',
+            ],
             'stringOffsetOfAnIntKeyedArrayObject' => [
                 'code' => '<?php
                     /** @var ArrayObject<int, int> */
