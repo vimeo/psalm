@@ -6,6 +6,7 @@ namespace Psalm\Internal\Provider;
 
 use Closure;
 use Psalm\CodeLocation;
+use Psalm\Internal\Perf;
 use Psalm\Plugin\EventHandler\Event\MethodExistenceProviderEvent;
 use Psalm\Plugin\EventHandler\MethodExistenceProviderInterface;
 use Psalm\StatementsSource;
@@ -47,11 +48,12 @@ final class MethodExistenceProvider
 
     /**
      * @param Closure(MethodExistenceProviderEvent): ?bool $c
-     * @psalm-external-mutation-free
      */
     public function registerClosure(string $fq_classlike_name, Closure $c): void
     {
-        self::$handlers[strtolower($fq_classlike_name)][] = $c;
+        self::$handlers[strtolower($fq_classlike_name)][] = Perf\Collector::$enabled
+            ? Perf\Collector::wrap($c, 'MethodExistence')
+            : $c;
     }
 
     /**

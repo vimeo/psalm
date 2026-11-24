@@ -8,6 +8,7 @@ use Closure;
 use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Context;
+use Psalm\Internal\Perf;
 use Psalm\Internal\Provider\ReturnTypeProvider\ArrayChunkReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\ArrayColumnReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\ArrayCombineReturnTypeProvider;
@@ -52,6 +53,7 @@ use Psalm\Internal\Provider\ReturnTypeProvider\MbInternalEncodingReturnTypeProvi
 use Psalm\Internal\Provider\ReturnTypeProvider\MbStrtolowerReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\MinMaxReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\MktimeReturnTypeProvider;
+use Psalm\Internal\Provider\ReturnTypeProvider\NumericCastFunctionReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\ParseUrlReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\PowReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\PropertyExistsReturnTypeProvider;
@@ -116,6 +118,7 @@ final class FunctionReturnTypeProvider
         $this->registerClass(FilterInputReturnTypeProvider::class);
         $this->registerClass(FilterVarReturnTypeProvider::class);
         $this->registerClass(IteratorToArrayReturnTypeProvider::class);
+        $this->registerClass(NumericCastFunctionReturnTypeProvider::class);
         $this->registerClass(ParseUrlReturnTypeProvider::class);
         $this->registerClass(PropertyExistsReturnTypeProvider::class);
         $this->registerClass(StrReplaceReturnTypeProvider::class);
@@ -166,11 +169,12 @@ final class FunctionReturnTypeProvider
     /**
      * @param lowercase-string $function_id
      * @param Closure(FunctionReturnTypeProviderEvent): ?Union $c
-     * @psalm-external-mutation-free
      */
     public function registerClosure(string $function_id, Closure $c): void
     {
-        self::$handlers[$function_id][] = $c;
+        self::$handlers[$function_id][] = Perf\Collector::$enabled
+            ? Perf\Collector::wrap($c, 'FunctionReturnType')
+            : $c;
     }
 
     /**
