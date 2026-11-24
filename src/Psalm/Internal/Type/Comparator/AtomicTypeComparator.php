@@ -262,7 +262,7 @@ final class AtomicTypeComparator
             }
 
             if ($container_type_part instanceof TTemplateParam
-                && ($container_type_part->as->isNullable() || $container_type_part->as->isMixed())
+                && $container_type_part->as->isNullable()
             ) {
                 return true;
             }
@@ -1221,6 +1221,14 @@ final class AtomicTypeComparator
 
         // a value of a template is a value of its bound: `T of numeric` can be a numeric string
         foreach ([[$type1_part, $type2_part], [$type2_part, $type1_part]] as [$template_part, $other_part]) {
+            // null is not contained by a template without a bound, but can be its value
+            if ($template_part instanceof TTemplateParam
+                && $other_part instanceof TNull
+                && $template_part->as->isMixed()
+            ) {
+                return true;
+            }
+
             if ($template_part instanceof TTemplateParam
                 && !$other_part instanceof TTemplateParam
                 && !$template_part->as->isMixed()

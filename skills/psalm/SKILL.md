@@ -48,8 +48,9 @@ vendor/bin/psalm --no-progress --output-format=compact src/Foo.php src/Bar.php
   `php scripts/summary.php psalm.json` prints counts per type and file; `--type=…`, `--file=…`,
   `--changed` narrow it down (see `--help`).
 - `php scripts/explain.php IssueType` prints the issue's documentation: what it means and how to fix it.
-- `SECURITY` lines are taint findings, reported in the same run as type errors. Reading their source → sink
-  path: [references/taint.md](references/taint.md).
+- `SECURITY` lines come in the same run as type errors: taint findings (`Tainted*`, a source → sink path:
+  [references/taint.md](references/taint.md)) and unsafe calls (`WeakHash`, `InsecureCookie`, …, fixed as
+  `explain.php` says).
 - After changing `psalm.xml`, stubs or `composer.json`, add `--no-cache` once.
 - Other output formats (`count`, `json-summary`, `by-issue-level`), cache and threads, `--stats`,
   `--show-info`, `--find-references-to`: [references/cli.md](references/cli.md).
@@ -79,8 +80,10 @@ for the inferred type with `@psalm-check-type` before editing: [references/debug
   library — and that caller should be visible somewhere (a config file, a docblock, an interface). A
   method or property of application code with no such caller is dead code: delete it. When a deletion
   reaches a constructor parameter or a field filled from the database or config, name it in your summary
-  so the user can keep it. `ClassMustBeFinal` is the same decision: `@api` on a class others may extend,
-  such as a library's public classes; `final` otherwise.
+  so the user can keep it. In a library, propose `markAllNonInternalCodeAsApi="true"` in `psalm.xml`
+  instead of `@api` on every class: it covers every class not marked `@internal`. `ClassMustBeFinal` is the
+  same decision, and that option leaves it alone: `@api` on a class others may extend, such as a library's
+  public classes; `final` otherwise.
 - **SECURITY**: fix the data flow — bound parameters for SQL, `htmlspecialchars()` for HTML,
   `escapeshellarg()` for shell. Psalm can't follow every check: after one it can't see (a path resolved
   and kept inside an allowed directory, a project's own escaping function), declare it with
