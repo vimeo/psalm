@@ -925,6 +925,19 @@ final class ArrayAssignmentTest extends TestCase
                     '$kept===' => 'non-empty-array<non-decimal-int-string, 0>',
                 ],
             ],
+            'intStringKeyIsAbsorbedOnlyByUnboundedInts' => [
+                'code' => '<?php
+                    /**
+                     * @param array<literal-int|\'5\', string> $literal
+                     * @param array<int<0, 10>|\'5\', string> $range
+                     * @param array<int|\'5\', string> $int
+                     */
+                    function f(array $literal, array $range, array $int): void {
+                        /** @psalm-check-type-exact $literal = array<literal-int, string> */
+                        /** @psalm-check-type-exact $range = array<5|int<0, 10>, string> */
+                        /** @psalm-check-type-exact $int = array<int, string> */
+                    }',
+            ],
             'templateBoundedByDecimalIntStringsKeysAreInts' => [
                 'code' => '<?php
                     /**

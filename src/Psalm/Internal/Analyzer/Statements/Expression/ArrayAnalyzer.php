@@ -281,7 +281,7 @@ final class ArrayAnalyzer
         $has_int = false;
         foreach ($input_types as $atomic_type) {
             if ($atomic_type instanceof TNumericString
-                || ($atomic_type instanceof TInt && $atomic_type->getKey() === 'int')
+                || $atomic_type::class === TInt::class
             ) {
                 $has_int = true;
             }
