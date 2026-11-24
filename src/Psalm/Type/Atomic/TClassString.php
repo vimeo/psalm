@@ -67,7 +67,7 @@ class TClassString extends TString
     }
 
     #[Override]
-    public function getId(bool $exact = true, bool $nested = false): string
+    public function getId(bool $exact = true): string
     {
         if ($this->is_interface) {
             $key = 'interface-string';

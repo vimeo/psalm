@@ -2541,7 +2541,8 @@ final class AssignmentAnalyzer
         if ($array instanceof TArray) {
             $can_be_empty = !$array instanceof TNonEmptyArray;
 
-            return $array->type_params[1];
+            // an empty array has no item
+            return $array->type_params[1]->isNever() ? null : $array->type_params[1];
         }
 
         $location = new CodeLocation($statements_analyzer->getSource(), $item->value);
@@ -2734,9 +2735,11 @@ final class AssignmentAnalyzer
         $has_other_type = false;
 
         foreach ($array_type->getAtomicTypes() as $atomic_type) {
-            if ($atomic_type instanceof TKeyedArray
-                && !isset($atomic_type->properties[$offset_value])
-                && ($atomic_type->fallback_params === null || ($atomic_type->is_list && is_string($offset_value)))
+            if (($atomic_type instanceof TKeyedArray
+                    && !isset($atomic_type->properties[$offset_value])
+                    && ($atomic_type->fallback_params === null
+                        || ($atomic_type->is_list && is_string($offset_value))))
+                || ($atomic_type instanceof TArray && $atomic_type->isEmptyArray())
             ) {
                 $has_type_without_key = true;
             } elseif (!$atomic_type instanceof TNull && !$atomic_type instanceof TFalse) {
@@ -2933,7 +2936,10 @@ final class AssignmentAnalyzer
                     if ($offset_value !== null
                         && isset($assign_value_atomic_type->properties[$offset_value])
                     ) {
-                        $value_type = $assign_value_atomic_type->properties[$offset_value];
+                        $value_type = TypeVariableResolver::resolveTopLevel(
+                            $assign_value_atomic_type->properties[$offset_value],
+                            $codebase,
+                        );
 
                         if ($value_type->possibly_undefined) {
                             IssueBuffer::maybeAdd(
@@ -3069,7 +3075,7 @@ final class AssignmentAnalyzer
                             $array_id,
                             $assign_value_type,
                             $offset_value,
-                            $item_type,
+                            TypeVariableResolver::resolveTopLevel($item_type, $codebase),
                         );
 
                         $new_assign_type = Type::combineUnionTypes($item_type, $new_assign_type);

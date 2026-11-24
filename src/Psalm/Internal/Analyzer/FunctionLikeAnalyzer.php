@@ -689,7 +689,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 $this->getFilePath(),
                 $start,
                 $end,
-                (string) $storage->signature_return_type,
+                $storage->signature_return_type->getId(false),
             );
         }
 
@@ -2156,7 +2156,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                     $this->getFilePath(),
                     $start,
                     $end,
-                    (string) $referenced_type,
+                    $referenced_type->getId(false),
                 );
             }
 
