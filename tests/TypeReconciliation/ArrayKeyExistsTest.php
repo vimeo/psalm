@@ -954,7 +954,7 @@ final class ArrayKeyExistsTest extends TestCase
                                 $unmerged[$i][$j][] = "b";
                             }
                         }
-                        /** @psalm-check-type-exact $unmerged = array<int<0, max>, array<int<0, max>, list{0: "a"|"b", 1?: "b", ...<"b">}>> */;
+                        /** @psalm-check-type-exact $unmerged = array<int<0, max>, non-empty-array<int<0, max>, list{0: "a"|"b", 1?: "b", ...<"b">}>> */;
                     }',
                 'assertions' => [],
                 'ignored_issues' => [],
@@ -973,7 +973,7 @@ final class ArrayKeyExistsTest extends TestCase
                                 $unmerged[$i][$j][] = "b";
                             }
                         }
-                        /** @psalm-check-type-exact $unmerged = array<int<0, max>, array<int<0, max>, list{0: "a"|"b", 1?: "b", ...<"b">}>> */;
+                        /** @psalm-check-type-exact $unmerged = array<int<0, max>, non-empty-array<int<0, max>, list{0: "a"|"b", 1?: "b", ...<"b">}>> */;
                     }',
                 'assertions' => [],
                 'ignored_issues' => [],

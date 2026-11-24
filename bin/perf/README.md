@@ -17,6 +17,12 @@ An issue removed and added at the same file, line and column is listed under **C
 + …possibly different type NodeInterface|(TParent:VariableNodeDefinition as NodeParentInterface|null) provided
 ```
 
+The report has a collapsed **Hot files** block, only when some project has a file whose analysis CPU grew by at least 0.2 s and 20 % from base to head: up to 10 such files per project, with the CPU of the scan stages, analysis.files and taint, taken from the first run of each side. It is informational and never changes the verdict. A line below it lists the projects without data and why (an old merge-base or a 6.x PR without `--debug-performance[=PATH]`, a missing or invalid profile).
+
+The profiles of both sides are in the `perf-report` artifact (`profiles/<project>.base.json` and `.head.json`); open them at https://psalm.dev/profile/.
+
+The measured runs are profiled with `--debug-performance=PATH`, which adds the same small CPU and memory cost to both sides. If either side does not support the option, or the PR changes `src/Psalm/Internal/Perf`, neither side is profiled.
+
 The sticky PR comment is posted by `perf-comment.yml` (`workflow_run`), which GitHub only runs from the default branch: until this lands on `master`, `6.x` PRs get the job summary and the check but no comment.
 
 Run it manually for a PR with `gh workflow run Perf -f pr=<number>` (only works once the workflow is on the default branch).

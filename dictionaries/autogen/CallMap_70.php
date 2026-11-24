@@ -1,6 +1,12 @@
 <?php // phpcs:ignoreFile
 
 return array (
+  '_' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'msgid' => 'mixed',
+  ),
   'abs' => 
   array (
     0 => 'mixed',
@@ -2568,17 +2574,98 @@ return array (
     -2 => 'none',
     'data' => 'mixed',
   ),
+  'bind_textdomain_codeset' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'domain' => 'mixed',
+    'codeset' => 'mixed',
+  ),
   'bindec' => 
   array (
     0 => 'mixed',
     -2 => 'none',
     'binary_number' => 'mixed',
   ),
+  'bindtextdomain' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'domain_name' => 'mixed',
+    'dir' => 'mixed',
+  ),
   'boolval' => 
   array (
     0 => 'mixed',
     -2 => 'none',
     'var' => 'mixed',
+  ),
+  'bzclose' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'fp' => 'mixed',
+  ),
+  'bzcompress' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'source' => 'mixed',
+    'blocksize' => 'mixed',
+    'workfactor=' => 'mixed',
+  ),
+  'bzdecompress' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'source' => 'mixed',
+    'small=' => 'mixed',
+  ),
+  'bzerrno' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'bz' => 'mixed',
+  ),
+  'bzerror' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'bz' => 'mixed',
+  ),
+  'bzerrstr' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'bz' => 'mixed',
+  ),
+  'bzflush' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'fp' => 'mixed',
+  ),
+  'bzopen' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'file' => 'mixed',
+    'mode' => 'mixed',
+  ),
+  'bzread' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'bz' => 'mixed',
+    'length=' => 'mixed',
+  ),
+  'bzwrite' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'fp' => 'mixed',
+    'str' => 'mixed',
+    'length=' => 'mixed',
   ),
   'cachingiterator::__construct' => 
   array (
@@ -2672,6 +2759,36 @@ return array (
   array (
     0 => 'mixed',
     -2 => 'none',
+  ),
+  'cal_days_in_month' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'calendar' => 'mixed',
+    'month' => 'mixed',
+    'year' => 'mixed',
+  ),
+  'cal_from_jd' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'jd' => 'mixed',
+    'calendar' => 'mixed',
+  ),
+  'cal_info' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'calendar=' => 'mixed',
+  ),
+  'cal_to_jd' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'calendar' => 'mixed',
+    'month' => 'mixed',
+    'day' => 'mixed',
+    'year' => 'mixed',
   ),
   'call_user_func' => 
   array (
@@ -3234,6 +3351,11 @@ return array (
     -2 => 'none',
   ),
   'co\\client::getpeername' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+  ),
+  'co\\client::getsocket' => 
   array (
     0 => 'mixed',
     -2 => 'none',
@@ -5286,6 +5408,11 @@ return array (
     'opt_name' => 'mixed',
   ),
   'co\\socket::getpeername' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+  ),
+  'co\\socket::getsocket' => 
   array (
     0 => 'mixed',
     -2 => 'none',
@@ -12514,6 +12641,127 @@ return array (
     'what=' => 'mixed',
     'country=' => 'mixed',
   ),
+  'dba_close' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'handle' => 'mixed',
+  ),
+  'dba_delete' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'key' => 'mixed',
+    'handle' => 'mixed',
+  ),
+  'dba_exists' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'key' => 'mixed',
+    'handle' => 'mixed',
+  ),
+  'dba_fetch' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'key' => 'mixed',
+    'skip' => 'mixed',
+    'handle=' => 'mixed',
+  ),
+  'dba_firstkey' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'handle' => 'mixed',
+  ),
+  'dba_handlers' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'full_info=' => 'mixed',
+  ),
+  'dba_insert' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'key' => 'mixed',
+    'value' => 'mixed',
+    'handle' => 'mixed',
+  ),
+  'dba_key_split' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'key' => 'mixed',
+  ),
+  'dba_list' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+  ),
+  'dba_nextkey' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'handle' => 'mixed',
+  ),
+  'dba_open' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'path' => 'mixed',
+    'mode' => 'mixed',
+    'handlername=' => 'mixed',
+    '...handler_parameters=' => 'mixed',
+  ),
+  'dba_optimize' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'handle' => 'mixed',
+  ),
+  'dba_popen' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'path' => 'mixed',
+    'mode' => 'mixed',
+    'handlername=' => 'mixed',
+    '...handler_parameters=' => 'mixed',
+  ),
+  'dba_replace' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'key' => 'mixed',
+    'value' => 'mixed',
+    'handle' => 'mixed',
+  ),
+  'dba_sync' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'handle' => 'mixed',
+  ),
+  'dcgettext' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'domain_name' => 'mixed',
+    'msgid' => 'mixed',
+    'category' => 'mixed',
+  ),
+  'dcngettext' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'domain' => 'mixed',
+    'msgid1' => 'mixed',
+    'msgid2' => 'mixed',
+    'count' => 'mixed',
+    'category' => 'mixed',
+  ),
   'debug_backtrace' => 
   array (
     0 => 'mixed',
@@ -12593,6 +12841,13 @@ return array (
     0 => 'mixed',
     -2 => 'none',
     'number' => 'mixed',
+  ),
+  'dgettext' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'domain_name' => 'mixed',
+    'msgid' => 'mixed',
   ),
   'dir' => 
   array (
@@ -12902,6 +13157,15 @@ return array (
     0 => 'mixed',
     -2 => 'none',
     'extension_filename' => 'mixed',
+  ),
+  'dngettext' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'domain' => 'mixed',
+    'msgid1' => 'mixed',
+    'msgid2' => 'mixed',
+    'count' => 'mixed',
   ),
   'dns_check_record' => 
   array (
@@ -17093,6 +17357,19 @@ return array (
     -2 => 'none',
     '&arr' => 'mixed',
   ),
+  'easter_date' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'year=' => 'mixed',
+  ),
+  'easter_days' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'year=' => 'mixed',
+    'method=' => 'mixed',
+  ),
   'emptyiterator::current' => 
   array (
     0 => 'mixed',
@@ -17117,6 +17394,148 @@ return array (
   array (
     0 => 'mixed',
     -2 => 'none',
+  ),
+  'enchant_broker_describe' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'broker' => 'mixed',
+  ),
+  'enchant_broker_dict_exists' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'broker' => 'mixed',
+    'tag' => 'mixed',
+  ),
+  'enchant_broker_free' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'broker' => 'mixed',
+  ),
+  'enchant_broker_free_dict' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'dict' => 'mixed',
+  ),
+  'enchant_broker_get_dict_path' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'broker' => 'mixed',
+    'name' => 'mixed',
+  ),
+  'enchant_broker_get_error' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'broker' => 'mixed',
+  ),
+  'enchant_broker_init' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+  ),
+  'enchant_broker_list_dicts' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'broker' => 'mixed',
+  ),
+  'enchant_broker_request_dict' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'broker' => 'mixed',
+    'tag' => 'mixed',
+  ),
+  'enchant_broker_request_pwl_dict' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'broker' => 'mixed',
+    'filename' => 'mixed',
+  ),
+  'enchant_broker_set_dict_path' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'broker' => 'mixed',
+    'name' => 'mixed',
+    'value' => 'mixed',
+  ),
+  'enchant_broker_set_ordering' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'broker' => 'mixed',
+    'tag' => 'mixed',
+    'ordering' => 'mixed',
+  ),
+  'enchant_dict_add_to_personal' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'dict' => 'mixed',
+    'word' => 'mixed',
+  ),
+  'enchant_dict_add_to_session' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'dict' => 'mixed',
+    'word' => 'mixed',
+  ),
+  'enchant_dict_check' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'dict' => 'mixed',
+    'word' => 'mixed',
+  ),
+  'enchant_dict_describe' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'dict' => 'mixed',
+  ),
+  'enchant_dict_get_error' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'dict' => 'mixed',
+  ),
+  'enchant_dict_is_in_session' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'dict' => 'mixed',
+    'word' => 'mixed',
+  ),
+  'enchant_dict_quick_check' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'dict' => 'mixed',
+    'word' => 'mixed',
+    '&suggestions=' => 'mixed',
+  ),
+  'enchant_dict_store_replacement' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'dict' => 'mixed',
+    'mis' => 'mixed',
+    'cor' => 'mixed',
+  ),
+  'enchant_dict_suggest' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'dict' => 'mixed',
+    'word' => 'mixed',
   ),
   'end' => 
   array (
@@ -18630,6 +19049,12 @@ return array (
     0 => 'void',
     -2 => 'none',
   ),
+  'eventutil::createsocket' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'fd' => 'mixed',
+  ),
   'eventutil::getlastsocketerrno' => 
   array (
     0 => 'mixed',
@@ -19518,6 +19943,36 @@ return array (
     '&output=' => 'mixed',
     '&return_value=' => 'mixed',
   ),
+  'exif_imagetype' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'imagefile' => 'mixed',
+  ),
+  'exif_read_data' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'filename' => 'mixed',
+    'sections_needed=' => 'mixed',
+    'sub_arrays=' => 'mixed',
+    'read_thumbnail=' => 'mixed',
+  ),
+  'exif_tagname' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'index' => 'mixed',
+  ),
+  'exif_thumbnail' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'filename' => 'mixed',
+    '&width=' => 'mixed',
+    '&height=' => 'mixed',
+    '&imagetype=' => 'mixed',
+  ),
   'exp' => 
   array (
     0 => 'mixed',
@@ -20161,6 +20616,14 @@ return array (
     -2 => 'none',
     'fp' => 'mixed',
     'length' => 'mixed',
+  ),
+  'frenchtojd' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'month' => 'mixed',
+    'day' => 'mixed',
+    'year' => 'mixed',
   ),
   'fscanf' => 
   array (
@@ -20872,6 +21335,12 @@ return array (
     'port' => 'mixed',
     'protocol' => 'mixed',
   ),
+  'gettext' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'msgid' => 'mixed',
+  ),
   'gettimeofday' => 
   array (
     0 => 'mixed',
@@ -21537,6 +22006,14 @@ return array (
     'start' => 'mixed',
     'length=' => 'mixed',
   ),
+  'gregoriantojd' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'month' => 'mixed',
+    'day' => 'mixed',
+    'year' => 'mixed',
+  ),
   'grpc\\call::__construct' => 
   array (
     0 => 'void',
@@ -21986,7 +22463,7 @@ return array (
     -2 => 'none',
     'context' => 'mixed',
     'filename' => 'mixed',
-    'context=' => 'mixed',
+    'context_3=' => 'mixed',
   ),
   'hash_update_stream' => 
   array (
@@ -26940,6 +27417,576 @@ return array (
     0 => 'mixed',
     -2 => 'none',
   ),
+  'imap_8bit' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'text' => 'mixed',
+  ),
+  'imap_alerts' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+  ),
+  'imap_append' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'stream_id' => 'mixed',
+    'folder' => 'mixed',
+    'message' => 'mixed',
+    'options=' => 'mixed',
+    'date=' => 'mixed',
+  ),
+  'imap_base64' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'text' => 'mixed',
+  ),
+  'imap_binary' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'text' => 'mixed',
+  ),
+  'imap_body' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'stream_id' => 'mixed',
+    'msg_no' => 'mixed',
+    'options=' => 'mixed',
+  ),
+  'imap_bodystruct' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'stream_id' => 'mixed',
+    'msg_no' => 'mixed',
+    'section' => 'mixed',
+  ),
+  'imap_check' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'stream_id' => 'mixed',
+  ),
+  'imap_clearflag_full' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'stream_id' => 'mixed',
+    'sequence' => 'mixed',
+    'flag' => 'mixed',
+    'options=' => 'mixed',
+  ),
+  'imap_close' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'stream_id' => 'mixed',
+    'options=' => 'mixed',
+  ),
+  'imap_create' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'stream_id' => 'mixed',
+    'mailbox' => 'mixed',
+  ),
+  'imap_createmailbox' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'stream_id' => 'mixed',
+    'mailbox' => 'mixed',
+  ),
+  'imap_delete' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'stream_id' => 'mixed',
+    'msg_no' => 'mixed',
+    'options=' => 'mixed',
+  ),
+  'imap_deletemailbox' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'stream_id' => 'mixed',
+    'mailbox' => 'mixed',
+  ),
+  'imap_errors' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+  ),
+  'imap_expunge' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'stream_id' => 'mixed',
+  ),
+  'imap_fetch_overview' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'stream_id' => 'mixed',
+    'sequence' => 'mixed',
+    'options=' => 'mixed',
+  ),
+  'imap_fetchbody' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'stream_id' => 'mixed',
+    'msg_no' => 'mixed',
+    'section' => 'mixed',
+    'options=' => 'mixed',
+  ),
+  'imap_fetchheader' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'stream_id' => 'mixed',
+    'msg_no' => 'mixed',
+    'options=' => 'mixed',
+  ),
+  'imap_fetchmime' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'stream_id' => 'mixed',
+    'msg_no' => 'mixed',
+    'section' => 'mixed',
+    'options=' => 'mixed',
+  ),
+  'imap_fetchstructure' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'stream_id' => 'mixed',
+    'msg_no' => 'mixed',
+    'options=' => 'mixed',
+  ),
+  'imap_fetchtext' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'stream_id' => 'mixed',
+    'msg_no' => 'mixed',
+    'options=' => 'mixed',
+  ),
+  'imap_gc' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'stream_id' => 'mixed',
+    'flags=' => 'mixed',
+  ),
+  'imap_get_quota' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'stream_id' => 'mixed',
+    'qroot' => 'mixed',
+  ),
+  'imap_get_quotaroot' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'stream_id' => 'mixed',
+    'mbox' => 'mixed',
+  ),
+  'imap_getacl' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'stream_id' => 'mixed',
+    'mailbox' => 'mixed',
+  ),
+  'imap_getmailboxes' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'stream_id' => 'mixed',
+    'ref' => 'mixed',
+    'pattern' => 'mixed',
+  ),
+  'imap_getsubscribed' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'stream_id' => 'mixed',
+    'ref' => 'mixed',
+    'pattern' => 'mixed',
+  ),
+  'imap_header' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'stream_id' => 'mixed',
+    'msg_no' => 'mixed',
+    'from_length=' => 'mixed',
+    'subject_length=' => 'mixed',
+    'default_host=' => 'mixed',
+  ),
+  'imap_headerinfo' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'stream_id' => 'mixed',
+    'msg_no' => 'mixed',
+    'from_length=' => 'mixed',
+    'subject_length=' => 'mixed',
+    'default_host=' => 'mixed',
+  ),
+  'imap_headers' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'stream_id' => 'mixed',
+  ),
+  'imap_last_error' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+  ),
+  'imap_list' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'stream_id' => 'mixed',
+    'ref' => 'mixed',
+    'pattern' => 'mixed',
+  ),
+  'imap_listmailbox' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'stream_id' => 'mixed',
+    'ref' => 'mixed',
+    'pattern' => 'mixed',
+  ),
+  'imap_listscan' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'stream_id' => 'mixed',
+    'ref' => 'mixed',
+    'pattern' => 'mixed',
+    'content' => 'mixed',
+  ),
+  'imap_listsubscribed' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'stream_id' => 'mixed',
+    'ref' => 'mixed',
+    'pattern' => 'mixed',
+  ),
+  'imap_lsub' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'stream_id' => 'mixed',
+    'ref' => 'mixed',
+    'pattern' => 'mixed',
+  ),
+  'imap_mail' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'to' => 'mixed',
+    'subject' => 'mixed',
+    'message' => 'mixed',
+    'additional_headers=' => 'mixed',
+    'cc=' => 'mixed',
+    'bcc=' => 'mixed',
+    'rpath=' => 'mixed',
+  ),
+  'imap_mail_compose' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'envelope' => 'mixed',
+    'body' => 'mixed',
+  ),
+  'imap_mail_copy' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'stream_id' => 'mixed',
+    'msglist' => 'mixed',
+    'mailbox' => 'mixed',
+    'options=' => 'mixed',
+  ),
+  'imap_mail_move' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'stream_id' => 'mixed',
+    'sequence' => 'mixed',
+    'mailbox' => 'mixed',
+    'options=' => 'mixed',
+  ),
+  'imap_mailboxmsginfo' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'stream_id' => 'mixed',
+  ),
+  'imap_mime_header_decode' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'str' => 'mixed',
+  ),
+  'imap_msgno' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'stream_id' => 'mixed',
+    'unique_msg_id' => 'mixed',
+  ),
+  'imap_mutf7_to_utf8' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'in' => 'mixed',
+  ),
+  'imap_num_msg' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'stream_id' => 'mixed',
+  ),
+  'imap_num_recent' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'stream_id' => 'mixed',
+  ),
+  'imap_open' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'mailbox' => 'mixed',
+    'user' => 'mixed',
+    'password' => 'mixed',
+    'options=' => 'mixed',
+    'n_retries=' => 'mixed',
+    'params=' => 'mixed',
+  ),
+  'imap_ping' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'stream_id' => 'mixed',
+  ),
+  'imap_qprint' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'text' => 'mixed',
+  ),
+  'imap_rename' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'stream_id' => 'mixed',
+    'old_name' => 'mixed',
+    'new_name' => 'mixed',
+  ),
+  'imap_renamemailbox' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'stream_id' => 'mixed',
+    'old_name' => 'mixed',
+    'new_name' => 'mixed',
+  ),
+  'imap_reopen' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'stream_id' => 'mixed',
+    'mailbox' => 'mixed',
+    'options=' => 'mixed',
+    'n_retries=' => 'mixed',
+  ),
+  'imap_rfc822_parse_adrlist' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'address_string' => 'mixed',
+    'default_host' => 'mixed',
+  ),
+  'imap_rfc822_parse_headers' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'headers' => 'mixed',
+    'default_host=' => 'mixed',
+  ),
+  'imap_rfc822_write_address' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'mailbox' => 'mixed',
+    'host' => 'mixed',
+    'personal' => 'mixed',
+  ),
+  'imap_savebody' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'stream_id' => 'mixed',
+    'file' => 'mixed',
+    'msg_no' => 'mixed',
+    'section=' => 'mixed',
+    'options=' => 'mixed',
+  ),
+  'imap_scan' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'stream_id' => 'mixed',
+    'ref' => 'mixed',
+    'pattern' => 'mixed',
+    'content' => 'mixed',
+  ),
+  'imap_scanmailbox' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'stream_id' => 'mixed',
+    'ref' => 'mixed',
+    'pattern' => 'mixed',
+    'content' => 'mixed',
+  ),
+  'imap_search' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'stream_id' => 'mixed',
+    'criteria' => 'mixed',
+    'options=' => 'mixed',
+    'charset=' => 'mixed',
+  ),
+  'imap_set_quota' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'stream_id' => 'mixed',
+    'qroot' => 'mixed',
+    'mailbox_size' => 'mixed',
+  ),
+  'imap_setacl' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'stream_id' => 'mixed',
+    'mailbox' => 'mixed',
+    'id' => 'mixed',
+    'rights' => 'mixed',
+  ),
+  'imap_setflag_full' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'stream_id' => 'mixed',
+    'sequence' => 'mixed',
+    'flag' => 'mixed',
+    'options=' => 'mixed',
+  ),
+  'imap_sort' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'stream_id' => 'mixed',
+    'criteria' => 'mixed',
+    'reverse' => 'mixed',
+    'options=' => 'mixed',
+    'search_criteria=' => 'mixed',
+    'charset=' => 'mixed',
+  ),
+  'imap_status' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'stream_id' => 'mixed',
+    'mailbox' => 'mixed',
+    'options' => 'mixed',
+  ),
+  'imap_subscribe' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'stream_id' => 'mixed',
+    'mailbox' => 'mixed',
+  ),
+  'imap_thread' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'stream_id' => 'mixed',
+    'options=' => 'mixed',
+  ),
+  'imap_timeout' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'timeout_type' => 'mixed',
+    'timeout=' => 'mixed',
+  ),
+  'imap_uid' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'stream_id' => 'mixed',
+    'msg_no' => 'mixed',
+  ),
+  'imap_undelete' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'stream_id' => 'mixed',
+    'msg_no' => 'mixed',
+    'flags=' => 'mixed',
+  ),
+  'imap_unsubscribe' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'stream_id' => 'mixed',
+    'mailbox' => 'mixed',
+  ),
+  'imap_utf7_decode' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'buf' => 'mixed',
+  ),
+  'imap_utf7_encode' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'buf' => 'mixed',
+  ),
+  'imap_utf8' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'mime_encoded_text' => 'mixed',
+  ),
+  'imap_utf8_to_mutf7' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'in' => 'mixed',
+  ),
   'implode' => 
   array (
     0 => 'mixed',
@@ -29607,6 +30654,60 @@ return array (
     0 => 'mixed',
     -2 => 'none',
   ),
+  'jddayofweek' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'juliandaycount' => 'mixed',
+    'mode=' => 'mixed',
+  ),
+  'jdmonthname' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'juliandaycount' => 'mixed',
+    'mode' => 'mixed',
+  ),
+  'jdtofrench' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'juliandaycount' => 'mixed',
+  ),
+  'jdtogregorian' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'juliandaycount' => 'mixed',
+  ),
+  'jdtojewish' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'juliandaycount' => 'mixed',
+    'hebrew=' => 'mixed',
+    'fl=' => 'mixed',
+  ),
+  'jdtojulian' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'juliandaycount' => 'mixed',
+  ),
+  'jdtounix' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'jday' => 'mixed',
+  ),
+  'jewishtojd' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'month' => 'mixed',
+    'day' => 'mixed',
+    'year' => 'mixed',
+  ),
   'join' => 
   array (
     0 => 'mixed',
@@ -29655,6 +30756,14 @@ return array (
   array (
     0 => 'mixed',
     -2 => 'none',
+  ),
+  'juliantojd' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'month' => 'mixed',
+    'day' => 'mixed',
+    'year' => 'mixed',
   ),
   'key' => 
   array (
@@ -29707,6 +30816,351 @@ return array (
     -2 => 'none',
     'filename' => 'mixed',
     'user' => 'mixed',
+  ),
+  'ldap_add' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'link_identifier' => 'mixed',
+    'dn' => 'mixed',
+    'entry' => 'mixed',
+  ),
+  'ldap_bind' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'link_identifier' => 'mixed',
+    'bind_rdn=' => 'mixed',
+    'bind_password=' => 'mixed',
+  ),
+  'ldap_close' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'link_identifier' => 'mixed',
+  ),
+  'ldap_compare' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'link_identifier' => 'mixed',
+    'dn' => 'mixed',
+    'attribute' => 'mixed',
+    'value' => 'mixed',
+  ),
+  'ldap_connect' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'hostname=' => 'mixed',
+    'port=' => 'mixed',
+  ),
+  'ldap_control_paged_result' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'link' => 'mixed',
+    'pagesize' => 'mixed',
+    'iscritical=' => 'mixed',
+    'cookie=' => 'mixed',
+  ),
+  'ldap_control_paged_result_response' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'link' => 'mixed',
+    'result' => 'mixed',
+    '&cookie=' => 'mixed',
+    '&estimated=' => 'mixed',
+  ),
+  'ldap_count_entries' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'link_identifier' => 'mixed',
+    'result_identifier' => 'mixed',
+  ),
+  'ldap_delete' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'link_identifier' => 'mixed',
+    'dn' => 'mixed',
+  ),
+  'ldap_dn2ufn' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'dn' => 'mixed',
+  ),
+  'ldap_err2str' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'errno' => 'mixed',
+  ),
+  'ldap_errno' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'link_identifier' => 'mixed',
+  ),
+  'ldap_error' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'link_identifier' => 'mixed',
+  ),
+  'ldap_escape' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'value' => 'mixed',
+    'ignore=' => 'mixed',
+    'flags=' => 'mixed',
+  ),
+  'ldap_explode_dn' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'dn' => 'mixed',
+    'with_attrib' => 'mixed',
+  ),
+  'ldap_first_attribute' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'link_identifier' => 'mixed',
+    'result_entry_identifier' => 'mixed',
+  ),
+  'ldap_first_entry' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'link_identifier' => 'mixed',
+    'result_identifier' => 'mixed',
+  ),
+  'ldap_first_reference' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'link' => 'mixed',
+    'result' => 'mixed',
+  ),
+  'ldap_free_result' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'link_identifier' => 'mixed',
+  ),
+  'ldap_get_attributes' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'link_identifier' => 'mixed',
+    'result_entry_identifier' => 'mixed',
+  ),
+  'ldap_get_dn' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'link_identifier' => 'mixed',
+    'result_entry_identifier' => 'mixed',
+  ),
+  'ldap_get_entries' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'link_identifier' => 'mixed',
+    'result_identifier' => 'mixed',
+  ),
+  'ldap_get_option' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'link_identifier' => 'mixed',
+    'option' => 'mixed',
+    '&retval' => 'mixed',
+  ),
+  'ldap_get_values' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'link_identifier' => 'mixed',
+    'result_entry_identifier' => 'mixed',
+    'attribute' => 'mixed',
+  ),
+  'ldap_get_values_len' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'link_identifier' => 'mixed',
+    'result_entry_identifier' => 'mixed',
+    'attribute' => 'mixed',
+  ),
+  'ldap_list' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'link_identifier' => 'mixed',
+    'base_dn' => 'mixed',
+    'filter' => 'mixed',
+    'attributes=' => 'mixed',
+    'attrsonly=' => 'mixed',
+    'sizelimit=' => 'mixed',
+    'timelimit=' => 'mixed',
+    'deref=' => 'mixed',
+  ),
+  'ldap_mod_add' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'link_identifier' => 'mixed',
+    'dn' => 'mixed',
+    'entry' => 'mixed',
+  ),
+  'ldap_mod_del' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'link_identifier' => 'mixed',
+    'dn' => 'mixed',
+    'entry' => 'mixed',
+  ),
+  'ldap_mod_replace' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'link_identifier' => 'mixed',
+    'dn' => 'mixed',
+    'entry' => 'mixed',
+  ),
+  'ldap_modify' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'link_identifier' => 'mixed',
+    'dn' => 'mixed',
+    'entry' => 'mixed',
+  ),
+  'ldap_modify_batch' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'link_identifier' => 'mixed',
+    'dn' => 'mixed',
+    'modifications_info' => 'array<array-key, mixed>',
+  ),
+  'ldap_next_attribute' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'link_identifier' => 'mixed',
+    'result_entry_identifier' => 'mixed',
+  ),
+  'ldap_next_entry' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'link_identifier' => 'mixed',
+    'result_identifier' => 'mixed',
+  ),
+  'ldap_next_reference' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'link' => 'mixed',
+    'entry' => 'mixed',
+  ),
+  'ldap_parse_reference' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'link' => 'mixed',
+    'entry' => 'mixed',
+    '&referrals' => 'mixed',
+  ),
+  'ldap_parse_result' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'link' => 'mixed',
+    'result' => 'mixed',
+    '&errcode' => 'mixed',
+    '&matcheddn=' => 'mixed',
+    '&errmsg=' => 'mixed',
+    '&referrals=' => 'mixed',
+  ),
+  'ldap_read' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'link_identifier' => 'mixed',
+    'base_dn' => 'mixed',
+    'filter' => 'mixed',
+    'attributes=' => 'mixed',
+    'attrsonly=' => 'mixed',
+    'sizelimit=' => 'mixed',
+    'timelimit=' => 'mixed',
+    'deref=' => 'mixed',
+  ),
+  'ldap_rename' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'link_identifier' => 'mixed',
+    'dn' => 'mixed',
+    'newrdn' => 'mixed',
+    'newparent' => 'mixed',
+    'deleteoldrdn' => 'mixed',
+  ),
+  'ldap_search' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'link_identifier' => 'mixed',
+    'base_dn' => 'mixed',
+    'filter' => 'mixed',
+    'attributes=' => 'mixed',
+    'attrsonly=' => 'mixed',
+    'sizelimit=' => 'mixed',
+    'timelimit=' => 'mixed',
+    'deref=' => 'mixed',
+  ),
+  'ldap_set_option' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'link_identifier' => 'mixed',
+    'option' => 'mixed',
+    'newval' => 'mixed',
+  ),
+  'ldap_set_rebind_proc' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'link' => 'mixed',
+    'callback' => 'mixed',
+  ),
+  'ldap_sort' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'link' => 'mixed',
+    'result' => 'mixed',
+    'sortfilter' => 'mixed',
+  ),
+  'ldap_start_tls' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'link_identifier' => 'mixed',
+  ),
+  'ldap_unbind' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'link_identifier' => 'mixed',
   ),
   'lengthexception::__clone' => 
   array (
@@ -33834,6 +35288,62 @@ return array (
     'path' => 'mixed',
     'new_path' => 'mixed',
   ),
+  'msg_get_queue' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'key' => 'mixed',
+    'perms=' => 'mixed',
+  ),
+  'msg_queue_exists' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'key' => 'mixed',
+  ),
+  'msg_receive' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'queue' => 'mixed',
+    'desiredmsgtype' => 'mixed',
+    '&msgtype' => 'mixed',
+    'maxsize' => 'mixed',
+    '&message' => 'mixed',
+    'unserialize=' => 'mixed',
+    'flags=' => 'mixed',
+    '&errorcode=' => 'mixed',
+  ),
+  'msg_remove_queue' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'queue' => 'mixed',
+  ),
+  'msg_send' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'queue' => 'mixed',
+    'msgtype' => 'mixed',
+    'message' => 'mixed',
+    'serialize=' => 'mixed',
+    'blocking=' => 'mixed',
+    '&errorcode=' => 'mixed',
+  ),
+  'msg_set_queue' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'queue' => 'mixed',
+    'data' => 'mixed',
+  ),
+  'msg_stat_queue' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'queue' => 'mixed',
+  ),
   'msgfmt_create' => 
   array (
     0 => 'mixed',
@@ -35211,6 +36721,14 @@ return array (
     -2 => 'none',
     '&arg' => 'mixed',
   ),
+  'ngettext' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'msgid1' => 'mixed',
+    'msgid2' => 'mixed',
+    'count' => 'mixed',
+  ),
   'nl2br' => 
   array (
     0 => 'mixed',
@@ -35605,11 +37123,1401 @@ return array (
     'chunk_size=' => 'mixed',
     'flags=' => 'mixed',
   ),
+  'oci-collection::append' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'value' => 'mixed',
+  ),
+  'oci-collection::assign' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'collection_from' => 'mixed',
+  ),
+  'oci-collection::assignelem' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'index' => 'mixed',
+    'value' => 'mixed',
+  ),
+  'oci-collection::free' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+  ),
+  'oci-collection::getelem' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'index' => 'mixed',
+  ),
+  'oci-collection::max' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+  ),
+  'oci-collection::size' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+  ),
+  'oci-collection::trim' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'number' => 'mixed',
+  ),
+  'oci-lob::append' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'lob_descriptor_from' => 'mixed',
+  ),
+  'oci-lob::close' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+  ),
+  'oci-lob::eof' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+  ),
+  'oci-lob::erase' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'offset=' => 'mixed',
+    'length=' => 'mixed',
+  ),
+  'oci-lob::export' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'filename' => 'mixed',
+    'start=' => 'mixed',
+    'length=' => 'mixed',
+  ),
+  'oci-lob::flush' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'flag=' => 'mixed',
+  ),
+  'oci-lob::free' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+  ),
+  'oci-lob::getbuffering' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+  ),
+  'oci-lob::import' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'filename' => 'mixed',
+  ),
+  'oci-lob::load' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+  ),
+  'oci-lob::read' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'length' => 'mixed',
+  ),
+  'oci-lob::rewind' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+  ),
+  'oci-lob::save' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'data' => 'mixed',
+    'offset=' => 'mixed',
+  ),
+  'oci-lob::savefile' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'filename' => 'mixed',
+  ),
+  'oci-lob::seek' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'offset' => 'mixed',
+    'whence=' => 'mixed',
+  ),
+  'oci-lob::setbuffering' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'mode' => 'mixed',
+  ),
+  'oci-lob::size' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+  ),
+  'oci-lob::tell' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+  ),
+  'oci-lob::truncate' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'length=' => 'mixed',
+  ),
+  'oci-lob::write' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'string' => 'mixed',
+    'length=' => 'mixed',
+  ),
+  'oci-lob::writetemporary' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'data' => 'mixed',
+    'type=' => 'mixed',
+  ),
+  'oci-lob::writetofile' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'filename' => 'mixed',
+    'start=' => 'mixed',
+    'length=' => 'mixed',
+  ),
+  'oci_bind_array_by_name' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'statement_resource' => 'mixed',
+    'column_name' => 'mixed',
+    '&variable' => 'mixed',
+    'maximum_array_length' => 'mixed',
+    'maximum_item_length=' => 'mixed',
+    'type=' => 'mixed',
+  ),
+  'oci_bind_by_name' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'statement_resource' => 'mixed',
+    'column_name' => 'mixed',
+    '&variable' => 'mixed',
+    'maximum_length=' => 'mixed',
+    'type=' => 'mixed',
+  ),
+  'oci_cancel' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'statement_resource' => 'mixed',
+  ),
+  'oci_client_version' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+  ),
+  'oci_close' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'connection_resource' => 'mixed',
+  ),
+  'oci_collection_append' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'collection' => 'mixed',
+    'value' => 'mixed',
+  ),
+  'oci_collection_assign' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'collection_to' => 'mixed',
+    'collection_from' => 'mixed',
+  ),
+  'oci_collection_element_assign' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'collection' => 'mixed',
+    'index' => 'mixed',
+    'value' => 'mixed',
+  ),
+  'oci_collection_element_get' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'collection' => 'mixed',
+    'index' => 'mixed',
+  ),
+  'oci_collection_max' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'collection' => 'mixed',
+  ),
+  'oci_collection_size' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'collection' => 'mixed',
+  ),
+  'oci_collection_trim' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'collection' => 'mixed',
+    'number' => 'mixed',
+  ),
+  'oci_commit' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'connection_resource' => 'mixed',
+  ),
+  'oci_connect' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'username' => 'mixed',
+    'password' => 'mixed',
+    'connection_string=' => 'mixed',
+    'character_set=' => 'mixed',
+    'session_mode=' => 'mixed',
+  ),
+  'oci_define_by_name' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'statement_resource' => 'mixed',
+    'column_name' => 'mixed',
+    '&variable' => 'mixed',
+    'type=' => 'mixed',
+  ),
+  'oci_error' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'connection_or_statement_resource=' => 'mixed',
+  ),
+  'oci_execute' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'statement_resource' => 'mixed',
+    'mode=' => 'mixed',
+  ),
+  'oci_fetch' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'statement_resource' => 'mixed',
+  ),
+  'oci_fetch_all' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'statement_resource' => 'mixed',
+    '&output' => 'mixed',
+    'skip=' => 'mixed',
+    'maximum_rows=' => 'mixed',
+    'flags=' => 'mixed',
+  ),
+  'oci_fetch_array' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'statement_resource' => 'mixed',
+    'mode=' => 'mixed',
+  ),
+  'oci_fetch_assoc' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'statement_resource' => 'mixed',
+  ),
+  'oci_fetch_object' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'statement_resource' => 'mixed',
+  ),
+  'oci_fetch_row' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'statement_resource' => 'mixed',
+  ),
+  'oci_field_is_null' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'statement_resource' => 'mixed',
+    'column_number_or_name' => 'mixed',
+  ),
+  'oci_field_name' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'statement_resource' => 'mixed',
+    'column_number_or_name' => 'mixed',
+  ),
+  'oci_field_precision' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'statement_resource' => 'mixed',
+    'column_number_or_name' => 'mixed',
+  ),
+  'oci_field_scale' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'statement_resource' => 'mixed',
+    'column_number_or_name' => 'mixed',
+  ),
+  'oci_field_size' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'statement_resource' => 'mixed',
+    'column_number_or_name' => 'mixed',
+  ),
+  'oci_field_type' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'statement_resource' => 'mixed',
+    'column_number_or_name' => 'mixed',
+  ),
+  'oci_field_type_raw' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'statement_resource' => 'mixed',
+    'column_number_or_name' => 'mixed',
+  ),
+  'oci_free_collection' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'collection' => 'mixed',
+  ),
+  'oci_free_cursor' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'statement_resource' => 'mixed',
+  ),
+  'oci_free_descriptor' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'lob_descriptor' => 'mixed',
+  ),
+  'oci_free_statement' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'statement_resource' => 'mixed',
+  ),
+  'oci_get_implicit_resultset' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'statement_resource' => 'mixed',
+  ),
+  'oci_internal_debug' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'mode' => 'mixed',
+  ),
+  'oci_lob_append' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'lob_descriptor_to' => 'mixed',
+    'lob_descriptor_from' => 'mixed',
+  ),
+  'oci_lob_copy' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'lob_descriptor_to' => 'mixed',
+    'lob_descriptor_from' => 'mixed',
+    'length=' => 'mixed',
+  ),
+  'oci_lob_eof' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'lob_descriptor' => 'mixed',
+  ),
+  'oci_lob_erase' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'lob_descriptor' => 'mixed',
+    'offset=' => 'mixed',
+    'length=' => 'mixed',
+  ),
+  'oci_lob_export' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'lob_descriptor' => 'mixed',
+    'filename' => 'mixed',
+    'start=' => 'mixed',
+    'length=' => 'mixed',
+  ),
+  'oci_lob_flush' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'lob_descriptor' => 'mixed',
+    'flag=' => 'mixed',
+  ),
+  'oci_lob_import' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'lob_descriptor' => 'mixed',
+    'filename' => 'mixed',
+  ),
+  'oci_lob_is_equal' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'lob_descriptor' => 'mixed',
+    'lob_descriptor_2' => 'mixed',
+  ),
+  'oci_lob_load' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'lob_descriptor' => 'mixed',
+  ),
+  'oci_lob_read' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'lob_descriptor' => 'mixed',
+    'length' => 'mixed',
+  ),
+  'oci_lob_rewind' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'lob_descriptor' => 'mixed',
+  ),
+  'oci_lob_save' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'lob_descriptor' => 'mixed',
+    'data' => 'mixed',
+    'offset=' => 'mixed',
+  ),
+  'oci_lob_seek' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'lob_descriptor' => 'mixed',
+    'offset' => 'mixed',
+    'whence=' => 'mixed',
+  ),
+  'oci_lob_size' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'lob_descriptor' => 'mixed',
+  ),
+  'oci_lob_tell' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'lob_descriptor' => 'mixed',
+  ),
+  'oci_lob_truncate' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'lob_descriptor' => 'mixed',
+    'length=' => 'mixed',
+  ),
+  'oci_lob_write' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'lob_descriptor' => 'mixed',
+    'string' => 'mixed',
+    'length=' => 'mixed',
+  ),
+  'oci_new_collection' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'connection_resource' => 'mixed',
+    'type_name' => 'mixed',
+    'schema_name=' => 'mixed',
+  ),
+  'oci_new_connect' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'username' => 'mixed',
+    'password' => 'mixed',
+    'connection_string=' => 'mixed',
+    'character_set=' => 'mixed',
+    'session_mode=' => 'mixed',
+  ),
+  'oci_new_cursor' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'connection_resource' => 'mixed',
+  ),
+  'oci_new_descriptor' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'connection_resource' => 'mixed',
+    'type=' => 'mixed',
+  ),
+  'oci_num_fields' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'statement_resource' => 'mixed',
+  ),
+  'oci_num_rows' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'statement_resource' => 'mixed',
+  ),
+  'oci_parse' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'connection_resource' => 'mixed',
+    'sql_text' => 'mixed',
+  ),
+  'oci_password_change' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'connection_resource_or_connection_string' => 'mixed',
+    'username' => 'mixed',
+    'old_password' => 'mixed',
+    'new_password' => 'mixed',
+  ),
+  'oci_pconnect' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'username' => 'mixed',
+    'password' => 'mixed',
+    'connection_string=' => 'mixed',
+    'character_set=' => 'mixed',
+    'session_mode=' => 'mixed',
+  ),
+  'oci_register_taf_callback' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'connection_resource' => 'mixed',
+    'function_name=' => 'mixed',
+  ),
+  'oci_result' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'statement_resource' => 'mixed',
+    'column_number_or_name' => 'mixed',
+  ),
+  'oci_rollback' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'connection_resource' => 'mixed',
+  ),
+  'oci_server_version' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'connection_resource' => 'mixed',
+  ),
+  'oci_set_action' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'connection_resource' => 'mixed',
+    'action' => 'mixed',
+  ),
+  'oci_set_client_identifier' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'connection_resource' => 'mixed',
+    'client_identifier' => 'mixed',
+  ),
+  'oci_set_client_info' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'connection_resource' => 'mixed',
+    'client_information' => 'mixed',
+  ),
+  'oci_set_edition' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'edition_name' => 'mixed',
+  ),
+  'oci_set_module_name' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'connection_resource' => 'mixed',
+    'module_name' => 'mixed',
+  ),
+  'oci_set_prefetch' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'statement_resource' => 'mixed',
+    'number_of_rows' => 'mixed',
+  ),
+  'oci_statement_type' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'statement_resource' => 'mixed',
+  ),
+  'oci_unregister_taf_callback' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'connection_resource' => 'mixed',
+  ),
+  'ocibindbyname' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'statement_resource' => 'mixed',
+    'column_name' => 'mixed',
+    '&variable' => 'mixed',
+    'maximum_length=' => 'mixed',
+    'type=' => 'mixed',
+  ),
+  'ocicancel' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'statement_resource' => 'mixed',
+  ),
+  'ocicollappend' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'collection' => 'mixed',
+    'value' => 'mixed',
+  ),
+  'ocicollassignelem' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'collection' => 'mixed',
+    'index' => 'mixed',
+    'value' => 'mixed',
+  ),
+  'ocicollgetelem' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'collection' => 'mixed',
+    'index' => 'mixed',
+  ),
+  'ocicollmax' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'collection' => 'mixed',
+  ),
+  'ocicollsize' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'collection' => 'mixed',
+  ),
+  'ocicolltrim' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'collection' => 'mixed',
+    'number' => 'mixed',
+  ),
+  'ocicolumnisnull' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'statement_resource' => 'mixed',
+    'column_number_or_name' => 'mixed',
+  ),
+  'ocicolumnname' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'statement_resource' => 'mixed',
+    'column_number_or_name' => 'mixed',
+  ),
+  'ocicolumnprecision' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'statement_resource' => 'mixed',
+    'column_number_or_name' => 'mixed',
+  ),
+  'ocicolumnscale' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'statement_resource' => 'mixed',
+    'column_number_or_name' => 'mixed',
+  ),
+  'ocicolumnsize' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'statement_resource' => 'mixed',
+    'column_number_or_name' => 'mixed',
+  ),
+  'ocicolumntype' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'statement_resource' => 'mixed',
+    'column_number_or_name' => 'mixed',
+  ),
+  'ocicolumntyperaw' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'statement_resource' => 'mixed',
+    'column_number_or_name' => 'mixed',
+  ),
+  'ocicommit' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'connection_resource' => 'mixed',
+  ),
+  'ocidefinebyname' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'statement_resource' => 'mixed',
+    'column_name' => 'mixed',
+    '&variable' => 'mixed',
+    'type=' => 'mixed',
+  ),
+  'ocierror' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'connection_or_statement_resource=' => 'mixed',
+  ),
+  'ociexecute' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'statement_resource' => 'mixed',
+    'mode=' => 'mixed',
+  ),
+  'ocifetch' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'statement_resource' => 'mixed',
+  ),
+  'ocifetchinto' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'statement_resource' => 'mixed',
+    '&result' => 'mixed',
+    'mode=' => 'mixed',
+  ),
+  'ocifetchstatement' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'statement_resource' => 'mixed',
+    '&output' => 'mixed',
+    'skip=' => 'mixed',
+    'maximum_rows=' => 'mixed',
+    'flags=' => 'mixed',
+  ),
+  'ocifreecollection' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'collection' => 'mixed',
+  ),
+  'ocifreecursor' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'statement_resource' => 'mixed',
+  ),
+  'ocifreedesc' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'lob_descriptor' => 'mixed',
+  ),
+  'ocifreestatement' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'statement_resource' => 'mixed',
+  ),
+  'ocigetbufferinglob' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'lob_descriptor' => 'mixed',
+  ),
+  'ociinternaldebug' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'mode' => 'mixed',
+  ),
+  'ociloadlob' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'lob_descriptor' => 'mixed',
+  ),
+  'ocilogoff' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'connection_resource' => 'mixed',
+  ),
+  'ocilogon' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'username' => 'mixed',
+    'password' => 'mixed',
+    'connection_string=' => 'mixed',
+    'character_set=' => 'mixed',
+    'session_mode=' => 'mixed',
+  ),
+  'ocinewcollection' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'connection_resource' => 'mixed',
+    'type_name' => 'mixed',
+    'schema_name=' => 'mixed',
+  ),
+  'ocinewcursor' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'connection_resource' => 'mixed',
+  ),
+  'ocinewdescriptor' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'connection_resource' => 'mixed',
+    'type=' => 'mixed',
+  ),
+  'ocinlogon' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'username' => 'mixed',
+    'password' => 'mixed',
+    'connection_string=' => 'mixed',
+    'character_set=' => 'mixed',
+    'session_mode=' => 'mixed',
+  ),
+  'ocinumcols' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'statement_resource' => 'mixed',
+  ),
+  'ociparse' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'connection_resource' => 'mixed',
+    'sql_text' => 'mixed',
+  ),
+  'ocipasswordchange' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'connection_resource_or_connection_string' => 'mixed',
+    'username' => 'mixed',
+    'old_password' => 'mixed',
+    'new_password' => 'mixed',
+  ),
+  'ociplogon' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'username' => 'mixed',
+    'password' => 'mixed',
+    'connection_string=' => 'mixed',
+    'character_set=' => 'mixed',
+    'session_mode=' => 'mixed',
+  ),
+  'ociresult' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'statement_resource' => 'mixed',
+    'column_number_or_name' => 'mixed',
+  ),
+  'ocirollback' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'connection_resource' => 'mixed',
+  ),
+  'ocirowcount' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'statement_resource' => 'mixed',
+  ),
+  'ocisavelob' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'lob_descriptor' => 'mixed',
+    'data' => 'mixed',
+    'offset=' => 'mixed',
+  ),
+  'ocisavelobfile' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'lob_descriptor' => 'mixed',
+    'filename' => 'mixed',
+  ),
+  'ociserverversion' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'connection_resource' => 'mixed',
+  ),
+  'ocisetbufferinglob' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'lob_descriptor' => 'mixed',
+    'mode' => 'mixed',
+  ),
+  'ocisetprefetch' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'statement_resource' => 'mixed',
+    'number_of_rows' => 'mixed',
+  ),
+  'ocistatementtype' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'statement_resource' => 'mixed',
+  ),
+  'ociwritelobtofile' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'lob_descriptor' => 'mixed',
+    'filename' => 'mixed',
+    'start=' => 'mixed',
+    'length=' => 'mixed',
+  ),
   'octdec' => 
   array (
     0 => 'mixed',
     -2 => 'none',
     'octal_number' => 'mixed',
+  ),
+  'odbc_autocommit' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'connection_id' => 'mixed',
+    'onoff=' => 'mixed',
+  ),
+  'odbc_binmode' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'result_id' => 'mixed',
+    'mode' => 'mixed',
+  ),
+  'odbc_close' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'connection_id' => 'mixed',
+  ),
+  'odbc_close_all' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+  ),
+  'odbc_columnprivileges' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'connection_id' => 'mixed',
+    'catalog' => 'mixed',
+    'schema' => 'mixed',
+    'table' => 'mixed',
+    'column' => 'mixed',
+  ),
+  'odbc_columns' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'connection_id' => 'mixed',
+    'qualifier=' => 'mixed',
+    'owner=' => 'mixed',
+    'table_name=' => 'mixed',
+    'column_name=' => 'mixed',
+  ),
+  'odbc_commit' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'connection_id' => 'mixed',
+  ),
+  'odbc_connect' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'dsn' => 'mixed',
+    'user' => 'mixed',
+    'password' => 'mixed',
+    'cursor_option=' => 'mixed',
+  ),
+  'odbc_cursor' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'result_id' => 'mixed',
+  ),
+  'odbc_data_source' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'connection_id' => 'mixed',
+    'fetch_type' => 'mixed',
+  ),
+  'odbc_do' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'connection_id' => 'mixed',
+    'query' => 'mixed',
+    'flags=' => 'mixed',
+  ),
+  'odbc_error' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'connection_id=' => 'mixed',
+  ),
+  'odbc_errormsg' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'connection_id=' => 'mixed',
+  ),
+  'odbc_exec' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'connection_id' => 'mixed',
+    'query' => 'mixed',
+    'flags=' => 'mixed',
+  ),
+  'odbc_execute' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'result_id' => 'mixed',
+    'parameters_array=' => 'mixed',
+  ),
+  'odbc_fetch_array' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'result' => 'mixed',
+    'rownumber=' => 'mixed',
+  ),
+  'odbc_fetch_into' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'result_id' => 'mixed',
+    '&result_array' => 'mixed',
+    'rownumber=' => 'mixed',
+  ),
+  'odbc_fetch_object' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'result' => 'mixed',
+    'rownumber=' => 'mixed',
+  ),
+  'odbc_fetch_row' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'result_id' => 'mixed',
+    'row_number=' => 'mixed',
+  ),
+  'odbc_field_len' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'result_id' => 'mixed',
+    'field_number' => 'mixed',
+  ),
+  'odbc_field_name' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'result_id' => 'mixed',
+    'field_number' => 'mixed',
+  ),
+  'odbc_field_num' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'result_id' => 'mixed',
+    'field_name' => 'mixed',
+  ),
+  'odbc_field_precision' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'result_id' => 'mixed',
+    'field_number' => 'mixed',
+  ),
+  'odbc_field_scale' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'result_id' => 'mixed',
+    'field_number' => 'mixed',
+  ),
+  'odbc_field_type' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'result_id' => 'mixed',
+    'field_number' => 'mixed',
+  ),
+  'odbc_foreignkeys' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'connection_id' => 'mixed',
+    'pk_qualifier' => 'mixed',
+    'pk_owner' => 'mixed',
+    'pk_table' => 'mixed',
+    'fk_qualifier' => 'mixed',
+    'fk_owner' => 'mixed',
+    'fk_table' => 'mixed',
+  ),
+  'odbc_free_result' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'result_id' => 'mixed',
+  ),
+  'odbc_gettypeinfo' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'connection_id' => 'mixed',
+    'data_type=' => 'mixed',
+  ),
+  'odbc_longreadlen' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'result_id' => 'mixed',
+    'length' => 'mixed',
+  ),
+  'odbc_next_result' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'result_id' => 'mixed',
+  ),
+  'odbc_num_fields' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'result_id' => 'mixed',
+  ),
+  'odbc_num_rows' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'result_id' => 'mixed',
+  ),
+  'odbc_pconnect' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'dsn' => 'mixed',
+    'user' => 'mixed',
+    'password' => 'mixed',
+    'cursor_option=' => 'mixed',
+  ),
+  'odbc_prepare' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'connection_id' => 'mixed',
+    'query' => 'mixed',
+  ),
+  'odbc_primarykeys' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'connection_id' => 'mixed',
+    'qualifier' => 'mixed',
+    'owner' => 'mixed',
+    'table' => 'mixed',
+  ),
+  'odbc_procedurecolumns' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'connection_id' => 'mixed',
+    'qualifier=' => 'mixed',
+    'owner=' => 'mixed',
+    'proc=' => 'mixed',
+    'column=' => 'mixed',
+  ),
+  'odbc_procedures' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'connection_id' => 'mixed',
+    'qualifier=' => 'mixed',
+    'owner=' => 'mixed',
+    'name=' => 'mixed',
+  ),
+  'odbc_result' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'result_id' => 'mixed',
+    'field' => 'mixed',
+  ),
+  'odbc_result_all' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'result_id' => 'mixed',
+    'format=' => 'mixed',
+  ),
+  'odbc_rollback' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'connection_id' => 'mixed',
+  ),
+  'odbc_setoption' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'conn_id' => 'mixed',
+    'which' => 'mixed',
+    'option' => 'mixed',
+    'value' => 'mixed',
+  ),
+  'odbc_specialcolumns' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'connection_id' => 'mixed',
+    'type' => 'mixed',
+    'qualifier' => 'mixed',
+    'owner' => 'mixed',
+    'table' => 'mixed',
+    'scope' => 'mixed',
+    'nullable' => 'mixed',
+  ),
+  'odbc_statistics' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'connection_id' => 'mixed',
+    'qualifier' => 'mixed',
+    'owner' => 'mixed',
+    'name' => 'mixed',
+    'unique' => 'mixed',
+    'accuracy' => 'mixed',
+  ),
+  'odbc_tableprivileges' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'connection_id' => 'mixed',
+    'qualifier' => 'mixed',
+    'owner' => 'mixed',
+    'name' => 'mixed',
+  ),
+  'odbc_tables' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'connection_id' => 'mixed',
+    'qualifier=' => 'mixed',
+    'owner=' => 'mixed',
+    'name=' => 'mixed',
+    'table_types=' => 'mixed',
   ),
   'opendir' => 
   array (
@@ -39582,6 +42490,146 @@ return array (
     'object_or_class' => 'mixed',
     'property_name' => 'mixed',
   ),
+  'pspell_add_to_personal' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'pspell' => 'mixed',
+    'word' => 'mixed',
+  ),
+  'pspell_add_to_session' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'pspell' => 'mixed',
+    'word' => 'mixed',
+  ),
+  'pspell_check' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'pspell' => 'mixed',
+    'word' => 'mixed',
+  ),
+  'pspell_clear_session' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'pspell' => 'mixed',
+  ),
+  'pspell_config_create' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'language' => 'mixed',
+    'spelling=' => 'mixed',
+    'jargon=' => 'mixed',
+    'encoding=' => 'mixed',
+  ),
+  'pspell_config_data_dir' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'conf' => 'mixed',
+    'directory' => 'mixed',
+  ),
+  'pspell_config_dict_dir' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'conf' => 'mixed',
+    'directory' => 'mixed',
+  ),
+  'pspell_config_ignore' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'conf' => 'mixed',
+    'ignore' => 'mixed',
+  ),
+  'pspell_config_mode' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'conf' => 'mixed',
+    'mode' => 'mixed',
+  ),
+  'pspell_config_personal' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'conf' => 'mixed',
+    'personal' => 'mixed',
+  ),
+  'pspell_config_repl' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'conf' => 'mixed',
+    'repl' => 'mixed',
+  ),
+  'pspell_config_runtogether' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'conf' => 'mixed',
+    'runtogether' => 'mixed',
+  ),
+  'pspell_config_save_repl' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'conf' => 'mixed',
+    'save' => 'mixed',
+  ),
+  'pspell_new' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'language' => 'mixed',
+    'spelling=' => 'mixed',
+    'jargon=' => 'mixed',
+    'encoding=' => 'mixed',
+    'mode=' => 'mixed',
+  ),
+  'pspell_new_config' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'config' => 'mixed',
+  ),
+  'pspell_new_personal' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'personal' => 'mixed',
+    'language' => 'mixed',
+    'spelling=' => 'mixed',
+    'jargon=' => 'mixed',
+    'encoding=' => 'mixed',
+    'mode=' => 'mixed',
+  ),
+  'pspell_save_wordlist' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'pspell' => 'mixed',
+  ),
+  'pspell_store_replacement' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'pspell' => 'mixed',
+    'misspell' => 'mixed',
+    'correct' => 'mixed',
+  ),
+  'pspell_suggest' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'pspell' => 'mixed',
+    'word' => 'mixed',
+  ),
   'putenv' => 
   array (
     0 => 'mixed',
@@ -39709,6 +42757,15 @@ return array (
     0 => 'mixed',
     -2 => 'none',
     'str' => 'mixed',
+  ),
+  'read_exif_data' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'filename' => 'mixed',
+    'sections_needed=' => 'mixed',
+    'sub_arrays=' => 'mixed',
+    'read_thumbnail=' => 'mixed',
   ),
   'readdir' => 
   array (
@@ -46156,6 +49213,34 @@ return array (
     0 => 'mixed',
     -2 => 'none',
   ),
+  'sem_acquire' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'sem_identifier' => 'mixed',
+    'nowait=' => 'mixed',
+  ),
+  'sem_get' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'key' => 'mixed',
+    'max_acquire=' => 'mixed',
+    'perm=' => 'mixed',
+    'auto_release=' => 'mixed',
+  ),
+  'sem_release' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'sem_identifier' => 'mixed',
+  ),
+  'sem_remove' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'sem_identifier' => 'mixed',
+  ),
   'serializable::serialize' => 
   array (
     0 => 'mixed',
@@ -46487,6 +49572,98 @@ return array (
     0 => 'mixed',
     -2 => 'none',
     'cmd' => 'mixed',
+  ),
+  'shm_attach' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'key' => 'mixed',
+    'memsize=' => 'mixed',
+    'perm=' => 'mixed',
+  ),
+  'shm_detach' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'shm_identifier' => 'mixed',
+  ),
+  'shm_get_var' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'id' => 'mixed',
+    'variable_key' => 'mixed',
+  ),
+  'shm_has_var' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'id' => 'mixed',
+    'variable_key' => 'mixed',
+  ),
+  'shm_put_var' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'shm_identifier' => 'mixed',
+    'variable_key' => 'mixed',
+    'variable' => 'mixed',
+  ),
+  'shm_remove' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'shm_identifier' => 'mixed',
+  ),
+  'shm_remove_var' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'id' => 'mixed',
+    'variable_key' => 'mixed',
+  ),
+  'shmop_close' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'shmid' => 'mixed',
+  ),
+  'shmop_delete' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'shmid' => 'mixed',
+  ),
+  'shmop_open' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'key' => 'mixed',
+    'flags' => 'mixed',
+    'mode' => 'mixed',
+    'size' => 'mixed',
+  ),
+  'shmop_read' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'shmid' => 'mixed',
+    'start' => 'mixed',
+    'count' => 'mixed',
+  ),
+  'shmop_size' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'shmid' => 'mixed',
+  ),
+  'shmop_write' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'shmid' => 'mixed',
+    'data' => 'mixed',
+    'offset' => 'mixed',
   ),
   'show_source' => 
   array (
@@ -47390,11 +50567,213 @@ return array (
     'node_name=' => 'mixed',
     'node_namespace=' => 'mixed',
   ),
+  'socket_accept' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'socket' => 'mixed',
+  ),
+  'socket_bind' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'socket' => 'mixed',
+    'addr' => 'mixed',
+    'port=' => 'mixed',
+  ),
+  'socket_clear_error' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'socket=' => 'mixed',
+  ),
+  'socket_close' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'socket' => 'mixed',
+  ),
+  'socket_cmsg_space' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'level' => 'mixed',
+    'type' => 'mixed',
+  ),
+  'socket_connect' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'socket' => 'mixed',
+    'addr' => 'mixed',
+    'port=' => 'mixed',
+  ),
+  'socket_create' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'domain' => 'mixed',
+    'type' => 'mixed',
+    'protocol' => 'mixed',
+  ),
+  'socket_create_listen' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'port' => 'mixed',
+    'backlog=' => 'mixed',
+  ),
+  'socket_create_pair' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'domain' => 'mixed',
+    'type' => 'mixed',
+    'protocol' => 'mixed',
+    '&fd' => 'mixed',
+  ),
+  'socket_export_stream' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'socket' => 'mixed',
+  ),
+  'socket_get_option' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'socket' => 'mixed',
+    'level' => 'mixed',
+    'optname' => 'mixed',
+  ),
   'socket_get_status' => 
   array (
     0 => 'mixed',
     -2 => 'none',
     'fp' => 'mixed',
+  ),
+  'socket_getopt' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'socket' => 'mixed',
+    'level' => 'mixed',
+    'optname' => 'mixed',
+  ),
+  'socket_getpeername' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'socket' => 'mixed',
+    '&addr' => 'mixed',
+    '&port=' => 'mixed',
+  ),
+  'socket_getsockname' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'socket' => 'mixed',
+    '&addr' => 'mixed',
+    '&port=' => 'mixed',
+  ),
+  'socket_import_stream' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'stream' => 'mixed',
+  ),
+  'socket_last_error' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'socket=' => 'mixed',
+  ),
+  'socket_listen' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'socket' => 'mixed',
+    'backlog=' => 'mixed',
+  ),
+  'socket_read' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'socket' => 'mixed',
+    'length' => 'mixed',
+    'type=' => 'mixed',
+  ),
+  'socket_recv' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'socket' => 'mixed',
+    '&buf' => 'mixed',
+    'len' => 'mixed',
+    'flags' => 'mixed',
+  ),
+  'socket_recvfrom' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'socket' => 'mixed',
+    '&buf' => 'mixed',
+    'len' => 'mixed',
+    'flags' => 'mixed',
+    '&name' => 'mixed',
+    '&port=' => 'mixed',
+  ),
+  'socket_recvmsg' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'socket' => 'mixed',
+    '&msghdr' => 'mixed',
+    'flags' => 'mixed',
+  ),
+  'socket_select' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    '&read_fds' => 'mixed',
+    '&write_fds' => 'mixed',
+    '&except_fds' => 'mixed',
+    'tv_sec' => 'mixed',
+    'tv_usec=' => 'mixed',
+  ),
+  'socket_send' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'socket' => 'mixed',
+    'buf' => 'mixed',
+    'len' => 'mixed',
+    'flags' => 'mixed',
+  ),
+  'socket_sendmsg' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'socket' => 'mixed',
+    'msghdr' => 'mixed',
+    'flags' => 'mixed',
+  ),
+  'socket_sendto' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'socket' => 'mixed',
+    'buf' => 'mixed',
+    'len' => 'mixed',
+    'flags' => 'mixed',
+    'addr' => 'mixed',
+    'port=' => 'mixed',
+  ),
+  'socket_set_block' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'socket' => 'mixed',
   ),
   'socket_set_blocking' => 
   array (
@@ -47403,6 +50782,21 @@ return array (
     'socket' => 'mixed',
     'mode' => 'mixed',
   ),
+  'socket_set_nonblock' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'socket' => 'mixed',
+  ),
+  'socket_set_option' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'socket' => 'mixed',
+    'level' => 'mixed',
+    'optname' => 'mixed',
+    'optval' => 'mixed',
+  ),
   'socket_set_timeout' => 
   array (
     0 => 'mixed',
@@ -47410,6 +50804,36 @@ return array (
     'stream' => 'mixed',
     'seconds' => 'mixed',
     'microseconds=' => 'mixed',
+  ),
+  'socket_setopt' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'socket' => 'mixed',
+    'level' => 'mixed',
+    'optname' => 'mixed',
+    'optval' => 'mixed',
+  ),
+  'socket_shutdown' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'socket' => 'mixed',
+    'how=' => 'mixed',
+  ),
+  'socket_strerror' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'errno' => 'mixed',
+  ),
+  'socket_write' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'socket' => 'mixed',
+    'buf' => 'mixed',
+    'length=' => 'mixed',
   ),
   'sort' => 
   array (
@@ -50335,6 +53759,11 @@ return array (
     0 => 'mixed',
     -2 => 'none',
   ),
+  'swoole\\client::getsocket' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+  ),
   'swoole\\client::getsockname' => 
   array (
     0 => 'mixed',
@@ -50727,6 +54156,11 @@ return array (
     -2 => 'none',
   ),
   'swoole\\coroutine\\client::getpeername' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+  ),
+  'swoole\\coroutine\\client::getsocket' => 
   array (
     0 => 'mixed',
     -2 => 'none',
@@ -52783,6 +56217,11 @@ return array (
     0 => 'mixed',
     -2 => 'none',
   ),
+  'swoole\\coroutine\\socket::getsocket' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+  ),
   'swoole\\coroutine\\socket::getsockname' => 
   array (
     0 => 'mixed',
@@ -53340,6 +56779,12 @@ return array (
     0 => 'mixed',
     -2 => 'none',
   ),
+  'swoole\\http\\server::getsocket' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'port=' => 'mixed',
+  ),
   'swoole\\http\\server::heartbeat' => 
   array (
     0 => 'mixed',
@@ -53860,6 +57305,12 @@ return array (
     0 => 'mixed',
     -2 => 'none',
   ),
+  'swoole\\redis\\server::getsocket' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'port=' => 'mixed',
+  ),
   'swoole\\redis\\server::heartbeat' => 
   array (
     0 => 'mixed',
@@ -54167,6 +57618,12 @@ return array (
     0 => 'mixed',
     -2 => 'none',
   ),
+  'swoole\\server::getsocket' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'port=' => 'mixed',
+  ),
   'swoole\\server::heartbeat' => 
   array (
     0 => 'mixed',
@@ -54331,6 +57788,11 @@ return array (
     0 => 'mixed',
     -2 => 'none',
     'event_name' => 'mixed',
+  ),
+  'swoole\\server\\port::getsocket' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
   ),
   'swoole\\server\\port::on' => 
   array (
@@ -54715,6 +58177,12 @@ return array (
     0 => 'mixed',
     -2 => 'none',
   ),
+  'swoole\\websocket\\server::getsocket' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'port=' => 'mixed',
+  ),
   'swoole\\websocket\\server::heartbeat' => 
   array (
     0 => 'mixed',
@@ -55095,6 +58563,11 @@ return array (
     -2 => 'none',
   ),
   'swoole_client::getpeername' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+  ),
+  'swoole_client::getsocket' => 
   array (
     0 => 'mixed',
     -2 => 'none',
@@ -55744,6 +59217,12 @@ return array (
     0 => 'mixed',
     -2 => 'none',
   ),
+  'swoole_http_server::getsocket' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'port=' => 'mixed',
+  ),
   'swoole_http_server::heartbeat' => 
   array (
     0 => 'mixed',
@@ -56274,6 +59753,12 @@ return array (
     0 => 'mixed',
     -2 => 'none',
   ),
+  'swoole_redis_server::getsocket' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'port=' => 'mixed',
+  ),
   'swoole_redis_server::heartbeat' => 
   array (
     0 => 'mixed',
@@ -56590,6 +60075,12 @@ return array (
     0 => 'mixed',
     -2 => 'none',
   ),
+  'swoole_server::getsocket' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'port=' => 'mixed',
+  ),
   'swoole_server::heartbeat' => 
   array (
     0 => 'mixed',
@@ -56754,6 +60245,11 @@ return array (
     0 => 'mixed',
     -2 => 'none',
     'event_name' => 'mixed',
+  ),
+  'swoole_server_port::getsocket' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
   ),
   'swoole_server_port::on' => 
   array (
@@ -57184,6 +60680,12 @@ return array (
     0 => 'mixed',
     -2 => 'none',
   ),
+  'swoole_websocket_server::getsocket' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'port=' => 'mixed',
+  ),
   'swoole_websocket_server::heartbeat' => 
   array (
     0 => 'mixed',
@@ -57412,6 +60914,12 @@ return array (
     -2 => 'none',
     'dir' => 'mixed',
     'prefix' => 'mixed',
+  ),
+  'textdomain' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'domain' => 'mixed',
   ),
   'throwable::__tostring' => 
   array (
@@ -58282,6 +61790,12 @@ return array (
     'prefix=' => 'mixed',
     'more_entropy=' => 'mixed',
   ),
+  'unixtojd' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'timestamp=' => 'mixed',
+  ),
   'unlink' => 
   array (
     0 => 'mixed',
@@ -58710,6 +62224,102 @@ return array (
     'source' => 'mixed',
     'encoding=' => 'mixed',
     'options=' => 'mixed',
+  ),
+  'xmlrpc_decode' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'value' => 'mixed',
+    'encoding=' => 'mixed',
+  ),
+  'xmlrpc_decode_request' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'xml' => 'mixed',
+    '&method' => 'mixed',
+    'encoding=' => 'mixed',
+  ),
+  'xmlrpc_encode' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'value' => 'mixed',
+  ),
+  'xmlrpc_encode_request' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'method' => 'mixed',
+    'params' => 'mixed',
+    'output_options=' => 'mixed',
+  ),
+  'xmlrpc_get_type' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'value' => 'mixed',
+  ),
+  'xmlrpc_is_fault' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'arg' => 'mixed',
+  ),
+  'xmlrpc_parse_method_descriptions' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'xml' => 'mixed',
+  ),
+  'xmlrpc_server_add_introspection_data' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'server' => 'mixed',
+    'desc' => 'mixed',
+  ),
+  'xmlrpc_server_call_method' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'server' => 'mixed',
+    'xml' => 'mixed',
+    'user_data' => 'mixed',
+    'output_options=' => 'mixed',
+  ),
+  'xmlrpc_server_create' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+  ),
+  'xmlrpc_server_destroy' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'server' => 'mixed',
+  ),
+  'xmlrpc_server_register_introspection_callback' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'server' => 'mixed',
+    'function' => 'mixed',
+  ),
+  'xmlrpc_server_register_method' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    'server' => 'mixed',
+    'method_name' => 'mixed',
+    'function' => 'mixed',
+  ),
+  'xmlrpc_set_type' => 
+  array (
+    0 => 'mixed',
+    -2 => 'none',
+    '&value' => 'mixed',
+    'type' => 'mixed',
   ),
   'xmlwriter::endattribute' => 
   array (

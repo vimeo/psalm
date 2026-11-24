@@ -19,6 +19,7 @@ use Psalm\Issue\CodeIssue;
 use Psalm\Issue\InvalidDocblock;
 use Psalm\Storage\Capabilities;
 use Psalm\Storage\CapabilitiesParseException;
+use Psalm\Storage\TemplateVariance;
 use RuntimeException;
 
 use function array_keys;
@@ -298,7 +299,7 @@ final class FunctionLikeDocblockParser
                     }
 
                     $templates[$purity_template['name']]['psalm']
-                        = [$purity_template['name'], 'of', $purity_template['bound'], false, 0];
+                        = [$purity_template['name'], 'of', $purity_template['bound'], TemplateVariance::Invariant, 0];
                     $info->purity_templates[] = $purity_template['name'];
                 }
             }
@@ -307,7 +308,7 @@ final class FunctionLikeDocblockParser
         [$templates, $info->template_defaults] = TemplateTagParser::parseTags(
             $parsed_docblock,
             $comment,
-            ['template' => false],
+            ['template' => TemplateVariance::Invariant],
             $templates,
         );
 

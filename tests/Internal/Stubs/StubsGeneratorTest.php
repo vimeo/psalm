@@ -187,6 +187,30 @@ final class StubsGeneratorTest extends TestCase
         self::assertStringContainsString('\\A::f insteadof \\B;', $stub);
     }
 
+    public function testTheGeneratedStubKeepsTheVarianceAndOrderOfTemplates(): void
+    {
+        $stub = $this->getStub('<?php
+            /**
+             * @template T
+             * @template-covariant U
+             * @template-contravariant V
+             * @template W
+             */
+            interface C {}');
+
+        self::assertStringContainsString(
+            '
+    /**
+     * @template T as mixed
+     * @template-covariant U as mixed
+     * @template-contravariant V as mixed
+     * @template W as mixed
+     */
+    interface C',
+            $stub,
+        );
+    }
+
     public function testAnIntIsAnIdentifier(): void
     {
         $type = StubsGenerator::getParserTypeFromPsalmType(Type::getInt());

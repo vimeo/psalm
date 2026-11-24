@@ -612,7 +612,7 @@ final class CommentAnalyzer
         $var_comments = [];
 
         try {
-            $file_path = $statements_analyzer->getRootFilePath();
+            $file_path = $statements_analyzer->getFilePath();
             $file_storage_provider = $codebase->file_storage_provider;
             $file_storage = $file_storage_provider->get($file_path);
 

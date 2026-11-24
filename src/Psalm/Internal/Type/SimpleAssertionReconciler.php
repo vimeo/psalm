@@ -1170,7 +1170,7 @@ final class SimpleAssertionReconciler extends Reconciler
             } elseif ($type instanceof TTemplateParam) {
                 $bound = self::getTemplateBound($type);
 
-                if ($bound->hasInt() || $bound->hasMixed()) {
+                if ($bound->hasInt() || $bound->hasMixed() || $bound->hasScalar() || $bound->hasNumeric()) {
                     $type = $type->replaceAs(self::reconcileInt(
                         $assertion,
                         $type->as,
@@ -1187,6 +1187,12 @@ final class SimpleAssertionReconciler extends Reconciler
                 $redundant = false;
             } elseif ($type instanceof TString && $assertion instanceof IsLooselyEqual) {
                 $int_types[] = new TNumericString();
+                $redundant = false;
+            } elseif ($assertion instanceof IsLooselyEqual
+                && ($type instanceof TFloat || $type instanceof TBool || $type instanceof TNull)
+            ) {
+                // a non-strict comparison with an int juggles the types: `1.0 == 1`, `false == 0`, `null == 0`
+                $int_types[] = $type;
                 $redundant = false;
             } else {
                 $redundant = false;
@@ -1243,7 +1249,7 @@ final class SimpleAssertionReconciler extends Reconciler
             } elseif ($type instanceof TTemplateParam) {
                 $bound = self::getTemplateBound($type);
 
-                if ($bound->hasBool() || $bound->hasMixed()) {
+                if ($bound->hasBool() || $bound->hasMixed() || $bound->hasScalar()) {
                     $type = $type->replaceAs(self::reconcileBool(
                         $assertion,
                         $type->as,
@@ -1387,7 +1393,7 @@ final class SimpleAssertionReconciler extends Reconciler
             } elseif ($type instanceof TTemplateParam) {
                 $bound = self::getTemplateBound($type);
 
-                if ($bound->hasScalarType() || $bound->hasMixed()) {
+                if (self::hasScalarAtomic($bound) || $bound->hasMixed()) {
                     $type = $type->replaceAs(self::reconcileScalar(
                         $assertion,
                         $type->as,
@@ -1482,7 +1488,7 @@ final class SimpleAssertionReconciler extends Reconciler
             } elseif ($type instanceof TTemplateParam) {
                 $bound = self::getTemplateBound($type);
 
-                if ($bound->hasScalarType() || $bound->hasMixed()) {
+                if (self::hasScalarAtomic($bound) || $bound->hasMixed()) {
                     $type = $type->replaceAs(self::reconcileNumeric(
                         $assertion,
                         $type->as,
@@ -1866,7 +1872,7 @@ final class SimpleAssertionReconciler extends Reconciler
                     $existing_var_type->getId(),
                     $key,
                     $assertion,
-                    true,
+                    $negated,
                     $negated,
                     $code_location,
                     $suppressed_issues,
@@ -2995,6 +3001,22 @@ final class SimpleAssertionReconciler extends Reconciler
         $class_storage = $codebase->classlike_storage_provider->get($type->value);
 
         return !$class_storage->final;
+    }
+
+    /**
+     * Whether a type holds a scalar of some kind (`scalar`, `array-key`, `int<0, 10>`, ...)
+     *
+     * @psalm-pure
+     */
+    private static function hasScalarAtomic(Union $type): bool
+    {
+        foreach ($type->getAtomicTypes() as $atomic) {
+            if ($atomic instanceof Scalar) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**

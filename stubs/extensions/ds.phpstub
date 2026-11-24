@@ -11,6 +11,19 @@ use OutOfRangeException;
 use Traversable;
 use UnderflowException;
 
+interface Hashable
+{
+    /**
+     * @param mixed $obj
+     */
+    public function equals($obj): bool;
+
+    /**
+     * @return mixed
+     */
+    public function hash();
+}
+
 /**
  * @template-covariant TKey
  * @template-covariant TValue
