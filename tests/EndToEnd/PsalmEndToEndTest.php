@@ -202,6 +202,46 @@ final class PsalmEndToEndTest extends PsalmEndToEndTestCase
         $this->assertSame(2, $result['CODE']);
     }
 
+    public function testStatisticsOfANonConsoleFormatGoToStderr(): void
+    {
+        $this->runPsalmInit(1);
+        $psalmXml = file_get_contents(self::$tmpDir . '/psalm.xml');
+        $psalmXml = str_replace('<psalm', '<psalm runTaintAnalysis="false"', (string) $psalmXml);
+        file_put_contents(self::$tmpDir . '/psalm.xml', $psalmXml);
+
+        /** @param list<string> $args */
+        $run = function (array $args): Process {
+            $process = self::newProcess(
+                [PHP_BINARY, $this->psalm, '-c=' . self::$tmpDir . '/psalm.xml', '--no-cache', '--output-format=json', ...$args],
+                null,
+                self::agentEnvVarsToUnset(),
+            );
+            $process->run();
+            $this->assertSame(2, $process->getExitCode(), $process->getErrorOutput());
+
+            return $process;
+        };
+
+        $plain = $run([]);
+        $with_stats = $run(['--stats', '--debug-performance']);
+
+        $this->assertNotNull(json_decode($with_stats->getOutput(), true));
+        $this->assertSame($plain->getOutput(), $with_stats->getOutput());
+        $this->assertStringContainsString('Checks took', $with_stats->getErrorOutput());
+        $this->assertStringContainsString('Psalm was able to infer types for', $with_stats->getErrorOutput());
+        $this->assertStringContainsString("-----------------\n", $with_stats->getErrorOutput());
+        $this->assertStringContainsString("\nPerformance\n", $with_stats->getErrorOutput());
+        $this->assertStringNotContainsString("\e[", $with_stats->getErrorOutput());
+        $this->assertStringContainsString('Checks took', $plain->getErrorOutput());
+        $this->assertStringNotContainsString("-----------------\n", $plain->getErrorOutput());
+        $this->assertStringNotContainsString('Performance', $plain->getErrorOutput());
+
+        $quiet = $run(['--no-progress', '--stats', '--debug-performance']);
+
+        $this->assertSame($plain->getOutput(), $quiet->getOutput());
+        $this->assertSame('', $quiet->getErrorOutput());
+    }
+
     // Psalm forks its workers only with these extensions (never on Windows)
     #[RequiresPhpExtension('pcntl')]
     #[RequiresPhpExtension('posix')]
@@ -432,6 +472,26 @@ final class PsalmEndToEndTest extends PsalmEndToEndTestCase
         $this->assertSame('', $process->getErrorOutput());
     }
 
+    public function testRefactorHelpListsMonochromeOnceAndRejectsTheUnusedFileOption(): void
+    {
+        $help = self::newProcess([PHP_BINARY, $this->psalmRefactor, '--help'], self::$tmpDir, self::agentEnvVarsToUnset());
+        $help->run();
+
+        $this->assertSame(0, $help->getExitCode(), $help->getErrorOutput());
+        $this->assertSame(1, substr_count($help->getOutput(), '-m, --monochrome'));
+        $this->assertDoesNotMatchRegularExpression('/^\s*-m\s*$/m', $help->getOutput());
+
+        $file = self::newProcess(
+            [PHP_BINARY, $this->psalmRefactor, '-f', 'src/Foo.php', '--help'],
+            self::$tmpDir,
+            self::agentEnvVarsToUnset(),
+        );
+        $file->run();
+
+        $this->assertSame(1, $file->getExitCode());
+        $this->assertStringContainsString('Unrecognised argument "-f"', $file->getErrorOutput());
+    }
+
     public function testRefactorAcceptsMemoryLimitAndUseIniDefaultsOptions(): void
     {
         $process = self::newProcess(
@@ -524,6 +584,47 @@ final class PsalmEndToEndTest extends PsalmEndToEndTestCase
 
             $this->assertSame('64M', file_get_contents($memory_limit_file));
             $this->assertStringContainsString('Could not locate root directory', $process->getErrorOutput());
+        } finally {
+            unlink($prepend_file);
+            if (file_exists($memory_limit_file)) {
+                unlink($memory_limit_file);
+            }
+        }
+    }
+
+    public function testPsalterHonoursUseIniDefaults(): void
+    {
+        $memory_limit_file = self::$tmpDir . '/psalter-ini-defaults-memory-limit.txt';
+        $prepend_file = self::$tmpDir . '/psalter-ini-defaults-prepend.php';
+        file_put_contents(
+            $prepend_file,
+            "<?php\nregister_shutdown_function(static function (): void {\n"
+                . "    file_put_contents(\n"
+                . "        " . var_export($memory_limit_file, true) . ", (string) ini_get('memory_limit')\n"
+                . "    );\n"
+                . "});\n",
+        );
+
+        try {
+            $process = self::newProcess(
+                [
+                    PHP_BINARY,
+                    '-d',
+                    'memory_limit=64M',
+                    '-d',
+                    'auto_prepend_file=' . $prepend_file,
+                    $this->psalter,
+                    '--use-ini-defaults',
+                    '--issues=all',
+                    '--root=missing-project',
+                ],
+                self::$tmpDir,
+                self::agentEnvVarsToUnset(),
+            );
+            $process->run();
+
+            $this->assertStringContainsString('Could not locate root directory', $process->getErrorOutput());
+            $this->assertSame('64M', file_get_contents($memory_limit_file));
         } finally {
             unlink($prepend_file);
             if (file_exists($memory_limit_file)) {

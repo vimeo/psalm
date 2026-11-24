@@ -802,57 +802,52 @@ final class MethodComparator
             // a variadic parameter takes the arguments that follow it by position, whatever their names
             if ($guide_param->name !== $implementer_param->name
                 && !$implementer_param->is_variadic
-                && $guide_method_storage->allowsNamedArguments()
                 && $implementer_classlike_storage->user_defined
                 && $implementer_param->location
-                && $guide_method_storage->cased_name
-                && (!str_starts_with($guide_method_storage->cased_name, '__')
-                    || ($guide_classlike_storage->preserve_constructor_signature
-                        && $guide_method_storage->cased_name === '__construct'))
+                && self::isParamNameBinding($config, $guide_classlike_storage, $guide_method_storage, $guide_param)
                 && $config->isInProjectDirs(
                     $implementer_param->location->file_path,
                 )
+                && !self::isNamedAsInAnotherOverriddenMethod(
+                    $codebase,
+                    $implementer_classlike_storage,
+                    $implementer_method_storage,
+                    $i,
+                    $implementer_param->name,
+                )
             ) {
                 // even if it's just a single arg, it needs to be renamed in case it's called with a single named arg
-                if ($config->allow_named_arg_calls
-                    || ($guide_classlike_storage->location
-                        && !$config->isInProjectDirs($guide_classlike_storage->location->file_path)
-                    )
-                    || $guide_method_storage->named_arguments === NamedArguments::STABLE
-                    || $guide_method_storage->requiresNamedArgument($guide_param)
-                ) {
-                    if ($codebase->alter_code) {
-                        $project_analyzer = ProjectAnalyzer::getInstance();
+                if ($codebase->alter_code) {
+                    $project_analyzer = ProjectAnalyzer::getInstance();
 
-                        if ($stmt && isset($project_analyzer->getIssuesToFix()['ParamNameMismatch'])) {
-                            $param_replacer = new ParamReplacementVisitor(
-                                $implementer_param->name,
-                                $guide_param->name,
-                            );
-
-                            $traverser = new NodeTraverser();
-                            $traverser->addVisitor($param_replacer);
-                            $traverser->traverse([$stmt]);
-
-                            if ($replacements = $param_replacer->getReplacements()) {
-                                FileManipulationBuffer::add(
-                                    $implementer_param->location->file_path,
-                                    $replacements,
-                                );
-                            }
-                        }
-                    } else {
-                        IssueBuffer::maybeAdd(
-                            new ParamNameMismatch(
-                                'Argument ' . ($i + 1) . ' of ' . $cased_implementer_method_id . ' has wrong name $'
-                                    . $implementer_param->name . ', expecting $'
-                                    . $guide_param->name . ' as defined by '
-                                    . $cased_guide_method_id,
-                                $implementer_param->location,
-                            ),
-                            $suppressed_issues + $implementer_classlike_storage->suppressed_issues,
+                    if ($stmt && isset($project_analyzer->getIssuesToFix()['ParamNameMismatch'])) {
+                        $param_replacer = new ParamReplacementVisitor(
+                            $implementer_param->name,
+                            $guide_param->name,
                         );
+
+                        $traverser = new NodeTraverser();
+                        $traverser->addVisitor($param_replacer);
+                        $traverser->traverse([$stmt]);
+
+                        if ($replacements = $param_replacer->getReplacements()) {
+                            FileManipulationBuffer::add(
+                                $implementer_param->location->file_path,
+                                $replacements,
+                            );
+                        }
                     }
+                } else {
+                    IssueBuffer::maybeAdd(
+                        new ParamNameMismatch(
+                            'Argument ' . ($i + 1) . ' of ' . $cased_implementer_method_id . ' has wrong name $'
+                                . $implementer_param->name . ', expecting $'
+                                . $guide_param->name . ' as defined by '
+                                . $cased_guide_method_id,
+                            $implementer_param->location,
+                        ),
+                        $suppressed_issues + $implementer_classlike_storage->suppressed_issues,
+                    );
                 }
             }
 
@@ -1741,5 +1736,71 @@ final class MethodComparator
                 $codebase,
             );
         }
+    }
+
+    /**
+     * Whether another method the implementer overrides names the parameter as the implementer does: the methods it
+     * overrides disagree, and no name fits them all
+     *
+     * @psalm-capabilities read-props
+     */
+    private static function isNamedAsInAnotherOverriddenMethod(
+        Codebase $codebase,
+        ClassLikeStorage $implementer_classlike_storage,
+        MethodStorage $implementer_method_storage,
+        int $offset,
+        string $name,
+    ): bool {
+        if ($implementer_method_storage->cased_name === null) {
+            return false;
+        }
+
+        $method_name = strtolower($implementer_method_storage->cased_name);
+
+        foreach ($implementer_classlike_storage->overridden_method_ids[$method_name] ?? [] as $overridden_method_id) {
+            if (!$codebase->methods->hasStorage($overridden_method_id)) {
+                continue;
+            }
+
+            $overridden_storage = $codebase->methods->getStorage($overridden_method_id);
+            $overridden_param = $overridden_storage->params[$offset] ?? null;
+
+            if ($overridden_param !== null
+                && $overridden_param->name === $name
+                && self::isParamNameBinding(
+                    $codebase->config,
+                    $codebase->classlike_storage_provider->get($overridden_method_id->fq_class_name),
+                    $overridden_storage,
+                    $overridden_param,
+                )
+            ) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Whether an override has to keep the name of this parameter, as it can be passed by name
+     *
+     * @psalm-capabilities read-props
+     */
+    private static function isParamNameBinding(
+        Config $config,
+        ClassLikeStorage $guide_classlike_storage,
+        MethodStorage $guide_method_storage,
+        FunctionLikeParameter $guide_param,
+    ): bool {
+        return $guide_method_storage->allowsNamedArguments()
+            && $guide_method_storage->cased_name
+            && (!str_starts_with($guide_method_storage->cased_name, '__')
+                || ($guide_classlike_storage->preserve_constructor_signature
+                    && $guide_method_storage->cased_name === '__construct'))
+            && ($config->allow_named_arg_calls
+                || ($guide_classlike_storage->location
+                    && !$config->isInProjectDirs($guide_classlike_storage->location->file_path))
+                || $guide_method_storage->named_arguments === NamedArguments::STABLE
+                || $guide_method_storage->requiresNamedArgument($guide_param));
     }
 }

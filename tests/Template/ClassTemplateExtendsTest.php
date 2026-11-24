@@ -6561,7 +6561,17 @@ final class ClassTemplateExtendsTest extends TestCase
 
                     /** @implements J<int> */
                     final class C implements I {}',
-                'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR . 'somefile.php:9:21 - @template-implements must include the name of an implemented class, got J',
+                'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR . 'somefile.php:9:21 - @template-implements must include the name of an implemented interface, got J',
+            ],
+            'implementsTagNamingAnotherInterfaceWithoutTypeArguments' => [
+                'code' => '<?php
+                    interface I {}
+
+                    interface J {}
+
+                    /** @implements J */
+                    final class C implements I {}',
+                'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:21 - @template-implements must include the name of an implemented interface, got J',
             ],
             'useTagNamingAnotherTrait' => [
                 'code' => '<?php
@@ -6575,7 +6585,31 @@ final class ClassTemplateExtendsTest extends TestCase
                         /** @use T2<int> */
                         use T1;
                     }',
-                'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:25 - @template-use must include the name of an used class, got T2',
+                'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:25 - @template-use must include the name of a used trait, got T2',
+            ],
+            'useTagNamingAnotherTraitWithoutTypeArguments' => [
+                'code' => '<?php
+                    /** @template T */
+                    trait T1 {}
+
+                    trait T2 {}
+
+                    final class C {
+                        /** @use T2 */
+                        use T1;
+                    }',
+                'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR . 'somefile.php:9:25 - @template-use must include the name of a used trait, got T2',
+            ],
+            'extendsTagNamingAnotherClassWithoutTypeArguments' => [
+                'code' => '<?php
+                    /** @template T */
+                    class P {}
+
+                    final class Q {}
+
+                    /** @extends Q */
+                    final class C extends P {}',
+                'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:21 - @template-extends must include the name of an extended class, got Q',
             ],
             'templatedMethodOfAMiddleParentDoesNotImplementTheInterfaceOfTheChildWithAnotherType' => [
                 'code' => '<?php

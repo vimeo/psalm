@@ -1,6 +1,8 @@
 ---
 name: purity-capabilities
 description: Use when working on Psalm's purity model, i.e. capabilities (@psalm-capabilities, @psalm-pure/@psalm-impure), purity templates (@psalm-purity-template, @psalm-purity-from-template, Closure[P], Traversable[pure]<K, V>, the `_` wildcard), purity of builtin/SPL stubs, memoized method results, or MissingPureAnnotation/ImpureMethodCall behaviour. Records the maintainers' design decisions, which must not be relitigated.
+metadata:
+  internal: "true"
 ---
 
 # Purity and capabilities

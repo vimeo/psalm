@@ -658,6 +658,55 @@ final class HackConformanceTranspiledTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.3',
             ],
+            'type_variables/untyped_closure_param_value_added_after_construction' => [
+                // a value added after the construction ("x") is one the untyped lambda
+                // parameter receives too, so folding the list neither conflicts with the
+                // construction's inferred element type (int) nor drops the added one.
+                'code' => '<?php
+                    /** @template T */
+                    final class Coll {
+                        /**
+                         * @psalm-impure
+                         * @param list<T> $items
+                         */
+                        public function __construct(private array $items) {}
+
+                        /**
+                         * @psalm-impure
+                         * @param T $item
+                         */
+                        public function add($item): void { $this->items[] = $item; }
+
+                        /**
+                         * @psalm-impure
+                         * @return list<T>
+                         */
+                        public function all(): array { return $this->items; }
+                    }
+
+                    /**
+                     * @template Ta
+                     * @template Tb
+                     * @psalm-impure
+                     * @param list<Ta> $items
+                     * @param Closure(Tb, Ta): Tb $f
+                     * @param Tb $init
+                     * @return Tb
+                     */
+                    function reduce(array $items, Closure $f, $init) {
+                        return $init;
+                    }
+
+                    /** @psalm-impure */
+                    function process(): void {
+                        $c = new Coll([1]);
+                        $c->add("x");
+                        $last = reduce($c->all(), /** @psalm-impure */ fn($carry, $i) => $i, null);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
         ];
     }
 
@@ -870,6 +919,42 @@ final class HackConformanceTranspiledTest extends TestCase
                         $box = new Box();
                         $box->set(5);
                         $box->each(/** @psalm-impure */ fn(Item $item) => $item->id);
+                    }',
+                'error_message' => 'IncompatibleTypeParameters',
+                'error_levels' => [],
+                'php_version' => '8.3',
+            ],
+            'type_variables/callable_param_too_narrow_for_value_added_after_construction' => [
+                // the callable parameter also receives the value added after the
+                // construction ("x"), so a lambda that only takes int is rejected
+                // (Hack: "Expected int but got string").
+                'code' => '<?php
+                    /** @template T */
+                    final class Coll {
+                        /**
+                         * @psalm-impure
+                         * @param list<T> $items
+                         */
+                        public function __construct(private array $items) {}
+
+                        /**
+                         * @psalm-impure
+                         * @param T $item
+                         */
+                        public function add($item): void { $this->items[] = $item; }
+
+                        /**
+                         * @psalm-impure
+                         * @param Closure(T): void $cb
+                         */
+                        public function each(Closure $cb): void {}
+                    }
+
+                    /** @psalm-impure */
+                    function process(): void {
+                        $c = new Coll([1]);
+                        $c->add("x");
+                        $c->each(/** @psalm-impure */ function (int $i) {});
                     }',
                 'error_message' => 'IncompatibleTypeParameters',
                 'error_levels' => [],
