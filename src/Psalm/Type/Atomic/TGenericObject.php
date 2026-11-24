@@ -11,6 +11,7 @@ use Psalm\Internal\Type\PurityArguments;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TypeArgumentProjection;
 use Psalm\Internal\TypeVisitor\TemplateTypeCollector;
+use Psalm\Storage\TemplateVariance;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Union;
@@ -376,13 +377,13 @@ final class TGenericObject extends TNamedObject
         }
 
         // `static<T>` names no class here, so it is read as an invariant argument list
-        $covariants = $codebase->classlike_storage_provider->has($this->value)
-            ? $codebase->classlike_storage_provider->get($this->value)->template_covariants
-            : [];
+        $class_storage = $codebase->classlike_storage_provider->has($this->value)
+            ? $codebase->classlike_storage_provider->get($this->value)
+            : null;
         $projections = [];
 
         foreach ($this->type_params as $offset => $type_param) {
-            if ($covariants[$offset] ?? false) {
+            if ($class_storage?->getTemplateVariance($offset) === TemplateVariance::Covariant) {
                 continue;
             }
 
