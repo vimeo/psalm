@@ -73,6 +73,44 @@ final class ArgTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'namedArgumentsOfSplClassesUseThePhp8Names' => [
+                'code' => '<?php
+                    $fixed = SplFixedArray::fromArray([1, 2], preserveKeys: false);
+                    $fixed->offsetSet(index: 0, value: 1);
+                    $exists = $fixed->offsetExists(index: 0);
+                    $fixed->offsetUnset(index: 0);
+
+                    $list = new SplDoublyLinkedList();
+                    $list->add(index: 0, value: 1);
+                    $list->offsetSet(index: 0, value: 2);
+                    $exists = $list->offsetExists(index: 0);
+                    $list->offsetUnset(index: 0);
+
+                    $directory = new DirectoryIterator(directory: ".");
+                    $directory->seek(offset: 0);
+                    $files = new FilesystemIterator(directory: ".");
+                    $recursive = new RecursiveDirectoryIterator(directory: ".");
+
+                    $regex = new RegexIterator(new ArrayIterator([]), pattern: "/a/", pregFlags: 0);
+                    $recursiveRegex = new RecursiveRegexIterator(
+                        new RecursiveArrayIterator([]),
+                        pattern: "/a/",
+                        pregFlags: 0,
+                    );
+                    $tree = new RecursiveTreeIterator(iterator: new RecursiveArrayIterator([]), cachingIteratorFlags: 16);
+
+                    $multiple = new MultipleIterator();
+                    $multiple->attachIterator(new ArrayIterator([]), info: "a");
+
+                    $map = new WeakMap();
+                    $key = new stdClass();
+                    $map->offsetSet(object: $key, value: 1);
+                    $exists = $map->offsetExists(object: $key);
+                    $map->offsetUnset(object: $key);',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'namedArgumentsOfArrayObjectAndArrayIteratorUseThePhp8Names' => [
                 'code' => '<?php
                     $object = new ArrayObject(array: [3, 1, 2]);

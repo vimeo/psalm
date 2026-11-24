@@ -113,6 +113,7 @@ use function count;
 use function implode;
 use function in_array;
 use function is_int;
+use function reset;
 use function spl_object_id;
 use function strlen;
 use function strpbrk;
@@ -1317,20 +1318,22 @@ final class ArrayFetchAnalyzer
             return false;
         }
 
+        // the offset is known to be set when each of the ints it may be is
+        $all_set = $extended_var_id !== null;
+
         foreach ($offset_type->getAtomicTypes() as $offset_type_part) {
-            if ($extended_var_id
+            if ($all_set
                 && $offset_type_part instanceof TLiteralInt
-                && isset(
-                    $context->vars_in_scope[
-                        $extended_var_id . '[' . $offset_type_part->value . ']'
-                    ],
-                )
-                && !$context->vars_in_scope[
-                        $extended_var_id . '[' . $offset_type_part->value . ']'
-                    ]->possibly_undefined
+                && !(isset($context->vars_in_scope[$extended_var_id . '[' . $offset_type_part->value . ']'])
+                    && !$context->vars_in_scope[$extended_var_id . '[' . $offset_type_part->value . ']']
+                        ->possibly_undefined)
             ) {
-                return false;
+                $all_set = false;
             }
+        }
+
+        if ($all_set) {
+            return false;
         }
 
         if ($context->inside_by_ref_offset) {
@@ -1368,11 +1371,11 @@ final class ArrayFetchAnalyzer
         }
 
         if ($offset_type->hasLiteralString() && !$expected_offset_type->hasLiteralClassString()) {
-            $found_match = false;
+            // the offset is known to be set when each of the strings it may be is
+            $found_match = $extended_var_id !== null;
 
             foreach ($offset_type->getAtomicTypes() as $offset_type_part) {
-                if ($extended_var_id === null
-                    || !($offset_type_part instanceof TLiteralString)) {
+                if (!$found_match || !$offset_type_part instanceof TLiteralString) {
                     continue;
                 }
 
@@ -1383,16 +1386,15 @@ final class ArrayFetchAnalyzer
                 $literal_access = $string_to_int === false
                     ? ExpressionIdentifier::quoteOffset($offset_type_part->value)
                     : $string_to_int;
-                if (isset(
+                if (!isset(
                     $context->vars_in_scope[
                         $extended_var_id . '[' . $literal_access . ']'
                     ],
-                ) && !$context->vars_in_scope[
+                ) || $context->vars_in_scope[
                         $extended_var_id . '[' . $literal_access . ']'
                     ]->possibly_undefined
                 ) {
-                    $found_match = true;
-                    break;
+                    $found_match = false;
                 }
             }
 
@@ -1571,6 +1573,28 @@ final class ArrayFetchAnalyzer
     }
 
     /**
+     * `value-of<T>` for `$arr[$k]` with `$arr: T` and `$k: key-of<T>`: an item of `T`
+     *
+     * @psalm-pure
+     */
+    private static function getValueOfTemplateAtItsKey(Atomic $array_type, MutableUnion $offset_type): ?TTemplateValueOf
+    {
+        $offset_atomic_types = $offset_type->getAtomicTypes();
+        $key_of = reset($offset_atomic_types);
+
+        if (!$array_type instanceof TTemplateParam
+            || count($offset_atomic_types) !== 1
+            || !$key_of instanceof TTemplateKeyOf
+            || $key_of->param_name !== $array_type->param_name
+            || $key_of->defining_class !== $array_type->defining_class
+        ) {
+            return null;
+        }
+
+        return new TTemplateValueOf($key_of->param_name, $key_of->defining_class, $key_of->as);
+    }
+
+    /**
      * @param list<string> $expected_offset_types
      * @param TArray|TKeyedArray|TClassStringMap $type
      * @param-out TArray|TKeyedArray|TClassStringMap $type
@@ -1692,6 +1716,12 @@ final class ArrayFetchAnalyzer
                 $replacement_type,
                 $array_access_type,
             );
+        } elseif (!$in_assignment
+            && ($value_of = self::getValueOfTemplateAtItsKey($original_type, $offset_type)) !== null
+        ) {
+            $array_access_type = Type::combineUnionTypes($array_access_type, new Union([$value_of]));
+
+            $has_valid_offset = true;
         } else {
             self::handleArrayAccessOnKeyedArray(
                 $statements_analyzer,
@@ -1798,7 +1828,11 @@ final class ArrayFetchAnalyzer
 
             $union_comparison_results = new TypeComparisonResult();
 
-            if ($original_type instanceof TTemplateParam && $templated_offset_type) {
+            if ($value_of = self::getValueOfTemplateAtItsKey($original_type, $offset_type)) {
+                $type = $type->setTypeParams([$type->type_params[0], new Union([$value_of])]);
+
+                $has_valid_offset = true;
+            } elseif ($original_type instanceof TTemplateParam && $templated_offset_type) {
                 foreach ($templated_offset_type->as->getAtomicTypes() as $offset_as) {
                     if ($offset_as instanceof TTemplateKeyOf
                         && $offset_as->param_name === $original_type->param_name
