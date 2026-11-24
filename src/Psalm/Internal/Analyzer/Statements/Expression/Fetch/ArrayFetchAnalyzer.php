@@ -449,7 +449,7 @@ final class ArrayFetchAnalyzer
         }
 
         if ($chain_state !== NullsafeChainState::None) {
-            $chain_state->afterLink($codebase, $own_type, $own_type && $own_type->possibly_undefined)->markOn($stmt);
+            $chain_state->afterLink($own_type, $own_type && $own_type->possibly_undefined)->markOn($stmt);
             $stmt_type = Type::combineUnionTypes($stmt_type, Type::getNull());
         }
 

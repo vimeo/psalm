@@ -441,7 +441,7 @@ final class MethodCallAnalyzer extends CallAnalyzer
         if ($receiver_state !== NullsafeChainState::None
             && TypeExpander::expandTemplateKeyOfAndValueOf($codebase, $class_type)->isNullable()
         ) {
-            $receiver_state->afterLink($codebase, $stmt_type)->markOn($stmt);
+            $receiver_state->afterLink($stmt_type)->markOn($stmt);
 
             if ($stmt_type && !$stmt_type->isNullable()) {
                 $stmt_type = Type::combineUnionTypes($stmt_type, Type::getNull());
