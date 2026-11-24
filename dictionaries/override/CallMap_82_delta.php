@@ -350,19 +350,6 @@ return array (
         'flags=' => 'int|null',
       ),
     ),
-    'ds\\hashable::equals' => 
-    array (
-      'old' => 
-      array (
-        0 => 'bool',
-        'obj' => 'mixed',
-      ),
-      'new' => 
-      array (
-        0 => 'bool',
-        'object' => 'mixed',
-      ),
-    ),
     'ds\\sequence::filter' => 
     array (
       'old' => 
