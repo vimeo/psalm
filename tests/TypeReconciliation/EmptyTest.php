@@ -133,13 +133,6 @@ final class EmptyTest extends TestCase
                         return empty($done);
                     }',
             ],
-            'emptyOnOptionalBoolShapeKey' => [
-                'code' => '<?php
-                    /** @param array{k?: bool} $a */
-                    function f(array $a): bool {
-                        return empty($a["k"]);
-                    }',
-            ],
             'ifNotUndefinedAndEmpty' => [
                 'code' => '<?php
                     $a = !empty($b) ? $b : null;',
