@@ -42,6 +42,7 @@ use function array_merge;
 use function array_pop;
 use function array_push;
 use function array_reverse;
+use function array_shift;
 use function array_unique;
 use function array_values;
 use function assert;
@@ -90,7 +91,6 @@ final class UnionTypeComparator
         }
 
 
-        $container_has_template = $container_type->hasTemplateOrStatic();
         $container_type_parts = self::getTypeParts($codebase, $container_type);
         $compare_iterable_directly = self::hasIterableOrSymbolicPart($container_type_parts);
 
@@ -98,11 +98,12 @@ final class UnionTypeComparator
         $container_literals = null;
         $other_container_parts = [];
 
-        // key-of<T> and value-of<T> are within their bound, but only key-of<T> and value-of<T> are within them
-        $input_atomic_types = array_reverse(self::getTypeParts(
+        $input_atomic_types = array_reverse(self::getInputParts(
             $codebase,
             $input_type,
-            !self::hasTemplateKeyOrValueOf($container_type),
+            $container_type,
+            $container_type_parts,
+            $union_comparison_result,
         ));
 
         // every input part no container part accepts is examined before the comparison fails, so that the result
@@ -115,22 +116,6 @@ final class UnionTypeComparator
             }
 
             if ($input_type_part instanceof TFalse && $ignore_false) {
-                continue;
-            }
-
-            if ($input_type_part instanceof TTemplateParam
-                && !$container_has_template
-                && !$input_type_part->extra_types
-            ) {
-                $input_atomic_types = array_merge(
-                    self::getTemplatePartsToCompare(
-                        $codebase,
-                        $input_type_part,
-                        $container_type_parts,
-                        $union_comparison_result,
-                    ),
-                    $input_atomic_types,
-                );
                 continue;
             }
 
@@ -581,6 +566,48 @@ final class UnionTypeComparator
         }
 
         return true;
+    }
+
+    /**
+     * The parts of the input to compare: key-of<T> and value-of<T> are within their bound, but only key-of<T> and
+     * value-of<T> are within them, and against a container without templates a template stands for its `as`
+     *
+     * @param list<Atomic> $container_parts
+     * @return list<Atomic>
+     */
+    private static function getInputParts(
+        Codebase $codebase,
+        Union $input_type,
+        Union $container_type,
+        array $container_parts,
+        ?TypeComparisonResult $union_comparison_result,
+    ): array {
+        $input_parts = self::getTypeParts($codebase, $input_type, !self::hasTemplateKeyOrValueOf($container_type));
+
+        if ($container_type->hasTemplateOrStatic()) {
+            return $input_parts;
+        }
+
+        $parts = [];
+
+        while ($input_part = array_shift($input_parts)) {
+            if ($input_part instanceof TTemplateParam && !$input_part->extra_types) {
+                $input_parts = [
+                    ...$input_parts,
+                    ...array_values(self::getTemplatePartsToCompare(
+                        $codebase,
+                        $input_part,
+                        $container_parts,
+                        $union_comparison_result,
+                    )),
+                ];
+                continue;
+            }
+
+            $parts[] = $input_part;
+        }
+
+        return $parts;
     }
 
     /**
