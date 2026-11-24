@@ -1204,20 +1204,20 @@ final class ArrayAssignmentTest extends TestCase
                     $a["x"] = 1;
                     $a[uniqid()] = "b";
                     $b = $a["x"];
-                    /** @psalm-check-type-exact $b = 1 */;
+                    /** @psalm-check-type-exact $b = \'b\'|1 */;
                     $a[str_repeat("x", rand(1, 3))] = "c";
                     $b2 = $a["x"];
-                    /** @psalm-check-type-exact $b2 = \'c\'|1 */;
+                    /** @psalm-check-type-exact $b2 = \'b\'|\'c\'|1 */;
 
                     /** @var array<string, array<string, int|string>> $e */
                     $e = [];
                     $e["x"]["y"] = 1;
                     $e["x"][uniqid()] = "b";
                     $f = $e["x"]["y"];
-                    /** @psalm-check-type-exact $f = 1 */;
+                    /** @psalm-check-type-exact $f = \'b\'|1 */;
                     $e["x"][str_repeat("y", rand(1, 3))] = "c";
                     $f2 = $e["x"]["y"];
-                    /** @psalm-check-type-exact $f2 = \'c\'|1 */;
+                    /** @psalm-check-type-exact $f2 = \'b\'|\'c\'|1 */;
 
                     $g = ["y" => 1];
                     $g["x"] = 1;
@@ -1259,7 +1259,7 @@ final class ArrayAssignmentTest extends TestCase
                         $p["a"]["b"] = 1;
                         $p["a"][$i] = "s";
                         $b = $p["a"]["b"];
-                        /** @psalm-check-type-exact $b = 1 */;
+                        /** @psalm-check-type-exact $b = \'b\'|1 */;
                     }
 
                     function decimalIntString(array $p): void {
@@ -1346,7 +1346,7 @@ final class ArrayAssignmentTest extends TestCase
                     $d["any"]["y"] = 6;
                     $d[uniqid()]["x"] = "s";
                     $e = $d["any"]["x"];
-                    /** @psalm-check-type-exact $e = 5 */;
+                    /** @psalm-check-type-exact $e = \'s\'|5 */;
                     $d[str_repeat("a", rand(1, 3))]["x"] = "s";
                     $e2 = $d["any"]["x"];
                     /** @psalm-check-type-exact $e2 = \'s\'|5 */;
