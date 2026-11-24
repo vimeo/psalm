@@ -52,6 +52,23 @@ final class ConditionalReturnTypeTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'conditionalOnANonEmptyListReturnsTheArrayMapOfTheList' => [
+                'code' => '<?php
+                    /**
+                     * @param list $items
+                     * @return ($items is non-empty-list ? non-empty-list : list)
+                     */
+                    function test(array $items): array
+                    {
+                        return array_map(
+                            static fn (mixed $item): mixed => $item,
+                            $items,
+                        );
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'conditionalOnClosureKeepsTheIfBranchForAnInterfaceNarrowedToClosure' => [
                 'code' => <<<'PHP'
                     <?php
@@ -966,6 +983,63 @@ final class ConditionalReturnTypeTest extends TestCase
                     function bar(SerializerInterface $i, string $data): array {
                         return $i->deserialize($data, \'array\');
                     }',
+            ],
+            'implementationWideningAParamReturnsTheGuidesTypeForTheGuidesValues' => [
+                'code' => '<?php
+                    interface Manager {
+                        /**
+                         * @template T of object
+                         * @param class-string<T> $className
+                         * @return T
+                         */
+                        public function get(string $className): object;
+                    }
+
+                    interface WideManager extends Manager {
+                        /**
+                         * @template T of object
+                         * @param string|class-string<T> $className
+                         * @return ($className is class-string<T> ? T : object)
+                         */
+                        #[Override]
+                        public function get(string $className): object;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
+            'implementedMethodWithTheConditionalReturnTypeOfTheInterface' => [
+                'code' => '<?php
+                    /** @template T = mixed */
+                    interface Box {
+                        /**
+                         * @template U = never
+                         * @param (callable(T): U)|null $f
+                         * @return Box<($f is null ? T : U)>
+                         */
+                        public function map(?callable $f = null): Box;
+                    }
+
+                    /**
+                     * @template T = mixed
+                     * @implements Box<T>
+                     */
+                    final class Just implements Box {
+                        /** @param T $value */
+                        public function __construct(private mixed $value) {}
+
+                        /**
+                         * @template U = never
+                         * @param (callable(T): U)|null $f
+                         * @return Box<($f is null ? T : U)>
+                         */
+                        public function map(?callable $f = null): Box {
+                            return $f === null ? $this : new Just($f($this->value));
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'inheritConditional' => [
                 'code' => '<?php
@@ -2178,7 +2252,7 @@ final class ConditionalReturnTypeTest extends TestCase
                     $node = new Node();
                     $result = $node->cmp($node);',
                 'assertions' => [
-                    '$result===' => 'int|string',
+                    '$result===' => 'string',
                 ],
                 'ignored_issues' => ['ArgumentTypeCoercion'],
             ],
@@ -2684,6 +2758,27 @@ final class ConditionalReturnTypeTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'conditionOnAParamIsAboutAnArgumentThatDoesNotFitIt' => [
+                'code' => '<?php
+                    final class Name {
+                        public function __toString(): string {
+                            return "n";
+                        }
+                    }
+
+                    /** @var list<Name> $names */
+                    $names = [new Name()];
+
+                    $r = preg_replace("/a/", "b", $names);
+                    $s = str_replace("a", "b", $names);
+                    $t = str_replace("a", "b", "abc");',
+                'assertions' => [
+                    '$r===' => 'array<int<0, max>, string>|null',
+                    '$s===' => 'array<int<0, max>, string>',
+                    '$t===' => "'bbc'",
+                ],
+                'ignored_issues' => ['ImplicitToStringCast'],
+            ],
             'conditionalReturnOfAMixedTemplateArgumentKeepsBothBranches' => [
                 'code' => '<?php
                     /**
@@ -2764,6 +2859,47 @@ final class ConditionalReturnTypeTest extends TestCase
                         return $key === null ? "a" : $key;
                     }',
                 'error_message' => 'InvalidDocblock',
+            ],
+            'conditionalOfAnImplementationOnPartOfTheGuidesValuesIsComparedByBothBranches' => [
+                'code' => '<?php
+                    interface Narrow {
+                        /** @return int */
+                        public function f(string $s): int|string;
+                    }
+
+                    final class NarrowImpl implements Narrow {
+                        /** @return ($s is "x" ? int : string) */
+                        #[Override]
+                        public function f(string $s): int|string {
+                            return $s === "x" ? 1 : "a";
+                        }
+                    }',
+                'error_message' => 'ImplementedReturnTypeMismatch',
+                'error_levels' => [],
+                'php_version' => '8.3',
+            ],
+            'implementedMethodWithAConditionalReturnTypeOutsideTheInterfaces' => [
+                'code' => '<?php
+                    interface Box {
+                        /**
+                         * @param int|null $f
+                         * @return ($f is null ? string : int)
+                         */
+                        public function map(?int $f = null): mixed;
+                    }
+
+                    final class Wrong implements Box {
+                        /**
+                         * @param int|null $f
+                         * @return ($f is null ? array : int)
+                         */
+                        public function map(?int $f = null): mixed {
+                            return $f ?? [];
+                        }
+                    }',
+                'error_message' => 'ImplementedReturnTypeMismatch',
+                'error_levels' => [],
+                'php_version' => '8.0',
             ],
             'typedClosureParamOfCallableOfStaticKeepsItsDeclaredType' => [
                 'code' => '<?php

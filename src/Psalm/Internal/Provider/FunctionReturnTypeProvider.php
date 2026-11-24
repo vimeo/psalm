@@ -48,11 +48,13 @@ use Psalm\Internal\Provider\ReturnTypeProvider\HexdecReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\HrtimeReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\ImplodeReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\InArrayReturnTypeProvider;
+use Psalm\Internal\Provider\ReturnTypeProvider\IniGetReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\IteratorToArrayReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\MbInternalEncodingReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\MbStrtolowerReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\MinMaxReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\MktimeReturnTypeProvider;
+use Psalm\Internal\Provider\ReturnTypeProvider\NumericCastFunctionReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\ParseUrlReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\PowReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\PropertyExistsReturnTypeProvider;
@@ -117,6 +119,7 @@ final class FunctionReturnTypeProvider
         $this->registerClass(FilterInputReturnTypeProvider::class);
         $this->registerClass(FilterVarReturnTypeProvider::class);
         $this->registerClass(IteratorToArrayReturnTypeProvider::class);
+        $this->registerClass(NumericCastFunctionReturnTypeProvider::class);
         $this->registerClass(ParseUrlReturnTypeProvider::class);
         $this->registerClass(PropertyExistsReturnTypeProvider::class);
         $this->registerClass(StrReplaceReturnTypeProvider::class);
@@ -148,6 +151,7 @@ final class FunctionReturnTypeProvider
         $this->registerClass(GetParentClassReturnTypeProvider::class);
         $this->registerClass(HrtimeReturnTypeProvider::class);
         $this->registerClass(MbStrtolowerReturnTypeProvider::class);
+        $this->registerClass(IniGetReturnTypeProvider::class);
     }
 
     /**

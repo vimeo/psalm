@@ -324,6 +324,24 @@ final class ClassLikeStringTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'getClassOfAUnionWithAnIntersectionIsComparedWithAClassOfTheUnion' => [
+                'code' => '<?php
+                    interface Shape {}
+                    interface Marked {}
+                    final class Circle implements Shape {}
+                    abstract class Group implements Shape {}
+
+                    /** @param (Group&Marked)|Shape $shape */
+                    function flagged(object $shape): bool {
+                        $class = get_class($shape);
+                        $flags = [Circle::class => true];
+
+                        return isset($flags[$class]) && $class === Circle::class;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'templateClassStringIsComparedWithAClassName' => [
                 'code' => '<?php
                     final class Special {}

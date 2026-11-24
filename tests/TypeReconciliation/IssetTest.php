@@ -81,6 +81,76 @@ final class IssetTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'issetInALoopOverLiteralKeysOfAnIntersectionShape' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-type HttpOptions = array{
+                     *   headers?: array<string, string | list<string>>,
+                     * }
+                     *
+                     * @psalm-type SerializedAccount = HttpOptions & array{discoveryUri: string, baseUrl?: ?string}
+                     */
+                    final class Account {
+                        /**
+                         * @psalm-param SerializedAccount $props
+                         */
+                        public static function constructFromArray(array $props): string
+                        {
+                            $requiredProps = [\'discoveryUri\'];
+
+                            foreach ($requiredProps as $prop) {
+                                if (!isset($props[$prop])) {
+                                    throw new \\Exception("x");
+                                }
+                            }
+
+                            return $props["discoveryUri"];
+                        }
+                    }',
+            ],
+            'coalesceToNullComparedWithNullNarrowsTheCoalescedOffset' => [
+                'code' => '<?php
+                    final class Item {
+                        public function getName(): string {
+                            return "x";
+                        }
+                    }
+
+                    /** @param array<string, Item> $data */
+                    function repeated(array $data): string {
+                        if (($data["item"] ?? null) !== null) {
+                            return ($data["item"] ?? null)->getName();
+                        }
+                        return "";
+                    }
+
+                    /** @param array<string, Item> $data */
+                    function negated(array $data): string {
+                        if (($data["item"] ?? null) === null) {
+                            return "";
+                        }
+                        return $data["item"]->getName();
+                    }
+
+                    /** @var array<string, Item> $data */
+                    $data = [];
+                    $item = ($data["item"] ?? null) !== null ? ($data["item"] ?? null) : new Item();',
+                'assertions' => [
+                    '$item===' => 'Item',
+                ],
+            ],
+            'coalesceOfASetNonNullVariableIsTheVariable' => [
+                'code' => '<?php
+                    function f(?int $i): ?int {
+                        return $i;
+                    }
+                    $i = f(1);
+                    $result = $i !== null ? ($i ?? "never") : 0;',
+                'assertions' => [
+                    '$result===' => 'int',
+                ],
+                'ignored_issues' => ['RedundantCondition', 'TypeDoesNotContainNull'],
+            ],
             'offsetUnderOneOfSeveralLiteralKeysIsTheValueOfThoseKeys' => [
                 'code' => '<?php
                     function getUserIps(): string {

@@ -162,6 +162,33 @@ final class TypeAlgebraTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'stringCheckedInTheRightOperandOfAnOrKeepsTheTypeOfANullCoalescedOffset' => [
+                'code' => '<?php
+                    final class VO {
+                        public function __construct(
+                            private readonly string|null $value
+                        ) {
+                        }
+                    }
+
+                    /** @var array{key?: mixed} */
+                    $array = [];
+
+                    $value = $array[\'key\'] ?? null;
+
+                    if (
+                        ($value !== null && ! is_string($value))
+                        ||
+                        (is_string($value) && empty($value))
+                    ) {
+                        throw new \\Exception();
+                    }
+
+                    new VO($value);',
+                'assertions' => [],
+                'ignored_issues' => ['MixedAssignment', 'RiskyTruthyFalsyComparison'],
+                'php_version' => '8.1',
+            ],
             'isArrayAndNotListThatDoesNotHoldKeepsTheOtherTypesOfTheUnion' => [
                 'code' => '<?php
                     function test(array|int $value): void {
@@ -2966,10 +2993,25 @@ final class TypeAlgebraTest extends TestCase
                     }',
                 'assertions' => [],
             ],
-            'orOfAValueAnEarlierConditionExcludedAndAnotherIsNotParadoxical' => [
+            'inArrayOfLiteralsWithAValueAnEarlierConditionExcludedIsNotParadoxical' => [
                 'code' => '<?php
                     function test(string $value): int {
                         if ($value === "a") {
+                            return 1;
+                        }
+
+                        if (in_array($value, ["a", "b"], true)) {
+                            return 2;
+                        }
+
+                        return 3;
+                    }',
+                'assertions' => [],
+            ],
+            'orOfValuesOfOneVariableNoneExcludedIsNotParadoxical' => [
+                'code' => '<?php
+                    function test(string $value): int {
+                        if ($value === "c") {
                             return 1;
                         }
 
@@ -6035,6 +6077,79 @@ final class TypeAlgebraTest extends TestCase
                         return 0;
                     }',
                 'error_message' => 'ParadoxicalCondition - src' . DIRECTORY_SEPARATOR . 'somefile.php:9:52',
+            ],
+            'deadOperandNextToAnotherValueOfTheSameVariableIsParadoxical' => [
+                'code' => '<?php
+                    function f(string $o): string {
+                        if ("term_id" === $o) {
+                            return "a";
+                        }
+
+                        if ("id" === $o || "term_id" === $o) {
+                            return "b";
+                        }
+
+                        return "c";
+                    }',
+                'error_message' => 'ParadoxicalCondition - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:44',
+            ],
+            'deadLeftOperandNextToAnotherValueOfTheSameVariableIsParadoxical' => [
+                'code' => '<?php
+                    function f(string $o): string {
+                        if ($o === "a") {
+                            return "a";
+                        }
+
+                        if ($o === "a" || $o === "b") {
+                            return "b";
+                        }
+
+                        return "c";
+                    }',
+                'error_message' => 'ParadoxicalCondition - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:29',
+            ],
+            'deadOperandOfTheSameVariableInAnElseIfIsParadoxical' => [
+                'code' => '<?php
+                    function f(string $o): string {
+                        if ($o === "a") {
+                            return "a";
+                        } elseif ($o === "b" || $o === "a") {
+                            return "b";
+                        }
+
+                        return "c";
+                    }',
+                'error_message' => 'ParadoxicalCondition - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:49',
+            ],
+            'deadOperandOfAValueAnInArrayExcludedIsParadoxical' => [
+                'code' => '<?php
+                    function f(string $o): string {
+                        if (in_array($o, ["term_id", "slug"], true)) {
+                            return "a";
+                        }
+
+                        if ($o === "id" || $o === "term_id") {
+                            return "b";
+                        }
+
+                        return "c";
+                    }',
+                'error_message' => 'ParadoxicalCondition - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:44',
+            ],
+            'deadOperandOfTheSameVariableInAChainOfOrsIsParadoxical' => [
+                'code' => '<?php
+                    function f(string $o): string {
+                        if ($o === "c") {
+                            return "a";
+                        }
+
+                        if ($o === "a" || $o === "c" || $o === "b") {
+                            return "b";
+                        }
+
+                        return "c";
+                    }',
+                'error_message' => 'ParadoxicalCondition - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:43',
             ],
             'deadOperandNextToAnAssignmentOfAnotherVariableIsParadoxical' => [
                 'code' => '<?php
