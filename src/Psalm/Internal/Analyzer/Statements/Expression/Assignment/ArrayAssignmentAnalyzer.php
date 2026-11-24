@@ -1815,7 +1815,7 @@ final class ArrayAssignmentAnalyzer
                 $statements_analyzer->node_data->setType($child_stmt->var, $array_type);
             }
 
-            // an ArrayAccess is taken to key its items as an array does
+            // a string's negative offset counts from its end; an ArrayAccess is taken to key its items as an array does
             if ($written_offset !== null && !self::isArrayOnWrite($array_type)) {
                 $written_offset[1] = self::getStringOffsetsOfKeyType($written_offset[1]);
             }
