@@ -21,6 +21,7 @@ use function array_values;
 use function count;
 use function implode;
 use function in_array;
+use function sort;
 use function strrpos;
 use function substr;
 
@@ -193,20 +194,35 @@ final class TGenericObject extends TNamedObject
     {
         [$type_params, $purity_args] = $this->getTypeParamsAndPurityArgs();
 
-        $s = self::formatTypeParams(
-            $type_params,
-            $purity_args,
-            static fn(Union $type_param): string => $type_param->getKey(),
-            $this,
-        );
+        return $this->value
+            . self::formatTypeParams($type_params, $purity_args, self::getTypeParamKey(...), $this)
+            . ($include_extra ? $this->getIntersectionTypesId(true) : '');
+    }
 
-        $extra_types = '';
+    /**
+     * TypeCombiner merges the generic objects of the same key: those whose type arguments only differ by their
+     * literals or by what their atomic types' keys leave out (`Foo<5>` and `Foo<6>`, `Foo<array{a: int}>` and
+     * `Foo<list<int>>`)
+     *
+     * @psalm-pure
+     */
+    private static function getTypeParamKey(Union $type_param): string
+    {
+        $keys = [];
 
-        if ($include_extra && $this->extra_types) {
-            $extra_types = '&' . implode('&', $this->extra_types);
+        foreach ($type_param->getAtomicTypes() as $atomic_type) {
+            $key = match (true) {
+                $atomic_type instanceof TLiteralInt => 'int',
+                $atomic_type instanceof TLiteralFloat => 'float',
+                $atomic_type instanceof TLiteralString => 'string',
+                default => $atomic_type->getKey(),
+            };
+            $keys[$key] = $key;
         }
 
-        return $this->value . $s . $extra_types;
+        sort($keys);
+
+        return implode('|', $keys);
     }
 
     /**

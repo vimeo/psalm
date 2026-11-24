@@ -258,6 +258,8 @@ trait UnionTrait
     }
 
     /**
+     * @deprecated A union has no key of its own: use getId() to identify a type, and Atomic::getKey() for the slot
+     *     of an atomic type in a union. Will be removed in Psalm 8.
      * @psalm-mutation-free
      */
     public function getKey(): string

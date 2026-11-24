@@ -365,7 +365,7 @@ final class UnionTypeComparator
                         }
 
                         $replacement = $union_comparison_result->replacement_union_type->getBuilder();
-                        $replacement->removeType($input_type->getKey());
+                        $replacement->removeType($input_type_part->getKey());
                         $replacement->addType(
                             $atomic_comparison_result->replacement_atomic_type,
                         );
