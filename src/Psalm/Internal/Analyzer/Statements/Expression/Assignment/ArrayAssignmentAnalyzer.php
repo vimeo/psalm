@@ -1815,11 +1815,9 @@ final class ArrayAssignmentAnalyzer
                 $statements_analyzer->node_data->setType($child_stmt->var, $array_type);
             }
 
+            // an ArrayAccess is taken to key its items as an array does
             if ($written_offset !== null && !self::isArrayOnWrite($array_type)) {
-                // an ArrayAccess takes the key as it is
-                $written_offset[1] = $array_type->hasObjectType()
-                    ? Type::getArrayKey()
-                    : self::getStringOffsetsOfKeyType($written_offset[1]);
+                $written_offset[1] = self::getStringOffsetsOfKeyType($written_offset[1]);
             }
 
             $written_offsets[] = $written_offset;

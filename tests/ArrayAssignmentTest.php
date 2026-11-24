@@ -1207,6 +1207,18 @@ final class ArrayAssignmentTest extends TestCase
                 'assertions' => [],
                 'ignored_issues' => ['MixedAssignment', 'MixedArrayAssignment', 'MixedArrayAccess', 'MissingParamType'],
             ],
+            'literalKeyAssignmentKeepsTheOtherLiteralOffsetsOfAnArrayOrArrayAccess' => [
+                'code' => '<?php
+                    /** @param array|ArrayAccess $c */
+                    function arrayOrArrayAccess(int $i, &$c): void {
+                        $c["sandbox"]["progress"] = $i;
+                        $c["finished"] = 1;
+                        $b = $c["sandbox"]["progress"];
+                        /** @psalm-check-type-exact $b = int */;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedArrayAccess', 'MixedArrayAssignment', 'MixedAssignment'],
+            ],
             'unknownKeyAssignmentKeepsTheOffsetsItCannotBe' => [
                 'code' => '<?php
                     /** @var array{x: array<string, int>, y: int} $a */
