@@ -7759,6 +7759,47 @@ final class ConditionalTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'looseEqualityWithTrueOrFalseIsTruthiness' => [
+                'code' => '<?php
+                    function intVsTrue(int $x, bool $flag): void {
+                        if ($flag && $x == $flag) {
+                            /** @psalm-check-type-exact $x = int */;
+                        }
+                    }
+
+                    function scalarsVsFalse(string|int|null $x, bool $flag): void {
+                        if (!$flag && $x == $flag) {
+                            /** @psalm-check-type-exact $x = ""|"0"|0|null */;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'looseEqualityWithAnObjectKeepsBool' => [
+                'code' => '<?php
+                    function boolVsObject(bool $b, stdClass $o): void {
+                        if ($b == $o) {
+                            /** @psalm-check-type-exact $b = bool */;
+                        }
+                    }
+
+                    function nullableBoolVsObject(?bool $b, stdClass $o): void {
+                        if ($b == $o) {
+                            /** @psalm-check-type-exact $b = bool */;
+                        }
+                    }
+
+                    /** @param non-empty-string $s */
+                    function floatOrArrayVsNonEmptyString(float|array $x, string $s): void {
+                        if ($x == $s) {
+                            /** @psalm-check-type-exact $x = float */;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'issetOfAnOffsetStoredInAVariableSetsAPossiblyUndefinedMixedVariable' => [
                 'code' => '<?php
                     /** @return mixed */
@@ -8252,6 +8293,19 @@ final class ConditionalTest extends TestCase
                         if ($s == null) {}
                     }',
                 'error_message' => 'TypeDoesNotContainType - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:29',
+            ],
+            'looseEqualityOfNegativeIntOrNullWithPositiveIntIsImpossible' => [
+                'code' => '<?php
+                    /**
+                     * @param int<min, -1>|null $x
+                     * @param positive-int $p
+                     */
+                    function f(?int $x, int $p): void {
+                        if ($x == $p) {}
+                    }',
+                'error_message' => 'DocblockTypeContradiction - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:29',
+                'error_levels' => [],
+                'php_version' => '8.0',
             ],
             'looseNullInequalityOfZeroOrOneIsRedundant' => [
                 'code' => '<?php

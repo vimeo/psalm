@@ -42,6 +42,9 @@ use Psalm\Type\Atomic\TCallableObject;
 use Psalm\Type\Atomic\TCallableString;
 use Psalm\Type\Atomic\TClassConstant;
 use Psalm\Type\Atomic\TClassString;
+use Psalm\Type\Atomic\TDependentGetClass;
+use Psalm\Type\Atomic\TDependentGetDebugType;
+use Psalm\Type\Atomic\TDependentGetType;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\TInt;
@@ -74,6 +77,7 @@ use Psalm\Type\Atomic\TResource;
 use Psalm\Type\Atomic\TScalar;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateParam;
+use Psalm\Type\Atomic\TTraitString;
 use Psalm\Type\Atomic\TTrue;
 use Psalm\Type\Atomic\TValueOf;
 use Psalm\Type\MutableUnion;
@@ -90,6 +94,7 @@ use function count;
 use function explode;
 use function in_array;
 use function is_int;
+use function is_numeric;
 use function ksort;
 use function strlen;
 use function strpos;
@@ -1223,7 +1228,12 @@ final class SimpleAssertionReconciler extends Reconciler
 
                 $redundant = false;
             } elseif ($type instanceof TString && $assertion instanceof IsLooselyEqual) {
-                $int_types[] = new TNumericString();
+                $numeric_type = self::getLooselyEqualJuggledAtomic($type, new TInt());
+
+                if ($numeric_type) {
+                    $int_types[] = $numeric_type;
+                }
+
                 $redundant = false;
             } elseif ($assertion instanceof IsLooselyEqual
                 && ($type instanceof TFloat || $type instanceof TBool || $type instanceof TNull)
@@ -3025,6 +3035,111 @@ final class SimpleAssertionReconciler extends Reconciler
         }
 
         return false;
+    }
+
+    /**
+     * The part of a type that can be loosely equal to a value of another kind (`1.0 == 1`, `"1" == 1.0`,
+     * `true == "a"`, `false == []`): null when both are of the same kind or aren't juggled, false when no value of it
+     * can be equal
+     *
+     * @psalm-pure
+     */
+    public static function getLooselyEqualJuggledAtomic(
+        Atomic $existing_type_part,
+        Atomic $new_type_part,
+    ): Atomic|false|null {
+        // every value is loosely equal to true or to false
+        if ($existing_type_part instanceof TBool) {
+            return $new_type_part instanceof TBool ? null : $existing_type_part;
+        }
+
+        if ($new_type_part instanceof TString) {
+            if ($existing_type_part instanceof TString) {
+                return null;
+            }
+
+            $can_be_numeric = self::canBeNumericString($new_type_part);
+
+            if ($existing_type_part instanceof TScalar) {
+                return $existing_type_part;
+            }
+
+            if ($existing_type_part instanceof TNull) {
+                // null is only equal to ""
+                return $can_be_numeric
+                    && !$new_type_part instanceof TNonEmptyString
+                    && !$new_type_part instanceof TNonEmptyNonspecificLiteralString
+                        ? $existing_type_part
+                        : false;
+            }
+
+            if ($existing_type_part instanceof TInt
+                || $existing_type_part instanceof TFloat
+                || $existing_type_part instanceof TNumeric
+            ) {
+                return $can_be_numeric ? $existing_type_part : false;
+            }
+
+            if ($existing_type_part instanceof TArrayKey && $can_be_numeric) {
+                return $existing_type_part;
+            }
+
+            return null;
+        }
+
+        if (!$new_type_part instanceof TInt && !$new_type_part instanceof TFloat) {
+            return null;
+        }
+
+        if ($new_type_part instanceof TInt
+            ? $existing_type_part instanceof TInt
+            : $existing_type_part instanceof TFloat
+        ) {
+            return null;
+        }
+
+        if ($existing_type_part instanceof TString) {
+            if ($existing_type_part instanceof TLiteralString) {
+                return is_numeric($existing_type_part->value) ? $existing_type_part : false;
+            }
+
+            if ($existing_type_part instanceof TNumericString) {
+                return $existing_type_part;
+            }
+
+            return self::canBeNumericString($existing_type_part) ? new TNumericString() : false;
+        }
+
+        if ($existing_type_part instanceof TNull) {
+            // null is only equal to 0
+            return !$new_type_part instanceof TIntRange || $new_type_part->contains(0) ? $existing_type_part : false;
+        }
+
+        if ($existing_type_part instanceof TInt
+            || $existing_type_part instanceof TFloat
+            || $existing_type_part instanceof TNumeric
+            || $existing_type_part instanceof TScalar
+            || $existing_type_part instanceof TArrayKey
+        ) {
+            return $existing_type_part;
+        }
+
+        return null;
+    }
+
+    /**
+     * Class names, callable names and gettype() results are never numeric
+     *
+     * @psalm-pure
+     */
+    private static function canBeNumericString(TString $type): bool
+    {
+        return !$type instanceof TClassString
+            && !$type instanceof TCallableString
+            && !$type instanceof TTraitString
+            && !$type instanceof TDependentGetClass
+            && !$type instanceof TDependentGetType
+            && !$type instanceof TDependentGetDebugType;
     }
 
     /**

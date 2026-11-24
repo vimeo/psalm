@@ -39,6 +39,7 @@ use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TLowercaseString;
 use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Type\Atomic\TNonEmptyNonspecificLiteralString;
 use Psalm\Type\Atomic\TNonEmptyString;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TNumeric;
@@ -186,6 +187,10 @@ final class ReconcilerTest extends TestCase
             'numericLooselyEqualToAnIntStaysNumeric' => ['numeric', new IsLooselyEqual(new TInt()), 'numeric'],
             'arrayKeyLooselyEqualToAnIntStaysArrayKey' => ['array-key', new IsLooselyEqual(new TInt()), 'array-key'],
             'scalarLooselyEqualToAnIntStaysScalar' => ['scalar', new IsLooselyEqual(new TInt()), 'scalar'],
+            'literalStringsLooselyEqualToAnIntAreTheNumericOnes' => ["'1'", new IsLooselyEqual(new TInt()), "'1'|'a'"],
+            'classStringIsNotLooselyEqualToAnInt' => ['never', new IsLooselyEqual(new TInt()), 'class-string'],
+            'intLooselyEqualToTrueIsTruthy' => ['int', new IsLooselyEqual(new TTrue()), 'int'],
+            'nullableIntLooselyEqualToFalseIsFalsy' => ['0|null', new IsLooselyEqual(new TFalse()), 'int|null'],
             'numericLooselyEqualToAFloatStaysNumeric' => ['numeric', new IsLooselyEqual(new TFloat()), 'numeric'],
             'scalarsLooselyEqualToAFloatStayScalars' => ['bool|int|null', new IsLooselyEqual(new TFloat()), 'bool|int|null'],
             'literalStringsLooselyEqualToAFloatAreTheNumericOnes' => ["'1'", new IsLooselyEqual(new TFloat()), "'1'|'a'"],
@@ -195,6 +200,7 @@ final class ReconcilerTest extends TestCase
             'floatLooselyEqualToALowercaseStringStaysFloat' => ['float', new IsLooselyEqual(new TLowercaseString()), 'float'],
             'floatLooselyEqualToANumericStringStaysFloat' => ['float', new IsLooselyEqual(new TNumericString()), 'float'],
             'nullIsNotLooselyEqualToANonEmptyString' => ['int', new IsLooselyEqual(new TNonEmptyString()), 'int|null'],
+            'nullIsNotLooselyEqualToANonEmptyLiteralString' => ['int', new IsLooselyEqual(new TNonEmptyNonspecificLiteralString()), 'int|null'],
             'nullIsLooselyEqualToAnEmptyLowercaseString' => ['int|null', new IsLooselyEqual(new TLowercaseString()), 'int|null'],
             'intIsNotLooselyEqualToAClassString' => ['class-string', new IsLooselyEqual(new TClassString()), 'int|null'],
             'stringLooselyEqualToANonEmptyStringIsNarrowed' => ['int|non-empty-string', new IsLooselyEqual(new TNonEmptyString()), 'int|string'],
