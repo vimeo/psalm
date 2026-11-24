@@ -129,6 +129,42 @@ final class ClosureTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'closureFromCallableOfAMethodReturningStaticBindsItToThis' => [
+                'code' => '<?php
+                    class Foo {
+                        public function self(): static {
+                            return $this;
+                        }
+
+                        public function test(): void {
+                            $a = box(Closure::fromCallable([$this, "self"])())->same()->same();
+                            /** @psalm-check-type-exact $a = Box<Foo&static> */;
+
+                            $b = box($this->self(...)())->same()->same();
+                            /** @psalm-check-type-exact $b = Box<Foo&static> */;
+                        }
+                    }
+
+                    /** @template T */
+                    final class Box {
+                        /** @return self<T> */
+                        public function same(): self {
+                            return $this;
+                        }
+                    }
+
+                    /**
+                     * @template T
+                     * @param T $value
+                     * @return Box<T>
+                     */
+                    function box(mixed $value): Box {
+                        return new Box();
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'closureFromAnAssertionOfAClassStringIsAClosure' => [
                 'code' => '<?php
                     /**
